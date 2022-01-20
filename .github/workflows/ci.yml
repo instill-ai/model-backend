@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  GAR_REGISTRY: europe-west2-docker.pkg.dev/prj-c-devops-artifacts-a306
+  GAR_REPOSITORY: model
+  GAR_IMAGE: model-backend
+
+jobs:
+  get-version:
+    runs-on: [self-hosted, on-prem, dgx]
+    # Skip if the event is triggered by the PR of release-please action (for pushing back to main branch for updating changelog and bumping up version)
+    if: ${{ !contains(github.head_ref, 'release') }}
+    outputs:
+      CORE_VERSION: ${{ steps.get-version.outputs.CORE_VERSION }}
+      GITHUB_SHA: ${{ steps.get-version.outputs.GITHUB_SHA }}
+    steps:
+      - name: Checkout (latest)
+        uses: actions/checkout@v2
+
+      - name: Get version
+        id: get-version
+        shell: bash
+        run: |
+          CORE_VERSION=$(cat version.txt)
+          GITHUB_SHA=$(echo ${{ github.event.pull_request.head.sha }} | cut -c -7)
+          echo "::set-output name=CORE_VERSION::$CORE_VERSION"
+          echo "::set-output name=GITHUB_SHA::$GITHUB_SHA"
+
+  build:
+    runs-on: [self-hosted, on-prem, dgx]
+    needs: [get-version]
+    steps:
+      - name: Checkout (latest)
+        uses: actions/checkout@v2
+
+      - name: Build build-metadata image
+        run: |
+          DOCKER_BUILDKIT=1 docker build -t $GAR_REGISTRY/$GAR_REPOSITORY/$GAR_IMAGE:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }} .
+
+  push:
+    runs-on: [self-hosted, on-prem, dgx]
+    needs: [get-version, build]
+    steps:
+      - name: Import Vault secrets
+        id: vault
+        uses: hashicorp/vault-action@v2.1.0
+        with:
+          url: https://vault.instill.tech
+          method: approle
+          roleId: ${{ secrets.vaultAppRoleRoleId }}
+          secretId: ${{ secrets.vaultAppRoleSecretId }}
+          tlsSkipVerify: false
+          extraHeaders: |
+            CF-Access-Client-Id: ${{ secrets.cfAccessClientId }}
+            CF-Access-Client-Secret: ${{ secrets.cfAccessClientSecret }}
+          # A magic json output trick: https://github.com/hashicorp/vault-action/issues/153#issuecomment-824329289
+          secrets: |
+            secret/data/devops/gcp/gar-model@prj-c-devops-artifacts-a306.iam.gserviceaccount.com $.$ | GAR_SA_KEY;
+
+      - name: Push build-metadata image
+        run: |
+          echo $GAR_SA_KEY | docker login -u _json_key --password-stdin https://$GAR_REGISTRY
+          docker push $GAR_REGISTRY/$GAR_REPOSITORY/$GAR_IMAGE:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}

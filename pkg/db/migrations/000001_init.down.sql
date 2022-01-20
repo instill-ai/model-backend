@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP TABLE IF EXISTS `model_versions`;
+DROP TABLE IF EXISTS `models`;
+
+COMMIT;
