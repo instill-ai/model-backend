@@ -5,7 +5,7 @@ tmp_dir = "tmp"
   bin = "./tmp/main"
   cmd = "go build -a -o ./tmp/main ./cmd"
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor"]
+  exclude_dir = ["assets", "tmp", "vendor", "test_upload", "test_predict"]
   exclude_file = []
   exclude_regex = []
   exclude_unchanged = false
@@ -30,3 +30,4 @@ tmp_dir = "tmp"
 
 [misc]
   clean_on_exit = false
+

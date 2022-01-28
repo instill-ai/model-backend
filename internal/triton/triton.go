@@ -6,38 +6,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
+	"image"
+	"image/jpeg"
 	"log"
 	"time"
 
+	"github.com/disintegration/imaging"
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"google.golang.org/grpc"
 )
-
-const (
-	inputSize  = 16
-	outputSize = 16
-)
-
-func SerializeBytesTensor(tensor [][]byte) []byte {
-	// Prepend 4-byte length to the input
-	// https://github.com/triton-inference-server/server/issues/1100
-	// https://github.com/triton-inference-server/server/blob/ffa3d639514a6ba0524bbfef0684238598979c13/src/clients/python/library/tritonclient/utils/__init__.py#L203
-	if len(tensor) == 0 {
-		return []byte{}
-	}
-
-	// Add capacity to avoid memory re-allocation
-	res := make([]byte, 0, len(tensor)*(4+len(tensor[0])))
-	for _, t := range tensor { // loop over batch
-		length := make([]byte, 4)
-		binary.LittleEndian.PutUint32(length, uint32(len(t)))
-		res = append(res, length...)
-		res = append(res, t...)
-	}
-
-	return res
-}
 
 func ReadFloat32(fourBytes []byte) float32 {
 	buf := bytes.NewBuffer(fourBytes)
@@ -57,25 +36,6 @@ func ReadInt32(fourBytes []byte) int32 {
 		log.Fatal(err)
 	}
 	return result
-}
-
-func DeserializeBytesTensor(encodedTensor []byte, capacity int64) []string {
-	arr := make([]string, 0, capacity)
-	for i := 0; i < len(encodedTensor); {
-		length := int(ReadInt32(encodedTensor[i : i+4]))
-		i += 4
-		arr = append(arr, string(encodedTensor[i:i+length]))
-		i += length
-	}
-	return arr
-}
-
-func DeserializeFloat32Tensor(encodedTensor []byte) []float32 {
-	arr := make([]float32, len(encodedTensor)/4)
-	for i := 0; i < len(encodedTensor)/4; i++ {
-		arr[i] = ReadFloat32(encodedTensor[i*4 : i*4+4])
-	}
-	return arr
 }
 
 var TritonClient inferenceserver.GRPCInferenceServiceClient
@@ -146,26 +106,112 @@ func ModelMetadataRequest(client inferenceserver.GRPCInferenceServiceClient, mod
 	return modelMetadataResponse
 }
 
-func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse) *inferenceserver.ModelInferResponse {
+func ModelConfigRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
+	// Create context for our request with 10 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Create status request for a given model
+	modelConfigRequest := inferenceserver.ModelConfigRequest{
+		Name:    modelName,
+		Version: modelVersion,
+	}
+	// Submit modelMetadata request to server
+	modelConfigResponse, err := client.ModelConfig(ctx, &modelConfigRequest)
+	if err != nil {
+		log.Printf("Couldn't get server model config: %v", err)
+	}
+	return modelConfigResponse
+}
+
+func _serializeBytesTensor(tensor [][]byte) []byte {
+	// Prepend 4-byte length to the input
+	// https://github.com/triton-inference-server/server/issues/1100
+	// https://github.com/triton-inference-server/server/blob/ffa3d639514a6ba0524bbfef0684238598979c13/src/clients/python/library/tritonclient/utils/__init__.py#L203
+	if len(tensor) == 0 {
+		return []byte{}
+	}
+
+	// Add capacity to avoid memory re-allocation
+	res := make([]byte, 0, len(tensor)*(4+len(tensor[0])))
+	for _, t := range tensor { // loop over batch
+		length := make([]byte, 4)
+		binary.LittleEndian.PutUint32(length, uint32(len(t)))
+		res = append(res, length...)
+		res = append(res, t...)
+	}
+
+	return res
+}
+
+func _deserializeBytesTensor(encodedTensor []byte) []string {
+	var arr []string
+	for i := 0; i < len(encodedTensor); {
+		length := int(ReadInt32(encodedTensor[i : i+4]))
+		i += 4
+		arr = append(arr, string(encodedTensor[i:i+length]))
+		i += length
+	}
+	return arr
+}
+
+func _reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error) {
+	if len(shape) != 2 {
+		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
+	}
+
+	var prod int64 = 1
+	for _, s := range shape {
+		prod *= s
+	}
+	if prod != int64(len(array)) {
+		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+	}
+
+	res := make([][]string, shape[0])
+	for i := int64(0); i < shape[0]; i++ {
+		res[i] = array[i*shape[1] : (i+1)*shape[1]]
+	}
+
+	return res, nil
+}
+
+func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, modelType string, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) *inferenceserver.ModelInferResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Create request input tensors
-	inferInputs := []*inferenceserver.ModelInferRequest_InferInputTensor{
-		&inferenceserver.ModelInferRequest_InferInputTensor{
-			Name:     modelMetadata.Inputs[0].Name,
-			Datatype: modelMetadata.Inputs[0].Datatype,
-			Shape:    modelMetadata.Inputs[0].Shape,
-		},
+	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
+	for i := 0; i < len(modelMetadata.Inputs); i++ {
+		if modelConfig.Config.Platform == "ensemble" {
+			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+				Name:     modelMetadata.Inputs[i].Name,
+				Datatype: modelMetadata.Inputs[i].Datatype,
+				Shape:    []int64{1, 1},
+			})
+		}
 	}
 
 	// Create request input output tensors
-	inferOutputs := []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
-		&inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
-			Name: modelMetadata.Outputs[0].Name,
-		},
+	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
+	for i := 0; i < len(modelMetadata.Outputs); i++ {
+		if modelType == "classification" {
+			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
+				Name: modelMetadata.Outputs[i].Name,
+				Parameters: map[string]*inferenceserver.InferParameter{
+					"classification": {
+						ParameterChoice: &inferenceserver.InferParameter_Int64Param{
+							Int64Param: 1,
+						},
+					},
+				},
+			})
+		} else {
+			//TODO object detection, segmentation
+		}
 	}
+
 	// Create inference request for specific model/version
 	modelInferRequest := inferenceserver.ModelInferRequest{
 		ModelName:    modelName,
@@ -173,9 +219,8 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, rawInp
 		Inputs:       inferInputs,
 		Outputs:      inferOutputs,
 	}
-
-	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, rawInput[0])
-	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, rawInput[1])
+	fmt.Println(">>>> checkccccccc ", _serializeBytesTensor(rawInput)[0], _serializeBytesTensor(rawInput)[10], _serializeBytesTensor(rawInput)[20], _serializeBytesTensor(rawInput)[100])
+	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, _serializeBytesTensor(rawInput))
 
 	// Submit inference request to server
 	modelInferResponse, err := client.ModelInfer(ctx, &modelInferRequest)
@@ -185,45 +230,74 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, rawInp
 	return modelInferResponse
 }
 
-// Convert int32 input data into raw bytes (assumes Little Endian)
-func Preprocess(inputs [][]int32) [][]byte {
-	inputData0 := inputs[0]
-	inputData1 := inputs[1]
-
-	var inputBytes0 []byte
-	var inputBytes1 []byte
-	// Temp variable to hold our converted int32 -> []byte
-	bs := make([]byte, 4)
-	for i := 0; i < inputSize; i++ {
-		binary.LittleEndian.PutUint32(bs, uint32(inputData0[i]))
-		inputBytes0 = append(inputBytes0, bs...)
-		binary.LittleEndian.PutUint32(bs, uint32(inputData1[i]))
-		inputBytes1 = append(inputBytes1, bs...)
+func _parseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (int64, int64, int64) {
+	input_batch_dim := modelConfig.Config.MaxBatchSize
+	var c int64
+	var h int64
+	var w int64
+	if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
+		if input_batch_dim > 0 {
+			h = modelMetadata.Inputs[0].Shape[1]
+			w = modelMetadata.Inputs[0].Shape[2]
+			c = modelMetadata.Inputs[0].Shape[3]
+		} else {
+			h = modelMetadata.Inputs[0].Shape[0]
+			w = modelMetadata.Inputs[0].Shape[1]
+			c = modelMetadata.Inputs[0].Shape[2]
+		}
+	} else {
+		if input_batch_dim > 0 {
+			c = modelMetadata.Inputs[0].Shape[1]
+			h = modelMetadata.Inputs[0].Shape[2]
+			w = modelMetadata.Inputs[0].Shape[3]
+		} else {
+			c = modelMetadata.Inputs[0].Shape[0]
+			h = modelMetadata.Inputs[0].Shape[1]
+			w = modelMetadata.Inputs[0].Shape[2]
+		}
 	}
-
-	return [][]byte{inputBytes0, inputBytes1}
+	return c, h, w
 }
 
-// Convert slice of 4 bytes to int32 (assumes Little Endian)
-func readInt32(fourBytes []byte) int32 {
-	buf := bytes.NewBuffer(fourBytes)
-	var retval int32
-	binary.Read(buf, binary.LittleEndian, &retval)
-	return retval
+func Preprocess(modelType string, imageFile string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (images [][]byte, err error) {
+	src, err := imaging.Open(imageFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var img image.Image
+	if modelMetadata.Inputs[0].Datatype == "BYTES" { // "BYTES" for "TYPE_STRING", it will be have preprocess model, so no need resize input
+		img = src
+	} else {
+		c, h, w := _parseModel(modelMetadata, modelConfig)
+		if c == 1 {
+			src = imaging.Grayscale(src)
+		}
+
+		img = imaging.Resize(src, int(w), int(h), imaging.Lanczos)
+	}
+
+	buff := new(bytes.Buffer)
+	err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
+	if err != nil {
+		return nil, err
+	}
+
+	var imgsBytes [][]byte
+	imgsBytes = append(imgsBytes, buff.Bytes())
+
+	return imgsBytes, nil
 }
 
 // Convert output's raw bytes into int32 data (assumes Little Endian)
-func Postprocess(inferResponse *inferenceserver.ModelInferResponse) [][]int32 {
-	outputBytes0 := inferResponse.RawOutputContents[0]
-	outputBytes1 := inferResponse.RawOutputContents[1]
-
-	outputData0 := make([]int32, outputSize)
-	outputData1 := make([]int32, outputSize)
-	for i := 0; i < outputSize; i++ {
-		outputData0[i] = readInt32(outputBytes0[i*4 : i*4+4])
-		outputData1[i] = readInt32(outputBytes1[i*4 : i*4+4])
-	}
-	return [][]int32{outputData0, outputData1}
+func Postprocess(modelType string, inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse) []string {
+	// imageShape := modelMetadata.Inputs[0].Shape
+	fmt.Println(">>>>inferResponse.RawOutputContents[0] ", inferResponse.RawOutputContents[0])
+	outputData := _deserializeBytesTensor(inferResponse.RawOutputContents[0])
+	// fmt.Println(">>>>outputData ", outputData)
+	// batchedOutputData, _ := _reshape1DArrayStringTo2D(outputData, imageShape)
+	// fmt.Println(">>>>batchedOutputData ", batchedOutputData)
+	return outputData
 }
 
 func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) *inferenceserver.RepositoryModelLoadResponse {

@@ -17,7 +17,8 @@ import (
 
 func main() {
 	// Set up a connection to the server.
-	conn, err := grpc.Dial("0.0.0.0:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// conn, err := grpc.Dial("0.0.0.0:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(30*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -25,7 +26,7 @@ func main() {
 	c := model.NewModelClient(conn)
 
 	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	streamUploader, err := c.CreateModel(ctx)
@@ -36,7 +37,7 @@ func main() {
 	buf := make([]byte, chunkSize)
 	firstChunk := true
 
-	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/client-test/server/docs/examples/model_repository/densenet_onnx.zip")
+	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/triton-models/number-onnx-cpu/logo.zip")
 	if errOpen != nil {
 		errOpen = errors.Wrapf(errOpen,
 			"failed to open file")
@@ -59,11 +60,11 @@ func main() {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.CreateModelRequest{
-				Name:        "Name",
+				Name:        "logo",
 				Description: "Description",
 				Type:        "tensorrt",
 				Framework:   "pytorch",
-				Optimized:   true,
+				Optimized:   false,
 				Visibility:  "public",
 				Filename:    "a.zip",
 				Content:     buf[:n],

@@ -13,6 +13,7 @@ package handlers
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,7 +23,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/configs"
@@ -36,6 +41,9 @@ type ServiceHandlers struct{}
 
 func _isTritonServerReady() bool {
 	serverLiveResponse := triton.ServerLiveRequest(triton.TritonClient)
+	if serverLiveResponse == nil {
+		return false
+	}
 	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
 	if !serverLiveResponse.Live {
 		return false
@@ -59,7 +67,17 @@ func _createModelResponse(modelInDB models.Model, versions []models.Version) *mo
 	mRes.Icon = modelInDB.Icon
 	mRes.Type = modelInDB.Type
 	mRes.Visibility = modelInDB.Visibility
-
+	var vers []*model.ModelVersion
+	for i := 0; i < len(versions); i++ {
+		vers = append(vers, &model.ModelVersion{
+			Version:     versions[i].Version,
+			ModelId:     versions[i].ModelId,
+			Description: versions[i].Description,
+			CreatedAt:   &model.Timestamp{Timestamp: timestamppb.New(versions[i].CreatedAt)},
+			UpdatedAt:   &model.Timestamp{Timestamp: timestamppb.New(versions[i].UpdatedAt)},
+		})
+	}
+	mRes.Versions = vers
 	return &mRes
 }
 
@@ -79,7 +97,6 @@ func _writeToFp(fp *os.File, data []byte) error {
 			return nil
 		}
 	}
-
 }
 
 func _unzip(filePath string, dstDir string, dstName string) (string, bool) {
@@ -155,6 +172,7 @@ func _saveFile(stream model.Model_CreateModelServer) (outFile string, createdMod
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
+			fmt.Println("????? err", err)
 			if err == io.EOF {
 				break
 			}
@@ -183,31 +201,86 @@ func _saveFile(stream model.Model_CreateModelServer) (outFile string, createdMod
 			}
 			firstChunk = false
 		}
-
 		err = _writeToFp(fp, fileData.Content)
 		if err != nil {
 			return "", nil, err
 		}
 	}
-
 	return tmpFile, newModel, nil
+}
+
+func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, modelId string, version int, modelType string, err error) {
+	firstChunk := true
+	var fp *os.File
+
+	var fileData *model.PredictModelRequest
+
+	var tmpFile string
+
+	for {
+		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			err = errors.Wrapf(err,
+				"failed unexpectadely while reading chunks from stream")
+			return "", "", -1, "", nil
+		}
+
+		if firstChunk { //first chunk contains file name
+			modelId = fileData.ModelId
+			version = int(fileData.ModelVersion)
+			modelType = fileData.ModelType
+
+			tmpFile = path.Join("/tmp/", uuid.New().String())
+			fp, err = os.Create(tmpFile)
+			if err != nil {
+				return "", "", -1, "", err
+			}
+			defer fp.Close()
+
+			firstChunk = false
+		}
+		err = _writeToFp(fp, fileData.Content)
+		if err != nil {
+			return "", "", -1, "", err
+		}
+	}
+	return tmpFile, modelId, version, modelType, nil
+}
+
+func _makeError(statusCode codes.Code, title string, detail string, duration float64) error {
+	err := &models.Error{
+		Status: int32(statusCode),
+		Title:  title,
+		Detail: detail,
+	}
+	data, _ := json.Marshal(err)
+	return status.Error(statusCode, string(data))
 }
 
 // AddModel - upload a model to the model server
 func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err error) {
+	start := time.Now()
+
 	tmpFile, newModel, err := _saveFile(stream)
 	if err != nil {
-		return err
+		return _makeError(400, "Save File Error", err.Error(), float64(time.Since(start).Milliseconds()))
 	}
 
 	// extract zip file from tmp to models directory
 	modelDirName, isOk := _unzip(tmpFile, configs.Config.TritonServer.ModelStore, newModel.Id)
 	if !isOk {
-		return errors.Errorf("Could not extract zip file")
+		return _makeError(400, "Save File Error", "Could not extract zip file", float64(time.Since(start).Milliseconds()))
 	}
 	newModel.Id = modelDirName
 
-	_ = db.DB.Create(&newModel)
+	result := db.DB.Create(&newModel)
+	if result.Error != nil {
+		return _makeError(400, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
 	newVersion := models.Version{
 		Version:     1,
@@ -218,12 +291,23 @@ func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err
 		Status:      "offline",
 		Metadata:    models.JSONB{},
 	}
-	_ = db.DB.Create(&newVersion)
+	result = db.DB.Create(&newVersion)
+	if result.Error != nil {
+		return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
 	var modelInDB models.Model
-	db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
+	result = db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
+	if result.Error != nil {
+		return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+	}
+
 	resp := _createModelResponse(modelInDB, []models.Version{newVersion})
+
 	err = stream.SendAndClose(resp)
+	if err != nil {
+		return _makeError(500, "Add Model Error", err.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
 	return
 }
@@ -270,31 +354,52 @@ func (s *ServiceHandlers) ListModels(ctx context.Context, in *model.ListModelReq
 	return &model.ListModelResponse{}, nil
 }
 
-func (s *ServiceHandlers) PredictModel(ctx context.Context, in *model.PredictModelRequest) (*model.PredictModelResponse, error) {
-	fmt.Println("PredictModel model ", in)
+func (s *ServiceHandlers) PredictModel(stream model.Model_PredictModelServer) error {
+	start := time.Now()
 
 	if !_isTritonServerReady() {
-		return &model.PredictModelResponse{}, nil
+		return _makeError(500, "PredictModel", "Triton Server not ready yet", float64(time.Since(start).Milliseconds()))
 	}
 
-	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, in.ModelId, in.ModelVersion)
+	imageFile, modelId, version, modelType, err := _savePredictFile(stream)
+
+	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, modelId, fmt.Sprint(version))
+	if modelMetadataResponse == nil {
+		return _makeError(400, "PredictModel", "Model not found", float64(time.Since(start).Milliseconds()))
+	}
+
+	modelConfigResponse := triton.ModelConfigRequest(triton.TritonClient, modelId, fmt.Sprint(version))
+	if modelMetadataResponse == nil {
+		return _makeError(400, "PredictModel", "Model config not found", float64(time.Since(start).Milliseconds()))
+	}
+
+	if err != nil {
+		return _makeError(500, "PredictModel", "Could not save file", float64(time.Since(start).Milliseconds()))
+	}
+
 	fmt.Println(modelMetadataResponse)
 
-	// rawInput := triton.Preprocess(inputs)
+	// err = stream.SendAndClose(&model.PredictModelResponse{})
+
+	input, err := triton.Preprocess(modelType, imageFile, modelMetadataResponse, modelConfigResponse)
+	if err != nil {
+		return _makeError(400, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
 	// /* We use a simple model that takes 2 input tensors of 16 integers
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
-	// inferResponse := triton.ModelInferRequest(triton.TritonClient, rawInput, modelName, modelVersion, modelMetadataResponse)
+	inferResponse := triton.ModelInferRequest(triton.TritonClient, modelType, input, modelId, fmt.Sprint(version), modelMetadataResponse, modelConfigResponse)
 
 	// /* We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
 	// calculated by the model. */
-	// outputs := triton.Postprocess(inferResponse)
-	// fmt.Println(">>>outputs: ", outputs)
+	postprocessResponse := triton.Postprocess(modelType, inferResponse, modelMetadataResponse)
 
-	return &model.PredictModelResponse{}, nil
+	err = stream.SendAndClose(&model.PredictModelResponse{Data: postprocessResponse})
+
+	return err
 }
 
 func HandleUploadOutput(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
