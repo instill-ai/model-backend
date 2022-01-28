@@ -272,7 +272,6 @@ func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err
 
 	// extract zip file from tmp to models directory
 	modelDirName, isOk := _unzip(tmpFile, configs.Config.TritonServer.ModelStore, newModel.Id)
-	fmt.Println(">>>modelDirName ", modelDirName)
 	if !isOk {
 		return _makeError(400, "Save File Error", "Could not extract zip file", float64(time.Since(start).Milliseconds()))
 	}
@@ -347,12 +346,17 @@ func (s *ServiceHandlers) ListModels(ctx context.Context, in *model.ListModelReq
 	listModelsResponse := triton.ListModelsRequest(triton.TritonClient)
 	fmt.Println("listModelsResponse ", listModelsResponse)
 
+	var resModels []*model.CreateModelResponse
 	models := listModelsResponse.Models
 	for i := 0; i < len(models); i++ {
-		fmt.Println(">>>>>model???: ", models[i].Name, models[i].Version, models[i].State, models[i].Reason)
+		md := model.CreateModelResponse{
+			Id:   models[i].Name,
+			Name: models[i].Name,
+		}
+		resModels = append(resModels, &md)
 	}
-
-	return &model.ListModelResponse{}, nil
+	fmt.Println("resModels ", resModels)
+	return &model.ListModelResponse{Models: resModels}, nil
 }
 
 func (s *ServiceHandlers) PredictModel(stream model.Model_PredictModelServer) error {
