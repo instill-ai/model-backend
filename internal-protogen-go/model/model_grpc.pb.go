@@ -21,7 +21,7 @@ type ModelClient interface {
 	CreateModel(ctx context.Context, opts ...grpc.CallOption) (Model_CreateModelClient, error)
 	LoadModel(ctx context.Context, in *LoadModelRequest, opts ...grpc.CallOption) (*LoadModelResponse, error)
 	UnloadModel(ctx context.Context, in *UnloadModelRequest, opts ...grpc.CallOption) (*UnloadModelResponse, error)
-	PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*PredictModelResponse, error)
+	PredictModel(ctx context.Context, opts ...grpc.CallOption) (Model_PredictModelClient, error)
 	ListModels(ctx context.Context, in *ListModelRequest, opts ...grpc.CallOption) (*ListModelResponse, error)
 }
 
@@ -85,13 +85,38 @@ func (c *modelClient) UnloadModel(ctx context.Context, in *UnloadModelRequest, o
 	return out, nil
 }
 
-func (c *modelClient) PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*PredictModelResponse, error) {
-	out := new(PredictModelResponse)
-	err := c.cc.Invoke(ctx, "/instill.model.Model/predictModel", in, out, opts...)
+func (c *modelClient) PredictModel(ctx context.Context, opts ...grpc.CallOption) (Model_PredictModelClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Model_ServiceDesc.Streams[1], "/instill.model.Model/predictModel", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &modelPredictModelClient{stream}
+	return x, nil
+}
+
+type Model_PredictModelClient interface {
+	Send(*PredictModelRequest) error
+	CloseAndRecv() (*PredictModelResponse, error)
+	grpc.ClientStream
+}
+
+type modelPredictModelClient struct {
+	grpc.ClientStream
+}
+
+func (x *modelPredictModelClient) Send(m *PredictModelRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *modelPredictModelClient) CloseAndRecv() (*PredictModelResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(PredictModelResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *modelClient) ListModels(ctx context.Context, in *ListModelRequest, opts ...grpc.CallOption) (*ListModelResponse, error) {
@@ -110,7 +135,7 @@ type ModelServer interface {
 	CreateModel(Model_CreateModelServer) error
 	LoadModel(context.Context, *LoadModelRequest) (*LoadModelResponse, error)
 	UnloadModel(context.Context, *UnloadModelRequest) (*UnloadModelResponse, error)
-	PredictModel(context.Context, *PredictModelRequest) (*PredictModelResponse, error)
+	PredictModel(Model_PredictModelServer) error
 	ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error)
 }
 
@@ -127,8 +152,8 @@ func (UnimplementedModelServer) LoadModel(context.Context, *LoadModelRequest) (*
 func (UnimplementedModelServer) UnloadModel(context.Context, *UnloadModelRequest) (*UnloadModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnloadModel not implemented")
 }
-func (UnimplementedModelServer) PredictModel(context.Context, *PredictModelRequest) (*PredictModelResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PredictModel not implemented")
+func (UnimplementedModelServer) PredictModel(Model_PredictModelServer) error {
+	return status.Errorf(codes.Unimplemented, "method PredictModel not implemented")
 }
 func (UnimplementedModelServer) ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
@@ -207,22 +232,30 @@ func _Model_UnloadModel_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Model_PredictModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PredictModelRequest)
-	if err := dec(in); err != nil {
+func _Model_PredictModel_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ModelServer).PredictModel(&modelPredictModelServer{stream})
+}
+
+type Model_PredictModelServer interface {
+	SendAndClose(*PredictModelResponse) error
+	Recv() (*PredictModelRequest, error)
+	grpc.ServerStream
+}
+
+type modelPredictModelServer struct {
+	grpc.ServerStream
+}
+
+func (x *modelPredictModelServer) SendAndClose(m *PredictModelResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *modelPredictModelServer) Recv() (*PredictModelRequest, error) {
+	m := new(PredictModelRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(ModelServer).PredictModel(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/instill.model.Model/predictModel",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServer).PredictModel(ctx, req.(*PredictModelRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 func _Model_ListModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -259,10 +292,6 @@ var Model_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Model_UnloadModel_Handler,
 		},
 		{
-			MethodName: "predictModel",
-			Handler:    _Model_PredictModel_Handler,
-		},
-		{
 			MethodName: "listModels",
 			Handler:    _Model_ListModels_Handler,
 		},
@@ -271,6 +300,11 @@ var Model_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "createModel",
 			Handler:       _Model_CreateModel_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "predictModel",
+			Handler:       _Model_PredictModel_Handler,
 			ClientStreams: true,
 		},
 	},
