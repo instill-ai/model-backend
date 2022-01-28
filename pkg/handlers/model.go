@@ -272,6 +272,7 @@ func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err
 
 	// extract zip file from tmp to models directory
 	modelDirName, isOk := _unzip(tmpFile, configs.Config.TritonServer.ModelStore, newModel.Id)
+	fmt.Println(">>>modelDirName ", modelDirName)
 	if !isOk {
 		return _makeError(400, "Save File Error", "Could not extract zip file", float64(time.Since(start).Milliseconds()))
 	}

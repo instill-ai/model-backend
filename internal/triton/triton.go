@@ -190,6 +190,19 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, modelT
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1, 1},
 			})
+		} else {
+			c, h, w := _parseModel(modelMetadata, modelConfig)
+			var shape []int64
+			if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
+				shape = []int64{1, h, w, c}
+			} else {
+				shape = []int64{1, c, h, w}
+			}
+			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+				Name:     modelMetadata.Inputs[i].Name,
+				Datatype: modelMetadata.Inputs[i].Datatype,
+				Shape:    shape,
+			})
 		}
 	}
 
@@ -219,7 +232,6 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, modelT
 		Inputs:       inferInputs,
 		Outputs:      inferOutputs,
 	}
-	fmt.Println(">>>> checkccccccc ", _serializeBytesTensor(rawInput)[0], _serializeBytesTensor(rawInput)[10], _serializeBytesTensor(rawInput)[20], _serializeBytesTensor(rawInput)[100])
 	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, _serializeBytesTensor(rawInput))
 
 	// Submit inference request to server
@@ -270,6 +282,7 @@ func Preprocess(modelType string, imageFile string, modelMetadata *inferenceserv
 		img = src
 	} else {
 		c, h, w := _parseModel(modelMetadata, modelConfig)
+		fmt.Println(">>>>>>>>?????? ", c, h, w)
 		if c == 1 {
 			src = imaging.Grayscale(src)
 		}
@@ -292,7 +305,7 @@ func Preprocess(modelType string, imageFile string, modelMetadata *inferenceserv
 // Convert output's raw bytes into int32 data (assumes Little Endian)
 func Postprocess(modelType string, inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse) []string {
 	// imageShape := modelMetadata.Inputs[0].Shape
-	fmt.Println(">>>>inferResponse.RawOutputContents[0] ", inferResponse.RawOutputContents[0])
+	fmt.Println(">>>>inferResponse.RawOutputContents[0] ", inferResponse)
 	outputData := _deserializeBytesTensor(inferResponse.RawOutputContents[0])
 	// fmt.Println(">>>>outputData ", outputData)
 	// batchedOutputData, _ := _reshape1DArrayStringTo2D(outputData, imageShape)
