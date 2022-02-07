@@ -37,7 +37,8 @@ func main() {
 	buf := make([]byte, chunkSize)
 	firstChunk := true
 
-	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/triton-models/number-onnx-cpu/logo.zip")
+	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/triton-models/number-onnx-cpu/Archive 2.zip")
+	// file, errOpen := os.Open("/Users/nguyenvantam/Desktop/working/INSTILL/src/model-backend/inception_graphdef.zip")
 	if errOpen != nil {
 		errOpen = errors.Wrapf(errOpen,
 			"failed to open file")
@@ -60,13 +61,13 @@ func main() {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.CreateModelRequest{
-				Name:        "logo",
+				Name:        "logo1",
 				Description: "Description",
 				Type:        "tensorrt",
 				Framework:   "pytorch",
 				Optimized:   false,
 				Visibility:  "public",
-				Filename:    "a.zip",
+				Filename:    "aa.zip",
 				Content:     buf[:n],
 			})
 			firstChunk = false

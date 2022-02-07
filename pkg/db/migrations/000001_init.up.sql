@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS "models" (
   "organization" varchar(256) NOT NULL,
   "description" varchar(1024),
   "visibility" VALID_VISIBILITIES NOT NULL,
-  "author" varchar(128)
+  "author" varchar(128),
+  UNIQUE("id"),
   PRIMARY KEY ("id", "author")
 );
 
@@ -40,8 +41,8 @@ CREATE TABLE IF NOT EXISTS "versions" (
   "metadata" JSON,
   PRIMARY KEY ("model_id", "version"),
   CONSTRAINT fk_version_model_id
-    FOREIGN KEY (model_id)
-    REFERENCES models (id)
+    FOREIGN KEY ("model_id")
+    REFERENCES models("id")
     ON DELETE CASCADE
 );
 

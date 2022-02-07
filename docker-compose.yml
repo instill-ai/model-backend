@@ -49,6 +49,7 @@ services:
         command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false --log-verbose=1
         volumes:
             - models:/models
+            - ./conda-pack:/conda-pack
         ports:
             - 8001:8001
         healthcheck:
