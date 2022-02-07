@@ -44,7 +44,7 @@ func (c *modelClient) CreateModel(ctx context.Context, opts ...grpc.CallOption) 
 
 type Model_CreateModelClient interface {
 	Send(*CreateModelRequest) error
-	CloseAndRecv() (*CreateModelResponse, error)
+	CloseAndRecv() (*CreateModelsResponse, error)
 	grpc.ClientStream
 }
 
@@ -56,11 +56,11 @@ func (x *modelCreateModelClient) Send(m *CreateModelRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *modelCreateModelClient) CloseAndRecv() (*CreateModelResponse, error) {
+func (x *modelCreateModelClient) CloseAndRecv() (*CreateModelsResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(CreateModelResponse)
+	m := new(CreateModelsResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func _Model_CreateModel_Handler(srv interface{}, stream grpc.ServerStream) error
 }
 
 type Model_CreateModelServer interface {
-	SendAndClose(*CreateModelResponse) error
+	SendAndClose(*CreateModelsResponse) error
 	Recv() (*CreateModelRequest, error)
 	grpc.ServerStream
 }
@@ -184,7 +184,7 @@ type modelCreateModelServer struct {
 	grpc.ServerStream
 }
 
-func (x *modelCreateModelServer) SendAndClose(m *CreateModelResponse) error {
+func (x *modelCreateModelServer) SendAndClose(m *CreateModelsResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 

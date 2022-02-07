@@ -20,6 +20,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -99,61 +101,101 @@ func _writeToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func _unzip(filePath string, dstDir string, dstName string) (string, bool) {
+func _unzip(filePath string, dstDir string) ([]*models.Model, []*models.Version, bool) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return "", false
+		return []*models.Model{}, []*models.Version{}, false
 	}
 	defer archive.Close()
-	topDir := true
-	var modelDirName string
+
+	var createdModels []*models.Model
+	var createdVersions []*models.Version
+	var currentModelName string
 	for _, f := range archive.File {
+		if strings.Contains(f.Name, "__MACOSX") { // ignore temp directory in macos
+			continue
+		}
 		filePath := filepath.Join(dstDir, f.Name)
 		fmt.Println("unzipping file ", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return "", false
+			return []*models.Model{}, []*models.Version{}, false
 		}
 		if f.FileInfo().IsDir() {
-			if topDir {
-				topDir = false
-				modelDirName = f.Name
+			dirName := f.Name
+			if string(dirName[len(dirName)-1]) == "/" {
+				dirName = dirName[:len(dirName)-1]
 			}
+			if !strings.Contains(dirName, "/") { // top directory model
+				currentModelName = dirName
+				newModel := &models.Model{
+					Name:         dirName,
+					Id:           dirName,
+					CreatedAt:    time.Now(),
+					UpdatedAt:    time.Now(),
+					Type:         "tensorrt",
+					Framework:    "pytorch",
+					Optimized:    false,
+					Icon:         "",
+					Visibility:   "public",
+					Organization: "domain@instill.tech",
+					Author:       "local-user@instill.tech",
+				}
+				createdModels = append(createdModels, newModel)
+			} else { // version folder
+				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentModelName)
+				match, _ := regexp.MatchString(patternVersionFolder, dirName)
+				if match {
+					elems := strings.Split(dirName, "/")
+					sVersion := elems[len(elems)-1]
+					iVersion, err := strconv.Atoi(sVersion)
+					if err == nil {
+						newVersion := &models.Version{
+							Version:   int32(iVersion),
+							ModelId:   currentModelName,
+							CreatedAt: time.Now(),
+							UpdatedAt: time.Now(),
+							Status:    "offline",
+							Metadata:  models.JSONB{},
+						}
+						createdVersions = append(createdVersions, newVersion)
+					}
+
+				}
+			}
+
 			fmt.Println("creating directory... ", filePath)
 			_ = os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return "", false
+			return []*models.Model{}, []*models.Version{}, false
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return "", false
+			return []*models.Model{}, []*models.Version{}, false
 		}
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return "", false
+			return []*models.Model{}, []*models.Version{}, false
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return "", false
+			return []*models.Model{}, []*models.Version{}, false
 		}
 
 		dstFile.Close()
 		fileInArchive.Close()
 	}
-	if string(modelDirName[len(modelDirName)-1]) == "/" {
-		modelDirName = modelDirName[:len(modelDirName)-1]
-	}
-	return modelDirName, true
+	return createdModels, createdVersions, true
 }
 
-func _saveFile(stream model.Model_CreateModelServer) (outFile string, createdModel *models.Model, err error) {
+func _saveFile(stream model.Model_CreateModelServer) (outFile string, err error) {
 	firstChunk := true
 	var fp *os.File
 
@@ -161,52 +203,37 @@ func _saveFile(stream model.Model_CreateModelServer) (outFile string, createdMod
 
 	var tmpFile string
 
-	newModel := &models.Model{
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-		Icon:         "",
-		Organization: "domain@instill.tech",
-		Author:       "local-user@instill.tech",
-	}
-
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
-			fmt.Println("????? err", err)
 			if err == io.EOF {
 				break
 			}
 
 			err = errors.Wrapf(err,
 				"failed unexpectadely while reading chunks from stream")
-			return "", nil, err
+			return "", err
 		}
 
 		if firstChunk { //first chunk contains file name
-			newModel.Name = fileData.Name
-			newModel.Description = fileData.Description
-			newModel.Optimized = fileData.Optimized
-			newModel.Type = fileData.Type
-			newModel.Framework = fileData.Framework
-			newModel.Visibility = fileData.Visibility
 			if fileData.Filename != "" {
 				tmpFile = path.Join("/tmp", filepath.Base(fileData.Filename))
 				fp, err = os.Create(tmpFile)
 				if err != nil {
-					return "", nil, err
+					return "", err
 				}
 				defer fp.Close()
 			} else {
-				return "", nil, errors.Errorf("No filename")
+				return "", errors.Errorf("No filename")
 			}
 			firstChunk = false
 		}
 		err = _writeToFp(fp, fileData.Content)
 		if err != nil {
-			return "", nil, err
+			return "", err
 		}
 	}
-	return tmpFile, newModel, nil
+	return tmpFile, nil
 }
 
 func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, modelId string, version int, modelType string, err error) {
@@ -226,7 +253,7 @@ func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, 
 
 			err = errors.Wrapf(err,
 				"failed unexpectadely while reading chunks from stream")
-			return "", "", -1, "", nil
+			return "", "", -1, "", err
 		}
 
 		if firstChunk { //first chunk contains file name
@@ -265,46 +292,90 @@ func _makeError(statusCode codes.Code, title string, detail string, duration flo
 func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err error) {
 	start := time.Now()
 
-	tmpFile, newModel, err := _saveFile(stream)
+	tmpFile, err := _saveFile(stream)
 	if err != nil {
 		return _makeError(400, "Save File Error", err.Error(), float64(time.Since(start).Milliseconds()))
 	}
 
 	// extract zip file from tmp to models directory
-	modelDirName, isOk := _unzip(tmpFile, configs.Config.TritonServer.ModelStore, newModel.Id)
-	if !isOk {
+	createdModels, createdVersions, isOk := _unzip(tmpFile, configs.Config.TritonServer.ModelStore)
+	if !isOk || len(createdModels) == 0 {
 		return _makeError(400, "Save File Error", "Could not extract zip file", float64(time.Since(start).Milliseconds()))
 	}
-	newModel.Id = modelDirName
 
-	result := db.DB.Create(&newModel)
-	if result.Error != nil {
-		return _makeError(400, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+	var respModels = []*model.CreateModelResponse{}
+	for i := 0; i < len(createdModels); i++ {
+		newModel := createdModels[i]
+		// check model existed or not
+		var modelInDB models.Model
+		var versions []models.Version
+		result := db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
+		if result.Error == nil { // model already existed
+			// check version exited or not
+			for j := 0; j < len(createdVersions); j++ { // this list contain versions of all models, so need check model id; TODO: maybe use bidirection link in DB
+				if createdVersions[j].ModelId != modelInDB.Id {
+					continue
+				}
+				var newVersion models.Version
+				rs := db.DB.Model(&models.Version{}).Where("version", createdVersions[j].Version).Where("model_id", modelInDB.Id).First(&newVersion)
+				fmt.Println(".  res", rs)
+				if rs.Error != nil { // version already existed
+					newVersion = models.Version{
+						Version:     createdVersions[j].Version,
+						ModelId:     modelInDB.Id,
+						Description: modelInDB.Description,
+						CreatedAt:   time.Now(),
+						UpdatedAt:   time.Now(),
+						Status:      "offline",
+						Metadata:    models.JSONB{},
+					}
+					_ = db.DB.Create(&newVersion)
+				}
+				versions = append(versions, newVersion)
+			}
+			respModel := _createModelResponse(modelInDB, versions)
+			respModels = append(respModels, respModel)
+			continue
+		}
+
+		result = db.DB.Create(newModel)
+		if result.Error != nil {
+			continue
+		}
+
+		for j := 0; j < len(createdVersions); j++ {
+			if createdVersions[j].ModelId != modelInDB.Id {
+				continue
+			}
+			var newVersion models.Version
+			rs := db.DB.Model(&models.Version{}).Where("version", createdVersions[j].Version).Where("model_id", modelInDB.Id).First(&newVersion)
+			if rs.Error != nil { // version already existed
+				newVersion = models.Version{
+					Version:     createdVersions[j].Version,
+					ModelId:     modelInDB.Id,
+					Description: modelInDB.Description,
+					CreatedAt:   time.Now(),
+					UpdatedAt:   time.Now(),
+					Status:      "offline",
+					Metadata:    models.JSONB{},
+				}
+				_ = db.DB.Create(&newVersion)
+			}
+			versions = append(versions, newVersion)
+		}
+
+		result = db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
+		if result.Error != nil {
+			return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+		}
+
+		respModel := _createModelResponse(modelInDB, versions)
+		respModels = append(respModels, respModel)
 	}
 
-	newVersion := models.Version{
-		Version:     1,
-		ModelId:     newModel.Id,
-		Description: newModel.Description,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Status:      "offline",
-		Metadata:    models.JSONB{},
-	}
-	result = db.DB.Create(&newVersion)
-	if result.Error != nil {
-		return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
-	}
-
-	var modelInDB models.Model
-	result = db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
-	if result.Error != nil {
-		return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
-	}
-
-	resp := _createModelResponse(modelInDB, []models.Version{newVersion})
-
-	err = stream.SendAndClose(resp)
+	var res model.CreateModelsResponse
+	res.Models = respModels
+	err = stream.SendAndClose(&res)
 	if err != nil {
 		return _makeError(500, "Add Model Error", err.Error(), float64(time.Since(start).Milliseconds()))
 	}

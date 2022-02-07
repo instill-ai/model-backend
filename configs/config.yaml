@@ -18,7 +18,7 @@ database:
   password: password
   host: localhost
   port: 5432
-  name: model-d2
+  name: model
   version: 1
   pool:
     idleconnections: 5
