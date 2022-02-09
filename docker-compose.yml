@@ -12,7 +12,7 @@ services:
             test: ["CMD-SHELL", "pg_isready -U postgres"]
             timeout: 20s
             retries: 10
-    migrate:
+    model-migrate:
         image: instill/model:0.1.0
         container_name: model-backend-migrate
         depends_on:
@@ -40,9 +40,8 @@ services:
             - models:/models
 
     triton-server:
-        # image: europe-west2-docker.pkg.dev/prj-c-devops-artifacts-a306/triton/triton-server:1.4.0
         image: nvcr.io/nvidia/tritonserver:21.09-py3
-        command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false --log-verbose=1
+        command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false
         volumes:
             - models:/models
             - ./conda-pack:/conda-pack

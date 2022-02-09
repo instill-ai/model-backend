@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/configs"
@@ -236,7 +237,7 @@ func _saveFile(stream model.Model_CreateModelServer) (outFile string, err error)
 	return tmpFile, nil
 }
 
-func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, modelId string, version int, modelType string, err error) {
+func _savePredictInput(stream model.Model_PredictModelServer) (imageFile string, modelId string, version int, modelType triton.CVTask, err error) {
 	firstChunk := true
 	var fp *os.File
 
@@ -253,18 +254,18 @@ func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, 
 
 			err = errors.Wrapf(err,
 				"failed unexpectadely while reading chunks from stream")
-			return "", "", -1, "", err
+			return "", "", -1, 0, err
 		}
 
 		if firstChunk { //first chunk contains file name
-			modelId = fileData.ModelId
-			version = int(fileData.ModelVersion)
-			modelType = fileData.ModelType
+			modelId = fileData.Name
+			version = int(fileData.Version)
+			modelType = triton.CVTask(fileData.Type)
 
 			tmpFile = path.Join("/tmp/", uuid.New().String())
 			fp, err = os.Create(tmpFile)
 			if err != nil {
-				return "", "", -1, "", err
+				return "", "", -1, 0, err
 			}
 			defer fp.Close()
 
@@ -272,7 +273,7 @@ func _savePredictFile(stream model.Model_PredictModelServer) (imageFile string, 
 		}
 		err = _writeToFp(fp, fileData.Content)
 		if err != nil {
-			return "", "", -1, "", err
+			return "", "", -1, 0, err
 		}
 	}
 	return tmpFile, modelId, version, modelType, nil
@@ -366,7 +367,7 @@ func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err
 
 		result = db.DB.Model(&models.Model{}).Where("id", newModel.Id).First(&modelInDB)
 		if result.Error != nil {
-			return _makeError(500, "Add Model Error", result.Error.Error(), float64(time.Since(start).Milliseconds()))
+			return _makeError(500, "Add Model Error1111", result.Error.Error(), float64(time.Since(start).Milliseconds()))
 		}
 
 		respModel := _createModelResponse(modelInDB, versions)
@@ -377,7 +378,7 @@ func (s *ServiceHandlers) CreateModel(stream model.Model_CreateModelServer) (err
 	res.Models = respModels
 	err = stream.SendAndClose(&res)
 	if err != nil {
-		return _makeError(500, "Add Model Error", err.Error(), float64(time.Since(start).Milliseconds()))
+		return _makeError(500, "Add Model Error2222", err.Error(), float64(time.Since(start).Milliseconds()))
 	}
 
 	return
@@ -437,7 +438,7 @@ func (s *ServiceHandlers) PredictModel(stream model.Model_PredictModelServer) er
 		return _makeError(500, "PredictModel", "Triton Server not ready yet", float64(time.Since(start).Milliseconds()))
 	}
 
-	imageFile, modelId, version, modelType, err := _savePredictFile(stream)
+	imageFile, modelId, version, cvTask, err := _savePredictInput(stream)
 
 	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, modelId, fmt.Sprint(version))
 	if modelMetadataResponse == nil {
@@ -457,7 +458,7 @@ func (s *ServiceHandlers) PredictModel(stream model.Model_PredictModelServer) er
 
 	// err = stream.SendAndClose(&model.PredictModelResponse{})
 
-	input, err := triton.Preprocess(modelType, imageFile, modelMetadataResponse, modelConfigResponse)
+	input, err := triton.PreProcess(imageFile, modelMetadataResponse, modelConfigResponse, cvTask)
 	if err != nil {
 		return _makeError(400, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
 	}
@@ -466,16 +467,88 @@ func (s *ServiceHandlers) PredictModel(stream model.Model_PredictModelServer) er
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
-	inferResponse := triton.ModelInferRequest(triton.TritonClient, modelType, input, modelId, fmt.Sprint(version), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := triton.ModelInferRequest(triton.TritonClient, cvTask, input, modelId, fmt.Sprint(version), modelMetadataResponse, modelConfigResponse)
+	if err != nil {
+		return _makeError(500, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
 	// /* We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
 	// calculated by the model. */
-	postprocessResponse := triton.Postprocess(modelType, inferResponse, modelMetadataResponse)
+	postprocessResponse, err := triton.PostProcess(inferResponse, modelMetadataResponse, cvTask)
+	if err != nil {
+		return _makeError(500, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
+	}
 
-	err = stream.SendAndClose(&model.PredictModelResponse{Data: postprocessResponse})
+	switch cvTask {
+	case triton.Classification:
+		clsResponses := postprocessResponse.([]string)
+		var contents []*model.ClassificationOutput
+		for _, clsRes := range clsResponses {
+			clsResSplit := strings.Split(clsRes, ":")
+			if len(clsResSplit) != 3 {
+				return _makeError(500, "PredictModel", "Unable to decode inference output", float64(time.Since(start).Milliseconds()))
+			}
+			score, err := strconv.ParseFloat(clsResSplit[0], 32)
+			if err != nil {
+				return _makeError(500, "PredictModel", "Unable to decode inference output", float64(time.Since(start).Milliseconds()))
+			}
+			clsOutput := model.ClassificationOutput{
+				Category: clsResSplit[2],
+				Score:    float32(score),
+			}
+			contents = append(contents, &clsOutput)
+		}
+		clsOutputs := model.ClassificationOutputs{
+			Contents: contents,
+		}
+		data, err := anypb.New(&clsOutputs)
+		if err != nil {
+			return _makeError(500, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
+		}
+		err = stream.SendAndClose(&model.PredictModelResponse{Data: data})
+		return err
+	case triton.Detection:
+		detResponses := postprocessResponse.(triton.DetectionOutput)
+		batchedOutputDataBboxes := detResponses.Boxes
+		batchedOutputDataLabels := detResponses.Labels
+		var detOutputs model.DetectionOutputs
+		for i := range batchedOutputDataBboxes {
+			var contents []*model.BoundingBoxPrediction
+			for j := range batchedOutputDataBboxes[i] {
+				box := batchedOutputDataBboxes[i][j]
+				label := batchedOutputDataLabels[i][j]
 
-	return err
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
+				if label != "0" {
+					pred := &model.BoundingBoxPrediction{
+						Category: label,
+						Score:    box[4],
+						// Convert x1y1x2y2 to xywh where xy is top-left corner
+						Box: &model.Box{
+							Left:   box[0],
+							Top:    box[1],
+							Width:  box[2] - box[0],
+							Height: box[3] - box[1],
+						},
+					}
+					contents = append(contents, pred)
+				}
+			}
+			detOutput := &model.DetectionOutput{
+				Contents: contents,
+			}
+			detOutputs.Contents = append(detOutputs.Contents, detOutput)
+		}
+		data, err := anypb.New(&detOutputs)
+		if err != nil {
+			return _makeError(500, "PredictModel", err.Error(), float64(time.Since(start).Milliseconds()))
+		}
+		err = stream.SendAndClose(&model.PredictModelResponse{Data: data})
+		return err
+	default:
+		return _makeError(500, "PredictModel", fmt.Sprintf("modelType %v do not support", cvTask), float64(time.Since(start).Milliseconds()))
+	}
 }
 
 func HandleUploadOutput(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {

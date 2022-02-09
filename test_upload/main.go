@@ -18,7 +18,7 @@ import (
 func main() {
 	// Set up a connection to the server.
 	// conn, err := grpc.Dial("0.0.0.0:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(30*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(120*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -37,7 +37,8 @@ func main() {
 	buf := make([]byte, chunkSize)
 	firstChunk := true
 
-	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/triton-models/number-onnx-cpu/Archive 2.zip")
+	file, errOpen := os.Open("/Users/nguyenvantam/Desktop/test_model/Archive.zip")
+	// file, errOpen := os.Open("/Users/nguyenvantam/Desktop/triton-models/number-onnx-cpu/Archive.zip")
 	// file, errOpen := os.Open("/Users/nguyenvantam/Desktop/working/INSTILL/src/model-backend/inception_graphdef.zip")
 	if errOpen != nil {
 		errOpen = errors.Wrapf(errOpen,
@@ -61,7 +62,7 @@ func main() {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.CreateModelRequest{
-				Name:        "logo1",
+				Name:        "yolov4",
 				Description: "Description",
 				Type:        "tensorrt",
 				Framework:   "pytorch",

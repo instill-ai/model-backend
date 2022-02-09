@@ -17,7 +17,8 @@ import (
 
 func main() {
 	// imagePath := "/Users/nguyenvantam/Desktop/working/INSTILL/src/client/src/python/examples/qa/images/vulture.jpeg"
-	imagePath := "/Users/nguyenvantam/Desktop/drive-download-20220121T191023Z-001/bnb_3.jpg"
+	imagePath := "/Users/nguyenvantam/Desktop/drive-download-20220121T191023Z-001/eth_1.jpg"
+	// imagePath := "/Users/nguyenvantam/Desktop/dog.png"
 	file, errOpen := os.Open(imagePath)
 	fmt.Println("runnnnn ", imagePath)
 	if errOpen != nil {
@@ -30,7 +31,7 @@ func main() {
 
 	// Set up a connection to the server.
 	// conn, err := grpc.Dial("0.0.0.0:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(30*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(60*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -64,10 +65,10 @@ func main() {
 		if firstChunk {
 			err = streamUploader.Send(&model.PredictModelRequest{
 				// ModelId:      "inception_graphdef",
-				ModelId:      "essemble",
-				ModelVersion: 1,
-				ModelType:    "classification",
-				Content:      buf[:n],
+				Name:    "ensemble",
+				Version: 1,
+				Type:    0,
+				Content: buf[:n],
 			})
 			firstChunk = false
 		} else {
