@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Push build-metadata image
         env: 
-          DOCKER_HUB_PWD: ${{ secrets.BOTDOCKERHUBPASSWORD }}
+          DOCKER_HUB_PWD: ${{ secrets.botDockerHubPassword }}
         run: |
           echo $DOCKER_HUB_PWD | docker login -u drop@instill.tech --password-stdin
           docker push $DOCKER_HUB_REPOSITORY:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}
