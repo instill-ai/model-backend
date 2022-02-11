@@ -290,9 +290,9 @@ func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadat
 	return outputs, nil
 }
 
-func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) *inferenceserver.RepositoryModelLoadResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
+	// Create context for our request with 60 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -301,14 +301,10 @@ func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelNa
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	loadModelResponse, err := client.RepositoryModelLoad(ctx, &loadModelRequest)
-	if err != nil {
-		log.Printf("Couldn't load model: %v", err)
-	}
-	return loadModelResponse
+	return client.RepositoryModelLoad(ctx, &loadModelRequest)
 }
 
-func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) *inferenceserver.RepositoryModelUnloadResponse {
+func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -319,11 +315,7 @@ func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, model
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	unloadModelResponse, err := client.RepositoryModelUnload(ctx, &loadModelRequest)
-	if err != nil {
-		log.Printf("Couldn't unload model: %v", err)
-	}
-	return unloadModelResponse
+	return client.RepositoryModelUnload(ctx, &loadModelRequest)
 }
 
 func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.RepositoryIndexResponse {

@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type serviceHandlers struct {
@@ -41,6 +42,36 @@ func NewServiceHandlers(modelService services.ModelService) model.ModelServer {
 	return &serviceHandlers{
 		modelService: modelService,
 	}
+}
+
+func createModelInfoResponse(modelInDB models.Model, versions []models.Version) *model.ModelInfo {
+	var mRes model.ModelInfo
+	mRes.Name = modelInDB.Name
+	mRes.FullName = modelInDB.FullName
+	mRes.Id = modelInDB.Id
+	mRes.Optimized = modelInDB.Optimized
+	mRes.Description = modelInDB.Description
+	mRes.Framework = modelInDB.Framework
+	mRes.CreatedAt = timestamppb.New(modelInDB.CreatedAt)
+	mRes.UpdatedAt = timestamppb.New(modelInDB.UpdatedAt)
+	mRes.Organization = modelInDB.Organization
+	mRes.Icon = modelInDB.Icon
+	mRes.Type = modelInDB.Type
+	mRes.Visibility = modelInDB.Visibility
+	var vers []*model.ModelVersion
+	for i := 0; i < len(versions); i++ {
+		vers = append(vers, &model.ModelVersion{
+			Version:     versions[i].Version,
+			ModelId:     versions[i].ModelId,
+			Description: versions[i].Description,
+			CreatedAt:   timestamppb.New(versions[i].CreatedAt),
+			UpdatedAt:   timestamppb.New(versions[i].UpdatedAt),
+			Status:      versions[i].Status,
+		})
+	}
+	mRes.Versions = vers
+
+	return &mRes
 }
 
 //writeToFp takes in a file pointer and byte array and writes the byte array into the file
@@ -395,15 +426,28 @@ func (s *serviceHandlers) LoadModel(ctx context.Context, in *model.LoadModelRequ
 		return &model.LoadModelResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
 	}
 
-	_, err = s.modelService.GetModelByName(username, in.Name)
+	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
 	if err != nil {
 		return &model.LoadModelResponse{}, makeError(404, "LoadModel Error", "The model not found in server")
 	}
 
-	loadModelResponse := triton.LoadModelRequest(triton.TritonClient, in.Name)
-	fmt.Println(loadModelResponse)
-
-	return &model.LoadModelResponse{}, nil
+	_, err = triton.LoadModelRequest(triton.TritonClient, in.Name)
+	fmt.Println(".        loadmodel err ", err)
+	if err != nil {
+		_, e := s.modelService.UpdateModelVersions(modelInDB.Id, models.Version{
+			UpdatedAt: time.Now(),
+			Status:    "error",
+		})
+		fmt.Println(".        loadmodel update db err ", e)
+		return &model.LoadModelResponse{}, makeError(500, "LoadModel Error", err.Error())
+	} else {
+		_, e := s.modelService.UpdateModelVersions(modelInDB.Id, models.Version{
+			UpdatedAt: time.Now(),
+			Status:    "online",
+		})
+		fmt.Println(".        loadmodel update db err ", e)
+		return &model.LoadModelResponse{}, nil
+	}
 }
 
 func (s *serviceHandlers) UnloadModel(ctx context.Context, in *model.UnloadModelRequest) (*model.UnloadModelResponse, error) {
@@ -416,15 +460,25 @@ func (s *serviceHandlers) UnloadModel(ctx context.Context, in *model.UnloadModel
 		return &model.UnloadModelResponse{}, makeError(503, "UnloadModel Error", "Triton Server not ready yet")
 	}
 
-	_, err = s.modelService.GetModelByName(username, in.Name)
+	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
 	if err != nil {
 		return &model.UnloadModelResponse{}, makeError(404, "LoadModel Error", "The model not found in server")
 	}
 
-	unloadModelResponse := triton.UnloadModelRequest(triton.TritonClient, in.Name)
-	fmt.Println(unloadModelResponse)
-
-	return &model.UnloadModelResponse{}, nil
+	_, err = triton.UnloadModelRequest(triton.TritonClient, in.Name)
+	if err != nil {
+		_, _ = s.modelService.UpdateModelVersions(modelInDB.Id, models.Version{
+			UpdatedAt: time.Now(),
+			Status:    "error",
+		})
+		return &model.UnloadModelResponse{}, makeError(500, "UnloadModel Error", err.Error())
+	} else {
+		_, _ = s.modelService.UpdateModelVersions(modelInDB.Id, models.Version{
+			UpdatedAt: time.Now(),
+			Status:    "offline",
+		})
+		return &model.UnloadModelResponse{}, nil
+	}
 }
 
 func (s *serviceHandlers) ListModels(ctx context.Context, in *model.ListModelRequest) (*model.ListModelResponse, error) {
@@ -558,4 +612,22 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
 	}
+}
+
+func (s *serviceHandlers) GetModel(ctx context.Context, in *model.GetModelRequest) (*model.ModelInfo, error) {
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &model.ModelInfo{}, err
+	}
+
+	resModelInDB, err := s.modelService.GetModelByName(username, in.Name)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "GetModel", fmt.Sprintf("Model %v not found in namespace %v", in.Name, username))
+	}
+
+	versions, err := s.modelService.GetModelVersions(resModelInDB.Id)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "GetModel", "There is no versions for this model")
+	}
+	return createModelInfoResponse(resModelInDB, versions), nil
 }

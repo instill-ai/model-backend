@@ -30,6 +30,7 @@ type ModelClient interface {
 	// This method handle request with file in body such as url/base64 encode
 	PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*PredictModelResponse, error)
 	ListModels(ctx context.Context, in *ListModelRequest, opts ...grpc.CallOption) (*ListModelResponse, error)
+	GetModel(ctx context.Context, in *GetModelRequest, opts ...grpc.CallOption) (*ModelInfo, error)
 }
 
 type modelClient struct {
@@ -171,6 +172,15 @@ func (c *modelClient) ListModels(ctx context.Context, in *ListModelRequest, opts
 	return out, nil
 }
 
+func (c *modelClient) GetModel(ctx context.Context, in *GetModelRequest, opts ...grpc.CallOption) (*ModelInfo, error) {
+	out := new(ModelInfo)
+	err := c.cc.Invoke(ctx, "/instill.model.Model/GetModel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ModelServer is the server API for Model service.
 // All implementations should embed UnimplementedModelServer
 // for forward compatibility
@@ -186,6 +196,7 @@ type ModelServer interface {
 	// This method handle request with file in body such as url/base64 encode
 	PredictModel(context.Context, *PredictModelRequest) (*PredictModelResponse, error)
 	ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error)
+	GetModel(context.Context, *GetModelRequest) (*ModelInfo, error)
 }
 
 // UnimplementedModelServer should be embedded to have forward compatible implementations.
@@ -218,6 +229,9 @@ func (UnimplementedModelServer) PredictModel(context.Context, *PredictModelReque
 }
 func (UnimplementedModelServer) ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListModels not implemented")
+}
+func (UnimplementedModelServer) GetModel(context.Context, *GetModelRequest) (*ModelInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetModel not implemented")
 }
 
 // UnsafeModelServer may be embedded to opt out of forward compatibility for this service.
@@ -409,6 +423,24 @@ func _Model_ListModels_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Model_GetModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModelServer).GetModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/instill.model.Model/GetModel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModelServer).GetModel(ctx, req.(*GetModelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Model_ServiceDesc is the grpc.ServiceDesc for Model service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -443,6 +475,10 @@ var Model_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListModels",
 			Handler:    _Model_ListModels_Handler,
+		},
+		{
+			MethodName: "GetModel",
+			Handler:    _Model_GetModel_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
