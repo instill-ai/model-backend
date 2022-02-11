@@ -103,3 +103,65 @@ func (j *JSONB) Scan(value interface{}) error {
 type ListModelQuery struct {
 	Namespace string
 }
+
+type VersionResponse struct {
+	// Model unique ID
+	ModelId int32 `json:"model_id,omitempty"`
+
+	// Model version
+	Version int32 `json:"version,omitempty"`
+
+	// Model description
+	Description string `json:"description,omitempty"`
+
+	// Model version created date time
+	CreatedAt time.Time `gorm:"type:timestamp"`
+
+	// Model version updated date time
+	UpdatedAt time.Time `gorm:"type:timestamp"`
+
+	// Model version status
+	Status string `json:"status,omitempty"`
+}
+
+type ModelResponse struct {
+
+	// Model unique ID
+	Id int32 `json:"id,omitempty"`
+
+	// Model name
+	Name string `json:"name,omitempty"`
+
+	// Option for model optimization (currently not support yet)
+	Optimized bool `json:"optimized,omitempty"`
+
+	// Model description
+	Description string `json:"description,omitempty"`
+
+	// Supportted model type (current only support tensorrt)
+	Type string `json:"type,omitempty"`
+
+	// Supportted framework (current only support pytorch)
+	Framework string `json:"framework,omitempty"`
+
+	// Model created date time
+	CreatedAt time.Time `gorm:"type:timestamp"`
+
+	// Model modified date time
+	UpdatedAt time.Time `gorm:"type:timestamp"`
+
+	// Organization in which model belong to
+	Organization string `json:"organization,omitempty"`
+
+	Icon string `json:"icon,omitempty"`
+
+	// Model visibility (public or private)
+	Visibility string `json:"visibility,omitempty"`
+
+	// model author
+	Author string `json:"author,omitempty"`
+
+	FullName string
+
+	Versions []VersionResponse
+}
