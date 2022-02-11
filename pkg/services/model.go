@@ -55,8 +55,8 @@ func createModelResponse(modelInDB models.Model, versions []models.Version) *mod
 	return &mRes
 }
 
-func createModelResponseByUpload(modelInDB models.Model, versions []models.Version) *model.CreateModelResponse {
-	var mRes model.CreateModelResponse
+func createModelResponseByUpload(modelInDB models.Model, versions []models.Version) *model.ModelInfo {
+	var mRes model.ModelInfo
 	mRes.Name = modelInDB.Name
 	mRes.FullName = modelInDB.FullName
 	mRes.Id = modelInDB.Id
@@ -87,11 +87,13 @@ type ModelService interface {
 	CreateModel(model models.Model) (models.Model, error)
 	GetModelByName(namespace string, modelName string) (models.Model, error)
 	CreateVersion(version models.Version) (models.Version, error)
-	GetVersionByModel(modelId int32, version int32) (models.Version, error)
+	UpdateModelVersions(modelId int32, version models.Version) (models.Version, error)
+	GetModelVersion(modelId int32, version int32) (models.Version, error)
+	GetModelVersions(modelId int32) ([]models.Version, error)
 	PredictModelByUpload(namespace string, modelName string, version int32, filePath string, cvTask triton.CVTask) (interface{}, error)
-	CreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*model.CreateModelResponse, error)
+	CreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*model.ModelInfo, error)
 	HandleCreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*models.ModelResponse, error)
-	ListModels(username string) ([]*model.CreateModelResponse, error)
+	ListModels(username string) ([]*model.ModelInfo, error)
 }
 
 type modelService struct {
@@ -134,15 +136,31 @@ func (s *modelService) CreateVersion(version models.Version) (models.Version, er
 		return models.Version{}, err
 	}
 
-	if createdVersion, err := s.modelRepository.GetVersionByModel(version.ModelId, version.Version); err != nil {
+	if createdVersion, err := s.modelRepository.GetModelVersion(version.ModelId, version.Version); err != nil {
 		return models.Version{}, err
 	} else {
 		return createdVersion, nil
 	}
 }
 
-func (s *modelService) GetVersionByModel(modelId int32, version int32) (models.Version, error) {
-	return s.modelRepository.GetVersionByModel(modelId, version)
+func (s *modelService) UpdateModelVersions(modelId int32, version models.Version) (models.Version, error) {
+	if err := s.modelRepository.UpdateModelVersions(modelId, version); err != nil {
+		return models.Version{}, err
+	}
+
+	if createdVersion, err := s.modelRepository.GetModelVersion(version.ModelId, version.Version); err != nil {
+		return models.Version{}, err
+	} else {
+		return createdVersion, nil
+	}
+}
+
+func (s *modelService) GetModelVersion(modelId int32, version int32) (models.Version, error) {
+	return s.modelRepository.GetModelVersion(modelId, version)
+}
+
+func (s *modelService) GetModelVersions(modelId int32) ([]models.Version, error) {
+	return s.modelRepository.GetModelVersions(modelId)
 }
 
 func (s *modelService) PredictModelByUpload(namespace string, modelName string, version int32, filePath string, cvTask triton.CVTask) (interface{}, error) {
@@ -241,8 +259,9 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 	}
 }
 
-func (s *modelService) CreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*model.CreateModelResponse, error) {
-	var respModels = []*model.CreateModelResponse{}
+func (s *modelService) CreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*model.ModelInfo, error) {
+	var respModels = []*model.ModelInfo{}
+
 	for i := 0; i < len(createdModels); i++ {
 		newModel := createdModels[i]
 		// check model existed or not
@@ -266,7 +285,7 @@ func (s *modelService) CreateModelByUpload(namespace string, createdModels []*mo
 				if err == nil { // new version created
 					versions = append(versions, newVersion)
 				} else { // version already existed
-					versionInDB, err := s.GetVersionByModel(modelInDB.Id, createdVersions[j].Version)
+					versionInDB, err := s.GetModelVersion(modelInDB.Id, createdVersions[j].Version)
 					if err == nil {
 						versions = append(versions, versionInDB)
 					}
@@ -300,7 +319,7 @@ func (s *modelService) CreateModelByUpload(namespace string, createdModels []*mo
 			if err == nil { // new version created
 				versions = append(versions, newVersion)
 			} else { // version already existed
-				versionInDB, err := s.GetVersionByModel(modelInDB.Id, createdVersions[j].Version)
+				versionInDB, err := s.GetModelVersion(modelInDB.Id, createdVersions[j].Version)
 				if err == nil {
 					versions = append(versions, versionInDB)
 				}
@@ -344,7 +363,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 				if err == nil { // new version created
 					versions = append(versions, newVersion)
 				} else { // version already existed
-					versionInDB, err := s.GetVersionByModel(modelInDB.Id, createdVersions[j].Version)
+					versionInDB, err := s.GetModelVersion(modelInDB.Id, createdVersions[j].Version)
 					if err == nil {
 						versions = append(versions, versionInDB)
 					}
@@ -378,7 +397,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 			if err == nil { // new version created
 				versions = append(versions, newVersion)
 			} else { // version already existed
-				versionInDB, err := s.GetVersionByModel(modelInDB.Id, createdVersions[j].Version)
+				versionInDB, err := s.GetModelVersion(modelInDB.Id, createdVersions[j].Version)
 				if err == nil {
 					versions = append(versions, versionInDB)
 				}
@@ -397,19 +416,19 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 	return respModels, nil
 }
 
-func (s *modelService) ListModels(username string) ([]*model.CreateModelResponse, error) {
+func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
 	if !triton.IsTritonServerReady() {
-		return []*model.CreateModelResponse{}, makeError(503, "PredictModel", "Triton Server not ready yet")
+		return []*model.ModelInfo{}, makeError(503, "PredictModel", "Triton Server not ready yet")
 	}
 
 	listModelsResponse := triton.ListModelsRequest(triton.TritonClient)
 
-	var resModels []*model.CreateModelResponse
+	var resModels []*model.ModelInfo
 	models := listModelsResponse.Models
 	for i := 0; i < len(models); i++ {
 		md, err := s.GetModelByName(username, models[i].Name)
 		if err == nil {
-			resModels = append(resModels, &model.CreateModelResponse{
+			resModels = append(resModels, &model.ModelInfo{
 				Id:          md.Id,
 				Name:        md.Name,
 				Optimized:   md.Optimized,
