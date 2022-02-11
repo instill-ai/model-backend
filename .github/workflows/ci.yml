@@ -6,9 +6,7 @@ on:
       - main
 
 env:
-  GAR_REGISTRY: europe-west2-docker.pkg.dev/prj-c-devops-artifacts-a306
-  GAR_REPOSITORY: model
-  GAR_IMAGE: model-backend
+  DOCKER_HUB_REPOSITORY: instill/model
 
 jobs:
   get-version:
@@ -40,7 +38,7 @@ jobs:
 
       - name: Build build-metadata image
         run: |
-          DOCKER_BUILDKIT=1 docker build -t $GAR_REGISTRY/$GAR_REPOSITORY/$GAR_IMAGE:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }} .
+          DOCKER_BUILDKIT=1 docker build -t $DOCKER_HUB_REPOSITORY:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }} .
 
   push:
     runs-on: [self-hosted, on-prem, dgx]
@@ -65,4 +63,4 @@ jobs:
       - name: Push build-metadata image
         run: |
           echo $GAR_SA_KEY | docker login -u _json_key --password-stdin https://$GAR_REGISTRY
-          docker push $GAR_REGISTRY/$GAR_REPOSITORY/$GAR_IMAGE:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}
+          docker push $DOCKER_HUB_REPOSITORY:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}
