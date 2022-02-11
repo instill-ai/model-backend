@@ -44,23 +44,9 @@ jobs:
     runs-on: [self-hosted, on-prem, dgx]
     needs: [get-version, build]
     steps:
-      - name: Import Vault secrets
-        id: vault
-        uses: hashicorp/vault-action@v2.1.0
-        with:
-          url: https://vault.instill.tech
-          method: approle
-          roleId: ${{ secrets.vaultAppRoleRoleId }}
-          secretId: ${{ secrets.vaultAppRoleSecretId }}
-          tlsSkipVerify: false
-          extraHeaders: |
-            CF-Access-Client-Id: ${{ secrets.cfAccessClientId }}
-            CF-Access-Client-Secret: ${{ secrets.cfAccessClientSecret }}
-          # A magic json output trick: https://github.com/hashicorp/vault-action/issues/153#issuecomment-824329289
-          secrets: |
-            shared-account/docker-hub/drop@instill.tech $.$ | GAR_SA_KEY;
-
       - name: Push build-metadata image
+        env: 
+          DOCKER_HUB_PWD: ${{ secrets.BOTDOCKERHUBPASSWORD }}
         run: |
-          echo $GAR_SA_KEY | docker login -u _json_key --password-stdin
+          echo $DOCKER_HUB_PWD | docker login -u drop@instill.tech --password-stdin
           docker push $DOCKER_HUB_REPOSITORY:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}
