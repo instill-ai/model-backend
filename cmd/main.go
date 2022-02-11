@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -26,10 +27,13 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"github.com/instill-ai/model-backend/configs"
-	model "github.com/instill-ai/model-backend/internal-protogen-go/model"
+	database "github.com/instill-ai/model-backend/internal/db"
+	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/triton"
-	modelDB "github.com/instill-ai/model-backend/pkg/db"
-	"github.com/instill-ai/model-backend/pkg/handlers"
+	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/services"
+	"github.com/instill-ai/model-backend/protogen-go/model"
+	"github.com/instill-ai/model-backend/rpc"
 
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -58,18 +62,6 @@ func recoveryInterceptor() grpc_recovery.Option {
 	})
 }
 
-func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
-	return h2c.NewHandler(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-				grpcServer.ServeHTTP(w, r)
-			} else {
-				gwHandler.ServeHTTP(w, r)
-			}
-		}),
-		&http2.Server{})
-}
-
 func CustomMatcher(key string) (string, bool) {
 	if strings.HasPrefix(strings.ToLower(key), "jwt-") {
 		return key, true
@@ -83,35 +75,46 @@ func CustomMatcher(key string) (string, bool) {
 	}
 }
 
+func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
+	return h2c.NewHandler(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+				grpcServer.ServeHTTP(w, r)
+			} else {
+				gwHandler.ServeHTTP(w, r)
+			}
+		}),
+		&http2.Server{})
+}
+
 func main() {
-	err := configs.Init()
-	if err != nil {
-		log.Fatal(err)
+	logger, _ := logger.GetZapLogger()
+
+	if err := configs.Init(); err != nil {
+		logger.Fatal(err.Error())
 	}
 
-	errSig := make(chan error)
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
-	quitSig := make(chan os.Signal, 1)
-
-	modelDB.Init()
-
+	db := database.GetConnection()
 	triton.Init()
 
 	// Create tls based credential.
 	var creds credentials.TransportCredentials
+	var err error
 	if configs.Config.Server.HTTPS.Enabled {
 		creds, err = credentials.NewServerTLSFromFile(configs.Config.Server.HTTPS.Cert, configs.Config.Server.HTTPS.Key)
 		if err != nil {
-			log.Fatalf("failed to create credentials: %v", err)
+			logger.Fatal(fmt.Sprintf("failed to create credentials: %v", err))
 		}
 	}
 
 	// Shared options for the logger, with a custom gRPC code to log level function.
 	opts := []grpc_zap.Option{
 		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
-			// will not log gRPC calls if it was a call to healthcheck and no error was raised
-			if err == nil && fullMethodName == "foo.bar.healthcheck" {
-				return false
+			// will not log gRPC calls if it was a call to liveness or readiness and no error was raised
+			if err == nil {
+				if match, _ := regexp.MatchString("instill.model.Model/.*ness$", fullMethodName); match {
+					return false
+				}
 			}
 			// by default everything will be logged
 			return true
@@ -120,12 +123,14 @@ func main() {
 
 	grpcServerOpts := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_zap.StreamServerInterceptor(zapInterceptor(), opts...),
-			// grpc_recovery.StreamServerInterceptor(recoveryInterceptor()),
+			streamAppendMetadataInterceptor,
+			grpc_zap.StreamServerInterceptor(logger, opts...),
+			grpc_recovery.StreamServerInterceptor(recoveryInterceptorOpt()),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_zap.UnaryServerInterceptor(zapInterceptor(), opts...),
-			// grpc_recovery.UnaryServerInterceptor(recoveryInterceptor()),
+			unaryAppendMetadataInterceptor,
+			grpc_zap.UnaryServerInterceptor(logger, opts...),
+			grpc_recovery.UnaryServerInterceptor(recoveryInterceptorOpt()),
 		)),
 	}
 	if configs.Config.Server.HTTPS.Enabled {
@@ -133,16 +138,22 @@ func main() {
 	}
 
 	grpcS := grpc.NewServer(grpcServerOpts...)
-	model.RegisterModelServer(grpcS, &handlers.ServiceHandlers{})
+	modelRepository := repository.NewModelRepository(db)
+	modelService := services.NewModelService(modelRepository)
+	modelServiceHandler := rpc.NewServiceHandlers(modelService)
+
+	model.RegisterModelServer(grpcS, modelServiceHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	gwS := runtime.NewServeMux(
-		runtime.WithIncomingHeaderMatcher(CustomMatcher),
+		runtime.WithForwardResponseOption(httpResponseModifier),
+		runtime.WithIncomingHeaderMatcher(customMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
-				UseProtoNames: true,
+				UseProtoNames:   true,
+				EmitUnpopulated: true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{
 				DiscardUnknown: true,
@@ -150,8 +161,12 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /models
-	if err := gwS.HandlePath("POST", "/models", handlers.HandleUploadOutput); err != nil {
+	// Register custom route for  GET /hello/{name}
+	if err := gwS.HandlePath("POST", "/models/{name}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
+		panic(err)
+	}
+
+	if err := gwS.HandlePath("POST", "/models/upload", appendCustomHeaderMiddleware(rpc.HandleCreateModelByUpload)); err != nil {
 		panic(err)
 	}
 
@@ -163,13 +178,17 @@ func main() {
 	}
 
 	if err := model.RegisterModelHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", configs.Config.Server.Port), dialOpts); err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err.Error())
 	}
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%v", configs.Config.Server.Port),
 		Handler: grpcHandlerFunc(grpcS, gwS),
 	}
+
+	errSig := make(chan error)
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
+	quitSig := make(chan os.Signal, 1)
 
 	if configs.Config.Server.HTTPS.Enabled {
 		go func() {
@@ -184,7 +203,7 @@ func main() {
 			}
 		}()
 	}
-	log.Println("gRPC server is running.")
+	logger.Info("gRPC server is running.")
 
 	// kill (no param) default send syscall.SIGTERM
 	// kill -2 is syscall.SIGINT
@@ -193,13 +212,15 @@ func main() {
 
 	select {
 	case err := <-errSig:
-		log.Printf("Fatal error: %v\n", err)
+		logger.Error(fmt.Sprintf("Fatal error: %v\n", err))
 	case <-quitSig:
 	}
 
-	log.Println("Shutting down server...")
+	logger.Info("Shutting down server...")
 
 	grpcS.GracefulStop()
-	modelDB.Close()
+	database.Close(db)
 	triton.Close()
+
+	logger.Sync()
 }

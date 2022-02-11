@@ -20,7 +20,4 @@ type Error struct {
 
 	// Human-readable error message
 	Detail string `json:"detail"`
-
-	// The duration in milliseconds (s) it takes for a request to be processed
-	Duration float64 `json:"duration"`
 }
