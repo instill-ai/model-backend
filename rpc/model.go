@@ -43,21 +43,6 @@ func NewServiceHandlers(modelService services.ModelService) model.ModelServer {
 	}
 }
 
-func isTritonServerReady() bool {
-	serverLiveResponse := triton.ServerLiveRequest(triton.TritonClient)
-	if serverLiveResponse == nil {
-		return false
-	}
-	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
-	if !serverLiveResponse.Live {
-		return false
-	}
-
-	serverReadyResponse := triton.ServerReadyRequest(triton.TritonClient)
-	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
-	return serverReadyResponse.Ready
-}
-
 //writeToFp takes in a file pointer and byte array and writes the byte array into the file
 //returns error if pointer is nil or error in writing to file
 func writeToFp(fp *os.File, data []byte) error {
@@ -249,7 +234,6 @@ func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile 
 
 func makeError(statusCode codes.Code, title string, detail string) error {
 	err := &models.Error{
-		Status: int32(statusCode),
 		Title:  title,
 		Detail: detail,
 	}
@@ -280,7 +264,7 @@ func getUsername(ctx context.Context) (string, error) {
 }
 
 func (s *serviceHandlers) Liveness(ctx context.Context, pb *emptypb.Empty) (*model.HealthCheckResponse, error) {
-	if !isTritonServerReady() {
+	if !triton.IsTritonServerReady() {
 		return &model.HealthCheckResponse{Status: 503}, nil
 	}
 
@@ -288,7 +272,7 @@ func (s *serviceHandlers) Liveness(ctx context.Context, pb *emptypb.Empty) (*mod
 }
 
 func (s *serviceHandlers) Readiness(ctx context.Context, pb *emptypb.Empty) (*model.HealthCheckResponse, error) {
-	if !isTritonServerReady() {
+	if !triton.IsTritonServerReady() {
 		return &model.HealthCheckResponse{Status: 503}, nil
 	}
 
@@ -348,7 +332,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			makeResponse(w, 400, "Add Model Error", "Could not extract zip file")
 		}
 
-		respModels, err := modelService.CreateModelByUpload(username, createdModels, createdVersions)
+		respModels, err := modelService.HandleCreateModelByUpload(username, createdModels, createdVersions)
 		if err != nil {
 			makeResponse(w, 500, "Add Model Error", err.Error())
 		}
@@ -407,7 +391,7 @@ func (s *serviceHandlers) LoadModel(ctx context.Context, in *model.LoadModelRequ
 		return &model.LoadModelResponse{}, err
 	}
 
-	if !isTritonServerReady() {
+	if !triton.IsTritonServerReady() {
 		return &model.LoadModelResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
 	}
 
@@ -428,7 +412,7 @@ func (s *serviceHandlers) UnloadModel(ctx context.Context, in *model.UnloadModel
 		return &model.UnloadModelResponse{}, err
 	}
 
-	if !isTritonServerReady() {
+	if !triton.IsTritonServerReady() {
 		return &model.UnloadModelResponse{}, makeError(503, "UnloadModel Error", "Triton Server not ready yet")
 	}
 
@@ -449,32 +433,8 @@ func (s *serviceHandlers) ListModels(ctx context.Context, in *model.ListModelReq
 		return &model.ListModelResponse{}, err
 	}
 
-	if !isTritonServerReady() {
-		return &model.ListModelResponse{}, nil
-	}
-
-	listModelsResponse := triton.ListModelsRequest(triton.TritonClient)
-	fmt.Println("listModelsResponse ", listModelsResponse)
-
-	var resModels []*model.CreateModelResponse
-	models := listModelsResponse.Models
-	for i := 0; i < len(models); i++ {
-		md, err := s.modelService.GetModelByName(username, models[i].Name)
-		if err == nil {
-			resModels = append(resModels, &model.CreateModelResponse{
-				Id:          md.Id,
-				Name:        md.Name,
-				Optimized:   md.Optimized,
-				Description: md.Description,
-				Type:        md.Type,
-				Framework:   md.Framework,
-				Author:      md.Author,
-				Icon:        md.Icon,
-			})
-		}
-	}
-	fmt.Println("resModels ", resModels)
-	return &model.ListModelResponse{Models: resModels}, nil
+	resModels, err := s.modelService.ListModels(username)
+	return &model.ListModelResponse{Models: resModels}, err
 }
 
 func (s *serviceHandlers) PredictModel(ctx context.Context, in *model.PredictModelRequest) (*model.PredictModelResponse, error) {
@@ -488,7 +448,7 @@ func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelBy
 		return err
 	}
 
-	if !isTritonServerReady() {
+	if !triton.IsTritonServerReady() {
 		return makeError(503, "PredictModel", "Triton Server not ready yet")
 	}
 
@@ -586,7 +546,6 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		}
 
 		response, err := modelService.PredictModelByUpload(username, modelName, int32(modelVersion), tmpFile, cvTask)
-		fmt.Println(".      response ", response)
 		if err != nil {
 			makeResponse(w, 500, "Error Predict Model", err.Error())
 		}

@@ -342,3 +342,18 @@ func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 	}
 	return listModelsResponse
 }
+
+func IsTritonServerReady() bool {
+	serverLiveResponse := ServerLiveRequest(TritonClient)
+	if serverLiveResponse == nil {
+		return false
+	}
+	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
+	if !serverLiveResponse.Live {
+		return false
+	}
+
+	serverReadyResponse := ServerReadyRequest(TritonClient)
+	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
+	return serverReadyResponse.Ready
+}
