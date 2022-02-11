@@ -48,5 +48,5 @@ jobs:
         env: 
           DOCKER_HUB_PWD: ${{ secrets.botDockerHubPassword }}
         run: |
-          echo $DOCKER_HUB_PWD | docker login -u drop@instill.tech --password-stdin
+          echo $DOCKER_HUB_PWD | docker login -u dropletbot --password-stdin
           docker push $DOCKER_HUB_REPOSITORY:${{ needs.get-version.outputs.CORE_VERSION }}_${{ needs.get-version.outputs.GITHUB_SHA }}
