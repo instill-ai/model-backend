@@ -6,7 +6,7 @@ CREATE TYPE valid_visibilities AS ENUM ('public', 'private');
 CREATE TYPE valid_statuses AS ENUM ('offline', 'online', 'error');
 
 CREATE TABLE IF NOT EXISTS "models" (
-  "id" varchar(64),
+  "id" SERIAL PRIMARY KEY,
   "name" varchar(256) NOT NULL,
   "optimized" bool DEFAULT false NOT NULL,
   "type" VALID_TYPES NOT NULL,
@@ -18,8 +18,7 @@ CREATE TABLE IF NOT EXISTS "models" (
   "description" varchar(1024),
   "visibility" VALID_VISIBILITIES NOT NULL,
   "author" varchar(128),
-  UNIQUE("id"),
-  PRIMARY KEY ("id", "author")
+  "namespace" varchar(128) NOT NULL
 );
 
 COMMENT ON COLUMN "models"."name" IS 'model name label';
@@ -32,7 +31,7 @@ COMMENT ON COLUMN "models"."visibility" IS 'model public or private';
 COMMENT ON COLUMN "models"."author" IS 'model author';
 
 CREATE TABLE IF NOT EXISTS "versions" (
-  "model_id" varchar(64) NOT NULL,
+  "model_id" int NOT NULL,
   "version" int NOT NULL,
   "description" varchar(1024),
   "created_at" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,

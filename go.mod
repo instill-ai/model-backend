@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/disintegration/imaging v1.6.2
+	github.com/gogo/status v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0

@@ -12,7 +12,6 @@ package configs
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -69,10 +68,6 @@ var Config AppConfig
 
 // Init - Assign global config to decoded config struct
 func Init() error {
-	mydir, _ := os.Getwd()
-	fmt.Println(">>>>> current dir ", mydir)
-	st, e := os.Stat("configs/config.yaml")
-	fmt.Println(">>>checcc ", st, e)
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	fileRelativePath := fs.String("file", "configs/config.yaml", "configuration file")
 	flag.Parse()

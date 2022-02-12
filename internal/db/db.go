@@ -2,17 +2,18 @@ package db
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/instill-ai/model-backend/configs"
-	utils "github.com/instill-ai/model-backend/internal"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+var db *gorm.DB
+var once sync.Once
 
-func Init() {
+func GetConnection() *gorm.DB {
 	databaseConfig := configs.Config.Database
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=%s",
 		databaseConfig.Host,
@@ -43,28 +44,18 @@ func Init() {
 	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
 	sqlDB.SetConnMaxLifetime(time.Minute * databaseConfig.Pool.ConnLifeTime)
 
-	DB = db
+	return db
 }
 
-func Close() {
+func Close(db *gorm.DB) {
 
 	// https://github.com/go-gorm/gorm/issues/3216
 	//
 	// This only works with a single master connection, but when dealing with replicas using DBResolver,
 	// it does not close everything since DB.DB() only returns the master connection.
-	if DB != nil {
-		sqlDB, _ := DB.DB()
+	if db != nil {
+		sqlDB, _ := db.DB()
 
 		sqlDB.Close()
 	}
-}
-
-func GetNameDesFromId(id string) (string, string) {
-	for i := 0; i < len(utils.ModelNames); i++ {
-		model := utils.ModelNames[i]
-		if model["id"] == id {
-			return fmt.Sprintf("%v", model["name"]), fmt.Sprintf("%v", model["description"])
-		}
-	}
-	return id, ""
 }
