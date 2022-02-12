@@ -40,7 +40,6 @@ WORKDIR /model-backend
 ENV GIN_MODE=release
 
 COPY --from=build /openapi ./
-COPY --from=build /go/src/.env ./
 COPY --from=build /go/src/configs ./configs/
 COPY --from=build /go/src/internal/db/migrations ./internal/db/migrations/
 COPY --from=build /migrate ./

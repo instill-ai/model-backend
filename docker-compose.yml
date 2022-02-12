@@ -19,7 +19,6 @@ services:
             database:
                 condition: service_healthy
         restart: on-failure
-        env_file: .env
         environment:
             CFG_DATABASE_HOST: database
         entrypoint: ./migrate
@@ -30,9 +29,10 @@ services:
         depends_on:
             triton-server:
                 condition: service_healthy
-        env_file: .env
         environment:
             CFG_DATABASE_HOST: database
+            CFG_TRITONSERVER_GRPCURI: triton-server:8001
+            CFG_TRITONSERVER_MODELSTORE: /models
         restart: on-failure
         ports:
             - 8080:8080

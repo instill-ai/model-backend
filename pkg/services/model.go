@@ -418,7 +418,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 
 func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
 	if !triton.IsTritonServerReady() {
-		return []*model.ModelInfo{}, makeError(503, "PredictModel", "Triton Server not ready yet")
+		return []*model.ModelInfo{}, makeError(503, "ListModels", "Triton Server not ready yet")
 	}
 
 	listModelsResponse := triton.ListModelsRequest(triton.TritonClient)
@@ -428,16 +428,10 @@ func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
 	for i := 0; i < len(models); i++ {
 		md, err := s.GetModelByName(username, models[i].Name)
 		if err == nil {
-			resModels = append(resModels, &model.ModelInfo{
-				Id:          md.Id,
-				Name:        md.Name,
-				Optimized:   md.Optimized,
-				Description: md.Description,
-				Type:        md.Type,
-				Framework:   md.Framework,
-				Author:      md.Author,
-				Icon:        md.Icon,
-			})
+			versions, err := s.GetModelVersions(md.Id)
+			if err == nil {
+				resModels = append(resModels, createModelResponseByUpload(md, versions))
+			}
 		}
 	}
 
