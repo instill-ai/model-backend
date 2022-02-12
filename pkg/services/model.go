@@ -298,7 +298,7 @@ func (s *modelService) CreateModelByUpload(namespace string, createdModels []*mo
 
 		newModel.Author = namespace
 		newModel.Namespace = namespace
-		_, err = s.CreateModel(*newModel)
+		modelInDB, err = s.CreateModel(*newModel)
 		if err != nil {
 			continue
 		}
