@@ -90,7 +90,7 @@ func upload(c *cli.Context) error {
 }
 
 func load(c *cli.Context) error {
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(30*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(120*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -163,7 +163,7 @@ func predict(c *cli.Context) error {
 			err = streamUploader.Send(&model.PredictModelRequest{
 				Name:    "ensemble",
 				Version: 1,
-				Type:    0,
+				Type:    int32(c.Int("type")),
 				Content: buf[:n],
 			})
 			if err != nil {
@@ -235,9 +235,9 @@ func main() {
 						Usage:    "Model `NAME`",
 						Required: true,
 					},
-					&cli.StringFlag{
+					&cli.IntFlag{
 						Name:     "type",
-						Aliases:  []string{"y"},
+						Aliases:  []string{"t"},
 						Usage:    "Model `TYPE`",
 						Required: true,
 					},
