@@ -13,15 +13,15 @@ import (
 	"time"
 
 	"github.com/instill-ai/model-backend/configs"
-	"github.com/instill-ai/model-backend/internal-protogen-go/model"
+	"github.com/instill-ai/model-backend/protogen-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/instill-ai/model-backend/pkg/db"
-	"github.com/instill-ai/model-backend/pkg/handlers"
+	"github.com/instill-ai/model-backend/internal/db"
+	"github.com/instill-ai/model-backend/rpc"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -47,7 +47,7 @@ func dialer() func(context.Context, string) (net.Conn, error) {
 
 	server := grpc.NewServer()
 
-	model.RegisterModelServer(server, &handlers.ServiceHandlers{})
+	model.RegisterModelServer(server, &rpc.ServiceHandlers{})
 
 	go func() {
 		if err := server.Serve(listener); err != nil {
