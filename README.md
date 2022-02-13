@@ -37,9 +37,6 @@ $ go run ./examples-go/grpc_client.go predict -n ensemble -t 1 -f sample-models/
 Note: check the server running via `curl`:
 
 ```bash
-$ curl http://localhost:8080/__health
+$ curl http://localhost:8080/health/model
 {"status":"ok"}%
-
-$ curl http://localhost:8080/v1/helloworld
-{"error":"You've not implemented this API yet"}%
 ```
