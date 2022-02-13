@@ -161,7 +161,7 @@ func predict(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.PredictModelRequest{
-				Name:    "ensemble",
+				Name:    "yolov4",
 				Version: 1,
 				Type:    model.PredictModelRequest_CVTask(c.Int("type")),
 				Content: buf[:n],
