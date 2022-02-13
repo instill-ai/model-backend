@@ -25,9 +25,9 @@ $ ./examples-go/quick-download.sh
 
 ```bash
 $ docker-compose up -d
-$ go run ./examples-go/grpc_client.go upload -f sample-models/yolov4-onnx-cpu.zip # upload model file
-$ go run ./examples-go/grpc_client.go load -n ensemble
-$ go run ./examples-go/grpc_client.go predict -n ensemble -t 1 -f sample-models/dog.jpg # -t 0: classification model and 1: object detection model; yolov4 is detection model
+$ go run ./examples-go/grpc_client.go upload -f sample-models/yolov4-onnx-cpu.zip  # upload a YOLOv4 model for object detection
+$ go run ./examples-go/grpc_client.go load -n yolov4  # deploy the model
+$ go run ./examples-go/grpc_client.go predict -n yolov4 -t 1 -f sample-models/dog.jpg # -t 0: image classification task and 1: object detection task
 ```
 
 ### Create a your own model to run in Triton server
