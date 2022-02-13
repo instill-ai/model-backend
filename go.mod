@@ -9,7 +9,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3
 	github.com/jinzhu/configor v1.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/xid v1.3.0
@@ -18,16 +18,16 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.20.0
-	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
-	google.golang.org/genproto v0.0.0-20220114231437-d2e6a121cae0 // indirect
-	google.golang.org/grpc v1.43.0
+	google.golang.org/genproto v0.0.0-20220211171837-173942840c17 // indirect
+	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.5
 )
 
-require github.com/instill-ai/protogen-go v0.0.0-20220213073739-a4cd01f3b2f9
+require github.com/instill-ai/protogen-go v0.0.0-20220213131517-e2f1fcd26cb3
 
 require (
 	github.com/BurntSushi/toml v1.0.0 // indirect

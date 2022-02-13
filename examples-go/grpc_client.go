@@ -163,7 +163,7 @@ func predict(c *cli.Context) error {
 			err = streamUploader.Send(&model.PredictModelRequest{
 				Name:    "ensemble",
 				Version: 1,
-				Type:    int32(c.Int("type")),
+				Type:    model.PredictModelRequest_CVTask(c.Int("type")),
 				Content: buf[:n],
 			})
 			if err != nil {

@@ -31,7 +31,7 @@ $ ./examples-go/quick-download.sh
 $ docker-compose up -d
 $ go run ./examples-go/grpc_client.go upload -f sample-models/yolov4-onnx-cpu.zip # upload model file
 $ go run ./examples-go/grpc_client.go load -n ensemble
-$ go run ./examples-go/grpc_client.go predict -n ensemble -t 1 -f sample-models/dog.jpg # -t 0: classification model 1: object detection model
+$ go run ./examples-go/grpc_client.go predict -n ensemble -t 1 -f sample-models/dog.jpg # -t 0: classification model and 1: object detection model; yolov4 is detection model
 ```
 
 Note: check the server running via `curl`:
