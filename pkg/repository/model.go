@@ -18,6 +18,7 @@ type ModelRepository interface {
 	UpdateModelVersions(modelId int32, version models.Version) error
 	GetModelVersion(modelId int32, version int32) (models.Version, error)
 	GetModelVersions(modelId int32) ([]models.Version, error)
+	UpdateModelMetaData(modelId int32, updatedModel models.Model) error
 }
 
 type modelRepository struct {
@@ -108,4 +109,16 @@ func (r *modelRepository) GetModelVersions(modelId int32) ([]models.Version, err
 		return []models.Version{}, status.Errorf(codes.NotFound, "The versions for model %v not found", modelId)
 	}
 	return versions, nil
+}
+
+func (r *modelRepository) UpdateModelMetaData(modelId int32, updatedModel models.Model) error {
+	l, _ := logger.GetZapLogger()
+
+	// We ignore the full_name column since it's a virtual column
+	if result := r.DB.Model(&models.Model{}).Select(GetModelSelectedFields).Where("id", modelId).Updates(&updatedModel); result.Error != nil {
+		l.Error(fmt.Sprintf("Error occur: %v", result.Error))
+		return status.Errorf(codes.Internal, "Error %v", result.Error)
+	}
+
+	return nil
 }

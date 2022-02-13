@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/models"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/protogen-go/model"
+	"github.com/instill-ai/protogen-go/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -77,6 +77,7 @@ func createModelResponseByUpload(modelInDB models.Model, versions []models.Versi
 			Description: versions[i].Description,
 			CreatedAt:   timestamppb.New(versions[i].CreatedAt),
 			UpdatedAt:   timestamppb.New(versions[i].UpdatedAt),
+			Status:      versions[i].Status,
 		})
 	}
 	mRes.Versions = vers
@@ -86,14 +87,17 @@ func createModelResponseByUpload(modelInDB models.Model, versions []models.Versi
 type ModelService interface {
 	CreateModel(model models.Model) (models.Model, error)
 	GetModelByName(namespace string, modelName string) (models.Model, error)
+	GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error)
 	CreateVersion(version models.Version) (models.Version, error)
-	UpdateModelVersions(modelId int32, version models.Version) (models.Version, error)
+	UpdateModelVersions(modelId int32, version models.Version) error
+	UpdateModelMetaData(namespace string, updatedModel models.Model) (*model.ModelInfo, error)
 	GetModelVersion(modelId int32, version int32) (models.Version, error)
 	GetModelVersions(modelId int32) ([]models.Version, error)
 	PredictModelByUpload(namespace string, modelName string, version int32, filePath string, cvTask triton.CVTask) (interface{}, error)
 	CreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*model.ModelInfo, error)
 	HandleCreateModelByUpload(namespace string, createdModels []*models.Model, createdVersions []*models.Version) ([]*models.ModelResponse, error)
-	ListModels(username string) ([]*model.ModelInfo, error)
+	ListModels(namespace string) ([]*model.ModelInfo, error)
+	UpdateModel(namespace string, updatedInfo *model.UpdateModelRequest) (*model.ModelInfo, error)
 }
 
 type modelService struct {
@@ -143,16 +147,8 @@ func (s *modelService) CreateVersion(version models.Version) (models.Version, er
 	}
 }
 
-func (s *modelService) UpdateModelVersions(modelId int32, version models.Version) (models.Version, error) {
-	if err := s.modelRepository.UpdateModelVersions(modelId, version); err != nil {
-		return models.Version{}, err
-	}
-
-	if createdVersion, err := s.modelRepository.GetModelVersion(version.ModelId, version.Version); err != nil {
-		return models.Version{}, err
-	} else {
-		return createdVersion, nil
-	}
+func (s *modelService) UpdateModelVersions(modelId int32, version models.Version) error {
+	return s.modelRepository.UpdateModelVersions(modelId, version)
 }
 
 func (s *modelService) GetModelVersion(modelId int32, version int32) (models.Version, error) {
@@ -166,7 +162,7 @@ func (s *modelService) GetModelVersions(modelId int32) ([]models.Version, error)
 func (s *modelService) PredictModelByUpload(namespace string, modelName string, version int32, filePath string, cvTask triton.CVTask) (interface{}, error) {
 	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, modelName, fmt.Sprint(version))
 	if modelMetadataResponse == nil {
-		return nil, makeError(400, "PredictModel", "Model not found")
+		return nil, makeError(400, "PredictModel", "Model not found or offline")
 	}
 
 	modelConfigResponse := triton.ModelConfigRequest(triton.TritonClient, modelName, fmt.Sprint(version))
@@ -416,7 +412,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 	return respModels, nil
 }
 
-func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
+func (s *modelService) ListModels(namespace string) ([]*model.ModelInfo, error) {
 	if !triton.IsTritonServerReady() {
 		return []*model.ModelInfo{}, makeError(503, "ListModels", "Triton Server not ready yet")
 	}
@@ -426,7 +422,7 @@ func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
 	var resModels []*model.ModelInfo
 	models := listModelsResponse.Models
 	for i := 0; i < len(models); i++ {
-		md, err := s.GetModelByName(username, models[i].Name)
+		md, err := s.GetModelByName(namespace, models[i].Name)
 		if err == nil {
 			versions, err := s.GetModelVersions(md.Id)
 			if err == nil {
@@ -436,4 +432,100 @@ func (s *modelService) ListModels(username string) ([]*model.ModelInfo, error) {
 	}
 
 	return resModels, nil
+}
+
+func (s *modelService) UpdateModelMetaData(namespace string, updatedModel models.Model) (*model.ModelInfo, error) {
+	md, err := s.GetModelByName(namespace, updatedModel.Name)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "UpdateModelMetaData Error", "The model not found in server")
+	}
+
+	err = s.modelRepository.UpdateModelMetaData(md.Id, updatedModel)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(500, "UpdateModelMetaData Error", err.Error())
+	}
+
+	modelInfo, err := s.GetModelMetaData(namespace, md.Name)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(500, "UpdateModelMetaData Error", err.Error())
+	}
+
+	return modelInfo, nil
+}
+
+func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelRequest) (*model.ModelInfo, error) {
+	modelInDB, err := s.GetModelByName(namespace, in.Model.Name)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "UpdateModel Error", "The model not found in server")
+	}
+
+	if in.UpdateMask != nil && len(in.UpdateMask.Paths) > 0 {
+		for _, field := range in.UpdateMask.Paths {
+			switch field {
+			case "description":
+				_, _ = s.UpdateModelMetaData(namespace, models.Model{
+					Description: in.Model.Description,
+					UpdatedAt:   time.Now(),
+				})
+			case "status":
+				switch in.Model.Status {
+				case model.UpdateModelInfo_ONLINE:
+					_, err = triton.LoadModelRequest(triton.TritonClient, in.Model.Name)
+					if err != nil {
+						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+							UpdatedAt: time.Now(),
+							Status:    "error",
+						})
+						if err != nil {
+							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
+						}
+					} else {
+						err := s.UpdateModelVersions(modelInDB.Id, models.Version{
+							UpdatedAt: time.Now(),
+							Status:    "online",
+						})
+						if err != nil {
+							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model version status")
+						}
+					}
+				case model.UpdateModelInfo_OFFLINE:
+					_, err = triton.UnloadModelRequest(triton.TritonClient, in.Model.Name)
+					if err != nil {
+						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+							UpdatedAt: time.Now(),
+							Status:    "error",
+						})
+						if err != nil {
+							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
+						}
+					} else {
+						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+							UpdatedAt: time.Now(),
+							Status:    "offline",
+						})
+						if err != nil {
+							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
+						}
+					}
+				default:
+					return &model.ModelInfo{}, makeError(400, "UpdateModel Error", "Wrong status value. Status should be online or offline")
+				}
+			}
+		}
+	}
+	return s.GetModelMetaData(namespace, in.Model.Name)
+}
+
+func (s *modelService) GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error) {
+	resModelInDB, err := s.GetModelByName(namespace, modelName)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "GetModel", fmt.Sprintf("Model %v not found in namespace %v", namespace, modelName))
+	}
+
+	versions, err := s.GetModelVersions(resModelInDB.Id)
+	if err != nil {
+		return &model.ModelInfo{}, makeError(404, "GetModel", "There is no versions for this model")
+	}
+
+	return createModelResponseByUpload(resModelInDB, versions), nil
 }
