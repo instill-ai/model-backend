@@ -17,18 +17,24 @@ Table of Contents:
   - [Image purge](#image-purge)
 
 ## Prerequisite
-
-- [openapi-generator](https://github.com/OpenAPITools/openapi-generator)
-- [mo](https://github.com/tests-always-included/mo)
+a 
+- [conda-pack](https://artifacts.instill.tech/visual-data-preparation/conda-pack) this is a Conda environment for Python Backend running in Triton server 
+- [sample models](https://artifacts.instill.tech/visual-data-preparation/sample-models/yolov4-onnx-cpu.zip) example CPU models running in Triton server
+To download those dependencies, run quick-download.sh
+```bash
+$ ./examples/quick-download.sh
+```
 
 ## Quick start
 
 ```bash
-$ scripts/build.sh -c -t
-$ ./openapi
+$ docker-compose up -d
+$ go run ./examples/grpc_client.go upload -f yolov4-onnx-cpu.zip # upload model file
+$ go run ./examples/grpc_client.go load -n ensemble
+$ go run  ./examples/grpc_client.go prdict -n ensemble -f https://artifacts.instill.tech/dog.jpg
 ```
 
-Check the gin-server running via `curl`:
+Note: check the server running via `curl`:
 
 ```bash
 $ curl http://localhost:8080/__health

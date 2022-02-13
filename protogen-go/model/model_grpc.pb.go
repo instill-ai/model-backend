@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,12 +24,11 @@ type ModelClient interface {
 	Readiness(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*HealthCheckResponse, error)
 	CreateModelByUpload(ctx context.Context, opts ...grpc.CallOption) (Model_CreateModelByUploadClient, error)
 	CreateModel(ctx context.Context, in *CreateModelRequest, opts ...grpc.CallOption) (*CreateModelsResponse, error)
-	LoadModel(ctx context.Context, in *LoadModelRequest, opts ...grpc.CallOption) (*LoadModelResponse, error)
-	UnloadModel(ctx context.Context, in *UnloadModelRequest, opts ...grpc.CallOption) (*UnloadModelResponse, error)
+	UpdateModel(ctx context.Context, in *UpdateModelRequest, opts ...grpc.CallOption) (*ModelInfo, error)
 	// This method handle upload file request
 	PredictModelByUpload(ctx context.Context, opts ...grpc.CallOption) (Model_PredictModelByUploadClient, error)
 	// This method handle request with file in body such as url/base64 encode
-	PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*PredictModelResponse, error)
+	PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*structpb.Struct, error)
 	ListModels(ctx context.Context, in *ListModelRequest, opts ...grpc.CallOption) (*ListModelResponse, error)
 	GetModel(ctx context.Context, in *GetModelRequest, opts ...grpc.CallOption) (*ModelInfo, error)
 }
@@ -102,18 +102,9 @@ func (c *modelClient) CreateModel(ctx context.Context, in *CreateModelRequest, o
 	return out, nil
 }
 
-func (c *modelClient) LoadModel(ctx context.Context, in *LoadModelRequest, opts ...grpc.CallOption) (*LoadModelResponse, error) {
-	out := new(LoadModelResponse)
-	err := c.cc.Invoke(ctx, "/instill.model.Model/LoadModel", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *modelClient) UnloadModel(ctx context.Context, in *UnloadModelRequest, opts ...grpc.CallOption) (*UnloadModelResponse, error) {
-	out := new(UnloadModelResponse)
-	err := c.cc.Invoke(ctx, "/instill.model.Model/UnloadModel", in, out, opts...)
+func (c *modelClient) UpdateModel(ctx context.Context, in *UpdateModelRequest, opts ...grpc.CallOption) (*ModelInfo, error) {
+	out := new(ModelInfo)
+	err := c.cc.Invoke(ctx, "/instill.model.Model/UpdateModel", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +122,7 @@ func (c *modelClient) PredictModelByUpload(ctx context.Context, opts ...grpc.Cal
 
 type Model_PredictModelByUploadClient interface {
 	Send(*PredictModelRequest) error
-	CloseAndRecv() (*PredictModelResponse, error)
+	CloseAndRecv() (*structpb.Struct, error)
 	grpc.ClientStream
 }
 
@@ -143,19 +134,19 @@ func (x *modelPredictModelByUploadClient) Send(m *PredictModelRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *modelPredictModelByUploadClient) CloseAndRecv() (*PredictModelResponse, error) {
+func (x *modelPredictModelByUploadClient) CloseAndRecv() (*structpb.Struct, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(PredictModelResponse)
+	m := new(structpb.Struct)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *modelClient) PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*PredictModelResponse, error) {
-	out := new(PredictModelResponse)
+func (c *modelClient) PredictModel(ctx context.Context, in *PredictModelRequest, opts ...grpc.CallOption) (*structpb.Struct, error) {
+	out := new(structpb.Struct)
 	err := c.cc.Invoke(ctx, "/instill.model.Model/PredictModel", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -189,12 +180,11 @@ type ModelServer interface {
 	Readiness(context.Context, *emptypb.Empty) (*HealthCheckResponse, error)
 	CreateModelByUpload(Model_CreateModelByUploadServer) error
 	CreateModel(context.Context, *CreateModelRequest) (*CreateModelsResponse, error)
-	LoadModel(context.Context, *LoadModelRequest) (*LoadModelResponse, error)
-	UnloadModel(context.Context, *UnloadModelRequest) (*UnloadModelResponse, error)
+	UpdateModel(context.Context, *UpdateModelRequest) (*ModelInfo, error)
 	// This method handle upload file request
 	PredictModelByUpload(Model_PredictModelByUploadServer) error
 	// This method handle request with file in body such as url/base64 encode
-	PredictModel(context.Context, *PredictModelRequest) (*PredictModelResponse, error)
+	PredictModel(context.Context, *PredictModelRequest) (*structpb.Struct, error)
 	ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error)
 	GetModel(context.Context, *GetModelRequest) (*ModelInfo, error)
 }
@@ -215,16 +205,13 @@ func (UnimplementedModelServer) CreateModelByUpload(Model_CreateModelByUploadSer
 func (UnimplementedModelServer) CreateModel(context.Context, *CreateModelRequest) (*CreateModelsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateModel not implemented")
 }
-func (UnimplementedModelServer) LoadModel(context.Context, *LoadModelRequest) (*LoadModelResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LoadModel not implemented")
-}
-func (UnimplementedModelServer) UnloadModel(context.Context, *UnloadModelRequest) (*UnloadModelResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UnloadModel not implemented")
+func (UnimplementedModelServer) UpdateModel(context.Context, *UpdateModelRequest) (*ModelInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateModel not implemented")
 }
 func (UnimplementedModelServer) PredictModelByUpload(Model_PredictModelByUploadServer) error {
 	return status.Errorf(codes.Unimplemented, "method PredictModelByUpload not implemented")
 }
-func (UnimplementedModelServer) PredictModel(context.Context, *PredictModelRequest) (*PredictModelResponse, error) {
+func (UnimplementedModelServer) PredictModel(context.Context, *PredictModelRequest) (*structpb.Struct, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PredictModel not implemented")
 }
 func (UnimplementedModelServer) ListModels(context.Context, *ListModelRequest) (*ListModelResponse, error) {
@@ -325,38 +312,20 @@ func _Model_CreateModel_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Model_LoadModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoadModelRequest)
+func _Model_UpdateModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateModelRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServer).LoadModel(ctx, in)
+		return srv.(ModelServer).UpdateModel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/instill.model.Model/LoadModel",
+		FullMethod: "/instill.model.Model/UpdateModel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServer).LoadModel(ctx, req.(*LoadModelRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Model_UnloadModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UnloadModelRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ModelServer).UnloadModel(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/instill.model.Model/UnloadModel",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServer).UnloadModel(ctx, req.(*UnloadModelRequest))
+		return srv.(ModelServer).UpdateModel(ctx, req.(*UpdateModelRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -366,7 +335,7 @@ func _Model_PredictModelByUpload_Handler(srv interface{}, stream grpc.ServerStre
 }
 
 type Model_PredictModelByUploadServer interface {
-	SendAndClose(*PredictModelResponse) error
+	SendAndClose(*structpb.Struct) error
 	Recv() (*PredictModelRequest, error)
 	grpc.ServerStream
 }
@@ -375,7 +344,7 @@ type modelPredictModelByUploadServer struct {
 	grpc.ServerStream
 }
 
-func (x *modelPredictModelByUploadServer) SendAndClose(m *PredictModelResponse) error {
+func (x *modelPredictModelByUploadServer) SendAndClose(m *structpb.Struct) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -461,12 +430,8 @@ var Model_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Model_CreateModel_Handler,
 		},
 		{
-			MethodName: "LoadModel",
-			Handler:    _Model_LoadModel_Handler,
-		},
-		{
-			MethodName: "UnloadModel",
-			Handler:    _Model_UnloadModel_Handler,
+			MethodName: "UpdateModel",
+			Handler:    _Model_UpdateModel_Handler,
 		},
 		{
 			MethodName: "PredictModel",
