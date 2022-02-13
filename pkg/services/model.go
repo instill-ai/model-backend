@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/models"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/protogen-go/model"
+	"github.com/instill-ai/protogen-go/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

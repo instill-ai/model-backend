@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"io"
 	"log"
@@ -13,18 +12,18 @@ import (
 	"time"
 
 	"github.com/instill-ai/model-backend/configs"
-	"github.com/instill-ai/model-backend/protogen-go/model"
+	database "github.com/instill-ai/model-backend/internal/db"
+	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/services"
+	"github.com/instill-ai/protogen-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/instill-ai/model-backend/internal/db"
 	"github.com/instill-ai/model-backend/rpc"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 func RandomString(n int) string {
@@ -47,7 +46,12 @@ func dialer() func(context.Context, string) (net.Conn, error) {
 
 	server := grpc.NewServer()
 
-	model.RegisterModelServer(server, &rpc.ServiceHandlers{})
+	db := database.GetConnection()
+	modelRepository := repository.NewModelRepository(db)
+	modelService := services.NewModelService(modelRepository)
+	modelServiceHandler := rpc.NewServiceHandlers(modelService)
+
+	model.RegisterModelServer(server, modelServiceHandler)
 
 	go func() {
 		if err := server.Serve(listener); err != nil {
@@ -73,22 +77,6 @@ func (suite *UploadModelTestSuite) AfterTest(suiteName, testName string) {
 // This will run before before the tests in the suite are run
 func (suite *UploadModelTestSuite) SetupSuite() {
 	_ = configs.Init()
-
-	var mockdb *sql.DB
-	mockdb, suite.mock, _ = sqlmock.New()
-
-	dialector := mysql.New(mysql.Config{
-		DSN:                       "sqlmock_db_0",
-		DriverName:                "mysql",
-		Conn:                      mockdb,
-		DefaultStringSize:         256,   // default size for string fields
-		DisableDatetimePrecision:  true,  // disable datetime precision, which not supported before MySQL 5.6
-		DontSupportRenameIndex:    true,  // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
-		DontSupportRenameColumn:   true,  // `change` when rename column, rename column not supported before MySQL 8, MariaDB
-		SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
-	})
-
-	db.DB, _ = gorm.Open(dialector, &gorm.Config{QueryFields: true})
 }
 
 // This will run before each test in the suite
@@ -133,7 +121,7 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 
 	c := model.NewModelClient(conn)
 
-	streamUploader, _ := c.CreateModel(ctx)
+	streamUploader, _ := c.CreateModelByUpload(ctx)
 	defer streamUploader.CloseSend()
 
 	const chunkSize = 64 * 1024 // 64 KiB
@@ -154,19 +142,17 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 			break
 		}
 		if firstChunk {
-			err = streamUploader.Send(&model.CreateModelRequest{
-				Name:        modelName,
+			_ = streamUploader.Send(&model.CreateModelRequest{
 				Description: description,
 				Type:        "tensorrt",
 				Framework:   "pytorch",
 				Optimized:   false,
 				Visibility:  "public",
-				Filename:    "densenet_onnx.zip",
 				Content:     buf[:n],
 			})
 			firstChunk = false
 		} else {
-			err = streamUploader.Send(&model.CreateModelRequest{
+			_ = streamUploader.Send(&model.CreateModelRequest{
 				Content: buf[:n],
 			})
 		}
@@ -174,9 +160,7 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 
 	response, _ := streamUploader.CloseAndRecv()
 	suite.T().Run("TestUploadModelNormal", func(t *testing.T) {
-		assert.Equal(t, modelName, response.Name)
-		assert.Equal(t, "tensorrt", response.Type)
-		assert.Equal(t, "pytorch", response.Framework)
+		assert.Greater(t, len(response.Models), 0)
 	})
 }
 

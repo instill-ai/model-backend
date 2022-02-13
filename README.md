@@ -20,18 +20,18 @@ Table of Contents:
 a 
 - [conda-pack](https://artifacts.instill.tech/visual-data-preparation/conda-pack) this is a Conda environment for Python Backend running in Triton server 
 - [sample models](https://artifacts.instill.tech/visual-data-preparation/sample-models/yolov4-onnx-cpu.zip) example CPU models running in Triton server
-To download those dependencies, run quick-download.sh
+To download those dependencies, you could run quick-download.sh
 ```bash
-$ ./examples/quick-download.sh
+$ ./examples-go/quick-download.sh
 ```
 
 ## Quick start
 
 ```bash
 $ docker-compose up -d
-$ go run ./examples/grpc_client.go upload -f yolov4-onnx-cpu.zip # upload model file
-$ go run ./examples/grpc_client.go load -n ensemble
-$ go run  ./examples/grpc_client.go prdict -n ensemble -f https://artifacts.instill.tech/dog.jpg
+$ go run ./examples-go/grpc_client.go upload -f yolov4-onnx-cpu.zip # upload model file
+$ go run ./examples-go/grpc_client.go load -n ensemble
+$ go run  ./examples-go/grpc_client.go prdict -n ensemble -f https://artifacts.instill.tech/dog.jpg
 ```
 
 Note: check the server running via `curl`:
