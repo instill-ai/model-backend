@@ -5,16 +5,12 @@ The service serve for uploading AI model into Instill platform and retrieving AI
 Table of Contents:
 - [Prerequisite](#prerequisite)
 - [Quick start](#quick-start)
-- [In the nut shell](#in-the-nut-shell)
-- [Logging with Logrus](#logging-with-logrus)
-  - [Gin logger](#gin-logger)
-  - [Debug logger](#debug-logger)
-- [How to contribute](#how-to-contribute)
-  - [Commit changes and submit PRs](#commit-changes-and-submit-prs)
-- [CI/CD](#cicd)
-  - [Push](#push)
-  - [Pull request](#pull-request)
-  - [Image purge](#image-purge)
+- [Community support](#community-support)
+- [Documentation](#documentation)
+  - [API reference](#api-reference)
+  - [Build docker](#build-docker)
+- [License](#license)
+
 
 ## Prerequisite
 a 
@@ -34,9 +30,26 @@ $ go run ./examples-go/grpc_client.go load -n ensemble
 $ go run ./examples-go/grpc_client.go predict -n ensemble -t 1 -f sample-models/dog.jpg # -t 0: classification model and 1: object detection model; yolov4 is detection model
 ```
 
-Note: check the server running via `curl`:
+### Create a your own model to run in Triton server
 
+## Community support
+
+For general help using VDP, you can use one of these channels:
+
+- [GitHub](https://github.com/instill-ai/vdp) (bug reports, feature requests, project discussions and contributions)
+- [Discord](https://discord.gg/sevxWsqpGh) (live discussion with the community and the Instill AI Team)
+
+## Documentation
+
+### API reference
+
+### Build docker
+
+You can build a development Docker image using:
 ```bash
-$ curl http://localhost:8080/health/model
-{"status":"ok"}%
+$ docker build -t {tag} .
 ```
+
+## License
+
+See the [LICENSE](https://github.com/instill-ai/vdp/blob/main/LICENSE) file for licensing information.
