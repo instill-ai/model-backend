@@ -548,3 +548,8 @@ func (s *serviceHandlers) GetModel(ctx context.Context, in *model.GetModelReques
 	}
 	return s.modelService.GetModelMetaData(username, in.Name)
 }
+
+func (s *serviceHandlers) DeleteModel(ctx context.Context, in *model.DeleteModelRequest) (*emptypb.Empty, error) {
+	//TODO support url and base64 content
+	return &emptypb.Empty{}, makeError(500, "DeleteModel", "Not supported yet")
+}

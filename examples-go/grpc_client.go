@@ -22,7 +22,7 @@ func upload(c *cli.Context) error {
 	}
 
 	// Create connection to server with timeout 120 secs to ensure file streamed successfully
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(120*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(150*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -90,7 +90,7 @@ func upload(c *cli.Context) error {
 }
 
 func load(c *cli.Context) error {
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(120*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(150*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -161,7 +161,7 @@ func predict(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.PredictModelRequest{
-				Name:    "ensemble",
+				Name:    "yolov4",
 				Version: 1,
 				Type:    model.PredictModelRequest_CVTask(c.Int("type")),
 				Content: buf[:n],
