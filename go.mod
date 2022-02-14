@@ -27,7 +27,7 @@ require (
 	gorm.io/gorm v1.22.5
 )
 
-require github.com/instill-ai/protogen-go v0.0.0-20220213131517-e2f1fcd26cb3
+require github.com/instill-ai/protogen-go v0.0.0-20220214084110-9a2713d704b2
 
 require (
 	github.com/BurntSushi/toml v1.0.0 // indirect

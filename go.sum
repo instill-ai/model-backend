@@ -568,8 +568,8 @@ github.com/imdario/mergo v0.3.10/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH
 github.com/imdario/mergo v0.3.11/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
-github.com/instill-ai/protogen-go v0.0.0-20220213131517-e2f1fcd26cb3 h1:wii1EUtjcF1QaAP6KssaBlPtTzr5dv+JgX382o0jQFs=
-github.com/instill-ai/protogen-go v0.0.0-20220213131517-e2f1fcd26cb3/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
+github.com/instill-ai/protogen-go v0.0.0-20220214084110-9a2713d704b2 h1:IIkKYAdgeQrj6Gm6zHCMJMOsfzpLqYQPfNokrUzuEZs=
+github.com/instill-ai/protogen-go v0.0.0-20220214084110-9a2713d704b2/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56/go.mod h1:ymszkNOg6tORTn+6F6j+Jc8TOr5osrynvN6ivFWZ2GA=
 github.com/jackc/chunkreader v1.0.0 h1:4s39bBR8ByfqH+DKm8rQA3E1LHZWB9XWcrz8fqaZbe0=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=

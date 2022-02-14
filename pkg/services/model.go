@@ -71,13 +71,14 @@ func createModelResponseByUpload(modelInDB models.Model, versions []models.Versi
 	mRes.Visibility = modelInDB.Visibility
 	var vers []*model.ModelVersion
 	for i := 0; i < len(versions); i++ {
+
 		vers = append(vers, &model.ModelVersion{
 			Version:     versions[i].Version,
 			ModelId:     versions[i].ModelId,
 			Description: versions[i].Description,
 			CreatedAt:   timestamppb.New(versions[i].CreatedAt),
 			UpdatedAt:   timestamppb.New(versions[i].UpdatedAt),
-			Status:      versions[i].Status,
+			Status:      model.ModelStatus(versions[i].Version),
 		})
 	}
 	mRes.Versions = vers
@@ -275,7 +276,7 @@ func (s *modelService) CreateModelByUpload(namespace string, createdModels []*mo
 					Description: modelInDB.Description,
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
-					Status:      "offline",
+					Status:      model.ModelStatus_OFFLINE.String(),
 					Metadata:    models.JSONB{},
 				})
 				if err == nil { // new version created
@@ -309,7 +310,7 @@ func (s *modelService) CreateModelByUpload(namespace string, createdModels []*mo
 				Description: modelInDB.Description,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
-				Status:      "offline",
+				Status:      model.ModelStatus_OFFLINE.String(),
 				Metadata:    models.JSONB{},
 			})
 			if err == nil { // new version created
@@ -353,7 +354,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 					Description: modelInDB.Description,
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
-					Status:      "offline",
+					Status:      model.ModelStatus_OFFLINE.String(),
 					Metadata:    models.JSONB{},
 				})
 				if err == nil { // new version created
@@ -387,7 +388,7 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, createdModels
 				Description: modelInDB.Description,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
-				Status:      "offline",
+				Status:      model.ModelStatus_OFFLINE.String(),
 				Metadata:    models.JSONB{},
 			})
 			if err == nil { // new version created
@@ -469,12 +470,12 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 				})
 			case "status":
 				switch in.Model.Status {
-				case model.UpdateModelInfo_ONLINE:
+				case model.ModelStatus_ONLINE:
 					_, err = triton.LoadModelRequest(triton.TritonClient, in.Model.Name)
 					if err != nil {
 						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
-							Status:    "error",
+							Status:    model.ModelStatus_ERROR.String(),
 						})
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
@@ -482,18 +483,18 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 					} else {
 						err := s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
-							Status:    "online",
+							Status:    model.ModelStatus_ONLINE.String(),
 						})
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model version status")
 						}
 					}
-				case model.UpdateModelInfo_OFFLINE:
+				case model.ModelStatus_OFFLINE:
 					_, err = triton.UnloadModelRequest(triton.TritonClient, in.Model.Name)
 					if err != nil {
 						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
-							Status:    "error",
+							Status:    model.ModelStatus_ERROR.String(),
 						})
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
@@ -501,7 +502,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 					} else {
 						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
-							Status:    "offline",
+							Status:    model.ModelStatus_OFFLINE.String(),
 						})
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")

@@ -3,7 +3,7 @@ BEGIN;
 CREATE TYPE valid_types AS ENUM ('tensorrt');
 CREATE TYPE valid_frameworks AS ENUM ('pytorch', 'tensorflow');
 CREATE TYPE valid_visibilities AS ENUM ('public', 'private');
-CREATE TYPE valid_statuses AS ENUM ('offline', 'online', 'error');
+CREATE TYPE valid_statuses AS ENUM ('OFFLINE', 'ONLINE', 'ERROR');
 
 CREATE TABLE IF NOT EXISTS "models" (
   "id" SERIAL PRIMARY KEY,
