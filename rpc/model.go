@@ -112,7 +112,7 @@ func unzip(filePath string, dstDir string, uploadedModelInfo *models.Model) ([]*
 				if match {
 					elems := strings.Split(dirName, "/")
 					sVersion := elems[len(elems)-1]
-					iVersion, err := strconv.Atoi(sVersion)
+					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
 						currentModel.Versions = append(currentModel.Versions, models.VersionResponse{
 							Version:   int32(iVersion),
