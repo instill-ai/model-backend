@@ -21,6 +21,7 @@ import (
 	"github.com/instill-ai/model-backend/configs"
 	database "github.com/instill-ai/model-backend/internal/db"
 	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/models"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -62,17 +63,17 @@ func writeToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func unzip(filePath string, dstDir string) ([]*models.Model, []*models.Version, bool) {
+func unzip(filePath string, dstDir string, uploadedModelInfo *models.Model) ([]*models.Model, bool) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return []*models.Model{}, []*models.Version{}, false
+		return []*models.Model{}, false
 	}
 	defer archive.Close()
 
 	var createdModels []*models.Model
-	var createdVersions []*models.Version
 	var currentModelName string
+	var currentModel *models.Model
 	for _, f := range archive.File {
 		if strings.Contains(f.Name, "__MACOSX") { // ignore temp directory in macos
 			continue
@@ -82,7 +83,7 @@ func unzip(filePath string, dstDir string) ([]*models.Model, []*models.Version, 
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return []*models.Model{}, []*models.Version{}, false
+			return []*models.Model{}, false
 		}
 		if f.FileInfo().IsDir() {
 			dirName := f.Name
@@ -91,36 +92,35 @@ func unzip(filePath string, dstDir string) ([]*models.Model, []*models.Version, 
 			}
 			if !strings.Contains(dirName, "/") { // top directory model
 				currentModelName = dirName
-				newModel := &models.Model{
-					Name:       dirName,
-					CreatedAt:  time.Now(),
-					UpdatedAt:  time.Now(),
-					Type:       "tensorrt",
-					Framework:  "pytorch",
-					Optimized:  false,
-					Icon:       "",
-					Visibility: "public",
+				currentModel = &models.Model{
+					Name:        dirName,
+					CreatedAt:   time.Now(),
+					UpdatedAt:   time.Now(),
+					Type:        uploadedModelInfo.Type,
+					Framework:   uploadedModelInfo.Framework,
+					Optimized:   false,
+					Icon:        "",
+					Visibility:  "public",
+					Description: uploadedModelInfo.Description,
+					Versions:    []models.VersionResponse{},
+					CVTask:      uploadedModelInfo.CVTask,
 				}
-				createdModels = append(createdModels, newModel)
+				createdModels = append(createdModels, currentModel)
 			} else { // version folder
 				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentModelName)
 				match, _ := regexp.MatchString(patternVersionFolder, dirName)
 				if match {
 					elems := strings.Split(dirName, "/")
 					sVersion := elems[len(elems)-1]
-					iVersion, err := strconv.Atoi(sVersion)
+					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
-						newVersion := &models.Version{
+						currentModel.Versions = append(currentModel.Versions, models.VersionResponse{
 							Version:   int32(iVersion),
 							CreatedAt: time.Now(),
-							ModelName: currentModelName,
 							UpdatedAt: time.Now(),
-							Status:    "offline",
-							Metadata:  models.JSONB{},
-						}
-						createdVersions = append(createdVersions, newVersion)
+							Status:    model.ModelStatus_OFFLINE.String(),
+						})
 					}
-
 				}
 			}
 
@@ -128,32 +128,29 @@ func unzip(filePath string, dstDir string) ([]*models.Model, []*models.Version, 
 			_ = os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
-
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return []*models.Model{}, []*models.Version{}, false
+			return []*models.Model{}, false
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return []*models.Model{}, []*models.Version{}, false
+			return []*models.Model{}, false
 		}
-
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return []*models.Model{}, []*models.Version{}, false
+			return []*models.Model{}, false
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return []*models.Model{}, []*models.Version{}, false
+			return []*models.Model{}, false
 		}
-
 		dstFile.Close()
 		fileInArchive.Close()
 	}
-	return createdModels, createdVersions, true
+	return createdModels, true
 }
 
-func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, err error) {
+func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, modelInfo *models.Model, err error) {
 	firstChunk := true
 	var fp *os.File
 
@@ -161,6 +158,7 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, err
 
 	var tmpFile string
 
+	var uploadedModeInfo models.Model
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
@@ -170,14 +168,23 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, err
 
 			err = errors.Wrapf(err,
 				"failed unexpectadely while reading chunks from stream")
-			return "", err
+			return "", &models.Model{}, err
 		}
 
 		if firstChunk { //first chunk contains file name
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
+			uploadedModeInfo = models.Model{
+				Type:        fileData.Type,
+				Framework:   fileData.Framework,
+				Description: fileData.Description,
+				Optimized:   fileData.Optimized,
+				Visibility:  fileData.Visibility,
+				CVTask:      int(fileData.CvTask),
+				CVVersion:   int(fileData.Version),
+			}
 			if err != nil {
-				return "", err
+				return "", &models.Model{}, err
 			}
 			defer fp.Close()
 
@@ -185,13 +192,13 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, err
 		}
 		err = writeToFp(fp, fileData.Content)
 		if err != nil {
-			return "", err
+			return "", &models.Model{}, err
 		}
 	}
-	return tmpFile, nil
+	return tmpFile, &uploadedModeInfo, nil
 }
 
-func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile string, modelId string, version int32, modelType triton.CVTask, err error) {
+func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile string, modelId string, version int32, err error) {
 	firstChunk := true
 	var fp *os.File
 
@@ -208,18 +215,17 @@ func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile 
 
 			err = errors.Wrapf(err,
 				"failed unexpectadely while reading chunks from stream")
-			return "", "", -1, 0, err
+			return "", "", -1, err
 		}
 
 		if firstChunk { //first chunk contains file name
 			modelId = fileData.Name
 			version = fileData.Version
-			modelType = triton.CVTask(fileData.Type)
 
 			tmpFile = path.Join("/tmp/", uuid.New().String())
 			fp, err = os.Create(tmpFile)
 			if err != nil {
-				return "", "", -1, 0, err
+				return "", "", -1, err
 			}
 			defer fp.Close()
 
@@ -227,10 +233,10 @@ func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile 
 		}
 		err = writeToFp(fp, fileData.Content)
 		if err != nil {
-			return "", "", -1, 0, err
+			return "", "", -1, err
 		}
 	}
-	return tmpFile, modelId, version, modelType, nil
+	return tmpFile, modelId, version, nil
 }
 
 func makeError(statusCode codes.Code, title string, detail string) error {
@@ -328,12 +334,16 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			makeResponse(w, 400, "Internal Error", "Error reading input file")
 		}
 
-		createdModels, createdVersions, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore)
+		var uploadedModelInfo = models.Model{
+			Description: r.FormValue("description"),
+		}
+
+		createdModels, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, &uploadedModelInfo)
 		if !isOk || len(createdModels) == 0 {
 			makeResponse(w, 400, "Add Model Error", "Could not extract zip file")
 		}
 
-		respModels, err := modelService.HandleCreateModelByUpload(username, createdModels, createdVersions)
+		respModels, err := modelService.HandleCreateModelByUpload(username, createdModels)
 		if err != nil {
 			makeResponse(w, 500, "Add Model Error", err.Error())
 		}
@@ -359,23 +369,19 @@ func (s *serviceHandlers) CreateModelByUpload(stream model.Model_CreateModelByUp
 	if err != nil {
 		return err
 	}
-
-	tmpFile, err := saveFile(stream)
+	tmpFile, uploadedModelInfo, err := saveFile(stream)
 	if err != nil {
 		return makeError(400, "Save File Error", err.Error())
 	}
-
 	// extract zip file from tmp to models directory
-	createdModels, createdVersions, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore)
+	createdModels, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, uploadedModelInfo)
 	if !isOk || len(createdModels) == 0 {
 		return makeError(400, "Save File Error", "Could not extract zip file")
 	}
-
-	respModels, err := s.modelService.CreateModelByUpload(username, createdModels, createdVersions)
+	respModels, err := s.modelService.CreateModelByUpload(username, createdModels)
 	if err != nil {
 		return makeError(500, "Add Model Error", err.Error())
 	}
-
 	var res model.CreateModelsResponse
 	res.Models = respModels
 	err = stream.SendAndClose(&res)
@@ -424,11 +430,16 @@ func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelBy
 		return err
 	}
 
-	imageFile, modelName, version, cvTask, err := savePredictInput(stream)
-
+	imageFile, modelName, version, err := savePredictInput(stream)
 	if err != nil {
 		return makeError(500, "PredictModel", "Could not save the file")
 	}
+
+	modelInDB, err := s.modelService.GetModelByName(username, modelName)
+	if err != nil {
+		return makeError(404, "PredictModel", fmt.Sprintf("The model %v do not exist", modelName))
+	}
+	cvTask := model.CVTask(modelInDB.CVTask)
 
 	response, err := s.modelService.PredictModelByUpload(username, modelName, version, imageFile, cvTask)
 
@@ -439,14 +450,18 @@ func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelBy
 	var data = &structpb.Struct{}
 	var b []byte
 	switch cvTask {
-	case triton.Classification:
+	case model.CVTask_CLASSIFICATION:
 		b, err = json.Marshal(response.(*model.ClassificationOutputs))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
-
-	case triton.Detection:
+	case model.CVTask_DETECTION:
 		b, err = json.Marshal(response.(*model.DetectionOutputs))
+		if err != nil {
+			return makeError(500, "PredictModel", err.Error())
+		}
+	default:
+		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
@@ -476,17 +491,12 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		if err != nil {
 			makeResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")
 		}
-		modelType, err := strconv.Atoi(r.FormValue("type"))
-		if err != nil {
-			makeResponse(w, 400, "Wrong parameter type", "Type should be a number greater than or equal 0")
-		}
-		cvTask := triton.CVTask(modelType)
 
 		db := database.GetConnection()
 		modelRepository := repository.NewModelRepository(db)
 		modelService := services.NewModelService(modelRepository)
 
-		_, err = modelService.GetModelByName(username, modelName)
+		modelInDB, err := modelService.GetModelByName(username, modelName)
 		if err != nil {
 			makeResponse(w, 404, "Model not found", "The model not found in server")
 		}
@@ -526,6 +536,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			makeResponse(w, 400, "Internal Error", "Error reading input file")
 		}
 
+		cvTask := model.CVTask(modelInDB.CVTask)
 		response, err := modelService.PredictModelByUpload(username, modelName, int32(modelVersion), tmpFile, cvTask)
 		if err != nil {
 			makeResponse(w, 500, "Error Predict Model", err.Error())

@@ -55,9 +55,17 @@ type Model struct {
 	Author string `json:"author,omitempty"`
 
 	// workspace name where model belong to
-	Namespace string
+	Namespace string `json:"namespace,omitempty"`
+
+	CVTask int `json:"cv_task,omitempty"`
+
+	// Model task version
+	CVVersion int `json:"cv_version,omitempty"`
 
 	FullName string
+
+	// // List of versions used when processing data not store in DB
+	Versions []VersionResponse
 }
 
 type Version struct {
@@ -81,9 +89,6 @@ type Version struct {
 
 	// Model version metadata
 	Metadata JSONB `gorm:"type:jsonb"`
-
-	// Model name not store in DB, only to check when upload model without known about model ID
-	ModelName string
 }
 
 type JSONB map[string]interface{}
