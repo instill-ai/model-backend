@@ -122,6 +122,7 @@ func load(c *cli.Context) error {
 
 func predict(c *cli.Context) error {
 	filePath := c.String("file")
+	modelName := c.String("name")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File image do not exist")
 	}
@@ -163,7 +164,7 @@ func predict(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.PredictModelRequest{
-				Name:    "yolov4",
+				Name:    modelName,
 				Version: 1,
 				Content: buf[:n],
 			})
