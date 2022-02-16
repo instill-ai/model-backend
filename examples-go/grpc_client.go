@@ -17,6 +17,7 @@ import (
 
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
+	cvtask := c.Int("cvtask")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
@@ -65,6 +66,7 @@ func upload(c *cli.Context) error {
 				Framework:   "pytorch",
 				Optimized:   false,
 				Visibility:  "public",
+				CvTask:      model.CVTask(cvtask),
 				Content:     buf[:n],
 			})
 			firstChunk = false
@@ -163,7 +165,6 @@ func predict(c *cli.Context) error {
 			err = streamUploader.Send(&model.PredictModelRequest{
 				Name:    "yolov4",
 				Version: 1,
-				Type:    model.PredictModelRequest_CVTask(c.Int("type")),
 				Content: buf[:n],
 			})
 			if err != nil {
@@ -203,6 +204,19 @@ func main() {
 						FilePath: "./sample-models/yolov4-onnx-cpu.zip",
 						Required: true,
 					},
+					&cli.StringFlag{
+						Name:     "name",
+						Aliases:  []string{"n"},
+						Usage:    "model `NAME`",
+						Required: false,
+					},
+					&cli.IntFlag{
+						Name:        "cvtask",
+						Aliases:     []string{"cv"},
+						Usage:       "model `TASK`",
+						DefaultText: "0",
+						Required:    false,
+					},
 				},
 				Action: func(c *cli.Context) error {
 					return upload(c)
@@ -233,12 +247,6 @@ func main() {
 						Name:     "name",
 						Aliases:  []string{"n"},
 						Usage:    "Model `NAME`",
-						Required: true,
-					},
-					&cli.IntFlag{
-						Name:     "type",
-						Aliases:  []string{"t"},
-						Usage:    "Model `TYPE`",
 						Required: true,
 					},
 					&cli.StringFlag{

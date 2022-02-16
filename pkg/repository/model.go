@@ -44,6 +44,7 @@ var GetModelSelectedFields = []string{
 	`"models"."icon"`,
 	`"models"."visibility"`,
 	`"models"."author"`,
+	`"models"."cv_task"`,
 	`'models' as kind`,
 	`CONCAT(namespace, '/', name) as full_name`,
 }
@@ -52,7 +53,7 @@ func (r *modelRepository) CreateModel(model models.Model) error {
 	l, _ := logger.GetZapLogger()
 
 	// We ignore the full_name column since it's a virtual column
-	if result := r.DB.Model(&models.Model{}).Omit(`"models"."full_name"`).Create(&model); result.Error != nil {
+	if result := r.DB.Model(&models.Model{}).Omit("Versions", "FullName").Create(&model); result.Error != nil {
 		l.Error(fmt.Sprintf("Error occur: %v", result.Error))
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
@@ -65,7 +66,6 @@ func (r *modelRepository) GetModelByName(namespace string, modelName string) (mo
 	if result := r.DB.Model(&models.Model{}).Select(GetModelSelectedFields).Where(map[string]interface{}{"name": modelName, "namespace": namespace}).First(&model); result.Error != nil {
 		return models.Model{}, status.Errorf(codes.NotFound, "The model name %s you specified is not found in namespace %s", modelName, namespace)
 	}
-
 	return model, nil
 }
 
@@ -77,7 +77,6 @@ func (r *modelRepository) ListModels(query models.ListModelQuery) ([]models.Mode
 }
 
 func (r *modelRepository) CreateVersion(version models.Version) error {
-
 	if result := r.DB.Model(&models.Version{}).Omit(`"version"."model_name"`).Create(&version); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
@@ -115,7 +114,7 @@ func (r *modelRepository) UpdateModelMetaData(modelId int32, updatedModel models
 	l, _ := logger.GetZapLogger()
 
 	// We ignore the full_name column since it's a virtual column
-	if result := r.DB.Model(&models.Model{}).Select(GetModelSelectedFields).Where("id", modelId).Updates(&updatedModel); result.Error != nil {
+	if result := r.DB.Model(&models.Model{}).Select(GetModelSelectedFields).Where("id", modelId).Omit("Versions", "FullName").Updates(&updatedModel); result.Error != nil {
 		l.Error(fmt.Sprintf("Error occur: %v", result.Error))
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}

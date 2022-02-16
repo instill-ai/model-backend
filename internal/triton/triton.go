@@ -14,6 +14,7 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/protogen-go/model"
 	"google.golang.org/grpc"
 )
 
@@ -103,7 +104,7 @@ func ModelConfigRequest(client inferenceserver.GRPCInferenceServiceClient, model
 	return modelConfigResponse
 }
 
-func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask CVTask, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask model.CVTask, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -112,7 +113,6 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
 		if modelConfig.Config.Platform == "ensemble" {
-			fmt.Println(".   run ensemble")
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
@@ -138,7 +138,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch cvTask {
-		case Classification:
+		case model.CVTask_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 				Parameters: map[string]*inferenceserver.InferParameter{
@@ -149,13 +149,14 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 					},
 				},
 			})
-		case Detection:
+		case model.CVTask_DETECTION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
 		default:
-			return nil, fmt.Errorf("Unknown CVTask: %v", cvTask)
-
+			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
+				Name: modelMetadata.Outputs[i].Name,
+			})
 		}
 	}
 
@@ -177,7 +178,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	return modelInferResponse, nil
 }
 
-func PreProcess(imageFile string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse, cvTask CVTask) (images [][]byte, err error) {
+func PreProcess(imageFile string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse, cvTask model.CVTask) (images [][]byte, err error) {
 	src, err := imaging.Open(imageFile)
 	if err != nil {
 		return nil, err
@@ -266,25 +267,25 @@ func PostProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
-func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, cvTask CVTask) (interface{}, error) {
+func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, cvTask model.CVTask) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
 	)
 
 	switch cvTask {
-	case Classification:
+	case model.CVTask_CLASSIFICATION:
 		outputs, err = PostProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process classification output: %w", err)
 		}
-	case Detection:
+	case model.CVTask_DETECTION:
 		outputs, err = PostProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
 		}
 	default:
-		return nil, fmt.Errorf("Unknown CV task %v", cvTask)
+		return inferResponse, nil
 	}
 
 	return outputs, nil

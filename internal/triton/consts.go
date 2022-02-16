@@ -14,13 +14,6 @@ const maxImageSizeBytes int = 4 * MB
 
 const classificationTopK int64 = 5
 
-type CVTask int
-
-const (
-	Classification CVTask = iota
-	Detection
-)
-
 type DetectionOutput struct {
 	Boxes  [][][]float32
 	Labels [][]string
