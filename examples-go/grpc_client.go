@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/instill-ai/model-backend/protogen-go/model"
+	"github.com/instill-ai/protogen-go/model"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
