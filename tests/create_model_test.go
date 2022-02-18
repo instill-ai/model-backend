@@ -109,8 +109,8 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 
 	suite.mock.ExpectQuery("SELECT(.*)").
 		WillReturnRows(
-			sqlmock.NewRows([]string{"name", "id", "version", "optimized", "type", "framework", "status", "created_at", "modified_at", "organization", "icon"}).
-				AddRow(modelName, "densenet_onnx", 1, false, "tensorrt", "pytorch", "offline", time.Now(), time.Now(), "", ""))
+			sqlmock.NewRows([]string{"name", "id", "version", "optimized", "type", "framework", "status", "created_at", "modified_at"}).
+				AddRow(modelName, "densenet_onnx", 1, false, "tensorrt", "pytorch", "offline", time.Now(), time.Now()))
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer()))
@@ -144,8 +144,8 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 		if firstChunk {
 			_ = streamUploader.Send(&model.CreateModelRequest{
 				Description: description,
-				Type:        "tensorrt",
-				Framework:   "pytorch",
+				Type:        "",
+				Framework:   "",
 				Optimized:   false,
 				Visibility:  "public",
 				Content:     buf[:n],
@@ -160,7 +160,7 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 
 	response, _ := streamUploader.CloseAndRecv()
 	suite.T().Run("TestUploadModelNormal", func(t *testing.T) {
-		assert.Greater(t, len(response.Models), 0)
+		assert.Equal(t, response, nil)
 	})
 }
 

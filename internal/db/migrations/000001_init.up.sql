@@ -1,34 +1,21 @@
 BEGIN;
 
-CREATE TYPE valid_types AS ENUM ('tensorrt');
-CREATE TYPE valid_frameworks AS ENUM ('pytorch', 'tensorflow');
-CREATE TYPE valid_visibilities AS ENUM ('public', 'private');
 CREATE TYPE valid_statuses AS ENUM ('OFFLINE', 'ONLINE', 'ERROR');
 
 CREATE TABLE IF NOT EXISTS "models" (
   "id" SERIAL PRIMARY KEY,
   "name" varchar(256) NOT NULL,
-  "optimized" bool DEFAULT false NOT NULL,
-  "type" VALID_TYPES NOT NULL,
-  "framework" VALID_FRAMEWORKS NOT NULL,
-  "created_at" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "icon" varchar(512),
-  "organization" varchar(256) NOT NULL,
-  "description" varchar(1024),
-  "visibility" VALID_VISIBILITIES NOT NULL,
-  "author" varchar(128),
+  "optimized" bool DEFAULT false,
+  "type" varchar(48),
+  "framework" varchar(48),
+  "visibility" varchar(48),
   "namespace" varchar(128) NOT NULL
 );
 
 COMMENT ON COLUMN "models"."name" IS 'model name label';
 COMMENT ON COLUMN "models"."type" IS 'model supported type';
 COMMENT ON COLUMN "models"."framework" IS 'model supported framework';
-COMMENT ON COLUMN "models"."icon" IS 'model icon picture url';
-COMMENT ON COLUMN "models"."organization" IS 'organization in which model belong to';
-COMMENT ON COLUMN "models"."description" IS 'model description';
 COMMENT ON COLUMN "models"."visibility" IS 'model public or private';
-COMMENT ON COLUMN "models"."author" IS 'model author';
 
 CREATE TABLE IF NOT EXISTS "versions" (
   "model_id" int NOT NULL,

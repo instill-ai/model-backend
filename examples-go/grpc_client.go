@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/instill-ai/protogen-go/model"
+	"github.com/instill-ai/model-backend/protogen-go/model"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,6 +17,8 @@ import (
 
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
+	modelName := c.String("name")
+	modelVersion := c.Int("version")
 	cvtask := c.Int("cvtask")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
@@ -61,13 +63,11 @@ func upload(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.CreateModelRequest{
-				Description: "Description",
-				Type:        "tensorrt",
-				Framework:   "pytorch",
-				Optimized:   false,
-				Visibility:  "public",
+				Name:        modelName,
+				Description: "YoloV4 for object detection",
 				CvTask:      model.CVTask(cvtask),
 				Content:     buf[:n],
+				Version:     int32(modelVersion),
 			})
 			firstChunk = false
 			if err != nil {
@@ -85,7 +85,7 @@ func upload(c *cli.Context) error {
 
 	res, err := streamUploader.CloseAndRecv()
 	if err != nil {
-		log.Fatalf("Could not get response from server")
+		log.Fatalf("Error %v", err.Error())
 	}
 	fmt.Println("Created model: ", res)
 	return nil
@@ -212,6 +212,13 @@ func main() {
 						Required: false,
 					},
 					&cli.IntFlag{
+						Name:        "version",
+						Aliases:     []string{"v"},
+						Usage:       "model `VERSION`",
+						DefaultText: "1",
+						Required:    false,
+					},
+					&cli.IntFlag{
 						Name:        "cvtask",
 						Aliases:     []string{"cv"},
 						Usage:       "model `TASK`",
@@ -234,6 +241,13 @@ func main() {
 						Usage:    "Model `NAME`",
 						Required: true,
 					},
+					&cli.IntFlag{
+						Name:        "version",
+						Aliases:     []string{"v"},
+						Usage:       "model `VERSION`",
+						DefaultText: "1",
+						Required:    false,
+					},
 				},
 				Action: func(c *cli.Context) error {
 					return load(c)
@@ -249,6 +263,13 @@ func main() {
 						Aliases:  []string{"n"},
 						Usage:    "Model `NAME`",
 						Required: true,
+					},
+					&cli.IntFlag{
+						Name:        "version",
+						Aliases:     []string{"v"},
+						Usage:       "model `VERSION`",
+						DefaultText: "1",
+						Required:    false,
 					},
 					&cli.StringFlag{
 						Name:     "file",
