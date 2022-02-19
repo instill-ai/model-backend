@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/instill-ai/model-backend/configs"
+	mUtils "github.com/instill-ai/model-backend/internal"
 	database "github.com/instill-ai/model-backend/internal/db"
 	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
@@ -341,7 +342,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		if strings.Contains(username, "..") || strings.Contains(username, "/") {
+		if strings.Contains(username, "..") || strings.Contains(username, "/") { //TODO add github username validator
 			makeResponse(w, 422, "Username error", "The user name should not contain special characters")
 			return
 		}
@@ -354,6 +355,17 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", modelName); !match {
 			makeResponse(w, 400, "Invalid parameter", "Model name is invalid")
 			return
+		}
+
+		var cvTask = 0
+		sCVTask := r.FormValue("cvtask")
+		if val, ok := mUtils.CVTasks[sCVTask]; ok {
+			cvTask = val
+		} else {
+			if sCVTask != "" {
+				makeResponse(w, 400, "Parameter Error", "Wrong CV Task value")
+				return
+			}
 		}
 
 		err := r.ParseMultipartForm(4 << 20)
@@ -379,32 +391,21 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			buf.Write(part[:count])
 		}
 		if err != io.EOF {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		tmpFile := path.Join("/tmp", uuid.New().String())
 		fp, err := os.Create(tmpFile)
 		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		err = writeToFp(fp, buf.Bytes())
 		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 
-		sCVTask := r.FormValue("cvtask")
-		var cvTask int64
-		if sCVTask != "" {
-			cvTask, err = strconv.ParseInt(sCVTask, 10, 32)
-			if err != nil {
-				makeResponse(w, 400, "Internal Error", "Error reading input file")
-				return
-			}
-		} else {
-			cvTask = 0
-		}
 		var uploadedModel = models.Model{
 			Versions: []models.Version{},
 			Name:     modelName,
