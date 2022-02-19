@@ -25,22 +25,10 @@ type Model struct {
 	// Model name
 	Name string `json:"name,omitempty"`
 
-	// Option for model optimization (currently not support yet)
-	Optimized bool `json:"optimized,omitempty"`
-
-	// Supportted model type
-	Type string `json:"type,omitempty"`
-
-	// Supportted framework (current only support pytorch)
-	Framework string `json:"framework,omitempty"`
-
-	// Model visibility (public or private)
-	Visibility string `json:"visibility,omitempty"`
-
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	CVTask int `json:"cv_task,omitempty"`
+	CVTask int32 `json:"cv_task,omitempty"`
 
 	// Not stored inn DB, only used for processing
 	FullName     string
@@ -65,6 +53,8 @@ type TModel struct {
 
 	// Model ID
 	ModelId int32 `json:"model_id,omitempty"`
+
+	ModelVersion int32 `json:"model_version,omitempty"`
 
 	Platform string `json:"platform,omitempty"`
 }
@@ -138,23 +128,9 @@ type ModelResponse struct {
 	// Model name
 	Name string
 
-	// Option for model optimization (currently not support yet)
-	Optimized bool
-
-	// Supportted model type
-	Type string
-
-	// Supportted framework (current only support pytorch)
-	Framework string
-
-	// Model visibility (public or private)
-	Visibility string
-
 	FullName string
 
-	CVTask int
+	CVTask string
 
 	Versions []VersionResponse
-
-	Contents []string
 }

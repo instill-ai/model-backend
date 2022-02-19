@@ -24,7 +24,7 @@ $ ./examples-go/quick-download.sh
 
 ```bash
 $ docker-compose up -d
-$ go run ./examples-go/grpc_client.go upload --file sample-models/yolov4-onnx-cpu.zip --name yolov4 --version 1 --cvtask 2  # upload a YOLOv4 model for object detection; note --cvtask 0: undefined 1: image classification task and 2: object detection task 
+$ go run ./examples-go/grpc_client.go upload --file sample-models/yolov4-onnx-cpu.zip --name yolov4 --cvtask 2  # upload a YOLOv4 model for object detection; note --cvtask 0: undefined 1: image classification task and 2: object detection task 
 $ go run ./examples-go/grpc_client.go load -n yolov4 --version 1  # deploy the ensemble model
 $ go run ./examples-go/grpc_client.go predict -n yolov4 --version 1 -f sample-models/dog.jpg # make inference
 ```

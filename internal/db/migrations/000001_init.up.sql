@@ -5,17 +5,11 @@ CREATE TYPE valid_statuses AS ENUM ('OFFLINE', 'ONLINE', 'ERROR');
 CREATE TABLE IF NOT EXISTS "models" (
   "id" SERIAL PRIMARY KEY,
   "name" varchar(256) NOT NULL,
-  "optimized" bool DEFAULT false,
-  "type" varchar(48),
-  "framework" varchar(48),
-  "visibility" varchar(48),
   "namespace" varchar(128) NOT NULL
 );
 
-COMMENT ON COLUMN "models"."name" IS 'model name label';
-COMMENT ON COLUMN "models"."type" IS 'model supported type';
-COMMENT ON COLUMN "models"."framework" IS 'model supported framework';
-COMMENT ON COLUMN "models"."visibility" IS 'model public or private';
+COMMENT ON COLUMN "models"."name" IS 'model name';
+COMMENT ON COLUMN "models"."namespace" IS 'namespace in which model belong to';
 
 CREATE TABLE IF NOT EXISTS "versions" (
   "model_id" int NOT NULL,

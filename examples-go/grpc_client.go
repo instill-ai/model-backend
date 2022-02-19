@@ -18,7 +18,6 @@ import (
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	modelVersion := c.Int("version")
 	cvtask := c.Int("cvtask")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
@@ -67,7 +66,6 @@ func upload(c *cli.Context) error {
 				Description: "YoloV4 for object detection",
 				CvTask:      model.CVTask(cvtask),
 				Content:     buf[:n],
-				Version:     int32(modelVersion),
 			})
 			firstChunk = false
 			if err != nil {
@@ -105,8 +103,9 @@ func load(c *cli.Context) error {
 
 	res, err := client.UpdateModel(ctx, &model.UpdateModelRequest{
 		Model: &model.UpdateModelInfo{
-			Name:   c.String("name"),
-			Status: 1, // 0: unload model from triton server, 1: load model into triton server
+			Name:    c.String("name"),
+			Version: int32(c.Int("version")),
+			Status:  1, // 0: unload model from triton server, 1: load model into triton server
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"name", "status"},
@@ -210,13 +209,6 @@ func main() {
 						Aliases:  []string{"n"},
 						Usage:    "model `NAME`",
 						Required: false,
-					},
-					&cli.IntFlag{
-						Name:        "version",
-						Aliases:     []string{"v"},
-						Usage:       "model `VERSION`",
-						DefaultText: "1",
-						Required:    false,
 					},
 					&cli.IntFlag{
 						Name:        "cvtask",

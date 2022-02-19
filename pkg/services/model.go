@@ -3,12 +3,15 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gogo/status"
+	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/models"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -46,16 +49,11 @@ func createModelResponse(modelInDB models.Model, versions []models.Version, trit
 		}
 	}
 	return &models.ModelResponse{
-		Name:       modelInDB.Name,
-		FullName:   modelInDB.FullName,
-		Id:         modelInDB.Id,
-		Optimized:  modelInDB.Optimized,
-		Framework:  modelInDB.Framework,
-		Type:       modelInDB.Type,
-		Visibility: modelInDB.Visibility,
-		CVTask:     modelInDB.CVTask,
-		Versions:   vers,
-		Contents:   contents,
+		Name:     modelInDB.Name,
+		FullName: modelInDB.FullName,
+		Id:       modelInDB.Id,
+		CVTask:   model.CVTask(modelInDB.CVTask).String(),
+		Versions: vers,
 	}
 }
 
@@ -86,16 +84,11 @@ func createModelInfo(modelInDB models.Model, versions []models.Version, tritonMo
 		}
 	}
 	return &model.ModelInfo{
-		Name:       modelInDB.Name,
-		FullName:   modelInDB.FullName,
-		Id:         modelInDB.Id,
-		Optimized:  modelInDB.Optimized,
-		Framework:  modelInDB.Framework,
-		Type:       modelInDB.Type,
-		Visibility: modelInDB.Visibility,
-		CvTask:     model.CVTask(modelInDB.CVTask),
-		Versions:   vers,
-		Contents:   contents,
+		Name:      modelInDB.Name,
+		Full_Name: modelInDB.FullName,
+		Id:        modelInDB.Id,
+		CvTask:    model.CVTask(modelInDB.CVTask),
+		Versions:  vers,
 	}
 }
 
@@ -114,6 +107,8 @@ type ModelService interface {
 	ListModels(namespace string) ([]*model.ModelInfo, error)
 	UpdateModel(namespace string, updatedInfo *model.UpdateModelRequest) (*model.ModelInfo, error)
 	DeleteModel(namespace string, modelName string) error
+	DeleteModelVersion(namespace string, modelName string, version int32) error
+	GetModelVersionLatest(modelId int32) (models.Version, error)
 }
 
 type modelService struct {
@@ -151,6 +146,10 @@ func (s *modelService) GetModelByName(namespace string, modelName string) (model
 	return s.modelRepository.GetModelByName(namespace, modelName)
 }
 
+func (s *modelService) GetModelVersionLatest(modelId int32) (models.Version, error) {
+	return s.modelRepository.GetModelVersionLatest(modelId)
+}
+
 func (s *modelService) CreateVersion(version models.Version) (models.Version, error) {
 	if err := s.modelRepository.CreateVersion(version); err != nil {
 		return models.Version{}, err
@@ -186,9 +185,9 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 		return nil, makeError(400, "PredictModel", "Model not found")
 	}
 
-	ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id)
+	ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, version)
 	if err != nil {
-		return nil, makeError(400, "PredictModel", "Ensemble model not found")
+		return nil, makeError(400, "PredictModel", "Triton model not found")
 	}
 
 	ensembleModelName := ensembleModel.Name
@@ -291,19 +290,21 @@ func createModel(s *modelService, namespace string, uploadedModel *models.Model)
 		modelInDB = *createdModel
 	}
 
-	versionInDB, err := s.GetModelVersion(modelInDB.Id, uploadedModel.Versions[0].Version)
+	latestVersion, err := s.modelRepository.GetModelVersionLatest(modelInDB.Id)
 	if err == nil {
-		return models.Model{}, []models.Version{}, []models.TModel{}, makeError(409, "CreateModel", fmt.Sprintf("Model with name %v and version %v already existed", uploadedModel.Name, versionInDB.Version))
+		uploadedModel.Versions[0].Version = latestVersion.Version + 1
+	} else {
+		uploadedModel.Versions[0].Version = 1
 	}
-
 	uploadedModel.Versions[0].ModelId = modelInDB.Id
-	_, err = s.CreateVersion(uploadedModel.Versions[0])
+	versionInDB, err := s.CreateVersion(uploadedModel.Versions[0])
 	if err != nil {
 		return models.Model{}, []models.Version{}, []models.TModel{}, makeError(500, "CreateModel", "Could not create model version in DB")
 	}
 	for i := 0; i < len(uploadedModel.TritonModels); i++ {
 		tmodel := uploadedModel.TritonModels[i]
 		tmodel.ModelId = modelInDB.Id
+		tmodel.ModelVersion = versionInDB.Version
 		err = s.modelRepository.CreateTModel(tmodel)
 		if err != nil {
 			return models.Model{}, []models.Version{}, []models.TModel{}, makeError(500, "CreateModel", "Could not create triton model in DB")
@@ -384,9 +385,9 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 		for _, field := range in.UpdateMask.Paths {
 			switch field {
 			case "status":
-				ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id)
+				ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, in.Model.Version)
 				if err != nil {
-					return &model.ModelInfo{}, makeError(404, "UpdateModel Error", "Could not find ensemble model")
+					return &model.ModelInfo{}, makeError(404, "UpdateModel Error", "The model not found in server")
 				}
 				switch in.Model.Status {
 				case model.ModelStatus_ONLINE:
@@ -399,6 +400,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
 						}
+						return &model.ModelInfo{}, makeError(500, "Load Model Error", err.Error())
 					} else {
 						err := s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
@@ -418,6 +420,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 						if err != nil {
 							return &model.ModelInfo{}, makeError(500, "UpdateModel Error", "Could not update model status")
 						}
+						return &model.ModelInfo{}, makeError(500, "Unload Model Error", err.Error())
 					} else {
 						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
 							UpdatedAt: time.Now(),
@@ -457,9 +460,62 @@ func (s *modelService) GetModelMetaData(namespace string, modelName string) (*mo
 }
 
 func (s *modelService) DeleteModel(namespace string, modelName string) error {
-	resModelInDB, err := s.GetModelByName(namespace, modelName)
+	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
 		return makeError(404, "DeleteModel", fmt.Sprintf("Model %v not found in namespace %v", modelName, namespace))
 	}
-	return s.modelRepository.DeleteModel(resModelInDB.Id)
+
+	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
+	if err == nil {
+		for i := 0; i < len(modelVersionsInDB); i++ {
+			ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, modelVersionsInDB[i].Version)
+			if err == nil {
+				_, err = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
+			}
+		}
+		tritonModels, err := s.modelRepository.GetTModels(modelInDB.Id)
+		if err == nil {
+			for i := 0; i < len(tritonModels); i++ {
+				modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
+				_ = os.RemoveAll(modelDir)
+			}
+		}
+	}
+
+	return s.modelRepository.DeleteModel(modelInDB.Id)
+}
+
+func (s *modelService) DeleteModelVersion(namespace string, modelName string, version int32) error {
+	modelInDB, err := s.GetModelByName(namespace, modelName)
+	if err != nil {
+		return makeError(404, "DeleteModelVersion", fmt.Sprintf("Model %v not found in namespace %v", modelName, namespace))
+	}
+	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, int32(version))
+	if err != nil {
+		return makeError(404, "DeleteModelVersion", fmt.Sprintf("Model %v with version %v not found in namespace %v", modelName, version, namespace))
+	}
+
+	ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, modelVersionInDB.Version)
+	if err == nil {
+		_, _ = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
+	}
+
+	tritonModels, err := s.modelRepository.GetTModelVersions(modelInDB.Id, modelVersionInDB.Version)
+	if err == nil {
+		for i := 0; i < len(tritonModels); i++ {
+			modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
+			_ = os.RemoveAll(modelDir)
+		}
+	}
+
+	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
+	if err != nil {
+		return makeError(404, "DeleteModelVersion", fmt.Sprintf("There is no version of model %v", modelName))
+	}
+
+	if len(modelVersionsInDB) > 1 {
+		return s.modelRepository.DeleteModelVersion(modelInDB.Id, modelVersionInDB.Version)
+	} else {
+		return s.modelRepository.DeleteModel(modelInDB.Id)
+	}
 }

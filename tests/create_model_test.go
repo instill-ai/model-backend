@@ -144,10 +144,6 @@ func (suite *UploadModelTestSuite) TestUploadModelNormal() {
 		if firstChunk {
 			_ = streamUploader.Send(&model.CreateModelRequest{
 				Description: description,
-				Type:        "",
-				Framework:   "",
-				Optimized:   false,
-				Visibility:  "public",
 				Content:     buf[:n],
 			})
 			firstChunk = false

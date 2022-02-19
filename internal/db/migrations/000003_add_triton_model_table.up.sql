@@ -6,11 +6,12 @@ CREATE TABLE IF NOT EXISTS "t_models" (
   "version" int NOT NULL,
   "status" VALID_STATUSES NOT NULL,
   "model_id" int NOT NULL,
+  "model_version" int NOT NULL,
   "platform" varchar(256),
-  CONSTRAINT fk_tmodel_model_id
-    FOREIGN KEY ("model_id")
-    REFERENCES models("id")
-    ON DELETE CASCADE
+  CONSTRAINT fk_tmodel_version
+    FOREIGN KEY ("model_id", "model_version")
+    REFERENCES versions("model_id", "version")
+    ON DELETE CASCADE    
 );
 
 COMMENT ON COLUMN "t_models"."name" IS 'triton model name';

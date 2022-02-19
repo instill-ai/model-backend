@@ -40,7 +40,7 @@ services:
             - models:/models
 
     triton-server:
-        image: nvcr.io/nvidia/tritonserver:21.09-py3
+        image: nvcr.io/nvidia/tritonserver:22.01-py3
         command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false
         container_name: triton-server
         volumes:

@@ -217,20 +217,16 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
 			uploadedModel = models.Model{
-				Name:       fileData.Name,
-				Type:       fileData.Type,
-				Framework:  fileData.Framework,
-				Optimized:  fileData.Optimized,
-				Visibility: fileData.Visibility,
-				CVTask:     int(fileData.CvTask),
-				Versions:   []models.Version{},
+				Name:     fileData.Name,
+				CVTask:   int32(fileData.CvTask),
+				Versions: []models.Version{},
 			}
 			uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
-				Version:     int32(fileData.Version),
 				Description: fileData.Description,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 				Status:      model.ModelStatus_OFFLINE.String(),
+				Version:     1,
 			})
 			if err != nil {
 				return "", &models.Model{}, err
@@ -353,18 +349,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		sVersion := r.FormValue("version")
-		if sVersion == "" {
-			makeResponse(w, 400, "Missing parameter", "Version need to be specified")
-			return
-		}
-		iVersion, err := strconv.ParseInt(sVersion, 10, 64)
-		if err != nil {
-			makeResponse(w, 400, "Wrong parameter", "Version need to be a number")
-			return
-		}
-
-		err = r.ParseMultipartForm(4 << 20)
+		err := r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
@@ -402,14 +387,26 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
+		sCVTask := r.FormValue("cvtask")
+		var cvTask int
+		if sCVTask != "" {
+			cvTask, err = strconv.Atoi(sCVTask)
+			if err != nil {
+				makeResponse(w, 400, "Internal Error", "Error reading input file")
+				return
+			}
+		} else {
+			cvTask = 0
+		}
 		var uploadedModel = models.Model{
 			Versions: []models.Version{},
 			Name:     modelName,
+			CVTask:   int32(cvTask),
 		}
 		uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
 			Description: r.FormValue("description"),
-			Version:     int32(iVersion),
 			Status:      model.ModelStatus_OFFLINE.String(),
+			Version:     1,
 		})
 		uploadedModel.Namespace = username
 
@@ -419,10 +416,9 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 
 		modelInDB, err := modelService.GetModelByName(username, uploadedModel.Name)
 		if err == nil {
-			_, err := modelService.GetModelVersion(modelInDB.Id, uploadedModel.Versions[0].Version)
+			latestVersion, err := modelService.GetModelVersionLatest(modelInDB.Id)
 			if err == nil {
-				makeResponse(w, 409, "CreateModel", fmt.Sprintf("Model %v with version %v already existed", uploadedModel.Name, uploadedModel.Versions[0].Version))
-				return
+				uploadedModel.Versions[0].Version = latestVersion.Version + 1
 			}
 		}
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
@@ -464,9 +460,9 @@ func (s *serviceHandlers) CreateModelByUpload(stream model.Model_CreateModelByUp
 	}
 	modelInDB, err := s.modelService.GetModelByName(username, uploadedModel.Name)
 	if err == nil {
-		_, err := s.modelService.GetModelVersion(modelInDB.Id, uploadedModel.Versions[0].Version)
+		latestVersion, err := s.modelService.GetModelVersionLatest(modelInDB.Id)
 		if err == nil {
-			return makeError(409, "CreateModel", fmt.Sprintf("Model %v with version %v already existed", uploadedModel.Name, uploadedModel.Versions[0].Version))
+			uploadedModel.Versions[0].Version = latestVersion.Version + 1
 		}
 	}
 
@@ -662,4 +658,12 @@ func (s *serviceHandlers) DeleteModel(ctx context.Context, in *model.DeleteModel
 		return &emptypb.Empty{}, err
 	}
 	return &emptypb.Empty{}, s.modelService.DeleteModel(username, in.Name)
+}
+
+func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *model.DeleteModelVersionRequest) (*emptypb.Empty, error) {
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+	return &emptypb.Empty{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
 }
