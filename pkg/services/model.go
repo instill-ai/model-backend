@@ -42,12 +42,6 @@ func createModelResponse(modelInDB models.Model, versions []models.Version, trit
 			Status:      versions[i].Status,
 		})
 	}
-	var contents []string
-	for i := 0; i < len(tritonModels); i++ {
-		if len(strings.Split(tritonModels[i].Name, "#")) > 2 {
-			contents = append(contents, strings.Split(tritonModels[i].Name, "#")[2])
-		}
-	}
 	return &models.ModelResponse{
 		Name:     modelInDB.Name,
 		FullName: modelInDB.FullName,
@@ -76,12 +70,6 @@ func createModelInfo(modelInDB models.Model, versions []models.Version, tritonMo
 			UpdatedAt:   timestamppb.New(ver.UpdatedAt),
 			Status:      st,
 		})
-	}
-	var contents []string
-	for i := 0; i < len(tritonModels); i++ {
-		if len(strings.Split(tritonModels[i].Name, "#")) > 2 {
-			contents = append(contents, strings.Split(tritonModels[i].Name, "#")[2])
-		}
 	}
 	return &model.ModelInfo{
 		Name:      modelInDB.Name,
