@@ -17,22 +17,22 @@ import (
 
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
+	modelName := c.String("name")
 	cvtask := c.Int("cvtask")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
 
-	// Create connection to server with timeout 120 secs to ensure file streamed successfully
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(150*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Create connection to server with timeout 300 secs to ensure file streamed successfully
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
 	client := model.NewModelClient(conn)
-
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
-	defer cancel()
 
 	streamUploader, err := client.CreateModelByUpload(ctx)
 	if err != nil {
@@ -61,11 +61,8 @@ func upload(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&model.CreateModelRequest{
-				Description: "Description",
-				Type:        "tensorrt",
-				Framework:   "pytorch",
-				Optimized:   false,
-				Visibility:  "public",
+				Name:        modelName,
+				Description: "YoloV4 for object detection",
 				CvTask:      model.CVTask(cvtask),
 				Content:     buf[:n],
 			})
@@ -85,28 +82,28 @@ func upload(c *cli.Context) error {
 
 	res, err := streamUploader.CloseAndRecv()
 	if err != nil {
-		log.Fatalf("Could not get response from server")
+		log.Fatalf("Error %v", err.Error())
 	}
 	fmt.Println("Created model: ", res)
 	return nil
 }
 
 func load(c *cli.Context) error {
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(150*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
 	client := model.NewModelClient(conn)
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
-	defer cancel()
-
 	res, err := client.UpdateModel(ctx, &model.UpdateModelRequest{
 		Model: &model.UpdateModelInfo{
-			Name:   c.String("name"),
-			Status: 1, // 0: unload model from triton server, 1: load model into triton server
+			Name:    c.String("name"),
+			Version: int32(c.Int("version")),
+			Status:  model.ModelStatus_ONLINE,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"name", "status"},
@@ -123,23 +120,26 @@ func load(c *cli.Context) error {
 func predict(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
+	modelVersion := c.Int("version")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File image do not exist")
 	}
 
 	// Set up a connection to the server.
-	conn, err := grpc.Dial("localhost:8080", grpc.WithTimeout(60*time.Second), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
 	client := model.NewModelClient(conn)
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
-	defer cancel()
-
 	streamUploader, err := client.PredictModelByUpload(ctx)
+	if err != nil {
+		log.Fatalf("Could not create predict stream")
+	}
 	defer streamUploader.CloseSend()
 
 	//create a buffer of chunkSize to be streamed
@@ -165,7 +165,7 @@ func predict(c *cli.Context) error {
 		if firstChunk {
 			err = streamUploader.Send(&model.PredictModelRequest{
 				Name:    modelName,
-				Version: 1,
+				Version: int32(modelVersion),
 				Content: buf[:n],
 			})
 			if err != nil {
@@ -234,6 +234,13 @@ func main() {
 						Usage:    "Model `NAME`",
 						Required: true,
 					},
+					&cli.IntFlag{
+						Name:        "version",
+						Aliases:     []string{"v"},
+						Usage:       "model `VERSION`",
+						DefaultText: "1",
+						Required:    false,
+					},
 				},
 				Action: func(c *cli.Context) error {
 					return load(c)
@@ -249,6 +256,13 @@ func main() {
 						Aliases:  []string{"n"},
 						Usage:    "Model `NAME`",
 						Required: true,
+					},
+					&cli.IntFlag{
+						Name:        "version",
+						Aliases:     []string{"v"},
+						Usage:       "model `VERSION`",
+						DefaultText: "1",
+						Required:    false,
 					},
 					&cli.StringFlag{
 						Name:     "file",

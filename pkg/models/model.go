@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// Thoese model structures used to work with database
+// This is model combined by several Triton model. It include ensemble model
 type Model struct {
 
 	// Model unique ID
@@ -25,51 +25,42 @@ type Model struct {
 	// Model name
 	Name string `json:"name,omitempty"`
 
-	// Option for model optimization (currently not support yet)
-	Optimized bool `json:"optimized,omitempty"`
-
-	// Model description
-	Description string `json:"description,omitempty"`
-
-	// Supportted model type (current only support tensorrt)
-	Type string `json:"type,omitempty"`
-
-	// Supportted framework (current only support pytorch)
-	Framework string `json:"framework,omitempty"`
-
-	// Model created date time
-	CreatedAt time.Time `gorm:"type:timestamp"`
-
-	// Model modified date time
-	UpdatedAt time.Time `gorm:"type:timestamp"`
-
-	// Organization in which model belong to
-	Organization string `json:"organization,omitempty"`
-
-	Icon string `json:"icon,omitempty"`
-
-	// Model visibility (public or private)
-	Visibility string `json:"visibility,omitempty"`
-
-	// model author
-	Author string `json:"author,omitempty"`
-
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	CVTask int `json:"cv_task,omitempty"`
+	CVTask int32 `json:"cv_task,omitempty"`
 
-	// Model task version
-	CVVersion int `json:"cv_version,omitempty"`
+	// Not stored inn DB, only used for processing
+	FullName     string
+	TritonModels []TModel
+	Versions     []Version
+}
 
-	FullName string
+// Triton model
+type TModel struct {
 
-	// // List of versions used when processing data not store in DB
-	Versions []VersionResponse
+	// Triton Model unique ID
+	Id int32 `json:"id,omitempty"`
+
+	// Triton Model name
+	Name string `json:"name,omitempty"`
+
+	// Triton Model version
+	Version int `json:"version,omitempty"`
+
+	// Triton Model status
+	Status string `json:"status,omitempty"`
+
+	// Model ID
+	ModelId int32 `json:"model_id,omitempty"`
+
+	ModelVersion int32 `json:"model_version,omitempty"`
+
+	Platform string `json:"platform,omitempty"`
 }
 
 type Version struct {
-	// Model unique ID
+	// Model ID
 	ModelId int32 `json:"model_id,omitempty"`
 
 	// Model version
@@ -111,62 +102,35 @@ type ListModelQuery struct {
 
 type VersionResponse struct {
 	// Model unique ID
-	ModelId int32 `json:"model_id,omitempty"`
+	ModelId int32
 
 	// Model version
-	Version int32 `json:"version,omitempty"`
+	Version int32
 
 	// Model description
-	Description string `json:"description,omitempty"`
+	Description string
 
 	// Model version created date time
-	CreatedAt time.Time `gorm:"type:timestamp"`
+	CreatedAt time.Time
 
 	// Model version updated date time
-	UpdatedAt time.Time `gorm:"type:timestamp"`
+	UpdatedAt time.Time
 
 	// Model version status
-	Status string `json:"status,omitempty"`
+	Status string
 }
 
 type ModelResponse struct {
 
 	// Model unique ID
-	Id int32 `json:"id,omitempty"`
+	Id int32
 
 	// Model name
-	Name string `json:"name,omitempty"`
-
-	// Option for model optimization (currently not support yet)
-	Optimized bool `json:"optimized,omitempty"`
-
-	// Model description
-	Description string `json:"description,omitempty"`
-
-	// Supportted model type (current only support tensorrt)
-	Type string `json:"type,omitempty"`
-
-	// Supportted framework (current only support pytorch)
-	Framework string `json:"framework,omitempty"`
-
-	// Model created date time
-	CreatedAt time.Time `gorm:"type:timestamp"`
-
-	// Model modified date time
-	UpdatedAt time.Time `gorm:"type:timestamp"`
-
-	// Organization in which model belong to
-	Organization string `json:"organization,omitempty"`
-
-	Icon string `json:"icon,omitempty"`
-
-	// Model visibility (public or private)
-	Visibility string `json:"visibility,omitempty"`
-
-	// model author
-	Author string `json:"author,omitempty"`
+	Name string
 
 	FullName string
+
+	CVTask string
 
 	Versions []VersionResponse
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/instill-ai/model-backend/configs"
+	mUtils "github.com/instill-ai/model-backend/internal"
 	database "github.com/instill-ai/model-backend/internal/db"
 	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
@@ -63,19 +65,37 @@ func writeToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func unzip(filePath string, dstDir string, uploadedModelInfo *models.Model) ([]*models.Model, bool) {
+func updateConfigpModelName(filePath string, oldModelName string, newModelName string) error {
+	regStr := fmt.Sprintf("name:\\s+\"%v\"", oldModelName)
+	nameRegx := regexp.MustCompile(regStr)
+	fileData, _ := ioutil.ReadFile(filePath)
+	fileString := string(fileData)
+	fileString = nameRegx.ReplaceAllString(fileString, fmt.Sprintf("name: \"%v\"", newModelName))
+	fileData = []byte(fileString)
+	return ioutil.WriteFile(filePath, fileData, 0o600)
+}
+
+func isEnsembleConfig(configPath string) bool {
+	fileData, _ := ioutil.ReadFile(configPath)
+	fileString := string(fileData)
+	return strings.Contains(fileString, "platform: \"ensemble\"")
+}
+
+func unzip(filePath string, dstDir string, namespace string, uploadedModel *models.Model) bool {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return []*models.Model{}, false
+		return false
 	}
 	defer archive.Close()
 
-	var createdModels []*models.Model
-	var currentModelName string
-	var currentModel *models.Model
+	var createdTModels []models.TModel
+	var currentNewModelName string
+	var currentOldModelName string
+	var ensembleFilePath string
+	var newModelNameMap = make(map[string]string)
 	for _, f := range archive.File {
-		if strings.Contains(f.Name, "__MACOSX") { // ignore temp directory in macos
+		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
 			continue
 		}
 		filePath := filepath.Join(dstDir, f.Name)
@@ -83,7 +103,7 @@ func unzip(filePath string, dstDir string, uploadedModelInfo *models.Model) ([]*
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return []*models.Model{}, false
+			return false
 		}
 		if f.FileInfo().IsDir() {
 			dirName := f.Name
@@ -91,63 +111,85 @@ func unzip(filePath string, dstDir string, uploadedModelInfo *models.Model) ([]*
 				dirName = dirName[:len(dirName)-1]
 			}
 			if !strings.Contains(dirName, "/") { // top directory model
-				currentModelName = dirName
-				currentModel = &models.Model{
-					Name:        dirName,
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
-					Type:        uploadedModelInfo.Type,
-					Framework:   uploadedModelInfo.Framework,
-					Optimized:   false,
-					Icon:        "",
-					Visibility:  "public",
-					Description: uploadedModelInfo.Description,
-					Versions:    []models.VersionResponse{},
-					CVTask:      uploadedModelInfo.CVTask,
-				}
-				createdModels = append(createdModels, currentModel)
+				currentOldModelName = dirName
+				dirName = fmt.Sprintf("%v#%v#%v#%v", namespace, uploadedModel.Name, dirName, uploadedModel.Versions[0].Version)
+				currentNewModelName = dirName
+				newModelNameMap[currentOldModelName] = currentNewModelName
 			} else { // version folder
-				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentModelName)
+				dirName = strings.Replace(dirName, currentOldModelName, currentNewModelName, 1)
+				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentNewModelName)
 				match, _ := regexp.MatchString(patternVersionFolder, dirName)
 				if match {
 					elems := strings.Split(dirName, "/")
 					sVersion := elems[len(elems)-1]
 					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
-						currentModel.Versions = append(currentModel.Versions, models.VersionResponse{
-							Version:   int32(iVersion),
-							CreatedAt: time.Now(),
-							UpdatedAt: time.Now(),
-							Status:    model.ModelStatus_OFFLINE.String(),
+						createdTModels = append(createdTModels, models.TModel{
+							Name:    currentNewModelName, // Triton model name
+							Status:  model.ModelStatus_OFFLINE.String(),
+							Version: int(iVersion),
 						})
 					}
 				}
 			}
-
-			fmt.Println("creating directory... ", filePath)
+			filePath := filepath.Join(dstDir, dirName)
 			_ = os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return []*models.Model{}, false
+
+		// Update triton folder into format {model_name}#{task_name}#{task_version}
+		subStrs := strings.Split(f.Name, "/")
+		if len(subStrs) < 1 {
+			continue
 		}
+		// Triton modelname is folder name
+		oldModelName := subStrs[0]
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", namespace, uploadedModel.Name, subStrs[0], uploadedModel.Versions[0].Version)
+		newModelName := subStrs[0]
+		filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return []*models.Model{}, false
+			return false
 		}
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return []*models.Model{}, false
+			return false
 		}
-
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return []*models.Model{}, false
+			return false
 		}
 		dstFile.Close()
 		fileInArchive.Close()
+		// Update ModelName in config.pbtxt
+		fileExtension := filepath.Ext(filePath)
+		if fileExtension == ".pbtxt" {
+			if isEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+			}
+			err = updateConfigpModelName(filePath, oldModelName, newModelName)
+			if err != nil {
+				return false
+			}
+		}
 	}
-	return createdModels, true
+	// Update ModelName in ensemble model config file
+	if ensembleFilePath != "" {
+		for oldModelName, newModelName := range newModelNameMap {
+			err = updateConfigpModelName(ensembleFilePath, oldModelName, newModelName)
+			if err != nil {
+				return false
+			}
+		}
+		for i := 0; i < len(createdTModels); i++ {
+			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
+				createdTModels[i].Platform = "ensemble"
+				break
+			}
+		}
+	}
+	uploadedModel.TritonModels = createdTModels
+	return true
 }
 
 func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, modelInfo *models.Model, err error) {
@@ -158,7 +200,7 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 
 	var tmpFile string
 
-	var uploadedModeInfo models.Model
+	var uploadedModel models.Model
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
@@ -174,15 +216,18 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 		if firstChunk { //first chunk contains file name
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
-			uploadedModeInfo = models.Model{
-				Type:        fileData.Type,
-				Framework:   fileData.Framework,
-				Description: fileData.Description,
-				Optimized:   fileData.Optimized,
-				Visibility:  fileData.Visibility,
-				CVTask:      int(fileData.CvTask),
-				CVVersion:   int(fileData.Version),
+			uploadedModel = models.Model{
+				Name:     fileData.Name,
+				CVTask:   int32(fileData.CvTask),
+				Versions: []models.Version{},
 			}
+			uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
+				Description: fileData.Description,
+				CreatedAt:   time.Now(),
+				UpdatedAt:   time.Now(),
+				Status:      model.ModelStatus_OFFLINE.String(),
+				Version:     1,
+			})
 			if err != nil {
 				return "", &models.Model{}, err
 			}
@@ -195,7 +240,7 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 			return "", &models.Model{}, err
 		}
 	}
-	return tmpFile, &uploadedModeInfo, nil
+	return tmpFile, &uploadedModel, nil
 }
 
 func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile string, modelId string, version int32, err error) {
@@ -249,6 +294,7 @@ func makeError(statusCode codes.Code, title string, detail string) error {
 }
 
 func makeResponse(w http.ResponseWriter, status int, title string, detail string) {
+	fmt.Println(" makeResponse ", status, title, detail, w)
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(status)
 	obj, _ := json.Marshal(models.Error{
@@ -287,28 +333,53 @@ func (s *serviceHandlers) Readiness(ctx context.Context, pb *emptypb.Empty) (*mo
 }
 
 func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-
+	fmt.Println("HandleCreateModelByUpload")
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
 		username := r.Header.Get("Username")
 		if username == "" {
 			makeResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			return
 		}
 
-		db := database.GetConnection()
-		modelRepository := repository.NewModelRepository(db)
-		modelService := services.NewModelService(modelRepository)
+		if strings.Contains(username, "..") || strings.Contains(username, "/") { //TODO add github username validator
+			makeResponse(w, 422, "Username error", "The user name should not contain special characters")
+			return
+		}
+
+		modelName := r.FormValue("name")
+		if modelName == "" {
+			makeResponse(w, 400, "Missing parameter", "Model name need to be specified")
+			return
+		}
+		if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", modelName); !match {
+			makeResponse(w, 400, "Invalid parameter", "Model name is invalid")
+			return
+		}
+
+		var cvTask = 0
+		sCVTask := r.FormValue("cvtask")
+		if val, ok := mUtils.CVTasks[sCVTask]; ok {
+			cvTask = val
+		} else {
+			if sCVTask != "" {
+				makeResponse(w, 400, "Parameter Error", "Wrong CV Task value")
+				return
+			}
+		}
 
 		err := r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
+			return
 		}
-
 		file, _, err := r.FormFile("content")
 		if err != nil {
 			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
+			return
 		}
 		defer file.Close()
+
 		reader := bufio.NewReader(file)
 		buf := bytes.NewBuffer(make([]byte, 0))
 		part := make([]byte, 1024)
@@ -320,37 +391,59 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			buf.Write(part[:count])
 		}
 		if err != io.EOF {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
+			return
 		}
-
 		tmpFile := path.Join("/tmp", uuid.New().String())
 		fp, err := os.Create(tmpFile)
 		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
+			return
 		}
-
 		err = writeToFp(fp, buf.Bytes())
 		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeResponse(w, 400, "File Error", "Error reading input file")
+			return
 		}
 
-		var uploadedModelInfo = models.Model{
+		var uploadedModel = models.Model{
+			Versions: []models.Version{},
+			Name:     modelName,
+			CVTask:   int32(cvTask),
+		}
+		uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
 			Description: r.FormValue("description"),
-		}
+			Status:      model.ModelStatus_OFFLINE.String(),
+			Version:     1,
+		})
+		uploadedModel.Namespace = username
 
-		createdModels, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, &uploadedModelInfo)
-		if !isOk || len(createdModels) == 0 {
+		db := database.GetConnection()
+		modelRepository := repository.NewModelRepository(db)
+		modelService := services.NewModelService(modelRepository)
+
+		modelInDB, err := modelService.GetModelByName(username, uploadedModel.Name)
+		if err == nil {
+			latestVersion, err := modelService.GetModelVersionLatest(modelInDB.Id)
+			if err == nil {
+				uploadedModel.Versions[0].Version = latestVersion.Version + 1
+			}
+		}
+		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
+		if !isOk {
 			makeResponse(w, 400, "Add Model Error", "Could not extract zip file")
+			return
 		}
 
-		respModels, err := modelService.HandleCreateModelByUpload(username, createdModels)
+		resModel, err := modelService.HandleCreateModelByUpload(username, &uploadedModel)
 		if err != nil {
 			makeResponse(w, 500, "Add Model Error", err.Error())
+			return
 		}
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		ret, _ := json.Marshal(respModels)
+		ret, _ := json.Marshal(resModel)
 		_, _ = w.Write(ret)
 	} else {
 		w.Header().Add("Content-Type", "application/json+problem")
@@ -358,9 +451,9 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 	}
 }
 
-func (s *serviceHandlers) CreateModel(ctx context.Context, in *model.CreateModelRequest) (*model.CreateModelsResponse, error) {
+func (s *serviceHandlers) CreateModel(ctx context.Context, in *model.CreateModelRequest) (*model.ModelInfo, error) {
 	//TODO support url and base64 content
-	return &model.CreateModelsResponse{}, nil
+	return &model.ModelInfo{}, nil
 }
 
 // AddModel - upload a model to the model server
@@ -369,22 +462,29 @@ func (s *serviceHandlers) CreateModelByUpload(stream model.Model_CreateModelByUp
 	if err != nil {
 		return err
 	}
-	tmpFile, uploadedModelInfo, err := saveFile(stream)
+	tmpFile, uploadedModel, err := saveFile(stream)
 	if err != nil {
 		return makeError(400, "Save File Error", err.Error())
 	}
+	modelInDB, err := s.modelService.GetModelByName(username, uploadedModel.Name)
+	if err == nil {
+		latestVersion, err := s.modelService.GetModelVersionLatest(modelInDB.Id)
+		if err == nil {
+			uploadedModel.Versions[0].Version = latestVersion.Version + 1
+		}
+	}
+
+	uploadedModel.Namespace = username
 	// extract zip file from tmp to models directory
-	createdModels, isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, uploadedModelInfo)
-	if !isOk || len(createdModels) == 0 {
+	isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
+	if !isOk {
 		return makeError(400, "Save File Error", "Could not extract zip file")
 	}
-	respModels, err := s.modelService.CreateModelByUpload(username, createdModels)
+	resModel, err := s.modelService.CreateModelByUpload(username, uploadedModel)
 	if err != nil {
-		return makeError(500, "Add Model Error", err.Error())
+		return err
 	}
-	var res model.CreateModelsResponse
-	res.Models = respModels
-	err = stream.SendAndClose(&res)
+	err = stream.SendAndClose(resModel)
 	if err != nil {
 		return makeError(500, "Add Model Error", err.Error())
 	}
@@ -487,7 +587,8 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			makeResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
 		}
 
-		modelVersion, err := strconv.Atoi(r.FormValue("version"))
+		modelVersion, err := strconv.ParseInt(r.FormValue("version"), 10, 32)
+
 		if err != nil {
 			makeResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")
 		}
@@ -561,6 +662,17 @@ func (s *serviceHandlers) GetModel(ctx context.Context, in *model.GetModelReques
 }
 
 func (s *serviceHandlers) DeleteModel(ctx context.Context, in *model.DeleteModelRequest) (*emptypb.Empty, error) {
-	//TODO support url and base64 content
-	return &emptypb.Empty{}, makeError(500, "DeleteModel", "Not supported yet")
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+	return &emptypb.Empty{}, s.modelService.DeleteModel(username, in.Name)
+}
+
+func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *model.DeleteModelVersionRequest) (*emptypb.Empty, error) {
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &emptypb.Empty{}, err
+	}
+	return &emptypb.Empty{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
 }
