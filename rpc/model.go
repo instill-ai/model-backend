@@ -132,7 +132,6 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 				}
 			}
 			filePath := filepath.Join(dstDir, dirName)
-			fmt.Println("creating directory... ", dirName, filePath)
 			_ = os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
@@ -335,7 +334,6 @@ func (s *serviceHandlers) Readiness(ctx context.Context, pb *emptypb.Empty) (*mo
 func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	fmt.Println("HandleCreateModelByUpload")
 	contentType := r.Header.Get("Content-Type")
-	fmt.Println("HandleCreateModelByUpload contentType ", contentType)
 	if strings.Contains(contentType, "multipart/form-data") {
 		username := r.Header.Get("Username")
 		if username == "" {
@@ -343,9 +341,18 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
+		if strings.Contains(username, "..") || strings.Contains(username, "/") {
+			makeResponse(w, 422, "Username error", "The user name should not contain special characters")
+			return
+		}
+
 		modelName := r.FormValue("name")
 		if modelName == "" {
 			makeResponse(w, 400, "Missing parameter", "Model name need to be specified")
+			return
+		}
+		if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", modelName); !match {
+			makeResponse(w, 400, "Invalid parameter", "Model name is invalid")
 			return
 		}
 
@@ -388,9 +395,9 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		}
 
 		sCVTask := r.FormValue("cvtask")
-		var cvTask int
+		var cvTask int64
 		if sCVTask != "" {
-			cvTask, err = strconv.Atoi(sCVTask)
+			cvTask, err = strconv.ParseInt(sCVTask, 10, 32)
 			if err != nil {
 				makeResponse(w, 400, "Internal Error", "Error reading input file")
 				return
@@ -579,7 +586,8 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			makeResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
 		}
 
-		modelVersion, err := strconv.Atoi(r.FormValue("version"))
+		modelVersion, err := strconv.ParseInt(r.FormValue("version"), 10, 32)
+
 		if err != nil {
 			makeResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")
 		}

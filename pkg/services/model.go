@@ -458,7 +458,7 @@ func (s *modelService) DeleteModel(namespace string, modelName string) error {
 		for i := 0; i < len(modelVersionsInDB); i++ {
 			ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, modelVersionsInDB[i].Version)
 			if err == nil {
-				_, err = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
+				_, _ = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
 			}
 		}
 		tritonModels, err := s.modelRepository.GetTModels(modelInDB.Id)
