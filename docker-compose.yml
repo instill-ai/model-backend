@@ -13,7 +13,9 @@ services:
             timeout: 20s
             retries: 10
     model-backend-migrate:
-        image: instill/model-backend:latest
+        build:
+            context: .
+        image: instill/model-backend:dev 
         container_name: model-backend-migrate
         depends_on:
             database:
@@ -24,7 +26,9 @@ services:
         entrypoint: ./model-backend-migrate
 
     model-backend:
-        image: instill/model-backend:latest
+        build:
+            context: .
+        image: instill/model-backend:dev 
         container_name: model-backend
         depends_on:
             triton-server:
