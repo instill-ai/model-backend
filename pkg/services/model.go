@@ -170,41 +170,42 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 	// Triton model name is change into
 	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
-		return nil, makeError(400, "PredictModel", "Model not found")
+		return nil, makeError(404, "PredictModel", "Model not found")
 	}
 
 	ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, version)
 	if err != nil {
-		return nil, makeError(400, "PredictModel", "Triton model not found")
+		return nil, makeError(404, "PredictModel", "Triton model not found")
 	}
 
 	ensembleModelName := ensembleModel.Name
-	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(version))
+	ensembleModelVersion := ensembleModel.Version
+	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
-		return nil, makeError(400, "PredictModel", "Model is offline")
+		return nil, makeError(422, "PredictModel", "Model is offline")
 	}
-	modelConfigResponse := triton.ModelConfigRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(version))
+	modelConfigResponse := triton.ModelConfigRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
-		return nil, makeError(400, "PredictModel", "Model config not found")
+		return nil, makeError(404, "PredictModel", "Model config not found")
 	}
 	input, err := triton.PreProcess(filePath, modelMetadataResponse, modelConfigResponse, cvTask)
 	if err != nil {
-		return nil, makeError(400, "PredictModel", err.Error())
+		return nil, makeError(422, "PredictModel", err.Error())
 	}
 	// /* We use a simple model that takes 2 input tensors of 16 integers
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
-	inferResponse, err := triton.ModelInferRequest(triton.TritonClient, cvTask, input, ensembleModelName, fmt.Sprint(version), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := triton.ModelInferRequest(triton.TritonClient, cvTask, input, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
 	if err != nil {
-		return nil, makeError(500, "PredictModel InferRequest", err.Error())
+		return nil, makeError(422, "PredictModel InferRequest", err.Error())
 	}
 	// /* We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
 	// calculated by the model. */
 	postprocessResponse, err := triton.PostProcess(inferResponse, modelMetadataResponse, cvTask)
 	if err != nil {
-		return nil, makeError(500, "PredictModel PostProcess", err.Error())
+		return nil, makeError(422, "PredictModel PostProcess", err.Error())
 	}
 	switch cvTask {
 	case model.CVTask_CLASSIFICATION:
@@ -213,11 +214,11 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
 			if len(clsResSplit) != 3 {
-				return nil, makeError(500, "PredictModel", "Unable to decode inference output")
+				return nil, makeError(422, "PredictModel", "Unable to decode inference output")
 			}
 			score, err := strconv.ParseFloat(clsResSplit[0], 32)
 			if err != nil {
-				return nil, makeError(500, "PredictModel", "Unable to decode inference output")
+				return nil, makeError(422, "PredictModel", "Unable to decode inference output")
 			}
 			clsOutput := model.ClassificationOutput{
 				Category: clsResSplit[2],
