@@ -141,15 +141,15 @@ func parseImageFormDataInputsToBytes(r *http.Request) (imgsBytes [][]byte, imgsM
 	for _, content := range inputs {
 		file, err := content.Open()
 		if err != nil {
-			log.Printf("Unable to open file for image %v. %v", content.Filename, err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to open file for image %v", content.Filename)
+			log.Printf("Unable to open file for image %v", err) // The internal error err only appears in the logs, because it's only useful to us
+			return nil, nil, fmt.Errorf("Unable to open file for image")
 		}
 
 		buff := new(bytes.Buffer) // pointer
 		numBytes, err := buff.ReadFrom(file)
 		if err != nil {
-			log.Printf("Unable to read content body from image %v. %v", content.Filename, err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to read content body from image %v", content.Filename)
+			log.Printf("Unable to read content body from image %v", err) // The internal error err only appears in the logs, because it's only useful to us
+			return nil, nil, fmt.Errorf("Unable to read content body from image")
 		}
 
 		if numBytes > int64(consts.MaxImageSizeBytes) {
@@ -163,8 +163,8 @@ func parseImageFormDataInputsToBytes(r *http.Request) (imgsBytes [][]byte, imgsM
 
 		img, format, err := image.Decode(buff)
 		if err != nil {
-			log.Printf("Unable to decode image: %v. %v", content.Filename, err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to decode image %v", content.Filename)
+			log.Printf("Unable to decode image: %v", err) // The internal error err only appears in the logs, because it's only useful to us
+			return nil, nil, fmt.Errorf("Unable to decode image")
 		}
 
 		// Encode into jpeg to remove alpha channel (hack)
@@ -172,8 +172,8 @@ func parseImageFormDataInputsToBytes(r *http.Request) (imgsBytes [][]byte, imgsM
 		buff = new(bytes.Buffer)
 		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 		if err != nil {
-			log.Printf("Unable to process image: %v. %v", content.Filename, err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to process image %v", content.Filename)
+			log.Printf("Unable to process image: %v", err) // The internal error err only appears in the logs, because it's only useful to us
+			return nil, nil, fmt.Errorf("Unable to process image")
 		}
 
 		imgsBytes = append(imgsBytes, buff.Bytes())

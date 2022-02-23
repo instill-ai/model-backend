@@ -74,7 +74,7 @@ type ModelService interface {
 	GetModelByName(namespace string, modelName string) (models.Model, error)
 	GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error)
 	CreateVersion(version models.Version) (models.Version, error)
-	UpdateModelVersions(modelId int32, version models.Version) error
+	UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error
 	UpdateModelMetaData(namespace string, updatedModel models.Model) (*model.ModelInfo, error)
 	GetModelVersion(modelId int32, version int32) (models.Version, error)
 	GetModelVersions(modelId int32) ([]models.Version, error)
@@ -139,8 +139,8 @@ func (s *modelService) CreateVersion(version models.Version) (models.Version, er
 	}
 }
 
-func (s *modelService) UpdateModelVersions(modelId int32, version models.Version) error {
-	return s.modelRepository.UpdateModelVersions(modelId, version)
+func (s *modelService) UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error {
+	return s.modelRepository.UpdateModelVersion(modelId, modelVersion, versionInfo)
 }
 
 func (s *modelService) GetModelVersion(modelId int32, version int32) (models.Version, error) {
@@ -367,7 +367,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 				case model.ModelStatus_ONLINE:
 					_, err = triton.LoadModelRequest(triton.TritonClient, ensembleModel.Name)
 					if err != nil {
-						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
 							UpdatedAt: time.Now(),
 							Status:    model.ModelStatus_ERROR.String(),
 						})
@@ -376,7 +376,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 						}
 						return &model.ModelInfo{}, err
 					} else {
-						err := s.UpdateModelVersions(modelInDB.Id, models.Version{
+						err := s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
 							UpdatedAt: time.Now(),
 							Status:    model.ModelStatus_ONLINE.String(),
 						})
@@ -387,7 +387,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 				case model.ModelStatus_OFFLINE:
 					_, err = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
 					if err != nil {
-						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
 							UpdatedAt: time.Now(),
 							Status:    model.ModelStatus_ERROR.String(),
 						})
@@ -396,7 +396,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 						}
 						return &model.ModelInfo{}, err
 					} else {
-						err = s.UpdateModelVersions(modelInDB.Id, models.Version{
+						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
 							UpdatedAt: time.Now(),
 							Status:    model.ModelStatus_OFFLINE.String(),
 						})

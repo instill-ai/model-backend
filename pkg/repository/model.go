@@ -15,7 +15,7 @@ type ModelRepository interface {
 	GetModelByName(namespace string, modelName string) (models.Model, error)
 	ListModels(query models.ListModelQuery) ([]models.Model, error)
 	CreateVersion(version models.Version) error
-	UpdateModelVersions(modelId int32, version models.Version) error
+	UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error
 	GetModelVersion(modelId int32, version int32) (models.Version, error)
 	GetModelVersions(modelId int32) ([]models.Version, error)
 	UpdateModelMetaData(modelId int32, updatedModel models.Model) error
@@ -81,9 +81,9 @@ func (r *modelRepository) CreateVersion(version models.Version) error {
 	return nil
 }
 
-func (r *modelRepository) UpdateModelVersions(modelId int32, version models.Version) error {
+func (r *modelRepository) UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error {
 
-	if result := r.DB.Model(&models.Version{}).Omit(`"version"."model_name"`).Where("model_id", modelId).Updates(&version); result.Error != nil {
+	if result := r.DB.Model(&models.Version{}).Omit(`"version"."model_name"`).Where(map[string]interface{}{"model_id": modelId, "version": modelVersion}).Updates(&versionInfo); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 
