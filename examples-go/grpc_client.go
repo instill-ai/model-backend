@@ -23,8 +23,8 @@ func upload(c *cli.Context) error {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
 
-	// Create connection to server with timeout 300 secs to ensure file streamed successfully
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	// Create connection to server with timeout 1000 secs to ensure file streamed successfully
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -89,7 +89,7 @@ func upload(c *cli.Context) error {
 }
 
 func load(c *cli.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -126,7 +126,7 @@ func predict(c *cli.Context) error {
 	}
 
 	// Set up a connection to the server.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
