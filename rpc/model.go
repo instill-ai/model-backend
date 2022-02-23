@@ -625,7 +625,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		modelVersion, err := strconv.ParseInt(r.FormValue("version"), 10, 32)
+		modelVersion, err := strconv.ParseInt(pathParams["version"], 10, 32)
 
 		if err != nil {
 			makeJsonResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")

@@ -17,7 +17,7 @@ Table of Contents:
 - [sample models](https://artifacts.instill.tech/visual-data-preparation/sample-models/yolov4-onnx-cpu.zip) example CPU models running in Triton server
 To download those dependencies, you could run quick-download.sh
 ```bash
-$ ./examples-go/quick-download.sh
+$ ./scripts/quick-download.sh
 ```
 
 ## Quick start

@@ -162,7 +162,7 @@ func main() {
 	)
 
 	// Register custom route for  GET /hello/{name}
-	if err := gwS.HandlePath("POST", "/models/{name}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
+	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
 		panic(err)
 	}
 
