@@ -419,14 +419,18 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
 		if !isOk {
 			makeJsonResponse(w, 400, "Add Model Error", "Could not extract zip file")
+			database.Close(db)
 			return
 		}
 
 		resModel, err := modelService.HandleCreateModelByUpload(username, &uploadedModel)
 		if err != nil {
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
+			database.Close(db)
 			return
 		}
+
+		database.Close(db)
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
@@ -638,18 +642,21 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelInDB, err := modelService.GetModelByName(username, modelName)
 		if err != nil {
 			makeJsonResponse(w, 404, "Model not found", "The model not found in server")
+			database.Close(db)
 			return
 		}
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
+			database.Close(db)
 			return
 		}
 
 		imgsBytes, _, err := parseImageFormDataInputsToBytes(r)
 		if err != nil {
 			makeJsonResponse(w, 400, "File Input Error", err.Error())
+			database.Close(db)
 			return
 		}
 
@@ -657,8 +664,11 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		response, err := modelService.PredictModelByUpload(username, modelName, int32(modelVersion), imgsBytes, cvTask)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			database.Close(db)
 			return
 		}
+
+		database.Close(db)
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)

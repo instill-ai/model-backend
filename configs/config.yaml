@@ -22,7 +22,7 @@ database:
   version: 3
   pool:
     idleconnections: 5
-    maxconnections: 10
+    maxconnections: 30
     connlifetime: 30 # In minutes
 tritonserver:
   grpcuri: 0.0.0.0:8001
