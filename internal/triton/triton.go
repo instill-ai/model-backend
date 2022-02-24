@@ -3,15 +3,11 @@
 package triton
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"image"
-	"image/jpeg"
 	"log"
 	"time"
 
-	"github.com/disintegration/imaging"
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/protogen-go/model"
@@ -110,13 +106,14 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	defer cancel()
 
 	// Create request input tensors
+	batchSize := int64(len(rawInput))
 	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
 		if modelConfig.Config.Platform == "ensemble" {
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
-				Shape:    []int64{1, 1},
+				Shape:    []int64{batchSize, 1},
 			})
 		} else {
 			c, h, w := ParseModel(modelMetadata, modelConfig)
@@ -173,39 +170,10 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	modelInferResponse, err := client.ModelInfer(ctx, &modelInferRequest)
 	if err != nil {
 		log.Printf("Error processing InferRequest: %v", err)
+		return &inferenceserver.ModelInferResponse{}, err
 	}
 
 	return modelInferResponse, nil
-}
-
-func PreProcess(imageFile string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse, cvTask model.CVTask) (images [][]byte, err error) {
-	src, err := imaging.Open(imageFile)
-	if err != nil {
-		return nil, err
-	}
-
-	var img image.Image
-	if modelMetadata.Inputs[0].Datatype == "BYTES" { // "BYTES" for "TYPE_STRING", it will be have preprocess model, so no need resize input
-		img = src
-	} else {
-		c, h, w := ParseModel(modelMetadata, modelConfig)
-		if c == 1 {
-			src = imaging.Grayscale(src)
-		}
-
-		img = imaging.Resize(src, int(w), int(h), imaging.Lanczos)
-	}
-
-	buff := new(bytes.Buffer)
-	err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
-	if err != nil {
-		return nil, err
-	}
-
-	var imgsBytes [][]byte
-	imgsBytes = append(imgsBytes, buff.Bytes())
-
-	return imgsBytes, nil
 }
 
 func PostProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {

@@ -89,6 +89,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handl
 
 func main() {
 	logger, _ := logger.GetZapLogger()
+	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
 	if err := configs.Init(); err != nil {
 		logger.Fatal(err.Error())
@@ -162,7 +163,7 @@ func main() {
 	)
 
 	// Register custom route for  GET /hello/{name}
-	if err := gwS.HandlePath("POST", "/models/{name}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
+	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
 		panic(err)
 	}
 

@@ -13,8 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -a -o /model-backen
 RUN --mount=type=cache,target=/root/.cache/go-build go build -a -o /model-backend-migrate ./migrate
 
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4 AS runtime
-# FROM gcr.io/distroless/base AS runtime
+FROM gcr.io/distroless/base AS runtime
 
 ENV GIN_MODE=release
 WORKDIR /model-backend

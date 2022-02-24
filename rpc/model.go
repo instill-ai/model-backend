@@ -243,13 +243,11 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 	return tmpFile, &uploadedModel, nil
 }
 
-func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile string, modelId string, version int32, err error) {
-	firstChunk := true
-	var fp *os.File
-
+func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageByte []byte, modelId string, version int32, err error) {
+	var firstChunk = true
 	var fileData *model.PredictModelRequest
 
-	var tmpFile string
+	var fileContent []byte
 
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
@@ -259,29 +257,19 @@ func savePredictInput(stream model.Model_PredictModelByUploadServer) (imageFile 
 			}
 
 			err = errors.Wrapf(err,
-				"failed unexpectadely while reading chunks from stream")
-			return "", "", -1, err
+				"failed while reading chunks from stream")
+			return []byte{}, "", -1, err
 		}
 
 		if firstChunk { //first chunk contains file name
 			modelId = fileData.Name
 			version = fileData.Version
 
-			tmpFile = path.Join("/tmp/", uuid.New().String())
-			fp, err = os.Create(tmpFile)
-			if err != nil {
-				return "", "", -1, err
-			}
-			defer fp.Close()
-
 			firstChunk = false
 		}
-		err = writeToFp(fp, fileData.Content)
-		if err != nil {
-			return "", "", -1, err
-		}
+		fileContent = append(fileContent, fileData.Content...)
 	}
-	return tmpFile, modelId, version, nil
+	return fileContent, modelId, version, nil
 }
 
 func makeError(statusCode codes.Code, title string, detail string) error {
@@ -293,8 +281,7 @@ func makeError(statusCode codes.Code, title string, detail string) error {
 	return status.Error(statusCode, string(data))
 }
 
-func makeResponse(w http.ResponseWriter, status int, title string, detail string) {
-	fmt.Println(" makeResponse ", status, title, detail, w)
+func makeJsonResponse(w http.ResponseWriter, status int, title string, detail string) {
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(status)
 	obj, _ := json.Marshal(models.Error{
@@ -338,22 +325,22 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 	if strings.Contains(contentType, "multipart/form-data") {
 		username := r.Header.Get("Username")
 		if username == "" {
-			makeResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
 			return
 		}
 
 		if strings.Contains(username, "..") || strings.Contains(username, "/") { //TODO add github username validator
-			makeResponse(w, 422, "Username error", "The user name should not contain special characters")
+			makeJsonResponse(w, 422, "Username error", "The user name should not contain special characters")
 			return
 		}
 
 		modelName := r.FormValue("name")
 		if modelName == "" {
-			makeResponse(w, 400, "Missing parameter", "Model name need to be specified")
+			makeJsonResponse(w, 400, "Missing parameter", "Model name need to be specified")
 			return
 		}
 		if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", modelName); !match {
-			makeResponse(w, 400, "Invalid parameter", "Model name is invalid")
+			makeJsonResponse(w, 400, "Invalid parameter", "Model name is invalid")
 			return
 		}
 
@@ -363,19 +350,19 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			cvTask = val
 		} else {
 			if sCVTask != "" {
-				makeResponse(w, 400, "Parameter Error", "Wrong CV Task value")
+				makeJsonResponse(w, 400, "Parameter Error", "Wrong CV Task value")
 				return
 			}
 		}
 
 		err := r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
 		}
 		file, _, err := r.FormFile("content")
 		if err != nil {
-			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
 		}
 		defer file.Close()
@@ -391,18 +378,18 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			buf.Write(part[:count])
 		}
 		if err != io.EOF {
-			makeResponse(w, 400, "File Error", "Error reading input file")
+			makeJsonResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		tmpFile := path.Join("/tmp", uuid.New().String())
 		fp, err := os.Create(tmpFile)
 		if err != nil {
-			makeResponse(w, 400, "File Error", "Error reading input file")
+			makeJsonResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		err = writeToFp(fp, buf.Bytes())
 		if err != nil {
-			makeResponse(w, 400, "File Error", "Error reading input file")
+			makeJsonResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 
@@ -431,13 +418,13 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		}
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
 		if !isOk {
-			makeResponse(w, 400, "Add Model Error", "Could not extract zip file")
+			makeJsonResponse(w, 400, "Add Model Error", "Could not extract zip file")
 			return
 		}
 
 		resModel, err := modelService.HandleCreateModelByUpload(username, &uploadedModel)
 		if err != nil {
-			makeResponse(w, 500, "Add Model Error", err.Error())
+			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
 
@@ -515,9 +502,57 @@ func (s *serviceHandlers) ListModels(ctx context.Context, in *model.ListModelReq
 	return &model.ListModelResponse{Models: resModels}, err
 }
 
-func (s *serviceHandlers) PredictModel(ctx context.Context, in *model.PredictModelRequest) (*structpb.Struct, error) {
-	fmt.Println("PredictModel", in)
-	return &structpb.Struct{}, nil
+func (s *serviceHandlers) PredictModel(ctx context.Context, in *model.PredictModelImageRequest) (*structpb.Struct, error) {
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &structpb.Struct{}, err
+	}
+
+	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
+	if err != nil {
+		return &structpb.Struct{}, makeError(404, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
+	}
+
+	_, err = s.modelService.GetModelVersion(modelInDB.Id, in.Version)
+	if err != nil {
+		return &structpb.Struct{}, makeError(404, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
+	}
+
+	imgsBytes, _, err := ParseImageRequestInputsToBytes(in)
+	if err != nil {
+		return &structpb.Struct{}, makeError(400, "PredictModel", err.Error())
+	}
+
+	cvTask := model.CVTask(modelInDB.CVTask)
+	response, err := s.modelService.PredictModelByUpload(username, in.Name, int32(in.Version), imgsBytes, cvTask)
+	if err != nil {
+		return &structpb.Struct{}, makeError(400, "PredictModel", err.Error())
+	}
+
+	var data = &structpb.Struct{}
+	var b []byte
+	switch cvTask {
+	case model.CVTask_CLASSIFICATION:
+		b, err = json.Marshal(response.(*model.ClassificationOutputs))
+		if err != nil {
+			return &structpb.Struct{}, makeError(500, "PredictModel", err.Error())
+		}
+	case model.CVTask_DETECTION:
+		b, err = json.Marshal(response.(*model.DetectionOutputs))
+		if err != nil {
+			return &structpb.Struct{}, makeError(500, "PredictModel", err.Error())
+		}
+	default:
+		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		if err != nil {
+			return &structpb.Struct{}, makeError(500, "PredictModel", err.Error())
+		}
+	}
+	err = protojson.Unmarshal(b, data)
+	if err != nil {
+		return &structpb.Struct{}, makeError(500, "PredictModel", err.Error())
+	}
+	return data, nil
 }
 
 func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelByUploadServer) error {
@@ -530,7 +565,7 @@ func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelBy
 		return err
 	}
 
-	imageFile, modelName, version, err := savePredictInput(stream)
+	imageByte, modelName, version, err := savePredictInput(stream)
 	if err != nil {
 		return makeError(500, "PredictModel", "Could not save the file")
 	}
@@ -541,7 +576,7 @@ func (s *serviceHandlers) PredictModelByUpload(stream model.Model_PredictModelBy
 	}
 	cvTask := model.CVTask(modelInDB.CVTask)
 
-	response, err := s.modelService.PredictModelByUpload(username, modelName, version, imageFile, cvTask)
+	response, err := s.modelService.PredictModelByUpload(username, modelName, version, [][]byte{imageByte}, cvTask)
 
 	if err != nil {
 		return err
@@ -581,16 +616,19 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelName := pathParams["name"]
 
 		if username == "" {
-			makeResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			return
 		}
 		if modelName == "" {
-			makeResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
+			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
+			return
 		}
 
-		modelVersion, err := strconv.ParseInt(r.FormValue("version"), 10, 32)
+		modelVersion, err := strconv.ParseInt(pathParams["version"], 10, 32)
 
 		if err != nil {
-			makeResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")
+			makeJsonResponse(w, 400, "Wrong parameter type", "Version should be a number greater than 0")
+			return
 		}
 
 		db := database.GetConnection()
@@ -599,48 +637,27 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		modelInDB, err := modelService.GetModelByName(username, modelName)
 		if err != nil {
-			makeResponse(w, 404, "Model not found", "The model not found in server")
+			makeJsonResponse(w, 404, "Model not found", "The model not found in server")
+			return
 		}
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
+			return
 		}
 
-		file, _, err := r.FormFile("content")
+		imgsBytes, _, err := parseImageFormDataInputsToBytes(r)
 		if err != nil {
-			makeResponse(w, 500, "Internal Error", "Error while reading file from request")
-		}
-		defer file.Close()
-		reader := bufio.NewReader(file)
-		buf := bytes.NewBuffer(make([]byte, 0))
-		part := make([]byte, 1024)
-		count := 0
-		for {
-			if count, err = reader.Read(part); err != nil {
-				break
-			}
-			buf.Write(part[:count])
-		}
-		if err != io.EOF {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
-		}
-
-		tmpFile := path.Join("/tmp", uuid.New().String()+".jpg")
-		fp, err := os.Create(tmpFile)
-		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
-		}
-
-		err = writeToFp(fp, buf.Bytes())
-		if err != nil {
-			makeResponse(w, 400, "Internal Error", "Error reading input file")
+			makeJsonResponse(w, 400, "File Input Error", err.Error())
+			return
 		}
 
 		cvTask := model.CVTask(modelInDB.CVTask)
-		response, err := modelService.PredictModelByUpload(username, modelName, int32(modelVersion), tmpFile, cvTask)
+		response, err := modelService.PredictModelByUpload(username, modelName, int32(modelVersion), imgsBytes, cvTask)
 		if err != nil {
-			makeResponse(w, 500, "Error Predict Model", err.Error())
+			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			return
 		}
 
 		w.Header().Add("Content-Type", "application/json+problem")
