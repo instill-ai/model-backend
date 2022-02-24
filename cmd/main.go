@@ -89,6 +89,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handl
 
 func main() {
 	logger, _ := logger.GetZapLogger()
+	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
 	if err := configs.Init(); err != nil {
 		logger.Fatal(err.Error())
