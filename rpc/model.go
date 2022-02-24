@@ -436,7 +436,6 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
 	}
-	return
 }
 
 func (s *serviceHandlers) CreateModel(ctx context.Context, in *model.CreateModelRequest) (*model.ModelInfo, error) {
@@ -669,7 +668,6 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
 	}
-	return
 }
 
 func (s *serviceHandlers) GetModel(ctx context.Context, in *model.GetModelRequest) (*model.ModelInfo, error) {

@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"path"
 
@@ -21,10 +20,6 @@ type imageMetadata struct {
 	format   string
 	width    int
 	height   int
-}
-
-type imageFormDataInputs struct {
-	Contents []*multipart.FileHeader `form:"contents"`
 }
 
 func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
