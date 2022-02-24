@@ -68,7 +68,6 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 
 func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	fmt.Println("???decoded ", decoded)
 	if err != nil {
 		log.Printf("Unable to decode base64 image. %v", err) // The internal error err only appears in the logs, because it's only useful to us
 		return nil, nil, fmt.Errorf("Unable to decode base64 image")
@@ -112,7 +111,6 @@ func ParseImageRequestInputsToBytes(inputs *model.PredictModelImageRequest) (img
 				return nil, nil, fmt.Errorf("Unable to parse image %v from url", idx)
 			}
 		} else if len(content.Base64) > 0 {
-			fmt.Println(">>>>>>>> ", content.Base64)
 			img, metadata, err = parseImageFromBase64(content.Base64)
 			if err != nil {
 				log.Printf("Unable to parse base64 image %v. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us

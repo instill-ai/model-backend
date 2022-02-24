@@ -573,6 +573,8 @@ github.com/instill-ai/protogen-go v0.0.0-20220219062322-6a4b524722dc h1:FB/LZrD1
 github.com/instill-ai/protogen-go v0.0.0-20220219062322-6a4b524722dc/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220223091118-ed559967d7ea h1:llNYw4hTDc6ihZhlDVsLke1FJ0zJ/S5q3WSYh7uk+A4=
 github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220223091118-ed559967d7ea/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
+github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220224084556-83b082053f0f h1:tmYDLfv1pdOY31wNP2DIG9QzDb54oljxfuDSXMd8Vx8=
+github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220224084556-83b082053f0f/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56/go.mod h1:ymszkNOg6tORTn+6F6j+Jc8TOr5osrynvN6ivFWZ2GA=
 github.com/jackc/chunkreader v1.0.0 h1:4s39bBR8ByfqH+DKm8rQA3E1LHZWB9XWcrz8fqaZbe0=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=

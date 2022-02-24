@@ -18,7 +18,7 @@ import (
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	cvtask := c.Int("cvtask")
+	cvtask := c.String("cvtask")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
@@ -60,10 +60,16 @@ func upload(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
+			cvt := model.CVTask_UNDEFINED
+			if cvtask == model.CVTask_DETECTION.String() {
+				cvt = model.CVTask_DETECTION
+			} else if cvtask == model.CVTask_CLASSIFICATION.String() {
+				cvt = model.CVTask_CLASSIFICATION
+			}
 			err = streamUploader.Send(&model.CreateModelRequest{
 				Name:        modelName,
 				Description: "YoloV4 for object detection",
-				CvTask:      model.CVTask(cvtask),
+				CvTask:      cvt,
 				Content:     buf[:n],
 			})
 			firstChunk = false
@@ -100,10 +106,10 @@ func load(c *cli.Context) error {
 	client := model.NewModelClient(conn)
 
 	res, err := client.UpdateModel(ctx, &model.UpdateModelRequest{
+		Name:    c.String("name"),
+		Version: int32(c.Int("version")),
 		Model: &model.UpdateModelInfo{
-			Name:    c.String("name"),
-			Version: int32(c.Int("version")),
-			Status:  model.ModelStatus_ONLINE,
+			Status: model.ModelStatus_ONLINE,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"name", "status"},
@@ -211,12 +217,11 @@ func main() {
 						Usage:    "model `NAME`",
 						Required: false,
 					},
-					&cli.IntFlag{
-						Name:        "cvtask",
-						Aliases:     []string{"cv"},
-						Usage:       "model `TASK`",
-						DefaultText: "0",
-						Required:    false,
+					&cli.StringFlag{
+						Name:     "cvtask",
+						Aliases:  []string{"cv"},
+						Usage:    "model `TASK`",
+						Required: false,
 					},
 				},
 				Action: func(c *cli.Context) error {

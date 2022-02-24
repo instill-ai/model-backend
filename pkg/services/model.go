@@ -350,7 +350,7 @@ func (s *modelService) UpdateModelMetaData(namespace string, updatedModel models
 }
 
 func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelRequest) (*model.ModelInfo, error) {
-	modelInDB, err := s.GetModelByName(namespace, in.Model.Name)
+	modelInDB, err := s.GetModelByName(namespace, in.Name)
 	if err != nil {
 		return &model.ModelInfo{}, err
 	}
@@ -359,7 +359,7 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 		for _, field := range in.UpdateMask.Paths {
 			switch field {
 			case "status":
-				ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, in.Model.Version)
+				ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, in.Version)
 				if err != nil {
 					return &model.ModelInfo{}, err
 				}
@@ -407,10 +407,18 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 				default:
 					return &model.ModelInfo{}, fmt.Errorf("Wrong status value. Status should be online or offline")
 				}
+			case "description":
+				err = s.UpdateModelVersion(modelInDB.Id, in.Version, models.Version{
+					UpdatedAt:   time.Now(),
+					Description: in.Model.Description,
+				})
+				if err != nil {
+					return &model.ModelInfo{}, err
+				}
 			}
 		}
 	}
-	return s.GetModelMetaData(namespace, in.Model.Name)
+	return s.GetModelMetaData(namespace, in.Name)
 }
 
 func (s *modelService) GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error) {

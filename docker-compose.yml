@@ -49,7 +49,7 @@ services:
         container_name: triton-server
         volumes:
             - models:/models
-            - ./conda-pack:/conda-pack
+            - conda_pack:/conda-pack
         ports:
             - 8001:8001
         healthcheck:
@@ -60,7 +60,14 @@ services:
         ulimits:
             memlock: -1
             stack: 67108864
+
+    triton_conda_env:
+        container_name: triton-conda-env
+        image: instill/triton-conda-env:v0.1.0-alpha-cpu
+        volumes:
+        - conda_pack:/conda-pack            
 volumes:
     dbdata:
     models:
+    conda_pack:
     
