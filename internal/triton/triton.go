@@ -58,7 +58,6 @@ func ServerReadyRequest(client inferenceserver.GRPCInferenceServiceClient) *infe
 	serverReadyRequest := inferenceserver.ServerReadyRequest{}
 	// Submit ServerReady request to server
 	serverReadyResponse, err := client.ServerReady(ctx, &serverReadyRequest)
-	fmt.Println("------>serverReadyResponse ", serverReadyResponse, err)
 	if err != nil {
 		log.Printf("Couldn't get server ready: %v", err)
 	}
@@ -307,7 +306,6 @@ func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 
 func IsTritonServerReady() bool {
 	serverLiveResponse := ServerLiveRequest(TritonClient)
-	fmt.Println("??????? serverLiveResponse ", serverLiveResponse)
 	if serverLiveResponse == nil {
 		return false
 	}
@@ -317,7 +315,6 @@ func IsTritonServerReady() bool {
 	}
 
 	serverReadyResponse := ServerReadyRequest(TritonClient)
-	fmt.Println("??????? serverReadyResponse ", serverReadyResponse)
 	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
 	return serverReadyResponse.Ready
 }
