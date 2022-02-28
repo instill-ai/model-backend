@@ -100,7 +100,7 @@ func (r *modelRepository) GetModelVersion(modelId int32, version int32) (models.
 
 func (r *modelRepository) GetModelVersions(modelId int32) ([]models.Version, error) {
 	var versions []models.Version
-	if result := r.DB.Model(&models.Version{}).Where("model_id", modelId).Find(&versions); result.Error != nil {
+	if result := r.DB.Model(&models.Version{}).Where("model_id", modelId).Order("version asc").Find(&versions); result.Error != nil {
 		return []models.Version{}, status.Errorf(codes.NotFound, "The versions for model %v not found", modelId)
 	}
 	return versions, nil

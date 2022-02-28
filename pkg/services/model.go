@@ -303,10 +303,6 @@ func (s *modelService) HandleCreateModelByUpload(namespace string, uploadedModel
 }
 
 func (s *modelService) ListModels(namespace string) ([]*model.ModelInfo, error) {
-	if !triton.IsTritonServerReady() {
-		return []*model.ModelInfo{}, fmt.Errorf("Triton Server not ready yet")
-	}
-
 	models, err := s.modelRepository.ListModels(models.ListModelQuery{Namespace: namespace})
 	if err != nil {
 		return []*model.ModelInfo{}, err

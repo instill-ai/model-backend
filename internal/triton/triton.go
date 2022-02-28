@@ -38,7 +38,7 @@ func Close() {
 
 func ServerLiveRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerLiveResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverLiveRequest := inferenceserver.ServerLiveRequest{}
@@ -52,12 +52,13 @@ func ServerLiveRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 
 func ServerReadyRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerReadyResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverReadyRequest := inferenceserver.ServerReadyRequest{}
 	// Submit ServerReady request to server
 	serverReadyResponse, err := client.ServerReady(ctx, &serverReadyRequest)
+	fmt.Println("------>serverReadyResponse ", serverReadyResponse, err)
 	if err != nil {
 		log.Printf("Couldn't get server ready: %v", err)
 	}
@@ -306,6 +307,7 @@ func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 
 func IsTritonServerReady() bool {
 	serverLiveResponse := ServerLiveRequest(TritonClient)
+	fmt.Println("??????? serverLiveResponse ", serverLiveResponse)
 	if serverLiveResponse == nil {
 		return false
 	}
@@ -315,6 +317,7 @@ func IsTritonServerReady() bool {
 	}
 
 	serverReadyResponse := ServerReadyRequest(TritonClient)
+	fmt.Println("??????? serverReadyResponse ", serverReadyResponse)
 	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
 	return serverReadyResponse.Ready
 }
