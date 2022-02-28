@@ -304,7 +304,7 @@ export default function (data) {
           [`PATCH ${apiHost}/models/${model_name}/versions/1 offline cvtask cls response Version 2 Status`]: (r) =>
           r.json().versions[1].status === "ONLINE",                                                            
       });  
-
+      
       payload = JSON.stringify({
         "status": 0
       });
@@ -336,7 +336,7 @@ export default function (data) {
       });   
     });
   }  
-
+  
   // Model Backend API: make inference
   {
     group("Model Backend API: Predict Model with classification model", function () {
@@ -361,7 +361,7 @@ export default function (data) {
           "POST /models (multipart) cvtask cls response Versions": (r) =>
           r.json().Versions.length === 1,                                        
       });
-
+      
       let payload = JSON.stringify({
         "status": 1
       });
@@ -381,7 +381,7 @@ export default function (data) {
           "PATCH /models (multipart) cvtask cls response Version 1 Status": (r) =>
           r.json().versions[0].status === "ONLINE",  
       });  
-
+      
       // Predict with url
       payload = JSON.stringify({
         "contents": [{"url": "https://artifacts.instill.tech/dog.jpg"}]
@@ -398,7 +398,7 @@ export default function (data) {
           [`POST ${apiHost}/models/${model_name}/versions/1/outputs url cls response contents.score`]: (r) =>
           r.json().contents[0].score === 1,            
       });  
-
+      
       // Predict with base64
       payload = JSON.stringify({
         "contents": [{"base64": base64_image,}]
@@ -415,7 +415,7 @@ export default function (data) {
           [`POST ${apiHost}/models/${model_name}/versions/1/outputs base64 cls response contents.score`]: (r) =>
           r.json().contents[0].score === 1,            
       });  
-
+      
       // Predict with multiple-part
       const fd = new FormData();
       fd.append("contents", http.file(dog_img));
@@ -558,7 +558,7 @@ export default function (data) {
       });   
     });
   }   
-
+  
   // Model Backend API: make inference
   {
     group("Model Backend API: Predict Model with undefined cvtask model", function () {
@@ -824,7 +824,6 @@ export default function (data) {
 
       let new_description = randomString(20)
       let payload = JSON.stringify({
-        "status": 1,
         "description": new_description
       });
       check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
@@ -840,17 +839,12 @@ export default function (data) {
           r.json().cv_task === "CLASSIFICATION",   
           [`PATCH ${apiHost}/models/${model_name}/versions/1 cvtask cls response Versions`]: (r) =>
           r.json().versions.length === 2,       
-          [`PATCH ${apiHost}/models/${model_name}/versions/1 cvtask cls response Version 1 Status`]: (r) =>
-          r.json().versions[0].status === "ONLINE",  
-          "PATCH /models (multipart) cvtask cls response Version 2 Status": (r) =>
-          r.json().versions[1].status === "OFFLINE",  
           "PATCH /models (multipart) cvtask cls response Version 1 Description": (r) =>
           r.json().versions[0].description === new_description,                                                                      
       });  
       
       let new_description2 = randomString(20)
       payload = JSON.stringify({
-        "status": 1,
         "description": new_description2
       });
       check(http.patch(`${apiHost}/models/${model_name}/versions/2`, payload, {
@@ -866,10 +860,6 @@ export default function (data) {
           r.json().cv_task === "CLASSIFICATION",   
           [`PATCH ${apiHost}/models/${model_name}/versions/2 cvtask cls response Versions`]: (r) =>
           r.json().versions.length === 2,       
-          [`PATCH ${apiHost}/models/${model_name}/versions/2 cvtask cls response Version 1 Status`]: (r) =>
-          r.json().versions[0].status === "ONLINE",  
-          [`PATCH ${apiHost}/models/${model_name}/versions/2 cvtask cls response Version 2 Status`]: (r) =>
-          r.json().versions[1].status === "ONLINE",  
           [`PATCH ${apiHost}/models/${model_name}/versions/2 cvtask cls response Version 1 Description`]: (r) =>
           r.json().versions[0].description === new_description,              
           [`PATCH ${apiHost}/models/${model_name}/versions/2 cvtask cls response Version 2 Description`]: (r) =>

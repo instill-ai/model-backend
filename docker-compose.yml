@@ -47,6 +47,8 @@ services:
         image: nvcr.io/nvidia/tritonserver:22.01-py3
         command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false
         container_name: triton-server
+        depends_on: 
+            - triton_conda_env
         volumes:
             - models:/models
             - conda_pack:/conda-pack
