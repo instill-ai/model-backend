@@ -1,16 +1,21 @@
 .DEFAULT_GOAL:=help
 
-INSTILL_SERVICES := model-backend-migrate model-backend triton-conda-env
+DEVELOP_SERVICES := model-backend model-backend-migrate
+INSTILL_SERVICES := triton-conda-env
 3RD_PARTY_SERVICES := triton-server database
 ALL_SERVICES := ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
 
 #============================================================================
 
+# load environment variables for local development
+include .env
+export
+
 #============================================================================
 
 all:			## Build and launch all services
 	@docker inspect --type=image nvcr.io/nvidia/tritonserver:${TRITONSERVER_VERSION} >/dev/null 2>&1 || printf "\033[1;33mWARNING:\033[0m This may take a while due to the enormous size of the Triton server image, but the image pulling process should be just a one-time effort.\n" && sleep 5
-	@docker-compose up -d ${ALL_SERVICES}	
+	@docker-compose up -d ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: all
 
 logs:			## Tail all logs with -n 10
@@ -23,19 +28,19 @@ pull:			## Pull all service images
 .PHONY: pull
 
 stop:			## Stop all components
-	@docker-compose stop ${ALL_SERVICES}
+	@docker-compose stop ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: stop
 
 start:			## Start all stopped services
-	@docker-compose start ${ALL_SERVICES}
+	@docker-compose start ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: start
 
 restart:		## Restart all services
-	@docker-compose restart ${ALL_SERVICES}
+	@docker-compose restart ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: restart
 
 rm:				## Remove all stopped service containers
-	@docker-compose rm -f ${ALL_SERVICES}
+	@docker-compose rm -f ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: rm
 
 down:			## Stop all services and remove all service containers
@@ -43,15 +48,15 @@ down:			## Stop all services and remove all service containers
 .PHONY: down
 
 images:			## List all container images
-	@docker-compose images ${ALL_SERVICES}
+	@docker-compose images ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: images
 
 ps:				## List all service containers
-	@docker-compose ps ${ALL_SERVICES}
+	@docker-compose ps ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: ps
 
 top:			## Display all running service processes
-	@docker-compose top ${ALL_SERVICES}
+	@docker-compose top ${DEVELOP_SERVICES} ${ALL_SERVICES}
 .PHONY: top
 
 prune:			## Remove all services containers and system prune everything
