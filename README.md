@@ -22,7 +22,7 @@ $ ./scripts/quick-download.sh
 ## Quick start
 
 ```bash
-$ docker-compose up -d
+$ make all
 $ go run ./examples-go/grpc_client.go upload --file sample-models/yolov4-onnx-cpu.zip --name yolov4 --cvtask DETECTION  # upload a YOLOv4 model for object detection; note --cvtask is optional and could be specified as DETECTION, CLASSIFICATION, without specifying cvtask will default UNDEFINED
 $ go run ./examples-go/grpc_client.go load -n yolov4 --version 1  # deploy the ensemble model
 $ go run ./examples-go/grpc_client.go predict -n yolov4 --version 1 -f sample-models/dog.jpg # make inference

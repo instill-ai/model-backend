@@ -48,7 +48,7 @@ services:
         command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false
         container_name: triton-server
         depends_on: 
-            - triton_conda_env
+            - triton-conda-env
         volumes:
             - models:/models
             - conda_pack:/conda-pack
@@ -63,7 +63,7 @@ services:
             memlock: -1
             stack: 67108864
 
-    triton_conda_env:
+    triton-conda-env:
         container_name: triton-conda-env
         image: instill/triton-conda-env:v0.1.0-alpha-cpu
         volumes:
