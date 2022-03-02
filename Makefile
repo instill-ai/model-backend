@@ -1,8 +1,8 @@
 .DEFAULT_GOAL:=help
 
-DEVELOP_SERVICES := model-backend model-backend-migrate
-INSTILL_SERVICES := triton-conda-env
-3RD_PARTY_SERVICES := triton-server database
+DEVELOP_SERVICES := model_backend model_backend_migrate
+INSTILL_SERVICES := triton_conda_env
+3RD_PARTY_SERVICES := pg_sql triton_server
 ALL_SERVICES := ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
 
 #============================================================================

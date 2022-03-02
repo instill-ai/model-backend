@@ -25,5 +25,5 @@ database:
     maxconnections: 10
     connlifetime: 30 # In minutes
 tritonserver:
-  grpcuri: 0.0.0.0:8001
-  modelstore: ./models
+  grpcuri: localhost:8001
+  modelstore: ./model-repository

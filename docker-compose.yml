@@ -1,9 +1,52 @@
-version: '3'
+version: "3.9"
+
+networks:
+  default:
+    name: instill-network
+
+volumes:
+  conda_pack:
+    name: conda-pack
+  model_repository:
+    name: model-repository
 
 services:
-    database:
+    model_backend:
+        container_name: model-backend
+        build:
+            context: .
+        image: instill/model-backend:dev
+        environment:
+            CFG_DATABASE_HOST: pg_sql
+            CFG_TRITONSERVER_GRPCURI: triton-server:8001
+            CFG_TRITONSERVER_MODELSTORE: /model-repository
+        restart: on-failure
+        ports:
+            - 8080:8080
+        volumes:
+            - model_repository:/model-repository
+        depends_on:
+            model_backend_migrate:
+                condition: service_started
+            triton_server:
+                condition: service_healthy
+
+    model_backend_migrate:
+        container_name: model-backend-migrate
+        build:
+            context: .
+        image: instill/model-backend:dev
+        restart: on-failure
+        environment:
+            CFG_DATABASE_HOST: pg_sql
+        entrypoint: ./model-backend-migrate
+        depends_on:
+            pg_sql:
+                condition: service_healthy
+
+    pg_sql:
+        container_name: pg-sql
         image: postgres:14.1-alpine
-        container_name: pg_sql
         ports:
             - 5432:5432
         environment:
@@ -12,48 +55,18 @@ services:
             test: ["CMD-SHELL", "pg_isready -U postgres"]
             timeout: 20s
             retries: 10
-    model-backend-migrate:
-        build:
-            context: .
-        image: instill/model-backend:dev 
-        container_name: model-backend-migrate
-        depends_on:
-            database:
-                condition: service_healthy
-        restart: on-failure
-        environment:
-            CFG_DATABASE_HOST: database
-        entrypoint: ./model-backend-migrate
 
-    model-backend:
-        build:
-            context: .
-        image: instill/model-backend:dev 
-        container_name: model-backend
-        depends_on:
-            triton-server:
-                condition: service_healthy
-        environment:
-            CFG_DATABASE_HOST: database
-            CFG_TRITONSERVER_GRPCURI: triton-server:8001
-            CFG_TRITONSERVER_MODELSTORE: /models
-        restart: on-failure
-        ports:
-            - 8080:8080
-        volumes:
-            - models:/models
-
-    triton-server:
-        image: nvcr.io/nvidia/tritonserver:22.01-py3
-        command: tritonserver --model-store=/models --model-control-mode=explicit --allow-http=true --strict-model-config=false
+    triton_server:
         container_name: triton-server
-        depends_on: 
-            - triton-conda-env
+        image: nvcr.io/nvidia/tritonserver:22.01-py3
+        command: tritonserver --model-store=/model-repository --model-control-mode=explicit --allow-http=true --strict-model-config=false
         volumes:
-            - models:/models
+            - model_repository:/model-repository
             - conda_pack:/conda-pack
         ports:
             - 8001:8001
+        depends_on:
+            - triton_conda_env
         healthcheck:
             test: ["CMD-SHELL", "curl localhost:8000/v2/health/ready"]
             timeout: 20s
@@ -63,13 +76,8 @@ services:
             memlock: -1
             stack: 67108864
 
-    triton-conda-env:
+    triton_conda_env:
         container_name: triton-conda-env
         image: instill/triton-conda-env:v0.1.0-alpha-cpu
         volumes:
-        - conda_pack:/conda-pack            
-volumes:
-    dbdata:
-    models:
-    conda_pack:
-    
+            - conda_pack:/conda-pack
