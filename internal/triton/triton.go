@@ -279,12 +279,12 @@ func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, model
 	defer cancel()
 
 	// Create status request for a given model
-	loadModelRequest := inferenceserver.RepositoryModelUnloadRequest{
+	unloadModelRequest := inferenceserver.RepositoryModelUnloadRequest{
 		RepositoryName: "",
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	return client.RepositoryModelUnload(ctx, &loadModelRequest)
+	return client.RepositoryModelUnload(ctx, &unloadModelRequest)
 }
 
 func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.RepositoryIndexResponse {
