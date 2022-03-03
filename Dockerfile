@@ -1,21 +1,21 @@
 FROM golang:1.17.2 AS build
+
 WORKDIR /go/src
 
-COPY go.mod .
-COPY go.sum .
-
 ENV CGO_ENABLED=0
+
+# Copy go.mod and go.sum
+COPY go.* .
 RUN go mod download
 
-COPY . /go/src
+# Compile source codes and cache it
 
-RUN --mount=type=cache,target=/root/.cache/go-build go build -a -o /model-backend ./cmd
-RUN --mount=type=cache,target=/root/.cache/go-build go build -a -o /model-backend-migrate ./migrate
-
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend ./cmd
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-migrate ./migrate
 
 FROM gcr.io/distroless/base AS runtime
 
-ENV GIN_MODE=release
 WORKDIR /model-backend
 
 COPY --from=build /model-backend ./model-backend
