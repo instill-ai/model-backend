@@ -69,6 +69,69 @@ func createModelInfo(modelInDB models.Model, versions []models.Version, tritonMo
 	}
 }
 
+func setModelOnline(s *modelService, modelID int32, modelVersion int32) error {
+
+	var tEnsembleModel models.TModel
+	var err error
+
+	if tEnsembleModel, err = s.modelRepository.GetTEnsembleModel(modelID, modelVersion); err != nil {
+		return err
+	}
+
+	// Load one ensemble model, which will also load all its dependent models
+	if _, err = triton.LoadModelRequest(triton.TritonClient, tEnsembleModel.Name); err != nil {
+		if err = s.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
+			UpdatedAt: time.Now(),
+			Status:    model.ModelStatus_ERROR.String(),
+		}); err != nil {
+			return err
+		}
+		return err
+	}
+
+	if err = s.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
+		UpdatedAt: time.Now(),
+		Status:    model.ModelStatus_ONLINE.String(),
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setModelOffline(s *modelService, modelID int32, modelVersion int32) error {
+
+	var tritonModels []models.TModel
+	var err error
+
+	if tritonModels, err = s.modelRepository.GetTModels(modelID); err != nil {
+		return err
+	}
+
+	for _, tm := range tritonModels {
+		// Unload all models composing the ensemble model
+		if _, err = triton.UnloadModelRequest(triton.TritonClient, tm.Name); err != nil {
+			// If any models unloaded with error, we set the ensemble model status with ERROR and return
+			if err = s.UpdateModelVersion(modelID, modelVersion, models.Version{
+				UpdatedAt: time.Now(),
+				Status:    model.ModelStatus_ERROR.String(),
+			}); err != nil {
+				return err
+			}
+			return err
+		}
+	}
+
+	if err := s.UpdateModelVersion(modelID, modelVersion, models.Version{
+		UpdatedAt: time.Now(),
+		Status:    model.ModelStatus_OFFLINE.String(),
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type ModelService interface {
 	CreateModel(model *models.Model) (*models.Model, error)
 	GetModelByName(namespace string, modelName string) (models.Model, error)
@@ -276,10 +339,10 @@ func createModel(s *modelService, namespace string, uploadedModel *models.Model)
 		return models.Model{}, []models.Version{}, []models.TModel{}, fmt.Errorf("Could not create model version in DB")
 	}
 	for i := 0; i < len(uploadedModel.TritonModels); i++ {
-		tmodel := uploadedModel.TritonModels[i]
-		tmodel.ModelId = modelInDB.Id
-		tmodel.ModelVersion = versionInDB.Version
-		err = s.modelRepository.CreateTModel(tmodel)
+		tritonModel := uploadedModel.TritonModels[i]
+		tritonModel.ModelId = modelInDB.Id
+		tritonModel.ModelVersion = versionInDB.Version
+		err = s.modelRepository.CreateTModel(tritonModel)
 		if err != nil {
 			return models.Model{}, []models.Version{}, []models.TModel{}, fmt.Errorf("Could not create triton model in DB")
 		}
@@ -355,53 +418,17 @@ func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelReques
 		for _, field := range in.UpdateMask.Paths {
 			switch field {
 			case "status":
-				ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, in.Version)
-				if err != nil {
-					return &model.ModelInfo{}, err
-				}
 				switch in.Model.Status {
 				case model.ModelStatus_ONLINE:
-					_, err = triton.LoadModelRequest(triton.TritonClient, ensembleModel.Name)
-					if err != nil {
-						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
-							UpdatedAt: time.Now(),
-							Status:    model.ModelStatus_ERROR.String(),
-						})
-						if err != nil {
-							return &model.ModelInfo{}, err
-						}
+					if err := setModelOnline(s, modelInDB.Id, in.Version); err != nil {
 						return &model.ModelInfo{}, err
-					} else {
-						err := s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
-							UpdatedAt: time.Now(),
-							Status:    model.ModelStatus_ONLINE.String(),
-						})
-						if err != nil {
-							return &model.ModelInfo{}, err
-						}
 					}
 				case model.ModelStatus_OFFLINE:
-					_, err = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
-					if err != nil {
-						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
-							UpdatedAt: time.Now(),
-							Status:    model.ModelStatus_ERROR.String(),
-						})
-						if err != nil {
-							return &model.ModelInfo{}, err
-						}
+					if err := setModelOffline(s, modelInDB.Id, in.Version); err != nil {
 						return &model.ModelInfo{}, err
-					} else {
-						err = s.UpdateModelVersion(modelInDB.Id, ensembleModel.ModelVersion, models.Version{
-							UpdatedAt: time.Now(),
-							Status:    model.ModelStatus_OFFLINE.String(),
-						})
-						if err != nil {
-							return &model.ModelInfo{}, err
-						}
 					}
 				default:
-					return &model.ModelInfo{}, fmt.Errorf("Wrong status value. Status should be online or offline")
+					return &model.ModelInfo{}, fmt.Errorf("Wrong status value. Status should be ONLINE or OFFLINE")
 				}
 			case "description":
 				err = s.UpdateModelVersion(modelInDB.Id, in.Version, models.Version{
@@ -446,9 +473,8 @@ func (s *modelService) DeleteModel(namespace string, modelName string) error {
 	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
 	if err == nil {
 		for i := 0; i < len(modelVersionsInDB); i++ {
-			ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, modelVersionsInDB[i].Version)
-			if err == nil {
-				_, _ = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
+			if err := setModelOffline(s, modelInDB.Id, modelVersionsInDB[i].Version); err != nil {
+				return err
 			}
 		}
 		tritonModels, err := s.modelRepository.GetTModels(modelInDB.Id)
@@ -473,9 +499,8 @@ func (s *modelService) DeleteModelVersion(namespace string, modelName string, ve
 		return err
 	}
 
-	ensembleModel, err := s.modelRepository.GetTEnsembleModel(modelInDB.Id, modelVersionInDB.Version)
-	if err == nil {
-		_, _ = triton.UnloadModelRequest(triton.TritonClient, ensembleModel.Name)
+	if err := setModelOffline(s, modelInDB.Id, modelVersionInDB.Version); err != nil {
+		return err
 	}
 
 	tritonModels, err := s.modelRepository.GetTModelVersions(modelInDB.Id, modelVersionInDB.Version)

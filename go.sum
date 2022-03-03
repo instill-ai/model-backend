@@ -305,8 +305,6 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/dhui/dktest v0.3.7 h1:jWjWgHAPDAdqgUr7lAsB3bqB2DKWC3OaA+isfekjRew=
 github.com/dhui/dktest v0.3.7/go.mod h1:nYMOkafiA07WchSwKnKFUSbGMb2hMm5DrCGiXYG6gwM=
-github.com/disintegration/imaging v1.6.2 h1:w1LecBlG2Lnp8B3jk5zSuNqd7b4DXhcjwek1ei82L+c=
-github.com/disintegration/imaging v1.6.2/go.mod h1:44/5580QXChDfwIclfc/PCwrr44amcmDAg8hxG0Ewe4=
 github.com/dnaeon/go-vcr v1.0.1/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
 github.com/docker/distribution v0.0.0-20190905152932-14b96e55d84c/go.mod h1:0+TTO4EOBfRPhZXAeF1Vu+W3hHZ8eLp8PgKVZlcvtFY=
 github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
@@ -543,6 +541,7 @@ github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
+github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2/go.mod h1:lsuH8kb4GlMdSlI4alNIBBSAt5CHJtg3i+0WuN9J5YM=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3 h1:I8MsauTJQXZ8df8qJvEln0kYNc3bSapuaSsEsnFdEFU=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3/go.mod h1:lZdb/YAJUSj9OqrCHs2ihjtoO3+xK3G53wTYXFWRGDo=
 github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed/go.mod h1:tMWxXQ9wFIaZeTI9F+hmhFiGpFmhOHzyShyFUhRm0H4=
@@ -567,14 +566,6 @@ github.com/imdario/mergo v0.3.10/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH
 github.com/imdario/mergo v0.3.11/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
-github.com/instill-ai/protogen-go v0.0.0-20220218052108-74a473c326b7 h1:G0gFscf9E6lWlJmMsIkaqEM1uGWee/49GWN9O4i0pCo=
-github.com/instill-ai/protogen-go v0.0.0-20220218052108-74a473c326b7/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
-github.com/instill-ai/protogen-go v0.0.0-20220219062322-6a4b524722dc h1:FB/LZrD1T12txnLqmg4Dta2GzC399O27/Nkiyd22nRA=
-github.com/instill-ai/protogen-go v0.0.0-20220219062322-6a4b524722dc/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
-github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220223091118-ed559967d7ea h1:llNYw4hTDc6ihZhlDVsLke1FJ0zJ/S5q3WSYh7uk+A4=
-github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220223091118-ed559967d7ea/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
-github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220224084556-83b082053f0f h1:tmYDLfv1pdOY31wNP2DIG9QzDb54oljxfuDSXMd8Vx8=
-github.com/instill-ai/protogen-go v0.1.0-alpha.0.20220224084556-83b082053f0f/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/instill-ai/protogen-go v0.1.1-alpha h1:rZ/mGWOi8sbSfub840WBDB/AmaClgkRjGT/8sDvCveo=
 github.com/instill-ai/protogen-go v0.1.1-alpha/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56/go.mod h1:ymszkNOg6tORTn+6F6j+Jc8TOr5osrynvN6ivFWZ2GA=
@@ -1050,12 +1041,10 @@ golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81/go.mod h1:ux5Hcp/YLpHSI86h
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
-golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20200119044424-58c23975cae1/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20200430140353-33d19683fad8/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20200618115811-c13761719519/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.0.0-20201208152932-35266b937fa6/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
-golang.org/x/image v0.0.0-20210216034530-4410531fe030 h1:lP9pYkih3DUSC641giIXa2XqfTIbbbRr0w2EOTA7wHA=
 golang.org/x/image v0.0.0-20210216034530-4410531fe030/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvxsM5YxQ5yQlVC4a0KAMCusXpPoU=
@@ -1459,6 +1448,8 @@ google.golang.org/genproto v0.0.0-20210716133855-ce7ef5c701ea/go.mod h1:AxrInvYm
 google.golang.org/genproto v0.0.0-20210721163202-f1cecdd8b78a/go.mod h1:ob2IJxKrgPT52GcgX759i1sleT07tiKowYBGbczaW48=
 google.golang.org/genproto v0.0.0-20210726143408-b02e89920bf0/go.mod h1:ob2IJxKrgPT52GcgX759i1sleT07tiKowYBGbczaW48=
 google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4/go.mod h1:5CzLGKJ67TSI2B9POpiiyGha0AjJvZIUgRMt1dSmuhc=
+google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa/go.mod h1:5CzLGKJ67TSI2B9POpiiyGha0AjJvZIUgRMt1dSmuhc=
+google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368/go.mod h1:5CzLGKJ67TSI2B9POpiiyGha0AjJvZIUgRMt1dSmuhc=
 google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5/go.mod h1:5CzLGKJ67TSI2B9POpiiyGha0AjJvZIUgRMt1dSmuhc=
 google.golang.org/genproto v0.0.0-20220215190005-e57b466719ef h1:LgGaJzny+/at3jTXZUNh/l8VBWyAiskCHrwq6iEYE7I=
 google.golang.org/genproto v0.0.0-20220215190005-e57b466719ef/go.mod h1:kGP+zUP2Ddo0ayMi4YuN7C3WZyJvGLZRh8Z5wnAqvEI=

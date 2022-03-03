@@ -305,6 +305,9 @@ export default function (data) {
           r.json().versions[1].status === "ONLINE",
       });
 
+      // Triton unloading models takes time
+      sleep(4)
+
       payload = JSON.stringify({
         "status": 0
       });
@@ -334,6 +337,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -439,6 +445,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -556,6 +565,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -666,6 +678,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -722,6 +737,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -779,6 +797,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 
@@ -873,6 +894,9 @@ export default function (data) {
         "DELETE clean up response Status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
+
+      // Triton unloading models takes time
+      sleep(4)
     });
   }
 

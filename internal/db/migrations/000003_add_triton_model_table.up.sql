@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "t_models" (
   CONSTRAINT fk_tmodel_version
     FOREIGN KEY ("model_id", "model_version")
     REFERENCES versions("model_id", "version")
-    ON DELETE CASCADE    
+    ON DELETE CASCADE
 );
 
 COMMENT ON COLUMN "t_models"."name" IS 'triton model name';

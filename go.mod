@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/disintegration/imaging v1.6.2
 	github.com/gogo/status v1.1.0
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
@@ -20,12 +19,14 @@ require (
 	go.uber.org/zap v1.20.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
-	google.golang.org/genproto v0.0.0-20220215190005-e57b466719ef
+	google.golang.org/genproto v0.0.0-20220215190005-e57b466719ef // indirect
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.5
 )
+
+require github.com/instill-ai/protogen-go v0.1.1-alpha
 
 require (
 	github.com/BurntSushi/toml v1.0.0 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/instill-ai/protogen-go v0.1.1-alpha // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -53,7 +53,6 @@ require (
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce // indirect
-	golang.org/x/image v0.0.0-20210216034530-4410531fe030 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
