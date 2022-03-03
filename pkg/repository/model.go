@@ -129,7 +129,7 @@ func (r *modelRepository) CreateTModel(model models.TModel) error {
 func (r *modelRepository) GetTModels(modelId int32) ([]models.TModel, error) {
 	var tmodels []models.TModel
 	if result := r.DB.Model(&models.TModel{}).Where("model_id", modelId).Find(&tmodels); result.Error != nil {
-		return []models.TModel{}, status.Errorf(codes.NotFound, "The triton model belong to model id %v not found", modelId)
+		return []models.TModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)
 	}
 	return tmodels, nil
 }
@@ -138,7 +138,7 @@ func (r *modelRepository) GetTEnsembleModel(modelId int32, version int32) (model
 	var ensembleModel models.TModel
 	result := r.DB.Model(&models.TModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
-		return models.TModel{}, status.Errorf(codes.NotFound, "The ensemble model belong to model id %v not found", modelId)
+		return models.TModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelId)
 	}
 	return ensembleModel, nil
 }
@@ -146,7 +146,7 @@ func (r *modelRepository) GetTEnsembleModel(modelId int32, version int32) (model
 func (r *modelRepository) GetTModelVersions(modelId int32, version int32) ([]models.TModel, error) {
 	var tmodels []models.TModel
 	if result := r.DB.Model(&models.TModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version}).Find(&tmodels); result.Error != nil {
-		return []models.TModel{}, status.Errorf(codes.NotFound, "The triton model belong to model id %v not found", modelId)
+		return []models.TModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)
 	}
 	return tmodels, nil
 }
@@ -161,7 +161,7 @@ func (r *modelRepository) DeleteModel(modelId int32) error {
 func (r *modelRepository) GetModelVersionLatest(modelId int32) (models.Version, error) {
 	var versionDB models.Version
 	if result := r.DB.Model(&models.Version{}).Where(map[string]interface{}{"model_id": modelId}).Order("version desc").First(&versionDB); result.Error != nil {
-		return models.Version{}, status.Errorf(codes.NotFound, "There is no version for model %v not found", modelId)
+		return models.Version{}, status.Errorf(codes.NotFound, "There is no version for model id %v not found", modelId)
 	}
 	return versionDB, nil
 }
