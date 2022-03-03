@@ -65,7 +65,7 @@ func writeToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func updateConfigpModelName(filePath string, oldModelName string, newModelName string) error {
+func updateConfigModelName(filePath string, oldModelName string, newModelName string) error {
 	regStr := fmt.Sprintf("name:\\s+\"%v\"", oldModelName)
 	nameRegx := regexp.MustCompile(regStr)
 	fileData, _ := ioutil.ReadFile(filePath)
@@ -167,7 +167,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 			if isEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
 			}
-			err = updateConfigpModelName(filePath, oldModelName, newModelName)
+			err = updateConfigModelName(filePath, oldModelName, newModelName)
 			if err != nil {
 				return false
 			}
@@ -176,7 +176,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 	// Update ModelName in ensemble model config file
 	if ensembleFilePath != "" {
 		for oldModelName, newModelName := range newModelNameMap {
-			err = updateConfigpModelName(ensembleFilePath, oldModelName, newModelName)
+			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
 				return false
 			}
@@ -209,7 +209,7 @@ func saveFile(stream model.Model_CreateModelByUploadServer) (outFile string, mod
 			}
 
 			err = errors.Wrapf(err,
-				"failed unexpectadely while reading chunks from stream")
+				"failed unexpectedly while reading chunks from stream")
 			return "", &models.Model{}, err
 		}
 

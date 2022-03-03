@@ -38,7 +38,7 @@ func Close() {
 
 func ServerLiveRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerLiveResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverLiveRequest := inferenceserver.ServerLiveRequest{}
@@ -52,7 +52,7 @@ func ServerLiveRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 
 func ServerReadyRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerReadyResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverReadyRequest := inferenceserver.ServerReadyRequest{}
@@ -279,12 +279,12 @@ func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, model
 	defer cancel()
 
 	// Create status request for a given model
-	loadModelRequest := inferenceserver.RepositoryModelUnloadRequest{
+	unloadModelRequest := inferenceserver.RepositoryModelUnloadRequest{
 		RepositoryName: "",
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	return client.RepositoryModelUnload(ctx, &loadModelRequest)
+	return client.RepositoryModelUnload(ctx, &unloadModelRequest)
 }
 
 func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.RepositoryIndexResponse {

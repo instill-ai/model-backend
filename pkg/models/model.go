@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// This is model combined by several Triton model. It include ensemble model
+// Model combines several Triton model. It includes ensemble model.
 type Model struct {
 
 	// Model unique ID
