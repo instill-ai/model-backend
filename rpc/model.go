@@ -417,6 +417,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			}
 		}
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
+		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if !isOk {
 			makeJsonResponse(w, 400, "Add Model Error", "Could not extract zip file")
 			return
@@ -464,6 +465,7 @@ func (s *serviceHandlers) CreateModelByUpload(stream model.Model_CreateModelByUp
 	uploadedModel.Namespace = username
 	// extract zip file from tmp to models directory
 	isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
+	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if !isOk {
 		return makeError(400, "Save File Error", "Could not extract zip file")
 	}
