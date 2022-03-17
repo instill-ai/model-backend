@@ -11,7 +11,7 @@ import (
 	"path"
 
 	consts "github.com/instill-ai/model-backend/internal"
-	"github.com/instill-ai/protogen-go/model"
+	model "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 // Internally used image metadata
@@ -91,22 +91,21 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	return &img, &metadata, nil
 }
 
-func ParseImageRequestInputsToBytes(inputs *model.PredictModelImageRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
-	for idx, content := range inputs.Contents {
+func ParseImageRequestInputsToBytes(inputs *model.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
+	for idx, content := range inputs.Inputs {
 		var (
 			img      *image.Image
 			metadata *imageMetadata
 			err      error
 		)
-
-		if len(content.Url) > 0 {
-			img, metadata, err = parseImageFromURL(content.Url)
+		if len(content.GetImageUrl()) > 0 {
+			img, metadata, err = parseImageFromURL(content.GetImageUrl())
 			if err != nil {
 				log.Printf("Unable to parse image %v from url. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us
 				return nil, nil, fmt.Errorf("Unable to parse image %v from url", idx)
 			}
-		} else if len(content.Base64) > 0 {
-			img, metadata, err = parseImageFromBase64(content.Base64)
+		} else if len(content.GetImageBase64()) > 0 {
+			img, metadata, err = parseImageFromBase64(content.GetImageBase64())
 			if err != nil {
 				log.Printf("Unable to parse base64 image %v. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us
 				return nil, nil, fmt.Errorf("Unable to parse base64 image %v", idx)
@@ -127,12 +126,11 @@ func ParseImageRequestInputsToBytes(inputs *model.PredictModelImageRequest) (img
 		imgsBytes = append(imgsBytes, buff.Bytes())
 		imgsMetadata = append(imgsMetadata, metadata)
 	}
-
 	return imgsBytes, imgsMetadata, nil
 }
 
 func parseImageFormDataInputsToBytes(r *http.Request) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
-	inputs := r.MultipartForm.File["contents"]
+	inputs := r.MultipartForm.File["inputs"]
 	for _, content := range inputs {
 		file, err := content.Open()
 		if err != nil {

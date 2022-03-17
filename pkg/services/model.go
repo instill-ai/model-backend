@@ -14,10 +14,39 @@ import (
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/models"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/protogen-go/model"
+	model "github.com/instill-ai/protogen-go/model/v1alpha"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type ModelService interface {
+	CreateModel(model *models.Model) (*models.Model, error)
+	GetModelByName(namespace string, modelName string) (models.Model, error)
+	CreateVersion(version models.Version) (models.Version, error)
+	GetModelVersion(modelId uint64, version uint64) (models.Version, error)
+	GetModelVersions(modelId uint64) ([]models.Version, error)
+	GetModelVersionLatest(modelId uint64) (models.Version, error)
+	GetFullModelData(namespace string, modelName string) (*model.Model, error)
+	ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task model.Model_Task) (interface{}, error)
+	CreateModelBinaryFileUpload(namespace string, createdModel *models.Model) (*model.Model, error)
+	HandleCreateModelMultiFormDataUpload(namespace string, createdModel *models.Model) (*models.ModelResponse, error)
+	ListModels(namespace string) ([]*model.Model, error)
+	UpdateModelVersion(namespace string, updatedInfo *model.UpdateModelVersionRequest) (*model.ModelVersion, error)
+	DeleteModel(namespace string, modelName string) error
+	DeleteModelVersion(namespace string, modelName string, version uint64) error
+}
+
+type modelService struct {
+	modelRepository repository.ModelRepository
+	triton          triton.TritonService
+}
+
+func NewModelService(r repository.ModelRepository, t triton.TritonService) ModelService {
+	return &modelService{
+		modelRepository: r,
+		triton:          t,
+	}
+}
 
 func createModelResponse(modelInDB models.Model, versions []models.Version, tritonModels []models.TModel) *models.ModelResponse {
 	var vers []models.VersionResponse
@@ -35,42 +64,44 @@ func createModelResponse(modelInDB models.Model, versions []models.Version, trit
 		Name:     modelInDB.Name,
 		FullName: modelInDB.FullName,
 		Id:       modelInDB.Id,
-		CVTask:   model.CVTask(modelInDB.CVTask).String(),
+		Task:     model.Model_Task(modelInDB.CVTask).String(),
 		Versions: vers,
 	}
 }
 
-func createModelInfo(modelInDB models.Model, versions []models.Version, tritonModels []models.TModel) *model.ModelInfo {
-	var vers []*model.ModelVersion
-	for i := 0; i < len(versions); i++ {
-		ver := versions[i]
-		var st = model.ModelStatus_OFFLINE
-		if ver.Status == model.ModelStatus_ONLINE.String() {
-			st = model.ModelStatus_ONLINE
-		} else if ver.Status == model.ModelStatus_ERROR.String() {
-			st = model.ModelStatus_ERROR
-		}
-
-		vers = append(vers, &model.ModelVersion{
-			Version:     ver.Version,
-			ModelId:     ver.ModelId,
-			Description: ver.Description,
-			CreatedAt:   timestamppb.New(ver.CreatedAt),
-			UpdatedAt:   timestamppb.New(ver.UpdatedAt),
-			Status:      st,
-		})
+func createModelVersion(modelVersionInDB models.Version) *model.ModelVersion {
+	var st = model.ModelVersion_STATUS_OFFLINE
+	if modelVersionInDB.Status == model.ModelVersion_STATUS_ONLINE.String() {
+		st = model.ModelVersion_STATUS_ONLINE
+	} else if modelVersionInDB.Status == model.ModelVersion_STATUS_ERROR.String() {
+		st = model.ModelVersion_STATUS_ERROR
 	}
-	return &model.ModelInfo{
-		Name:      modelInDB.Name,
-		Full_Name: modelInDB.FullName,
-		Id:        modelInDB.Id,
-		CvTask:    model.CVTask(modelInDB.CVTask),
-		Versions:  vers,
+
+	return &model.ModelVersion{
+		Version:     modelVersionInDB.Version,
+		ModelId:     modelVersionInDB.ModelId,
+		Description: modelVersionInDB.Description,
+		CreatedAt:   timestamppb.New(modelVersionInDB.CreatedAt),
+		UpdatedAt:   timestamppb.New(modelVersionInDB.UpdatedAt),
+		Status:      st,
 	}
 }
 
-func setModelOnline(s *modelService, modelID int32, modelVersion int32) error {
+func createModelInfo(modelInDB models.Model, versions []models.Version, tritonModels []models.TModel) *model.Model {
+	var vers []*model.ModelVersion
+	for i := 0; i < len(versions); i++ {
+		vers = append(vers, createModelVersion(versions[i]))
+	}
+	return &model.Model{
+		Name:          modelInDB.Name,
+		FullName:      modelInDB.FullName,
+		Id:            uint64(modelInDB.Id),
+		Task:          model.Model_Task(modelInDB.CVTask),
+		ModelVersions: vers,
+	}
+}
 
+func setModelOnline(s *modelService, modelID uint64, modelVersion uint64) error {
 	var tEnsembleModel models.TModel
 	var err error
 
@@ -79,19 +110,19 @@ func setModelOnline(s *modelService, modelID int32, modelVersion int32) error {
 	}
 
 	// Load one ensemble model, which will also load all its dependent models
-	if _, err = triton.LoadModelRequest(triton.TritonClient, tEnsembleModel.Name); err != nil {
-		if err = s.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
+	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
+		if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
 			UpdatedAt: time.Now(),
-			Status:    model.ModelStatus_ERROR.String(),
+			Status:    model.ModelVersion_STATUS_ERROR.String(),
 		}); err != nil {
 			return err
 		}
 		return err
 	}
 
-	if err = s.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
+	if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, models.Version{
 		UpdatedAt: time.Now(),
-		Status:    model.ModelStatus_ONLINE.String(),
+		Status:    model.ModelVersion_STATUS_ONLINE.String(),
 	}); err != nil {
 		return err
 	}
@@ -99,7 +130,7 @@ func setModelOnline(s *modelService, modelID int32, modelVersion int32) error {
 	return nil
 }
 
-func setModelOffline(s *modelService, modelID int32, modelVersion int32) error {
+func setModelOffline(s *modelService, modelID uint64, modelVersion uint64) error {
 
 	var tritonModels []models.TModel
 	var err error
@@ -110,11 +141,11 @@ func setModelOffline(s *modelService, modelID int32, modelVersion int32) error {
 
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
-		if _, err = triton.UnloadModelRequest(triton.TritonClient, tm.Name); err != nil {
+		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err = s.UpdateModelVersion(modelID, modelVersion, models.Version{
+			if err = s.modelRepository.UpdateModelVersion(modelID, modelVersion, models.Version{
 				UpdatedAt: time.Now(),
-				Status:    model.ModelStatus_ERROR.String(),
+				Status:    model.ModelVersion_STATUS_ERROR.String(),
 			}); err != nil {
 				return err
 			}
@@ -122,43 +153,14 @@ func setModelOffline(s *modelService, modelID int32, modelVersion int32) error {
 		}
 	}
 
-	if err := s.UpdateModelVersion(modelID, modelVersion, models.Version{
+	if err := s.modelRepository.UpdateModelVersion(modelID, modelVersion, models.Version{
 		UpdatedAt: time.Now(),
-		Status:    model.ModelStatus_OFFLINE.String(),
+		Status:    model.ModelVersion_STATUS_OFFLINE.String(),
 	}); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type ModelService interface {
-	CreateModel(model *models.Model) (*models.Model, error)
-	GetModelByName(namespace string, modelName string) (models.Model, error)
-	GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error)
-	CreateVersion(version models.Version) (models.Version, error)
-	UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error
-	UpdateModelMetaData(namespace string, updatedModel models.Model) (*model.ModelInfo, error)
-	GetModelVersion(modelId int32, version int32) (models.Version, error)
-	GetModelVersions(modelId int32) ([]models.Version, error)
-	PredictModelByUpload(namespace string, modelName string, version int32, imgsBytes [][]byte, cvTask model.CVTask) (interface{}, error)
-	CreateModelByUpload(namespace string, createdModel *models.Model) (*model.ModelInfo, error)
-	HandleCreateModelByUpload(namespace string, createdModel *models.Model) (*models.ModelResponse, error)
-	ListModels(namespace string) ([]*model.ModelInfo, error)
-	UpdateModel(namespace string, updatedInfo *model.UpdateModelRequest) (*model.ModelInfo, error)
-	DeleteModel(namespace string, modelName string) error
-	DeleteModelVersion(namespace string, modelName string, version int32) error
-	GetModelVersionLatest(modelId int32) (models.Version, error)
-}
-
-type modelService struct {
-	modelRepository repository.ModelRepository
-}
-
-func NewModelService(r repository.ModelRepository) ModelService {
-	return &modelService{
-		modelRepository: r,
-	}
 }
 
 func (s *modelService) CreateModel(model *models.Model) (*models.Model, error) {
@@ -186,7 +188,7 @@ func (s *modelService) GetModelByName(namespace string, modelName string) (model
 	return s.modelRepository.GetModelByName(namespace, modelName)
 }
 
-func (s *modelService) GetModelVersionLatest(modelId int32) (models.Version, error) {
+func (s *modelService) GetModelVersionLatest(modelId uint64) (models.Version, error) {
 	return s.modelRepository.GetModelVersionLatest(modelId)
 }
 
@@ -202,23 +204,19 @@ func (s *modelService) CreateVersion(version models.Version) (models.Version, er
 	}
 }
 
-func (s *modelService) UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error {
-	return s.modelRepository.UpdateModelVersion(modelId, modelVersion, versionInfo)
-}
-
-func (s *modelService) GetModelVersion(modelId int32, version int32) (models.Version, error) {
+func (s *modelService) GetModelVersion(modelId uint64, version uint64) (models.Version, error) {
 	return s.modelRepository.GetModelVersion(modelId, version)
 }
 
-func (s *modelService) GetModelVersions(modelId int32) ([]models.Version, error) {
+func (s *modelService) GetModelVersions(modelId uint64) ([]models.Version, error) {
 	return s.modelRepository.GetModelVersions(modelId)
 }
 
-func (s *modelService) GetTModels(modelId int32) ([]models.TModel, error) {
+func (s *modelService) GetTModels(modelId uint64) ([]models.TModel, error) {
 	return s.modelRepository.GetTModels(modelId)
 }
 
-func (s *modelService) PredictModelByUpload(namespace string, modelName string, version int32, imgsBytes [][]byte, cvTask model.CVTask) (interface{}, error) {
+func (s *modelService) ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task model.Model_Task) (interface{}, error) {
 	// Triton model name is change into
 	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
@@ -232,11 +230,11 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 
 	ensembleModelName := ensembleModel.Name
 	ensembleModelVersion := ensembleModel.Version
-	modelMetadataResponse := triton.ModelMetadataRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	modelMetadataResponse := s.triton.ModelMetadataRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("Model is offline")
 	}
-	modelConfigResponse := triton.ModelConfigRequest(triton.TritonClient, ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	modelConfigResponse := s.triton.ModelConfigRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
 		return nil, err
 	}
@@ -244,19 +242,19 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
-	inferResponse, err := triton.ModelInferRequest(triton.TritonClient, cvTask, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := s.triton.ModelInferRequest(task, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
 	if err != nil {
 		return nil, err
 	}
 	// /* We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
 	// calculated by the model. */
-	postprocessResponse, err := triton.PostProcess(inferResponse, modelMetadataResponse, cvTask)
+	postprocessResponse, err := s.triton.PostProcess(inferResponse, modelMetadataResponse, task)
 	if err != nil {
 		return nil, err
 	}
-	switch cvTask {
-	case model.CVTask_CLASSIFICATION:
+	switch task {
+	case model.Model_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
 		var contents []*model.ClassificationOutput
 		for _, clsRes := range clsResponses {
@@ -275,28 +273,28 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 			contents = append(contents, &clsOutput)
 		}
 		clsOutputs := model.ClassificationOutputs{
-			Contents: contents,
+			ClassificationOutputs: contents,
 		}
 		return &clsOutputs, nil
 
-	case model.CVTask_DETECTION:
+	case model.Model_TASK_DETECTION:
 		detResponses := postprocessResponse.(triton.DetectionOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataLabels := detResponses.Labels
 		var detOutputs model.DetectionOutputs
 		for i := range batchedOutputDataBboxes {
-			var contents []*model.BoundingBoxPrediction
+			var contents []*model.BoundingBoxObject
 			for j := range batchedOutputDataBboxes[i] {
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
 
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
 				if label != "0" {
-					pred := &model.BoundingBoxPrediction{
+					pred := &model.BoundingBoxObject{
 						Category: label,
 						Score:    box[4],
 						// Convert x1y1x2y2 to xywh where xy is top-left corner
-						Box: &model.Box{
+						BoundingBox: &model.BoundingBox{
 							Left:   box[0],
 							Top:    box[1],
 							Width:  box[2] - box[0],
@@ -307,9 +305,9 @@ func (s *modelService) PredictModelByUpload(namespace string, modelName string, 
 				}
 			}
 			detOutput := &model.DetectionOutput{
-				Contents: contents,
+				BoundingBoxObjects: contents,
 			}
-			detOutputs.Contents = append(detOutputs.Contents, detOutput)
+			detOutputs.DetectionOutput = append(detOutputs.DetectionOutput, detOutput)
 		}
 		return &detOutputs, nil
 	default:
@@ -326,7 +324,6 @@ func createModel(s *modelService, namespace string, uploadedModel *models.Model)
 		}
 		modelInDB = *createdModel
 	}
-
 	latestVersion, err := s.modelRepository.GetModelVersionLatest(modelInDB.Id)
 	if err == nil {
 		uploadedModel.Versions[0].Version = latestVersion.Version + 1
@@ -355,32 +352,32 @@ func createModel(s *modelService, namespace string, uploadedModel *models.Model)
 	return modelInDB, versions, uploadedModel.TritonModels, nil
 }
 
-func (s *modelService) CreateModelByUpload(namespace string, uploadedModel *models.Model) (*model.ModelInfo, error) {
+func (s *modelService) CreateModelBinaryFileUpload(namespace string, uploadedModel *models.Model) (*model.Model, error) {
 	modelInDB, versions, tritonModels, err := createModel(s, namespace, uploadedModel)
 	return createModelInfo(modelInDB, versions, tritonModels), err
 }
 
-func (s *modelService) HandleCreateModelByUpload(namespace string, uploadedModel *models.Model) (*models.ModelResponse, error) {
+func (s *modelService) HandleCreateModelMultiFormDataUpload(namespace string, uploadedModel *models.Model) (*models.ModelResponse, error) {
 	modelInDB, versions, tritonModels, err := createModel(s, namespace, uploadedModel)
 	return createModelResponse(modelInDB, versions, tritonModels), err
 }
 
-func (s *modelService) ListModels(namespace string) ([]*model.ModelInfo, error) {
+func (s *modelService) ListModels(namespace string) ([]*model.Model, error) {
 	models, err := s.modelRepository.ListModels(models.ListModelQuery{Namespace: namespace})
 	if err != nil {
-		return []*model.ModelInfo{}, err
+		return []*model.Model{}, err
 	}
 
-	var resModels []*model.ModelInfo
+	var resModels []*model.Model
 	for i := 0; i < len(models); i++ {
 		md := models[i]
 		versions, err := s.GetModelVersions(md.Id)
 		if err != nil {
-			return []*model.ModelInfo{}, err
+			return []*model.Model{}, err
 		}
 		tritonModels, err := s.GetTModels(md.Id)
 		if err != nil {
-			return []*model.ModelInfo{}, err
+			return []*model.Model{}, err
 
 		}
 		resModels = append(resModels, createModelInfo(md, versions, tritonModels))
@@ -389,76 +386,57 @@ func (s *modelService) ListModels(namespace string) ([]*model.ModelInfo, error) 
 	return resModels, nil
 }
 
-func (s *modelService) UpdateModelMetaData(namespace string, updatedModel models.Model) (*model.ModelInfo, error) {
-	md, err := s.GetModelByName(namespace, updatedModel.Name)
-	if err != nil {
-		return &model.ModelInfo{}, err
-	}
-
-	err = s.modelRepository.UpdateModelMetaData(md.Id, updatedModel)
-	if err != nil {
-		return &model.ModelInfo{}, err
-	}
-
-	modelInfo, err := s.GetModelMetaData(namespace, md.Name)
-	if err != nil {
-		return &model.ModelInfo{}, err
-	}
-
-	return modelInfo, nil
-}
-
-func (s *modelService) UpdateModel(namespace string, in *model.UpdateModelRequest) (*model.ModelInfo, error) {
+func (s *modelService) UpdateModelVersion(namespace string, in *model.UpdateModelVersionRequest) (*model.ModelVersion, error) {
 	modelInDB, err := s.GetModelByName(namespace, in.Name)
 	if err != nil {
-		return &model.ModelInfo{}, err
+		return &model.ModelVersion{}, err
 	}
-
-	if in.UpdateMask != nil && len(in.UpdateMask.Paths) > 0 {
-		for _, field := range in.UpdateMask.Paths {
+	if in.FieldMask != nil && len(in.FieldMask.Paths) > 0 {
+		for _, field := range in.FieldMask.Paths {
 			switch field {
 			case "status":
-				switch in.Model.Status {
-				case model.ModelStatus_ONLINE:
+				switch in.VersionPatch.Status {
+				case model.ModelVersion_STATUS_ONLINE:
 					if err := setModelOnline(s, modelInDB.Id, in.Version); err != nil {
-						return &model.ModelInfo{}, err
+						return &model.ModelVersion{}, err
 					}
-				case model.ModelStatus_OFFLINE:
+				case model.ModelVersion_STATUS_OFFLINE:
 					if err := setModelOffline(s, modelInDB.Id, in.Version); err != nil {
-						return &model.ModelInfo{}, err
+						return &model.ModelVersion{}, err
 					}
 				default:
-					return &model.ModelInfo{}, fmt.Errorf("Wrong status value. Status should be ONLINE or OFFLINE")
+					return &model.ModelVersion{}, fmt.Errorf("Wrong status value. Status should be ONLINE or OFFLINE")
 				}
 			case "description":
-				err = s.UpdateModelVersion(modelInDB.Id, in.Version, models.Version{
+				err = s.modelRepository.UpdateModelVersion(modelInDB.Id, in.Version, models.Version{
 					UpdatedAt:   time.Now(),
-					Description: in.Model.Description,
+					Description: in.VersionPatch.Description,
 				})
 				if err != nil {
-					return &model.ModelInfo{}, err
+					return &model.ModelVersion{}, err
 				}
 			}
 		}
 	}
-	return s.GetModelMetaData(namespace, in.Name)
+	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, in.Version)
+	return createModelVersion(modelVersionInDB), err
 }
 
-func (s *modelService) GetModelMetaData(namespace string, modelName string) (*model.ModelInfo, error) {
+func (s *modelService) GetFullModelData(namespace string, modelName string) (*model.Model, error) {
 	// TODO: improve by using join
 	resModelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
-		return &model.ModelInfo{}, err
+		return &model.Model{}, err
 	}
 
 	versions, err := s.GetModelVersions(resModelInDB.Id)
 	if err != nil {
-		return &model.ModelInfo{}, err
+		return &model.Model{}, err
 	}
 
 	tritonModels, err := s.GetTModels(resModelInDB.Id)
 	if err != nil {
-		return &model.ModelInfo{}, err
+		return &model.Model{}, err
 	}
 
 	return createModelInfo(resModelInDB, versions, tritonModels), nil
@@ -469,7 +447,6 @@ func (s *modelService) DeleteModel(namespace string, modelName string) error {
 	if err != nil {
 		return err
 	}
-
 	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
 	if err == nil {
 		for i := 0; i < len(modelVersionsInDB); i++ {
@@ -489,12 +466,12 @@ func (s *modelService) DeleteModel(namespace string, modelName string) error {
 	return s.modelRepository.DeleteModel(modelInDB.Id)
 }
 
-func (s *modelService) DeleteModelVersion(namespace string, modelName string, version int32) error {
+func (s *modelService) DeleteModelVersion(namespace string, modelName string, version uint64) error {
 	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
 		return err
 	}
-	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, int32(version))
+	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, version)
 	if err != nil {
 		return err
 	}

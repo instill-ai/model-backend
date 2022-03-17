@@ -1,8 +1,8 @@
 package utils
 
 var CVTasks = map[string]int{
-	"CLASSIFICATION": 1,
-	"DETECTION":      2,
+	"TASK_CLASSIFICATION": 1,
+	"TASK_DETECTION":      2,
 }
 
 const MaxBatchSize int = 32

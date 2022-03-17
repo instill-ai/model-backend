@@ -20,7 +20,7 @@ import (
 type Model struct {
 
 	// Model unique ID
-	Id int32 `json:"id,omitempty"`
+	Id uint64 `json:"id,omitempty"`
 
 	// Model name
 	Name string `json:"name,omitempty"`
@@ -28,7 +28,7 @@ type Model struct {
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	CVTask int32 `json:"cv_task,omitempty"`
+	CVTask uint64 `json:"cv_task,omitempty"`
 
 	// Not stored inn DB, only used for processing
 	FullName     string
@@ -40,7 +40,7 @@ type Model struct {
 type TModel struct {
 
 	// Triton Model unique ID
-	Id int32 `json:"id,omitempty"`
+	Id uint64 `json:"id,omitempty"`
 
 	// Triton Model name
 	Name string `json:"name,omitempty"`
@@ -52,19 +52,19 @@ type TModel struct {
 	Status string `json:"status,omitempty"`
 
 	// Model ID
-	ModelId int32 `json:"model_id,omitempty"`
+	ModelId uint64 `json:"model_id,omitempty"`
 
-	ModelVersion int32 `json:"model_version,omitempty"`
+	ModelVersion uint64 `json:"model_version,omitempty"`
 
 	Platform string `json:"platform,omitempty"`
 }
 
 type Version struct {
 	// Model ID
-	ModelId int32 `json:"model_id,omitempty"`
+	ModelId uint64 `json:"model_id,omitempty"`
 
 	// Model version
-	Version int32 `json:"version,omitempty"`
+	Version uint64 `json:"version,omitempty"`
 
 	// Model description
 	Description string `json:"description,omitempty"`
@@ -102,10 +102,10 @@ type ListModelQuery struct {
 
 type VersionResponse struct {
 	// Model unique ID
-	ModelId int32
+	ModelId uint64
 
 	// Model version
-	Version int32
+	Version uint64
 
 	// Model description
 	Description string
@@ -123,14 +123,14 @@ type VersionResponse struct {
 type ModelResponse struct {
 
 	// Model unique ID
-	Id int32
+	Id uint64
 
 	// Model name
 	Name string
 
 	FullName string
 
-	CVTask string
+	Task string
 
 	Versions []VersionResponse
 }

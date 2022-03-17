@@ -10,14 +10,37 @@ import (
 
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
-	"github.com/instill-ai/protogen-go/model"
+	model "github.com/instill-ai/protogen-go/model/v1alpha"
 	"google.golang.org/grpc"
 )
 
-var TritonClient inferenceserver.GRPCInferenceServiceClient
-var connection *grpc.ClientConn
+type TritonService interface {
+	ServerLiveRequest() *inferenceserver.ServerLiveResponse
+	ServerReadyRequest() *inferenceserver.ServerReadyResponse
+	ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse
+	ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse
+	ModelInferRequest(cvTask model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task model.Model_Task) (interface{}, error)
+	LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
+	UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
+	ListModelsRequest() *inferenceserver.RepositoryIndexResponse
+	IsTritonServerReady() bool
+	Init()
+	Close()
+}
 
-func Init() {
+type tritonService struct {
+	tritonClient inferenceserver.GRPCInferenceServiceClient
+	connection   *grpc.ClientConn
+}
+
+func NewTritonService() TritonService {
+	tritonService := &tritonService{}
+	tritonService.Init()
+	return tritonService
+}
+
+func (ts *tritonService) Init() {
 	grpcUri := configs.Config.TritonServer.GrpcUri
 	// Connect to gRPC server
 	conn, err := grpc.Dial(grpcUri, grpc.WithInsecure())
@@ -26,45 +49,45 @@ func Init() {
 	}
 
 	// Create client from gRPC server connection
-	connection = conn
-	TritonClient = inferenceserver.NewGRPCInferenceServiceClient(conn)
+	ts.connection = conn
+	ts.tritonClient = inferenceserver.NewGRPCInferenceServiceClient(conn)
 }
 
-func Close() {
-	if connection != nil {
-		connection.Close()
+func (ts *tritonService) Close() {
+	if ts.connection != nil {
+		ts.connection.Close()
 	}
 }
 
-func ServerLiveRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerLiveResponse {
+func (ts *tritonService) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverLiveRequest := inferenceserver.ServerLiveRequest{}
 	// Submit ServerLive request to server
-	serverLiveResponse, err := client.ServerLive(ctx, &serverLiveRequest)
+	serverLiveResponse, err := ts.tritonClient.ServerLive(ctx, &serverLiveRequest)
 	if err != nil {
 		log.Printf("Couldn't get server live: %v", err)
 	}
 	return serverLiveResponse
 }
 
-func ServerReadyRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.ServerReadyResponse {
+func (ts *tritonService) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	serverReadyRequest := inferenceserver.ServerReadyRequest{}
 	// Submit ServerReady request to server
-	serverReadyResponse, err := client.ServerReady(ctx, &serverReadyRequest)
+	serverReadyResponse, err := ts.tritonClient.ServerReady(ctx, &serverReadyRequest)
 	if err != nil {
 		log.Printf("Couldn't get server ready: %v", err)
 	}
 	return serverReadyResponse
 }
 
-func ModelMetadataRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse {
+func (ts *tritonService) ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -74,15 +97,16 @@ func ModelMetadataRequest(client inferenceserver.GRPCInferenceServiceClient, mod
 		Name:    modelName,
 		Version: modelVersion,
 	}
+	fmt.Println(">>>>>>>>chhcccc ", ts.tritonClient)
 	// Submit modelMetadata request to server
-	modelMetadataResponse, err := client.ModelMetadata(ctx, &modelMetadataRequest)
+	modelMetadataResponse, err := ts.tritonClient.ModelMetadata(ctx, &modelMetadataRequest)
 	if err != nil {
 		log.Printf("Couldn't get server model metadata: %v", err)
 	}
 	return modelMetadataResponse
 }
 
-func ModelConfigRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
+func (ts *tritonService) ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -93,14 +117,14 @@ func ModelConfigRequest(client inferenceserver.GRPCInferenceServiceClient, model
 		Version: modelVersion,
 	}
 	// Submit modelMetadata request to server
-	modelConfigResponse, err := client.ModelConfig(ctx, &modelConfigRequest)
+	modelConfigResponse, err := ts.tritonClient.ModelConfig(ctx, &modelConfigRequest)
 	if err != nil {
 		log.Printf("Couldn't get server model config: %v", err)
 	}
 	return modelConfigResponse
 }
 
-func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask model.CVTask, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (ts *tritonService) ModelInferRequest(cvTask model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -135,7 +159,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch cvTask {
-		case model.CVTask_CLASSIFICATION:
+		case model.Model_TASK_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 				Parameters: map[string]*inferenceserver.InferParameter{
@@ -146,7 +170,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 					},
 				},
 			})
-		case model.CVTask_DETECTION:
+		case model.Model_TASK_DETECTION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
@@ -167,7 +191,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(rawInput))
 
 	// Submit inference request to server
-	modelInferResponse, err := client.ModelInfer(ctx, &modelInferRequest)
+	modelInferResponse, err := ts.tritonClient.ModelInfer(ctx, &modelInferRequest)
 	if err != nil {
 		log.Printf("Error processing InferRequest: %v", err)
 		return &inferenceserver.ModelInferResponse{}, err
@@ -176,7 +200,7 @@ func ModelInferRequest(client inferenceserver.GRPCInferenceServiceClient, cvTask
 	return modelInferResponse, nil
 }
 
-func PostProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 
 	if err != nil {
@@ -220,7 +244,7 @@ func PostProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse
 	}, nil
 }
 
-func PostProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (interface{}, error) {
+func postProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (interface{}, error) {
 	outputTensor, rawOutputContent, err := GetOutputFromInferResponse(outputName, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -235,20 +259,20 @@ func PostProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
-func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, cvTask model.CVTask) (interface{}, error) {
+func (ts *tritonService) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task model.Model_Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
 	)
 
-	switch cvTask {
-	case model.CVTask_CLASSIFICATION:
-		outputs, err = PostProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
+	switch task {
+	case model.Model_TASK_CLASSIFICATION:
+		outputs, err = postProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process classification output: %w", err)
 		}
-	case model.CVTask_DETECTION:
-		outputs, err = PostProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+	case model.Model_TASK_DETECTION:
+		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
 		}
@@ -259,7 +283,8 @@ func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadat
 	return outputs, nil
 }
 
-func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
+func (ts *tritonService) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
+	fmt.Println(">LoadModelRequestLoadModelRequest")
 	// Create context for our request with 60 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -270,10 +295,10 @@ func LoadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelNa
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	return client.RepositoryModelLoad(ctx, &loadModelRequest)
+	return ts.tritonClient.RepositoryModelLoad(ctx, &loadModelRequest)
 }
 
-func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
+func (ts *tritonService) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -284,10 +309,10 @@ func UnloadModelRequest(client inferenceserver.GRPCInferenceServiceClient, model
 		ModelName:      modelName,
 	}
 	// Submit loadModelRequest request to server
-	return client.RepositoryModelUnload(ctx, &unloadModelRequest)
+	return ts.tritonClient.RepositoryModelUnload(ctx, &unloadModelRequest)
 }
 
-func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *inferenceserver.RepositoryIndexResponse {
+func (ts *tritonService) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -297,15 +322,15 @@ func ListModelsRequest(client inferenceserver.GRPCInferenceServiceClient) *infer
 		RepositoryName: "",
 	}
 	// Submit loadModelRequest request to server
-	listModelsResponse, err := client.RepositoryIndex(ctx, &listModelsRequest)
+	listModelsResponse, err := ts.tritonClient.RepositoryIndex(ctx, &listModelsRequest)
 	if err != nil {
 		log.Printf("Couldn't list models: %v", err)
 	}
 	return listModelsResponse
 }
 
-func IsTritonServerReady() bool {
-	serverLiveResponse := ServerLiveRequest(TritonClient)
+func (ts *tritonService) IsTritonServerReady() bool {
+	serverLiveResponse := ts.ServerLiveRequest()
 	if serverLiveResponse == nil {
 		return false
 	}
@@ -314,7 +339,7 @@ func IsTritonServerReady() bool {
 		return false
 	}
 
-	serverReadyResponse := ServerReadyRequest(TritonClient)
+	serverReadyResponse := ts.ServerReadyRequest()
 	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
 	return serverReadyResponse.Ready
 }

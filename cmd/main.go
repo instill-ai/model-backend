@@ -33,7 +33,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/services"
 	"github.com/instill-ai/model-backend/rpc"
-	"github.com/instill-ai/protogen-go/model"
+	model "github.com/instill-ai/protogen-go/model/v1alpha"
 
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -96,7 +96,6 @@ func main() {
 	}
 
 	db := database.GetConnection()
-	triton.Init()
 
 	// Create tls based credential.
 	var creds credentials.TransportCredentials
@@ -140,10 +139,11 @@ func main() {
 
 	grpcS := grpc.NewServer(grpcServerOpts...)
 	modelRepository := repository.NewModelRepository(db)
-	modelService := services.NewModelService(modelRepository)
-	modelServiceHandler := rpc.NewServiceHandlers(modelService)
+	tritonService := triton.NewTritonService()
+	modelService := services.NewModelService(modelRepository, tritonService)
+	modelServiceHandler := rpc.NewServiceHandlers(modelService, tritonService)
 
-	model.RegisterModelServer(grpcS, modelServiceHandler)
+	model.RegisterModelServiceServer(grpcS, modelServiceHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -162,11 +162,12 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  GET /hello/{name}
+	// Register custom route for  POST /models/{name}/versions/{version}/upload/outputs which makes model inference for REST multiple-part form-data
 	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
 		panic(err)
 	}
 
+	// Register custom route for  POST /models/upload which uploads model for REST multiple-part form-data
 	if err := gwS.HandlePath("POST", "/models/upload", appendCustomHeaderMiddleware(rpc.HandleCreateModelByUpload)); err != nil {
 		panic(err)
 	}
@@ -178,7 +179,7 @@ func main() {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	}
 
-	if err := model.RegisterModelHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", configs.Config.Server.Port), dialOpts); err != nil {
+	if err := model.RegisterModelServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", configs.Config.Server.Port), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -221,7 +222,7 @@ func main() {
 
 	grpcS.GracefulStop()
 	database.Close(db)
-	triton.Close()
+	tritonService.Close()
 
 	logger.Sync()
 }

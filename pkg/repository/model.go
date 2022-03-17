@@ -15,17 +15,17 @@ type ModelRepository interface {
 	GetModelByName(namespace string, modelName string) (models.Model, error)
 	ListModels(query models.ListModelQuery) ([]models.Model, error)
 	CreateVersion(version models.Version) error
-	UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error
-	GetModelVersion(modelId int32, version int32) (models.Version, error)
-	GetModelVersions(modelId int32) ([]models.Version, error)
-	UpdateModelMetaData(modelId int32, updatedModel models.Model) error
+	UpdateModelVersion(modelId uint64, modelVersion uint64, versionInfo models.Version) error
+	GetModelVersion(modelId uint64, version uint64) (models.Version, error)
+	GetModelVersions(modelId uint64) ([]models.Version, error)
+	UpdateModelMetaData(modelId uint64, updatedModel models.Model) error
 	CreateTModel(model models.TModel) error
-	GetTModels(modelId int32) ([]models.TModel, error)
-	GetTEnsembleModel(modelId int32, version int32) (models.TModel, error)
-	DeleteModel(modelId int32) error
-	DeleteModelVersion(modelId int32, version int32) error
-	GetModelVersionLatest(modelId int32) (models.Version, error)
-	GetTModelVersions(modelId int32, version int32) ([]models.TModel, error)
+	GetTModels(modelId uint64) ([]models.TModel, error)
+	GetTEnsembleModel(modelId uint64, version uint64) (models.TModel, error)
+	DeleteModel(modelId uint64) error
+	DeleteModelVersion(modelId uint64, version uint64) error
+	GetModelVersionLatest(modelId uint64) (models.Version, error)
+	GetTModelVersions(modelId uint64, version uint64) ([]models.TModel, error)
 }
 
 type modelRepository struct {
@@ -81,7 +81,7 @@ func (r *modelRepository) CreateVersion(version models.Version) error {
 	return nil
 }
 
-func (r *modelRepository) UpdateModelVersion(modelId int32, modelVersion int32, versionInfo models.Version) error {
+func (r *modelRepository) UpdateModelVersion(modelId uint64, modelVersion uint64, versionInfo models.Version) error {
 
 	if result := r.DB.Model(&models.Version{}).Omit(`"version"."model_name"`).Where(map[string]interface{}{"model_id": modelId, "version": modelVersion}).Updates(&versionInfo); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
@@ -90,7 +90,7 @@ func (r *modelRepository) UpdateModelVersion(modelId int32, modelVersion int32, 
 	return nil
 }
 
-func (r *modelRepository) GetModelVersion(modelId int32, version int32) (models.Version, error) {
+func (r *modelRepository) GetModelVersion(modelId uint64, version uint64) (models.Version, error) {
 	var versionDB models.Version
 	if result := r.DB.Model(&models.Version{}).Where(map[string]interface{}{"model_id": modelId, "version": version}).First(&versionDB); result.Error != nil {
 		return models.Version{}, status.Errorf(codes.NotFound, "The version %v for model %v not found", version, modelId)
@@ -98,7 +98,7 @@ func (r *modelRepository) GetModelVersion(modelId int32, version int32) (models.
 	return versionDB, nil
 }
 
-func (r *modelRepository) GetModelVersions(modelId int32) ([]models.Version, error) {
+func (r *modelRepository) GetModelVersions(modelId uint64) ([]models.Version, error) {
 	var versions []models.Version
 	if result := r.DB.Model(&models.Version{}).Where("model_id", modelId).Order("version asc").Find(&versions); result.Error != nil {
 		return []models.Version{}, status.Errorf(codes.NotFound, "The versions for model %v not found", modelId)
@@ -106,7 +106,7 @@ func (r *modelRepository) GetModelVersions(modelId int32) ([]models.Version, err
 	return versions, nil
 }
 
-func (r *modelRepository) UpdateModelMetaData(modelId int32, updatedModel models.Model) error {
+func (r *modelRepository) UpdateModelMetaData(modelId uint64, updatedModel models.Model) error {
 	l, _ := logger.GetZapLogger()
 
 	// We ignore the full_name column since it's a virtual column
@@ -126,7 +126,7 @@ func (r *modelRepository) CreateTModel(model models.TModel) error {
 	return nil
 }
 
-func (r *modelRepository) GetTModels(modelId int32) ([]models.TModel, error) {
+func (r *modelRepository) GetTModels(modelId uint64) ([]models.TModel, error) {
 	var tmodels []models.TModel
 	if result := r.DB.Model(&models.TModel{}).Where("model_id", modelId).Find(&tmodels); result.Error != nil {
 		return []models.TModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)
@@ -134,7 +134,7 @@ func (r *modelRepository) GetTModels(modelId int32) ([]models.TModel, error) {
 	return tmodels, nil
 }
 
-func (r *modelRepository) GetTEnsembleModel(modelId int32, version int32) (models.TModel, error) {
+func (r *modelRepository) GetTEnsembleModel(modelId uint64, version uint64) (models.TModel, error) {
 	var ensembleModel models.TModel
 	result := r.DB.Model(&models.TModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
@@ -143,7 +143,7 @@ func (r *modelRepository) GetTEnsembleModel(modelId int32, version int32) (model
 	return ensembleModel, nil
 }
 
-func (r *modelRepository) GetTModelVersions(modelId int32, version int32) ([]models.TModel, error) {
+func (r *modelRepository) GetTModelVersions(modelId uint64, version uint64) ([]models.TModel, error) {
 	var tmodels []models.TModel
 	if result := r.DB.Model(&models.TModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version}).Find(&tmodels); result.Error != nil {
 		return []models.TModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)
@@ -151,14 +151,14 @@ func (r *modelRepository) GetTModelVersions(modelId int32, version int32) ([]mod
 	return tmodels, nil
 }
 
-func (r *modelRepository) DeleteModel(modelId int32) error {
+func (r *modelRepository) DeleteModel(modelId uint64) error {
 	if result := r.DB.Model(&models.Model{}).Where("id", modelId).Delete(models.Model{}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelId)
 	}
 	return nil
 }
 
-func (r *modelRepository) GetModelVersionLatest(modelId int32) (models.Version, error) {
+func (r *modelRepository) GetModelVersionLatest(modelId uint64) (models.Version, error) {
 	var versionDB models.Version
 	if result := r.DB.Model(&models.Version{}).Where(map[string]interface{}{"model_id": modelId}).Order("version desc").First(&versionDB); result.Error != nil {
 		return models.Version{}, status.Errorf(codes.NotFound, "There is no version for model id %v not found", modelId)
@@ -166,7 +166,7 @@ func (r *modelRepository) GetModelVersionLatest(modelId int32) (models.Version, 
 	return versionDB, nil
 }
 
-func (r *modelRepository) DeleteModelVersion(modelId int32, version int32) error {
+func (r *modelRepository) DeleteModelVersion(modelId uint64, version uint64) error {
 	if result := r.DB.Model(&models.Version{}).Where(map[string]interface{}{"model_id": modelId, "version": version}).Delete(models.Version{}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v and version %v", modelId, version)
 	}
