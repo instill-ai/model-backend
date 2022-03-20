@@ -97,7 +97,6 @@ func (ts *tritonService) ModelMetadataRequest(modelName string, modelVersion str
 		Name:    modelName,
 		Version: modelVersion,
 	}
-	fmt.Println(">>>>>>>>chhcccc ", ts.tritonClient)
 	// Submit modelMetadata request to server
 	modelMetadataResponse, err := ts.tritonClient.ModelMetadata(ctx, &modelMetadataRequest)
 	if err != nil {

@@ -316,6 +316,7 @@ func (s *modelService) ModelInfer(namespace string, modelName string, version ui
 }
 
 func createModel(s *modelService, namespace string, uploadedModel *models.Model) (models.Model, []models.Version, []models.TModel, error) {
+	fmt.Println(">>>>>>> creaateetttt")
 	modelInDB, err := s.GetModelByName(namespace, uploadedModel.Name)
 	if err != nil {
 		createdModel, err := s.CreateModel(uploadedModel)
