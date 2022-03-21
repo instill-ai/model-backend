@@ -219,7 +219,7 @@ func saveFile(stream model.ModelService_CreateModelBinaryFileUploadServer) (outF
 			fp, err = os.Create(tmpFile)
 			uploadedModel = models.Model{
 				Name:     fileData.ModelInitData.Name,
-				CVTask:   uint64(fileData.ModelInitData.Task),
+				Task:     uint64(fileData.ModelInitData.Task),
 				Versions: []models.Version{},
 			}
 			uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
@@ -345,12 +345,12 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		var cvTask = 0
-		sCVTask := r.FormValue("task")
-		if val, ok := mUtils.CVTasks[sCVTask]; ok {
-			cvTask = val
+		var task = 0
+		sTask := r.FormValue("task")
+		if val, ok := mUtils.Tasks[sTask]; ok {
+			task = val
 		} else {
-			if sCVTask != "" {
+			if sTask != "" {
 				makeJsonResponse(w, 400, "Parameter Error", "Wrong CV Task value")
 				return
 			}
@@ -397,7 +397,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		var uploadedModel = models.Model{
 			Versions: []models.Version{},
 			Name:     modelName,
-			CVTask:   uint64(cvTask),
+			Task:     uint64(task),
 		}
 		uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
 			Description: r.FormValue("description"),
@@ -425,7 +425,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		resModel, err := modelService.HandleCreateModelMultiFormDataUpload(username, &uploadedModel)
+		resModel, err := modelService.CreateModelBinaryFileUpload(username, &uploadedModel)
 		if err != nil {
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
@@ -433,7 +433,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		ret, _ := json.Marshal(resModel)
+		ret, _ := json.Marshal(model.CreateModelBinaryFileUploadResponse{Model: resModel})
 		_, _ = w.Write(ret)
 	} else {
 		w.Header().Add("Content-Type", "application/json+problem")
@@ -525,15 +525,15 @@ func (s *serviceHandlers) TriggerModel(ctx context.Context, in *model.TriggerMod
 	if err != nil {
 		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
 	}
-	cvTask := model.Model_Task(modelInDB.CVTask)
-	response, err := s.modelService.ModelInfer(username, in.Name, in.Version, imgsBytes, cvTask)
+	task := model.Model_Task(modelInDB.Task)
+	response, err := s.modelService.ModelInfer(username, in.Name, in.Version, imgsBytes, task)
 	if err != nil {
 		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
 	}
 
 	var data = &structpb.Struct{}
 	var b []byte
-	switch cvTask {
+	switch task {
 	case model.Model_TASK_CLASSIFICATION:
 		b, err = json.Marshal(response.(*model.ClassificationOutputs))
 		if err != nil {
@@ -576,9 +576,9 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService
 	if err != nil {
 		return makeError(404, "PredictModel", fmt.Sprintf("The model %v do not exist", modelName))
 	}
-	cvTask := model.Model_Task(modelInDB.CVTask)
+	task := model.Model_Task(modelInDB.Task)
 
-	response, err := s.modelService.ModelInfer(username, modelName, version, [][]byte{imageByte}, cvTask)
+	response, err := s.modelService.ModelInfer(username, modelName, version, [][]byte{imageByte}, task)
 
 	if err != nil {
 		return err
@@ -586,7 +586,7 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService
 
 	var data = &structpb.Struct{}
 	var b []byte
-	switch cvTask {
+	switch task {
 	case model.Model_TASK_CLASSIFICATION:
 		b, err = json.Marshal(response.(*model.ClassificationOutputs))
 		if err != nil {
@@ -657,15 +657,15 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		cvTask := model.Model_Task(modelInDB.CVTask)
-		response, err := modelService.ModelInfer(username, modelName, uint64(modelVersion), imgsBytes, cvTask)
+		task := model.Model_Task(modelInDB.Task)
+		response, err := modelService.ModelInfer(username, modelName, uint64(modelVersion), imgsBytes, task)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
 		}
 		var data = &structpb.Struct{}
 		var b []byte
-		switch cvTask {
+		switch task {
 		case model.Model_TASK_CLASSIFICATION:
 			b, err = json.Marshal(response.(*model.ClassificationOutputs))
 			if err != nil {

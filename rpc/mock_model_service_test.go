@@ -183,21 +183,6 @@ func (mr *MockModelServiceMockRecorder) GetModelVersions(modelId interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersions", reflect.TypeOf((*MockModelService)(nil).GetModelVersions), modelId)
 }
 
-// HandleCreateModelMultiFormDataUpload mocks base method.
-func (m *MockModelService) HandleCreateModelMultiFormDataUpload(namespace string, createdModel *models.Model) (*models.ModelResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HandleCreateModelMultiFormDataUpload", namespace, createdModel)
-	ret0, _ := ret[0].(*models.ModelResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// HandleCreateModelMultiFormDataUpload indicates an expected call of HandleCreateModelMultiFormDataUpload.
-func (mr *MockModelServiceMockRecorder) HandleCreateModelMultiFormDataUpload(namespace, createdModel interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleCreateModelMultiFormDataUpload", reflect.TypeOf((*MockModelService)(nil).HandleCreateModelMultiFormDataUpload), namespace, createdModel)
-}
-
 // ListModels mocks base method.
 func (m *MockModelService) ListModels(namespace string) ([]*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()

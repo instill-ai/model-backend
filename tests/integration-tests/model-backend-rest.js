@@ -57,13 +57,13 @@ export default function (data) {
         "POST /models/upload (multipart) task cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_det = new FormData();
@@ -78,13 +78,13 @@ export default function (data) {
         "POST /models/upload (multipart) task det response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task det response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task det response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response task": (r) =>
-          r.json().Task === "TASK_DETECTION",
+          r.json().model.task === 2,
           "POST /models/upload (multipart) task det response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_undefined = new FormData();
@@ -98,13 +98,13 @@ export default function (data) {
         "POST /models/upload (multipart) task undefined response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task undefined response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task undefined response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task undefined response task": (r) =>
-          r.json().Task === "TASK_UNSPECIFIED",
+          r.json().model.task === undefined, //default value of TASK_UNSPECIFIED task is 0 which not in response
           "POST /models/upload (multipart) task undefined response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       // clean up
@@ -144,13 +144,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_det = new FormData();
@@ -164,13 +164,13 @@ export default function (data) {
         "POST /models/upload (multipart) det response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task det response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task det response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task det response Versions": (r) =>
-          r.json().Versions.length === 2,
+          r.json().model.model_versions.length === 2,
       });
 
       let fd_undefined = new FormData();
@@ -183,13 +183,13 @@ export default function (data) {
         "POST /models/upload (multipart) undefined response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task undefined response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task undefined response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task undefined response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task undefined response Versions": (r) =>
-          r.json().Versions.length === 3,
+          r.json().model.model_versions.length === 3,
       });
 
       // clean up
@@ -218,13 +218,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -232,13 +232,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 2,
+          r.json().model.model_versions.length === 2,
       });
 
       let payload = JSON.stringify({
@@ -361,13 +361,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -471,13 +471,13 @@ export default function (data) {
         "POST /models/upload (multipart) det response Status": (r) =>
           r.status === 200,
           "POST /models/upload (multipart) task det response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task det response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response task": (r) =>
-          r.json().Task === "TASK_DETECTION",
+          r.json().model.task === 2,
           "POST /models/upload (multipart) task det response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -586,13 +586,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_UNSPECIFIED",
+          r.json().model.task === undefined,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -702,20 +702,20 @@ export default function (data) {
         "POST /models/upload (multipart) det response Status": (r) =>
           r.status === 200,
           "POST /models/upload (multipart) task det response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task det response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response task": (r) =>
-          r.json().Task === "TASK_DETECTION",
+          r.json().model.task === 2,
           "POST /models/upload (multipart) task det response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
       check(http.get(`${apiHost}/models/${model_name}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /models/${model_name} response Status`]: (r) =>
           r.status === 200,
-          [`GET /models/${model_name} cv_task`]: (r) =>
+          [`GET /models/${model_name} task`]: (r) =>
           r.json().model.task === "TASK_DETECTION",
           [`GET /models/${model_name} versions`]: (r) =>
           r.json().model.model_versions.length === 1,
@@ -760,13 +760,13 @@ export default function (data) {
         "POST /models/upload (multipart) det response Status": (r) =>
           r.status === 200,
           "POST /models/upload (multipart) task det response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task det response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response task": (r) =>
-          r.json().Task === "TASK_DETECTION",
+          r.json().model.task === 2,
           "POST /models/upload (multipart) task det response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       check(http.get(`${apiHost}/models`, {
@@ -774,7 +774,7 @@ export default function (data) {
       }), {
         [`GET /models response Status`]: (r) =>
           r.status === 200,
-          [`GET /models cv_task`]: (r) =>
+          [`GET /models task`]: (r) =>
           r.json().models[0].task !== undefined,
           [`GET /models versions`]: (r) =>
           r.json().models[0].model_versions.length > 0,
@@ -819,13 +819,13 @@ export default function (data) {
         "POST /models/upload (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 1,
+          r.json().model.model_versions.length === 1,
       });
 
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
@@ -834,13 +834,13 @@ export default function (data) {
         "POST /models (multipart) cls response Status": (r) =>
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response Name": (r) =>
-          r.json().Name !== undefined,
+          r.json().model.name !== undefined,
           "POST /models/upload (multipart) task cls response FullName": (r) =>
-          r.json().FullName !== undefined,
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response task": (r) =>
-          r.json().Task === "TASK_CLASSIFICATION",
+          r.json().model.task === 1,
           "POST /models/upload (multipart) task cls response Versions": (r) =>
-          r.json().Versions.length === 2,
+          r.json().model.model_versions.length === 2,
       });
 
       let new_description = randomString(20)

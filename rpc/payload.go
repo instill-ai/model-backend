@@ -91,8 +91,8 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	return &img, &metadata, nil
 }
 
-func ParseImageRequestInputsToBytes(inputs *model.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
-	for idx, content := range inputs.Inputs {
+func ParseImageRequestInputsToBytes(req *model.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
+	for idx, content := range req.Inputs {
 		var (
 			img      *image.Image
 			metadata *imageMetadata
@@ -129,8 +129,8 @@ func ParseImageRequestInputsToBytes(inputs *model.TriggerModelRequest) (imgsByte
 	return imgsBytes, imgsMetadata, nil
 }
 
-func parseImageFormDataInputsToBytes(r *http.Request) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
-	inputs := r.MultipartForm.File["inputs"]
+func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
+	inputs := req.MultipartForm.File["inputs"]
 	for _, content := range inputs {
 		file, err := content.Open()
 		if err != nil {

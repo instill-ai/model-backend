@@ -39,10 +39,9 @@ func NewModelRepository(db *gorm.DB) ModelRepository {
 }
 
 var GetModelSelectedFields = []string{
-	`"models"."id" as id`,
+	`"models"."id"`,
 	`"models"."name"`,
-	`"models"."cv_task"`,
-	`'models' as kind`,
+	`"models"."task"`,
 	`CONCAT(namespace, '/', name) as full_name`,
 }
 

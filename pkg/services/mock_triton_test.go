@@ -117,9 +117,9 @@ func (mr *MockTritonServiceMockRecorder) ModelConfigRequest(modelName, modelVers
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTritonService) ModelInferRequest(cvTask modelv1alpha.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTritonService) ModelInferRequest(task modelv1alpha.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ModelInferRequest", cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
+	ret := m.ctrl.Call(m, "ModelInferRequest", task, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1

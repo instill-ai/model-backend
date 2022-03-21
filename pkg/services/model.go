@@ -29,7 +29,6 @@ type ModelService interface {
 	GetFullModelData(namespace string, modelName string) (*model.Model, error)
 	ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task model.Model_Task) (interface{}, error)
 	CreateModelBinaryFileUpload(namespace string, createdModel *models.Model) (*model.Model, error)
-	HandleCreateModelMultiFormDataUpload(namespace string, createdModel *models.Model) (*models.ModelResponse, error)
 	ListModels(namespace string) ([]*model.Model, error)
 	UpdateModelVersion(namespace string, updatedInfo *model.UpdateModelVersionRequest) (*model.ModelVersion, error)
 	DeleteModel(namespace string, modelName string) error
@@ -45,27 +44,6 @@ func NewModelService(r repository.ModelRepository, t triton.TritonService) Model
 	return &modelService{
 		modelRepository: r,
 		triton:          t,
-	}
-}
-
-func createModelResponse(modelInDB models.Model, versions []models.Version, tritonModels []models.TModel) *models.ModelResponse {
-	var vers []models.VersionResponse
-	for i := 0; i < len(versions); i++ {
-		vers = append(vers, models.VersionResponse{
-			Version:     versions[i].Version,
-			ModelId:     versions[i].ModelId,
-			Description: versions[i].Description,
-			CreatedAt:   versions[i].CreatedAt,
-			UpdatedAt:   versions[i].UpdatedAt,
-			Status:      versions[i].Status,
-		})
-	}
-	return &models.ModelResponse{
-		Name:     modelInDB.Name,
-		FullName: modelInDB.FullName,
-		Id:       modelInDB.Id,
-		Task:     model.Model_Task(modelInDB.CVTask).String(),
-		Versions: vers,
 	}
 }
 
@@ -96,7 +74,7 @@ func createModelInfo(modelInDB models.Model, versions []models.Version, tritonMo
 		Name:          modelInDB.Name,
 		FullName:      modelInDB.FullName,
 		Id:            uint64(modelInDB.Id),
-		Task:          model.Model_Task(modelInDB.CVTask),
+		Task:          model.Model_Task(modelInDB.Task),
 		ModelVersions: vers,
 	}
 }
@@ -356,11 +334,6 @@ func createModel(s *modelService, namespace string, uploadedModel *models.Model)
 func (s *modelService) CreateModelBinaryFileUpload(namespace string, uploadedModel *models.Model) (*model.Model, error) {
 	modelInDB, versions, tritonModels, err := createModel(s, namespace, uploadedModel)
 	return createModelInfo(modelInDB, versions, tritonModels), err
-}
-
-func (s *modelService) HandleCreateModelMultiFormDataUpload(namespace string, uploadedModel *models.Model) (*models.ModelResponse, error) {
-	modelInDB, versions, tritonModels, err := createModel(s, namespace, uploadedModel)
-	return createModelResponse(modelInDB, versions, tritonModels), err
 }
 
 func (s *modelService) ListModels(namespace string) ([]*model.Model, error) {

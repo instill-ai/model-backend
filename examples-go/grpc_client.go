@@ -18,7 +18,7 @@ import (
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	cvtask := c.String("cvtask")
+	task := c.String("task")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
@@ -61,9 +61,9 @@ func upload(c *cli.Context) error {
 		}
 		if firstChunk {
 			cvt := model.Model_TASK_UNSPECIFIED
-			if cvtask == model.Model_TASK_DETECTION.String() {
+			if task == model.Model_TASK_DETECTION.String() {
 				cvt = model.Model_TASK_DETECTION
-			} else if cvtask == model.Model_TASK_CLASSIFICATION.String() {
+			} else if task == model.Model_TASK_CLASSIFICATION.String() {
 				cvt = model.Model_TASK_CLASSIFICATION
 			}
 			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
@@ -222,7 +222,7 @@ func main() {
 						Required: false,
 					},
 					&cli.StringFlag{
-						Name:     "cvtask",
+						Name:     "task",
 						Aliases:  []string{"cv"},
 						Usage:    "model `TASK`",
 						Required: false,

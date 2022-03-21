@@ -22,7 +22,7 @@ func TestModelService_CreateModel(t *testing.T) {
 
 		newModel := models.Model{
 			Name:      "normalname",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -51,7 +51,7 @@ func TestModelService_CreateModel_InvalidName(t *testing.T) {
 
 		newModel := models.Model{
 			Name:      "#$%^",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -73,7 +73,7 @@ func TestModelService_GetModelByName(t *testing.T) {
 
 		newModel := models.Model{
 			Name:      "normalname",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -184,7 +184,7 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository.
@@ -248,7 +248,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository.
@@ -333,7 +333,7 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{},
 		}
@@ -375,7 +375,7 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 
 		uploadModel := models.Model{
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{versionInDB},
 		}
@@ -396,7 +396,7 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{},
 		}
@@ -438,7 +438,7 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 
 		uploadModel := models.Model{
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{versionInDB},
 		}
@@ -476,7 +476,7 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{},
 		}
@@ -516,7 +516,7 @@ func TestModelService_DeleteModel(t *testing.T) {
 		newModel := models.Model{
 			Id:        1,
 			Name:      "test",
-			CVTask:    uint64(model.Model_TASK_CLASSIFICATION),
+			Task:      uint64(model.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []models.Version{},
 		}

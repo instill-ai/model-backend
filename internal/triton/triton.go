@@ -19,7 +19,7 @@ type TritonService interface {
 	ServerReadyRequest() *inferenceserver.ServerReadyResponse
 	ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse
 	ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse
-	ModelInferRequest(cvTask model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	ModelInferRequest(task model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
 	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task model.Model_Task) (interface{}, error)
 	LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
 	UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
@@ -123,7 +123,7 @@ func (ts *tritonService) ModelConfigRequest(modelName string, modelVersion strin
 	return modelConfigResponse
 }
 
-func (ts *tritonService) ModelInferRequest(cvTask model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (ts *tritonService) ModelInferRequest(task model.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -157,7 +157,7 @@ func (ts *tritonService) ModelInferRequest(cvTask model.Model_Task, rawInput [][
 	// Create request input output tensors
 	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
-		switch cvTask {
+		switch task {
 		case model.Model_TASK_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,

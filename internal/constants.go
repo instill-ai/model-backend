@@ -1,6 +1,6 @@
 package utils
 
-var CVTasks = map[string]int{
+var Tasks = map[string]int{
 	"TASK_CLASSIFICATION": 1,
 	"TASK_DETECTION":      2,
 }

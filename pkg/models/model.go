@@ -28,7 +28,7 @@ type Model struct {
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	CVTask uint64 `json:"cv_task,omitempty"`
+	Task uint64 `json:"task,omitempty"`
 
 	// Not stored inn DB, only used for processing
 	FullName     string
@@ -98,39 +98,4 @@ func (j *JSONB) Scan(value interface{}) error {
 
 type ListModelQuery struct {
 	Namespace string
-}
-
-type VersionResponse struct {
-	// Model unique ID
-	ModelId uint64
-
-	// Model version
-	Version uint64
-
-	// Model description
-	Description string
-
-	// Model version created date time
-	CreatedAt time.Time
-
-	// Model version updated date time
-	UpdatedAt time.Time
-
-	// Model version status
-	Status string
-}
-
-type ModelResponse struct {
-
-	// Model unique ID
-	Id uint64
-
-	// Model name
-	Name string
-
-	FullName string
-
-	Task string
-
-	Versions []VersionResponse
 }
