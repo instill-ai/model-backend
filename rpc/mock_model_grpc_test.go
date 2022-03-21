@@ -37,26 +37,6 @@ func (m *MockModelServiceClient) EXPECT() *MockModelServiceClientMockRecorder {
 	return m.recorder
 }
 
-// CreateModel mocks base method.
-func (m *MockModelServiceClient) CreateModel(ctx context.Context, in *modelv1alpha.CreateModelRequest, opts ...grpc.CallOption) (*modelv1alpha.CreateModelResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CreateModel", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.CreateModelResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateModel indicates an expected call of CreateModel.
-func (mr *MockModelServiceClientMockRecorder) CreateModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockModelServiceClient)(nil).CreateModel), varargs...)
-}
-
 // CreateModelBinaryFileUpload mocks base method.
 func (m *MockModelServiceClient) CreateModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelv1alpha.ModelService_CreateModelBinaryFileUploadClient, error) {
 	m.ctrl.T.Helper()
@@ -552,21 +532,6 @@ func NewMockModelServiceServer(ctrl *gomock.Controller) *MockModelServiceServer 
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockModelServiceServer) EXPECT() *MockModelServiceServerMockRecorder {
 	return m.recorder
-}
-
-// CreateModel mocks base method.
-func (m *MockModelServiceServer) CreateModel(arg0 context.Context, arg1 *modelv1alpha.CreateModelRequest) (*modelv1alpha.CreateModelResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModel", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.CreateModelResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateModel indicates an expected call of CreateModel.
-func (mr *MockModelServiceServerMockRecorder) CreateModel(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockModelServiceServer)(nil).CreateModel), arg0, arg1)
 }
 
 // CreateModelBinaryFileUpload mocks base method.

@@ -283,7 +283,6 @@ func (ts *tritonService) PostProcess(inferResponse *inferenceserver.ModelInferRe
 }
 
 func (ts *tritonService) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
-	fmt.Println(">LoadModelRequestLoadModelRequest")
 	// Create context for our request with 60 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

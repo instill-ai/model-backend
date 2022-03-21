@@ -67,12 +67,10 @@ func upload(c *cli.Context) error {
 				cvt = model.Model_TASK_CLASSIFICATION
 			}
 			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
-				ModelInitData: &model.ModelInitData{
-					Name:        modelName,
-					Description: "YoloV4 for object detection",
-					Task:        cvt,
-					Byte:        buf[:n],
-				},
+				Name:        modelName,
+				Description: "YoloV4 for object detection",
+				Task:        cvt,
+				Bytes:       buf[:n],
 			})
 			firstChunk = false
 			if err != nil {
@@ -80,9 +78,7 @@ func upload(c *cli.Context) error {
 			}
 		} else {
 			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
-				ModelInitData: &model.ModelInitData{
-					Byte: buf[:n],
-				},
+				Bytes: buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -176,7 +172,7 @@ func predict(c *cli.Context) error {
 			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
 				Name:    modelName,
 				Version: uint64(modelVersion),
-				Chunk:   buf[:n],
+				Bytes:   buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -184,7 +180,7 @@ func predict(c *cli.Context) error {
 			firstChunk = false
 		} else {
 			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
-				Chunk: buf[:n],
+				Bytes: buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
