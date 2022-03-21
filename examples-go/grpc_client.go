@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/instill-ai/protogen-go/model"
+	model "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,7 +18,7 @@ import (
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	cvtask := c.String("cvtask")
+	task := c.String("task")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
 	}
@@ -32,9 +32,9 @@ func upload(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelClient(conn)
+	client := model.NewModelServiceClient(conn)
 
-	streamUploader, err := client.CreateModelByUpload(ctx)
+	streamUploader, err := client.CreateModelBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create a stream to server, please make sure the server is running")
 	}
@@ -60,25 +60,25 @@ func upload(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
-			cvt := model.CVTask_UNDEFINED
-			if cvtask == model.CVTask_DETECTION.String() {
-				cvt = model.CVTask_DETECTION
-			} else if cvtask == model.CVTask_CLASSIFICATION.String() {
-				cvt = model.CVTask_CLASSIFICATION
+			cvt := model.Model_TASK_UNSPECIFIED
+			if task == model.Model_TASK_DETECTION.String() {
+				cvt = model.Model_TASK_DETECTION
+			} else if task == model.Model_TASK_CLASSIFICATION.String() {
+				cvt = model.Model_TASK_CLASSIFICATION
 			}
-			err = streamUploader.Send(&model.CreateModelRequest{
+			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
 				Name:        modelName,
 				Description: "YoloV4 for object detection",
-				CvTask:      cvt,
-				Content:     buf[:n],
+				Task:        cvt,
+				Bytes:       buf[:n],
 			})
 			firstChunk = false
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
 			}
 		} else {
-			err = streamUploader.Send(&model.CreateModelRequest{
-				Content: buf[:n],
+			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
+				Bytes: buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -103,15 +103,15 @@ func load(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelClient(conn)
+	client := model.NewModelServiceClient(conn)
 
-	res, err := client.UpdateModel(ctx, &model.UpdateModelRequest{
+	res, err := client.UpdateModelVersion(ctx, &model.UpdateModelVersionRequest{
 		Name:    c.String("name"),
-		Version: int32(c.Int("version")),
-		Model: &model.UpdateModelInfo{
-			Status: model.ModelStatus_ONLINE,
+		Version: uint64(c.Int("version")),
+		VersionPatch: &model.UpdateModelVersionPatch{
+			Status: model.ModelVersion_STATUS_ONLINE,
 		},
-		UpdateMask: &fieldmaskpb.FieldMask{
+		FieldMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"name", "status"},
 		},
 	})
@@ -140,9 +140,9 @@ func predict(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelClient(conn)
+	client := model.NewModelServiceClient(conn)
 
-	streamUploader, err := client.PredictModelByUpload(ctx)
+	streamUploader, err := client.TriggerModelBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create predict stream")
 	}
@@ -169,18 +169,18 @@ func predict(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
-			err = streamUploader.Send(&model.PredictModelRequest{
+			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
 				Name:    modelName,
-				Version: int32(modelVersion),
-				Content: buf[:n],
+				Version: uint64(modelVersion),
+				Bytes:   buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
 			}
 			firstChunk = false
 		} else {
-			err = streamUploader.Send(&model.PredictModelRequest{
-				Content: buf[:n],
+			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
+				Bytes: buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -218,7 +218,7 @@ func main() {
 						Required: false,
 					},
 					&cli.StringFlag{
-						Name:     "cvtask",
+						Name:     "task",
 						Aliases:  []string{"cv"},
 						Usage:    "model `TASK`",
 						Required: false,

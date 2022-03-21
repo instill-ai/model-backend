@@ -20,7 +20,7 @@ import (
 type Model struct {
 
 	// Model unique ID
-	Id int32 `json:"id,omitempty"`
+	Id uint64 `json:"id,omitempty"`
 
 	// Model name
 	Name string `json:"name,omitempty"`
@@ -28,7 +28,7 @@ type Model struct {
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	CVTask int32 `json:"cv_task,omitempty"`
+	Task uint64 `json:"task,omitempty"`
 
 	// Not stored inn DB, only used for processing
 	FullName     string
@@ -40,7 +40,7 @@ type Model struct {
 type TModel struct {
 
 	// Triton Model unique ID
-	Id int32 `json:"id,omitempty"`
+	Id uint64 `json:"id,omitempty"`
 
 	// Triton Model name
 	Name string `json:"name,omitempty"`
@@ -52,19 +52,19 @@ type TModel struct {
 	Status string `json:"status,omitempty"`
 
 	// Model ID
-	ModelId int32 `json:"model_id,omitempty"`
+	ModelId uint64 `json:"model_id,omitempty"`
 
-	ModelVersion int32 `json:"model_version,omitempty"`
+	ModelVersion uint64 `json:"model_version,omitempty"`
 
 	Platform string `json:"platform,omitempty"`
 }
 
 type Version struct {
 	// Model ID
-	ModelId int32 `json:"model_id,omitempty"`
+	ModelId uint64 `json:"model_id,omitempty"`
 
 	// Model version
-	Version int32 `json:"version,omitempty"`
+	Version uint64 `json:"version,omitempty"`
 
 	// Model description
 	Description string `json:"description,omitempty"`
@@ -98,39 +98,4 @@ func (j *JSONB) Scan(value interface{}) error {
 
 type ListModelQuery struct {
 	Namespace string
-}
-
-type VersionResponse struct {
-	// Model unique ID
-	ModelId int32
-
-	// Model version
-	Version int32
-
-	// Model description
-	Description string
-
-	// Model version created date time
-	CreatedAt time.Time
-
-	// Model version updated date time
-	UpdatedAt time.Time
-
-	// Model version status
-	Status string
-}
-
-type ModelResponse struct {
-
-	// Model unique ID
-	Id int32
-
-	// Model name
-	Name string
-
-	FullName string
-
-	CVTask string
-
-	Versions []VersionResponse
 }
