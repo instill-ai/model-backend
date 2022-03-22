@@ -285,7 +285,7 @@ func (s *modelService) ModelInfer(namespace string, modelName string, version ui
 			detOutput := &model.DetectionOutput{
 				BoundingBoxObjects: contents,
 			}
-			detOutputs.DetectionOutput = append(detOutputs.DetectionOutput, detOutput)
+			detOutputs.DetectionOutputs = append(detOutputs.DetectionOutputs, detOutput)
 		}
 		return &detOutputs, nil
 	default:

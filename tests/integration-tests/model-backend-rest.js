@@ -58,12 +58,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_det = new FormData();
@@ -79,12 +79,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task det response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task det response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_undefined = new FormData();
@@ -99,12 +99,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task undefined response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task undefined response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task undefined response model.task": (r) =>
-          r.json().model.task === undefined, //default value of TASK_UNSPECIFIED task is 0 which not in response
-          "POST /models/upload (multipart) task undefined response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          r.json().model.task === "TASK_UNSPECIFIED", 
+          "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       // clean up
@@ -145,12 +145,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let fd_det = new FormData();
@@ -165,12 +165,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task det response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task det response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task det response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 2,
+          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 2,
       });
 
       let fd_undefined = new FormData();
@@ -184,12 +184,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task undefined response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task undefined response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task undefined response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task undefined response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 3,
+          "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 3,
       });
 
       // clean up
@@ -219,12 +219,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -233,12 +233,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 2,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 2,
       });
 
       let payload = JSON.stringify({
@@ -249,18 +249,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_ONLINE",
       });
 
       payload = JSON.stringify({
@@ -271,18 +271,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/2 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_ONLINE",
       });
 
       payload = JSON.stringify({
@@ -293,18 +293,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 offline task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 offline task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_OFFLINE",
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 offline task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_OFFLINE",
       });
 
       // Triton unloading models takes time
@@ -318,18 +318,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/2 offline task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 offline task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_OFFLINE",
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 offline task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_OFFLINE",
       });
 
       // clean up
@@ -362,12 +362,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -378,18 +378,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_ONLINE",
       });
 
       // Predict with url
@@ -402,11 +402,11 @@ export default function (data) {
         [`POST /models/${model_name}/versions/1/outputs url cls response status`]: (r) =>
           r.status === 200,
           [`POST /models/${model_name}/versions/1/outputs url cls contents`]: (r) =>
-          r.json().output.classificationOutputs.length === 1,
+          r.json().output.classification_outputs.length === 1,
           [`POST /models/${model_name}/versions/1/outputs url cls contents.category`]: (r) =>
-          r.json().output.classificationOutputs[0].category === "match",
+          r.json().output.classification_outputs[0].category === "match",
           [`POST /models/${model_name}/versions/1/outputs url cls response contents.score`]: (r) =>
-          r.json().output.classificationOutputs[0].score === 1,
+          r.json().output.classification_outputs[0].score === 1,
       });
 
       // Predict with base64
@@ -419,11 +419,11 @@ export default function (data) {
         [`POST /models/${model_name}/versions/1/outputs base64 cls response status`]: (r) =>
           r.status === 200,
           [`POST /models/${model_name}/versions/1/outputs base64 cls contents`]: (r) =>
-          r.json().output.classificationOutputs.length === 1,
+          r.json().output.classification_outputs.length === 1,
           [`POST /models/${model_name}/versions/1/outputs base64 cls contents.category`]: (r) =>
-          r.json().output.classificationOutputs[0].category === "match",
+          r.json().output.classification_outputs[0].category === "match",
           [`POST /models/${model_name}/versions/1/outputs base64 cls response contents.score`]: (r) =>
-          r.json().output.classificationOutputs[0].score === 1,
+          r.json().output.classification_outputs[0].score === 1,
       });
 
       // Predict with multiple-part
@@ -435,11 +435,11 @@ export default function (data) {
         [`POST /models/${model_name}/versions/1/upload/outputs form-data cls response status`]: (r) =>
           r.status === 200,
           [`POST /models/${model_name}/versions/1/upload/outputs form-data cls contents`]: (r) =>
-          r.json().output.classificationOutputs.length === 1,
+          r.json().output.classification_outputs.length === 1,
           [`POST /models/${model_name}/versions/1/upload/outputs form-data cls contents.category`]: (r) =>
-          r.json().output.classificationOutputs[0].category === "match",
+          r.json().output.classification_outputs[0].category === "match",
           [`POST /models/${model_name}/versions/1/upload/outputs form-data cls response contents.score`]: (r) =>
-          r.json().output.classificationOutputs[0].score === 1,
+          r.json().output.classification_outputs[0].score === 1,
       });
 
       // clean up
@@ -472,12 +472,12 @@ export default function (data) {
           r.status === 200,
           "POST /models/upload (multipart) task det response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task det response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -488,18 +488,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_ONLINE",
       });
 
       // Predict with url
@@ -511,14 +511,14 @@ export default function (data) {
       }), {
         [`POST /models/${model_name}/versions/1/outputs url det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs url det output.detectionOutput.length`]: (r) =>
-          r.json().output.detectionOutput.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detectionOutput[0].boundingBoxObjects[0].category`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detectionOutput[0].boundingBoxObjects[0].score`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detectionOutput[0].boundingBoxObjects[0].boundingBox`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].boundingBox !== undefined,
+          [`POST /models/${model_name}/versions/1/outputs url det output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 1,
+          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
       // Predict with base64
@@ -530,14 +530,14 @@ export default function (data) {
       }), {
         [`POST /models/${model_name}/versions/1/outputs base64 det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs base64 det output.detectionOutput.length`]: (r) =>
-          r.json().output.detectionOutput.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detectionOutput[0].boundingBoxObjects[0].category`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detectionOutput[0].boundingBoxObjects[0].score`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detectionOutput[0].boundingBoxObjects[0].boundingBox`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].boundingBox !== undefined,
+          [`POST /models/${model_name}/versions/1/outputs base64 det output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 1,
+          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
       // Predict with multiple-part
@@ -548,14 +548,14 @@ export default function (data) {
       }), {
         [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det output.detectionOutput[0].boundingBoxObjects.length`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects.length === 1,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detectionOutput[0].boundingBoxObjects[0].category`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detectionOutput[0].boundingBoxObjects[0].score`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detectionOutput[0].boundingBoxObjects[0].boundingBox`]: (r) =>
-          r.json().output.detectionOutput[0].boundingBoxObjects[0].boundingBox !== undefined,
+          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det output.detection_outputs[0].bounding_box_objects.length`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects.length === 1,
+          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
       // clean up
@@ -587,12 +587,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === undefined,
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          r.json().model.task === "TASK_UNSPECIFIED",
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       let payload = JSON.stringify({
@@ -603,18 +603,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status === "STATUS_ONLINE",
       });
 
       // Predict with url
@@ -631,9 +631,9 @@ export default function (data) {
           [`POST /models/${model_name}/versions/1/outputs url undefined parameters`]: (r) =>
           r.json().output.parameters !== undefined,
           [`POST /models/${model_name}/versions/1/outputs url undefined raw_output_contents`]: (r) =>
-          r.json().output.rawOutputContents.length === 1,
+          r.json().output.raw_output_contents.length === 1,
           [`POST /models/${model_name}/versions/1/outputs url undefined raw_output_contents content`]: (r) =>
-          r.json().output.rawOutputContents[0] !== undefined,
+          r.json().output.raw_output_contents[0] !== undefined,
       });
 
       // Predict with base64
@@ -649,10 +649,10 @@ export default function (data) {
           r.json().output.outputs.length === 1,
           [`POST /models/${model_name}/versions/1/outputs base64 undefined output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.rawOutputContents.length`]: (r) =>
-          r.json().output.rawOutputContents.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.rawOutputContents[0]`]: (r) =>
-          r.json().output.rawOutputContents[0] !== undefined,
+          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.raw_output_contents.length`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
       });
 
       // Predict with multiple-part
@@ -668,9 +668,9 @@ export default function (data) {
           [`POST /models/${model_name}/versions/1/outputs multipart undefined output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
           [`POST /models/${model_name}/versions/1/outputs multipart undefined output.raw_output_contents.length`]: (r) =>
-          r.json().output.rawOutputContents.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.rawOutputContents[0]`]: (r) =>
-          r.json().output.rawOutputContents[0] !== undefined,
+          r.json().output.raw_output_contents.length === 1,
+          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
       });
 
       // clean up
@@ -703,12 +703,12 @@ export default function (data) {
           r.status === 200,
           "POST /models/upload (multipart) task det response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task det response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
       check(http.get(`${apiHost}/models/${model_name}`, {
         headers: genHeader(`application/json`),
@@ -717,18 +717,18 @@ export default function (data) {
           r.status === 200,
           [`GET /models/${model_name} task`]: (r) =>
           r.json().model.task === "TASK_DETECTION",
-          [`GET /models/${model_name} model.modelVersions.length`]: (r) =>
-          r.json().model.modelVersions.length === 1,
-          [`GET /models/${model_name} version model.modelVersions[0].createdAt`]: (r) =>
-          r.json().model.modelVersions[0].createdAt !== undefined,
-          [`GET /models/${model_name} version model.modelVersions[0].updatedAt`]: (r) =>
-          r.json().model.modelVersions[0].updatedAt !== undefined,
-          [`GET /models/${model_name} version model.modelVersions[0].status`]: (r) =>
-          r.json().model.modelVersions[0].status === "STATUS_OFFLINE",
+          [`GET /models/${model_name} model.model_versions.length`]: (r) =>
+          r.json().model.model_versions.length === 1,
+          [`GET /models/${model_name} version model.model_versions[0].created_at`]: (r) =>
+          r.json().model.model_versions[0].created_at !== undefined,
+          [`GET /models/${model_name} version model.model_versions[0].updated_at`]: (r) =>
+          r.json().model.model_versions[0].updated_at !== undefined,
+          [`GET /models/${model_name} version model.model_versions[0].status`]: (r) =>
+          r.json().model.model_versions[0].status === "STATUS_OFFLINE",
           [`GET /models/${model_name} model.id`]: (r) =>
           r.json().model.id !== undefined,
-          [`GET /models/${model_name} model.fullName`]: (r) =>
-          r.json().model.fullName === `local-user/${model_name}`,
+          [`GET /models/${model_name} model.full_name`]: (r) =>
+          r.json().model.full_name === `local-user/${model_name}`,
       });
 
       // clean up
@@ -761,12 +761,12 @@ export default function (data) {
           r.status === 200,
           "POST /models/upload (multipart) task det response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task det response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       check(http.get(`${apiHost}/models`, {
@@ -776,18 +776,18 @@ export default function (data) {
           r.status === 200,
           [`GET /models task`]: (r) =>
           r.json().models[0].task !== undefined,
-          [`GET /models models[0].modelVersions.length`]: (r) =>
-          r.json().models[0].modelVersions.length > 0,
-          [`GET /models models[0].modelVersions[0].createdAt`]: (r) =>
-          r.json().models[0].modelVersions[0].createdAt !== undefined,
-          [`GET /models models[0].modelVersions[0].updatedAt`]: (r) =>
-          r.json().models[0].modelVersions[0].updatedAt !== undefined,
-          [`GET /models models[0].modelVersions[0].status`]: (r) =>
-          r.json().models[0].modelVersions[0].status !== undefined,
+          [`GET /models models[0].model_versions.length`]: (r) =>
+          r.json().models[0].model_versions.length > 0,
+          [`GET /models models[0].model_versions[0].created_at`]: (r) =>
+          r.json().models[0].model_versions[0].created_at !== undefined,
+          [`GET /models models[0].model_versions[0].updated_at`]: (r) =>
+          r.json().models[0].model_versions[0].updated_at !== undefined,
+          [`GET /models models[0].model_versions[0].status`]: (r) =>
+          r.json().models[0].model_versions[0].status !== undefined,
           [`GET /models models[0].id`]: (r) =>
           r.json().models[0].id !== undefined,
-          [`GET /models models[0].fullName`]: (r) =>
-          r.json().models[0].fullName !== undefined,
+          [`GET /models models[0].full_name`]: (r) =>
+          r.json().models[0].full_name !== undefined,
       });
 
       // clean up
@@ -820,12 +820,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 1,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 1,
       });
 
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
@@ -835,12 +835,12 @@ export default function (data) {
           r.status === 200, // TODO: update status to 201
           "POST /models/upload (multipart) task cls response model.name": (r) =>
           r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.fullName": (r) =>
-          r.json().model.fullName !== undefined,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task cls response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.modelVersions.length": (r) =>
-          r.json().model.modelVersions.length === 2,
+          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
+          r.json().model.model_versions.length === 2,
       });
 
       let new_description = randomString(20)
@@ -852,18 +852,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description === new_description,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description === new_description,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status !== undefined,
       });
 
       let new_description2 = randomString(20)
@@ -875,18 +875,18 @@ export default function (data) {
       }), {
         [`PATCH /models/${model_name}/versions/2 online task cls response status`]: (r) =>
           r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.version`]: (r) =>
-          r.json().modelVersion.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.modelId`]: (r) =>
-          r.json().modelVersion.modelId !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.description`]: (r) =>
-          r.json().modelVersion.description === new_description2,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.createdAt`]: (r) =>
-          r.json().modelVersion.createdAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response modelVersion.updatedAt`]: (r) =>
-          r.json().modelVersion.updatedAt !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model version modelVersion.status`]: (r) =>
-          r.json().modelVersion.status !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.version`]: (r) =>
+          r.json().model_version.version !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.model_id`]: (r) =>
+          r.json().model_version.model_id !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.description`]: (r) =>
+          r.json().model_version.description === new_description2,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.created_at`]: (r) =>
+          r.json().model_version.created_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.updated_at`]: (r) =>
+          r.json().model_version.updated_at !== undefined,
+          [`PATCH /models/${model_name}/versions/2 online task cls response model version model_version.status`]: (r) =>
+          r.json().model_version.status !== undefined,
       });
 
       // clean up
