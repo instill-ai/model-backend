@@ -430,13 +430,15 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
-
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res := model.CreateModelBinaryFileUploadResponse{Model: resModel}
-		m := jsonpb.Marshaler{OrigName: false}
+		m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
 		var buffer bytes.Buffer
-		_ = m.Marshal(&buffer, &res)
+		err = m.Marshal(&buffer, &model.CreateModelBinaryFileUploadResponse{Model: resModel})
+		if err != nil {
+			makeJsonResponse(w, 500, "Add Model Error", err.Error())
+			return
+		}
 		_, _ = w.Write(buffer.Bytes())
 	} else {
 		w.Header().Add("Content-Type", "application/json+problem")
@@ -531,26 +533,25 @@ func (s *serviceHandlers) TriggerModel(ctx context.Context, in *model.TriggerMod
 	}
 
 	var data = &structpb.Struct{}
-	var buf bytes.Buffer
-	m := jsonpb.Marshaler{OrigName: false}
+	var b []byte
 	switch task {
 	case model.Model_TASK_CLASSIFICATION:
-		err = m.Marshal(&buf, response.(*model.ClassificationOutputs))
+		b, err = json.Marshal(response.(*model.ClassificationOutputs))
 		if err != nil {
 			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
 		}
 	case model.Model_TASK_DETECTION:
-		err = m.Marshal(&buf, response.(*model.DetectionOutputs))
+		b, err = json.Marshal(response.(*model.DetectionOutputs))
 		if err != nil {
 			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
 		}
 	default:
-		err = m.Marshal(&buf, response.(*inferenceserver.ModelInferResponse))
+		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
 		}
 	}
-	err = protojson.Unmarshal(buf.Bytes(), data)
+	err = protojson.Unmarshal(b, data)
 	if err != nil {
 		return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
 	}
@@ -665,29 +666,28 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 		var data = &structpb.Struct{}
-		var b bytes.Buffer
-		m := jsonpb.Marshaler{OrigName: false}
+		var b []byte
 		switch task {
 		case model.Model_TASK_CLASSIFICATION:
-			err = m.Marshal(&b, response.(*model.ClassificationOutputs))
+			b, err = json.Marshal(response.(*model.ClassificationOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		case model.Model_TASK_DETECTION:
-			err = m.Marshal(&b, response.(*model.DetectionOutputs))
+			b, err = json.Marshal(response.(*model.DetectionOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		default:
-			err = m.Marshal(&b, response.(*inferenceserver.ModelInferResponse))
+			b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		}
-		err = protojson.Unmarshal(b.Bytes(), data)
+		err = protojson.Unmarshal(b, data)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -695,8 +695,12 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		ret, _ := json.Marshal(&model.TriggerModelBinaryFileUploadResponse{Output: data})
-		_, _ = w.Write(ret)
+		res, err := json.Marshal(&model.TriggerModelBinaryFileUploadResponse{Output: data})
+		if err != nil {
+			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			return
+		}
+		_, _ = w.Write(res)
 	} else {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
