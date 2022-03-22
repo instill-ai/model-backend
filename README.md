@@ -50,4 +50,4 @@ $ docker build -t {tag} .
 
 ## License
 
-See the [LICENSE](https://github.com/instill-ai/vdp/blob/main/LICENSE) file for licensing information.
+See the [LICENSE](https://github.com/instill-ai/model-backend/blob/main/LICENSE) file for licensing information.
