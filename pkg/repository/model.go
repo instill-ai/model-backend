@@ -59,7 +59,7 @@ func (r *modelRepository) CreateModel(model datamodel.Model) error {
 
 func (r *modelRepository) GetModelByName(namespace string, modelName string) (datamodel.Model, error) {
 	var model datamodel.Model
-	if result := r.DB.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Where(map[string]interface{}{"name": modelName, "namespace": namespace}).First(&model); result.Error != nil {
+	if result := r.DB.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Where(&datamodel.Model{Name: modelName, Namespace: namespace}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model name %s you specified is not found in namespace %s", modelName, namespace)
 	}
 	return model, nil
