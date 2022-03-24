@@ -31,8 +31,8 @@ import (
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/rpc"
 	"github.com/instill-ai/model-backend/pkg/services"
-	"github.com/instill-ai/model-backend/rpc"
 	model "github.com/instill-ai/protogen-go/model/v1alpha"
 
 	"go.uber.org/zap"

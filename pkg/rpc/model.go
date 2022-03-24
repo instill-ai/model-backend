@@ -197,7 +197,6 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 func saveFile(stream model.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *models.Model, err error) {
 	firstChunk := true
 	var fp *os.File
-
 	var fileData *model.CreateModelBinaryFileUploadRequest
 
 	var tmpFile string
@@ -454,7 +453,7 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream model.ModelService_
 	}
 	tmpFile, uploadedModel, err := saveFile(stream)
 	if err != nil {
-		return makeError(400, "Save File Error", err.Error())
+		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
 	modelInDB, err := s.modelService.GetModelByName(username, uploadedModel.Name)
 	if err == nil {
@@ -514,22 +513,22 @@ func (s *serviceHandlers) TriggerModel(ctx context.Context, in *model.TriggerMod
 
 	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(404, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
+		return &model.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
 	}
 
 	_, err = s.modelService.GetModelVersion(modelInDB.Id, in.Version)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(404, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
+		return &model.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
 	}
 
 	imgsBytes, _, err := ParseImageRequestInputsToBytes(in)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
+		return &model.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
 	task := model.Model_Task(modelInDB.Task)
 	response, err := s.modelService.ModelInfer(username, in.Name, in.Version, imgsBytes, task)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
+		return &model.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
 
 	var data = &structpb.Struct{}
@@ -538,22 +537,22 @@ func (s *serviceHandlers) TriggerModel(ctx context.Context, in *model.TriggerMod
 	case model.Model_TASK_CLASSIFICATION:
 		b, err = json.Marshal(response.(*model.ClassificationOutputs))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &model.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	case model.Model_TASK_DETECTION:
 		b, err = json.Marshal(response.(*model.DetectionOutputs))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &model.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	default:
 		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &model.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	}
 	err = protojson.Unmarshal(b, data)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+		return &model.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 	}
 
 	return &model.TriggerModelResponse{Output: data}, nil

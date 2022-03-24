@@ -20,7 +20,7 @@ func upload(c *cli.Context) error {
 	modelName := c.String("name")
 	task := c.String("task")
 	if _, err := os.Stat(filePath); err != nil {
-		log.Fatalf("File model do not exist, you could download sample-models by examples-go/quick-download.sh")
+		log.Fatalf("File model do not exist, you could download sample-models by scripts/quick-download.sh")
 	}
 
 	// Create connection to server with timeout 1000 secs to ensure file streamed successfully
