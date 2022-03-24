@@ -31,7 +31,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/rpc"
-	"github.com/instill-ai/model-backend/pkg/services"
+	"github.com/instill-ai/model-backend/pkg/service"
 	model "github.com/instill-ai/protogen-go/model/v1alpha"
 
 	"golang.org/x/net/http2"
@@ -107,7 +107,7 @@ func main() {
 	grpcS := grpc.NewServer(grpcServerOpts...)
 	modelRepository := repository.NewModelRepository(db)
 	tritonService := triton.NewTritonService()
-	modelService := services.NewModelService(modelRepository, tritonService)
+	modelService := service.NewModelService(modelRepository, tritonService)
 	modelServiceHandler := rpc.NewServiceHandlers(modelService, tritonService)
 
 	model.RegisterModelServiceServer(grpcS, modelServiceHandler)

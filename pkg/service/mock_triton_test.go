@@ -2,7 +2,7 @@
 // Source: ./internal/triton/triton.go
 
 // Package services is a generated GoMock package.
-package services
+package service
 
 import (
 	reflect "reflect"

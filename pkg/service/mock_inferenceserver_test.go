@@ -2,7 +2,7 @@
 // Source: ./internal/inferenceserver/grpc_service.pb.go
 
 // Package services is a generated GoMock package.
-package services
+package service
 
 import (
 	reflect "reflect"
