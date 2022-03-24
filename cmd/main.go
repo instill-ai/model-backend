@@ -13,7 +13,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,45 +34,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/services"
 	model "github.com/instill-ai/protogen-go/model/v1alpha"
 
-	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
-
-func zapInterceptor() *zap.Logger {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Fatalf("failed to initialize zap logger: %v", err)
-	}
-	grpc_zap.ReplaceGrpcLoggerV2(logger)
-	return logger
-}
-
-// RecoveryInterceptor - panic handler
-func recoveryInterceptor() grpc_recovery.Option {
-	return grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
-		return status.Errorf(codes.Unknown, "panic triggered: %v", p)
-	})
-}
-
-func CustomMatcher(key string) (string, bool) {
-	if strings.HasPrefix(strings.ToLower(key), "jwt-") {
-		return key, true
-	}
-
-	switch key {
-	case "Request-Id":
-		return key, true
-	default:
-		return runtime.DefaultHeaderMatcher(key)
-	}
-}
 
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
 	return h2c.NewHandler(
@@ -225,5 +192,5 @@ func main() {
 	database.Close(db)
 	tritonService.Close()
 
-	logger.Sync()
+	_ = logger.Sync()
 }
