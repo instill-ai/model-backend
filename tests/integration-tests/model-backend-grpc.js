@@ -54,7 +54,7 @@ export default () => {
         });
         let response = client.invoke('instill.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {});
         check(response, {
-            'Missing stream body status': (r) => r && r.status == 400,  //TODO: need update to grpc code
+            'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,  //TODO: need update to grpc code
         });
 
         client.close();
