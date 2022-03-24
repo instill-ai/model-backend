@@ -156,7 +156,7 @@ export default function (data) {
       let fd_det = new FormData();
       fd_det.append("name", model_name);
       fd_det.append("description", randomString(20));
-      fd_det.append("task", "TASK_DETECTION");
+      fd_det.append("task", "TASK_CLASSIFICATION");
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
@@ -176,20 +176,13 @@ export default function (data) {
       let fd_undefined = new FormData();
       fd_undefined.append("name", model_name);
       fd_undefined.append("description", randomString(20));
+      fd_det.append("task", "TASK_DETECTION");
       fd_undefined.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_undefined.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_undefined.boundary}`),
       }), {
-        "POST /models/upload (multipart) undefined response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task undefined response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 3,
+        "POST /models/upload (multipart) wrong task response status": (r) =>
+          r.status === 400, 
       });
 
       // clean up

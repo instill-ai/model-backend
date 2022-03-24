@@ -416,6 +416,10 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			if err == nil {
 				uploadedModel.Versions[0].Version = latestVersion.Version + 1
 			}
+			if modelInDB.Task != uploadedModel.Task {
+				makeJsonResponse(w, 400, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+				return
+			}
 		}
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
@@ -461,6 +465,10 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelServi
 		if err == nil {
 			uploadedModel.Versions[0].Version = latestVersion.Version + 1
 		}
+
+		if modelInDB.Task != uploadedModel.Task {
+			return makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+		}
 	}
 
 	uploadedModel.Namespace = username
@@ -468,7 +476,7 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelServi
 	isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if !isOk {
-		return makeError(400, "Save File Error", "Could not extract zip file")
+		return makeError(codes.InvalidArgument, "Save File Error", "Could not extract zip file")
 	}
 	resModel, err := s.modelService.CreateModelBinaryFileUpload(username, uploadedModel)
 	if err != nil {
@@ -476,7 +484,7 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelServi
 	}
 	err = stream.SendAndClose(&modelRPC.CreateModelBinaryFileUploadResponse{Model: resModel})
 	if err != nil {
-		return makeError(500, "Add Model Error", err.Error())
+		return makeError(codes.Internal, "Add Model Error", err.Error())
 	}
 
 	return
