@@ -2,7 +2,7 @@
 // Source: ./pkg/services/model.go
 
 // Package rpc is a generated GoMock package.
-package rpc
+package handler
 
 import (
 	reflect "reflect"

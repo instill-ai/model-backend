@@ -29,8 +29,8 @@ import (
 	database "github.com/instill-ai/model-backend/internal/db"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/rpc"
 	"github.com/instill-ai/model-backend/pkg/service"
 	model "github.com/instill-ai/protogen-go/model/v1alpha"
 
@@ -108,7 +108,7 @@ func main() {
 	modelRepository := repository.NewModelRepository(db)
 	tritonService := triton.NewTritonService()
 	modelService := service.NewModelService(modelRepository, tritonService)
-	modelServiceHandler := rpc.NewServiceHandlers(modelService, tritonService)
+	modelServiceHandler := handler.NewServiceHandlers(modelService, tritonService)
 
 	model.RegisterModelServiceServer(grpcS, modelServiceHandler)
 
@@ -131,12 +131,12 @@ func main() {
 	)
 
 	// Register custom route for  POST /models/{name}/versions/{version}/upload/outputs which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(rpc.HandlePredictModelByUpload)); err != nil {
+	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(handler.HandlePredictModelByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /models/upload which uploads model for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/models/upload", appendCustomHeaderMiddleware(rpc.HandleCreateModelByUpload)); err != nil {
+	if err := gwS.HandlePath("POST", "/models/upload", appendCustomHeaderMiddleware(handler.HandleCreateModelByUpload)); err != nil {
 		panic(err)
 	}
 

@@ -2,7 +2,7 @@
 // Source: ./protogen-go/model/model_grpc.pb.go
 
 // Package rpc is a generated GoMock package.
-package rpc
+package handler
 
 import (
 	context "context"
