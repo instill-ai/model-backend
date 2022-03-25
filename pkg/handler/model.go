@@ -1,4 +1,4 @@
-package rpc
+package handler
 
 import (
 	"archive/zip"
@@ -26,10 +26,10 @@ import (
 	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/pkg/models"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/services"
-	model "github.com/instill-ai/protogen-go/model/v1alpha"
+	"github.com/instill-ai/model-backend/pkg/service"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,11 +38,11 @@ import (
 )
 
 type serviceHandlers struct {
-	modelService  services.ModelService
+	modelService  service.ModelService
 	tritonService triton.TritonService
 }
 
-func NewServiceHandlers(modelService services.ModelService, tritonService triton.TritonService) model.ModelServiceServer {
+func NewServiceHandlers(modelService service.ModelService, tritonService triton.TritonService) modelPB.ModelServiceServer {
 	return &serviceHandlers{
 		modelService:  modelService,
 		tritonService: tritonService,
@@ -83,7 +83,7 @@ func isEnsembleConfig(configPath string) bool {
 	return strings.Contains(fileString, "platform: \"ensemble\"")
 }
 
-func unzip(filePath string, dstDir string, namespace string, uploadedModel *models.Model) bool {
+func unzip(filePath string, dstDir string, namespace string, uploadedModel *datamodel.Model) bool {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
@@ -91,7 +91,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 	}
 	defer archive.Close()
 
-	var createdTModels []models.TModel
+	var createdTModels []datamodel.TModel
 	var currentNewModelName string
 	var currentOldModelName string
 	var ensembleFilePath string
@@ -126,9 +126,9 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 					sVersion := elems[len(elems)-1]
 					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
-						createdTModels = append(createdTModels, models.TModel{
+						createdTModels = append(createdTModels, datamodel.TModel{
 							Name:    currentNewModelName, // Triton model name
-							Status:  model.ModelVersion_STATUS_OFFLINE.String(),
+							Status:  modelPB.ModelVersion_STATUS_OFFLINE.String(),
 							Version: int(iVersion),
 						})
 					}
@@ -194,15 +194,14 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *mode
 	return true
 }
 
-func saveFile(stream model.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *models.Model, err error) {
+func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, err error) {
 	firstChunk := true
 	var fp *os.File
-
-	var fileData *model.CreateModelBinaryFileUploadRequest
+	var fileData *modelPB.CreateModelBinaryFileUploadRequest
 
 	var tmpFile string
 
-	var uploadedModel models.Model
+	var uploadedModel datamodel.Model
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
@@ -212,26 +211,26 @@ func saveFile(stream model.ModelService_CreateModelBinaryFileUploadServer) (outF
 
 			err = errors.Wrapf(err,
 				"failed unexpectedly while reading chunks from stream")
-			return "", &models.Model{}, err
+			return "", &datamodel.Model{}, err
 		}
 
 		if firstChunk { //first chunk contains file name
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
-			uploadedModel = models.Model{
+			uploadedModel = datamodel.Model{
 				Name:     fileData.Name,
 				Task:     uint64(fileData.Task),
-				Versions: []models.Version{},
+				Versions: []datamodel.Version{},
 			}
-			uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
+			uploadedModel.Versions = append(uploadedModel.Versions, datamodel.Version{
 				Description: fileData.Description,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
-				Status:      model.ModelVersion_STATUS_OFFLINE.String(),
+				Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
 				Version:     1,
 			})
 			if err != nil {
-				return "", &models.Model{}, err
+				return "", &datamodel.Model{}, err
 			}
 			defer fp.Close()
 
@@ -239,15 +238,15 @@ func saveFile(stream model.ModelService_CreateModelBinaryFileUploadServer) (outF
 		}
 		err = writeToFp(fp, fileData.Bytes)
 		if err != nil {
-			return "", &models.Model{}, err
+			return "", &datamodel.Model{}, err
 		}
 	}
 	return tmpFile, &uploadedModel, nil
 }
 
-func savePredictInput(stream model.ModelService_TriggerModelBinaryFileUploadServer) (imageByte []byte, modelId string, version uint64, err error) {
+func savePredictInput(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) (imageByte []byte, modelId string, version uint64, err error) {
 	var firstChunk = true
-	var fileData *model.TriggerModelBinaryFileUploadRequest
+	var fileData *modelPB.TriggerModelBinaryFileUploadRequest
 
 	var fileContent []byte
 
@@ -275,7 +274,7 @@ func savePredictInput(stream model.ModelService_TriggerModelBinaryFileUploadServ
 }
 
 func makeError(statusCode codes.Code, title string, detail string) error {
-	err := &models.Error{
+	err := &datamodel.Error{
 		Title:  title,
 		Detail: detail,
 	}
@@ -286,7 +285,7 @@ func makeError(statusCode codes.Code, title string, detail string) error {
 func makeJsonResponse(w http.ResponseWriter, status int, title string, detail string) {
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(status)
-	obj, _ := json.Marshal(models.Error{
+	obj, _ := json.Marshal(datamodel.Error{
 		Status: int32(status),
 		Title:  title,
 		Detail: detail,
@@ -305,20 +304,20 @@ func getUsername(ctx context.Context) (string, error) {
 	}
 }
 
-func (s *serviceHandlers) Liveness(ctx context.Context, pb *model.LivenessRequest) (*model.LivenessResponse, error) {
+func (s *serviceHandlers) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &model.LivenessResponse{Status: model.LivenessResponse_SERVING_STATUS_NOT_SERVING}, nil
+		return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
 
-	return &model.LivenessResponse{Status: model.LivenessResponse_SERVING_STATUS_SERVING}, nil
+	return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_SERVING}, nil
 }
 
-func (s *serviceHandlers) Readiness(ctx context.Context, pb *model.ReadinessRequest) (*model.ReadinessResponse, error) {
+func (s *serviceHandlers) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &model.ReadinessResponse{Status: model.ReadinessResponse_SERVING_STATUS_NOT_SERVING}, nil
+		return &modelPB.ReadinessResponse{Status: modelPB.ReadinessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
 
-	return &model.ReadinessResponse{Status: model.ReadinessResponse_SERVING_STATUS_SERVING}, nil
+	return &modelPB.ReadinessResponse{Status: modelPB.ReadinessResponse_SERVING_STATUS_SERVING}, nil
 }
 
 func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
@@ -394,14 +393,14 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		var uploadedModel = models.Model{
-			Versions: []models.Version{},
+		var uploadedModel = datamodel.Model{
+			Versions: []datamodel.Version{},
 			Name:     modelName,
 			Task:     uint64(task),
 		}
-		uploadedModel.Versions = append(uploadedModel.Versions, models.Version{
+		uploadedModel.Versions = append(uploadedModel.Versions, datamodel.Version{
 			Description: r.FormValue("description"),
-			Status:      model.ModelVersion_STATUS_OFFLINE.String(),
+			Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
 			Version:     1,
 		})
 		uploadedModel.Namespace = username
@@ -409,13 +408,17 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		db := database.GetConnection()
 		modelRepository := repository.NewModelRepository(db)
 		tritonService := triton.NewTritonService()
-		modelService := services.NewModelService(modelRepository, tritonService)
+		modelService := service.NewModelService(modelRepository, tritonService)
 
 		modelInDB, err := modelService.GetModelByName(username, uploadedModel.Name)
 		if err == nil {
 			latestVersion, err := modelService.GetModelVersionLatest(modelInDB.Id)
 			if err == nil {
 				uploadedModel.Versions[0].Version = latestVersion.Version + 1
+			}
+			if modelInDB.Task != uploadedModel.Task {
+				makeJsonResponse(w, 400, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+				return
 			}
 		}
 		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
@@ -434,7 +437,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		w.WriteHeader(200)
 		m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
 		var buffer bytes.Buffer
-		err = m.Marshal(&buffer, &model.CreateModelBinaryFileUploadResponse{Model: resModel})
+		err = m.Marshal(&buffer, &modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
 		if err != nil {
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
@@ -447,20 +450,24 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 }
 
 // AddModel - upload a model to the model server
-func (s *serviceHandlers) CreateModelBinaryFileUpload(stream model.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
 	username, err := getUsername(stream.Context())
 	if err != nil {
 		return err
 	}
 	tmpFile, uploadedModel, err := saveFile(stream)
 	if err != nil {
-		return makeError(400, "Save File Error", err.Error())
+		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
 	modelInDB, err := s.modelService.GetModelByName(username, uploadedModel.Name)
 	if err == nil {
 		latestVersion, err := s.modelService.GetModelVersionLatest(modelInDB.Id)
 		if err == nil {
 			uploadedModel.Versions[0].Version = latestVersion.Version + 1
+		}
+
+		if modelInDB.Task != uploadedModel.Task {
+			return makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
 		}
 	}
 
@@ -469,97 +476,97 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream model.ModelService_
 	isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if !isOk {
-		return makeError(400, "Save File Error", "Could not extract zip file")
+		return makeError(codes.InvalidArgument, "Save File Error", "Could not extract zip file")
 	}
 	resModel, err := s.modelService.CreateModelBinaryFileUpload(username, uploadedModel)
 	if err != nil {
 		return err
 	}
-	err = stream.SendAndClose(&model.CreateModelBinaryFileUploadResponse{Model: resModel})
+	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
 	if err != nil {
-		return makeError(500, "Add Model Error", err.Error())
+		return makeError(codes.Internal, "Add Model Error", err.Error())
 	}
 
 	return
 }
 
-func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *model.UpdateModelVersionRequest) (*model.UpdateModelVersionResponse, error) {
+func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &model.UpdateModelVersionResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
+		return &modelPB.UpdateModelVersionResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
 	}
 
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.UpdateModelVersionResponse{}, err
+		return &modelPB.UpdateModelVersionResponse{}, err
 	}
 	modelVersion, err := s.modelService.UpdateModelVersion(username, in)
-	return &model.UpdateModelVersionResponse{ModelVersion: modelVersion}, err
+	return &modelPB.UpdateModelVersionResponse{ModelVersion: modelVersion}, err
 }
 
-func (s *serviceHandlers) ListModel(ctx context.Context, in *model.ListModelRequest) (*model.ListModelResponse, error) {
+func (s *serviceHandlers) ListModel(ctx context.Context, in *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.ListModelResponse{}, err
+		return &modelPB.ListModelResponse{}, err
 	}
 
 	resModels, err := s.modelService.ListModels(username)
-	return &model.ListModelResponse{Models: resModels}, err
+	return &modelPB.ListModelResponse{Models: resModels}, err
 }
 
-func (s *serviceHandlers) TriggerModel(ctx context.Context, in *model.TriggerModelRequest) (*model.TriggerModelResponse, error) {
+func (s *serviceHandlers) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.TriggerModelResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
 	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(404, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
+		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
 	}
 
 	_, err = s.modelService.GetModelVersion(modelInDB.Id, in.Version)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(404, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
+		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
 	}
 
 	imgsBytes, _, err := ParseImageRequestInputsToBytes(in)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
-	task := model.Model_Task(modelInDB.Task)
+	task := modelPB.Model_Task(modelInDB.Task)
 	response, err := s.modelService.ModelInfer(username, in.Name, in.Version, imgsBytes, task)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(400, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
 
 	var data = &structpb.Struct{}
 	var b []byte
 	switch task {
-	case model.Model_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*model.ClassificationOutputs))
+	case modelPB.Model_TASK_CLASSIFICATION:
+		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
-	case model.Model_TASK_DETECTION:
-		b, err = json.Marshal(response.(*model.DetectionOutputs))
+	case modelPB.Model_TASK_DETECTION:
+		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	default:
 		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
-			return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	}
 	err = protojson.Unmarshal(b, data)
 	if err != nil {
-		return &model.TriggerModelResponse{}, makeError(500, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 	}
 
-	return &model.TriggerModelResponse{Output: data}, nil
+	return &modelPB.TriggerModelResponse{Output: data}, nil
 }
 
-func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService_TriggerModelBinaryFileUploadServer) error {
+func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) error {
 	if !s.tritonService.IsTritonServerReady() {
 		return makeError(503, "PredictModel", "Triton Server not ready yet")
 	}
@@ -578,7 +585,7 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService
 	if err != nil {
 		return makeError(404, "PredictModel", fmt.Sprintf("The model %v do not exist", modelName))
 	}
-	task := model.Model_Task(modelInDB.Task)
+	task := modelPB.Model_Task(modelInDB.Task)
 
 	response, err := s.modelService.ModelInfer(username, modelName, version, [][]byte{imageByte}, task)
 
@@ -589,13 +596,13 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService
 	var data = &structpb.Struct{}
 	var b []byte
 	switch task {
-	case model.Model_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*model.ClassificationOutputs))
+	case modelPB.Model_TASK_CLASSIFICATION:
+		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
-	case model.Model_TASK_DETECTION:
-		b, err = json.Marshal(response.(*model.DetectionOutputs))
+	case modelPB.Model_TASK_DETECTION:
+		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
@@ -609,7 +616,7 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream model.ModelService
 	if err != nil {
 		return makeError(500, "PredictModel", err.Error())
 	}
-	err = stream.SendAndClose(&model.TriggerModelBinaryFileUploadResponse{Output: data})
+	err = stream.SendAndClose(&modelPB.TriggerModelBinaryFileUploadResponse{Output: data})
 	return err
 }
 
@@ -639,7 +646,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelRepository := repository.NewModelRepository(db)
 		tritonService := triton.NewTritonService()
 
-		modelService := services.NewModelService(modelRepository, tritonService)
+		modelService := service.NewModelService(modelRepository, tritonService)
 
 		modelInDB, err := modelService.GetModelByName(username, modelName)
 		if err != nil {
@@ -659,7 +666,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		task := model.Model_Task(modelInDB.Task)
+		task := modelPB.Model_Task(modelInDB.Task)
 		response, err := modelService.ModelInfer(username, modelName, uint64(modelVersion), imgsBytes, task)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
@@ -668,14 +675,14 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		var data = &structpb.Struct{}
 		var b []byte
 		switch task {
-		case model.Model_TASK_CLASSIFICATION:
-			b, err = json.Marshal(response.(*model.ClassificationOutputs))
+		case modelPB.Model_TASK_CLASSIFICATION:
+			b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
-		case model.Model_TASK_DETECTION:
-			b, err = json.Marshal(response.(*model.DetectionOutputs))
+		case modelPB.Model_TASK_DETECTION:
+			b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
@@ -695,7 +702,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := json.Marshal(&model.TriggerModelBinaryFileUploadResponse{Output: data})
+		res, err := json.Marshal(&modelPB.TriggerModelBinaryFileUploadResponse{Output: data})
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -707,27 +714,27 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	}
 }
 
-func (s *serviceHandlers) GetModel(ctx context.Context, in *model.GetModelRequest) (*model.GetModelResponse, error) {
+func (s *serviceHandlers) GetModel(ctx context.Context, in *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.GetModelResponse{}, err
+		return &modelPB.GetModelResponse{}, err
 	}
 	md, err := s.modelService.GetFullModelData(username, in.Name)
-	return &model.GetModelResponse{Model: md}, err
+	return &modelPB.GetModelResponse{Model: md}, err
 }
 
-func (s *serviceHandlers) DeleteModel(ctx context.Context, in *model.DeleteModelRequest) (*model.DeleteModelResponse, error) {
+func (s *serviceHandlers) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.DeleteModelResponse{}, err
+		return &modelPB.DeleteModelResponse{}, err
 	}
-	return &model.DeleteModelResponse{}, s.modelService.DeleteModel(username, in.Name)
+	return &modelPB.DeleteModelResponse{}, s.modelService.DeleteModel(username, in.Name)
 }
 
-func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *model.DeleteModelVersionRequest) (*model.DeleteModelVersionResponse, error) {
+func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest) (*modelPB.DeleteModelVersionResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &model.DeleteModelVersionResponse{}, err
+		return &modelPB.DeleteModelVersionResponse{}, err
 	}
-	return &model.DeleteModelVersionResponse{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
+	return &modelPB.DeleteModelVersionResponse{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
 }

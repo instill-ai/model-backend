@@ -2,13 +2,13 @@
 // Source: ./pkg/repository/model.go
 
 // Package services is a generated GoMock package.
-package services
+package service
 
 import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/instill-ai/model-backend/pkg/models"
+	models "github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
 // MockModelRepository is a mock of ModelRepository interface.

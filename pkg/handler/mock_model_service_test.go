@@ -2,13 +2,13 @@
 // Source: ./pkg/services/model.go
 
 // Package rpc is a generated GoMock package.
-package rpc
+package handler
 
 import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/instill-ai/model-backend/pkg/models"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
@@ -36,10 +36,10 @@ func (m *MockModelService) EXPECT() *MockModelServiceMockRecorder {
 }
 
 // CreateModel mocks base method.
-func (m *MockModelService) CreateModel(model *models.Model) (*models.Model, error) {
+func (m *MockModelService) CreateModel(model *datamodel.Model) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateModel", model)
-	ret0, _ := ret[0].(*models.Model)
+	ret0, _ := ret[0].(*datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,7 +51,7 @@ func (mr *MockModelServiceMockRecorder) CreateModel(model interface{}) *gomock.C
 }
 
 // CreateModelBinaryFileUpload mocks base method.
-func (m *MockModelService) CreateModelBinaryFileUpload(namespace string, createdModel *models.Model) (*modelv1alpha.Model, error) {
+func (m *MockModelService) CreateModelBinaryFileUpload(namespace string, createdModel *datamodel.Model) (*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateModelBinaryFileUpload", namespace, createdModel)
 	ret0, _ := ret[0].(*modelv1alpha.Model)
@@ -66,10 +66,10 @@ func (mr *MockModelServiceMockRecorder) CreateModelBinaryFileUpload(namespace, c
 }
 
 // CreateVersion mocks base method.
-func (m *MockModelService) CreateVersion(version models.Version) (models.Version, error) {
+func (m *MockModelService) CreateVersion(version datamodel.Version) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVersion", version)
-	ret0, _ := ret[0].(models.Version)
+	ret0, _ := ret[0].(datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -124,10 +124,10 @@ func (mr *MockModelServiceMockRecorder) GetFullModelData(namespace, modelName in
 }
 
 // GetModelByName mocks base method.
-func (m *MockModelService) GetModelByName(namespace, modelName string) (models.Model, error) {
+func (m *MockModelService) GetModelByName(namespace, modelName string) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelByName", namespace, modelName)
-	ret0, _ := ret[0].(models.Model)
+	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -139,10 +139,10 @@ func (mr *MockModelServiceMockRecorder) GetModelByName(namespace, modelName inte
 }
 
 // GetModelVersion mocks base method.
-func (m *MockModelService) GetModelVersion(modelId, version uint64) (models.Version, error) {
+func (m *MockModelService) GetModelVersion(modelId, version uint64) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersion", modelId, version)
-	ret0, _ := ret[0].(models.Version)
+	ret0, _ := ret[0].(datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -154,10 +154,10 @@ func (mr *MockModelServiceMockRecorder) GetModelVersion(modelId, version interfa
 }
 
 // GetModelVersionLatest mocks base method.
-func (m *MockModelService) GetModelVersionLatest(modelId uint64) (models.Version, error) {
+func (m *MockModelService) GetModelVersionLatest(modelId uint64) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersionLatest", modelId)
-	ret0, _ := ret[0].(models.Version)
+	ret0, _ := ret[0].(datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -169,10 +169,10 @@ func (mr *MockModelServiceMockRecorder) GetModelVersionLatest(modelId interface{
 }
 
 // GetModelVersions mocks base method.
-func (m *MockModelService) GetModelVersions(modelId uint64) ([]models.Version, error) {
+func (m *MockModelService) GetModelVersions(modelId uint64) ([]datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersions", modelId)
-	ret0, _ := ret[0].([]models.Version)
+	ret0, _ := ret[0].([]datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

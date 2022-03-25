@@ -88,4 +88,5 @@ cleanup-test:
 
 integration-test:
 	@TEST_FOLDER_ABS_PATH=${PWD} ./k6 run tests/integration-tests/model-backend-rest.js --no-usage-report
+	@TEST_FOLDER_ABS_PATH=${PWD} ./k6 run tests/integration-tests/model-backend-grpc.js --no-usage-report
 .PHONE: integration-test
