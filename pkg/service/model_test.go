@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	modelDB "github.com/instill-ai/model-backend/pkg/datamodel"
-	modelRPC "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 )
@@ -22,7 +22,7 @@ func TestModelService_CreateModel(t *testing.T) {
 
 		newModel := modelDB.Model{
 			Name:      "normalname",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -51,7 +51,7 @@ func TestModelService_CreateModel_InvalidName(t *testing.T) {
 
 		newModel := modelDB.Model{
 			Name:      "#$%^",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -73,7 +73,7 @@ func TestModelService_GetModelByName(t *testing.T) {
 
 		newModel := modelDB.Model{
 			Name:      "normalname",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository := NewMockModelRepository(ctrl)
@@ -184,7 +184,7 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository.
@@ -248,7 +248,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
 		mockModelRepository.
@@ -309,14 +309,14 @@ func TestModelService_ModelInfer(t *testing.T) {
 			Return(modelConfigResponse)
 		triton.
 			EXPECT().
-			ModelInferRequest(modelRPC.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
+			ModelInferRequest(modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
 			Return(modelInferResponse, nil)
 		triton.
 			EXPECT().
-			PostProcess(modelInferResponse, modelMetadataResponse, modelRPC.Model_TASK_CLASSIFICATION).
+			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
 			Return(postResponse, nil)
 
-		_, err := modelService.ModelInfer(NAMESPACE, "test", uint64(1), [][]byte{}, modelRPC.Model_TASK_CLASSIFICATION)
+		_, err := modelService.ModelInfer(NAMESPACE, "test", uint64(1), [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
 		assert.NoError(t, err)
 	})
 }
@@ -333,7 +333,7 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{},
 		}
@@ -375,7 +375,7 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 
 		uploadModel := modelDB.Model{
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{versionInDB},
 		}
@@ -396,7 +396,7 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{},
 		}
@@ -438,7 +438,7 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 
 		uploadModel := modelDB.Model{
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{versionInDB},
 		}
@@ -476,7 +476,7 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{},
 		}
@@ -494,10 +494,10 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 			Times(2)
 		_, _ = modelService.GetModelVersion(uint64(1), uint64(1))
 
-		_, err := modelService.UpdateModelVersion(NAMESPACE, &modelRPC.UpdateModelVersionRequest{
+		_, err := modelService.UpdateModelVersion(NAMESPACE, &modelPB.UpdateModelVersionRequest{
 			Name:    newModel.Name,
 			Version: uint64(1),
-			VersionPatch: &modelRPC.UpdateModelVersionPatch{
+			VersionPatch: &modelPB.UpdateModelVersionPatch{
 				Description: "updated description",
 			},
 		})
@@ -516,7 +516,7 @@ func TestModelService_DeleteModel(t *testing.T) {
 		newModel := modelDB.Model{
 			Id:        1,
 			Name:      "test",
-			Task:      uint64(modelRPC.Model_TASK_CLASSIFICATION),
+			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 			Versions:  []modelDB.Version{},
 		}

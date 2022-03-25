@@ -29,7 +29,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
-	modelRPC "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,7 +42,7 @@ type serviceHandlers struct {
 	tritonService triton.TritonService
 }
 
-func NewServiceHandlers(modelService service.ModelService, tritonService triton.TritonService) modelRPC.ModelServiceServer {
+func NewServiceHandlers(modelService service.ModelService, tritonService triton.TritonService) modelPB.ModelServiceServer {
 	return &serviceHandlers{
 		modelService:  modelService,
 		tritonService: tritonService,
@@ -128,7 +128,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 					if err == nil {
 						createdTModels = append(createdTModels, datamodel.TModel{
 							Name:    currentNewModelName, // Triton model name
-							Status:  modelRPC.ModelVersion_STATUS_OFFLINE.String(),
+							Status:  modelPB.ModelVersion_STATUS_OFFLINE.String(),
 							Version: int(iVersion),
 						})
 					}
@@ -194,10 +194,10 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 	return true
 }
 
-func saveFile(stream modelRPC.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, err error) {
+func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, err error) {
 	firstChunk := true
 	var fp *os.File
-	var fileData *modelRPC.CreateModelBinaryFileUploadRequest
+	var fileData *modelPB.CreateModelBinaryFileUploadRequest
 
 	var tmpFile string
 
@@ -226,7 +226,7 @@ func saveFile(stream modelRPC.ModelService_CreateModelBinaryFileUploadServer) (o
 				Description: fileData.Description,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
-				Status:      modelRPC.ModelVersion_STATUS_OFFLINE.String(),
+				Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
 				Version:     1,
 			})
 			if err != nil {
@@ -244,9 +244,9 @@ func saveFile(stream modelRPC.ModelService_CreateModelBinaryFileUploadServer) (o
 	return tmpFile, &uploadedModel, nil
 }
 
-func savePredictInput(stream modelRPC.ModelService_TriggerModelBinaryFileUploadServer) (imageByte []byte, modelId string, version uint64, err error) {
+func savePredictInput(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) (imageByte []byte, modelId string, version uint64, err error) {
 	var firstChunk = true
-	var fileData *modelRPC.TriggerModelBinaryFileUploadRequest
+	var fileData *modelPB.TriggerModelBinaryFileUploadRequest
 
 	var fileContent []byte
 
@@ -304,20 +304,20 @@ func getUsername(ctx context.Context) (string, error) {
 	}
 }
 
-func (s *serviceHandlers) Liveness(ctx context.Context, pb *modelRPC.LivenessRequest) (*modelRPC.LivenessResponse, error) {
+func (s *serviceHandlers) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &modelRPC.LivenessResponse{Status: modelRPC.LivenessResponse_SERVING_STATUS_NOT_SERVING}, nil
+		return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
 
-	return &modelRPC.LivenessResponse{Status: modelRPC.LivenessResponse_SERVING_STATUS_SERVING}, nil
+	return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_SERVING}, nil
 }
 
-func (s *serviceHandlers) Readiness(ctx context.Context, pb *modelRPC.ReadinessRequest) (*modelRPC.ReadinessResponse, error) {
+func (s *serviceHandlers) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &modelRPC.ReadinessResponse{Status: modelRPC.ReadinessResponse_SERVING_STATUS_NOT_SERVING}, nil
+		return &modelPB.ReadinessResponse{Status: modelPB.ReadinessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
 
-	return &modelRPC.ReadinessResponse{Status: modelRPC.ReadinessResponse_SERVING_STATUS_SERVING}, nil
+	return &modelPB.ReadinessResponse{Status: modelPB.ReadinessResponse_SERVING_STATUS_SERVING}, nil
 }
 
 func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
@@ -400,7 +400,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		}
 		uploadedModel.Versions = append(uploadedModel.Versions, datamodel.Version{
 			Description: r.FormValue("description"),
-			Status:      modelRPC.ModelVersion_STATUS_OFFLINE.String(),
+			Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
 			Version:     1,
 		})
 		uploadedModel.Namespace = username
@@ -437,7 +437,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		w.WriteHeader(200)
 		m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
 		var buffer bytes.Buffer
-		err = m.Marshal(&buffer, &modelRPC.CreateModelBinaryFileUploadResponse{Model: resModel})
+		err = m.Marshal(&buffer, &modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
 		if err != nil {
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
@@ -450,7 +450,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 }
 
 // AddModel - upload a model to the model server
-func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
 	username, err := getUsername(stream.Context())
 	if err != nil {
 		return err
@@ -482,7 +482,7 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelServi
 	if err != nil {
 		return err
 	}
-	err = stream.SendAndClose(&modelRPC.CreateModelBinaryFileUploadResponse{Model: resModel})
+	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
 	if err != nil {
 		return makeError(codes.Internal, "Add Model Error", err.Error())
 	}
@@ -490,83 +490,83 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelRPC.ModelServi
 	return
 }
 
-func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *modelRPC.UpdateModelVersionRequest) (*modelRPC.UpdateModelVersionResponse, error) {
+func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
-		return &modelRPC.UpdateModelVersionResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
+		return &modelPB.UpdateModelVersionResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
 	}
 
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.UpdateModelVersionResponse{}, err
+		return &modelPB.UpdateModelVersionResponse{}, err
 	}
 	modelVersion, err := s.modelService.UpdateModelVersion(username, in)
-	return &modelRPC.UpdateModelVersionResponse{ModelVersion: modelVersion}, err
+	return &modelPB.UpdateModelVersionResponse{ModelVersion: modelVersion}, err
 }
 
-func (s *serviceHandlers) ListModel(ctx context.Context, in *modelRPC.ListModelRequest) (*modelRPC.ListModelResponse, error) {
+func (s *serviceHandlers) ListModel(ctx context.Context, in *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.ListModelResponse{}, err
+		return &modelPB.ListModelResponse{}, err
 	}
 
 	resModels, err := s.modelService.ListModels(username)
-	return &modelRPC.ListModelResponse{Models: resModels}, err
+	return &modelPB.ListModelResponse{Models: resModels}, err
 }
 
-func (s *serviceHandlers) TriggerModel(ctx context.Context, in *modelRPC.TriggerModelRequest) (*modelRPC.TriggerModelResponse, error) {
+func (s *serviceHandlers) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
 	modelInDB, err := s.modelService.GetModelByName(username, in.Name)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
+		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
 	}
 
 	_, err = s.modelService.GetModelVersion(modelInDB.Id, in.Version)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
+		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
 	}
 
 	imgsBytes, _, err := ParseImageRequestInputsToBytes(in)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
-	task := modelRPC.Model_Task(modelInDB.Task)
+	task := modelPB.Model_Task(modelInDB.Task)
 	response, err := s.modelService.ModelInfer(username, in.Name, in.Version, imgsBytes, task)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
 
 	var data = &structpb.Struct{}
 	var b []byte
 	switch task {
-	case modelRPC.Model_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelRPC.ClassificationOutputs))
+	case modelPB.Model_TASK_CLASSIFICATION:
+		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
-			return &modelRPC.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
-	case modelRPC.Model_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelRPC.DetectionOutputs))
+	case modelPB.Model_TASK_DETECTION:
+		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
-			return &modelRPC.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	default:
 		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
-			return &modelRPC.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
+			return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 		}
 	}
 	err = protojson.Unmarshal(b, data)
 	if err != nil {
-		return &modelRPC.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
+		return &modelPB.TriggerModelResponse{}, makeError(codes.Internal, "PredictModel", err.Error())
 	}
 
-	return &modelRPC.TriggerModelResponse{Output: data}, nil
+	return &modelPB.TriggerModelResponse{Output: data}, nil
 }
 
-func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelRPC.ModelService_TriggerModelBinaryFileUploadServer) error {
+func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) error {
 	if !s.tritonService.IsTritonServerReady() {
 		return makeError(503, "PredictModel", "Triton Server not ready yet")
 	}
@@ -585,7 +585,7 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelRPC.ModelServ
 	if err != nil {
 		return makeError(404, "PredictModel", fmt.Sprintf("The model %v do not exist", modelName))
 	}
-	task := modelRPC.Model_Task(modelInDB.Task)
+	task := modelPB.Model_Task(modelInDB.Task)
 
 	response, err := s.modelService.ModelInfer(username, modelName, version, [][]byte{imageByte}, task)
 
@@ -596,13 +596,13 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelRPC.ModelServ
 	var data = &structpb.Struct{}
 	var b []byte
 	switch task {
-	case modelRPC.Model_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelRPC.ClassificationOutputs))
+	case modelPB.Model_TASK_CLASSIFICATION:
+		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
-	case modelRPC.Model_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelRPC.DetectionOutputs))
+	case modelPB.Model_TASK_DETECTION:
+		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return makeError(500, "PredictModel", err.Error())
 		}
@@ -616,7 +616,7 @@ func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelRPC.ModelServ
 	if err != nil {
 		return makeError(500, "PredictModel", err.Error())
 	}
-	err = stream.SendAndClose(&modelRPC.TriggerModelBinaryFileUploadResponse{Output: data})
+	err = stream.SendAndClose(&modelPB.TriggerModelBinaryFileUploadResponse{Output: data})
 	return err
 }
 
@@ -666,7 +666,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		task := modelRPC.Model_Task(modelInDB.Task)
+		task := modelPB.Model_Task(modelInDB.Task)
 		response, err := modelService.ModelInfer(username, modelName, uint64(modelVersion), imgsBytes, task)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
@@ -675,14 +675,14 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		var data = &structpb.Struct{}
 		var b []byte
 		switch task {
-		case modelRPC.Model_TASK_CLASSIFICATION:
-			b, err = json.Marshal(response.(*modelRPC.ClassificationOutputs))
+		case modelPB.Model_TASK_CLASSIFICATION:
+			b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
-		case modelRPC.Model_TASK_DETECTION:
-			b, err = json.Marshal(response.(*modelRPC.DetectionOutputs))
+		case modelPB.Model_TASK_DETECTION:
+			b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
@@ -702,7 +702,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := json.Marshal(&modelRPC.TriggerModelBinaryFileUploadResponse{Output: data})
+		res, err := json.Marshal(&modelPB.TriggerModelBinaryFileUploadResponse{Output: data})
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -714,27 +714,27 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	}
 }
 
-func (s *serviceHandlers) GetModel(ctx context.Context, in *modelRPC.GetModelRequest) (*modelRPC.GetModelResponse, error) {
+func (s *serviceHandlers) GetModel(ctx context.Context, in *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.GetModelResponse{}, err
+		return &modelPB.GetModelResponse{}, err
 	}
 	md, err := s.modelService.GetFullModelData(username, in.Name)
-	return &modelRPC.GetModelResponse{Model: md}, err
+	return &modelPB.GetModelResponse{Model: md}, err
 }
 
-func (s *serviceHandlers) DeleteModel(ctx context.Context, in *modelRPC.DeleteModelRequest) (*modelRPC.DeleteModelResponse, error) {
+func (s *serviceHandlers) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.DeleteModelResponse{}, err
+		return &modelPB.DeleteModelResponse{}, err
 	}
-	return &modelRPC.DeleteModelResponse{}, s.modelService.DeleteModel(username, in.Name)
+	return &modelPB.DeleteModelResponse{}, s.modelService.DeleteModel(username, in.Name)
 }
 
-func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *modelRPC.DeleteModelVersionRequest) (*modelRPC.DeleteModelVersionResponse, error) {
+func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest) (*modelPB.DeleteModelVersionResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
-		return &modelRPC.DeleteModelVersionResponse{}, err
+		return &modelPB.DeleteModelVersionResponse{}, err
 	}
-	return &modelRPC.DeleteModelVersionResponse{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
+	return &modelPB.DeleteModelVersionResponse{}, s.modelService.DeleteModelVersion(username, in.Name, in.Version)
 }
