@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/gogo/status"
-	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"google.golang.org/grpc/codes"
 	"gorm.io/gorm"
+
+	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
-type ModelRepository interface {
+type Repository interface {
 	CreateModel(model datamodel.Model) error
 	GetModelByName(namespace string, modelName string) (datamodel.Model, error)
 	ListModels(query datamodel.ListModelQuery) ([]datamodel.Model, error)
@@ -32,7 +33,7 @@ type modelRepository struct {
 	DB *gorm.DB
 }
 
-func NewModelRepository(db *gorm.DB) ModelRepository {
+func NewModelRepository(db *gorm.DB) Repository {
 	return &modelRepository{
 		DB: db,
 	}

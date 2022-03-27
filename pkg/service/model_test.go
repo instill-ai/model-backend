@@ -7,11 +7,13 @@ import (
 
 	"github.com/gogo/status"
 	"github.com/golang/mock/gomock"
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
-	modelDB "github.com/instill-ai/model-backend/pkg/datamodel"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const NAMESPACE = "local-user"
@@ -20,7 +22,7 @@ func TestModelService_CreateModel(t *testing.T) {
 	t.Run("CreateModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "normalname",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -29,7 +31,7 @@ func TestModelService_CreateModel(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
 		mockModelRepository.
 			EXPECT().
@@ -49,7 +51,7 @@ func TestModelService_CreateModel_InvalidName(t *testing.T) {
 	t.Run("CreateModel_InvalidName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "#$%^",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -71,7 +73,7 @@ func TestModelService_GetModelByName(t *testing.T) {
 	t.Run("GetModelByName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "normalname",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -80,7 +82,7 @@ func TestModelService_GetModelByName(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(1)
 		modelService := modelService{
 			modelRepository: mockModelRepository,
@@ -98,7 +100,7 @@ func TestModelService_CreateVersion(t *testing.T) {
 		modelService := modelService{
 			modelRepository: mockModelRepository,
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     1,
 			Version:     1,
 			Description: "This is version 1",
@@ -113,7 +115,7 @@ func TestModelService_CreateVersion(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
 		_, err := modelService.CreateVersion(modelVersion)
 		assert.NoError(t, err)
@@ -131,7 +133,7 @@ func TestModelService_GetModelVersion(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
 		_, err := modelService.GetModelVersion(1, 1)
 		assert.NoError(t, err)
@@ -149,7 +151,7 @@ func TestModelService_GetModelVersions(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil)
+			Return([]datamodel.Version{}, nil)
 
 		_, err := modelService.GetModelVersions(1)
 		assert.NoError(t, err)
@@ -167,7 +169,7 @@ func TestModelService_GetModelVersionLatest(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
 		_, err := modelService.GetModelVersionLatest(1)
 		assert.NoError(t, err)
@@ -181,7 +183,7 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		modelService := modelService{
 			modelRepository: mockModelRepository,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
@@ -190,7 +192,7 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
 		mockModelRepository.
 			EXPECT().
@@ -198,7 +200,7 @@ func TestModelService_GetFullModelData(t *testing.T) {
 			Return(nil)
 		_, _ = modelService.CreateModel(&newModel)
 
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -225,11 +227,11 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil)
+			Return([]datamodel.Version{}, nil)
 		mockModelRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]modelDB.TModel{}, nil)
+			Return([]datamodel.TModel{}, nil)
 
 		_, err := modelService.GetFullModelData(NAMESPACE, "test")
 		assert.NoError(t, err)
@@ -245,7 +247,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 			modelRepository: mockModelRepository,
 			triton:          triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
@@ -254,7 +256,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
 		mockModelRepository.
 			EXPECT().
@@ -262,7 +264,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 			Return(nil)
 		_, _ = modelService.CreateModel(&newModel)
 
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -286,7 +288,7 @@ func TestModelService_ModelInfer(t *testing.T) {
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		ensembleModel := modelDB.TModel{
+		ensembleModel := datamodel.TModel{
 			Name:    "essembleModel",
 			Version: 1,
 		}
@@ -330,14 +332,14 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 			modelRepository: mockModelRepository,
 			triton:          triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -353,7 +355,7 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, fmt.Errorf("non-existed"))
+			Return(datamodel.Version{}, fmt.Errorf("non-existed"))
 
 		mockModelRepository.
 			EXPECT().
@@ -370,14 +372,14 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{modelVersion}, nil).Times(2)
+			Return([]datamodel.Version{modelVersion}, nil).Times(2)
 		_, _ = modelService.GetModelVersions(uint64(1))
 
-		uploadModel := modelDB.Model{
+		uploadModel := datamodel.Model{
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{versionInDB},
+			Versions:  []datamodel.Version{versionInDB},
 		}
 		_, err := modelService.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
 		assert.NoError(t, err)
@@ -393,14 +395,14 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 			modelRepository: mockModelRepository,
 			triton:          triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -416,7 +418,7 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, fmt.Errorf("non-existed"))
+			Return(datamodel.Version{}, fmt.Errorf("non-existed"))
 
 		mockModelRepository.
 			EXPECT().
@@ -433,14 +435,14 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{modelVersion}, nil).Times(2)
+			Return([]datamodel.Version{modelVersion}, nil).Times(2)
 		_, _ = modelService.GetModelVersions(uint64(1))
 
-		uploadModel := modelDB.Model{
+		uploadModel := datamodel.Model{
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{versionInDB},
+			Versions:  []datamodel.Version{versionInDB},
 		}
 		_, err := modelService.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
 		assert.NoError(t, err)
@@ -457,8 +459,8 @@ func TestModelService_ListModels(t *testing.T) {
 
 		mockModelRepository.
 			EXPECT().
-			ListModels(modelDB.ListModelQuery{Namespace: NAMESPACE}).
-			Return([]modelDB.Model{}, nil)
+			ListModels(datamodel.ListModelQuery{Namespace: NAMESPACE}).
+			Return([]datamodel.Model{}, nil)
 
 		_, err := modelService.ListModels(NAMESPACE)
 		assert.NoError(t, err)
@@ -473,12 +475,12 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 			modelRepository: mockModelRepository,
 		}
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
 		mockModelRepository.
 			EXPECT().
@@ -490,7 +492,7 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil).
+			Return(datamodel.Version{}, nil).
 			Times(2)
 		_, _ = modelService.GetModelVersion(uint64(1), uint64(1))
 
@@ -513,12 +515,12 @@ func TestModelService_DeleteModel(t *testing.T) {
 			modelRepository: mockModelRepository,
 		}
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
 		mockModelRepository.
 			EXPECT().
@@ -530,11 +532,11 @@ func TestModelService_DeleteModel(t *testing.T) {
 		mockModelRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil).Times(2)
+			Return([]datamodel.Version{}, nil).Times(2)
 		mockModelRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]modelDB.TModel{}, nil).Times(1)
+			Return([]datamodel.TModel{}, nil).Times(1)
 		mockModelRepository.
 			EXPECT().
 			DeleteModel(uint64(1)).

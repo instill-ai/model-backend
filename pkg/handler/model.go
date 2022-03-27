@@ -20,30 +20,32 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/google/uuid"
-	"github.com/instill-ai/model-backend/configs"
-	mUtils "github.com/instill-ai/model-backend/internal"
-	database "github.com/instill-ai/model-backend/internal/db"
-	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/service"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/service"
+
+	database "github.com/instill-ai/model-backend/internal/db"
+	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-type serviceHandlers struct {
-	modelService  service.ModelService
+type modelServiceHandler struct {
+	modelService  service.Service
 	tritonService triton.TritonService
 }
 
-func NewServiceHandlers(modelService service.ModelService, tritonService triton.TritonService) modelPB.ModelServiceServer {
-	return &serviceHandlers{
+func NewServiceHandler(modelService service.Service, tritonService triton.TritonService) modelPB.ModelServiceServer {
+	return &modelServiceHandler{
 		modelService:  modelService,
 		tritonService: tritonService,
 	}
@@ -304,7 +306,7 @@ func getUsername(ctx context.Context) (string, error) {
 	}
 }
 
-func (s *serviceHandlers) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
+func (s *modelServiceHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
 		return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
@@ -312,7 +314,7 @@ func (s *serviceHandlers) Liveness(ctx context.Context, pb *modelPB.LivenessRequ
 	return &modelPB.LivenessResponse{Status: modelPB.LivenessResponse_SERVING_STATUS_SERVING}, nil
 }
 
-func (s *serviceHandlers) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
+func (s *modelServiceHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
 		return &modelPB.ReadinessResponse{Status: modelPB.ReadinessResponse_SERVING_STATUS_NOT_SERVING}, nil
 	}
@@ -346,7 +348,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 
 		var task = 0
 		sTask := r.FormValue("task")
-		if val, ok := mUtils.Tasks[sTask]; ok {
+		if val, ok := util.Tasks[sTask]; ok {
 			task = val
 		} else {
 			if sTask != "" {
@@ -450,7 +452,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 }
 
 // AddModel - upload a model to the model server
-func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (s *modelServiceHandler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
 	username, err := getUsername(stream.Context())
 	if err != nil {
 		return err
@@ -490,7 +492,7 @@ func (s *serviceHandlers) CreateModelBinaryFileUpload(stream modelPB.ModelServic
 	return
 }
 
-func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {
+func (s *modelServiceHandler) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {
 	if !s.tritonService.IsTritonServerReady() {
 		return &modelPB.UpdateModelVersionResponse{}, makeError(503, "LoadModel Error", "Triton Server not ready yet")
 	}
@@ -503,7 +505,7 @@ func (s *serviceHandlers) UpdateModelVersion(ctx context.Context, in *modelPB.Up
 	return &modelPB.UpdateModelVersionResponse{ModelVersion: modelVersion}, err
 }
 
-func (s *serviceHandlers) ListModel(ctx context.Context, in *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
+func (s *modelServiceHandler) ListModel(ctx context.Context, in *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
 		return &modelPB.ListModelResponse{}, err
@@ -513,7 +515,7 @@ func (s *serviceHandlers) ListModel(ctx context.Context, in *modelPB.ListModelRe
 	return &modelPB.ListModelResponse{Models: resModels}, err
 }
 
-func (s *serviceHandlers) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
+func (s *modelServiceHandler) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
 		return &modelPB.TriggerModelResponse{}, err
@@ -566,7 +568,7 @@ func (s *serviceHandlers) TriggerModel(ctx context.Context, in *modelPB.TriggerM
 	return &modelPB.TriggerModelResponse{Output: data}, nil
 }
 
-func (s *serviceHandlers) TriggerModelBinaryFileUpload(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) error {
+func (s *modelServiceHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) error {
 	if !s.tritonService.IsTritonServerReady() {
 		return makeError(503, "PredictModel", "Triton Server not ready yet")
 	}
@@ -714,7 +716,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	}
 }
 
-func (s *serviceHandlers) GetModel(ctx context.Context, in *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
+func (s *modelServiceHandler) GetModel(ctx context.Context, in *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
@@ -723,7 +725,7 @@ func (s *serviceHandlers) GetModel(ctx context.Context, in *modelPB.GetModelRequ
 	return &modelPB.GetModelResponse{Model: md}, err
 }
 
-func (s *serviceHandlers) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
+func (s *modelServiceHandler) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
 		return &modelPB.DeleteModelResponse{}, err
@@ -731,7 +733,7 @@ func (s *serviceHandlers) DeleteModel(ctx context.Context, in *modelPB.DeleteMod
 	return &modelPB.DeleteModelResponse{}, s.modelService.DeleteModel(username, in.Name)
 }
 
-func (s *serviceHandlers) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest) (*modelPB.DeleteModelVersionResponse, error) {
+func (s *modelServiceHandler) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest) (*modelPB.DeleteModelVersionResponse, error) {
 	username, err := getUsername(ctx)
 	if err != nil {
 		return &modelPB.DeleteModelVersionResponse{}, err

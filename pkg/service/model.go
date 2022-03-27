@@ -10,25 +10,27 @@ import (
 	"time"
 
 	"github.com/gogo/status"
-	"github.com/instill-ai/model-backend/configs"
-	"github.com/instill-ai/model-backend/internal/triton"
-	modelDB "github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/repository"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/repository"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-type ModelService interface {
-	CreateModel(model *modelDB.Model) (*modelDB.Model, error)
-	GetModelByName(namespace string, modelName string) (modelDB.Model, error)
-	CreateVersion(version modelDB.Version) (modelDB.Version, error)
-	GetModelVersion(modelId uint64, version uint64) (modelDB.Version, error)
-	GetModelVersions(modelId uint64) ([]modelDB.Version, error)
-	GetModelVersionLatest(modelId uint64) (modelDB.Version, error)
+type Service interface {
+	CreateModel(model *datamodel.Model) (*datamodel.Model, error)
+	GetModelByName(namespace string, modelName string) (datamodel.Model, error)
+	CreateVersion(version datamodel.Version) (datamodel.Version, error)
+	GetModelVersion(modelId uint64, version uint64) (datamodel.Version, error)
+	GetModelVersions(modelId uint64) ([]datamodel.Version, error)
+	GetModelVersionLatest(modelId uint64) (datamodel.Version, error)
 	GetFullModelData(namespace string, modelName string) (*modelPB.Model, error)
 	ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error)
-	CreateModelBinaryFileUpload(namespace string, createdModel *modelDB.Model) (*modelPB.Model, error)
+	CreateModelBinaryFileUpload(namespace string, createdModel *datamodel.Model) (*modelPB.Model, error)
 	ListModels(namespace string) ([]*modelPB.Model, error)
 	UpdateModelVersion(namespace string, updatedInfo *modelPB.UpdateModelVersionRequest) (*modelPB.ModelVersion, error)
 	DeleteModel(namespace string, modelName string) error
@@ -36,18 +38,18 @@ type ModelService interface {
 }
 
 type modelService struct {
-	modelRepository repository.ModelRepository
+	modelRepository repository.Repository
 	triton          triton.TritonService
 }
 
-func NewModelService(r repository.ModelRepository, t triton.TritonService) ModelService {
+func NewModelService(r repository.Repository, t triton.TritonService) Service {
 	return &modelService{
 		modelRepository: r,
 		triton:          t,
 	}
 }
 
-func createModelVersion(modelVersionInDB modelDB.Version) *modelPB.ModelVersion {
+func createModelVersion(modelVersionInDB datamodel.Version) *modelPB.ModelVersion {
 	var st = modelPB.ModelVersion_STATUS_OFFLINE
 	if modelVersionInDB.Status == modelPB.ModelVersion_STATUS_ONLINE.String() {
 		st = modelPB.ModelVersion_STATUS_ONLINE
@@ -65,7 +67,7 @@ func createModelVersion(modelVersionInDB modelDB.Version) *modelPB.ModelVersion 
 	}
 }
 
-func createModelInfo(modelInDB modelDB.Model, versions []modelDB.Version, tritonModels []modelDB.TModel) *modelPB.Model {
+func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tritonModels []datamodel.TModel) *modelPB.Model {
 	var vers []*modelPB.ModelVersion
 	for i := 0; i < len(versions); i++ {
 		vers = append(vers, createModelVersion(versions[i]))
@@ -80,7 +82,7 @@ func createModelInfo(modelInDB modelDB.Model, versions []modelDB.Version, triton
 }
 
 func setModelOnline(s *modelService, modelID uint64, modelVersion uint64) error {
-	var tEnsembleModel modelDB.TModel
+	var tEnsembleModel datamodel.TModel
 	var err error
 
 	if tEnsembleModel, err = s.modelRepository.GetTEnsembleModel(modelID, modelVersion); err != nil {
@@ -89,7 +91,7 @@ func setModelOnline(s *modelService, modelID uint64, modelVersion uint64) error 
 
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, modelDB.Version{
+		if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, datamodel.Version{
 			UpdatedAt: time.Now(),
 			Status:    modelPB.ModelVersion_STATUS_ERROR.String(),
 		}); err != nil {
@@ -98,7 +100,7 @@ func setModelOnline(s *modelService, modelID uint64, modelVersion uint64) error 
 		return err
 	}
 
-	if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, modelDB.Version{
+	if err = s.modelRepository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, datamodel.Version{
 		UpdatedAt: time.Now(),
 		Status:    modelPB.ModelVersion_STATUS_ONLINE.String(),
 	}); err != nil {
@@ -110,7 +112,7 @@ func setModelOnline(s *modelService, modelID uint64, modelVersion uint64) error 
 
 func setModelOffline(s *modelService, modelID uint64, modelVersion uint64) error {
 
-	var tritonModels []modelDB.TModel
+	var tritonModels []datamodel.TModel
 	var err error
 
 	if tritonModels, err = s.modelRepository.GetTModels(modelID); err != nil {
@@ -121,7 +123,7 @@ func setModelOffline(s *modelService, modelID uint64, modelVersion uint64) error
 		// Unload all models composing the ensemble model
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err = s.modelRepository.UpdateModelVersion(modelID, modelVersion, modelDB.Version{
+			if err = s.modelRepository.UpdateModelVersion(modelID, modelVersion, datamodel.Version{
 				UpdatedAt: time.Now(),
 				Status:    modelPB.ModelVersion_STATUS_ERROR.String(),
 			}); err != nil {
@@ -131,7 +133,7 @@ func setModelOffline(s *modelService, modelID uint64, modelVersion uint64) error
 		}
 	}
 
-	if err := s.modelRepository.UpdateModelVersion(modelID, modelVersion, modelDB.Version{
+	if err := s.modelRepository.UpdateModelVersion(modelID, modelVersion, datamodel.Version{
 		UpdatedAt: time.Now(),
 		Status:    modelPB.ModelVersion_STATUS_OFFLINE.String(),
 	}); err != nil {
@@ -141,56 +143,56 @@ func setModelOffline(s *modelService, modelID uint64, modelVersion uint64) error
 	return nil
 }
 
-func (s *modelService) CreateModel(model *modelDB.Model) (*modelDB.Model, error) {
+func (s *modelService) CreateModel(model *datamodel.Model) (*datamodel.Model, error) {
 	// Validate the naming rule of model
 	if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", model.Name); !match {
-		return &modelDB.Model{}, status.Error(codes.FailedPrecondition, "The name of model is invalid")
+		return &datamodel.Model{}, status.Error(codes.FailedPrecondition, "The name of model is invalid")
 	}
 
 	if existingModel, _ := s.GetModelByName(model.Namespace, model.Name); existingModel.Name != "" {
-		return &modelDB.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your namespace", model.Name)
+		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your namespace", model.Name)
 	}
 
 	if err := s.modelRepository.CreateModel(*model); err != nil {
-		return &modelDB.Model{}, err
+		return &datamodel.Model{}, err
 	}
 
 	if createdModel, err := s.GetModelByName(model.Namespace, model.Name); err != nil {
-		return &modelDB.Model{}, err
+		return &datamodel.Model{}, err
 	} else {
 		return &createdModel, nil
 	}
 }
 
-func (s *modelService) GetModelByName(namespace string, modelName string) (modelDB.Model, error) {
+func (s *modelService) GetModelByName(namespace string, modelName string) (datamodel.Model, error) {
 	return s.modelRepository.GetModelByName(namespace, modelName)
 }
 
-func (s *modelService) GetModelVersionLatest(modelId uint64) (modelDB.Version, error) {
+func (s *modelService) GetModelVersionLatest(modelId uint64) (datamodel.Version, error) {
 	return s.modelRepository.GetModelVersionLatest(modelId)
 }
 
-func (s *modelService) CreateVersion(version modelDB.Version) (modelDB.Version, error) {
+func (s *modelService) CreateVersion(version datamodel.Version) (datamodel.Version, error) {
 	if err := s.modelRepository.CreateVersion(version); err != nil {
-		return modelDB.Version{}, err
+		return datamodel.Version{}, err
 	}
 
 	if createdVersion, err := s.modelRepository.GetModelVersion(version.ModelId, version.Version); err != nil {
-		return modelDB.Version{}, err
+		return datamodel.Version{}, err
 	} else {
 		return createdVersion, nil
 	}
 }
 
-func (s *modelService) GetModelVersion(modelId uint64, version uint64) (modelDB.Version, error) {
+func (s *modelService) GetModelVersion(modelId uint64, version uint64) (datamodel.Version, error) {
 	return s.modelRepository.GetModelVersion(modelId, version)
 }
 
-func (s *modelService) GetModelVersions(modelId uint64) ([]modelDB.Version, error) {
+func (s *modelService) GetModelVersions(modelId uint64) ([]datamodel.Version, error) {
 	return s.modelRepository.GetModelVersions(modelId)
 }
 
-func (s *modelService) GetTModels(modelId uint64) ([]modelDB.TModel, error) {
+func (s *modelService) GetTModels(modelId uint64) ([]datamodel.TModel, error) {
 	return s.modelRepository.GetTModels(modelId)
 }
 
@@ -293,13 +295,13 @@ func (s *modelService) ModelInfer(namespace string, modelName string, version ui
 	}
 }
 
-func createModel(s *modelService, namespace string, uploadedModel *modelDB.Model) (modelDB.Model, []modelDB.Version, []modelDB.TModel, error) {
+func createModel(s *modelService, namespace string, uploadedModel *datamodel.Model) (datamodel.Model, []datamodel.Version, []datamodel.TModel, error) {
 
 	modelInDB, err := s.GetModelByName(namespace, uploadedModel.Name)
 	if err != nil {
 		createdModel, err := s.CreateModel(uploadedModel)
 		if err != nil {
-			return modelDB.Model{}, []modelDB.Version{}, []modelDB.TModel{}, fmt.Errorf("Could not create model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model in DB")
 		}
 		modelInDB = *createdModel
 	}
@@ -312,7 +314,7 @@ func createModel(s *modelService, namespace string, uploadedModel *modelDB.Model
 	uploadedModel.Versions[0].ModelId = modelInDB.Id
 	versionInDB, err := s.CreateVersion(uploadedModel.Versions[0])
 	if err != nil {
-		return modelDB.Model{}, []modelDB.Version{}, []modelDB.TModel{}, fmt.Errorf("Could not create model version in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model version in DB")
 	}
 	for i := 0; i < len(uploadedModel.TritonModels); i++ {
 		tritonModel := uploadedModel.TritonModels[i]
@@ -320,24 +322,24 @@ func createModel(s *modelService, namespace string, uploadedModel *modelDB.Model
 		tritonModel.ModelVersion = versionInDB.Version
 		err = s.modelRepository.CreateTModel(tritonModel)
 		if err != nil {
-			return modelDB.Model{}, []modelDB.Version{}, []modelDB.TModel{}, fmt.Errorf("Could not create triton model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create triton model in DB")
 		}
 	}
 	versions, err := s.GetModelVersions(modelInDB.Id)
 	if err != nil {
-		return modelDB.Model{}, []modelDB.Version{}, []modelDB.TModel{}, fmt.Errorf("Could not get model versions in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not get model versions in DB")
 	}
 
 	return modelInDB, versions, uploadedModel.TritonModels, nil
 }
 
-func (s *modelService) CreateModelBinaryFileUpload(namespace string, uploadedModel *modelDB.Model) (*modelPB.Model, error) {
+func (s *modelService) CreateModelBinaryFileUpload(namespace string, uploadedModel *datamodel.Model) (*modelPB.Model, error) {
 	modelInDB, versions, tritonModels, err := createModel(s, namespace, uploadedModel)
 	return createModelInfo(modelInDB, versions, tritonModels), err
 }
 
 func (s *modelService) ListModels(namespace string) ([]*modelPB.Model, error) {
-	models, err := s.modelRepository.ListModels(modelDB.ListModelQuery{Namespace: namespace})
+	models, err := s.modelRepository.ListModels(datamodel.ListModelQuery{Namespace: namespace})
 	if err != nil {
 		return []*modelPB.Model{}, err
 	}
@@ -382,7 +384,7 @@ func (s *modelService) UpdateModelVersion(namespace string, in *modelPB.UpdateMo
 					return &modelPB.ModelVersion{}, fmt.Errorf("Wrong status value. Status should be ONLINE or OFFLINE")
 				}
 			case "description":
-				err = s.modelRepository.UpdateModelVersion(modelInDB.Id, in.Version, modelDB.Version{
+				err = s.modelRepository.UpdateModelVersion(modelInDB.Id, in.Version, datamodel.Version{
 					UpdatedAt:   time.Now(),
 					Description: in.VersionPatch.Description,
 				})

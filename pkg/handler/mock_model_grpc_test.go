@@ -9,9 +9,10 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
-	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
+	grpc "google.golang.org/grpc"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 // MockModelServiceClient is a mock of ModelServiceClient interface.
@@ -38,14 +39,14 @@ func (m *MockModelServiceClient) EXPECT() *MockModelServiceClientMockRecorder {
 }
 
 // CreateModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceClient) CreateModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelv1alpha.ModelService_CreateModelBinaryFileUploadClient, error) {
+func (m *MockModelServiceClient) CreateModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_CreateModelBinaryFileUploadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreateModelBinaryFileUpload", varargs...)
-	ret0, _ := ret[0].(modelv1alpha.ModelService_CreateModelBinaryFileUploadClient)
+	ret0, _ := ret[0].(modelPB.ModelService_CreateModelBinaryFileUploadClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -58,14 +59,14 @@ func (mr *MockModelServiceClientMockRecorder) CreateModelBinaryFileUpload(ctx in
 }
 
 // DeleteModel mocks base method.
-func (m *MockModelServiceClient) DeleteModel(ctx context.Context, in *modelv1alpha.DeleteModelRequest, opts ...grpc.CallOption) (*modelv1alpha.DeleteModelResponse, error) {
+func (m *MockModelServiceClient) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DeleteModel", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.DeleteModelResponse)
+	ret0, _ := ret[0].(*modelPB.DeleteModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,14 +79,14 @@ func (mr *MockModelServiceClientMockRecorder) DeleteModel(ctx, in interface{}, o
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockModelServiceClient) DeleteModelVersion(ctx context.Context, in *modelv1alpha.DeleteModelVersionRequest, opts ...grpc.CallOption) (*modelv1alpha.DeleteModelVersionResponse, error) {
+func (m *MockModelServiceClient) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DeleteModelVersion", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.DeleteModelVersionResponse)
+	ret0, _ := ret[0].(*modelPB.DeleteModelVersionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -98,14 +99,14 @@ func (mr *MockModelServiceClientMockRecorder) DeleteModelVersion(ctx, in interfa
 }
 
 // GetModel mocks base method.
-func (m *MockModelServiceClient) GetModel(ctx context.Context, in *modelv1alpha.GetModelRequest, opts ...grpc.CallOption) (*modelv1alpha.GetModelResponse, error) {
+func (m *MockModelServiceClient) GetModel(ctx context.Context, in *modelPB.GetModelRequest, opts ...grpc.CallOption) (*modelPB.GetModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetModel", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.GetModelResponse)
+	ret0, _ := ret[0].(*modelPB.GetModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -118,14 +119,14 @@ func (mr *MockModelServiceClientMockRecorder) GetModel(ctx, in interface{}, opts
 }
 
 // ListModel mocks base method.
-func (m *MockModelServiceClient) ListModel(ctx context.Context, in *modelv1alpha.ListModelRequest, opts ...grpc.CallOption) (*modelv1alpha.ListModelResponse, error) {
+func (m *MockModelServiceClient) ListModel(ctx context.Context, in *modelPB.ListModelRequest, opts ...grpc.CallOption) (*modelPB.ListModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListModel", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.ListModelResponse)
+	ret0, _ := ret[0].(*modelPB.ListModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -138,14 +139,14 @@ func (mr *MockModelServiceClientMockRecorder) ListModel(ctx, in interface{}, opt
 }
 
 // Liveness mocks base method.
-func (m *MockModelServiceClient) Liveness(ctx context.Context, in *modelv1alpha.LivenessRequest, opts ...grpc.CallOption) (*modelv1alpha.LivenessResponse, error) {
+func (m *MockModelServiceClient) Liveness(ctx context.Context, in *modelPB.LivenessRequest, opts ...grpc.CallOption) (*modelPB.LivenessResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Liveness", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.LivenessResponse)
+	ret0, _ := ret[0].(*modelPB.LivenessResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -158,14 +159,14 @@ func (mr *MockModelServiceClientMockRecorder) Liveness(ctx, in interface{}, opts
 }
 
 // Readiness mocks base method.
-func (m *MockModelServiceClient) Readiness(ctx context.Context, in *modelv1alpha.ReadinessRequest, opts ...grpc.CallOption) (*modelv1alpha.ReadinessResponse, error) {
+func (m *MockModelServiceClient) Readiness(ctx context.Context, in *modelPB.ReadinessRequest, opts ...grpc.CallOption) (*modelPB.ReadinessResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Readiness", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.ReadinessResponse)
+	ret0, _ := ret[0].(*modelPB.ReadinessResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -178,14 +179,14 @@ func (mr *MockModelServiceClientMockRecorder) Readiness(ctx, in interface{}, opt
 }
 
 // TriggerModel mocks base method.
-func (m *MockModelServiceClient) TriggerModel(ctx context.Context, in *modelv1alpha.TriggerModelRequest, opts ...grpc.CallOption) (*modelv1alpha.TriggerModelResponse, error) {
+func (m *MockModelServiceClient) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest, opts ...grpc.CallOption) (*modelPB.TriggerModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TriggerModel", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.TriggerModelResponse)
+	ret0, _ := ret[0].(*modelPB.TriggerModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -198,14 +199,14 @@ func (mr *MockModelServiceClientMockRecorder) TriggerModel(ctx, in interface{}, 
 }
 
 // TriggerModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceClient) TriggerModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelv1alpha.ModelService_TriggerModelBinaryFileUploadClient, error) {
+func (m *MockModelServiceClient) TriggerModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_TriggerModelBinaryFileUploadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TriggerModelBinaryFileUpload", varargs...)
-	ret0, _ := ret[0].(modelv1alpha.ModelService_TriggerModelBinaryFileUploadClient)
+	ret0, _ := ret[0].(modelPB.ModelService_TriggerModelBinaryFileUploadClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -218,14 +219,14 @@ func (mr *MockModelServiceClientMockRecorder) TriggerModelBinaryFileUpload(ctx i
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockModelServiceClient) UpdateModelVersion(ctx context.Context, in *modelv1alpha.UpdateModelVersionRequest, opts ...grpc.CallOption) (*modelv1alpha.UpdateModelVersionResponse, error) {
+func (m *MockModelServiceClient) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest, opts ...grpc.CallOption) (*modelPB.UpdateModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateModelVersion", varargs...)
-	ret0, _ := ret[0].(*modelv1alpha.UpdateModelVersionResponse)
+	ret0, _ := ret[0].(*modelPB.UpdateModelVersionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -261,10 +262,10 @@ func (m *MockModelService_CreateModelBinaryFileUploadClient) EXPECT() *MockModel
 }
 
 // CloseAndRecv mocks base method.
-func (m *MockModelService_CreateModelBinaryFileUploadClient) CloseAndRecv() (*modelv1alpha.CreateModelBinaryFileUploadResponse, error) {
+func (m *MockModelService_CreateModelBinaryFileUploadClient) CloseAndRecv() (*modelPB.CreateModelBinaryFileUploadResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseAndRecv")
-	ret0, _ := ret[0].(*modelv1alpha.CreateModelBinaryFileUploadResponse)
+	ret0, _ := ret[0].(*modelPB.CreateModelBinaryFileUploadResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -333,7 +334,7 @@ func (mr *MockModelService_CreateModelBinaryFileUploadClientMockRecorder) RecvMs
 }
 
 // Send mocks base method.
-func (m *MockModelService_CreateModelBinaryFileUploadClient) Send(arg0 *modelv1alpha.CreateModelBinaryFileUploadRequest) error {
+func (m *MockModelService_CreateModelBinaryFileUploadClient) Send(arg0 *modelPB.CreateModelBinaryFileUploadRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
@@ -398,10 +399,10 @@ func (m *MockModelService_TriggerModelBinaryFileUploadClient) EXPECT() *MockMode
 }
 
 // CloseAndRecv mocks base method.
-func (m *MockModelService_TriggerModelBinaryFileUploadClient) CloseAndRecv() (*modelv1alpha.TriggerModelBinaryFileUploadResponse, error) {
+func (m *MockModelService_TriggerModelBinaryFileUploadClient) CloseAndRecv() (*modelPB.TriggerModelBinaryFileUploadResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseAndRecv")
-	ret0, _ := ret[0].(*modelv1alpha.TriggerModelBinaryFileUploadResponse)
+	ret0, _ := ret[0].(*modelPB.TriggerModelBinaryFileUploadResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -470,7 +471,7 @@ func (mr *MockModelService_TriggerModelBinaryFileUploadClientMockRecorder) RecvM
 }
 
 // Send mocks base method.
-func (m *MockModelService_TriggerModelBinaryFileUploadClient) Send(arg0 *modelv1alpha.TriggerModelBinaryFileUploadRequest) error {
+func (m *MockModelService_TriggerModelBinaryFileUploadClient) Send(arg0 *modelPB.TriggerModelBinaryFileUploadRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
@@ -535,7 +536,7 @@ func (m *MockModelServiceServer) EXPECT() *MockModelServiceServerMockRecorder {
 }
 
 // CreateModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceServer) CreateModelBinaryFileUpload(arg0 modelv1alpha.ModelService_CreateModelBinaryFileUploadServer) error {
+func (m *MockModelServiceServer) CreateModelBinaryFileUpload(arg0 modelPB.ModelService_CreateModelBinaryFileUploadServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateModelBinaryFileUpload", arg0)
 	ret0, _ := ret[0].(error)
@@ -549,10 +550,10 @@ func (mr *MockModelServiceServerMockRecorder) CreateModelBinaryFileUpload(arg0 i
 }
 
 // DeleteModel mocks base method.
-func (m *MockModelServiceServer) DeleteModel(arg0 context.Context, arg1 *modelv1alpha.DeleteModelRequest) (*modelv1alpha.DeleteModelResponse, error) {
+func (m *MockModelServiceServer) DeleteModel(arg0 context.Context, arg1 *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteModel", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.DeleteModelResponse)
+	ret0, _ := ret[0].(*modelPB.DeleteModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -564,10 +565,10 @@ func (mr *MockModelServiceServerMockRecorder) DeleteModel(arg0, arg1 interface{}
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockModelServiceServer) DeleteModelVersion(arg0 context.Context, arg1 *modelv1alpha.DeleteModelVersionRequest) (*modelv1alpha.DeleteModelVersionResponse, error) {
+func (m *MockModelServiceServer) DeleteModelVersion(arg0 context.Context, arg1 *modelPB.DeleteModelVersionRequest) (*modelPB.DeleteModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.DeleteModelVersionResponse)
+	ret0, _ := ret[0].(*modelPB.DeleteModelVersionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -579,10 +580,10 @@ func (mr *MockModelServiceServerMockRecorder) DeleteModelVersion(arg0, arg1 inte
 }
 
 // GetModel mocks base method.
-func (m *MockModelServiceServer) GetModel(arg0 context.Context, arg1 *modelv1alpha.GetModelRequest) (*modelv1alpha.GetModelResponse, error) {
+func (m *MockModelServiceServer) GetModel(arg0 context.Context, arg1 *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModel", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.GetModelResponse)
+	ret0, _ := ret[0].(*modelPB.GetModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -594,10 +595,10 @@ func (mr *MockModelServiceServerMockRecorder) GetModel(arg0, arg1 interface{}) *
 }
 
 // ListModel mocks base method.
-func (m *MockModelServiceServer) ListModel(arg0 context.Context, arg1 *modelv1alpha.ListModelRequest) (*modelv1alpha.ListModelResponse, error) {
+func (m *MockModelServiceServer) ListModel(arg0 context.Context, arg1 *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModel", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.ListModelResponse)
+	ret0, _ := ret[0].(*modelPB.ListModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -609,10 +610,10 @@ func (mr *MockModelServiceServerMockRecorder) ListModel(arg0, arg1 interface{}) 
 }
 
 // Liveness mocks base method.
-func (m *MockModelServiceServer) Liveness(arg0 context.Context, arg1 *modelv1alpha.LivenessRequest) (*modelv1alpha.LivenessResponse, error) {
+func (m *MockModelServiceServer) Liveness(arg0 context.Context, arg1 *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Liveness", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.LivenessResponse)
+	ret0, _ := ret[0].(*modelPB.LivenessResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -624,10 +625,10 @@ func (mr *MockModelServiceServerMockRecorder) Liveness(arg0, arg1 interface{}) *
 }
 
 // Readiness mocks base method.
-func (m *MockModelServiceServer) Readiness(arg0 context.Context, arg1 *modelv1alpha.ReadinessRequest) (*modelv1alpha.ReadinessResponse, error) {
+func (m *MockModelServiceServer) Readiness(arg0 context.Context, arg1 *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Readiness", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.ReadinessResponse)
+	ret0, _ := ret[0].(*modelPB.ReadinessResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -639,10 +640,10 @@ func (mr *MockModelServiceServerMockRecorder) Readiness(arg0, arg1 interface{}) 
 }
 
 // TriggerModel mocks base method.
-func (m *MockModelServiceServer) TriggerModel(arg0 context.Context, arg1 *modelv1alpha.TriggerModelRequest) (*modelv1alpha.TriggerModelResponse, error) {
+func (m *MockModelServiceServer) TriggerModel(arg0 context.Context, arg1 *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerModel", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.TriggerModelResponse)
+	ret0, _ := ret[0].(*modelPB.TriggerModelResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -654,7 +655,7 @@ func (mr *MockModelServiceServerMockRecorder) TriggerModel(arg0, arg1 interface{
 }
 
 // TriggerModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceServer) TriggerModelBinaryFileUpload(arg0 modelv1alpha.ModelService_TriggerModelBinaryFileUploadServer) error {
+func (m *MockModelServiceServer) TriggerModelBinaryFileUpload(arg0 modelPB.ModelService_TriggerModelBinaryFileUploadServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerModelBinaryFileUpload", arg0)
 	ret0, _ := ret[0].(error)
@@ -668,10 +669,10 @@ func (mr *MockModelServiceServerMockRecorder) TriggerModelBinaryFileUpload(arg0 
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockModelServiceServer) UpdateModelVersion(arg0 context.Context, arg1 *modelv1alpha.UpdateModelVersionRequest) (*modelv1alpha.UpdateModelVersionResponse, error) {
+func (m *MockModelServiceServer) UpdateModelVersion(arg0 context.Context, arg1 *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelVersion", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.UpdateModelVersionResponse)
+	ret0, _ := ret[0].(*modelPB.UpdateModelVersionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -755,10 +756,10 @@ func (mr *MockModelService_CreateModelBinaryFileUploadServerMockRecorder) Contex
 }
 
 // Recv mocks base method.
-func (m *MockModelService_CreateModelBinaryFileUploadServer) Recv() (*modelv1alpha.CreateModelBinaryFileUploadRequest, error) {
+func (m *MockModelService_CreateModelBinaryFileUploadServer) Recv() (*modelPB.CreateModelBinaryFileUploadRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
-	ret0, _ := ret[0].(*modelv1alpha.CreateModelBinaryFileUploadRequest)
+	ret0, _ := ret[0].(*modelPB.CreateModelBinaryFileUploadRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -784,7 +785,7 @@ func (mr *MockModelService_CreateModelBinaryFileUploadServerMockRecorder) RecvMs
 }
 
 // SendAndClose mocks base method.
-func (m *MockModelService_CreateModelBinaryFileUploadServer) SendAndClose(arg0 *modelv1alpha.CreateModelBinaryFileUploadResponse) error {
+func (m *MockModelService_CreateModelBinaryFileUploadServer) SendAndClose(arg0 *modelPB.CreateModelBinaryFileUploadResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendAndClose", arg0)
 	ret0, _ := ret[0].(error)
@@ -889,10 +890,10 @@ func (mr *MockModelService_TriggerModelBinaryFileUploadServerMockRecorder) Conte
 }
 
 // Recv mocks base method.
-func (m *MockModelService_TriggerModelBinaryFileUploadServer) Recv() (*modelv1alpha.TriggerModelBinaryFileUploadRequest, error) {
+func (m *MockModelService_TriggerModelBinaryFileUploadServer) Recv() (*modelPB.TriggerModelBinaryFileUploadRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
-	ret0, _ := ret[0].(*modelv1alpha.TriggerModelBinaryFileUploadRequest)
+	ret0, _ := ret[0].(*modelPB.TriggerModelBinaryFileUploadRequest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -918,7 +919,7 @@ func (mr *MockModelService_TriggerModelBinaryFileUploadServerMockRecorder) RecvM
 }
 
 // SendAndClose mocks base method.
-func (m *MockModelService_TriggerModelBinaryFileUploadServer) SendAndClose(arg0 *modelv1alpha.TriggerModelBinaryFileUploadResponse) error {
+func (m *MockModelService_TriggerModelBinaryFileUploadServer) SendAndClose(arg0 *modelPB.TriggerModelBinaryFileUploadResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendAndClose", arg0)
 	ret0, _ := ret[0].(error)

@@ -8,7 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/instill-ai/model-backend/pkg/datamodel"
+
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
 // MockModelRepository is a mock of ModelRepository interface.
@@ -35,7 +36,7 @@ func (m *MockModelRepository) EXPECT() *MockModelRepositoryMockRecorder {
 }
 
 // CreateModel mocks base method.
-func (m *MockModelRepository) CreateModel(model models.Model) error {
+func (m *MockModelRepository) CreateModel(model datamodel.Model) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateModel", model)
 	ret0, _ := ret[0].(error)
@@ -49,7 +50,7 @@ func (mr *MockModelRepositoryMockRecorder) CreateModel(model interface{}) *gomoc
 }
 
 // CreateTModel mocks base method.
-func (m *MockModelRepository) CreateTModel(model models.TModel) error {
+func (m *MockModelRepository) CreateTModel(model datamodel.TModel) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTModel", model)
 	ret0, _ := ret[0].(error)
@@ -63,7 +64,7 @@ func (mr *MockModelRepositoryMockRecorder) CreateTModel(model interface{}) *gomo
 }
 
 // CreateVersion mocks base method.
-func (m *MockModelRepository) CreateVersion(version models.Version) error {
+func (m *MockModelRepository) CreateVersion(version datamodel.Version) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVersion", version)
 	ret0, _ := ret[0].(error)
@@ -105,10 +106,10 @@ func (mr *MockModelRepositoryMockRecorder) DeleteModelVersion(modelId, version i
 }
 
 // GetModelByName mocks base method.
-func (m *MockModelRepository) GetModelByName(namespace, modelName string) (models.Model, error) {
+func (m *MockModelRepository) GetModelByName(namespace, modelName string) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelByName", namespace, modelName)
-	ret0, _ := ret[0].(models.Model)
+	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -120,10 +121,10 @@ func (mr *MockModelRepositoryMockRecorder) GetModelByName(namespace, modelName i
 }
 
 // GetModelVersion mocks base method.
-func (m *MockModelRepository) GetModelVersion(modelId, version uint64) (models.Version, error) {
+func (m *MockModelRepository) GetModelVersion(modelId, version uint64) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersion", modelId, version)
-	ret0, _ := ret[0].(models.Version)
+	ret0, _ := ret[0].(datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -135,10 +136,10 @@ func (mr *MockModelRepositoryMockRecorder) GetModelVersion(modelId, version inte
 }
 
 // GetModelVersionLatest mocks base method.
-func (m *MockModelRepository) GetModelVersionLatest(modelId uint64) (models.Version, error) {
+func (m *MockModelRepository) GetModelVersionLatest(modelId uint64) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersionLatest", modelId)
-	ret0, _ := ret[0].(models.Version)
+	ret0, _ := ret[0].(datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -150,10 +151,10 @@ func (mr *MockModelRepositoryMockRecorder) GetModelVersionLatest(modelId interfa
 }
 
 // GetModelVersions mocks base method.
-func (m *MockModelRepository) GetModelVersions(modelId uint64) ([]models.Version, error) {
+func (m *MockModelRepository) GetModelVersions(modelId uint64) ([]datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersions", modelId)
-	ret0, _ := ret[0].([]models.Version)
+	ret0, _ := ret[0].([]datamodel.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -165,10 +166,10 @@ func (mr *MockModelRepositoryMockRecorder) GetModelVersions(modelId interface{})
 }
 
 // GetTEnsembleModel mocks base method.
-func (m *MockModelRepository) GetTEnsembleModel(modelId, version uint64) (models.TModel, error) {
+func (m *MockModelRepository) GetTEnsembleModel(modelId, version uint64) (datamodel.TModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTEnsembleModel", modelId, version)
-	ret0, _ := ret[0].(models.TModel)
+	ret0, _ := ret[0].(datamodel.TModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -180,10 +181,10 @@ func (mr *MockModelRepositoryMockRecorder) GetTEnsembleModel(modelId, version in
 }
 
 // GetTModelVersions mocks base method.
-func (m *MockModelRepository) GetTModelVersions(modelId, version uint64) ([]models.TModel, error) {
+func (m *MockModelRepository) GetTModelVersions(modelId, version uint64) ([]datamodel.TModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModelVersions", modelId, version)
-	ret0, _ := ret[0].([]models.TModel)
+	ret0, _ := ret[0].([]datamodel.TModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -195,10 +196,10 @@ func (mr *MockModelRepositoryMockRecorder) GetTModelVersions(modelId, version in
 }
 
 // GetTModels mocks base method.
-func (m *MockModelRepository) GetTModels(modelId uint64) ([]models.TModel, error) {
+func (m *MockModelRepository) GetTModels(modelId uint64) ([]datamodel.TModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModels", modelId)
-	ret0, _ := ret[0].([]models.TModel)
+	ret0, _ := ret[0].([]datamodel.TModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -210,10 +211,10 @@ func (mr *MockModelRepositoryMockRecorder) GetTModels(modelId interface{}) *gomo
 }
 
 // ListModels mocks base method.
-func (m *MockModelRepository) ListModels(query models.ListModelQuery) ([]models.Model, error) {
+func (m *MockModelRepository) ListModels(query datamodel.ListModelQuery) ([]datamodel.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModels", query)
-	ret0, _ := ret[0].([]models.Model)
+	ret0, _ := ret[0].([]datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -225,7 +226,7 @@ func (mr *MockModelRepositoryMockRecorder) ListModels(query interface{}) *gomock
 }
 
 // UpdateModelMetaData mocks base method.
-func (m *MockModelRepository) UpdateModelMetaData(modelId uint64, updatedModel models.Model) error {
+func (m *MockModelRepository) UpdateModelMetaData(modelId uint64, updatedModel datamodel.Model) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelMetaData", modelId, updatedModel)
 	ret0, _ := ret[0].(error)
@@ -239,7 +240,7 @@ func (mr *MockModelRepositoryMockRecorder) UpdateModelMetaData(modelId, updatedM
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockModelRepository) UpdateModelVersion(modelId, modelVersion uint64, versionInfo models.Version) error {
+func (m *MockModelRepository) UpdateModelVersion(modelId, modelVersion uint64, versionInfo datamodel.Version) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelVersion", modelId, modelVersion, versionInfo)
 	ret0, _ := ret[0].(error)

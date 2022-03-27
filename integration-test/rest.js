@@ -11,10 +11,10 @@ import {
 
 const apiHost = "http://localhost:8080";
 
-const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/tests/data/dog.jpg`, "b");
+const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/tests/data/dummy-cls-model.zip`, "b");
-const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/tests/data/dummy-det-model.zip`, "b");
+const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
+const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 
 export let options = {
   insecureSkipTLSVerify: true,
@@ -102,7 +102,7 @@ export default function (data) {
           "POST /models/upload (multipart) task undefined response model.full_name": (r) =>
           r.json().model.full_name !== undefined,
           "POST /models/upload (multipart) task undefined response model.task": (r) =>
-          r.json().model.task === "TASK_UNSPECIFIED", 
+          r.json().model.task === "TASK_UNSPECIFIED",
           "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -182,7 +182,7 @@ export default function (data) {
         headers: genHeader(`multipart/form-data; boundary=${fd_undefined.boundary}`),
       }), {
         "POST /models/upload (multipart) wrong task response status": (r) =>
-          r.status === 400, 
+          r.status === 400,
       });
 
       // clean up
@@ -200,7 +200,6 @@ export default function (data) {
     group("Model Backend API: Load model online", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_CLASSIFICATION");
@@ -234,6 +233,9 @@ export default function (data) {
           r.json().model.model_versions.length === 2,
       });
 
+      // Triton loading models takes time
+      sleep(6)
+
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
       });
@@ -256,6 +258,9 @@ export default function (data) {
           r.json().model_version.status === "STATUS_ONLINE",
       });
 
+      // Triton loading models takes time
+      sleep(6)
+
       payload = JSON.stringify({
         "status": "STATUS_ONLINE",
       });
@@ -277,6 +282,9 @@ export default function (data) {
           [`PATCH /models/${model_name}/versions/2 online task cls response model version model_version.status`]: (r) =>
           r.json().model_version.status === "STATUS_ONLINE",
       });
+
+      // Triton loading models takes time
+      sleep(6)
 
       payload = JSON.stringify({
         "status": "STATUS_OFFLINE",
@@ -301,7 +309,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
 
       payload = JSON.stringify({
         "status": "STATUS_OFFLINE",
@@ -334,7 +342,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -343,7 +351,6 @@ export default function (data) {
     group("Model Backend API: Predict Model with classification model", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_CLASSIFICATION");
@@ -444,7 +451,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -453,7 +460,6 @@ export default function (data) {
     group("Model Backend API: Predict Model with detection model", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_DETECTION");
@@ -472,6 +478,9 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
+
+      // Triton loading models takes time
+      sleep(6)
 
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
@@ -560,7 +569,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -569,7 +578,6 @@ export default function (data) {
     group("Model Backend API: Predict Model with undefined task model", function () {
       let fd = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd.append("name", model_name);
       fd.append("description", randomString(20));
       fd.append("content", http.file(cls_model, "dummy-cls-model.zip"));
@@ -587,6 +595,9 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
+
+      // Triton loading models takes time
+      sleep(6)
 
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
@@ -675,7 +686,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -684,7 +695,6 @@ export default function (data) {
     group("Model Backend API: Get model info", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_DETECTION");
@@ -703,6 +713,10 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
+
+      // Triton loading models takes time
+      sleep(6)
+
       check(http.get(`${apiHost}/models/${model_name}`, {
         headers: genHeader(`application/json`),
       }), {
@@ -733,7 +747,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -742,7 +756,6 @@ export default function (data) {
     group("Model Backend API: Get model list", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_DETECTION");
@@ -761,6 +774,9 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
+
+      // Triton loading models takes time
+      sleep(6)
 
       check(http.get(`${apiHost}/models`, {
         headers: genHeader(`application/json`),
@@ -792,7 +808,7 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
 
@@ -801,7 +817,6 @@ export default function (data) {
     group("Model Backend API: Update model version description", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
-      console.log("Create model ", model_name)
       fd_cls.append("name", model_name);
       fd_cls.append("description", randomString(20));
       fd_cls.append("task", "TASK_CLASSIFICATION");
@@ -891,11 +906,9 @@ export default function (data) {
       });
 
       // Triton unloading models takes time
-      sleep(4)
+      sleep(6)
     });
   }
-
-  sleep(1);
 }
 
 export function teardown(data) {

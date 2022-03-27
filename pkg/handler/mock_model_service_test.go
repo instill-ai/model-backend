@@ -8,8 +8,10 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 // MockModelService is a mock of ModelService interface.
@@ -51,10 +53,10 @@ func (mr *MockModelServiceMockRecorder) CreateModel(model interface{}) *gomock.C
 }
 
 // CreateModelBinaryFileUpload mocks base method.
-func (m *MockModelService) CreateModelBinaryFileUpload(namespace string, createdModel *datamodel.Model) (*modelv1alpha.Model, error) {
+func (m *MockModelService) CreateModelBinaryFileUpload(namespace string, createdModel *datamodel.Model) (*modelPB.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateModelBinaryFileUpload", namespace, createdModel)
-	ret0, _ := ret[0].(*modelv1alpha.Model)
+	ret0, _ := ret[0].(*modelPB.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -109,10 +111,10 @@ func (mr *MockModelServiceMockRecorder) DeleteModelVersion(namespace, modelName,
 }
 
 // GetFullModelData mocks base method.
-func (m *MockModelService) GetFullModelData(namespace, modelName string) (*modelv1alpha.Model, error) {
+func (m *MockModelService) GetFullModelData(namespace, modelName string) (*modelPB.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFullModelData", namespace, modelName)
-	ret0, _ := ret[0].(*modelv1alpha.Model)
+	ret0, _ := ret[0].(*modelPB.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -184,10 +186,10 @@ func (mr *MockModelServiceMockRecorder) GetModelVersions(modelId interface{}) *g
 }
 
 // ListModels mocks base method.
-func (m *MockModelService) ListModels(namespace string) ([]*modelv1alpha.Model, error) {
+func (m *MockModelService) ListModels(namespace string) ([]*modelPB.Model, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModels", namespace)
-	ret0, _ := ret[0].([]*modelv1alpha.Model)
+	ret0, _ := ret[0].([]*modelPB.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -199,7 +201,7 @@ func (mr *MockModelServiceMockRecorder) ListModels(namespace interface{}) *gomoc
 }
 
 // ModelInfer mocks base method.
-func (m *MockModelService) ModelInfer(namespace, modelName string, version uint64, imgsBytes [][]byte, task modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockModelService) ModelInfer(namespace, modelName string, version uint64, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInfer", namespace, modelName, version, imgsBytes, task)
 	ret0, _ := ret[0].(interface{})
@@ -214,10 +216,10 @@ func (mr *MockModelServiceMockRecorder) ModelInfer(namespace, modelName, version
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockModelService) UpdateModelVersion(namespace string, updatedInfo *modelv1alpha.UpdateModelVersionRequest) (*modelv1alpha.ModelVersion, error) {
+func (m *MockModelService) UpdateModelVersion(namespace string, updatedInfo *modelPB.UpdateModelVersionRequest) (*modelPB.ModelVersion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelVersion", namespace, updatedInfo)
-	ret0, _ := ret[0].(*modelv1alpha.ModelVersion)
+	ret0, _ := ret[0].(*modelPB.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

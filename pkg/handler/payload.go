@@ -10,8 +10,9 @@ import (
 	"net/http"
 	"path"
 
-	consts "github.com/instill-ai/model-backend/internal"
-	model "github.com/instill-ai/protogen-go/model/v1alpha"
+	"github.com/instill-ai/model-backend/internal/util"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 // Internally used image metadata
@@ -37,11 +38,11 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 		return nil, nil, fmt.Errorf("Unable to read content body from image at %v", url)
 	}
 
-	if numBytes > int64(consts.MaxImageSizeBytes) {
+	if numBytes > int64(util.MaxImageSizeBytes) {
 		return nil, nil, fmt.Errorf(
 			"Image size must be smaller than %vMB. Got %vMB",
-			float32(consts.MaxImageSizeBytes)/float32(consts.MB),
-			float32(numBytes)/float32(consts.MB),
+			float32(util.MaxImageSizeBytes)/float32(util.MB),
+			float32(numBytes)/float32(util.MB),
 		)
 	}
 
@@ -68,11 +69,11 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 		return nil, nil, fmt.Errorf("Unable to decode base64 image")
 	}
 	numBytes := len(decoded)
-	if numBytes > consts.MaxImageSizeBytes {
+	if numBytes > util.MaxImageSizeBytes {
 		return nil, nil, fmt.Errorf(
 			"Image size must be smaller than %vMB. Got %vMB",
-			float32(consts.MaxImageSizeBytes)/float32(consts.MB),
-			float32(numBytes)/float32(consts.MB),
+			float32(util.MaxImageSizeBytes)/float32(util.MB),
+			float32(numBytes)/float32(util.MB),
 		)
 	}
 	img, format, err := image.Decode(bytes.NewReader(decoded))
@@ -91,7 +92,7 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	return &img, &metadata, nil
 }
 
-func ParseImageRequestInputsToBytes(req *model.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
+func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
 	for idx, content := range req.Inputs {
 		var (
 			img      *image.Image
@@ -145,11 +146,11 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, img
 			return nil, nil, fmt.Errorf("Unable to read content body from image")
 		}
 
-		if numBytes > int64(consts.MaxImageSizeBytes) {
+		if numBytes > int64(util.MaxImageSizeBytes) {
 			return nil, nil, fmt.Errorf(
 				"Image size must be smaller than %vMB. Got %vMB from image %v",
-				float32(consts.MaxImageSizeBytes)/float32(consts.MB),
-				float32(numBytes)/float32(consts.MB),
+				float32(util.MaxImageSizeBytes)/float32(util.MB),
+				float32(numBytes)/float32(util.MB),
 				content.Filename,
 			)
 		}

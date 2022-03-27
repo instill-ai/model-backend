@@ -8,6 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+
 	"github.com/instill-ai/model-backend/configs"
 )
 
@@ -45,14 +46,14 @@ func checkExist(databaseConfig configs.DatabaseConfig) error {
 	dbExist := false
 	defer rows.Close()
 	for rows.Next() {
-		var database_name string
-		if err := rows.Scan(&database_name); err != nil {
+		var databaseName string
+		if err := rows.Scan(&databaseName); err != nil {
 			panic(err)
 		}
 
-		if databaseConfig.Name == database_name {
+		if databaseConfig.Name == databaseName {
 			dbExist = true
-			fmt.Printf("Database %s exist\n", database_name)
+			fmt.Printf("Database %s exist\n", databaseName)
 		}
 	}
 
@@ -71,7 +72,7 @@ func checkExist(databaseConfig configs.DatabaseConfig) error {
 }
 
 func main() {
-	mydir, _ := os.Getwd()
+	migrateFolder, _ := os.Getwd()
 
 	_ = configs.Init()
 	databaseConfig := configs.Config.Database
@@ -88,7 +89,7 @@ func main() {
 		"sslmode=disable",
 	)
 
-	m, err := migrate.New(fmt.Sprintf("file:///%s/internal/db/migrations", mydir), dsn)
+	m, err := migrate.New(fmt.Sprintf("file:///%s/internal/db/migration", migrateFolder), dsn)
 
 	if err != nil {
 		panic(err)

@@ -8,8 +8,10 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
+
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 // MockTritonService is a mock of TritonService interface.
@@ -117,7 +119,7 @@ func (mr *MockTritonServiceMockRecorder) ModelConfigRequest(modelName, modelVers
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTritonService) ModelInferRequest(cvTask modelv1alpha.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTritonService) ModelInferRequest(cvTask modelPB.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)
@@ -146,7 +148,7 @@ func (mr *MockTritonServiceMockRecorder) ModelMetadataRequest(modelName, modelVe
 }
 
 // PostProcess mocks base method.
-func (m *MockTritonService) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockTritonService) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PostProcess", inferResponse, modelMetadata, task)
 	ret0, _ := ret[0].(interface{})

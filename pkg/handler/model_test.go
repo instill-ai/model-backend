@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
-	gomock "github.com/golang/mock/gomock"
-	model "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/stretchr/testify/assert"
+
+	gomock "github.com/golang/mock/gomock"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const NAMESPACE = "local-user"
@@ -18,7 +20,7 @@ func TestModelService_Readiness(t *testing.T) {
 
 		mockModelService := NewMockModelService(ctrl)
 		mockTritonService := NewMockTritonService(ctrl)
-		rpcService := serviceHandlers{
+		rpcService := modelServiceHandler{
 			modelService:  mockModelService,
 			tritonService: mockTritonService,
 		}
@@ -29,9 +31,9 @@ func TestModelService_Readiness(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 		defer cancel()
-		readyRes, err := rpcService.Readiness(ctx, &model.ReadinessRequest{})
+		readyRes, err := rpcService.Readiness(ctx, &modelPB.ReadinessRequest{})
 		assert.NoError(t, err)
-		assert.Equal(t, readyRes.Status, model.ReadinessResponse_SERVING_STATUS_SERVING)
+		assert.Equal(t, readyRes.Status, modelPB.ReadinessResponse_SERVING_STATUS_SERVING)
 	})
 }
 
@@ -42,7 +44,7 @@ func TestModelService_Liveness(t *testing.T) {
 		mockModelService := NewMockModelService(ctrl)
 		mockTritonService := NewMockTritonService(ctrl)
 
-		rpcService := serviceHandlers{
+		rpcService := modelServiceHandler{
 			modelService:  mockModelService,
 			tritonService: mockTritonService,
 		}
@@ -53,8 +55,8 @@ func TestModelService_Liveness(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 		defer cancel()
-		liveRes, err := rpcService.Liveness(ctx, &model.LivenessRequest{})
+		liveRes, err := rpcService.Liveness(ctx, &modelPB.LivenessRequest{})
 		assert.NoError(t, err)
-		assert.Equal(t, liveRes.Status, model.LivenessResponse_SERVING_STATUS_SERVING)
+		assert.Equal(t, liveRes.Status, modelPB.LivenessResponse_SERVING_STATUS_SERVING)
 	})
 }
