@@ -17,7 +17,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-type TritonService interface {
+type Triton interface {
 	ServerLiveRequest() *inferenceserver.ServerLiveResponse
 	ServerReadyRequest() *inferenceserver.ServerReadyResponse
 	ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse
@@ -32,18 +32,18 @@ type TritonService interface {
 	Close()
 }
 
-type tritonService struct {
+type triton struct {
 	tritonClient inferenceserver.GRPCInferenceServiceClient
 	connection   *grpc.ClientConn
 }
 
-func NewTritonService() TritonService {
-	tritonService := &tritonService{}
+func NewTriton() Triton {
+	tritonService := &triton{}
 	tritonService.Init()
 	return tritonService
 }
 
-func (ts *tritonService) Init() {
+func (ts *triton) Init() {
 	grpcUri := configs.Config.TritonServer.GrpcUri
 	// Connect to gRPC server
 	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -56,13 +56,13 @@ func (ts *tritonService) Init() {
 	ts.tritonClient = inferenceserver.NewGRPCInferenceServiceClient(conn)
 }
 
-func (ts *tritonService) Close() {
+func (ts *triton) Close() {
 	if ts.connection != nil {
 		ts.connection.Close()
 	}
 }
 
-func (ts *tritonService) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
+func (ts *triton) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -76,7 +76,7 @@ func (ts *tritonService) ServerLiveRequest() *inferenceserver.ServerLiveResponse
 	return serverLiveResponse
 }
 
-func (ts *tritonService) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
+func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -90,7 +90,7 @@ func (ts *tritonService) ServerReadyRequest() *inferenceserver.ServerReadyRespon
 	return serverReadyResponse
 }
 
-func (ts *tritonService) ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse {
+func (ts *triton) ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -108,7 +108,7 @@ func (ts *tritonService) ModelMetadataRequest(modelName string, modelVersion str
 	return modelMetadataResponse
 }
 
-func (ts *tritonService) ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
+func (ts *triton) ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -126,7 +126,7 @@ func (ts *tritonService) ModelConfigRequest(modelName string, modelVersion strin
 	return modelConfigResponse
 }
 
-func (ts *tritonService) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -261,7 +261,7 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
-func (ts *tritonService) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
+func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
@@ -285,7 +285,7 @@ func (ts *tritonService) PostProcess(inferResponse *inferenceserver.ModelInferRe
 	return outputs, nil
 }
 
-func (ts *tritonService) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
+func (ts *triton) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
 	// Create context for our request with 60 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -299,7 +299,7 @@ func (ts *tritonService) LoadModelRequest(modelName string) (*inferenceserver.Re
 	return ts.tritonClient.RepositoryModelLoad(ctx, &loadModelRequest)
 }
 
-func (ts *tritonService) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
+func (ts *triton) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -313,7 +313,7 @@ func (ts *tritonService) UnloadModelRequest(modelName string) (*inferenceserver.
 	return ts.tritonClient.RepositoryModelUnload(ctx, &unloadModelRequest)
 }
 
-func (ts *tritonService) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
+func (ts *triton) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -330,7 +330,7 @@ func (ts *tritonService) ListModelsRequest() *inferenceserver.RepositoryIndexRes
 	return listModelsResponse
 }
 
-func (ts *tritonService) IsTritonServerReady() bool {
+func (ts *triton) IsTritonServerReady() bool {
 	serverLiveResponse := ts.ServerLiveRequest()
 	if serverLiveResponse == nil {
 		return false

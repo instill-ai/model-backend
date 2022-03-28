@@ -15,31 +15,31 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-// MockModelServiceClient is a mock of ModelServiceClient interface.
-type MockModelServiceClient struct {
+// MockServiceClient is a mock of ModelServiceClient interface.
+type MockServiceClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockModelServiceClientMockRecorder
+	recorder *MockServiceClientMockRecorder
 }
 
-// MockModelServiceClientMockRecorder is the mock recorder for MockModelServiceClient.
-type MockModelServiceClientMockRecorder struct {
-	mock *MockModelServiceClient
+// MockServiceClientMockRecorder is the mock recorder for MockServiceClient.
+type MockServiceClientMockRecorder struct {
+	mock *MockServiceClient
 }
 
-// NewMockModelServiceClient creates a new mock instance.
-func NewMockModelServiceClient(ctrl *gomock.Controller) *MockModelServiceClient {
-	mock := &MockModelServiceClient{ctrl: ctrl}
-	mock.recorder = &MockModelServiceClientMockRecorder{mock}
+// NewMockServiceClient creates a new mock instance.
+func NewMockServiceClient(ctrl *gomock.Controller) *MockServiceClient {
+	mock := &MockServiceClient{ctrl: ctrl}
+	mock.recorder = &MockServiceClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockModelServiceClient) EXPECT() *MockModelServiceClientMockRecorder {
+func (m *MockServiceClient) EXPECT() *MockServiceClientMockRecorder {
 	return m.recorder
 }
 
 // CreateModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceClient) CreateModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_CreateModelBinaryFileUploadClient, error) {
+func (m *MockServiceClient) CreateModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_CreateModelBinaryFileUploadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range opts {
@@ -52,14 +52,14 @@ func (m *MockModelServiceClient) CreateModelBinaryFileUpload(ctx context.Context
 }
 
 // CreateModelBinaryFileUpload indicates an expected call of CreateModelBinaryFileUpload.
-func (mr *MockModelServiceClientMockRecorder) CreateModelBinaryFileUpload(ctx interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) CreateModelBinaryFileUpload(ctx interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelBinaryFileUpload", reflect.TypeOf((*MockModelServiceClient)(nil).CreateModelBinaryFileUpload), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelBinaryFileUpload", reflect.TypeOf((*MockServiceClient)(nil).CreateModelBinaryFileUpload), varargs...)
 }
 
 // DeleteModel mocks base method.
-func (m *MockModelServiceClient) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelResponse, error) {
+func (m *MockServiceClient) DeleteModel(ctx context.Context, in *modelPB.DeleteModelRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -72,14 +72,14 @@ func (m *MockModelServiceClient) DeleteModel(ctx context.Context, in *modelPB.De
 }
 
 // DeleteModel indicates an expected call of DeleteModel.
-func (mr *MockModelServiceClientMockRecorder) DeleteModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) DeleteModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockModelServiceClient)(nil).DeleteModel), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockServiceClient)(nil).DeleteModel), varargs...)
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockModelServiceClient) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelVersionResponse, error) {
+func (m *MockServiceClient) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteModelVersionRequest, opts ...grpc.CallOption) (*modelPB.DeleteModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -92,14 +92,14 @@ func (m *MockModelServiceClient) DeleteModelVersion(ctx context.Context, in *mod
 }
 
 // DeleteModelVersion indicates an expected call of DeleteModelVersion.
-func (mr *MockModelServiceClientMockRecorder) DeleteModelVersion(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) DeleteModelVersion(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockModelServiceClient)(nil).DeleteModelVersion), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockServiceClient)(nil).DeleteModelVersion), varargs...)
 }
 
 // GetModel mocks base method.
-func (m *MockModelServiceClient) GetModel(ctx context.Context, in *modelPB.GetModelRequest, opts ...grpc.CallOption) (*modelPB.GetModelResponse, error) {
+func (m *MockServiceClient) GetModel(ctx context.Context, in *modelPB.GetModelRequest, opts ...grpc.CallOption) (*modelPB.GetModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -112,14 +112,14 @@ func (m *MockModelServiceClient) GetModel(ctx context.Context, in *modelPB.GetMo
 }
 
 // GetModel indicates an expected call of GetModel.
-func (mr *MockModelServiceClientMockRecorder) GetModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) GetModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockModelServiceClient)(nil).GetModel), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockServiceClient)(nil).GetModel), varargs...)
 }
 
 // ListModel mocks base method.
-func (m *MockModelServiceClient) ListModel(ctx context.Context, in *modelPB.ListModelRequest, opts ...grpc.CallOption) (*modelPB.ListModelResponse, error) {
+func (m *MockServiceClient) ListModel(ctx context.Context, in *modelPB.ListModelRequest, opts ...grpc.CallOption) (*modelPB.ListModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -132,14 +132,14 @@ func (m *MockModelServiceClient) ListModel(ctx context.Context, in *modelPB.List
 }
 
 // ListModel indicates an expected call of ListModel.
-func (mr *MockModelServiceClientMockRecorder) ListModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) ListModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModel", reflect.TypeOf((*MockModelServiceClient)(nil).ListModel), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModel", reflect.TypeOf((*MockServiceClient)(nil).ListModel), varargs...)
 }
 
 // Liveness mocks base method.
-func (m *MockModelServiceClient) Liveness(ctx context.Context, in *modelPB.LivenessRequest, opts ...grpc.CallOption) (*modelPB.LivenessResponse, error) {
+func (m *MockServiceClient) Liveness(ctx context.Context, in *modelPB.LivenessRequest, opts ...grpc.CallOption) (*modelPB.LivenessResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -152,14 +152,14 @@ func (m *MockModelServiceClient) Liveness(ctx context.Context, in *modelPB.Liven
 }
 
 // Liveness indicates an expected call of Liveness.
-func (mr *MockModelServiceClientMockRecorder) Liveness(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) Liveness(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Liveness", reflect.TypeOf((*MockModelServiceClient)(nil).Liveness), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Liveness", reflect.TypeOf((*MockServiceClient)(nil).Liveness), varargs...)
 }
 
 // Readiness mocks base method.
-func (m *MockModelServiceClient) Readiness(ctx context.Context, in *modelPB.ReadinessRequest, opts ...grpc.CallOption) (*modelPB.ReadinessResponse, error) {
+func (m *MockServiceClient) Readiness(ctx context.Context, in *modelPB.ReadinessRequest, opts ...grpc.CallOption) (*modelPB.ReadinessResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -172,14 +172,14 @@ func (m *MockModelServiceClient) Readiness(ctx context.Context, in *modelPB.Read
 }
 
 // Readiness indicates an expected call of Readiness.
-func (mr *MockModelServiceClientMockRecorder) Readiness(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) Readiness(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Readiness", reflect.TypeOf((*MockModelServiceClient)(nil).Readiness), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Readiness", reflect.TypeOf((*MockServiceClient)(nil).Readiness), varargs...)
 }
 
 // TriggerModel mocks base method.
-func (m *MockModelServiceClient) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest, opts ...grpc.CallOption) (*modelPB.TriggerModelResponse, error) {
+func (m *MockServiceClient) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequest, opts ...grpc.CallOption) (*modelPB.TriggerModelResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -192,14 +192,14 @@ func (m *MockModelServiceClient) TriggerModel(ctx context.Context, in *modelPB.T
 }
 
 // TriggerModel indicates an expected call of TriggerModel.
-func (mr *MockModelServiceClientMockRecorder) TriggerModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) TriggerModel(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerModel", reflect.TypeOf((*MockModelServiceClient)(nil).TriggerModel), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerModel", reflect.TypeOf((*MockServiceClient)(nil).TriggerModel), varargs...)
 }
 
 // TriggerModelBinaryFileUpload mocks base method.
-func (m *MockModelServiceClient) TriggerModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_TriggerModelBinaryFileUploadClient, error) {
+func (m *MockServiceClient) TriggerModelBinaryFileUpload(ctx context.Context, opts ...grpc.CallOption) (modelPB.ModelService_TriggerModelBinaryFileUploadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range opts {
@@ -212,14 +212,14 @@ func (m *MockModelServiceClient) TriggerModelBinaryFileUpload(ctx context.Contex
 }
 
 // TriggerModelBinaryFileUpload indicates an expected call of TriggerModelBinaryFileUpload.
-func (mr *MockModelServiceClientMockRecorder) TriggerModelBinaryFileUpload(ctx interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) TriggerModelBinaryFileUpload(ctx interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerModelBinaryFileUpload", reflect.TypeOf((*MockModelServiceClient)(nil).TriggerModelBinaryFileUpload), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerModelBinaryFileUpload", reflect.TypeOf((*MockServiceClient)(nil).TriggerModelBinaryFileUpload), varargs...)
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockModelServiceClient) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest, opts ...grpc.CallOption) (*modelPB.UpdateModelVersionResponse, error) {
+func (m *MockServiceClient) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest, opts ...grpc.CallOption) (*modelPB.UpdateModelVersionResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -232,10 +232,10 @@ func (m *MockModelServiceClient) UpdateModelVersion(ctx context.Context, in *mod
 }
 
 // UpdateModelVersion indicates an expected call of UpdateModelVersion.
-func (mr *MockModelServiceClientMockRecorder) UpdateModelVersion(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockServiceClientMockRecorder) UpdateModelVersion(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockModelServiceClient)(nil).UpdateModelVersion), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockServiceClient)(nil).UpdateModelVersion), varargs...)
 }
 
 // MockModelService_CreateModelBinaryFileUploadClient is a mock of ModelService_CreateModelBinaryFileUploadClient interface.

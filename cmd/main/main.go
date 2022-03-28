@@ -96,12 +96,12 @@ func main() {
 	}
 
 	grpcS := grpc.NewServer(grpcServerOpts...)
-	modelRepository := repository.NewModelRepository(db)
-	tritonService := triton.NewTritonService()
-	modelService := service.NewModelService(modelRepository, tritonService)
-	modelServiceHandler := handler.NewServiceHandler(modelService, tritonService)
+	r := repository.NewRepository(db)
+	t := triton.NewTriton()
+	s := service.NewService(r, t)
+	h := handler.NewHandler(s, t)
 
-	modelPB.RegisterModelServiceServer(grpcS, modelServiceHandler)
+	modelPB.RegisterModelServiceServer(grpcS, h)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -181,7 +181,7 @@ func main() {
 
 	grpcS.GracefulStop()
 	database.Close(db)
-	tritonService.Close()
+	t.Close()
 
 	_ = logger.Sync()
 }
