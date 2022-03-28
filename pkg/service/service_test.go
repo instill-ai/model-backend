@@ -7,59 +7,61 @@ import (
 
 	"github.com/gogo/status"
 	"github.com/golang/mock/gomock"
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
-	modelDB "github.com/instill-ai/model-backend/pkg/datamodel"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const NAMESPACE = "local-user"
 
-func TestModelService_CreateModel(t *testing.T) {
+func TestService_CreateModel(t *testing.T) {
 	t.Run("CreateModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "normalname",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
-		mockModelRepository := NewMockModelRepository(ctrl)
-		mockModelRepository.
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateModel(newModel).
 			Return(nil)
 
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		s := service{
+			repository: mockRepository,
 		}
 
-		_, err := modelService.CreateModel(&newModel)
+		_, err := s.CreateModel(&newModel)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_CreateModel_InvalidName(t *testing.T) {
+func TestService_CreateModel_InvalidName(t *testing.T) {
 	t.Run("CreateModel_InvalidName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "#$%^",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		_, err := modelService.CreateModel(&newModel)
+		_, err := s.CreateModel(&newModel)
 		if assert.Error(t, err) {
 			assert.Equal(t, err, status.Error(codes.FailedPrecondition, "The name of model is invalid"))
 		}
@@ -67,38 +69,38 @@ func TestModelService_CreateModel_InvalidName(t *testing.T) {
 	})
 }
 
-func TestModelService_GetModelByName(t *testing.T) {
+func TestService_GetModelByName(t *testing.T) {
 	t.Run("GetModelByName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Name:      "normalname",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
-		mockModelRepository := NewMockModelRepository(ctrl)
-		mockModelRepository.
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(1)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		s := service{
+			repository: mockRepository,
 		}
 
-		_, err := modelService.GetModelByName(NAMESPACE, newModel.Name)
+		_, err := s.GetModelByName(NAMESPACE, newModel.Name)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_CreateVersion(t *testing.T) {
+func TestService_CreateVersion(t *testing.T) {
 	t.Run("CreateVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     1,
 			Version:     1,
 			Description: "This is version 1",
@@ -106,99 +108,99 @@ func TestModelService_CreateVersion(t *testing.T) {
 			UpdatedAt:   time.Now(),
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateVersion(modelVersion).
 			Return(nil)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
-		_, err := modelService.CreateVersion(modelVersion)
+		_, err := s.CreateVersion(modelVersion)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_GetModelVersion(t *testing.T) {
+func TestService_GetModelVersion(t *testing.T) {
 	t.Run("GetModelVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
-		_, err := modelService.GetModelVersion(1, 1)
+		_, err := s.GetModelVersion(1, 1)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_GetModelVersions(t *testing.T) {
+func TestService_GetModelVersions(t *testing.T) {
 	t.Run("GetModelVersions", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil)
+			Return([]datamodel.Version{}, nil)
 
-		_, err := modelService.GetModelVersions(1)
+		_, err := s.GetModelVersions(1)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_GetModelVersionLatest(t *testing.T) {
+func TestService_GetModelVersionLatest(t *testing.T) {
 	t.Run("GetModelVersionLatest", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, nil)
+			Return(datamodel.Version{}, nil)
 
-		_, err := modelService.GetModelVersionLatest(1)
+		_, err := s.GetModelVersionLatest(1)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_GetFullModelData(t *testing.T) {
+func TestService_GetFullModelData(t *testing.T) {
 	t.Run("GetFullModelData", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateModel(newModel).
 			Return(nil)
-		_, _ = modelService.CreateModel(&newModel)
+		_, _ = s.CreateModel(&newModel)
 
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -207,62 +209,62 @@ func TestModelService_GetFullModelData(t *testing.T) {
 		}
 		newModel.Versions = append(newModel.Versions, modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateVersion(modelVersion).
 			Return(nil)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
 			Return(modelVersion, nil)
-		_, _ = modelService.CreateVersion(modelVersion)
+		_, _ = s.CreateVersion(modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil)
-		mockModelRepository.
+			Return([]datamodel.Version{}, nil)
+		mockRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]modelDB.TModel{}, nil)
+			Return([]datamodel.TModel{}, nil)
 
-		_, err := modelService.GetFullModelData(NAMESPACE, "test")
+		_, err := s.GetFullModelData(NAMESPACE, "test")
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_ModelInfer(t *testing.T) {
+func TestService_ModelInfer(t *testing.T) {
 	t.Run("ModelInfer", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		triton := NewMockTritonService(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
-			triton:          triton,
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service{
+			repository: mockRepository,
+			triton:     triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
 		}
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-			Return(modelDB.Model{}, nil).
+			Return(datamodel.Model{}, nil).
 			Times(2)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateModel(newModel).
 			Return(nil)
-		_, _ = modelService.CreateModel(&newModel)
+		_, _ = s.CreateModel(&newModel)
 
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -271,26 +273,26 @@ func TestModelService_ModelInfer(t *testing.T) {
 		}
 		newModel.Versions = append(newModel.Versions, modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateVersion(modelVersion).
 			Return(nil)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
 			Return(modelVersion, nil)
-		_, _ = modelService.CreateVersion(modelVersion)
+		_, _ = s.CreateVersion(modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		ensembleModel := modelDB.TModel{
+		ensembleModel := datamodel.TModel{
 			Name:    "essembleModel",
 			Version: 1,
 		}
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetTEnsembleModel(uint64(1), uint64(1)).
 			Return(ensembleModel, nil)
@@ -316,28 +318,28 @@ func TestModelService_ModelInfer(t *testing.T) {
 			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
 			Return(postResponse, nil)
 
-		_, err := modelService.ModelInfer(NAMESPACE, "test", uint64(1), [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
+		_, err := s.ModelInfer(NAMESPACE, "test", uint64(1), [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
+func TestService_CreateModelBinaryFileUpload(t *testing.T) {
 	t.Run("CreateModelBinaryFileUpload", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		triton := NewMockTritonService(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
-			triton:          triton,
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service{
+			repository: mockRepository,
+			triton:     triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -345,62 +347,62 @@ func TestModelService_CreateModelBinaryFileUpload(t *testing.T) {
 			UpdatedAt:   time.Now(),
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, fmt.Errorf("non-existed"))
+			Return(datamodel.Version{}, fmt.Errorf("non-existed"))
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateVersion(modelVersion).
 			Return(nil).
 			Times(2)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
 			Return(modelVersion, nil).
 			Times(2)
-		versionInDB, _ := modelService.CreateVersion(modelVersion)
+		versionInDB, _ := s.CreateVersion(modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{modelVersion}, nil).Times(2)
-		_, _ = modelService.GetModelVersions(uint64(1))
+			Return([]datamodel.Version{modelVersion}, nil).Times(2)
+		_, _ = s.GetModelVersions(uint64(1))
 
-		uploadModel := modelDB.Model{
+		uploadModel := datamodel.Model{
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{versionInDB},
+			Versions:  []datamodel.Version{versionInDB},
 		}
-		_, err := modelService.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
+		_, err := s.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
+func TestService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 	t.Run("HandleCreateModelMultiFormDataUpload", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		triton := NewMockTritonService(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
-			triton:          triton,
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service{
+			repository: mockRepository,
+			triton:     triton,
 		}
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		modelVersion := modelDB.Version{
+		modelVersion := datamodel.Version{
 			ModelId:     uint64(1),
 			Version:     uint64(1),
 			Description: "This is version 1",
@@ -408,93 +410,93 @@ func TestModelService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 			UpdatedAt:   time.Now(),
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersionLatest(uint64(1)).
-			Return(modelDB.Version{}, fmt.Errorf("non-existed"))
+			Return(datamodel.Version{}, fmt.Errorf("non-existed"))
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			CreateVersion(modelVersion).
 			Return(nil).
 			Times(2)
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
 			Return(modelVersion, nil).
 			Times(2)
-		versionInDB, _ := modelService.CreateVersion(modelVersion)
+		versionInDB, _ := s.CreateVersion(modelVersion)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{modelVersion}, nil).Times(2)
-		_, _ = modelService.GetModelVersions(uint64(1))
+			Return([]datamodel.Version{modelVersion}, nil).Times(2)
+		_, _ = s.GetModelVersions(uint64(1))
 
-		uploadModel := modelDB.Model{
+		uploadModel := datamodel.Model{
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{versionInDB},
+			Versions:  []datamodel.Version{versionInDB},
 		}
-		_, err := modelService.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
+		_, err := s.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_ListModels(t *testing.T) {
+func TestService_ListModels(t *testing.T) {
 	t.Run("ListModels", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
-			ListModels(modelDB.ListModelQuery{Namespace: NAMESPACE}).
-			Return([]modelDB.Model{}, nil)
+			ListModels(datamodel.ListModelQuery{Namespace: NAMESPACE}).
+			Return([]datamodel.Model{}, nil)
 
-		_, err := modelService.ListModels(NAMESPACE)
+		_, err := s.ListModels(NAMESPACE)
 		assert.NoError(t, err)
 	})
 }
 
-func TestModelService_UpdateModelVersion(t *testing.T) {
+func TestService_UpdateModelVersion(t *testing.T) {
 	t.Run("UpdateModelVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(NAMESPACE, newModel.Name).
 			Return(newModel, nil).
 			Times(2)
-		_, _ = modelService.GetModelByName(NAMESPACE, newModel.Name)
+		_, _ = s.GetModelByName(NAMESPACE, newModel.Name)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersion(uint64(1), uint64(1)).
-			Return(modelDB.Version{}, nil).
+			Return(datamodel.Version{}, nil).
 			Times(2)
-		_, _ = modelService.GetModelVersion(uint64(1), uint64(1))
+		_, _ = s.GetModelVersion(uint64(1), uint64(1))
 
-		_, err := modelService.UpdateModelVersion(NAMESPACE, &modelPB.UpdateModelVersionRequest{
+		_, err := s.UpdateModelVersion(NAMESPACE, &modelPB.UpdateModelVersionRequest{
 			Name:    newModel.Name,
 			Version: uint64(1),
 			VersionPatch: &modelPB.UpdateModelVersionPatch{
@@ -505,43 +507,43 @@ func TestModelService_UpdateModelVersion(t *testing.T) {
 	})
 }
 
-func TestModelService_DeleteModel(t *testing.T) {
+func TestService_DeleteModel(t *testing.T) {
 	t.Run("DeleteModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		mockModelRepository := NewMockModelRepository(ctrl)
-		modelService := modelService{
-			modelRepository: mockModelRepository,
+		mockRepository := NewMockRepository(ctrl)
+		s := service{
+			repository: mockRepository,
 		}
 
-		newModel := modelDB.Model{
+		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
 			Task:      uint64(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
-			Versions:  []modelDB.Version{},
+			Versions:  []datamodel.Version{},
 		}
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelByName(NAMESPACE, newModel.Name).
 			Return(newModel, nil).
 			Times(2)
-		_, _ = modelService.GetModelByName(NAMESPACE, newModel.Name)
+		_, _ = s.GetModelByName(NAMESPACE, newModel.Name)
 
-		mockModelRepository.
+		mockRepository.
 			EXPECT().
 			GetModelVersions(uint64(1)).
-			Return([]modelDB.Version{}, nil).Times(2)
-		mockModelRepository.
+			Return([]datamodel.Version{}, nil).Times(2)
+		mockRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]modelDB.TModel{}, nil).Times(1)
-		mockModelRepository.
+			Return([]datamodel.TModel{}, nil).Times(1)
+		mockRepository.
 			EXPECT().
 			DeleteModel(uint64(1)).
 			Return(nil).Times(1)
-		_, _ = modelService.GetModelVersions(uint64(1))
+		_, _ = s.GetModelVersions(uint64(1))
 
-		err := modelService.DeleteModel(NAMESPACE, newModel.Name)
+		err := s.DeleteModel(NAMESPACE, newModel.Name)
 		assert.NoError(t, err)
 	})
 }

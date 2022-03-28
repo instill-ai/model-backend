@@ -8,11 +8,12 @@ import (
 	"os"
 	"time"
 
-	model "github.com/instill-ai/protogen-go/model/v1alpha"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 func upload(c *cli.Context) error {
@@ -32,13 +33,13 @@ func upload(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelServiceClient(conn)
+	client := modelPB.NewModelServiceClient(conn)
 
 	streamUploader, err := client.CreateModelBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create a stream to server, please make sure the server is running")
 	}
-	defer streamUploader.CloseSend()
+	defer streamUploader.CloseSend() //nolint
 
 	//create a buffer of chunkSize to be streamed
 	const chunkSize = 64 * 1024 // 64 KiB
@@ -60,13 +61,13 @@ func upload(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
-			cvt := model.Model_TASK_UNSPECIFIED
-			if task == model.Model_TASK_DETECTION.String() {
-				cvt = model.Model_TASK_DETECTION
-			} else if task == model.Model_TASK_CLASSIFICATION.String() {
-				cvt = model.Model_TASK_CLASSIFICATION
+			cvt := modelPB.Model_TASK_UNSPECIFIED
+			if task == modelPB.Model_TASK_DETECTION.String() {
+				cvt = modelPB.Model_TASK_DETECTION
+			} else if task == modelPB.Model_TASK_CLASSIFICATION.String() {
+				cvt = modelPB.Model_TASK_CLASSIFICATION
 			}
-			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.CreateModelBinaryFileUploadRequest{
 				Name:        modelName,
 				Description: "YoloV4 for object detection",
 				Task:        cvt,
@@ -77,7 +78,7 @@ func upload(c *cli.Context) error {
 				log.Fatalf("Could not send buffer data to server")
 			}
 		} else {
-			err = streamUploader.Send(&model.CreateModelBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.CreateModelBinaryFileUploadRequest{
 				Bytes: buf[:n],
 			})
 			if err != nil {
@@ -103,13 +104,13 @@ func load(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelServiceClient(conn)
+	client := modelPB.NewModelServiceClient(conn)
 
-	res, err := client.UpdateModelVersion(ctx, &model.UpdateModelVersionRequest{
+	res, err := client.UpdateModelVersion(ctx, &modelPB.UpdateModelVersionRequest{
 		Name:    c.String("name"),
 		Version: uint64(c.Int("version")),
-		VersionPatch: &model.UpdateModelVersionPatch{
-			Status: model.ModelVersion_STATUS_ONLINE,
+		VersionPatch: &modelPB.UpdateModelVersionPatch{
+			Status: modelPB.ModelVersion_STATUS_ONLINE,
 		},
 		FieldMask: &fieldmaskpb.FieldMask{
 			Paths: []string{"name", "status"},
@@ -140,13 +141,13 @@ func predict(c *cli.Context) error {
 		log.Fatalf("Did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := model.NewModelServiceClient(conn)
+	client := modelPB.NewModelServiceClient(conn)
 
 	streamUploader, err := client.TriggerModelBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create predict stream")
 	}
-	defer streamUploader.CloseSend()
+	defer streamUploader.CloseSend() //nolint
 
 	//create a buffer of chunkSize to be streamed
 	const chunkSize = 64 * 1024 // 64 KiB
@@ -169,7 +170,7 @@ func predict(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
-			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
 				Name:    modelName,
 				Version: uint64(modelVersion),
 				Bytes:   buf[:n],
@@ -179,7 +180,7 @@ func predict(c *cli.Context) error {
 			}
 			firstChunk = false
 		} else {
-			err = streamUploader.Send(&model.TriggerModelBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
 				Bytes: buf[:n],
 			})
 			if err != nil {

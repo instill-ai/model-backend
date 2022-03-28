@@ -1,25 +1,20 @@
 server:
   port: 8080
-  http:
-    enabled: true
-    port: 8080
   https:
-    enabled: false
-    port: 8445
-    cert: /model-backend/ssl/tls.crt
-    key: /model-backend/ssl/tls.key
+    cert:   # /ssl/tls.crt
+    key:    # /ssl/tls.key
   cors-origins:
     - http://localhost
     - https://instill-inc.tech
     - https://instill.tech
 database:
-  timezone: Etc/UTC
   username: postgres
   password: password
   host: localhost
   port: 5432
   name: model
   version: 3
+  timezone: Etc/UTC
   pool:
     idleconnections: 5
     maxconnections: 30

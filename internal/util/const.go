@@ -1,11 +1,9 @@
-package utils
+package util
 
 var Tasks = map[string]int{
 	"TASK_CLASSIFICATION": 1,
 	"TASK_DETECTION":      2,
 }
-
-const MaxBatchSize int = 32
 
 const (
 	_  = iota
@@ -15,4 +13,5 @@ const (
 	TB
 )
 
+const MaxBatchSize int = 32
 const MaxImageSizeBytes int = 4 * MB

@@ -8,59 +8,61 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
+
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
+
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-// MockTritonService is a mock of TritonService interface.
-type MockTritonService struct {
+// MockTriton is a mock of TritonService interface.
+type MockTriton struct {
 	ctrl     *gomock.Controller
-	recorder *MockTritonServiceMockRecorder
+	recorder *MockTritonMockRecorder
 }
 
-// MockTritonServiceMockRecorder is the mock recorder for MockTritonService.
-type MockTritonServiceMockRecorder struct {
-	mock *MockTritonService
+// MockTritonMockRecorder is the mock recorder for MockTritonService.
+type MockTritonMockRecorder struct {
+	mock *MockTriton
 }
 
-// NewMockTritonService creates a new mock instance.
-func NewMockTritonService(ctrl *gomock.Controller) *MockTritonService {
-	mock := &MockTritonService{ctrl: ctrl}
-	mock.recorder = &MockTritonServiceMockRecorder{mock}
+// NewMockTriton creates a new mock instance.
+func NewMockTriton(ctrl *gomock.Controller) *MockTriton {
+	mock := &MockTriton{ctrl: ctrl}
+	mock.recorder = &MockTritonMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTritonService) EXPECT() *MockTritonServiceMockRecorder {
+func (m *MockTriton) EXPECT() *MockTritonMockRecorder {
 	return m.recorder
 }
 
 // Close mocks base method.
-func (m *MockTritonService) Close() {
+func (m *MockTriton) Close() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Close")
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockTritonServiceMockRecorder) Close() *gomock.Call {
+func (mr *MockTritonMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockTritonService)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockTriton)(nil).Close))
 }
 
 // Init mocks base method.
-func (m *MockTritonService) Init() {
+func (m *MockTriton) Init() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Init")
 }
 
 // Init indicates an expected call of Init.
-func (mr *MockTritonServiceMockRecorder) Init() *gomock.Call {
+func (mr *MockTritonMockRecorder) Init() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockTritonService)(nil).Init))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockTriton)(nil).Init))
 }
 
 // IsTritonServerReady mocks base method.
-func (m *MockTritonService) IsTritonServerReady() bool {
+func (m *MockTriton) IsTritonServerReady() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsTritonServerReady")
 	ret0, _ := ret[0].(bool)
@@ -68,13 +70,13 @@ func (m *MockTritonService) IsTritonServerReady() bool {
 }
 
 // IsTritonServerReady indicates an expected call of IsTritonServerReady.
-func (mr *MockTritonServiceMockRecorder) IsTritonServerReady() *gomock.Call {
+func (mr *MockTritonMockRecorder) IsTritonServerReady() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTritonServerReady", reflect.TypeOf((*MockTritonService)(nil).IsTritonServerReady))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTritonServerReady", reflect.TypeOf((*MockTriton)(nil).IsTritonServerReady))
 }
 
 // ListModelsRequest mocks base method.
-func (m *MockTritonService) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
+func (m *MockTriton) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModelsRequest")
 	ret0, _ := ret[0].(*inferenceserver.RepositoryIndexResponse)
@@ -82,13 +84,13 @@ func (m *MockTritonService) ListModelsRequest() *inferenceserver.RepositoryIndex
 }
 
 // ListModelsRequest indicates an expected call of ListModelsRequest.
-func (mr *MockTritonServiceMockRecorder) ListModelsRequest() *gomock.Call {
+func (mr *MockTritonMockRecorder) ListModelsRequest() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsRequest", reflect.TypeOf((*MockTritonService)(nil).ListModelsRequest))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsRequest", reflect.TypeOf((*MockTriton)(nil).ListModelsRequest))
 }
 
 // LoadModelRequest mocks base method.
-func (m *MockTritonService) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
+func (m *MockTriton) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadModelRequest", modelName)
 	ret0, _ := ret[0].(*inferenceserver.RepositoryModelLoadResponse)
@@ -97,13 +99,13 @@ func (m *MockTritonService) LoadModelRequest(modelName string) (*inferenceserver
 }
 
 // LoadModelRequest indicates an expected call of LoadModelRequest.
-func (mr *MockTritonServiceMockRecorder) LoadModelRequest(modelName interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) LoadModelRequest(modelName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadModelRequest", reflect.TypeOf((*MockTritonService)(nil).LoadModelRequest), modelName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadModelRequest", reflect.TypeOf((*MockTriton)(nil).LoadModelRequest), modelName)
 }
 
 // ModelConfigRequest mocks base method.
-func (m *MockTritonService) ModelConfigRequest(modelName, modelVersion string) *inferenceserver.ModelConfigResponse {
+func (m *MockTriton) ModelConfigRequest(modelName, modelVersion string) *inferenceserver.ModelConfigResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelConfigRequest", modelName, modelVersion)
 	ret0, _ := ret[0].(*inferenceserver.ModelConfigResponse)
@@ -111,13 +113,13 @@ func (m *MockTritonService) ModelConfigRequest(modelName, modelVersion string) *
 }
 
 // ModelConfigRequest indicates an expected call of ModelConfigRequest.
-func (mr *MockTritonServiceMockRecorder) ModelConfigRequest(modelName, modelVersion interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) ModelConfigRequest(modelName, modelVersion interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelConfigRequest", reflect.TypeOf((*MockTritonService)(nil).ModelConfigRequest), modelName, modelVersion)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelConfigRequest", reflect.TypeOf((*MockTriton)(nil).ModelConfigRequest), modelName, modelVersion)
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTritonService) ModelInferRequest(task modelv1alpha.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTriton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, modelName, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", task, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)
@@ -126,13 +128,13 @@ func (m *MockTritonService) ModelInferRequest(task modelv1alpha.Model_Task, rawI
 }
 
 // ModelInferRequest indicates an expected call of ModelInferRequest.
-func (mr *MockTritonServiceMockRecorder) ModelInferRequest(cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) ModelInferRequest(cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInferRequest", reflect.TypeOf((*MockTritonService)(nil).ModelInferRequest), cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInferRequest", reflect.TypeOf((*MockTriton)(nil).ModelInferRequest), cvTask, rawInput, modelName, modelVersion, modelMetadata, modelConfig)
 }
 
 // ModelMetadataRequest mocks base method.
-func (m *MockTritonService) ModelMetadataRequest(modelName, modelVersion string) *inferenceserver.ModelMetadataResponse {
+func (m *MockTriton) ModelMetadataRequest(modelName, modelVersion string) *inferenceserver.ModelMetadataResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelMetadataRequest", modelName, modelVersion)
 	ret0, _ := ret[0].(*inferenceserver.ModelMetadataResponse)
@@ -140,13 +142,13 @@ func (m *MockTritonService) ModelMetadataRequest(modelName, modelVersion string)
 }
 
 // ModelMetadataRequest indicates an expected call of ModelMetadataRequest.
-func (mr *MockTritonServiceMockRecorder) ModelMetadataRequest(modelName, modelVersion interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) ModelMetadataRequest(modelName, modelVersion interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelMetadataRequest", reflect.TypeOf((*MockTritonService)(nil).ModelMetadataRequest), modelName, modelVersion)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelMetadataRequest", reflect.TypeOf((*MockTriton)(nil).ModelMetadataRequest), modelName, modelVersion)
 }
 
 // PostProcess mocks base method.
-func (m *MockTritonService) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockTriton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PostProcess", inferResponse, modelMetadata, task)
 	ret0, _ := ret[0].(interface{})
@@ -155,13 +157,13 @@ func (m *MockTritonService) PostProcess(inferResponse *inferenceserver.ModelInfe
 }
 
 // PostProcess indicates an expected call of PostProcess.
-func (mr *MockTritonServiceMockRecorder) PostProcess(inferResponse, modelMetadata, task interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) PostProcess(inferResponse, modelMetadata, task interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostProcess", reflect.TypeOf((*MockTritonService)(nil).PostProcess), inferResponse, modelMetadata, task)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostProcess", reflect.TypeOf((*MockTriton)(nil).PostProcess), inferResponse, modelMetadata, task)
 }
 
 // ServerLiveRequest mocks base method.
-func (m *MockTritonService) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
+func (m *MockTriton) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServerLiveRequest")
 	ret0, _ := ret[0].(*inferenceserver.ServerLiveResponse)
@@ -169,13 +171,13 @@ func (m *MockTritonService) ServerLiveRequest() *inferenceserver.ServerLiveRespo
 }
 
 // ServerLiveRequest indicates an expected call of ServerLiveRequest.
-func (mr *MockTritonServiceMockRecorder) ServerLiveRequest() *gomock.Call {
+func (mr *MockTritonMockRecorder) ServerLiveRequest() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerLiveRequest", reflect.TypeOf((*MockTritonService)(nil).ServerLiveRequest))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerLiveRequest", reflect.TypeOf((*MockTriton)(nil).ServerLiveRequest))
 }
 
 // ServerReadyRequest mocks base method.
-func (m *MockTritonService) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
+func (m *MockTriton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServerReadyRequest")
 	ret0, _ := ret[0].(*inferenceserver.ServerReadyResponse)
@@ -183,13 +185,13 @@ func (m *MockTritonService) ServerReadyRequest() *inferenceserver.ServerReadyRes
 }
 
 // ServerReadyRequest indicates an expected call of ServerReadyRequest.
-func (mr *MockTritonServiceMockRecorder) ServerReadyRequest() *gomock.Call {
+func (mr *MockTritonMockRecorder) ServerReadyRequest() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerReadyRequest", reflect.TypeOf((*MockTritonService)(nil).ServerReadyRequest))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerReadyRequest", reflect.TypeOf((*MockTriton)(nil).ServerReadyRequest))
 }
 
 // UnloadModelRequest mocks base method.
-func (m *MockTritonService) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
+func (m *MockTriton) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnloadModelRequest", modelName)
 	ret0, _ := ret[0].(*inferenceserver.RepositoryModelUnloadResponse)
@@ -198,7 +200,7 @@ func (m *MockTritonService) UnloadModelRequest(modelName string) (*inferenceserv
 }
 
 // UnloadModelRequest indicates an expected call of UnloadModelRequest.
-func (mr *MockTritonServiceMockRecorder) UnloadModelRequest(modelName interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) UnloadModelRequest(modelName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnloadModelRequest", reflect.TypeOf((*MockTritonService)(nil).UnloadModelRequest), modelName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnloadModelRequest", reflect.TypeOf((*MockTriton)(nil).UnloadModelRequest), modelName)
 }

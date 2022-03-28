@@ -11,10 +11,10 @@ import {
 } from "./helpers.js";
 
 const client = new grpc.Client();
-client.load(['definitions'], 'model.proto');
+client.load(['proto'], 'model.proto');
 
 const apiHost = "http://localhost:8080";
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/tests/data/dummy-cls-model.zip`, "b");
+const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 
 export function setup() {
 }
@@ -33,7 +33,7 @@ export default () => {
             });
         });
     }
-    
+
     // Readiness check
     group("Model API: Readiness", () => {
         client.connect('localhost:8080', {
@@ -88,27 +88,27 @@ export default () => {
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/ListModel', {}, {}), {
-            'ListModel status': (r) => r && r.status === grpc.StatusOK, 
-            'ListModel models length': (r) => r && r.message.models.length > 0, 
-            'ListModel model name': (r) => r && r.message.models[0].name == model_name_cls, 
-            'ListModel model fullName': (r) => r && r.message.models[0].fullName === `local-user/${model_name_cls}`, 
+            'ListModel status': (r) => r && r.status === grpc.StatusOK,
+            'ListModel models length': (r) => r && r.message.models.length > 0,
+            'ListModel model name': (r) => r && r.message.models[0].name == model_name_cls,
+            'ListModel model fullName': (r) => r && r.message.models[0].fullName === `local-user/${model_name_cls}`,
             'ListModel model task': (r) => r && r.message.models[0].task === "TASK_CLASSIFICATION",
             'ListModel model modelVersions length': (r) => r && r.message.models[0].modelVersions.length > 0,
-            'ListModel model modelVersions status': (r) => r && r.message.models[0].modelVersions[0].status === "STATUS_OFFLINE", 
+            'ListModel model modelVersions status': (r) => r && r.message.models[0].modelVersions[0].status === "STATUS_OFFLINE",
             'ListModel model modelVersions version': (r) => r && r.message.models[0].modelVersions[0].version == 1, //response is string ?
             'ListModel model modelVersions modelId': (r) => r && r.message.models[0].modelVersions[0].modelId !== undefined,
-            'ListModel model modelVersions description': (r) => r && r.message.models[0].modelVersions[0].description !== undefined, 
-            'ListModel model modelVersions createdAt': (r) => r && r.message.models[0].modelVersions[0].createdAt !== undefined, 
-            'ListModel model modelVersions updatedAt': (r) => r && r.message.models[0].modelVersions[0].updatedAt !== undefined, 
-            'ListModel model modelVersions modelId': (r) => r && r.message.models[0].modelVersions[0].modelId !== undefined, 
+            'ListModel model modelVersions description': (r) => r && r.message.models[0].modelVersions[0].description !== undefined,
+            'ListModel model modelVersions createdAt': (r) => r && r.message.models[0].modelVersions[0].createdAt !== undefined,
+            'ListModel model modelVersions updatedAt': (r) => r && r.message.models[0].modelVersions[0].updatedAt !== undefined,
+            'ListModel model modelVersions modelId': (r) => r && r.message.models[0].modelVersions[0].modelId !== undefined,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
-    });    
-    
+    });
+
     // GetModel check
     group("Model API: GetModel", () => {
         client.connect('localhost:8080', {
@@ -137,21 +137,21 @@ export default () => {
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
-            'GetModel status': (r) => r && r.status === grpc.StatusOK, 
-            'GetModel model name': (r) => r && r.message.model.name == model_name_cls, 
-            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`, 
+            'GetModel status': (r) => r && r.status === grpc.StatusOK,
+            'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
+            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE", 
+            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
             'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined, 
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined, 
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined, 
+            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
+            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
+            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: randomString(10)}, {}), {
-            'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
 
@@ -159,7 +159,7 @@ export default () => {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
-    });    
+    });
 
     // UpdateModelVersion check
     group("Model API: UpdateModelVersion", () => {
@@ -191,46 +191,46 @@ export default () => {
         let description = randomString(10)
         let req = {name: model_name_cls, version: 1, version_patch: {description: description}, field_mask: "description"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 1st status': (r) => r && r.status === grpc.StatusOK, 
-            'UpdateModelVersion 1st modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE", 
+            'UpdateModelVersion 1st status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelVersion 1st modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE",
             'UpdateModelVersion 1st modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
             'UpdateModelVersion 1st modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 1st modelVersion description': (r) => r && r.message.modelVersion.description == description, 
-            'UpdateModelVersion 1st modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined, 
-            'UpdateModelVersion 1st modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined, 
-        });  
-        
+            'UpdateModelVersion 1st modelVersion description': (r) => r && r.message.modelVersion.description == description,
+            'UpdateModelVersion 1st modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
+            'UpdateModelVersion 1st modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        });
+
         req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 2nd status': (r) => r && r.status === grpc.StatusOK, 
-            'UpdateModelVersion 2nd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE", 
+            'UpdateModelVersion 2nd status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelVersion 2nd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
             'UpdateModelVersion 2nd modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
             'UpdateModelVersion 2nd modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 2nd modelVersion description': (r) => r && r.message.modelVersion.description == description, 
-            'UpdateModelVersion 2nd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined, 
-            'UpdateModelVersion 2nd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined, 
-        });        
+            'UpdateModelVersion 2nd modelVersion description': (r) => r && r.message.modelVersion.description == description,
+            'UpdateModelVersion 2nd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
+            'UpdateModelVersion 2nd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        });
 
         let new_description = randomString(10)
         req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_OFFLINE",description: new_description}, field_mask: "status,description"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 3rd status': (r) => r && r.status === grpc.StatusOK, 
-            'UpdateModelVersion 3rd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE", 
+            'UpdateModelVersion 3rd status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelVersion 3rd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE",
             'UpdateModelVersion 3rd modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
             'UpdateModelVersion 3rd modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 3rd modelVersion description': (r) => r && r.message.modelVersion.description == new_description, 
-            'UpdateModelVersion 3rd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined, 
-            'UpdateModelVersion 3rd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined, 
+            'UpdateModelVersion 3rd modelVersion description': (r) => r && r.message.modelVersion.description == new_description,
+            'UpdateModelVersion 3rd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
+            'UpdateModelVersion 3rd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
         });
 
         sleep(5) // triton take time after update status
 
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', {name: randomString(10), version: 1}), {
-            'UpdateModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'UpdateModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', {name: model_name_cls, version: 999}, {}), {
-            'UpdateModelVersion non-existed version status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'UpdateModelVersion non-existed version status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
@@ -246,7 +246,7 @@ export default () => {
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: randomString(10)}, {}), {
-            'DeleteModel non-exist model status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'DeleteModel non-exist model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         let fd_cls = new FormData();
@@ -271,32 +271,32 @@ export default () => {
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
-            'GetModel status': (r) => r && r.status === grpc.StatusOK, 
-            'GetModel model name': (r) => r && r.message.model.name == model_name_cls, 
-            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`, 
+            'GetModel status': (r) => r && r.status === grpc.StatusOK,
+            'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
+            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE", 
+            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
             'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined, 
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined, 
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined, 
+            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
+            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
+            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}, {}), {
-            'DeleteModel status OK': (r) => r && r.status === grpc.StatusOK, 
+            'DeleteModel status OK': (r) => r && r.status === grpc.StatusOK,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
-            'GetModel after delete version status': (r) => r && r.status === grpc.StatusNotFound, 
+            'GetModel after delete version status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusNotFound,
         });
         client.close();
-    });    
+    });
 
     // DeleteModelVersion check
     group("Model API: DeleteModelVersion", () => {
@@ -326,33 +326,33 @@ export default () => {
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
-            'GetModel status': (r) => r && r.status === grpc.StatusOK, 
-            'GetModel model name': (r) => r && r.message.model.name == model_name_cls, 
-            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`, 
+            'GetModel status': (r) => r && r.status === grpc.StatusOK,
+            'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
+            'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE", 
+            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
             'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined, 
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined, 
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined, 
+            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
+            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
+            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: randomString(10), version:1}, {}), {
-            'DeleteModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'DeleteModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: model_name_cls, version:999}, {}), {
-            'DeleteModelVersion non-existed model version status not found': (r) => r && r.status === grpc.StatusNotFound, 
+            'DeleteModelVersion non-existed model version status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: model_name_cls, version:1}, {}), {
-            'DeleteModelVersion status OK': (r) => r && r.status === grpc.StatusOK, 
+            'DeleteModelVersion status OK': (r) => r && r.status === grpc.StatusOK,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
-            'GetModel after delete version status': (r) => r && r.status === grpc.StatusNotFound, 
+            'GetModel after delete version status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
@@ -390,34 +390,34 @@ export default () => {
 
         let req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK, 
-            'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE", 
+            'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
             'UpdateModelVersion modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
             'UpdateModelVersion modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion modelVersion description': (r) => r && r.message.modelVersion.description !== undefined, 
-            'UpdateModelVersion modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined, 
-            'UpdateModelVersion modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined, 
-        });     
+            'UpdateModelVersion modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
+            'UpdateModelVersion modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
+            'UpdateModelVersion modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        });
         sleep(5) // triton take time after change status
 
         check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
-            'TriggerModel status': (r) => r && r.status === grpc.StatusOK, 
-            'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1, 
-            'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match", 
-            'TriggerModel output classification_outputs score': (r) => r && r.message.output.classification_outputs[0].score === 1, 
+            'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
+            'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
+            'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
+            'TriggerModel output classification_outputs score': (r) => r && r.message.output.classification_outputs[0].score === 1,
         });
 
-        
+
         check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: randomString(10), version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
-            'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound, 
+            'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 999, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
-            'TriggerModel non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound, 
+            'TriggerModel non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/non-existed.jpg"}]}, {}), {
-            'TriggerModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument, 
+            'TriggerModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
