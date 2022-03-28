@@ -1,4 +1,7 @@
-package service
+package service_test
+
+//go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/internal/triton Triton
+//go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 
 import (
 	"fmt"
@@ -12,13 +15,14 @@ import (
 
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/service"
 
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const NAMESPACE = "local-user"
 
-func TestService_CreateModel(t *testing.T) {
+func TestCreateModel(t *testing.T) {
 	t.Run("CreateModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
@@ -38,16 +42,14 @@ func TestService_CreateModel(t *testing.T) {
 			CreateModel(newModel).
 			Return(nil)
 
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		_, err := s.CreateModel(&newModel)
 		assert.NoError(t, err)
 	})
 }
 
-func TestService_CreateModel_InvalidName(t *testing.T) {
+func TestCreateModel_InvalidName(t *testing.T) {
 	t.Run("CreateModel_InvalidName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
@@ -57,9 +59,7 @@ func TestService_CreateModel_InvalidName(t *testing.T) {
 			Namespace: NAMESPACE,
 		}
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		_, err := s.CreateModel(&newModel)
 		if assert.Error(t, err) {
@@ -69,7 +69,7 @@ func TestService_CreateModel_InvalidName(t *testing.T) {
 	})
 }
 
-func TestService_GetModelByName(t *testing.T) {
+func TestGetModelByName(t *testing.T) {
 	t.Run("GetModelByName", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
@@ -84,22 +84,19 @@ func TestService_GetModelByName(t *testing.T) {
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(datamodel.Model{}, nil).
 			Times(1)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		_, err := s.GetModelByName(NAMESPACE, newModel.Name)
 		assert.NoError(t, err)
 	})
 }
 
-func TestService_CreateVersion(t *testing.T) {
+func TestCreateVersion(t *testing.T) {
 	t.Run("CreateVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
+
 		modelVersion := datamodel.Version{
 			ModelId:     1,
 			Version:     1,
@@ -122,13 +119,11 @@ func TestService_CreateVersion(t *testing.T) {
 	})
 }
 
-func TestService_GetModelVersion(t *testing.T) {
+func TestGetModelVersion(t *testing.T) {
 	t.Run("GetModelVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		mockRepository.
 			EXPECT().
@@ -140,13 +135,11 @@ func TestService_GetModelVersion(t *testing.T) {
 	})
 }
 
-func TestService_GetModelVersions(t *testing.T) {
+func TestGetModelVersions(t *testing.T) {
 	t.Run("GetModelVersions", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		mockRepository.
 			EXPECT().
@@ -158,13 +151,11 @@ func TestService_GetModelVersions(t *testing.T) {
 	})
 }
 
-func TestService_GetModelVersionLatest(t *testing.T) {
+func TestGetModelVersionLatest(t *testing.T) {
 	t.Run("GetModelVersionLatest", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		mockRepository.
 			EXPECT().
@@ -176,13 +167,12 @@ func TestService_GetModelVersionLatest(t *testing.T) {
 	})
 }
 
-func TestService_GetFullModelData(t *testing.T) {
+func TestGetFullModelData(t *testing.T) {
 	t.Run("GetFullModelData", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
+
 		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
@@ -238,15 +228,13 @@ func TestService_GetFullModelData(t *testing.T) {
 	})
 }
 
-func TestService_ModelInfer(t *testing.T) {
+func TestModelInfer(t *testing.T) {
 	t.Run("ModelInfer", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service{
-			repository: mockRepository,
-			triton:     triton,
-		}
+		s := service.NewService(mockRepository, triton)
+
 		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
@@ -323,15 +311,13 @@ func TestService_ModelInfer(t *testing.T) {
 	})
 }
 
-func TestService_CreateModelBinaryFileUpload(t *testing.T) {
+func TestCreateModelBinaryFileUpload(t *testing.T) {
 	t.Run("CreateModelBinaryFileUpload", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service{
-			repository: mockRepository,
-			triton:     triton,
-		}
+		s := service.NewService(mockRepository, triton)
+
 		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
@@ -386,15 +372,13 @@ func TestService_CreateModelBinaryFileUpload(t *testing.T) {
 	})
 }
 
-func TestService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
+func TestHandleCreateModelMultiFormDataUpload(t *testing.T) {
 	t.Run("HandleCreateModelMultiFormDataUpload", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service{
-			repository: mockRepository,
-			triton:     triton,
-		}
+		s := service.NewService(mockRepository, triton)
+
 		newModel := datamodel.Model{
 			Id:        1,
 			Name:      "test",
@@ -449,13 +433,11 @@ func TestService_HandleCreateModelMultiFormDataUpload(t *testing.T) {
 	})
 }
 
-func TestService_ListModels(t *testing.T) {
+func TestListModels(t *testing.T) {
 	t.Run("ListModels", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		mockRepository.
 			EXPECT().
@@ -467,13 +449,11 @@ func TestService_ListModels(t *testing.T) {
 	})
 }
 
-func TestService_UpdateModelVersion(t *testing.T) {
+func TestUpdateModelVersion(t *testing.T) {
 	t.Run("UpdateModelVersion", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		newModel := datamodel.Model{
 			Id:        1,
@@ -507,13 +487,11 @@ func TestService_UpdateModelVersion(t *testing.T) {
 	})
 }
 
-func TestService_DeleteModel(t *testing.T) {
+func TestDeleteModel(t *testing.T) {
 	t.Run("DeleteModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
-		s := service{
-			repository: mockRepository,
-		}
+		s := service.NewService(mockRepository, nil)
 
 		newModel := datamodel.Model{
 			Id:        1,

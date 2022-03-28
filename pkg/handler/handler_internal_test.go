@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_parseImageFromURL(t *testing.T) {
+func TestParseImageFromURL(t *testing.T) {
 
 	{
 		_, _, err := parseImageFromURL("https://artifacts.instill.tech/non-existing.jpg")
@@ -23,7 +23,7 @@ func Test_parseImageFromURL(t *testing.T) {
 	log.SetOutput(os.Stderr)
 }
 
-func Test_parseImageFromBase64(t *testing.T) {
+func TestParseImageFromBase64(t *testing.T) {
 
 	{
 		_, _, err := parseImageFromBase64("test")
