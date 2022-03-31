@@ -28,7 +28,7 @@ require (
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220331100946-19ee7b448c30
 	github.com/mitchellh/mapstructure v1.4.3
 	gopkg.in/src-d/go-git.v4 v4.13.1
 )
