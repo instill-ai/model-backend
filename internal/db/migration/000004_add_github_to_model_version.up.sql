@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE "versions" ADD "github" JSON NOT NULL;
+
+COMMIT;

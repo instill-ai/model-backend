@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -38,6 +39,11 @@ import (
 	metadataUtil "github.com/instill-ai/model-backend/internal/grpc/metadata"
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
+
+type FileMeta struct {
+	path  string
+	fInfo os.FileInfo
+}
 
 type handler struct {
 	modelPB.UnimplementedModelServiceServer
@@ -197,6 +203,95 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 	return true
 }
 
+// modelDir and dstDir are absolute path
+func updateModelPath(modelDir string, dstDir string, namespace string, uploadedModel *datamodel.Model) (string, error) {
+	var createdTModels []datamodel.TModel
+	var ensembleFilePath string
+	var newModelNameMap = make(map[string]string)
+	var readmeFilePath string
+	files := []FileMeta{}
+	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
+		if !strings.Contains(path, ".git") {
+			files = append(files, FileMeta{
+				path:  path,
+				fInfo: f,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		// Update triton folder into format {model_name}#{task_name}#{task_version}
+		subStrs := strings.Split(strings.Replace(f.path, modelDir+"/", "", 1), "/")
+		if len(subStrs) < 1 {
+			continue
+		}
+		// Triton modelname is folder name
+		oldModelName := subStrs[0]
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", namespace, uploadedModel.Name, oldModelName, uploadedModel.Versions[0].Version)
+		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
+		if f.fInfo.IsDir() { // create new folder
+			_ = os.Mkdir(filePath, os.ModePerm)
+			newModelNameMap[oldModelName] = subStrs[0]
+			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
+				createdTModels = append(createdTModels, datamodel.TModel{
+					Name:    subStrs[0], // Triton model name
+					Status:  modelPB.ModelVersion_STATUS_OFFLINE.String(),
+					Version: int(v),
+				})
+			}
+			continue
+		}
+		if strings.Contains(filePath, "README") {
+			readmeFilePath = filePath
+		}
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
+		if err != nil {
+			log.Fatal(err)
+		}
+		srcFile, err := os.Open(f.path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err := io.Copy(dstFile, srcFile); err != nil {
+			log.Fatal(err)
+		}
+		dstFile.Close()
+		srcFile.Close()
+		// Update ModelName in config.pbtxt
+		fileExtension := filepath.Ext(filePath)
+		if fileExtension == ".pbtxt" {
+			if isEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+			}
+			err = updateConfigModelName(filePath, oldModelName, subStrs[0])
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+	// Update ModelName in ensemble model config file
+	if ensembleFilePath != "" {
+		for oldModelName, newModelName := range newModelNameMap {
+			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		for i := 0; i < len(createdTModels); i++ {
+			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
+				createdTModels[i].Platform = "ensemble"
+				break
+			}
+		}
+	}
+	uploadedModel.TritonModels = createdTModels
+	return readmeFilePath, nil
+}
+
 func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, err error) {
 	firstChunk := true
 	var fp *os.File
@@ -221,17 +316,16 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
 			uploadedModel = datamodel.Model{
-				Name:     fileData.Name,
-				Task:     uint64(fileData.Task),
-				Versions: []datamodel.Version{},
+				Name: fileData.Name,
+				Task: uint64(fileData.Task),
+				Versions: []datamodel.Version{{
+					Description: fileData.Description,
+					CreatedAt:   time.Now(),
+					UpdatedAt:   time.Now(),
+					Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+					Version:     1,
+				}},
 			}
-			uploadedModel.Versions = append(uploadedModel.Versions, datamodel.Version{
-				Description: fileData.Description,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-				Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
-				Version:     1,
-			})
 			if err != nil {
 				return "", &datamodel.Model{}, err
 			}
@@ -397,16 +491,15 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		}
 
 		var uploadedModel = datamodel.Model{
-			Versions: []datamodel.Version{},
-			Name:     modelName,
-			Task:     uint64(task),
+			Versions: []datamodel.Version{{
+				Description: r.FormValue("description"),
+				Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+				Version:     1,
+			}},
+			Name:      modelName,
+			Task:      uint64(task),
+			Namespace: username,
 		}
-		uploadedModel.Versions = append(uploadedModel.Versions, datamodel.Version{
-			Description: r.FormValue("description"),
-			Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
-			Version:     1,
-		})
-		uploadedModel.Namespace = username
 
 		db := database.GetConnection()
 		modelRepository := repository.NewRepository(db)
@@ -491,6 +584,84 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	}
 
 	return
+}
+
+func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateModelByGitHubRequest) (*modelPB.CreateModelByGitHubResponse, error) {
+	username, err := getUsername(ctx)
+	if err != nil {
+		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	}
+	// Validate the naming rule of model
+	if match, _ := regexp.MatchString(util.MODEL_NAME_REGEX, in.Name); !match {
+		return &modelPB.CreateModelByGitHubResponse{}, status.Error(codes.FailedPrecondition, "The name of model is invalid")
+	}
+	if in.Github == nil || in.Github.RepoUrl == "" || !util.IsGitHubURL(in.Github.RepoUrl) {
+		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Invalid GitHub URL")
+	}
+
+	modelSrcDir := fmt.Sprintf("/tmp/%v", uuid.New().String())
+	githubInfo := datamodel.GitHub{
+		RepoUrl: in.Github.RepoUrl,
+		GitRef: datamodel.GitRef{
+			Branch: in.Github.GitRef.GetBranch(),
+			Tag:    in.Github.GitRef.GetTag(),
+			Commit: in.Github.GitRef.GetCommit(),
+		},
+	}
+	err = util.GitHubClone(modelSrcDir, githubInfo)
+	if err != nil {
+		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	}
+	githubModel := datamodel.Model{
+		Name:      in.Name,
+		Namespace: username,
+		Versions: []datamodel.Version{{
+			Description: in.Description,
+			Version:     1,
+			Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+			Github:      githubInfo,
+		}},
+	}
+
+	readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, username, &githubModel)
+	if err != nil {
+		return &modelPB.CreateModelByGitHubResponse{}, err
+	}
+	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+	if err != nil || modelMeta.Task == "" {
+		return &modelPB.CreateModelByGitHubResponse{}, err
+	}
+
+	if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+		githubModel.Task = uint64(val)
+	} else {
+		if modelMeta.Task != "" {
+			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md do not contain valid task information")
+		} else {
+			githubModel.Task = 0
+		}
+	}
+
+	modelInDB, err := s.service.GetModelByName(username, in.Name)
+	if err == nil {
+		latestVersion, err := s.service.GetModelVersionLatest(modelInDB.Id)
+		if err == nil {
+			githubModel.Versions[0].Version = latestVersion.Version + 1
+		}
+
+		if modelInDB.Task != githubModel.Task {
+			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+		}
+	}
+
+	resModel, err := s.service.CreateModelBinaryFileUpload(username, &githubModel)
+
+	if err != nil {
+		return &modelPB.CreateModelByGitHubResponse{}, err
+	}
+
+	return &modelPB.CreateModelByGitHubResponse{Model: resModel}, nil
 }
 
 func (s *handler) UpdateModelVersion(ctx context.Context, in *modelPB.UpdateModelVersionRequest) (*modelPB.UpdateModelVersionResponse, error) {

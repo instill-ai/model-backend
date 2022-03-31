@@ -11,6 +11,27 @@ import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 
+// GitRef represents the git reference
+message GitRef {
+  // git reference
+  oneof ref {
+    // git branch
+    string branch = 1;
+    // git tag
+    string tag = 2;
+    // git commit
+    string commit = 3;
+  }
+}
+
+// GitHub represents the GitHub source a model is created from
+message GitHub {
+  // GitHub repository URL
+  string repo_url = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // git reference
+  GitRef git_ref = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // LivenessRequest represents a request to check a service liveness status
 message LivenessRequest {
   // Service name to check for its liveness status
@@ -82,6 +103,8 @@ message ModelVersion {
   google.protobuf.Timestamp updated_at = 5;
   // Model version status
   Status status = 6;
+  // Model GitHub source (has value when model created by CreateModelByGitHub and is empty when created by CreateModelBinaryFileUpload)
+  GitHub github = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // Model represents the content of a model
@@ -124,6 +147,23 @@ message CreateModelBinaryFileUploadRequest {
 // CreateModelBinaryFileUploadResponse represents a response for a model
 // instance
 message CreateModelBinaryFileUploadResponse {
+  // A model instance
+  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// CreateModelByGitHubRequest represents a request to create a model from a GitHub repo
+message CreateModelByGitHubRequest {
+  // Model name
+  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model description
+  string description = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model GitHub source
+  GitHub github = 3 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// CreateModelByGitHubResponse represents a response for a model
+// instance
+message CreateModelByGitHubResponse {
   // A model instance
   Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
 }
@@ -310,6 +350,17 @@ service ModelService {
       get : "/__readiness"
     };
   }
+
+  // CreateModelByGitHub method receives a
+  // CreateModelByGitHubRequest message and returns a
+  // CreateModelByGitHubResponse message.
+  rpc CreateModelByGitHub(CreateModelByGitHubRequest)
+      returns (CreateModelByGitHubResponse) {
+        option (google.api.http) = {
+          post : "/models"
+          body : "*"
+        };
+      }
 
   // CreateModelBinaryFileUpload method receives a
   // CreateModelBinaryFileUploadRequest message and returns a

@@ -26,6 +26,17 @@ type Model struct {
 	Versions     []Version
 }
 
+type GitRef struct {
+	Branch string `json:"branch,omitempty"`
+	Tag    string `json:"tag,omitempty"`
+	Commit string `json:"commit,omitempty"`
+}
+type GitHub struct {
+	// Model github repository URL
+	RepoUrl string `json:"repo_url,omitempty"`
+	GitRef  GitRef `json:"git_ref,omitempty"`
+}
+
 // Triton model
 type TModel struct {
 
@@ -70,6 +81,10 @@ type Version struct {
 
 	// Model version metadata
 	Metadata JSONB `gorm:"type:jsonb"`
+
+	// GitHub information corresponding to a model version
+	// It will empty if model is created by local file
+	Github GitHub `gorm:"type:jsonb"`
 }
 
 type JSONB map[string]interface{}
@@ -80,6 +95,18 @@ func (j JSONB) Value() (driver.Value, error) {
 }
 
 func (j *JSONB) Scan(value interface{}) error {
+	if err := json.Unmarshal(value.([]byte), &j); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (j GitHub) Value() (driver.Value, error) {
+	valueString, err := json.Marshal(j)
+	return string(valueString), err
+}
+
+func (j *GitHub) Scan(value interface{}) error {
 	if err := json.Unmarshal(value.([]byte), &j); err != nil {
 		return err
 	}

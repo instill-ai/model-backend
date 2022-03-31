@@ -15,6 +15,7 @@ import (
 
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 
@@ -57,6 +58,27 @@ func createModelVersion(modelVersionInDB datamodel.Version) *modelPB.ModelVersio
 		st = modelPB.ModelVersion_STATUS_ERROR
 	}
 
+	var gitRef modelPB.GitRef
+	if modelVersionInDB.Github.GitRef.Branch != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Branch{
+				Branch: modelVersionInDB.Github.GitRef.Branch,
+			},
+		}
+	} else if modelVersionInDB.Github.GitRef.Tag != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Tag{
+				Tag: modelVersionInDB.Github.GitRef.Tag,
+			},
+		}
+	} else if modelVersionInDB.Github.GitRef.Commit != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Commit{
+				Commit: modelVersionInDB.Github.GitRef.Commit,
+			},
+		}
+	}
+
 	return &modelPB.ModelVersion{
 		Version:     modelVersionInDB.Version,
 		ModelId:     modelVersionInDB.ModelId,
@@ -64,6 +86,10 @@ func createModelVersion(modelVersionInDB datamodel.Version) *modelPB.ModelVersio
 		CreatedAt:   timestamppb.New(modelVersionInDB.CreatedAt),
 		UpdatedAt:   timestamppb.New(modelVersionInDB.UpdatedAt),
 		Status:      st,
+		Github: &modelPB.GitHub{
+			RepoUrl: modelVersionInDB.Github.RepoUrl,
+			GitRef:  &gitRef,
+		},
 	}
 }
 
@@ -88,7 +114,6 @@ func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
 	if tEnsembleModel, err = s.repository.GetTEnsembleModel(modelID, modelVersion); err != nil {
 		return err
 	}
-
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
 		if err = s.repository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, datamodel.Version{
@@ -145,7 +170,7 @@ func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
 
 func (s *service) CreateModel(model *datamodel.Model) (*datamodel.Model, error) {
 	// Validate the naming rule of model
-	if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", model.Name); !match {
+	if match, _ := regexp.MatchString(util.MODEL_NAME_REGEX, model.Name); !match {
 		return &datamodel.Model{}, status.Error(codes.FailedPrecondition, "The name of model is invalid")
 	}
 
