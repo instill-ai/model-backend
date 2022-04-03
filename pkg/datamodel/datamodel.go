@@ -20,9 +20,9 @@ type Model struct {
 
 	Task uint64 `json:"task,omitempty"`
 
-	// Not stored inn DB, only used for processing
+	// Not stored in DB, only used for processing
 	FullName     string
-	TritonModels []TModel
+	TritonModels []TritonModel
 	Versions     []Version
 }
 
@@ -38,7 +38,7 @@ type GitHub struct {
 }
 
 // Triton model
-type TModel struct {
+type TritonModel struct {
 
 	// Triton Model unique ID
 	Id uint64 `json:"id,omitempty"`
@@ -85,6 +85,18 @@ type Version struct {
 	// GitHub information corresponding to a model version
 	// It will empty if model is created by local file
 	Github GitHub `gorm:"type:jsonb"`
+}
+
+func (Model) TableName() string {
+	return "model"
+}
+
+func (Version) TableName() string {
+	return "version"
+}
+
+func (TritonModel) TableName() string {
+	return "triton_model"
 }
 
 type JSONB map[string]interface{}

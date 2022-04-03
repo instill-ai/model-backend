@@ -49,7 +49,7 @@ func (mr *MockRepositoryMockRecorder) CreateModel(arg0 interface{}) *gomock.Call
 }
 
 // CreateTModel mocks base method.
-func (m *MockRepository) CreateTModel(arg0 datamodel.TModel) error {
+func (m *MockRepository) CreateTModel(arg0 datamodel.TritonModel) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTModel", arg0)
 	ret0, _ := ret[0].(error)
@@ -165,10 +165,10 @@ func (mr *MockRepositoryMockRecorder) GetModelVersions(arg0 interface{}) *gomock
 }
 
 // GetTEnsembleModel mocks base method.
-func (m *MockRepository) GetTEnsembleModel(arg0, arg1 uint64) (datamodel.TModel, error) {
+func (m *MockRepository) GetTEnsembleModel(arg0, arg1 uint64) (datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTEnsembleModel", arg0, arg1)
-	ret0, _ := ret[0].(datamodel.TModel)
+	ret0, _ := ret[0].(datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -180,10 +180,10 @@ func (mr *MockRepositoryMockRecorder) GetTEnsembleModel(arg0, arg1 interface{}) 
 }
 
 // GetTModelVersions mocks base method.
-func (m *MockRepository) GetTModelVersions(arg0, arg1 uint64) ([]datamodel.TModel, error) {
+func (m *MockRepository) GetTModelVersions(arg0, arg1 uint64) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModelVersions", arg0, arg1)
-	ret0, _ := ret[0].([]datamodel.TModel)
+	ret0, _ := ret[0].([]datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -195,10 +195,10 @@ func (mr *MockRepositoryMockRecorder) GetTModelVersions(arg0, arg1 interface{}) 
 }
 
 // GetTModels mocks base method.
-func (m *MockRepository) GetTModels(arg0 uint64) ([]datamodel.TModel, error) {
+func (m *MockRepository) GetTModels(arg0 uint64) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModels", arg0)
-	ret0, _ := ret[0].([]datamodel.TModel)
+	ret0, _ := ret[0].([]datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

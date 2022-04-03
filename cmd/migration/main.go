@@ -116,13 +116,12 @@ func main() {
 			break
 		} else {
 			fmt.Printf("Step up to version %d\n", step+1)
-			if err := m.Up(); err != nil {
+			if err := m.Steps(1); err != nil {
 				panic(err)
 			}
 		}
 
 		step, _, err = m.Version()
-
 		if err != nil {
 			panic(err)
 		}

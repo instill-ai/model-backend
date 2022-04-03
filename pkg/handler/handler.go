@@ -100,7 +100,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 	}
 	defer archive.Close()
 
-	var createdTModels []datamodel.TModel
+	var createdTModels []datamodel.TritonModel
 	var currentNewModelName string
 	var currentOldModelName string
 	var ensembleFilePath string
@@ -135,7 +135,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 					sVersion := elems[len(elems)-1]
 					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
-						createdTModels = append(createdTModels, datamodel.TModel{
+						createdTModels = append(createdTModels, datamodel.TritonModel{
 							Name:    currentNewModelName, // Triton model name
 							Status:  modelPB.ModelVersion_STATUS_OFFLINE.String(),
 							Version: int(iVersion),
@@ -205,7 +205,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 
 // modelDir and dstDir are absolute path
 func updateModelPath(modelDir string, dstDir string, namespace string, uploadedModel *datamodel.Model) (string, error) {
-	var createdTModels []datamodel.TModel
+	var createdTModels []datamodel.TritonModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
 	var readmeFilePath string
@@ -237,7 +237,7 @@ func updateModelPath(modelDir string, dstDir string, namespace string, uploadedM
 			_ = os.Mkdir(filePath, os.ModePerm)
 			newModelNameMap[oldModelName] = subStrs[0]
 			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
-				createdTModels = append(createdTModels, datamodel.TModel{
+				createdTModels = append(createdTModels, datamodel.TritonModel{
 					Name:    subStrs[0], // Triton model name
 					Status:  modelPB.ModelVersion_STATUS_OFFLINE.String(),
 					Version: int(v),

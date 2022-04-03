@@ -221,7 +221,7 @@ func TestGetFullModelData(t *testing.T) {
 		mockRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]datamodel.TModel{}, nil)
+			Return([]datamodel.TritonModel{}, nil)
 
 		_, err := s.GetFullModelData(NAMESPACE, "test")
 		assert.NoError(t, err)
@@ -276,7 +276,7 @@ func TestModelInfer(t *testing.T) {
 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
 			Return(newModel, nil).
 			Times(1)
-		ensembleModel := datamodel.TModel{
+		ensembleModel := datamodel.TritonModel{
 			Name:    "essembleModel",
 			Version: 1,
 		}
@@ -514,7 +514,7 @@ func TestDeleteModel(t *testing.T) {
 		mockRepository.
 			EXPECT().
 			GetTModels(uint64(1)).
-			Return([]datamodel.TModel{}, nil).Times(1)
+			Return([]datamodel.TritonModel{}, nil).Times(1)
 		mockRepository.
 			EXPECT().
 			DeleteModel(uint64(1)).

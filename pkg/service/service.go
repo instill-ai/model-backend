@@ -93,7 +93,7 @@ func createModelVersion(modelVersionInDB datamodel.Version) *modelPB.ModelVersio
 	}
 }
 
-func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tritonModels []datamodel.TModel) *modelPB.Model {
+func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tritonModels []datamodel.TritonModel) *modelPB.Model {
 	var vers []*modelPB.ModelVersion
 	for i := 0; i < len(versions); i++ {
 		vers = append(vers, createModelVersion(versions[i]))
@@ -108,7 +108,7 @@ func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tr
 }
 
 func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
-	var tEnsembleModel datamodel.TModel
+	var tEnsembleModel datamodel.TritonModel
 	var err error
 
 	if tEnsembleModel, err = s.repository.GetTEnsembleModel(modelID, modelVersion); err != nil {
@@ -137,7 +137,7 @@ func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
 
 func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
 
-	var tritonModels []datamodel.TModel
+	var tritonModels []datamodel.TritonModel
 	var err error
 
 	if tritonModels, err = s.repository.GetTModels(modelID); err != nil {
@@ -217,7 +217,7 @@ func (s *service) GetModelVersions(modelId uint64) ([]datamodel.Version, error) 
 	return s.repository.GetModelVersions(modelId)
 }
 
-func (s *service) GetTModels(modelId uint64) ([]datamodel.TModel, error) {
+func (s *service) GetTModels(modelId uint64) ([]datamodel.TritonModel, error) {
 	return s.repository.GetTModels(modelId)
 }
 
@@ -320,13 +320,13 @@ func (s *service) ModelInfer(namespace string, modelName string, version uint64,
 	}
 }
 
-func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (datamodel.Model, []datamodel.Version, []datamodel.TModel, error) {
+func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (datamodel.Model, []datamodel.Version, []datamodel.TritonModel, error) {
 
 	modelInDB, err := s.GetModelByName(namespace, uploadedModel.Name)
 	if err != nil {
 		createdModel, err := s.CreateModel(uploadedModel)
 		if err != nil {
-			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create model in DB")
 		}
 		modelInDB = *createdModel
 	}
@@ -339,7 +339,7 @@ func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (
 	uploadedModel.Versions[0].ModelId = modelInDB.Id
 	versionInDB, err := s.CreateVersion(uploadedModel.Versions[0])
 	if err != nil {
-		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model version in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create model version in DB")
 	}
 	for i := 0; i < len(uploadedModel.TritonModels); i++ {
 		tritonModel := uploadedModel.TritonModels[i]
@@ -347,12 +347,12 @@ func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (
 		tritonModel.ModelVersion = versionInDB.Version
 		err = s.repository.CreateTModel(tritonModel)
 		if err != nil {
-			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create triton model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create triton model in DB")
 		}
 	}
 	versions, err := s.GetModelVersions(modelInDB.Id)
 	if err != nil {
-		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not get model versions in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not get model versions in DB")
 	}
 
 	return modelInDB, versions, uploadedModel.TritonModels, nil
