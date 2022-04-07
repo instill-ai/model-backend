@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS "models" (
 );
 
 COMMENT ON COLUMN "models"."name" IS 'model name';
-COMMENT ON COLUMN "models"."namespace" IS 'namespace in which model belong to';
+COMMENT ON COLUMN "models"."namespace" IS 'namespace in which model belongs to';
 
 CREATE TABLE IF NOT EXISTS "versions" (
   "model_id" int NOT NULL,

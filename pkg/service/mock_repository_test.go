@@ -77,7 +77,7 @@ func (mr *MockRepositoryMockRecorder) CreateVersion(arg0 interface{}) *gomock.Ca
 }
 
 // DeleteModel mocks base method.
-func (m *MockRepository) DeleteModel(arg0 uint64) error {
+func (m *MockRepository) DeleteModel(arg0 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteModel", arg0)
 	ret0, _ := ret[0].(error)
@@ -91,7 +91,7 @@ func (mr *MockRepositoryMockRecorder) DeleteModel(arg0 interface{}) *gomock.Call
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockRepository) DeleteModelVersion(arg0, arg1 uint64) error {
+func (m *MockRepository) DeleteModelVersion(arg0, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -120,7 +120,7 @@ func (mr *MockRepositoryMockRecorder) GetModelByName(arg0, arg1 interface{}) *go
 }
 
 // GetModelVersion mocks base method.
-func (m *MockRepository) GetModelVersion(arg0, arg1 uint64) (datamodel.Version, error) {
+func (m *MockRepository) GetModelVersion(arg0, arg1 uint) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersion", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.Version)
@@ -135,7 +135,7 @@ func (mr *MockRepositoryMockRecorder) GetModelVersion(arg0, arg1 interface{}) *g
 }
 
 // GetModelVersionLatest mocks base method.
-func (m *MockRepository) GetModelVersionLatest(arg0 uint64) (datamodel.Version, error) {
+func (m *MockRepository) GetModelVersionLatest(arg0 uint) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersionLatest", arg0)
 	ret0, _ := ret[0].(datamodel.Version)
@@ -150,7 +150,7 @@ func (mr *MockRepositoryMockRecorder) GetModelVersionLatest(arg0 interface{}) *g
 }
 
 // GetModelVersions mocks base method.
-func (m *MockRepository) GetModelVersions(arg0 uint64) ([]datamodel.Version, error) {
+func (m *MockRepository) GetModelVersions(arg0 uint) ([]datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersions", arg0)
 	ret0, _ := ret[0].([]datamodel.Version)
@@ -165,7 +165,7 @@ func (mr *MockRepositoryMockRecorder) GetModelVersions(arg0 interface{}) *gomock
 }
 
 // GetTEnsembleModel mocks base method.
-func (m *MockRepository) GetTEnsembleModel(arg0, arg1 uint64) (datamodel.TritonModel, error) {
+func (m *MockRepository) GetTEnsembleModel(arg0, arg1 uint) (datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTEnsembleModel", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.TritonModel)
@@ -180,7 +180,7 @@ func (mr *MockRepositoryMockRecorder) GetTEnsembleModel(arg0, arg1 interface{}) 
 }
 
 // GetTModelVersions mocks base method.
-func (m *MockRepository) GetTModelVersions(arg0, arg1 uint64) ([]datamodel.TritonModel, error) {
+func (m *MockRepository) GetTModelVersions(arg0, arg1 uint) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModelVersions", arg0, arg1)
 	ret0, _ := ret[0].([]datamodel.TritonModel)
@@ -195,7 +195,7 @@ func (mr *MockRepositoryMockRecorder) GetTModelVersions(arg0, arg1 interface{}) 
 }
 
 // GetTModels mocks base method.
-func (m *MockRepository) GetTModels(arg0 uint64) ([]datamodel.TritonModel, error) {
+func (m *MockRepository) GetTModels(arg0 uint) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTModels", arg0)
 	ret0, _ := ret[0].([]datamodel.TritonModel)
@@ -225,7 +225,7 @@ func (mr *MockRepositoryMockRecorder) ListModels(arg0 interface{}) *gomock.Call 
 }
 
 // UpdateModelMetaData mocks base method.
-func (m *MockRepository) UpdateModelMetaData(arg0 uint64, arg1 datamodel.Model) error {
+func (m *MockRepository) UpdateModelMetaData(arg0 uint, arg1 datamodel.Model) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelMetaData", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -239,7 +239,7 @@ func (mr *MockRepositoryMockRecorder) UpdateModelMetaData(arg0, arg1 interface{}
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockRepository) UpdateModelVersion(arg0, arg1 uint64, arg2 datamodel.Version) error {
+func (m *MockRepository) UpdateModelVersion(arg0, arg1 uint, arg2 datamodel.Version) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateModelVersion", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

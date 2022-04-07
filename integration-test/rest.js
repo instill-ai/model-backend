@@ -431,7 +431,7 @@ export default function (data) {
 
       // Predict with multiple-part
       const fd = new FormData();
-      fd.append("inputs", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
       check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
@@ -547,7 +547,7 @@ export default function (data) {
 
       // Predict with multiple-part
       const fd = new FormData();
-      fd.append("inputs", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
       check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
@@ -664,7 +664,7 @@ export default function (data) {
 
       // Predict with multiple-part
       fd = new FormData();
-      fd.append("inputs", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
       check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {

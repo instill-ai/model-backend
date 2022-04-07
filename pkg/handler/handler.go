@@ -17,7 +17,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/google/uuid"
@@ -317,12 +316,10 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 			fp, err = os.Create(tmpFile)
 			uploadedModel = datamodel.Model{
 				Name: fileData.Name,
-				Task: uint64(fileData.Task),
+				Task: uint(fileData.Task),
 				Versions: []datamodel.Version{{
 					Description: fileData.Description,
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
-					Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+					Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
 					Version:     1,
 				}},
 			}
@@ -341,12 +338,12 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 	return tmpFile, &uploadedModel, nil
 }
 
-func savePredictInput(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) (imageByte []byte, modelId string, version uint64, err error) {
+func savePredictInputs(stream modelPB.ModelService_TriggerModelBinaryFileUploadServer) (imageBytes [][]byte, modelId string, version uint, err error) {
 	var firstChunk = true
 	var fileData *modelPB.TriggerModelBinaryFileUploadRequest
 
-	var fileContent []byte
-
+	var allContentFiles []byte
+	var length_of_files []uint64
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
@@ -356,18 +353,28 @@ func savePredictInput(stream modelPB.ModelService_TriggerModelBinaryFileUploadSe
 
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return []byte{}, "", 0, err
+			return [][]byte{}, "", 0, err
 		}
 
 		if firstChunk { //first chunk contains file name
 			modelId = fileData.Name
-			version = fileData.Version
+			version = uint(fileData.Version)
+			length_of_files = fileData.FileLengths
 
 			firstChunk = false
 		}
-		fileContent = append(fileContent, fileData.Bytes...)
+		allContentFiles = append(allContentFiles, fileData.Bytes...)
 	}
-	return fileContent, modelId, version, nil
+
+	if len(length_of_files) == 0 {
+		return [][]byte{}, "", 0, fmt.Errorf("Wrong parameter length of files")
+	}
+	start := uint64(0)
+	for i := 0; i < len(length_of_files); i++ {
+		imageBytes = append(imageBytes, allContentFiles[start:start+length_of_files[i]])
+		start = length_of_files[i]
+	}
+	return imageBytes, modelId, version, nil
 }
 
 func makeError(statusCode codes.Code, title string, detail string) error {
@@ -493,11 +500,11 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		var uploadedModel = datamodel.Model{
 			Versions: []datamodel.Version{{
 				Description: r.FormValue("description"),
-				Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+				Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
 				Version:     1,
 			}},
 			Name:      modelName,
-			Task:      uint64(task),
+			Task:      uint(task),
 			Namespace: username,
 		}
 
@@ -508,7 +515,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 
 		modelInDB, err := modelService.GetModelByName(username, uploadedModel.Name)
 		if err == nil {
-			latestVersion, err := modelService.GetModelVersionLatest(modelInDB.Id)
+			latestVersion, err := modelService.GetModelVersionLatest(modelInDB.ID)
 			if err == nil {
 				uploadedModel.Versions[0].Version = latestVersion.Version + 1
 			}
@@ -557,7 +564,7 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	}
 	modelInDB, err := s.service.GetModelByName(username, uploadedModel.Name)
 	if err == nil {
-		latestVersion, err := s.service.GetModelVersionLatest(modelInDB.Id)
+		latestVersion, err := s.service.GetModelVersionLatest(modelInDB.ID)
 		if err == nil {
 			uploadedModel.Versions[0].Version = latestVersion.Version + 1
 		}
@@ -618,7 +625,7 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 		Versions: []datamodel.Version{{
 			Description: in.Description,
 			Version:     1,
-			Status:      modelPB.ModelVersion_STATUS_OFFLINE.String(),
+			Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
 			Github:      githubInfo,
 		}},
 	}
@@ -634,7 +641,7 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 	}
 
 	if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-		githubModel.Task = uint64(val)
+		githubModel.Task = uint(val)
 	} else {
 		if modelMeta.Task != "" {
 			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md do not contain valid task information")
@@ -645,7 +652,7 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 
 	modelInDB, err := s.service.GetModelByName(username, in.Name)
 	if err == nil {
-		latestVersion, err := s.service.GetModelVersionLatest(modelInDB.Id)
+		latestVersion, err := s.service.GetModelVersionLatest(modelInDB.ID)
 		if err == nil {
 			githubModel.Versions[0].Version = latestVersion.Version + 1
 		}
@@ -698,7 +705,7 @@ func (s *handler) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequ
 		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model named %v not found in server", in.Name))
 	}
 
-	_, err = s.service.GetModelVersion(modelInDB.Id, in.Version)
+	_, err = s.service.GetModelVersion(modelInDB.ID, uint(in.Version))
 	if err != nil {
 		return &modelPB.TriggerModelResponse{}, makeError(codes.NotFound, "PredictModel", fmt.Sprintf("The model %v  with version %v not found in server", in.Name, in.Version))
 	}
@@ -708,7 +715,7 @@ func (s *handler) TriggerModel(ctx context.Context, in *modelPB.TriggerModelRequ
 		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
 	task := modelPB.Model_Task(modelInDB.Task)
-	response, err := s.service.ModelInfer(username, in.Name, in.Version, imgsBytes, task)
+	response, err := s.service.ModelInfer(username, in.Name, uint(in.Version), imgsBytes, task)
 	if err != nil {
 		return &modelPB.TriggerModelResponse{}, makeError(codes.InvalidArgument, "PredictModel", err.Error())
 	}
@@ -750,7 +757,7 @@ func (s *handler) TriggerModelBinaryFileUpload(stream modelPB.ModelService_Trigg
 		return err
 	}
 
-	imageByte, modelName, version, err := savePredictInput(stream)
+	imageBytes, modelName, version, err := savePredictInputs(stream)
 	if err != nil {
 		return makeError(500, "PredictModel", "Could not save the file")
 	}
@@ -760,9 +767,7 @@ func (s *handler) TriggerModelBinaryFileUpload(stream modelPB.ModelService_Trigg
 		return makeError(404, "PredictModel", fmt.Sprintf("The model %v do not exist", modelName))
 	}
 	task := modelPB.Model_Task(modelInDB.Task)
-
-	response, err := s.service.ModelInfer(username, modelName, version, [][]byte{imageByte}, task)
-
+	response, err := s.service.ModelInfer(username, modelName, version, imageBytes, task)
 	if err != nil {
 		return err
 	}
@@ -830,7 +835,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJsonResponse(w, 400, "Internal Error", fmt.Sprintf("Error while reading file from request %v", err))
 			return
 		}
 
@@ -841,7 +846,7 @@ func HandlePredictModelByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		}
 
 		task := modelPB.Model_Task(modelInDB.Task)
-		response, err := modelService.ModelInfer(username, modelName, uint64(modelVersion), imgsBytes, task)
+		response, err := modelService.ModelInfer(username, modelName, uint(modelVersion), imgsBytes, task)
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -910,5 +915,5 @@ func (s *handler) DeleteModelVersion(ctx context.Context, in *modelPB.DeleteMode
 	if err != nil {
 		return &modelPB.DeleteModelVersionResponse{}, err
 	}
-	return &modelPB.DeleteModelVersionResponse{}, s.service.DeleteModelVersion(username, in.Name, in.Version)
+	return &modelPB.DeleteModelVersionResponse{}, s.service.DeleteModelVersion(username, in.Name, uint(in.Version))
 }
