@@ -11,8 +11,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+	"gorm.io/gorm"
 
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 
@@ -26,6 +27,7 @@ func TestCreateModel(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "normalname",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -53,6 +55,7 @@ func TestCreateModel_InvalidName(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "#$%^",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -73,6 +76,7 @@ func TestGetModelByName(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "normalname",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -171,6 +175,7 @@ func TestGetFullModelData(t *testing.T) {
 		s := service.NewService(mockRepository, nil)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -230,6 +235,7 @@ func TestModelInfer(t *testing.T) {
 		s := service.NewService(mockRepository, triton)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -310,6 +316,7 @@ func TestCreateModelBinaryFileUpload(t *testing.T) {
 		s := service.NewService(mockRepository, triton)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -323,7 +330,7 @@ func TestCreateModelBinaryFileUpload(t *testing.T) {
 
 		mockRepository.
 			EXPECT().
-			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
+			GetModelByName(NAMESPACE, newModel.Name).
 			Return(newModel, nil).
 			Times(1)
 		mockRepository.
@@ -368,6 +375,7 @@ func TestHandleCreateModelMultiFormDataUpload(t *testing.T) {
 		s := service.NewService(mockRepository, triton)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -441,6 +449,7 @@ func TestUpdateModelVersion(t *testing.T) {
 		s := service.NewService(mockRepository, nil)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
@@ -478,6 +487,7 @@ func TestDeleteModel(t *testing.T) {
 		s := service.NewService(mockRepository, nil)
 
 		newModel := datamodel.Model{
+			Model:     gorm.Model{ID: uint(1)},
 			Name:      "test",
 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
 			Namespace: NAMESPACE,
