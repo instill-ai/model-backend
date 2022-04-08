@@ -1,4 +1,5 @@
 import grpc from 'k6/net/grpc';
+import grpc from 'k6/net/grpc';
 import { check, sleep, group } from 'k6';
 import http from "k6/http";
 import {FormData} from "https://jslib.k6.io/formdata/0.0.2/index.js";
@@ -389,7 +390,7 @@ export default () => {
             r.json().model.model_versions.length === 1,
         });
 
-        let req = {name: model_name, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
+        let req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
             'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,
             'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
@@ -401,7 +402,7 @@ export default () => {
         });
         sleep(5) // triton take time after change status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
             'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
             'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
@@ -454,6 +455,7 @@ export default () => {
             'modelVersions repoUrl': (r) => r && r.message.model.modelVersions[0].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
         });
 
+        sleep(5)
         let req = {name: model_name, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
             'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,

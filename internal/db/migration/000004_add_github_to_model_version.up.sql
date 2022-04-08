@@ -1,5 +1,5 @@
 BEGIN;
 
-ALTER TABLE "versions" ADD "github" JSON NOT NULL;
+ALTER TABLE "versions" ADD "github" JSONB NOT NULL;
 
 COMMIT;
