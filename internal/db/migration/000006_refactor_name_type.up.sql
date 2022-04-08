@@ -2,7 +2,6 @@ BEGIN;
 
 ALTER TYPE "valid_statuses" RENAME TO "valid_status";
 ALTER TABLE "model" ALTER COLUMN "namespace" TYPE varchar(39);
-ALTER TABLE "version" ALTER COLUMN "description" TYPE text;
 ALTER TABLE "version" ALTER COLUMN "metadata" TYPE JSONB;
 ALTER TABLE "version" ALTER COLUMN "github" TYPE JSONB;
 
