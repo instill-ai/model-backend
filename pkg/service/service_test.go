@@ -219,7 +219,7 @@ func TestGetFullModelData(t *testing.T) {
 			Return([]datamodel.Version{}, nil)
 		mockRepository.
 			EXPECT().
-			GetTModels(uint(1)).
+			GetTritonModels(uint(1)).
 			Return([]datamodel.TritonModel{}, nil)
 
 		_, err := s.GetFullModelData(NAMESPACE, "test")
@@ -279,7 +279,7 @@ func TestModelInfer(t *testing.T) {
 		}
 		mockRepository.
 			EXPECT().
-			GetTEnsembleModel(uint(1), uint(1)).
+			GetTritonEnsembleModel(uint(1), uint(1)).
 			Return(ensembleModel, nil)
 
 		modelConfigResponse := &inferenceserver.ModelConfigResponse{}
@@ -506,7 +506,7 @@ func TestDeleteModel(t *testing.T) {
 			Return([]datamodel.Version{}, nil).Times(2)
 		mockRepository.
 			EXPECT().
-			GetTModels(uint(1)).
+			GetTritonModels(uint(1)).
 			Return([]datamodel.TritonModel{}, nil).Times(1)
 		mockRepository.
 			EXPECT().

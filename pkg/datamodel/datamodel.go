@@ -82,18 +82,6 @@ type Version struct {
 	Github GitHub `gorm:"type:jsonb"`
 }
 
-func (Model) TableName() string {
-	return "model"
-}
-
-func (Version) TableName() string {
-	return "version"
-}
-
-func (TritonModel) TableName() string {
-	return "triton_model"
-}
-
 type JSONB map[string]interface{}
 
 func (j JSONB) Value() (driver.Value, error) {
@@ -147,24 +135,6 @@ func (p *ValidStatus) Scan(value interface{}) error {
 
 func (p ValidStatus) Value() (driver.Value, error) {
 	return string(p), nil
-}
-
-func (r *TritonModel) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal TritonModel value:", value))
-	}
-
-	if err := json.Unmarshal(bytes, &r); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *TritonModel) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(r)
-	return string(valueString), err
 }
 
 func (r *Version) Scan(value interface{}) error {

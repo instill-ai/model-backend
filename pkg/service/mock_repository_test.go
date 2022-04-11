@@ -164,49 +164,49 @@ func (mr *MockRepositoryMockRecorder) GetModelVersions(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersions", reflect.TypeOf((*MockRepository)(nil).GetModelVersions), arg0)
 }
 
-// GetTEnsembleModel mocks base method.
-func (m *MockRepository) GetTEnsembleModel(arg0, arg1 uint) (datamodel.TritonModel, error) {
+// GetTritonEnsembleModel mocks base method.
+func (m *MockRepository) GetTritonEnsembleModel(arg0, arg1 uint) (datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTEnsembleModel", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetTritonEnsembleModel", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTEnsembleModel indicates an expected call of GetTEnsembleModel.
-func (mr *MockRepositoryMockRecorder) GetTEnsembleModel(arg0, arg1 interface{}) *gomock.Call {
+// GetTritonEnsembleModel indicates an expected call of GetTritonEnsembleModel.
+func (mr *MockRepositoryMockRecorder) GetTritonEnsembleModel(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTEnsembleModel", reflect.TypeOf((*MockRepository)(nil).GetTEnsembleModel), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonEnsembleModel", reflect.TypeOf((*MockRepository)(nil).GetTritonEnsembleModel), arg0, arg1)
 }
 
-// GetTModelVersions mocks base method.
-func (m *MockRepository) GetTModelVersions(arg0, arg1 uint) ([]datamodel.TritonModel, error) {
+// GetTritonModelVersions mocks base method.
+func (m *MockRepository) GetTritonModelVersions(arg0, arg1 uint) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTModelVersions", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetTritonModelVersions", arg0, arg1)
 	ret0, _ := ret[0].([]datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTModelVersions indicates an expected call of GetTModelVersions.
-func (mr *MockRepositoryMockRecorder) GetTModelVersions(arg0, arg1 interface{}) *gomock.Call {
+// GetTritonModelVersions indicates an expected call of GetTritonModelVersions.
+func (mr *MockRepositoryMockRecorder) GetTritonModelVersions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTModelVersions", reflect.TypeOf((*MockRepository)(nil).GetTModelVersions), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonModelVersions", reflect.TypeOf((*MockRepository)(nil).GetTritonModelVersions), arg0, arg1)
 }
 
-// GetTModels mocks base method.
-func (m *MockRepository) GetTModels(arg0 uint) ([]datamodel.TritonModel, error) {
+// GetTritonModels mocks base method.
+func (m *MockRepository) GetTritonModels(arg0 uint) ([]datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTModels", arg0)
+	ret := m.ctrl.Call(m, "GetTritonModels", arg0)
 	ret0, _ := ret[0].([]datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTModels indicates an expected call of GetTModels.
-func (mr *MockRepositoryMockRecorder) GetTModels(arg0 interface{}) *gomock.Call {
+// GetTritonModels indicates an expected call of GetTritonModels.
+func (mr *MockRepositoryMockRecorder) GetTritonModels(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTModels", reflect.TypeOf((*MockRepository)(nil).GetTModels), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonModels", reflect.TypeOf((*MockRepository)(nil).GetTritonModels), arg0)
 }
 
 // ListModels mocks base method.

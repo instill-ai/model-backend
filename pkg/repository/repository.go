@@ -21,12 +21,12 @@ type Repository interface {
 	GetModelVersions(modelId uint) ([]datamodel.Version, error)
 	UpdateModelMetaData(modelId uint, updatedModel datamodel.Model) error
 	CreateTModel(model datamodel.TritonModel) error
-	GetTModels(modelId uint) ([]datamodel.TritonModel, error)
-	GetTEnsembleModel(modelId uint, version uint) (datamodel.TritonModel, error)
+	GetTritonModels(modelId uint) ([]datamodel.TritonModel, error)
+	GetTritonEnsembleModel(modelId uint, version uint) (datamodel.TritonModel, error)
 	DeleteModel(modelId uint) error
 	DeleteModelVersion(modelId uint, version uint) error
 	GetModelVersionLatest(modelId uint) (datamodel.Version, error)
-	GetTModelVersions(modelId uint, version uint) ([]datamodel.TritonModel, error)
+	GetTritonModelVersions(modelId uint, version uint) ([]datamodel.TritonModel, error)
 }
 
 type repository struct {
@@ -125,7 +125,7 @@ func (r *repository) CreateTModel(model datamodel.TritonModel) error {
 	return nil
 }
 
-func (r *repository) GetTModels(modelId uint) ([]datamodel.TritonModel, error) {
+func (r *repository) GetTritonModels(modelId uint) ([]datamodel.TritonModel, error) {
 	var tmodels []datamodel.TritonModel
 	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_id", modelId).Find(&tmodels); result.Error != nil {
 		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)
@@ -133,7 +133,7 @@ func (r *repository) GetTModels(modelId uint) ([]datamodel.TritonModel, error) {
 	return tmodels, nil
 }
 
-func (r *repository) GetTEnsembleModel(modelId uint, version uint) (datamodel.TritonModel, error) {
+func (r *repository) GetTritonEnsembleModel(modelId uint, version uint) (datamodel.TritonModel, error) {
 	var ensembleModel datamodel.TritonModel
 	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
@@ -142,7 +142,7 @@ func (r *repository) GetTEnsembleModel(modelId uint, version uint) (datamodel.Tr
 	return ensembleModel, nil
 }
 
-func (r *repository) GetTModelVersions(modelId uint, version uint) ([]datamodel.TritonModel, error) {
+func (r *repository) GetTritonModelVersions(modelId uint, version uint) ([]datamodel.TritonModel, error) {
 	var tmodels []datamodel.TritonModel
 	if result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_id": modelId, "model_version": version}).Find(&tmodels); result.Error != nil {
 		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelId)

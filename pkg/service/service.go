@@ -110,7 +110,7 @@ func setModelOnline(s *service, modelID uint, modelVersion uint) error {
 	var tEnsembleModel datamodel.TritonModel
 	var err error
 
-	if tEnsembleModel, err = s.repository.GetTEnsembleModel(modelID, modelVersion); err != nil {
+	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelID, modelVersion); err != nil {
 		return err
 	}
 	// Load one ensemble model, which will also load all its dependent models
@@ -137,7 +137,7 @@ func setModelOffline(s *service, modelID uint, modelVersion uint) error {
 	var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = s.repository.GetTModels(modelID); err != nil {
+	if tritonModels, err = s.repository.GetTritonModels(modelID); err != nil {
 		return err
 	}
 
@@ -213,7 +213,7 @@ func (s *service) GetModelVersions(modelId uint) ([]datamodel.Version, error) {
 }
 
 func (s *service) GetTModels(modelId uint) ([]datamodel.TritonModel, error) {
-	return s.repository.GetTModels(modelId)
+	return s.repository.GetTritonModels(modelId)
 }
 
 func (s *service) ModelInfer(namespace string, modelName string, version uint, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error) {
@@ -223,7 +223,7 @@ func (s *service) ModelInfer(namespace string, modelName string, version uint, i
 		return nil, fmt.Errorf("Model not found")
 	}
 
-	ensembleModel, err := s.repository.GetTEnsembleModel(modelInDB.ID, version)
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInDB.ID, version)
 	if err != nil {
 		return nil, fmt.Errorf("Triton model not found")
 	}
@@ -449,7 +449,7 @@ func (s *service) DeleteModel(namespace string, modelName string) error {
 				return err
 			}
 		}
-		tritonModels, err := s.repository.GetTModels(modelInDB.ID)
+		tritonModels, err := s.repository.GetTritonModels(modelInDB.ID)
 		if err == nil {
 			for i := 0; i < len(tritonModels); i++ {
 				modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
@@ -475,7 +475,7 @@ func (s *service) DeleteModelVersion(namespace string, modelName string, version
 		return err
 	}
 
-	tritonModels, err := s.repository.GetTModelVersions(modelInDB.ID, modelVersionInDB.Version)
+	tritonModels, err := s.repository.GetTritonModelVersions(modelInDB.ID, modelVersionInDB.Version)
 	if err == nil {
 		for i := 0; i < len(tritonModels); i++ {
 			modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)

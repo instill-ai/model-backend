@@ -1,5 +1,4 @@
 import grpc from 'k6/net/grpc';
-import grpc from 'k6/net/grpc';
 import { check, sleep, group } from 'k6';
 import http from "k6/http";
 import {FormData} from "https://jslib.k6.io/formdata/0.0.2/index.js";
