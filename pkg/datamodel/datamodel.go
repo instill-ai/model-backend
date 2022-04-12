@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -79,25 +80,11 @@ type Version struct {
 	Status ValidStatus `sql:"type:valid_status"`
 
 	// Model version metadata
-	Metadata JSONB `gorm:"type:jsonb"`
+	Metadata datatypes.JSON `gorm:"type:jsonb"`
 
 	// GitHub information corresponding to a model version
 	// It will empty if model is created by local file
 	Github GitHub `gorm:"type:jsonb"`
-}
-
-type JSONB map[string]interface{}
-
-func (j JSONB) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(j)
-	return string(valueString), err
-}
-
-func (j *JSONB) Scan(value interface{}) error {
-	if err := json.Unmarshal(value.([]byte), &j); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (j GitHub) Value() (driver.Value, error) {
