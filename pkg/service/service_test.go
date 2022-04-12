@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"gorm.io/gorm"
 
-	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 

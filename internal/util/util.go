@@ -12,11 +12,12 @@ import (
 	"strings"
 
 	"github.com/gernest/front"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing"
+
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
 func IsGitHubURL(input string) bool {
