@@ -42,7 +42,7 @@ export default function (data) {
       });
       check(http.request("GET", `${apiHost}/__readiness`), {
         "GET /__readiness response status is 200": (r) => r.status === 200,
-      });      
+      });
     });
   }
 
@@ -113,7 +113,7 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",          
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -162,7 +162,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -183,9 +183,9 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
           "POST /models/upload (multipart) task det response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",          
+          r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",          
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 2,
       });
@@ -233,7 +233,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -251,7 +251,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",             
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 2,
       });
@@ -276,7 +276,7 @@ export default function (data) {
           [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
           r.json().model_version.created_at !== undefined,
           [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,     
+          r.json().model_version.updated_at !== undefined,
           [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
           r.json().model_version.status === "STATUS_ONLINE",
       });
@@ -391,7 +391,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -501,9 +501,9 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.task": (r) =>
           r.json().model.task === "TASK_DETECTION",
           "POST /models/upload (multipart) task det response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",          
+          r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",          
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -624,7 +624,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -745,7 +745,7 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -809,7 +809,7 @@ export default function (data) {
           "POST /models/upload (multipart) task det response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -873,7 +873,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",                    
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
       });
@@ -892,7 +892,7 @@ export default function (data) {
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",            
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
           "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 2,
       });
@@ -964,7 +964,7 @@ export default function (data) {
         "name": model_name,
         "github": {
           "repo_url": "https://github.com/Phelan164/test-repo.git",
-        }  
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -979,7 +979,7 @@ export default function (data) {
           "POST /models by github task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_GITHUB",
           "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",                    
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
           "POST /models by github task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 1,
           "POST /models by github task cls response model.model_versions[0].description": (r) =>
@@ -1044,7 +1044,7 @@ export default function (data) {
           "git_ref": {
             "commit": "641c76de930003ac9f8dfc4d6b7430a9a98e305b"
         }
-        }  
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -1059,7 +1059,7 @@ export default function (data) {
           "POST /models by github task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_GITHUB",
           "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",             
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
           "POST /models by github task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 2,
           "POST /models by github task cls response model.model_versions[1].description": (r) =>
@@ -1078,8 +1078,8 @@ export default function (data) {
           r.json().model.model_versions[1].github.repo_url === "https://github.com/Phelan164/test-repo.git",
           "POST /models by github task cls response model.model_versions[1].github.git_ref.commit": (r) =>
           r.json().model.model_versions[1].github.git_ref.commit === "641c76de930003ac9f8dfc4d6b7430a9a98e305b",
-      });   
-      
+      });
+
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
         "name": model_name,
         "github": {
@@ -1087,7 +1087,7 @@ export default function (data) {
           "git_ref": {
             "tag": "v1.0"
         }
-        }  
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -1102,7 +1102,7 @@ export default function (data) {
           "POST /models by github task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_GITHUB",
           "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",             
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
           "POST /models by github task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 3,
           "POST /models by github task cls response model.model_versions[0].description": (r) =>
@@ -1130,7 +1130,7 @@ export default function (data) {
           "git_ref": {
             "branch": "feat-a"
         }
-        }  
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -1145,7 +1145,7 @@ export default function (data) {
           "POST /models by github task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_GITHUB",
           "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",             
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
           "POST /models by github task cls response model.model_versions.length": (r) =>
           r.json().model.model_versions.length === 4,
           "POST /models by github task cls response model.model_versions[3].description": (r) =>
@@ -1179,7 +1179,7 @@ export default function (data) {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github invalid url status": (r) =>
-          r.status === 400, 
+          r.status === 400,
       });
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
@@ -1194,7 +1194,7 @@ export default function (data) {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github invalid url status": (r) =>
-          r.status === 400, 
+          r.status === 400,
       });
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
@@ -1209,7 +1209,7 @@ export default function (data) {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github invalid url status": (r) =>
-          r.status === 400, 
+          r.status === 400,
       });
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
@@ -1221,7 +1221,7 @@ export default function (data) {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github invalid url status": (r) =>
-          r.status === 400, 
+          r.status === 400,
       });
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
@@ -1230,17 +1230,17 @@ export default function (data) {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github missing name status": (r) =>
-          r.status === 400, 
-      });   
-      
+          r.status === 400,
+      });
+
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
         "name": model_name,
       }), {
         headers: genHeader("application/json"),
       }), {
         "POST /models by github missing github_url status": (r) =>
-          r.status === 400, 
-      });         
+          r.status === 400,
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {

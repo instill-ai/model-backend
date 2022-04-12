@@ -54,7 +54,7 @@ export default () => {
         });
         let response = client.invoke('instill.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {});
         check(response, {
-            'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument, 
+            'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
         client.close();
@@ -444,16 +444,16 @@ export default () => {
             "name": model_name,
             "github": {
                 "repo_url": "https://github.com/Phelan164/test-repo.git",
-            }         
+            }
         }), {
-            'status': (r) => r && r.status == grpc.StatusOK, 
+            'status': (r) => r && r.status == grpc.StatusOK,
             'model_name': (r) => r && r.message.model.name == model_name,
             'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
             'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
             'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions': (r) => r && r.message.model.modelVersions.length == 1, 
+            'modelVersions': (r) => r && r.message.model.modelVersions.length == 1,
             'modelVersions status': (r) => r && r.message.model.modelVersions[0].status == "STATUS_OFFLINE",
-            'modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, 
+            'modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1,
             'modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId != undefined,
             'modelVersions description': (r) => r && r.message.model.modelVersions[0].description != undefined,
             'modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt != undefined,
@@ -488,16 +488,16 @@ export default () => {
                 "git_ref": {
                     "commit": "641c76de930003ac9f8dfc4d6b7430a9a98e305b"
                 }
-            }          
+            }
         }), {
-            '2nd status': (r) => r && r.status == grpc.StatusOK, 
+            '2nd status': (r) => r && r.status == grpc.StatusOK,
             '2nd model_name': (r) => r && r.message.model.name == model_name,
             '2nd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
             '2nd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
             '2nd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 2nd': (r) => r && r.message.model.modelVersions.length == 2, 
+            'modelVersions 2nd': (r) => r && r.message.model.modelVersions.length == 2,
             'modelVersions 2nd status': (r) => r && r.message.model.modelVersions[1].status == "STATUS_OFFLINE",
-            'modelVersions 2nd version': (r) => r && r.message.model.modelVersions[1].version == 2, 
+            'modelVersions 2nd version': (r) => r && r.message.model.modelVersions[1].version == 2,
             'modelVersions 2nd modelId': (r) => r && r.message.model.modelVersions[1].modelId != undefined,
             'modelVersions 2nd description': (r) => r && r.message.model.modelVersions[1].description != undefined,
             'modelVersions 2nd createdAt': (r) => r && r.message.model.modelVersions[1].createdAt != undefined,
@@ -513,16 +513,16 @@ export default () => {
                 "git_ref": {
                     "tag": "v1.0"
                 }
-            }          
+            }
         }), {
-            '3rd status': (r) => r && r.status == grpc.StatusOK, 
+            '3rd status': (r) => r && r.status == grpc.StatusOK,
             '3rd model_name': (r) => r && r.message.model.name == model_name,
             '3rd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
             '3rd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
             '3rd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 3, 
+            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 3,
             'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[2].status == "STATUS_OFFLINE",
-            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[2].version == 3, 
+            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[2].version == 3,
             'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[2].modelId != undefined,
             'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[2].description != undefined,
             'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[2].createdAt != undefined,
@@ -538,23 +538,23 @@ export default () => {
                 "git_ref": {
                     "branch": "feat-a"
                 }
-            }          
+            }
         }), {
-            'status': (r) => r && r.status == grpc.StatusOK, 
+            'status': (r) => r && r.status == grpc.StatusOK,
             'model_name': (r) => r && r.message.model.name == model_name,
             'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
             'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
             'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 4, 
+            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 4,
             'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[3].status == "STATUS_OFFLINE",
-            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[3].version == 4, 
+            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[3].version == 4,
             'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[3].modelId != undefined,
             'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[3].description != undefined,
             'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[3].createdAt != undefined,
             'modelVersions 3rd updatedAt': (r) => r && r.message.model.modelVersions[3].updatedAt != undefined,
             'modelVersions 3rd github repoUrl': (r) => r && r.message.model.modelVersions[3].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
             'modelVersions 3rd github gitRef branch': (r) => r && r.message.model.modelVersions[3].github.gitRef.branch == "feat-a",
-        });        
+        });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
@@ -563,9 +563,9 @@ export default () => {
                 "git_ref": {
                     "branch": "non-existed"
                 }
-            }          
+            }
         }), {
-            'status': (r) => r && r.status == grpc.StatusInvalidArgument, 
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
@@ -575,9 +575,9 @@ export default () => {
                 "git_ref": {
                     "tag": "non-existed"
                 }
-            }          
+            }
         }), {
-            'status': (r) => r && r.status == grpc.StatusInvalidArgument, 
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
@@ -587,19 +587,19 @@ export default () => {
                 "git_ref": {
                     "commit": "non-existed"
                 }
-            }          
+            }
         }), {
-            'status': (r) => r && r.status == grpc.StatusInvalidArgument, 
-        });        
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
             "github": {
                 "repo_url": "https://github.com/Phelan164/invalid-repo.git",
-            }  
+            }
         }), {
-            'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument, 
-        });        
+            'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "github": {
@@ -607,23 +607,23 @@ export default () => {
                 "git_ref": {
                     "tag": "v1.0"
                 }
-            }         
+            }
         }), {
-            'missing name status': (r) => r && r.status == grpc.StatusFailedPrecondition, 
-        });     
-        
+            'missing name status': (r) => r && r.status == grpc.StatusFailedPrecondition,
+        });
+
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
         }), {
-            'missing github url status': (r) => r && r.status == grpc.StatusFailedPrecondition, 
-        });     
+            'missing github url status': (r) => r && r.status == grpc.StatusFailedPrecondition,
+        });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name}), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
-        });             
+        });
 
         client.close();
-    });    
+    });
 
     sleep(1);
 };
