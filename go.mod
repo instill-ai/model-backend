@@ -27,7 +27,6 @@ require (
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220405104634-05079661392a
 	github.com/knadh/koanf v1.4.0
 	github.com/mitchellh/mapstructure v1.4.3
 	gopkg.in/src-d/go-git.v4 v4.13.1
@@ -41,8 +40,11 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-github/v43 v43.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220412141851-6d2ec225afb9 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

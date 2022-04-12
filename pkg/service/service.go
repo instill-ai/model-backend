@@ -97,11 +97,21 @@ func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tr
 	for i := 0; i < len(versions); i++ {
 		vers = append(vers, createModelVersion(versions[i]))
 	}
+	visibility := modelPB.Model_VISIBILITY_PUBLIC
+	if modelInDB.Visibility == modelPB.Model_VISIBILITY_PRIVATE.String() {
+		visibility = modelPB.Model_VISIBILITY_PRIVATE
+	}
+	source := modelPB.Model_SOURCE_LOCAL
+	if modelInDB.Source == modelPB.Model_SOURCE_GITHUB.String() {
+		source = modelPB.Model_SOURCE_GITHUB
+	}
 	return &modelPB.Model{
 		Name:          modelInDB.Name,
 		FullName:      modelInDB.FullName,
 		Id:            uint64(modelInDB.ID),
 		Task:          modelPB.Model_Task(modelInDB.Task),
+		Source:        source,
+		Visibility:    visibility,
 		ModelVersions: vers,
 	}
 }
@@ -448,9 +458,12 @@ func (s *service) DeleteModel(namespace string, modelName string) error {
 			if err := setModelOffline(s, modelInDB.ID, modelVersionsInDB[i].Version); err != nil {
 				return err
 			}
+			// remove README.md
+			_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, namespace, modelName, (i + 1)))
 		}
 		tritonModels, err := s.repository.GetTritonModels(modelInDB.ID)
 		if err == nil {
+			// remove model folders
 			for i := 0; i < len(tritonModels); i++ {
 				modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
 				_ = os.RemoveAll(modelDir)
@@ -482,6 +495,8 @@ func (s *service) DeleteModelVersion(namespace string, modelName string, version
 			_ = os.RemoveAll(modelDir)
 		}
 	}
+	// remove README.md
+	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, namespace, modelName, version))
 
 	modelVersionsInDB, err := s.GetModelVersions(modelInDB.ID)
 	if err != nil {

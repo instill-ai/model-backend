@@ -1,10 +1,14 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gernest/front"
@@ -53,6 +57,7 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 		return &ModelMeta{}, err
 	}
 	var modelMeta ModelMeta
+	fmt.Println(">>>> meta ", meta)
 	err = mapstructure.Decode(meta, &modelMeta)
 
 	return &modelMeta, err
@@ -102,4 +107,47 @@ func GitHubClone(dir string, github datamodel.GitHub) error {
 	}
 
 	return err
+}
+
+type GitHubInfo struct {
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+}
+
+func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
+	if repo == "" {
+		return GitHubInfo{}, fmt.Errorf("invalid repo URL")
+	}
+
+	splited_elems := strings.Split(repo, "github.com/")
+	if len(splited_elems) < 2 {
+		return GitHubInfo{}, fmt.Errorf("invalid repo URL")
+	}
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v", strings.Replace(splited_elems[len(splited_elems)-1], ".git", "", 1)))
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+	githubRepoInfo := GitHubInfo{}
+	err = json.Unmarshal(body, &githubRepoInfo)
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+	return githubRepoInfo, nil
+}
+
+func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, version uint) {
+	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, version)
+	files, err := filepath.Glob(path)
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		if err := os.RemoveAll(f); err != nil {
+			panic(err)
+		}
+	}
 }

@@ -8,6 +8,8 @@ ALTER TABLE "version" ALTER COLUMN "github" TYPE JSON;
 ALTER TABLE "model" DROP "created_at";
 ALTER TABLE "model" DROP "updated_at";
 ALTER TABLE "model" DROP "deleted_at";
+ALTER TABLE "model" DROP "visibility";
+ALTER TABLE "model" DROP "source";
 ALTER TABLE "version" DROP "deleted_at";
 ALTER TABLE "version" DROP "id";
 ALTER TABLE "triton_model" DROP "created_at";

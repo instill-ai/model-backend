@@ -91,14 +91,14 @@ func isEnsembleConfig(configPath string) bool {
 	return strings.Contains(fileString, "platform: \"ensemble\"")
 }
 
-func unzip(filePath string, dstDir string, namespace string, uploadedModel *datamodel.Model) bool {
+func unzip(filePath string, dstDir string, namespace string, uploadedModel *datamodel.Model) (string, error) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return false
+		return "", err
 	}
 	defer archive.Close()
-
+	var readmeFilePath string
 	var createdTModels []datamodel.TritonModel
 	var currentNewModelName string
 	var currentOldModelName string
@@ -113,7 +113,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return false
+			return "", fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
 			dirName := f.Name
@@ -157,18 +157,21 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", namespace, uploadedModel.Name, subStrs[0], uploadedModel.Versions[0].Version)
 		newModelName := subStrs[0]
 		filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
-
+		if strings.Contains(f.Name, "README.md") {
+			readmeFilePath = filePath
+		}
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return false
+			return "", err
 		}
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return false
+			return "", err
 		}
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return false
+			return "", err
 		}
+
 		dstFile.Close()
 		fileInArchive.Close()
 		// Update ModelName in config.pbtxt
@@ -179,7 +182,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 			}
 			err = updateConfigModelName(filePath, oldModelName, newModelName)
 			if err != nil {
-				return false
+				return "", err
 			}
 		}
 	}
@@ -188,7 +191,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 		for oldModelName, newModelName := range newModelNameMap {
 			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
-				return false
+				return "", err
 			}
 		}
 		for i := 0; i < len(createdTModels); i++ {
@@ -199,7 +202,7 @@ func unzip(filePath string, dstDir string, namespace string, uploadedModel *data
 		}
 	}
 	uploadedModel.TritonModels = createdTModels
-	return true
+	return readmeFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
@@ -314,9 +317,14 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 		if firstChunk { //first chunk contains file name
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
+			visibility := modelPB.Model_VISIBILITY_PRIVATE.String()
+			if fileData.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+				visibility = modelPB.Model_VISIBILITY_PUBLIC.String()
+			}
 			uploadedModel = datamodel.Model{
-				Name: fileData.Name,
-				Task: uint(fileData.Task),
+				Name:       fileData.Name,
+				Visibility: visibility,
+				Source:     modelPB.Model_SOURCE_LOCAL.String(),
 				Versions: []datamodel.Version{{
 					Description: fileData.Description,
 					Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
@@ -448,15 +456,16 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		var task = 0
-		sTask := r.FormValue("task")
-		if val, ok := util.Tasks[sTask]; ok {
-			task = val
-		} else {
-			if sTask != "" {
-				makeJsonResponse(w, 400, "Parameter Error", "Wrong CV Task value")
+		visibility := r.FormValue("visibility")
+		if visibility != "" {
+			if util.Visibility[visibility] == "" {
+				makeJsonResponse(w, 400, "Invalid parameter", "Visibility is invalid")
 				return
+			} else {
+				visibility = util.Visibility[visibility]
 			}
+		} else {
+			visibility = modelPB.Model_VISIBILITY_PRIVATE.String()
 		}
 
 		err := r.ParseMultipartForm(4 << 20)
@@ -503,9 +512,10 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 				Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
 				Version:     1,
 			}},
-			Name:      modelName,
-			Task:      uint(task),
-			Namespace: username,
+			Name:       modelName,
+			Namespace:  username,
+			Visibility: visibility,
+			Source:     modelPB.Model_SOURCE_LOCAL.String(),
 		}
 
 		db := database.GetConnection()
@@ -519,20 +529,42 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			if err == nil {
 				uploadedModel.Versions[0].Version = latestVersion.Version + 1
 			}
-			if modelInDB.Task != uploadedModel.Task {
-				makeJsonResponse(w, 400, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+		}
+
+		readmeFilePath, err := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
+		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
+		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+			makeJsonResponse(w, 400, "Add Model Error", err.Error())
+			return
+		}
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+			makeJsonResponse(w, 400, "Add Model Error", err.Error())
+			return
+		}
+		if modelMeta.Task == "" {
+			uploadedModel.Task = 0
+		} else {
+			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+				uploadedModel.Task = uint(val)
+			} else {
+				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+				makeJsonResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 				return
 			}
 		}
-		isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, &uploadedModel)
-		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
-		if !isOk {
-			makeJsonResponse(w, 400, "Add Model Error", "Could not extract zip file")
+
+		if uploadedModel.Versions[0].Version > 1 && modelInDB.Task != uploadedModel.Task {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+			makeJsonResponse(w, 400, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
 			return
 		}
 
 		resModel, err := modelService.CreateModelBinaryFileUpload(username, &uploadedModel)
 		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -542,6 +574,7 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		var buffer bytes.Buffer
 		err = m.Marshal(&buffer, &modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
 		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -568,21 +601,41 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		if err == nil {
 			uploadedModel.Versions[0].Version = latestVersion.Version + 1
 		}
-
-		if modelInDB.Task != uploadedModel.Task {
-			return makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
-		}
 	}
 
 	uploadedModel.Namespace = username
+
 	// extract zip file from tmp to models directory
-	isOk := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
+	readmeFilePath, err := unzip(tmpFile, configs.Config.TritonServer.ModelStore, username, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
-	if !isOk {
-		return makeError(codes.InvalidArgument, "Save File Error", "Could not extract zip file")
+	if err != nil {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
+	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+	if err != nil {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+		return makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	}
+	if modelMeta.Task == "" {
+		uploadedModel.Task = 0
+	} else {
+		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			uploadedModel.Task = uint(val)
+		} else {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+			return makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+		}
+	}
+
+	if uploadedModel.Versions[0].Version > 1 && modelInDB.Task != uploadedModel.Task {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+		return makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+	}
+
 	resModel, err := s.service.CreateModelBinaryFileUpload(username, uploadedModel)
 	if err != nil {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
 		return err
 	}
 	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: resModel})
@@ -607,7 +660,7 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 	}
 
 	modelSrcDir := fmt.Sprintf("/tmp/%v", uuid.New().String())
-	githubInfo := datamodel.GitHub{
+	github := datamodel.GitHub{
 		RepoUrl: in.Github.RepoUrl,
 		GitRef: datamodel.GitRef{
 			Branch: in.Github.GitRef.GetBranch(),
@@ -615,39 +668,32 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 			Commit: in.Github.GitRef.GetCommit(),
 		},
 	}
-	err = util.GitHubClone(modelSrcDir, githubInfo)
+	err = util.GitHubClone(modelSrcDir, github)
 	if err != nil {
 		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
+	githubInfo, err := util.GetGitHubRepoInfo(in.Github.RepoUrl)
+	if err != nil {
+		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	}
+	visibility := util.Visibility[githubInfo.Visibility]
+	if in.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		visibility = modelPB.Model_VISIBILITY_PUBLIC.String()
+	} else if in.Visibility == modelPB.Model_VISIBILITY_PRIVATE {
+		visibility = modelPB.Model_VISIBILITY_PRIVATE.String()
+	}
+
 	githubModel := datamodel.Model{
-		Name:      in.Name,
-		Namespace: username,
+		Name:       in.Name,
+		Namespace:  username,
+		Source:     modelPB.Model_SOURCE_GITHUB.String(),
+		Visibility: visibility,
 		Versions: []datamodel.Version{{
-			Description: in.Description,
 			Version:     1,
 			Status:      datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
-			Github:      githubInfo,
+			Github:      github,
+			Description: githubInfo.Description,
 		}},
-	}
-
-	readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, username, &githubModel)
-	if err != nil {
-		return &modelPB.CreateModelByGitHubResponse{}, err
-	}
-	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-	if err != nil || modelMeta.Task == "" {
-		return &modelPB.CreateModelByGitHubResponse{}, err
-	}
-
-	if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-		githubModel.Task = uint(val)
-	} else {
-		if modelMeta.Task != "" {
-			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md do not contain valid task information")
-		} else {
-			githubModel.Task = 0
-		}
 	}
 
 	modelInDB, err := s.service.GetModelByName(username, in.Name)
@@ -656,15 +702,38 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 		if err == nil {
 			githubModel.Versions[0].Version = latestVersion.Version + 1
 		}
+	}
 
-		if modelInDB.Task != githubModel.Task {
-			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
+	readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, username, &githubModel)
+	if err != nil {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
+		return &modelPB.CreateModelByGitHubResponse{}, err
+	}
+	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+	if err != nil || modelMeta.Task == "" {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
+		return &modelPB.CreateModelByGitHubResponse{}, err
+	}
+	if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+		githubModel.Task = uint(val)
+	} else {
+		if modelMeta.Task != "" {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
+			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+		} else {
+			githubModel.Task = 0
 		}
+	}
+	if githubModel.Versions[0].Version > 1 && modelInDB.Task != githubModel.Task { // All versions need to be same task
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
+		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
 	}
 
 	resModel, err := s.service.CreateModelBinaryFileUpload(username, &githubModel)
 
 	if err != nil {
+		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
 		return &modelPB.CreateModelByGitHubResponse{}, err
 	}
 

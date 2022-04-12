@@ -5,6 +5,11 @@ var Tasks = map[string]int{
 	"TASK_DETECTION":      2,
 }
 
+var Visibility = map[string]string{
+	"public":  "VISIBILITY_PUBLIC",
+	"private": "VISIBILITY_PRIVATE",
+}
+
 const (
 	_  = iota
 	KB = 1 << (10 * iota)

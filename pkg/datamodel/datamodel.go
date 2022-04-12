@@ -21,6 +21,10 @@ type Model struct {
 
 	Task uint `json:"task,omitempty"`
 
+	Visibility string `json:"visibility,omitempty"`
+
+	Source string `json:"source,omitempty"`
+
 	// Not stored in DB, only used for processing
 	FullName     string
 	TritonModels []TritonModel `gorm:"foreignKey:ModelID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

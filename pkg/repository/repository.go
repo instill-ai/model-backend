@@ -43,6 +43,8 @@ var GetModelSelectedFields = []string{
 	`"model"."id"`,
 	`"model"."name"`,
 	`"model"."task"`,
+	`"model"."visibility"`,
+	`"model"."source"`,
 	`CONCAT(namespace, '/', name) as full_name`,
 }
 
@@ -68,7 +70,6 @@ func (r *repository) GetModelByName(namespace string, modelName string) (datamod
 func (r *repository) ListModels(query datamodel.ListModelQuery) ([]datamodel.Model, error) {
 	var modelList []datamodel.Model
 	r.db.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Where("namespace", query.Namespace).Find(&modelList)
-
 	return modelList, nil
 }
 
