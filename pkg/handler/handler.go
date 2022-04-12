@@ -538,22 +538,26 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			makeJsonResponse(w, 400, "Add Model Error", err.Error())
 			return
 		}
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
-			makeJsonResponse(w, 400, "Add Model Error", err.Error())
-			return
-		}
-		if modelMeta.Task == "" {
-			uploadedModel.Task = 0
-		} else {
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				uploadedModel.Task = uint(val)
-			} else {
+		if _, err := os.Stat(readmeFilePath); err == nil {
+			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+			if err != nil {
 				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
-				makeJsonResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
+				makeJsonResponse(w, 400, "Add Model Error", err.Error())
 				return
 			}
+			if modelMeta.Task == "" {
+				uploadedModel.Task = 0
+			} else {
+				if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+					uploadedModel.Task = uint(val)
+				} else {
+					util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+					makeJsonResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
+					return
+				}
+			}
+		} else {
+			uploadedModel.Task = 0
 		}
 
 		if uploadedModel.Versions[0].Version > 1 && modelInDB.Task != uploadedModel.Task {
@@ -612,20 +616,24 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
 		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
-	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-	if err != nil {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
-		return makeError(codes.InvalidArgument, "Add Model Error", err.Error())
-	}
-	if modelMeta.Task == "" {
-		uploadedModel.Task = 0
-	} else {
-		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-			uploadedModel.Task = uint(val)
-		} else {
+	if _, err := os.Stat(readmeFilePath); err == nil {
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil {
 			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
-			return makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+			return makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 		}
+		if modelMeta.Task == "" {
+			uploadedModel.Task = 0
+		} else {
+			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+				uploadedModel.Task = uint(val)
+			} else {
+				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, uploadedModel.Name, uploadedModel.Versions[0].Version)
+				return makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+			}
+		}
+	} else {
+		uploadedModel.Task = 0
 	}
 
 	if uploadedModel.Versions[0].Version > 1 && modelInDB.Task != uploadedModel.Task {
@@ -705,26 +713,31 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 	}
 
 	readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, username, &githubModel)
+	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	if err != nil {
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
 		return &modelPB.CreateModelByGitHubResponse{}, err
 	}
-	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-	modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-	if err != nil || modelMeta.Task == "" {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
-		return &modelPB.CreateModelByGitHubResponse{}, err
-	}
-	if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-		githubModel.Task = uint(val)
-	} else {
-		if modelMeta.Task != "" {
+	if _, err := os.Stat(readmeFilePath); err == nil {
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil || modelMeta.Task == "" {
 			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
-			return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
-		} else {
-			githubModel.Task = 0
+			return &modelPB.CreateModelByGitHubResponse{}, err
 		}
+		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			githubModel.Task = uint(val)
+		} else {
+			if modelMeta.Task != "" {
+				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
+				return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+			} else {
+				githubModel.Task = 0
+			}
+		}
+	} else {
+		githubModel.Task = 0
 	}
+
 	if githubModel.Versions[0].Version > 1 && modelInDB.Task != githubModel.Task { // All versions need to be same task
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, username, githubModel.Name, githubModel.Versions[0].Version)
 		return &modelPB.CreateModelByGitHubResponse{}, makeError(codes.InvalidArgument, "Invalid task value", fmt.Sprintf("The model have task %v which need to be consistency", modelInDB.Task))
