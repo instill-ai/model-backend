@@ -131,7 +131,7 @@ func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (imgsBytes
 }
 
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
-	inputs := req.MultipartForm.File["inputs"]
+	inputs := req.MultipartForm.File["file"]
 	for _, content := range inputs {
 		file, err := content.Open()
 		if err != nil {

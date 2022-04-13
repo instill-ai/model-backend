@@ -19,7 +19,6 @@ import (
 func upload(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	task := c.String("task")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File model do not exist, you could download sample-models by scripts/quick-download.sh")
 	}
@@ -61,16 +60,9 @@ func upload(c *cli.Context) error {
 			log.Fatalf("Could not read the file %v", filePath)
 		}
 		if firstChunk {
-			cvt := modelPB.Model_TASK_UNSPECIFIED
-			if task == modelPB.Model_TASK_DETECTION.String() {
-				cvt = modelPB.Model_TASK_DETECTION
-			} else if task == modelPB.Model_TASK_CLASSIFICATION.String() {
-				cvt = modelPB.Model_TASK_CLASSIFICATION
-			}
 			err = streamUploader.Send(&modelPB.CreateModelBinaryFileUploadRequest{
 				Name:        modelName,
 				Description: "YoloV4 for object detection",
-				Task:        cvt,
 				Bytes:       buf[:n],
 			})
 			firstChunk = false
@@ -154,26 +146,31 @@ func predict(c *cli.Context) error {
 	buf := make([]byte, chunkSize)
 	firstChunk := true
 
-	file, err := os.Open(filePath)
+	file1, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Could not open the file %v", filePath)
 	}
+	fi1, _ := file1.Stat()
+	defer file1.Close()
 
-	defer file.Close()
-
+	var n int
+	var errRead error
 	for {
-		n, errRead := file.Read(buf)
+		n, errRead = file1.Read(buf)
 		if errRead != nil {
 			if errRead == io.EOF {
 				break
+			} else {
+				log.Fatalf("Could not read the file1 %v", filePath)
 			}
-			log.Fatalf("Could not read the file %v", filePath)
 		}
+
 		if firstChunk {
 			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
-				Name:    modelName,
-				Version: uint64(modelVersion),
-				Bytes:   buf[:n],
+				Name:        modelName,
+				Version:     uint64(modelVersion),
+				FileLengths: []uint64{uint64(fi1.Size())},
+				Bytes:       buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -216,12 +213,6 @@ func main() {
 						Name:     "name",
 						Aliases:  []string{"n"},
 						Usage:    "model `NAME`",
-						Required: false,
-					},
-					&cli.StringFlag{
-						Name:     "task",
-						Aliases:  []string{"cv"},
-						Usage:    "model `TASK`",
 						Required: false,
 					},
 				},

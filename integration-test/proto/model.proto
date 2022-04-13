@@ -11,10 +11,31 @@ import "google/protobuf/timestamp.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 
+// GitRef represents the git reference
+message GitRef {
+  // git reference
+  oneof ref {
+    // git branch
+    string branch = 1;
+    // git tag
+    string tag = 2;
+    // git commit
+    string commit = 3;
+  }
+}
+
+// GitHub represents the GitHub source a model is created from
+message GitHub {
+  // GitHub repository URL
+  string repo_url = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // git reference
+  GitRef git_ref = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // LivenessRequest represents a request to check a service liveness status
 message LivenessRequest {
   // Service name to check for its liveness status
-  string service = 1;
+  string service = 1 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // LivenessResponse represents a response for a service liveness status
@@ -30,13 +51,13 @@ message LivenessResponse {
   }
 
   // Status is the instance of the enum type ServingStatus
-  ServingStatus status = 1;
+  ServingStatus status = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ReadinessRequest represents a request to check a service readiness status
 message ReadinessRequest {
   // Service name to check for its readiness status
-  string service = 1;
+  string service = 1 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // ReadinessResponse represents a response for a service readiness status
@@ -52,7 +73,7 @@ message ReadinessResponse {
   }
 
   // Status is the value of ServingStatus enum type
-  ServingStatus status = 1;
+  ServingStatus status = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ModelVersion represents the version of a model
@@ -71,22 +92,24 @@ message ModelVersion {
   }
 
   // Model version
-  uint64 version = 1;
+  uint64 version = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model version corresponding model ID
-  uint64 model_id = 2;
+  uint64 model_id = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model version description
-  string description = 3;
+  string description = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model version creation time
-  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp created_at = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model version update time
-  google.protobuf.Timestamp updated_at = 5;
+  google.protobuf.Timestamp updated_at = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model version status
-  Status status = 6;
+  Status status = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model GitHub source
+  // It has value when model created by CreateModelByGitHub and is empty when created by CreateModelBinaryFileUpload
+  GitHub github = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // Model represents the content of a model
 message Model {
-
   // Task enumerates the task type of a model
   enum Task {
     // Task: UNSPECIFIED
@@ -96,17 +119,40 @@ message Model {
     // Task: DETECTION
     TASK_DETECTION = 2;
   }
+  // Model visibility including public or private
+  enum Visibility {
+    // Visibility: UNSPECIFIED
+    VISIBILITY_UNSPECIFIED = 0;
+    // Visibility: PUBLIC
+    VISIBILITY_PUBLIC = 1;
+    // Visibility: PRIVATE
+    VISIBILITY_PRIVATE = 2;
+  }
+
+  // Model source
+  enum Source {
+    // Source: UNSPECIFIED
+    SOURCE_UNSPECIFIED = 0;
+    // Source: GITHUB
+    SOURCE_GITHUB = 1;
+    // Source: LOCAL
+    SOURCE_LOCAL = 2;
+  }
 
   // Model ID
-  uint64 id = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  uint64 id = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model name
-  string name = 2;
-  // Model full name (i.e., [user_name/org_name]/model_name)
+  string name = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model full name (i.e., [user_name/org_name]/full_name)
   string full_name = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model task
-  Task task = 4;
+  Task task = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model versions
-  repeated ModelVersion model_versions = 5;
+  repeated ModelVersion model_versions = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model visibility including public or private
+  Visibility visibility = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Source including 'local' or 'github' where model is imported
+  Source source = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // CreateModelBinaryFileUploadRequest represents a request to create a model
@@ -117,23 +163,42 @@ message CreateModelBinaryFileUploadRequest {
   bytes bytes = 2 [ (google.api.field_behavior) = REQUIRED ];
   // Model description
   string description = 3 [ (google.api.field_behavior) = OPTIONAL ];
-  // Model task type
-  Model.Task task = 4 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model visibility
+  // If does not specify visibility, then default will be VISIBILITY_PRIVATE
+  Model.Visibility visibility = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // CreateModelBinaryFileUploadResponse represents a response for a model
 // instance
 message CreateModelBinaryFileUploadResponse {
   // A model instance
-  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// CreateModelByGitHubRequest represents a request to create a model from a GitHub repo
+message CreateModelByGitHubRequest {
+  // Model name
+  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model GitHub source
+  GitHub github = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // Model mode including public or private
+  // If does not specify visibility, then default will be the same as the visibility of GitHub repository
+  Model.Visibility visibility = 3 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// CreateModelByGitHubResponse represents a response for a model
+// instance
+message CreateModelByGitHubResponse {
+  // A model instance
+  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // UpdateModelVersionPatch represents a patch to update a model
 message UpdateModelVersionPatch {
   // Model version description
-  string description = 1;
+  string description = 1 [ (google.api.field_behavior) = OPTIONAL ];
   // Model version status
-  ModelVersion.Status status = 2;
+  ModelVersion.Status status = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // CreateModelRequest represents a request to update a model
@@ -153,7 +218,7 @@ message UpdateModelVersionRequest {
 // UpdateModelVersionResponse represents a response for a model version instance
 message UpdateModelVersionResponse {
   // A model version instance
-  ModelVersion model_version = 1 [ (google.api.field_behavior) = REQUIRED ];
+  ModelVersion model_version = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ListModelRequest represents a request to list models
@@ -162,7 +227,7 @@ message ListModelRequest {}
 // ListModelResponse represents a response for a list of models
 message ListModelResponse {
   // A list of models
-  repeated Model models = 1;
+  repeated Model models = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
@@ -174,7 +239,7 @@ message GetModelRequest {
 // GetModelResponse represents a response for a model instance
 message GetModelResponse {
   // A model instance
-  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  Model model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // DeleteModelRequest represents a request to delete a model
@@ -221,7 +286,7 @@ message TriggerModelRequest {
 // TriggerModelResponse represents a response for the output of a model
 message TriggerModelResponse {
   // Output from a model
-  google.protobuf.Struct output = 1;
+  google.protobuf.Struct output = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // TriggerModelBinaryFileUploadRequest represents a request to trigger a model
@@ -230,63 +295,65 @@ message TriggerModelBinaryFileUploadRequest {
   string name = 1 [ (google.api.field_behavior) = REQUIRED ];
   // Model version
   uint64 version = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Model content in bytes
-  bytes bytes = 3 [ (google.api.field_behavior) = REQUIRED ];
+  // list of image's file length
+  repeated uint64 file_lengths = 3 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes bytes = 4 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TriggerModelBinaryFileUploadResponse represents a response for the output of
 // a model
 message TriggerModelBinaryFileUploadResponse {
   // Output from a model
-  google.protobuf.Struct output = 1;
+  google.protobuf.Struct output = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ClassificationOutput represents the output of classification task
 message ClassificationOutput {
-  // Classification cateogry
-  string category = 1;
+  // Classification category
+  string category = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Classification score
-  float score = 2;
+  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ClassificationOutputs represents a list of classification task outputs
 message ClassificationOutputs {
   // A list of classification outputs
-  repeated ClassificationOutput classification_outputs = 1;
+  repeated ClassificationOutput classification_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // BoundingBox represents the bounding box data structure
 message BoundingBox {
   // Bounding box top y-axis value
-  float top = 1;
+  float top = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Bounding box left x-axis value
-  float left = 2;
+  float left = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Bounding box width value
-  float width = 3;
+  float width = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Bounding box height value
-  float height = 4;
+  float height = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // BoundingBoxObject represents a predicted bounding box object
 message BoundingBoxObject {
   // Bounding box object category
-  string category = 1;
-  // Bounding box object scroe
-  float score = 2;
+  string category = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Bounding box object score
+  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Bounding box
-  BoundingBox bounding_box = 3;
+  BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // DetectionOutput represents the output of detection task
 message DetectionOutput {
-  // A list of buonding box objects
-  repeated BoundingBoxObject bounding_box_objects = 1;
+  // A list of bounding box objects
+  repeated BoundingBoxObject bounding_box_objects = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // DetectionOutputs represents a list of detection task outputs
 message DetectionOutputs {
   // A list of detection outputs
-  repeated DetectionOutput detection_outputs = 1;
+  repeated DetectionOutput detection_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // Model service responds to incoming model requests.
@@ -310,6 +377,17 @@ service ModelService {
       get : "/__readiness"
     };
   }
+
+  // CreateModelByGitHub method receives a
+  // CreateModelByGitHubRequest message and returns a
+  // CreateModelByGitHubResponse message.
+  rpc CreateModelByGitHub(CreateModelByGitHubRequest)
+      returns (CreateModelByGitHubResponse) {
+        option (google.api.http) = {
+          post : "/models"
+          body : "*"
+        };
+      }
 
   // CreateModelBinaryFileUpload method receives a
   // CreateModelBinaryFileUploadRequest message and returns a

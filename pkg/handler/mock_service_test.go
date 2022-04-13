@@ -95,7 +95,7 @@ func (mr *MockServiceMockRecorder) DeleteModel(arg0, arg1 interface{}) *gomock.C
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockService) DeleteModelVersion(arg0, arg1 string, arg2 uint64) error {
+func (m *MockService) DeleteModelVersion(arg0, arg1 string, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -139,7 +139,7 @@ func (mr *MockServiceMockRecorder) GetModelByName(arg0, arg1 interface{}) *gomoc
 }
 
 // GetModelVersion mocks base method.
-func (m *MockService) GetModelVersion(arg0, arg1 uint64) (datamodel.Version, error) {
+func (m *MockService) GetModelVersion(arg0, arg1 uint) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersion", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.Version)
@@ -154,7 +154,7 @@ func (mr *MockServiceMockRecorder) GetModelVersion(arg0, arg1 interface{}) *gomo
 }
 
 // GetModelVersionLatest mocks base method.
-func (m *MockService) GetModelVersionLatest(arg0 uint64) (datamodel.Version, error) {
+func (m *MockService) GetModelVersionLatest(arg0 uint) (datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersionLatest", arg0)
 	ret0, _ := ret[0].(datamodel.Version)
@@ -169,7 +169,7 @@ func (mr *MockServiceMockRecorder) GetModelVersionLatest(arg0 interface{}) *gomo
 }
 
 // GetModelVersions mocks base method.
-func (m *MockService) GetModelVersions(arg0 uint64) ([]datamodel.Version, error) {
+func (m *MockService) GetModelVersions(arg0 uint) ([]datamodel.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelVersions", arg0)
 	ret0, _ := ret[0].([]datamodel.Version)
@@ -199,7 +199,7 @@ func (mr *MockServiceMockRecorder) ListModels(arg0 interface{}) *gomock.Call {
 }
 
 // ModelInfer mocks base method.
-func (m *MockService) ModelInfer(arg0, arg1 string, arg2 uint64, arg3 [][]byte, arg4 modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockService) ModelInfer(arg0, arg1 string, arg2 uint, arg3 [][]byte, arg4 modelv1alpha.Model_Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInfer", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(interface{})

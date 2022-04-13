@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 
@@ -25,16 +25,16 @@ type Service interface {
 	CreateModel(model *datamodel.Model) (*datamodel.Model, error)
 	GetModelByName(namespace string, modelName string) (datamodel.Model, error)
 	CreateVersion(version datamodel.Version) (datamodel.Version, error)
-	GetModelVersion(modelId uint64, version uint64) (datamodel.Version, error)
-	GetModelVersions(modelId uint64) ([]datamodel.Version, error)
-	GetModelVersionLatest(modelId uint64) (datamodel.Version, error)
+	GetModelVersion(modelId uint, version uint) (datamodel.Version, error)
+	GetModelVersions(modelId uint) ([]datamodel.Version, error)
+	GetModelVersionLatest(modelId uint) (datamodel.Version, error)
 	GetFullModelData(namespace string, modelName string) (*modelPB.Model, error)
-	ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error)
+	ModelInfer(namespace string, modelName string, version uint, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error)
 	CreateModelBinaryFileUpload(namespace string, createdModel *datamodel.Model) (*modelPB.Model, error)
 	ListModels(namespace string) ([]*modelPB.Model, error)
 	UpdateModelVersion(namespace string, updatedInfo *modelPB.UpdateModelVersionRequest) (*modelPB.ModelVersion, error)
 	DeleteModel(namespace string, modelName string) error
-	DeleteModelVersion(namespace string, modelName string, version uint64) error
+	DeleteModelVersion(namespace string, modelName string, version uint) error
 }
 
 type service struct {
@@ -51,49 +51,82 @@ func NewService(r repository.Repository, t triton.Triton) Service {
 
 func createModelVersion(modelVersionInDB datamodel.Version) *modelPB.ModelVersion {
 	var st = modelPB.ModelVersion_STATUS_OFFLINE
-	if modelVersionInDB.Status == modelPB.ModelVersion_STATUS_ONLINE.String() {
+	if string(modelVersionInDB.Status) == modelPB.ModelVersion_STATUS_ONLINE.String() {
 		st = modelPB.ModelVersion_STATUS_ONLINE
-	} else if modelVersionInDB.Status == modelPB.ModelVersion_STATUS_ERROR.String() {
+	} else if string(modelVersionInDB.Status) == modelPB.ModelVersion_STATUS_ERROR.String() {
 		st = modelPB.ModelVersion_STATUS_ERROR
 	}
 
+	var gitRef modelPB.GitRef
+	if modelVersionInDB.Github.GitRef.Branch != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Branch{
+				Branch: modelVersionInDB.Github.GitRef.Branch,
+			},
+		}
+	} else if modelVersionInDB.Github.GitRef.Tag != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Tag{
+				Tag: modelVersionInDB.Github.GitRef.Tag,
+			},
+		}
+	} else if modelVersionInDB.Github.GitRef.Commit != "" {
+		gitRef = modelPB.GitRef{
+			Ref: &modelPB.GitRef_Commit{
+				Commit: modelVersionInDB.Github.GitRef.Commit,
+			},
+		}
+	}
+
 	return &modelPB.ModelVersion{
-		Version:     modelVersionInDB.Version,
-		ModelId:     modelVersionInDB.ModelId,
+		Version:     uint64(modelVersionInDB.Version),
+		ModelId:     uint64(modelVersionInDB.ModelID),
 		Description: modelVersionInDB.Description,
 		CreatedAt:   timestamppb.New(modelVersionInDB.CreatedAt),
 		UpdatedAt:   timestamppb.New(modelVersionInDB.UpdatedAt),
 		Status:      st,
+		Github: &modelPB.GitHub{
+			RepoUrl: modelVersionInDB.Github.RepoUrl,
+			GitRef:  &gitRef,
+		},
 	}
 }
 
-func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tritonModels []datamodel.TModel) *modelPB.Model {
+func createModelInfo(modelInDB datamodel.Model, versions []datamodel.Version, tritonModels []datamodel.TritonModel) *modelPB.Model {
 	var vers []*modelPB.ModelVersion
 	for i := 0; i < len(versions); i++ {
 		vers = append(vers, createModelVersion(versions[i]))
 	}
+	visibility := modelPB.Model_VISIBILITY_PUBLIC
+	if modelInDB.Visibility == modelPB.Model_VISIBILITY_PRIVATE.String() {
+		visibility = modelPB.Model_VISIBILITY_PRIVATE
+	}
+	source := modelPB.Model_SOURCE_LOCAL
+	if modelInDB.Source == modelPB.Model_SOURCE_GITHUB.String() {
+		source = modelPB.Model_SOURCE_GITHUB
+	}
 	return &modelPB.Model{
 		Name:          modelInDB.Name,
 		FullName:      modelInDB.FullName,
-		Id:            uint64(modelInDB.Id),
+		Id:            uint64(modelInDB.ID),
 		Task:          modelPB.Model_Task(modelInDB.Task),
+		Source:        source,
+		Visibility:    visibility,
 		ModelVersions: vers,
 	}
 }
 
-func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
-	var tEnsembleModel datamodel.TModel
+func setModelOnline(s *service, modelID uint, modelVersion uint) error {
+	var tEnsembleModel datamodel.TritonModel
 	var err error
 
-	if tEnsembleModel, err = s.repository.GetTEnsembleModel(modelID, modelVersion); err != nil {
+	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelID, modelVersion); err != nil {
 		return err
 	}
-
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
 		if err = s.repository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, datamodel.Version{
-			UpdatedAt: time.Now(),
-			Status:    modelPB.ModelVersion_STATUS_ERROR.String(),
+			Status: datamodel.ValidStatus(modelPB.ModelVersion_STATUS_ERROR.String()),
 		}); err != nil {
 			return err
 		}
@@ -101,8 +134,7 @@ func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
 	}
 
 	if err = s.repository.UpdateModelVersion(modelID, tEnsembleModel.ModelVersion, datamodel.Version{
-		UpdatedAt: time.Now(),
-		Status:    modelPB.ModelVersion_STATUS_ONLINE.String(),
+		Status: datamodel.ValidStatus(modelPB.ModelVersion_STATUS_ONLINE.String()),
 	}); err != nil {
 		return err
 	}
@@ -110,12 +142,12 @@ func setModelOnline(s *service, modelID uint64, modelVersion uint64) error {
 	return nil
 }
 
-func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
+func setModelOffline(s *service, modelID uint, modelVersion uint) error {
 
-	var tritonModels []datamodel.TModel
+	var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = s.repository.GetTModels(modelID); err != nil {
+	if tritonModels, err = s.repository.GetTritonModels(modelID); err != nil {
 		return err
 	}
 
@@ -124,8 +156,7 @@ func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
 			if err = s.repository.UpdateModelVersion(modelID, modelVersion, datamodel.Version{
-				UpdatedAt: time.Now(),
-				Status:    modelPB.ModelVersion_STATUS_ERROR.String(),
+				Status: datamodel.ValidStatus(modelPB.ModelVersion_STATUS_ERROR.String()),
 			}); err != nil {
 				return err
 			}
@@ -134,8 +165,7 @@ func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
 	}
 
 	if err := s.repository.UpdateModelVersion(modelID, modelVersion, datamodel.Version{
-		UpdatedAt: time.Now(),
-		Status:    modelPB.ModelVersion_STATUS_OFFLINE.String(),
+		Status: datamodel.ValidStatus(modelPB.ModelVersion_STATUS_OFFLINE.String()),
 	}); err != nil {
 		return err
 	}
@@ -145,7 +175,7 @@ func setModelOffline(s *service, modelID uint64, modelVersion uint64) error {
 
 func (s *service) CreateModel(model *datamodel.Model) (*datamodel.Model, error) {
 	// Validate the naming rule of model
-	if match, _ := regexp.MatchString("^[A-Za-z0-9][a-zA-Z0-9_.-]*$", model.Name); !match {
+	if match, _ := regexp.MatchString(util.MODEL_NAME_REGEX, model.Name); !match {
 		return &datamodel.Model{}, status.Error(codes.FailedPrecondition, "The name of model is invalid")
 	}
 
@@ -168,7 +198,7 @@ func (s *service) GetModelByName(namespace string, modelName string) (datamodel.
 	return s.repository.GetModelByName(namespace, modelName)
 }
 
-func (s *service) GetModelVersionLatest(modelId uint64) (datamodel.Version, error) {
+func (s *service) GetModelVersionLatest(modelId uint) (datamodel.Version, error) {
 	return s.repository.GetModelVersionLatest(modelId)
 }
 
@@ -177,33 +207,33 @@ func (s *service) CreateVersion(version datamodel.Version) (datamodel.Version, e
 		return datamodel.Version{}, err
 	}
 
-	if createdVersion, err := s.repository.GetModelVersion(version.ModelId, version.Version); err != nil {
+	if createdVersion, err := s.repository.GetModelVersion(version.ModelID, version.Version); err != nil {
 		return datamodel.Version{}, err
 	} else {
 		return createdVersion, nil
 	}
 }
 
-func (s *service) GetModelVersion(modelId uint64, version uint64) (datamodel.Version, error) {
+func (s *service) GetModelVersion(modelId uint, version uint) (datamodel.Version, error) {
 	return s.repository.GetModelVersion(modelId, version)
 }
 
-func (s *service) GetModelVersions(modelId uint64) ([]datamodel.Version, error) {
+func (s *service) GetModelVersions(modelId uint) ([]datamodel.Version, error) {
 	return s.repository.GetModelVersions(modelId)
 }
 
-func (s *service) GetTModels(modelId uint64) ([]datamodel.TModel, error) {
-	return s.repository.GetTModels(modelId)
+func (s *service) GetTModels(modelId uint) ([]datamodel.TritonModel, error) {
+	return s.repository.GetTritonModels(modelId)
 }
 
-func (s *service) ModelInfer(namespace string, modelName string, version uint64, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error) {
+func (s *service) ModelInfer(namespace string, modelName string, version uint, imgsBytes [][]byte, task modelPB.Model_Task) (interface{}, error) {
 	// Triton model name is change into
 	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
 		return nil, fmt.Errorf("Model not found")
 	}
 
-	ensembleModel, err := s.repository.GetTEnsembleModel(modelInDB.Id, version)
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInDB.ID, version)
 	if err != nil {
 		return nil, fmt.Errorf("Triton model not found")
 	}
@@ -295,39 +325,39 @@ func (s *service) ModelInfer(namespace string, modelName string, version uint64,
 	}
 }
 
-func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (datamodel.Model, []datamodel.Version, []datamodel.TModel, error) {
+func createModel(s *service, namespace string, uploadedModel *datamodel.Model) (datamodel.Model, []datamodel.Version, []datamodel.TritonModel, error) {
 
 	modelInDB, err := s.GetModelByName(namespace, uploadedModel.Name)
 	if err != nil {
 		createdModel, err := s.CreateModel(uploadedModel)
 		if err != nil {
-			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create model in DB")
 		}
 		modelInDB = *createdModel
 	}
-	latestVersion, err := s.repository.GetModelVersionLatest(modelInDB.Id)
+	latestVersion, err := s.repository.GetModelVersionLatest(modelInDB.ID)
 	if err == nil {
 		uploadedModel.Versions[0].Version = latestVersion.Version + 1
 	} else {
 		uploadedModel.Versions[0].Version = 1
 	}
-	uploadedModel.Versions[0].ModelId = modelInDB.Id
+	uploadedModel.Versions[0].ModelID = modelInDB.ID
 	versionInDB, err := s.CreateVersion(uploadedModel.Versions[0])
 	if err != nil {
-		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create model version in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create model version in DB")
 	}
 	for i := 0; i < len(uploadedModel.TritonModels); i++ {
 		tritonModel := uploadedModel.TritonModels[i]
-		tritonModel.ModelId = modelInDB.Id
+		tritonModel.ModelID = modelInDB.ID
 		tritonModel.ModelVersion = versionInDB.Version
 		err = s.repository.CreateTModel(tritonModel)
 		if err != nil {
-			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not create triton model in DB")
+			return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not create triton model in DB")
 		}
 	}
-	versions, err := s.GetModelVersions(modelInDB.Id)
+	versions, err := s.GetModelVersions(modelInDB.ID)
 	if err != nil {
-		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TModel{}, fmt.Errorf("Could not get model versions in DB")
+		return datamodel.Model{}, []datamodel.Version{}, []datamodel.TritonModel{}, fmt.Errorf("Could not get model versions in DB")
 	}
 
 	return modelInDB, versions, uploadedModel.TritonModels, nil
@@ -347,11 +377,11 @@ func (s *service) ListModels(namespace string) ([]*modelPB.Model, error) {
 	var resModels []*modelPB.Model
 	for i := 0; i < len(models); i++ {
 		md := models[i]
-		versions, err := s.GetModelVersions(md.Id)
+		versions, err := s.GetModelVersions(md.ID)
 		if err != nil {
 			return []*modelPB.Model{}, err
 		}
-		tritonModels, err := s.GetTModels(md.Id)
+		tritonModels, err := s.GetTModels(md.ID)
 		if err != nil {
 			return []*modelPB.Model{}, err
 
@@ -373,19 +403,18 @@ func (s *service) UpdateModelVersion(namespace string, in *modelPB.UpdateModelVe
 			case "status":
 				switch in.VersionPatch.Status {
 				case modelPB.ModelVersion_STATUS_ONLINE:
-					if err := setModelOnline(s, modelInDB.Id, in.Version); err != nil {
+					if err := setModelOnline(s, modelInDB.ID, uint(in.Version)); err != nil {
 						return &modelPB.ModelVersion{}, err
 					}
 				case modelPB.ModelVersion_STATUS_OFFLINE:
-					if err := setModelOffline(s, modelInDB.Id, in.Version); err != nil {
+					if err := setModelOffline(s, modelInDB.ID, uint(in.Version)); err != nil {
 						return &modelPB.ModelVersion{}, err
 					}
 				default:
 					return &modelPB.ModelVersion{}, fmt.Errorf("Wrong status value. Status should be ONLINE or OFFLINE")
 				}
 			case "description":
-				err = s.repository.UpdateModelVersion(modelInDB.Id, in.Version, datamodel.Version{
-					UpdatedAt:   time.Now(),
+				err = s.repository.UpdateModelVersion(modelInDB.ID, uint(in.Version), datamodel.Version{
 					Description: in.VersionPatch.Description,
 				})
 				if err != nil {
@@ -394,7 +423,7 @@ func (s *service) UpdateModelVersion(namespace string, in *modelPB.UpdateModelVe
 			}
 		}
 	}
-	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, in.Version)
+	modelVersionInDB, err := s.GetModelVersion(modelInDB.ID, uint(in.Version))
 	return createModelVersion(modelVersionInDB), err
 }
 
@@ -405,12 +434,12 @@ func (s *service) GetFullModelData(namespace string, modelName string) (*modelPB
 		return &modelPB.Model{}, err
 	}
 
-	versions, err := s.GetModelVersions(resModelInDB.Id)
+	versions, err := s.GetModelVersions(resModelInDB.ID)
 	if err != nil {
 		return &modelPB.Model{}, err
 	}
 
-	tritonModels, err := s.GetTModels(resModelInDB.Id)
+	tritonModels, err := s.GetTModels(resModelInDB.ID)
 	if err != nil {
 		return &modelPB.Model{}, err
 	}
@@ -423,15 +452,18 @@ func (s *service) DeleteModel(namespace string, modelName string) error {
 	if err != nil {
 		return err
 	}
-	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
+	modelVersionsInDB, err := s.GetModelVersions(modelInDB.ID)
 	if err == nil {
 		for i := 0; i < len(modelVersionsInDB); i++ {
-			if err := setModelOffline(s, modelInDB.Id, modelVersionsInDB[i].Version); err != nil {
+			if err := setModelOffline(s, modelInDB.ID, modelVersionsInDB[i].Version); err != nil {
 				return err
 			}
+			// remove README.md
+			_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, namespace, modelName, (i + 1)))
 		}
-		tritonModels, err := s.repository.GetTModels(modelInDB.Id)
+		tritonModels, err := s.repository.GetTritonModels(modelInDB.ID)
 		if err == nil {
+			// remove model folders
 			for i := 0; i < len(tritonModels); i++ {
 				modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
 				_ = os.RemoveAll(modelDir)
@@ -439,39 +471,41 @@ func (s *service) DeleteModel(namespace string, modelName string) error {
 		}
 	}
 
-	return s.repository.DeleteModel(modelInDB.Id)
+	return s.repository.DeleteModel(modelInDB.ID)
 }
 
-func (s *service) DeleteModelVersion(namespace string, modelName string, version uint64) error {
+func (s *service) DeleteModelVersion(namespace string, modelName string, version uint) error {
 	modelInDB, err := s.GetModelByName(namespace, modelName)
 	if err != nil {
 		return err
 	}
-	modelVersionInDB, err := s.GetModelVersion(modelInDB.Id, version)
+	modelVersionInDB, err := s.GetModelVersion(modelInDB.ID, version)
 	if err != nil {
 		return err
 	}
 
-	if err := setModelOffline(s, modelInDB.Id, modelVersionInDB.Version); err != nil {
+	if err := setModelOffline(s, modelInDB.ID, modelVersionInDB.Version); err != nil {
 		return err
 	}
 
-	tritonModels, err := s.repository.GetTModelVersions(modelInDB.Id, modelVersionInDB.Version)
+	tritonModels, err := s.repository.GetTritonModelVersions(modelInDB.ID, modelVersionInDB.Version)
 	if err == nil {
 		for i := 0; i < len(tritonModels); i++ {
 			modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
 			_ = os.RemoveAll(modelDir)
 		}
 	}
+	// remove README.md
+	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, namespace, modelName, version))
 
-	modelVersionsInDB, err := s.GetModelVersions(modelInDB.Id)
+	modelVersionsInDB, err := s.GetModelVersions(modelInDB.ID)
 	if err != nil {
 		return err
 	}
 
 	if len(modelVersionsInDB) > 1 {
-		return s.repository.DeleteModelVersion(modelInDB.Id, modelVersionInDB.Version)
+		return s.repository.DeleteModelVersion(modelInDB.ID, modelVersionInDB.Version)
 	} else {
-		return s.repository.DeleteModel(modelInDB.Id)
+		return s.repository.DeleteModel(modelInDB.ID)
 	}
 }

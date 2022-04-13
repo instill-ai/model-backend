@@ -182,7 +182,6 @@ func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, 
 			})
 		}
 	}
-
 	// Create inference request for specific model/version
 	modelInferRequest := inferenceserver.ModelInferRequest{
 		ModelName:    modelName,

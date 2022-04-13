@@ -54,7 +54,7 @@ export default () => {
         });
         let response = client.invoke('instill.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {});
         check(response, {
-            'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,  //TODO: need update to grpc code
+            'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
         client.close();
@@ -72,7 +72,7 @@ export default () => {
         fd_cls.append("description", randomString(20));
         fd_cls.append("task", "TASK_CLASSIFICATION");
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
+        check( http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /models/upload (multipart) task cls response status": (r) =>
@@ -86,13 +86,14 @@ export default () => {
             "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
             r.json().model.model_versions.length === 1,
         });
-
         check(client.invoke('instill.model.v1alpha.ModelService/ListModel', {}, {}), {
             'ListModel status': (r) => r && r.status === grpc.StatusOK,
             'ListModel models length': (r) => r && r.message.models.length > 0,
             'ListModel model name': (r) => r && r.message.models[0].name == model_name_cls,
             'ListModel model fullName': (r) => r && r.message.models[0].fullName === `local-user/${model_name_cls}`,
             'ListModel model task': (r) => r && r.message.models[0].task === "TASK_CLASSIFICATION",
+            'ListModel model source': (r) => r && r.message.models[0].source === "SOURCE_LOCAL",
+            'ListModel model visibility': (r) => r && r.message.models[0].visibility === "VISIBILITY_PRIVATE",
             'ListModel model modelVersions length': (r) => r && r.message.models[0].modelVersions.length > 0,
             'ListModel model modelVersions status': (r) => r && r.message.models[0].modelVersions[0].status === "STATUS_OFFLINE",
             'ListModel model modelVersions version': (r) => r && r.message.models[0].modelVersions[0].version == 1, //response is string ?
@@ -141,6 +142,8 @@ export default () => {
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
+            'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
             'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
@@ -206,10 +209,11 @@ export default () => {
             'UpdateModelVersion 2nd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
             'UpdateModelVersion 2nd modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
             'UpdateModelVersion 2nd modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 2nd modelVersion description': (r) => r && r.message.modelVersion.description == description,
+            'UpdateModelVersion 2nd modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
             'UpdateModelVersion 2nd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
             'UpdateModelVersion 2nd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
         });
+        sleep(5) // triton take time after update status
 
         let new_description = randomString(10)
         req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_OFFLINE",description: new_description}, field_mask: "status,description"}
@@ -275,6 +279,8 @@ export default () => {
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
+            'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
             'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
@@ -330,6 +336,8 @@ export default () => {
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
             'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
+            'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
             'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
             'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
             'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
@@ -423,6 +431,197 @@ export default () => {
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
+        client.close();
+    });
+
+    // CreateModelByGitHub check
+    group("Model API: CreateModelByGitHub", () => {
+        client.connect('localhost:8080', {
+            plaintext: true
+        });
+        let model_name = randomString(10)
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+            }
+        }), {
+            'status': (r) => r && r.status == grpc.StatusOK,
+            'model_name': (r) => r && r.message.model.name == model_name,
+            'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
+            'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
+            'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
+            'modelVersions': (r) => r && r.message.model.modelVersions.length == 1,
+            'modelVersions status': (r) => r && r.message.model.modelVersions[0].status == "STATUS_OFFLINE",
+            'modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1,
+            'modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId != undefined,
+            'modelVersions description': (r) => r && r.message.model.modelVersions[0].description != undefined,
+            'modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt != undefined,
+            'modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt != undefined,
+            'modelVersions repoUrl': (r) => r && r.message.model.modelVersions[0].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
+        });
+
+        sleep(5)
+        let req = {name: model_name, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
+            'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
+            'UpdateModelVersion modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
+            'UpdateModelVersion modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
+            'UpdateModelVersion modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
+            'UpdateModelVersion modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
+            'UpdateModelVersion modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        });
+        sleep(5) // triton take time after change status
+
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+            'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
+            'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
+            'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
+            'TriggerModel output classification_outputs score': (r) => r && r.message.output.classification_outputs[0].score === 1,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "commit": "641c76de930003ac9f8dfc4d6b7430a9a98e305b"
+                }
+            }
+        }), {
+            '2nd status': (r) => r && r.status == grpc.StatusOK,
+            '2nd model_name': (r) => r && r.message.model.name == model_name,
+            '2nd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
+            '2nd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
+            '2nd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
+            'modelVersions 2nd': (r) => r && r.message.model.modelVersions.length == 2,
+            'modelVersions 2nd status': (r) => r && r.message.model.modelVersions[1].status == "STATUS_OFFLINE",
+            'modelVersions 2nd version': (r) => r && r.message.model.modelVersions[1].version == 2,
+            'modelVersions 2nd modelId': (r) => r && r.message.model.modelVersions[1].modelId != undefined,
+            'modelVersions 2nd description': (r) => r && r.message.model.modelVersions[1].description != undefined,
+            'modelVersions 2nd createdAt': (r) => r && r.message.model.modelVersions[1].createdAt != undefined,
+            'modelVersions 2nd updatedAt': (r) => r && r.message.model.modelVersions[1].updatedAt != undefined,
+            'modelVersions 2nd github repoUrl': (r) => r && r.message.model.modelVersions[1].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
+            'modelVersions 2nd github gitRef commit': (r) => r && r.message.model.modelVersions[1].github.gitRef.commit == "641c76de930003ac9f8dfc4d6b7430a9a98e305b",
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "tag": "v1.0"
+                }
+            }
+        }), {
+            '3rd status': (r) => r && r.status == grpc.StatusOK,
+            '3rd model_name': (r) => r && r.message.model.name == model_name,
+            '3rd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
+            '3rd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
+            '3rd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
+            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 3,
+            'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[2].status == "STATUS_OFFLINE",
+            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[2].version == 3,
+            'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[2].modelId != undefined,
+            'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[2].description != undefined,
+            'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[2].createdAt != undefined,
+            'modelVersions 3rd updatedAt': (r) => r && r.message.model.modelVersions[2].updatedAt != undefined,
+            'modelVersions 3rd github repoUrl': (r) => r && r.message.model.modelVersions[2].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
+            'modelVersions 3rd github gitRef tag': (r) => r && r.message.model.modelVersions[2].github.gitRef.tag == "v1.0",
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "branch": "feat-a"
+                }
+            }
+        }), {
+            'status': (r) => r && r.status == grpc.StatusOK,
+            'model_name': (r) => r && r.message.model.name == model_name,
+            'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
+            'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
+            'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
+            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 4,
+            'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[3].status == "STATUS_OFFLINE",
+            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[3].version == 4,
+            'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[3].modelId != undefined,
+            'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[3].description != undefined,
+            'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[3].createdAt != undefined,
+            'modelVersions 3rd updatedAt': (r) => r && r.message.model.modelVersions[3].updatedAt != undefined,
+            'modelVersions 3rd github repoUrl': (r) => r && r.message.model.modelVersions[3].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
+            'modelVersions 3rd github gitRef branch': (r) => r && r.message.model.modelVersions[3].github.gitRef.branch == "feat-a",
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "branch": "non-existed"
+                }
+            }
+        }), {
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "tag": "non-existed"
+                }
+            }
+        }), {
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "commit": "non-existed"
+                }
+            }
+        }), {
+            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+            "github": {
+                "repo_url": "https://github.com/Phelan164/invalid-repo.git",
+            }
+        }), {
+            'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "github": {
+                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "git_ref": {
+                    "tag": "v1.0"
+                }
+            }
+        }), {
+            'missing name status': (r) => r && r.status == grpc.StatusFailedPrecondition,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
+            "name": model_name,
+        }), {
+            'missing github url status': (r) => r && r.status == grpc.StatusFailedPrecondition,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name}), {
+            'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
+        });
+
         client.close();
     });
 

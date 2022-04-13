@@ -5,6 +5,11 @@ var Tasks = map[string]int{
 	"TASK_DETECTION":      2,
 }
 
+var Visibility = map[string]string{
+	"public":  "VISIBILITY_PUBLIC",
+	"private": "VISIBILITY_PRIVATE",
+}
+
 const (
 	_  = iota
 	KB = 1 << (10 * iota)
@@ -15,3 +20,5 @@ const (
 
 const MaxBatchSize int = 32
 const MaxImageSizeBytes int = 4 * MB
+
+const MODEL_NAME_REGEX = "^[A-Za-z0-9][a-zA-Z0-9_.-]*$"
