@@ -47,6 +47,10 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handl
 
 func main() {
 	logger, _ := logger.GetZapLogger()
+	defer func() {
+		// can't handle the error due to https://github.com/uber-go/zap/issues/880
+		_ = logger.Sync()
+	}()
 	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
 	if err := configs.Init(); err != nil {
@@ -54,6 +58,7 @@ func main() {
 	}
 
 	db := database.GetConnection()
+	defer database.Close(db)
 
 	// Create tls based credential.
 	var creds credentials.TransportCredentials
@@ -96,12 +101,17 @@ func main() {
 	}
 
 	grpcS := grpc.NewServer(grpcServerOpts...)
-	r := repository.NewRepository(db)
-	t := triton.NewTriton()
-	s := service.NewService(r, t)
-	h := handler.NewHandler(s, t)
 
-	modelPB.RegisterModelServiceServer(grpcS, h)
+	triton := triton.NewTriton()
+	triton.Close()
+
+	modelPB.RegisterModelServiceServer(
+		grpcS,
+		handler.NewHandler(
+			service.NewService(
+				repository.NewRepository(db),
+				triton),
+			triton))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -147,10 +157,9 @@ func main() {
 		Handler: grpcHandlerFunc(grpcS, gwS),
 	}
 
-	errSig := make(chan error)
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
 	quitSig := make(chan os.Signal, 1)
-
+	errSig := make(chan error)
 	if configs.Config.Server.HTTPS.Cert != "" && configs.Config.Server.HTTPS.Key != "" {
 		go func() {
 			if err := httpServer.ListenAndServeTLS(configs.Config.Server.HTTPS.Cert, configs.Config.Server.HTTPS.Key); err != nil {
@@ -175,13 +184,8 @@ func main() {
 	case err := <-errSig:
 		logger.Error(fmt.Sprintf("Fatal error: %v\n", err))
 	case <-quitSig:
+		logger.Info("Shutting down server...")
+		grpcS.GracefulStop()
 	}
 
-	logger.Info("Shutting down server...")
-
-	grpcS.GracefulStop()
-	database.Close(db)
-	t.Close()
-
-	_ = logger.Sync()
 }
