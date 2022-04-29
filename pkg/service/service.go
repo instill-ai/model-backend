@@ -52,18 +52,10 @@ func NewService(r repository.Repository, t triton.Triton) Service {
 }
 
 func createModelInstance(modelInDB datamodel.Model, modelInstanceInDB datamodel.Instance) *modelPB.ModelInstance {
-	var st = modelPB.ModelInstance_STATUS_OFFLINE
-	if string(modelInstanceInDB.Status) == modelPB.ModelInstance_STATUS_ONLINE.String() {
-		st = modelPB.ModelInstance_STATUS_ONLINE
-	} else if string(modelInstanceInDB.Status) == modelPB.ModelInstance_STATUS_ERROR.String() {
-		st = modelPB.ModelInstance_STATUS_ERROR
-	}
-
 	var configuration modelPB.Configuration
 	var githubConfigObj datamodel.InstanceConfiguration
 	_ = json.Unmarshal(modelInstanceInDB.Config, &githubConfigObj)
 
-	var source = modelPB.ModelDefinition_SOURCE_GITHUB
 	if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_GITHUB) {
 		configuration = modelPB.Configuration{
 			Repo:    githubConfigObj.Repo,
@@ -72,7 +64,6 @@ func createModelInstance(modelInDB datamodel.Model, modelInstanceInDB datamodel.
 		}
 	} else if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_LOCAL) {
 		configuration = modelPB.Configuration{}
-		source = modelPB.ModelDefinition_SOURCE_LOCAL
 	}
 
 	return &modelPB.ModelInstance{
@@ -81,10 +72,10 @@ func createModelInstance(modelInDB datamodel.Model, modelInstanceInDB datamodel.
 		ModelDefinitionName:   modelInDB.Name,
 		CreatedAt:             timestamppb.New(modelInstanceInDB.CreatedAt),
 		UpdatedAt:             timestamppb.New(modelInstanceInDB.UpdatedAt),
-		Status:                st,
+		Status:                modelPB.ModelInstance_Status(modelInstanceInDB.Status),
 		Configuration:         &configuration,
 		Task:                  modelPB.ModelInstance_Task(modelInstanceInDB.Task),
-		ModelDefinitionSource: source,
+		ModelDefinitionSource: modelPB.ModelDefinition_Source(modelInDB.Source),
 		ModelDefinitionId:     modelInDB.ID.String(),
 	}
 }
@@ -94,15 +85,9 @@ func createModelInfo(modelInDB datamodel.Model, modelInstances []datamodel.Insta
 	for i := 0; i < len(modelInstances); i++ {
 		instances = append(instances, createModelInstance(modelInDB, modelInstances[i]))
 	}
-	visibility := modelPB.ModelDefinition_VISIBILITY_PUBLIC
-	if modelInDB.Visibility == datamodel.ModelDefinitionVisibility(modelPB.ModelDefinition_VISIBILITY_PRIVATE) {
-		visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE
-	}
 
-	var source = modelPB.ModelDefinition_SOURCE_LOCAL
 	var config modelPB.Configuration
 	if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_GITHUB) {
-		source = modelPB.ModelDefinition_SOURCE_GITHUB
 		_ = json.Unmarshal(modelInDB.Config, &config)
 	}
 
@@ -112,9 +97,9 @@ func createModelInfo(modelInDB datamodel.Model, modelInstances []datamodel.Insta
 		Id:            modelInDB.ID.String(),
 		Name:          modelInDB.Name,
 		FullName:      modelInDB.FullName,
-		Visibility:    visibility,
+		Visibility:    modelPB.ModelDefinition_Visibility(modelInDB.Visibility),
 		Instances:     instances,
-		Source:        source,
+		Source:        modelPB.ModelDefinition_Source(modelInDB.Source),
 		Configuration: &config,
 		Owner:         &owner,
 		CreatedAt:     timestamppb.New(modelInDB.CreatedAt),
