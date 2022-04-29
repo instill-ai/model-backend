@@ -249,7 +249,7 @@ export default () => {
             r.json().model.instances.length === 1,
         });
 
-        let req = {model_name: model_name_cls, instance_name: "latest", status: 2}
+        let req = {model_name: model_name_cls, instance_name: "latest", status: "STATUS_ONLINE"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
             'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
@@ -489,7 +489,7 @@ export default () => {
         });
         sleep(5)
 
-        let req = {model_name: model_name_cls, instance_name: "latest", status: 2}
+        let req = {model_name: model_name_cls, instance_name: "latest", status: "STATUS_ONLINE"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
             'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
@@ -571,7 +571,7 @@ export default () => {
         });
         sleep(5)
 
-        let req = {model_name: model_name, instance_name: "v1.0", status: 2}
+        let req = {model_name: model_name, instance_name: "v1.0", status: "STATUS_ONLINE"}
         check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
             'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
