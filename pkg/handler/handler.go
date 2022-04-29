@@ -317,17 +317,17 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 		if firstChunk { //first chunk contains file name
 			tmpFile = path.Join("/tmp", uuid.New().String()+".zip")
 			fp, err = os.Create(tmpFile)
-			visibility := modelPB.ModelDefinition_VISIBILITY_PRIVATE.String()
+			visibility := modelPB.ModelDefinition_VISIBILITY_PRIVATE
 			if fileData.Visibility == modelPB.ModelDefinition_VISIBILITY_PUBLIC {
-				visibility = modelPB.ModelDefinition_VISIBILITY_PUBLIC.String()
+				visibility = modelPB.ModelDefinition_VISIBILITY_PUBLIC
 			}
 			uploadedModel = datamodel.Model{
 				Name:        fileData.Name,
-				Visibility:  visibility,
-				Source:      modelPB.ModelDefinition_SOURCE_LOCAL.String(),
+				Visibility:  datamodel.ModelDefinitionVisibility(visibility),
+				Source:      datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_LOCAL),
 				Description: fileData.Description,
 				Instances: []datamodel.Instance{{
-					Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_OFFLINE.String()),
+					Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_OFFLINE),
 					Name:   "latest",
 				}},
 			}
@@ -456,16 +456,17 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 			return
 		}
 
-		visibility := r.FormValue("visibility")
-		if visibility != "" {
-			if util.Visibility[visibility] == "" {
+		viz := r.FormValue("visibility")
+		var visibility modelPB.ModelDefinition_Visibility
+		if viz != "" {
+			if util.Visibility[viz] == modelPB.ModelDefinition_VISIBILITY_UNSPECIFIED {
 				makeJsonResponse(w, 400, "Invalid parameter", "Visibility is invalid")
 				return
 			} else {
-				visibility = util.Visibility[visibility]
+				visibility = util.Visibility[viz]
 			}
 		} else {
-			visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE.String()
+			visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE
 		}
 
 		err := r.ParseMultipartForm(4 << 20)
@@ -513,13 +514,13 @@ func HandleCreateModelByUpload(w http.ResponseWriter, r *http.Request, pathParam
 		})
 		var uploadedModel = datamodel.Model{
 			Instances: []datamodel.Instance{{
-				Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_OFFLINE.String()),
+				Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_OFFLINE),
 				Name:   "latest",
 			}},
 			Name:        modelName,
 			Namespace:   username,
-			Visibility:  visibility,
-			Source:      modelPB.ModelDefinition_SOURCE_LOCAL.String(),
+			Visibility:  datamodel.ModelDefinitionVisibility(visibility),
+			Source:      datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_LOCAL),
 			Owner:       owner,
 			Description: r.FormValue("description"),
 		}
@@ -678,9 +679,9 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 	}
 	visibility := util.Visibility[githubInfo.Visibility]
 	if in.Visibility == modelPB.ModelDefinition_VISIBILITY_PUBLIC {
-		visibility = modelPB.ModelDefinition_VISIBILITY_PUBLIC.String()
+		visibility = modelPB.ModelDefinition_VISIBILITY_PUBLIC
 	} else if in.Visibility == modelPB.ModelDefinition_VISIBILITY_PRIVATE {
-		visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE.String()
+		visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE
 	}
 
 	owner, _ := json.Marshal(datamodel.Owner{
@@ -695,13 +696,13 @@ func (s *handler) CreateModelByGitHub(ctx context.Context, in *modelPB.CreateMod
 	githubModel := datamodel.Model{
 		Name:       in.Name,
 		Namespace:  username,
-		Source:     modelPB.ModelDefinition_SOURCE_GITHUB.String(),
-		Visibility: visibility,
+		Source:     datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_GITHUB),
+		Visibility: datamodel.ModelDefinitionVisibility(visibility),
 		Owner:      owner,
 		Config:     githubModelConfig,
 		Instances: []datamodel.Instance{{
 			Name:   in.Github.Tag,
-			Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_OFFLINE.String()),
+			Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_OFFLINE),
 			Config: githubConfigObj,
 		}},
 	}

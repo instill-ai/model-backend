@@ -1,13 +1,15 @@
 package util
 
+import modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+
 var Tasks = map[string]int{
 	"TASK_CLASSIFICATION": 1,
 	"TASK_DETECTION":      2,
 }
 
-var Visibility = map[string]string{
-	"public":  "VISIBILITY_PUBLIC",
-	"private": "VISIBILITY_PRIVATE",
+var Visibility = map[string]modelPB.ModelDefinition_Visibility{
+	"public":  modelPB.ModelDefinition_VISIBILITY_PUBLIC,
+	"private": modelPB.ModelDefinition_VISIBILITY_PRIVATE,
 }
 
 const (

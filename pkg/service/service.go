@@ -64,13 +64,13 @@ func createModelInstance(modelInDB datamodel.Model, modelInstanceInDB datamodel.
 	_ = json.Unmarshal(modelInstanceInDB.Config, &githubConfigObj)
 
 	var source = modelPB.ModelDefinition_SOURCE_GITHUB
-	if modelInDB.Source == modelPB.ModelDefinition_SOURCE_GITHUB.String() {
+	if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_GITHUB) {
 		configuration = modelPB.Configuration{
 			Repo:    githubConfigObj.Repo,
 			Tag:     githubConfigObj.Tag,
 			HtmlUrl: githubConfigObj.HtmlUrl,
 		}
-	} else if modelInDB.Source == modelPB.ModelDefinition_SOURCE_LOCAL.String() {
+	} else if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_LOCAL) {
 		configuration = modelPB.Configuration{}
 		source = modelPB.ModelDefinition_SOURCE_LOCAL
 	}
@@ -95,13 +95,13 @@ func createModelInfo(modelInDB datamodel.Model, modelInstances []datamodel.Insta
 		instances = append(instances, createModelInstance(modelInDB, modelInstances[i]))
 	}
 	visibility := modelPB.ModelDefinition_VISIBILITY_PUBLIC
-	if modelInDB.Visibility == modelPB.ModelDefinition_VISIBILITY_PRIVATE.String() {
+	if modelInDB.Visibility == datamodel.ModelDefinitionVisibility(modelPB.ModelDefinition_VISIBILITY_PRIVATE) {
 		visibility = modelPB.ModelDefinition_VISIBILITY_PRIVATE
 	}
 
 	var source = modelPB.ModelDefinition_SOURCE_LOCAL
 	var config modelPB.Configuration
-	if modelInDB.Source == modelPB.ModelDefinition_SOURCE_GITHUB.String() {
+	if modelInDB.Source == datamodel.ModelDefinitionSource(modelPB.ModelDefinition_SOURCE_GITHUB) {
 		source = modelPB.ModelDefinition_SOURCE_GITHUB
 		_ = json.Unmarshal(modelInDB.Config, &config)
 	}
@@ -133,7 +133,7 @@ func setModelOnline(s *service, modelId uuid.UUID, instanceName string) error {
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
 		if err = s.repository.UpdateModelInstance(modelId, tEnsembleModel.ModelInstance, datamodel.Instance{
-			Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_ERROR.String()),
+			Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_ERROR),
 		}); err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func setModelOnline(s *service, modelId uuid.UUID, instanceName string) error {
 	}
 
 	if err = s.repository.UpdateModelInstance(modelId, tEnsembleModel.ModelInstance, datamodel.Instance{
-		Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_ONLINE.String()),
+		Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_ONLINE),
 	}); err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func setModelOffline(s *service, modelId uuid.UUID, instanceName string) error {
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
 			if err = s.repository.UpdateModelInstance(modelId, instanceName, datamodel.Instance{
-				Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_ERROR.String()),
+				Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_ERROR),
 			}); err != nil {
 				return err
 			}
@@ -172,7 +172,7 @@ func setModelOffline(s *service, modelId uuid.UUID, instanceName string) error {
 	}
 
 	if err := s.repository.UpdateModelInstance(modelId, instanceName, datamodel.Instance{
-		Status: datamodel.ValidStatus(modelPB.ModelInstance_STATUS_OFFLINE.String()),
+		Status: datamodel.ModelInstanceStatus(modelPB.ModelInstance_STATUS_OFFLINE),
 	}); err != nil {
 		return err
 	}
