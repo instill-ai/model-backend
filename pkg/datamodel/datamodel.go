@@ -5,14 +5,42 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/gofrs/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
+// BaseStatic contains common columns for all tables with static UUID as primary key
+type BaseStatic struct {
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+}
+
+// BaseDynamic contains common columns for all tables with dynamic UUID as primary key generated when creating
+type BaseDynamic struct {
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+}
+
+// BeforeCreate will set a UUID rather than numeric ID.
+func (base *BaseDynamic) BeforeCreate(db *gorm.DB) error {
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+	db.Statement.SetColumn("ID", uuid)
+	return nil
+}
+
 // Model combines several Triton model. It includes ensemble model.
 type Model struct {
-	gorm.Model
+	BaseDynamic
 
 	// Model name
 	Name string `json:"name,omitempty"`
@@ -20,32 +48,30 @@ type Model struct {
 	// workspace name where model belong to
 	Namespace string `json:"namespace,omitempty"`
 
-	Task uint `json:"task,omitempty"`
-
+	// Model visibility
 	Visibility string `json:"visibility,omitempty"`
 
+	// Model description
+	Description string `json:"description,omitempty"`
+
+	// Model source
 	Source string `json:"source,omitempty"`
+
+	// Model configuration
+	Config datatypes.JSON `gorm:"config:jsonb"`
+
+	// Model Owner
+	Owner datatypes.JSON `gorm:"owner:jsonb"`
 
 	// Not stored in DB, only used for processing
 	FullName     string
 	TritonModels []TritonModel `gorm:"foreignKey:ModelID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Versions     []Version     `gorm:"foreignKey:ModelID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-}
-
-type GitRef struct {
-	Branch string `json:"branch,omitempty"`
-	Tag    string `json:"tag,omitempty"`
-	Commit string `json:"commit,omitempty"`
-}
-type GitHub struct {
-	// Model github repository URL
-	RepoUrl string `json:"repo_url,omitempty"`
-	GitRef  GitRef `json:"git_ref,omitempty"`
+	Instances    []Instance    `gorm:"foreignKey:ModelID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 // Triton model
 type TritonModel struct {
-	gorm.Model
+	BaseDynamic
 
 	// Triton Model name
 	Name string `json:"name,omitempty"`
@@ -57,46 +83,55 @@ type TritonModel struct {
 	Status string `json:"status,omitempty"`
 
 	// Model ID
-	ModelID uint `json:"model_id,omitempty"`
+	ModelID uuid.UUID `json:"model_id,omitempty"`
 
-	ModelVersion uint `json:"model_version,omitempty"`
+	// Model Instance Name
+	ModelInstance string `json:"model_instance,omitempty"`
 
+	// Model triton platform, only store ensemble model to make inferencing
 	Platform string `json:"platform,omitempty"`
 }
 
-type Version struct {
-	gorm.Model
+type Instance struct {
+	BaseDynamic
 
 	// Model ID
-	ModelID uint `json:"model_id,omitempty" gorm:"column:model_id"`
+	ModelID uuid.UUID `json:"model_id,omitempty" gorm:"column:model_id"`
 
-	// Model version
-	Version uint `json:"version,omitempty"`
+	// Model instance name
+	Name string `json:"name,omitempty"`
 
-	// Model description
-	Description string `json:"description,omitempty"`
+	// Model instance task
+	Task uint `json:"task,omitempty"`
 
 	// Model version status
 	Status ValidStatus `sql:"type:valid_status"`
 
-	// Model version metadata
-	Metadata datatypes.JSON `gorm:"type:jsonb"`
+	// Model instance configuration
+	Config datatypes.JSON `gorm:"configuration:jsonb"`
 
-	// GitHub information corresponding to a model version
-	// It will empty if model is created by local file
-	Github GitHub `gorm:"type:jsonb"`
+	// Output only, not store in DB
+	Source            string `json:"source,omitempty"`
+	ModelDefinitionId string `json:"model_definition_id,omitempty"`
 }
 
-func (j GitHub) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(j)
-	return string(valueString), err
+// Model configuration
+type ModelConfiguration struct {
+	Repo    string `json:"repo,omitempty"`
+	HtmlUrl string `json:"html_url,omitempty"`
 }
 
-func (j *GitHub) Scan(value interface{}) error {
-	if err := json.Unmarshal(value.([]byte), &j); err != nil {
-		return err
-	}
-	return nil
+// Model Instance configuration
+type InstanceConfiguration struct {
+	Repo    string `json:"repo,omitempty"`
+	Tag     string `json:"tag,omitempty"`
+	HtmlUrl string `json:"html_url,omitempty"`
+}
+
+type Owner struct {
+	ID       string `json:"id,omitempty"`
+	Username string `json:"username,omitempty"`
+	Type     string `json:"type,omitempty"`
 }
 
 type ListModelQuery struct {
@@ -128,7 +163,7 @@ func (p ValidStatus) Value() (driver.Value, error) {
 	return string(p), nil
 }
 
-func (r *Version) Scan(value interface{}) error {
+func (r *Instance) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal TritonModel value:", value))
@@ -141,7 +176,7 @@ func (r *Version) Scan(value interface{}) error {
 	return nil
 }
 
-func (r *Version) Value() (driver.Value, error) {
+func (r *Instance) Value() (driver.Value, error) {
 	valueString, err := json.Marshal(r)
 	return string(valueString), err
 }

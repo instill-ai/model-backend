@@ -4,33 +4,12 @@ package instill.model.v1alpha;
 
 // Protobuf standard
 import "google/protobuf/struct.proto";
-import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 
 // Google api
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 
-// GitRef represents the git reference
-message GitRef {
-  // git reference
-  oneof ref {
-    // git branch
-    string branch = 1;
-    // git tag
-    string tag = 2;
-    // git commit
-    string commit = 3;
-  }
-}
-
-// GitHub represents the GitHub source a model is created from
-message GitHub {
-  // GitHub repository URL
-  string repo_url = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // git reference
-  GitRef git_ref = 2 [ (google.api.field_behavior) = REQUIRED ];
-}
+import "definition.proto";
 
 // LivenessRequest represents a request to check a service liveness status
 message LivenessRequest {
@@ -76,85 +55,6 @@ message ReadinessResponse {
   ServingStatus status = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// ModelVersion represents the version of a model
-message ModelVersion {
-
-  // Status enumerates the status of a model version
-  enum Status {
-    // Status: UNSPECIFIED
-    STATUS_UNSPECIFIED = 0;
-    // Status: OFFLINE
-    STATUS_OFFLINE = 1;
-    // Status: ONLINE
-    STATUS_ONLINE = 2;
-    // Status: ERROR
-    STATUS_ERROR = 3;
-  }
-
-  // Model version
-  uint64 version = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model version corresponding model ID
-  uint64 model_id = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model version description
-  string description = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model version creation time
-  google.protobuf.Timestamp created_at = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model version update time
-  google.protobuf.Timestamp updated_at = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model version status
-  Status status = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model GitHub source
-  // It has value when model created by CreateModelByGitHub and is empty when created by CreateModelBinaryFileUpload
-  GitHub github = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
-// Model represents the content of a model
-message Model {
-  // Task enumerates the task type of a model
-  enum Task {
-    // Task: UNSPECIFIED
-    TASK_UNSPECIFIED = 0;
-    // Task: CLASSIFICATION
-    TASK_CLASSIFICATION = 1;
-    // Task: DETECTION
-    TASK_DETECTION = 2;
-  }
-  // Model visibility including public or private
-  enum Visibility {
-    // Visibility: UNSPECIFIED
-    VISIBILITY_UNSPECIFIED = 0;
-    // Visibility: PUBLIC
-    VISIBILITY_PUBLIC = 1;
-    // Visibility: PRIVATE
-    VISIBILITY_PRIVATE = 2;
-  }
-
-  // Model source
-  enum Source {
-    // Source: UNSPECIFIED
-    SOURCE_UNSPECIFIED = 0;
-    // Source: GITHUB
-    SOURCE_GITHUB = 1;
-    // Source: LOCAL
-    SOURCE_LOCAL = 2;
-  }
-
-  // Model ID
-  uint64 id = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model name
-  string name = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model full name (i.e., [user_name/org_name]/full_name)
-  string full_name = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model task
-  Task task = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model versions
-  repeated ModelVersion model_versions = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Model visibility including public or private
-  Visibility visibility = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Source including 'local' or 'github' where model is imported
-  Source source = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
 // CreateModelBinaryFileUploadRequest represents a request to create a model
 message CreateModelBinaryFileUploadRequest {
   // Model name
@@ -165,14 +65,14 @@ message CreateModelBinaryFileUploadRequest {
   string description = 3 [ (google.api.field_behavior) = OPTIONAL ];
   // Model visibility
   // If does not specify visibility, then default will be VISIBILITY_PRIVATE
-  Model.Visibility visibility = 4 [ (google.api.field_behavior) = OPTIONAL ];
+  ModelDefinition.Visibility visibility = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // CreateModelBinaryFileUploadResponse represents a response for a model
 // instance
 message CreateModelBinaryFileUploadResponse {
   // A model instance
-  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  ModelDefinition model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // CreateModelByGitHubRequest represents a request to create a model from a GitHub repo
@@ -180,45 +80,33 @@ message CreateModelByGitHubRequest {
   // Model name
   string name = 1 [ (google.api.field_behavior) = REQUIRED ];
   // Model GitHub source
-  GitHub github = 2 [ (google.api.field_behavior) = REQUIRED ];
+  Configuration github = 2 [ (google.api.field_behavior) = REQUIRED ];
   // Model mode including public or private
   // If does not specify visibility, then default will be the same as the visibility of GitHub repository
-  Model.Visibility visibility = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  ModelDefinition.Visibility visibility = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // CreateModelByGitHubResponse represents a response for a model
 // instance
 message CreateModelByGitHubResponse {
   // A model instance
-  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  ModelDefinition model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// UpdateModelVersionPatch represents a patch to update a model
-message UpdateModelVersionPatch {
-  // Model version description
-  string description = 1 [ (google.api.field_behavior) = OPTIONAL ];
-  // Model version status
-  ModelVersion.Status status = 2 [ (google.api.field_behavior) = OPTIONAL ];
-}
-
-// CreateModelRequest represents a request to update a model
-message UpdateModelVersionRequest {
+// UpdateModelInstanceRequest represents a request to update a model instance
+message UpdateModelInstanceRequest {
   // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model version
-  uint64 version = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Model version patch to update
-  UpdateModelVersionPatch version_patch = 3
-      [ (google.api.field_behavior) = REQUIRED ];
-  // Update mask for a model instance
-  google.protobuf.FieldMask field_mask = 4
-      [ (google.api.field_behavior) = REQUIRED ];
+  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance name
+  string instance_name = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance status
+  ModelInstance.Status status = 3 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// UpdateModelVersionResponse represents a response for a model version instance
-message UpdateModelVersionResponse {
-  // A model version instance
-  ModelVersion model_version = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+// UpdateModelInstanceResponse represents a response for a model instance
+message UpdateModelInstanceResponse {
+  // A model instance
+  ModelInstance instance = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ListModelRequest represents a request to list models
@@ -227,7 +115,7 @@ message ListModelRequest {}
 // ListModelResponse represents a response for a list of models
 message ListModelResponse {
   // A list of models
-  repeated Model models = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated ModelDefinition models = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
@@ -239,7 +127,7 @@ message GetModelRequest {
 // GetModelResponse represents a response for a model instance
 message GetModelResponse {
   // A model instance
-  Model model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  ModelDefinition model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // DeleteModelRequest represents a request to delete a model
@@ -251,16 +139,16 @@ message DeleteModelRequest {
 // DeleteModelResponse represents an empty response
 message DeleteModelResponse {}
 
-// DeleteModelVersionRequest represents a request to delete a model version
-message DeleteModelVersionRequest {
+// DeleteModelInstanceRequest represents a request to delete a model instance
+message DeleteModelInstanceRequest {
   // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model version
-  uint64 version = 2 [ (google.api.field_behavior) = REQUIRED ];
+  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance name
+  string instance_name = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// DeleteModelVersionResponse represents an empty response
-message DeleteModelVersionResponse {}
+// DeleteModelInstanceResponse represents an empty response
+message DeleteModelInstanceResponse {}
 
 // Input represents the input to a model
 message Input {
@@ -276,9 +164,9 @@ message Input {
 // TriggerModelRequest represents a request to trigger a model
 message TriggerModelRequest {
   // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model version
-  uint64 version = 2 [ (google.api.field_behavior) = REQUIRED ];
+  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance name, default will be 'latest'
+  string instance_name = 2 [ (google.api.field_behavior) = OPTIONAL ];
   // Input to the model
   repeated Input inputs = 3 [ (google.api.field_behavior) = REQUIRED ];
 }
@@ -292,9 +180,9 @@ message TriggerModelResponse {
 // TriggerModelBinaryFileUploadRequest represents a request to trigger a model
 message TriggerModelBinaryFileUploadRequest {
   // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model version
-  uint64 version = 2 [ (google.api.field_behavior) = REQUIRED ];
+  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance name
+  string instance_name = 2 [ (google.api.field_behavior) = OPTIONAL ];
   // list of image's file length
   repeated uint64 file_lengths = 3 [ (google.api.field_behavior) = REQUIRED ];
   // Content of images in bytes
@@ -411,13 +299,13 @@ service ModelService {
     };
   }
 
-  // UpdateModelVersion method receives a UpdateModelVersionRequest message and
-  // returns a UpdateModelVersionResponse message.
-  rpc UpdateModelVersion(UpdateModelVersionRequest)
-      returns (UpdateModelVersionResponse) {
+  // UpdateModelInstance method receives a UpdateModelInstanceRequest message and
+  // returns a UpdateModelInstanceResponse message.
+  rpc UpdateModelInstance(UpdateModelInstanceRequest)
+      returns (UpdateModelInstanceResponse) {
     option (google.api.http) = {
-      patch : "/models/{name}/versions/{version}"
-      body : "version_patch"
+      patch : "/models/{model_name}/instances/{instance_name}"
+      body : "*"
     };
   }
 
@@ -429,12 +317,12 @@ service ModelService {
     };
   }
 
-  // DeleteModelVersion method receives a DeleteModelVersionRequest message and
-  // returns a DeleteModelVersionResponse message.
-  rpc DeleteModelVersion(DeleteModelVersionRequest)
-      returns (DeleteModelVersionResponse) {
+  // DeleteModelInstance method receives a DeleteModelInstanceRequest message and
+  // returns a DeleteModelInstanceResponse message.
+  rpc DeleteModelInstance(DeleteModelInstanceRequest)
+      returns (DeleteModelInstanceResponse) {
     option (google.api.http) = {
-      delete : "/models/{name}/versions/{version}"
+      delete : "/models/{model_name}/instances/{instance_name}"
     };
   }
 
@@ -442,7 +330,7 @@ service ModelService {
   // returns a TriggerModelResponse message.
   rpc TriggerModel(TriggerModelRequest) returns (TriggerModelResponse) {
     option (google.api.http) = {
-      post : "/models/{name}/versions/{version}/outputs"
+      post : "/models/{model_name}/instances/{instance_name}/outputs"
       body : "*"
     };
   }

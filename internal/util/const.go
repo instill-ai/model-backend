@@ -22,3 +22,6 @@ const MaxBatchSize int = 32
 const MaxImageSizeBytes int = 4 * MB
 
 const MODEL_NAME_REGEX = "^[A-Za-z0-9][a-zA-Z0-9_.-]*$"
+
+const USER_ID = "2a06c2f7-8da9-4046-91ea-240f88a5d729"
+const TYPE_USER = "user"

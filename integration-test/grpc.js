@@ -11,6 +11,7 @@ import {
 } from "./helpers.js";
 
 const client = new grpc.Client();
+client.load(['proto'], 'definition.proto');
 client.load(['proto'], 'model.proto');
 
 const apiHost = "http://localhost:8080";
@@ -68,40 +69,61 @@ export default () => {
 
         let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-        check( http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
+        check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
         check(client.invoke('instill.model.v1alpha.ModelService/ListModel', {}, {}), {
             'ListModel status': (r) => r && r.status === grpc.StatusOK,
             'ListModel models length': (r) => r && r.message.models.length > 0,
             'ListModel model name': (r) => r && r.message.models[0].name == model_name_cls,
             'ListModel model fullName': (r) => r && r.message.models[0].fullName === `local-user/${model_name_cls}`,
-            'ListModel model task': (r) => r && r.message.models[0].task === "TASK_CLASSIFICATION",
             'ListModel model source': (r) => r && r.message.models[0].source === "SOURCE_LOCAL",
+            'ListModel model description': (r) => r && r.message.models[0].description === model_description,
             'ListModel model visibility': (r) => r && r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-            'ListModel model modelVersions length': (r) => r && r.message.models[0].modelVersions.length > 0,
-            'ListModel model modelVersions status': (r) => r && r.message.models[0].modelVersions[0].status === "STATUS_OFFLINE",
-            'ListModel model modelVersions version': (r) => r && r.message.models[0].modelVersions[0].version == 1, //response is string ?
-            'ListModel model modelVersions modelId': (r) => r && r.message.models[0].modelVersions[0].modelId !== undefined,
-            'ListModel model modelVersions description': (r) => r && r.message.models[0].modelVersions[0].description !== undefined,
-            'ListModel model modelVersions createdAt': (r) => r && r.message.models[0].modelVersions[0].createdAt !== undefined,
-            'ListModel model modelVersions updatedAt': (r) => r && r.message.models[0].modelVersions[0].updatedAt !== undefined,
-            'ListModel model modelVersions modelId': (r) => r && r.message.models[0].modelVersions[0].modelId !== undefined,
+            'ListModel model createdAt': (r) => r && r.message.models[0].createdAt !== undefined,
+            'ListModel model updatedAt': (r) => r && r.message.models[0].updatedAt !== undefined,
+            'ListModel model id': (r) => r && r.message.models[0].id !== undefined,
+            'ListModel model owner id': (r) => r && r.message.models[0].owner.id !== undefined,
+            'ListModel model owner username': (r) => r && r.message.models[0].owner.username === "local-user",
+            'ListModel model owner type': (r) => r && r.message.models[0].owner.type === "user",
+            'ListModel model instances length': (r) => r && r.message.models[0].instances.length > 0,
+            'ListModel model instances status': (r) => r && r.message.models[0].instances[0].status === "STATUS_OFFLINE",
+            'ListModel model instances name': (r) => r && r.message.models[0].instances[0].name === "latest",
+            'ListModel model instances task': (r) => r && r.message.models[0].instances[0].task === "TASK_CLASSIFICATION",
+            'ListModel model instances modelDefinitionId': (r) => r && r.message.models[0].instances[0].modelDefinitionId === r.message.models[0].id,
+            'ListModel model instances modelDefinitionSource': (r) => r && r.message.models[0].instances[0].modelDefinitionSource === r.message.models[0].source,
+            'ListModel model instances createdAt': (r) => r && r.message.models[0].instances[0].createdAt !== undefined,
+            'ListModel model instances updatedAt': (r) => r && r.message.models[0].instances[0].updatedAt !== undefined,
+            'ListModel model instances modelDefinitionName': (r) => r && r.message.models[0].instances[0].modelDefinitionName === model_name_cls,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
@@ -118,9 +140,9 @@ export default () => {
 
         let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -128,29 +150,51 @@ export default () => {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
             'GetModel status': (r) => r && r.status === grpc.StatusOK,
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
-            'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model description': (r) => r && r.message.model.description === model_description,
             'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
-            'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
-            'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
-            'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
+            'GetModel model createdAt': (r) => r && r.message.model.createdAt !== undefined,
+            'GetModel model updatedAt': (r) => r && r.message.model.updatedAt !== undefined,
+            'GetModel model id': (r) => r && r.message.model.id !== undefined,
+            'GetModel model owner id': (r) => r && r.message.model.owner.id !== undefined,
+            'GetModel model owner username': (r) => r && r.message.model.owner.username === "local-user",
+            'GetModel model owner type': (r) => r && r.message.model.owner.type === "user",
+            'GetModel model instances length': (r) => r && r.message.model.instances.length > 0,
+            'GetModel model instances status': (r) => r && r.message.model.instances[0].status === "STATUS_OFFLINE",
+            'GetModel model instances name': (r) => r && r.message.model.instances[0].name === "latest",
+            'GetModel model instances task': (r) => r && r.message.model.instances[0].task === "TASK_CLASSIFICATION",
+            'GetModel model instances modelDefinitionId': (r) => r && r.message.model.instances[0].modelDefinitionId === r.message.model.id,
+            'GetModel model instances modelDefinitionSource': (r) => r && r.message.model.instances[0].modelDefinitionSource === r.message.model.source,
+            'GetModel model instances createdAt': (r) => r && r.message.model.instances[0].createdAt !== undefined,
+            'GetModel model instances updatedAt': (r) => r && r.message.model.instances[0].updatedAt !== undefined,
+            'GetModel model instances modelDefinitionName': (r) => r && r.message.model.instances[0].modelDefinitionName === model_name_cls,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: randomString(10)}, {}), {
@@ -164,17 +208,17 @@ export default () => {
         client.close();
     });
 
-    // UpdateModelVersion check
-    group("Model API: UpdateModelVersion", () => {
+    // UpdateModelInstance check
+    group("Model API: UpdateModelInstance", () => {
         client.connect('localhost:8080', {
             plaintext: true
         });
 
-        let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let fd_cls = new FormData();
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -182,59 +226,49 @@ export default () => {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
 
-        let description = randomString(10)
-        let req = {name: model_name_cls, version: 1, version_patch: {description: description}, field_mask: "description"}
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 1st status': (r) => r && r.status === grpc.StatusOK,
-            'UpdateModelVersion 1st modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE",
-            'UpdateModelVersion 1st modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
-            'UpdateModelVersion 1st modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 1st modelVersion description': (r) => r && r.message.modelVersion.description == description,
-            'UpdateModelVersion 1st modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
-            'UpdateModelVersion 1st modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
-        });
-
-        req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 2nd status': (r) => r && r.status === grpc.StatusOK,
-            'UpdateModelVersion 2nd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
-            'UpdateModelVersion 2nd modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
-            'UpdateModelVersion 2nd modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 2nd modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
-            'UpdateModelVersion 2nd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
-            'UpdateModelVersion 2nd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        let req = {model_name: model_name_cls, instance_name: "latest", status: 2}
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
+            'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
+            'UpdateModelInstance instance modelDefinitionName': (r) => r && r.message.instance.modelDefinitionName === model_name_cls,
+            'UpdateModelInstance instance name': (r) => r && r.message.instance.name === "latest",
+            'UpdateModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
+            'UpdateModelInstance instance modelDefinitionSource': (r) => r && r.message.instance.modelDefinitionSource === "SOURCE_LOCAL",
+            'UpdateModelInstance instance id': (r) => r && r.message.instance.id !== undefined,
+            'UpdateModelInstance instance createdAt': (r) => r && r.message.instance.createdAt !== undefined,
+            'UpdateModelInstance instance updatedAt': (r) => r && r.message.instance.updatedAt !== undefined,
         });
         sleep(5) // triton take time after update status
 
-        let new_description = randomString(10)
-        req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_OFFLINE",description: new_description}, field_mask: "status,description"}
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion 3rd status': (r) => r && r.status === grpc.StatusOK,
-            'UpdateModelVersion 3rd modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_OFFLINE",
-            'UpdateModelVersion 3rd modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
-            'UpdateModelVersion 3rd modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion 3rd modelVersion description': (r) => r && r.message.modelVersion.description == new_description,
-            'UpdateModelVersion 3rd modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
-            'UpdateModelVersion 3rd modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', {model_name: randomString(10), instance_name: "latest"}), {
+            'UpdateModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        sleep(5) // triton take time after update status
-
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', {name: randomString(10), version: 1}), {
-            'UpdateModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', {name: model_name_cls, version: 999}, {}), {
-            'UpdateModelVersion non-existed version status not found': (r) => r && r.status === grpc.StatusNotFound,
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', {model_name: model_name_cls, instance_name: "non-existed"}, {}), {
+            'UpdateModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}), {
@@ -253,11 +287,11 @@ export default () => {
             'DeleteModel non-exist model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let fd_cls = new FormData();
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -265,29 +299,51 @@ export default () => {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
             'GetModel status': (r) => r && r.status === grpc.StatusOK,
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
-            'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model description': (r) => r && r.message.model.description === model_description,
             'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
-            'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
-            'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
-            'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
+            'GetModel model createdAt': (r) => r && r.message.model.createdAt !== undefined,
+            'GetModel model updatedAt': (r) => r && r.message.model.updatedAt !== undefined,
+            'GetModel model id': (r) => r && r.message.model.id !== undefined,
+            'GetModel model owner id': (r) => r && r.message.model.owner.id !== undefined,
+            'GetModel model owner username': (r) => r && r.message.model.owner.username === "local-user",
+            'GetModel model owner type': (r) => r && r.message.model.owner.type === "user",
+            'GetModel model instances length': (r) => r && r.message.model.instances.length > 0,
+            'GetModel model instances status': (r) => r && r.message.model.instances[0].status === "STATUS_OFFLINE",
+            'GetModel model instances name': (r) => r && r.message.model.instances[0].name === "latest",
+            'GetModel model instances task': (r) => r && r.message.model.instances[0].task === "TASK_CLASSIFICATION",
+            'GetModel model instances modelDefinitionId': (r) => r && r.message.model.instances[0].modelDefinitionId === r.message.model.id,
+            'GetModel model instances modelDefinitionSource': (r) => r && r.message.model.instances[0].modelDefinitionSource === r.message.model.source,
+            'GetModel model instances createdAt': (r) => r && r.message.model.instances[0].createdAt !== undefined,
+            'GetModel model instances updatedAt': (r) => r && r.message.model.instances[0].updatedAt !== undefined,
+            'GetModel model instances modelDefinitionName': (r) => r && r.message.model.instances[0].modelDefinitionName === model_name_cls,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: model_name_cls}, {}), {
@@ -304,17 +360,17 @@ export default () => {
         client.close();
     });
 
-    // DeleteModelVersion check
-    group("Model API: DeleteModelVersion", () => {
+    // DeleteModelInstance check
+    group("Model API: DeleteModelInstance", () => {
         client.connect('localhost:8080', {
             plaintext: true
         });
 
-        let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let fd_cls = new FormData();
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -322,41 +378,63 @@ export default () => {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
             'GetModel status': (r) => r && r.status === grpc.StatusOK,
             'GetModel model name': (r) => r && r.message.model.name == model_name_cls,
             'GetModel model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name_cls}`,
-            'GetModel model task': (r) => r && r.message.model.task === "TASK_CLASSIFICATION",
             'GetModel model source': (r) => r && r.message.model.source === "SOURCE_LOCAL",
+            'GetModel model description': (r) => r && r.message.model.description === model_description,
             'GetModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PRIVATE",
-            'GetModel model modelVersions length': (r) => r && r.message.model.modelVersions.length > 0,
-            'GetModel model modelVersions status': (r) => r && r.message.model.modelVersions[0].status === "STATUS_OFFLINE",
-            'GetModel model modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1, //response is string ?
-            'GetModel model modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId !== undefined,
-            'GetModel model modelVersions description': (r) => r && r.message.model.modelVersions[0].description !== undefined,
-            'GetModel model modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt !== undefined,
-            'GetModel model modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt !== undefined,
+            'GetModel model createdAt': (r) => r && r.message.model.createdAt !== undefined,
+            'GetModel model updatedAt': (r) => r && r.message.model.updatedAt !== undefined,
+            'GetModel model id': (r) => r && r.message.model.id !== undefined,
+            'GetModel model owner id': (r) => r && r.message.model.owner.id !== undefined,
+            'GetModel model owner username': (r) => r && r.message.model.owner.username === "local-user",
+            'GetModel model owner type': (r) => r && r.message.model.owner.type === "user",
+            'GetModel model instances length': (r) => r && r.message.model.instances.length > 0,
+            'GetModel model instances status': (r) => r && r.message.model.instances[0].status === "STATUS_OFFLINE",
+            'GetModel model instances name': (r) => r && r.message.model.instances[0].name === "latest",
+            'GetModel model instances task': (r) => r && r.message.model.instances[0].task === "TASK_CLASSIFICATION",
+            'GetModel model instances modelDefinitionId': (r) => r && r.message.model.instances[0].modelDefinitionId === r.message.model.id,
+            'GetModel model instances modelDefinitionSource': (r) => r && r.message.model.instances[0].modelDefinitionSource === r.message.model.source,
+            'GetModel model instances createdAt': (r) => r && r.message.model.instances[0].createdAt !== undefined,
+            'GetModel model instances updatedAt': (r) => r && r.message.model.instances[0].updatedAt !== undefined,
+            'GetModel model instances modelDefinitionName': (r) => r && r.message.model.instances[0].modelDefinitionName === model_name_cls,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: randomString(10), version:1}, {}), {
-            'DeleteModelVersion non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelInstance', {model_name: randomString(10), instance_name: "latest"}, {}), {
+            'DeleteModelInstance non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: model_name_cls, version:999}, {}), {
-            'DeleteModelVersion non-existed model version status not found': (r) => r && r.status === grpc.StatusNotFound,
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelInstance', {model_name: model_name_cls, instance_name: "non-existed"}, {}), {
+            'DeleteModelInstance non-existed model version status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelVersion', {name: model_name_cls, version:1}, {}), {
-            'DeleteModelVersion status OK': (r) => r && r.status === grpc.StatusOK,
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModelInstance', {model_name: model_name_cls, instance_name: "latest"}, {}), {
+            'DeleteModelInstance status OK': (r) => r && r.status === grpc.StatusOK,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/GetModel', {name: model_name_cls}, {}), {
@@ -375,11 +453,11 @@ export default () => {
             plaintext: true
         });
 
-        let fd_cls = new FormData();
         let model_name_cls = randomString(10)
+        let fd_cls = new FormData();
+        let model_description = randomString(20)
         fd_cls.append("name", model_name_cls);
-        fd_cls.append("description", randomString(20));
-        fd_cls.append("task", "TASK_CLASSIFICATION");
+        fd_cls.append("description", model_description);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -387,28 +465,45 @@ export default () => {
             "POST /models/upload (multipart) task cls response status": (r) =>
             r.status === 200, // TODO: update status to 201
             "POST /models/upload (multipart) task cls response model.name": (r) =>
-            r.json().model.name !== undefined,
+            r.json().model.name === model_name_cls,
             "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-            r.json().model.full_name !== undefined,
-            "POST /models/upload (multipart) task cls response model.task": (r) =>
-            r.json().model.task === "TASK_CLASSIFICATION",
-            "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-            r.json().model.model_versions.length === 1,
+            r.json().model.full_name === `local-user/${model_name_cls}`,
+            "POST /models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /models/upload (multipart) task cls response model.source": (r) =>
+            r.json().model.source === "SOURCE_LOCAL",
+            "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+            r.json().model.owner.id !== undefined,
+            "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+            r.json().model.owner.username === "local-user",
+            "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+            r.json().model.owner.type === "user",
+            "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+            r.json().model.created_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+            r.json().model.updated_at !== undefined,
+            "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+            r.json().model.instances.length === 1,
         });
+        sleep(5)
 
-        let req = {name: model_name_cls, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,
-            'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
-            'UpdateModelVersion modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
-            'UpdateModelVersion modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
-            'UpdateModelVersion modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
-            'UpdateModelVersion modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
+        let req = {model_name: model_name_cls, instance_name: "latest", status: 2}
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
+            'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
+            'UpdateModelInstance instance modelDefinitionName': (r) => r && r.message.instance.modelDefinitionName === model_name_cls,
+            'UpdateModelInstance instance name': (r) => r && r.message.instance.name === "latest",
+            'UpdateModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
+            'UpdateModelInstance instance modelDefinitionSource': (r) => r && r.message.instance.modelDefinitionSource === "SOURCE_LOCAL",
+            'UpdateModelInstance instance id': (r) => r && r.message.instance.id !== undefined,
+            'UpdateModelInstance instance createdAt': (r) => r && r.message.instance.createdAt !== undefined,
+            'UpdateModelInstance instance updatedAt': (r) => r && r.message.instance.updatedAt !== undefined,
         });
-        sleep(5) // triton take time after change status
+        sleep(5) // triton take time after update status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {model_name: model_name_cls, instance_name: "latest", inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
             'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
             'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
@@ -416,15 +511,15 @@ export default () => {
         });
 
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: randomString(10), version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {model_name: randomString(10), instance_name: "latest", inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
             'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 999, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {model_name: model_name_cls, instance_name: "non-existed", inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
             'TriggerModel non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name_cls, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/non-existed.jpg"}]}, {}), {
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {model_name: model_name_cls, instance_name: "latest", inputs: [{image_url: "https://artifacts.instill.tech/non-existed.jpg"}]}, {}), {
             'TriggerModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
@@ -443,38 +538,54 @@ export default () => {
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
             "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
+                "repo": "https://github.com/Phelan164/test-repo.git",
+                "tag": "v1.0"
             }
         }), {
-            'status': (r) => r && r.status == grpc.StatusOK,
-            'model_name': (r) => r && r.message.model.name == model_name,
-            'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
-            'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
-            'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions': (r) => r && r.message.model.modelVersions.length == 1,
-            'modelVersions status': (r) => r && r.message.model.modelVersions[0].status == "STATUS_OFFLINE",
-            'modelVersions version': (r) => r && r.message.model.modelVersions[0].version == 1,
-            'modelVersions modelId': (r) => r && r.message.model.modelVersions[0].modelId != undefined,
-            'modelVersions description': (r) => r && r.message.model.modelVersions[0].description != undefined,
-            'modelVersions createdAt': (r) => r && r.message.model.modelVersions[0].createdAt != undefined,
-            'modelVersions updatedAt': (r) => r && r.message.model.modelVersions[0].updatedAt != undefined,
-            'modelVersions repoUrl': (r) => r && r.message.model.modelVersions[0].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
+            'CreateModelByGitHub status': (r) => r && r.status === grpc.StatusOK,
+            'CreateModelByGitHub model name': (r) => r && r.message.model.name == model_name,
+            'CreateModelByGitHub model fullName': (r) => r && r.message.model.fullName === `local-user/${model_name}`,
+            'CreateModelByGitHub model source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
+            'CreateModelByGitHub model description': (r) => r && r.message.model.description !== undefined,
+            'CreateModelByGitHub model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
+            'CreateModelByGitHub model createdAt': (r) => r && r.message.model.createdAt !== undefined,
+            'CreateModelByGitHub model updatedAt': (r) => r && r.message.model.updatedAt !== undefined,
+            'CreateModelByGitHub model id': (r) => r && r.message.model.id !== undefined,
+            'CreateModelByGitHub model configuration repo': (r) => r && r.message.model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
+            'CreateModelByGitHub model configuration htmlUrl': (r) => r && r.message.model.configuration.htmlUrl === "",
+            'CreateModelByGitHub model owner id': (r) => r && r.message.model.owner.id !== undefined,
+            'CreateModelByGitHub model owner username': (r) => r && r.message.model.owner.username === "local-user",
+            'CreateModelByGitHub model owner type': (r) => r && r.message.model.owner.type === "user",
+            'CreateModelByGitHub model instances length': (r) => r && r.message.model.instances.length > 0,
+            'CreateModelByGitHub model instances status': (r) => r && r.message.model.instances[0].status === "STATUS_OFFLINE",
+            'CreateModelByGitHub model instances name': (r) => r && r.message.model.instances[0].name === "v1.0",
+            'CreateModelByGitHub model instances task': (r) => r && r.message.model.instances[0].task === "TASK_CLASSIFICATION",
+            'CreateModelByGitHub model instances modelDefinitionId': (r) => r && r.message.model.instances[0].modelDefinitionId === r.message.model.id,
+            'CreateModelByGitHub model instances modelDefinitionSource': (r) => r && r.message.model.instances[0].modelDefinitionSource === r.message.model.source,
+            'CreateModelByGitHub model instances createdAt': (r) => r && r.message.model.instances[0].createdAt !== undefined,
+            'CreateModelByGitHub model instances updatedAt': (r) => r && r.message.model.instances[0].updatedAt !== undefined,
+            'CreateModelByGitHub model instances modelDefinitionName': (r) => r && r.message.model.instances[0].modelDefinitionName === model_name, 
+            'CreateModelByGitHub model instances configuration repo': (r) => r && r.message.model.instances[0].configuration.repo === "https://github.com/Phelan164/test-repo.git",
+            'CreateModelByGitHub model instances configuration tag': (r) => r && r.message.model.instances[0].configuration.tag === "v1.0",
+            'CreateModelByGitHub model instances configuration htmlUrl': (r) => r && r.message.model.instances[0].configuration.htmlUrl === "",
         });
-
         sleep(5)
-        let req = {name: model_name, version: 1, version_patch: {status: "STATUS_ONLINE"}, field_mask: "status"}
-        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelVersion', req, {}), {
-            'UpdateModelVersion status': (r) => r && r.status === grpc.StatusOK,
-            'UpdateModelVersion modelVersion status': (r) => r && r.message.modelVersion.status === "STATUS_ONLINE",
-            'UpdateModelVersion modelVersion version': (r) => r && r.message.modelVersion.version == 1, //response is string ?
-            'UpdateModelVersion modelVersion modelId': (r) => r && r.message.modelVersion.modelId !== undefined,
-            'UpdateModelVersion modelVersion description': (r) => r && r.message.modelVersion.description !== undefined,
-            'UpdateModelVersion modelVersion createdAt': (r) => r && r.message.modelVersion.createdAt !== undefined,
-            'UpdateModelVersion modelVersion updatedAt': (r) => r && r.message.modelVersion.updatedAt !== undefined,
-        });
-        sleep(5) // triton take time after change status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {name: model_name, version: 1, inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
+        let req = {model_name: model_name, instance_name: "v1.0", status: 2}
+        check(client.invoke('instill.model.v1alpha.ModelService/UpdateModelInstance', req, {}), {
+            'UpdateModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'UpdateModelInstance instance status': (r) => r && r.message.instance.status === "STATUS_ONLINE",
+            'UpdateModelInstance instance modelDefinitionName': (r) => r && r.message.instance.modelDefinitionName === model_name,
+            'UpdateModelInstance instance name': (r) => r && r.message.instance.name === "v1.0",
+            'UpdateModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
+            'UpdateModelInstance instance modelDefinitionSource': (r) => r && r.message.instance.modelDefinitionSource === "SOURCE_GITHUB",
+            'UpdateModelInstance instance id': (r) => r && r.message.instance.id !== undefined,
+            'UpdateModelInstance instance createdAt': (r) => r && r.message.instance.createdAt !== undefined,
+            'UpdateModelInstance instance updatedAt': (r) => r && r.message.instance.updatedAt !== undefined,
+        });
+        sleep(5) // triton take time after update status
+
+        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModel', {model_name: model_name, instance_name: "v1.0", inputs: [{image_url: "https://artifacts.instill.tech/dog.jpg"}]}, {}), {
             'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModel output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
             'TriggerModel output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
@@ -484,118 +595,18 @@ export default () => {
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
             "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "commit": "641c76de930003ac9f8dfc4d6b7430a9a98e305b"
-                }
-            }
-        }), {
-            '2nd status': (r) => r && r.status == grpc.StatusOK,
-            '2nd model_name': (r) => r && r.message.model.name == model_name,
-            '2nd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
-            '2nd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
-            '2nd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 2nd': (r) => r && r.message.model.modelVersions.length == 2,
-            'modelVersions 2nd status': (r) => r && r.message.model.modelVersions[1].status == "STATUS_OFFLINE",
-            'modelVersions 2nd version': (r) => r && r.message.model.modelVersions[1].version == 2,
-            'modelVersions 2nd modelId': (r) => r && r.message.model.modelVersions[1].modelId != undefined,
-            'modelVersions 2nd description': (r) => r && r.message.model.modelVersions[1].description != undefined,
-            'modelVersions 2nd createdAt': (r) => r && r.message.model.modelVersions[1].createdAt != undefined,
-            'modelVersions 2nd updatedAt': (r) => r && r.message.model.modelVersions[1].updatedAt != undefined,
-            'modelVersions 2nd github repoUrl': (r) => r && r.message.model.modelVersions[1].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
-            'modelVersions 2nd github gitRef commit': (r) => r && r.message.model.modelVersions[1].github.gitRef.commit == "641c76de930003ac9f8dfc4d6b7430a9a98e305b",
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
-            "name": model_name,
-            "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "tag": "v1.0"
-                }
-            }
-        }), {
-            '3rd status': (r) => r && r.status == grpc.StatusOK,
-            '3rd model_name': (r) => r && r.message.model.name == model_name,
-            '3rd task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
-            '3rd source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
-            '3rd visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 3,
-            'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[2].status == "STATUS_OFFLINE",
-            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[2].version == 3,
-            'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[2].modelId != undefined,
-            'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[2].description != undefined,
-            'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[2].createdAt != undefined,
-            'modelVersions 3rd updatedAt': (r) => r && r.message.model.modelVersions[2].updatedAt != undefined,
-            'modelVersions 3rd github repoUrl': (r) => r && r.message.model.modelVersions[2].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
-            'modelVersions 3rd github gitRef tag': (r) => r && r.message.model.modelVersions[2].github.gitRef.tag == "v1.0",
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
-            "name": model_name,
-            "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "branch": "feat-a"
-                }
-            }
-        }), {
-            'status': (r) => r && r.status == grpc.StatusOK,
-            'model_name': (r) => r && r.message.model.name == model_name,
-            'task': (r) => r && r.message.model.task == "TASK_CLASSIFICATION",
-            'source': (r) => r && r.message.model.source === "SOURCE_GITHUB",
-            'visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'modelVersions 3rd': (r) => r && r.message.model.modelVersions.length == 4,
-            'modelVersions 3rd status': (r) => r && r.message.model.modelVersions[3].status == "STATUS_OFFLINE",
-            'modelVersions 3rd version': (r) => r && r.message.model.modelVersions[3].version == 4,
-            'modelVersions 3rd modelId': (r) => r && r.message.model.modelVersions[3].modelId != undefined,
-            'modelVersions 3rd description': (r) => r && r.message.model.modelVersions[3].description != undefined,
-            'modelVersions 3rd createdAt': (r) => r && r.message.model.modelVersions[3].createdAt != undefined,
-            'modelVersions 3rd updatedAt': (r) => r && r.message.model.modelVersions[3].updatedAt != undefined,
-            'modelVersions 3rd github repoUrl': (r) => r && r.message.model.modelVersions[3].github.repoUrl == "https://github.com/Phelan164/test-repo.git",
-            'modelVersions 3rd github gitRef branch': (r) => r && r.message.model.modelVersions[3].github.gitRef.branch == "feat-a",
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
-            "name": model_name,
-            "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "branch": "non-existed"
-                }
+                "repo": "https://github.com/Phelan164/test-repo.git",
+                "tag": "non-existed"
             }
         }), {
             'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
-            "name": model_name,
-            "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "tag": "non-existed"
-                }
-            }
-        }), {
-            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
-        });
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "name": model_name,
             "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "commit": "non-existed"
-                }
-            }
-        }), {
-            'status': (r) => r && r.status == grpc.StatusInvalidArgument,
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
-            "name": model_name,
-            "github": {
-                "repo_url": "https://github.com/Phelan164/invalid-repo.git",
+                "repo": "https://github.com/Phelan164/invalid-repo.git",
             }
         }), {
             'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
@@ -603,10 +614,8 @@ export default () => {
 
         check(client.invoke('instill.model.v1alpha.ModelService/CreateModelByGitHub', {
             "github": {
-                "repo_url": "https://github.com/Phelan164/test-repo.git",
-                "git_ref": {
-                    "tag": "v1.0"
-                }
+                "repo": "https://github.com/Phelan164/test-repo.git",
+                "tag": "v1.0"
             }
         }), {
             'missing name status': (r) => r && r.status == grpc.StatusFailedPrecondition,

@@ -103,7 +103,7 @@ func main() {
 	grpcS := grpc.NewServer(grpcServerOpts...)
 
 	triton := triton.NewTriton()
-	triton.Close()
+	defer triton.Close()
 
 	modelPB.RegisterModelServiceServer(
 		grpcS,
@@ -131,8 +131,8 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /models/{name}/versions/{version}/upload/outputs which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/models/{name}/versions/{version}/upload/outputs", appendCustomHeaderMiddleware(handler.HandlePredictModelByUpload)); err != nil {
+	// Register custom route for  POST /models/{model_name}/instances/{instance_name}/upload/outputs which makes model inference for REST multiple-part form-data
+	if err := gwS.HandlePath("POST", "/models/{model_name}/instances/{instance_name}/upload/outputs", appendCustomHeaderMiddleware(handler.HandlePredictModelByUpload)); err != nil {
 		panic(err)
 	}
 

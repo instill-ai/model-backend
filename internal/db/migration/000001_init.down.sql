@@ -1,6 +1,7 @@
 BEGIN;
 
-DROP TABLE IF EXISTS `versions`;
-DROP TABLE IF EXISTS `models`;
+DROP TABLE IF EXISTS `triton_model`;
+DROP TABLE IF EXISTS `instance`;
+DROP TABLE IF EXISTS `model`;
 
 COMMIT;

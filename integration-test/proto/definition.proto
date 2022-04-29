@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package instill.model.v1alpha;
+
+// Protobuf standard
+import "google/protobuf/timestamp.proto";
+
+// Google api
+import "google/api/field_behavior.proto";
+
+///////////////////////////////
+// GitHub Model Spec represents a model spec data created from GitHub
+message Configuration {
+  // GitHub repository URL
+  string repo = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // GitHub tag
+  string tag = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model description
+  string html_url = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+///////////////////////////////
+// Model owner
+message Owner {
+  // Owner uuid
+  string id = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Owner username
+  string username = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Owner type
+  string type = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+///////////////////////////////////////////////////////////////////
+// ModelDefinition represents the definition of a model
+message ModelDefinition {
+  // Model visibility including public or private
+  enum Visibility {
+    // Visibility: UNSPECIFIED
+    VISIBILITY_UNSPECIFIED = 0;
+    // Visibility: PUBLIC
+    VISIBILITY_PUBLIC = 1;
+    // Visibility: PRIVATE
+    VISIBILITY_PRIVATE = 2;
+  }
+  // Model source
+  enum Source {
+    // Source: UNSPECIFIED
+    SOURCE_UNSPECIFIED = 0;
+    // Source: GITHUB
+    SOURCE_GITHUB = 1;
+    // Source: LOCAL
+    SOURCE_LOCAL = 2;
+  }
+
+  // Model definition UUID
+  string id = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition name
+  string name = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition full name (i.e., [user_name/org_name]/full_name)
+  string full_name = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition description
+  string description = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition source including 'local' or 'github' where model is imported from
+  Source source = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition configuration
+  Configuration configuration = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance list
+  repeated ModelInstance instances = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model visibility including public or private
+  Visibility visibility = 8 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model owner
+  Owner owner = 9 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model created time
+  google.protobuf.Timestamp created_at = 10 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model updated time
+  google.protobuf.Timestamp updated_at = 11 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// ModelVersion represents the version of a model
+message ModelInstance {
+  // Task enumerates the task type of a model instance
+  enum Task {
+    // Task: UNSPECIFIED
+    TASK_UNSPECIFIED = 0;
+    // Task: CLASSIFICATION
+    TASK_CLASSIFICATION = 1;
+    // Task: DETECTION
+    TASK_DETECTION = 2;
+  }
+  // Status enumerates the status of a model instance
+  enum Status {
+    // Status: UNSPECIFIED
+    STATUS_UNSPECIFIED = 0;
+    // Status: OFFLINE
+    STATUS_OFFLINE = 1;
+    // Status: ONLINE
+    STATUS_ONLINE = 2;
+    // Status: ERROR
+    STATUS_ERROR = 3;
+  }
+
+  // Model instance UUID
+  string id = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance name
+  string name = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance task
+  Task task = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance configuration
+  Configuration configuration = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance status
+  Status status = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition id
+  string model_definition_id = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition name
+  string model_definition_name = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition source
+  ModelDefinition.Source model_definition_source = 8 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance created time
+  google.protobuf.Timestamp created_at = 9 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance updated time
+  google.protobuf.Timestamp updated_at = 10 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}

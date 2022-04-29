@@ -1,0 +1,30 @@
+name: "post"
+backend: "python"
+max_batch_size: 32
+input [
+  {
+    name: "orig_img_hw"
+    data_type: TYPE_INT32
+    dims: [ 2 ]
+  }
+]
+output [
+  {
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [ 2 ]
+    label_filename: "labels.txt"
+  }
+]
+instance_group [
+  {
+    count: 1
+    kind: KIND_CPU
+  }
+]
+dynamic_batching { }
+version_policy: { all { } }
+parameters: {
+  key: "EXECUTION_ENV_PATH",
+  value: {string_value: "/conda-pack/python-3-8.tar.gz"}
+}

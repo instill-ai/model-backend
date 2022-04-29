@@ -58,19 +58,18 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 		return &ModelMeta{}, err
 	}
 	var modelMeta ModelMeta
-	fmt.Println(">>>> meta ", meta)
 	err = mapstructure.Decode(meta, &modelMeta)
 
 	return &modelMeta, err
 }
 
-func GitHubClone(dir string, github datamodel.GitHub) error {
-	if !IsGitHubURL(github.RepoUrl) {
+func GitHubClone(dir string, github datamodel.InstanceConfiguration) error {
+	if !IsGitHubURL(github.Repo) {
 		return fmt.Errorf("Invalid GitHub URL")
 	}
 
 	r, err := git.PlainClone(dir, false, &git.CloneOptions{
-		URL: github.RepoUrl,
+		URL: github.Repo,
 	})
 	if err != nil {
 		return err
@@ -85,29 +84,11 @@ func GitHubClone(dir string, github datamodel.GitHub) error {
 	if err != nil {
 		return err
 	}
-	if github.GitRef.Branch != "" {
-		err = w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", github.GitRef.Branch)),
-			Force:  true,
-		})
-	} else if github.GitRef.Tag != "" {
-		err = w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName(fmt.Sprintf("refs/tags/%s", github.GitRef.Tag)),
-			Force:  true,
-		})
-	} else if github.GitRef.Commit != "" {
-		err = w.Checkout(&git.CheckoutOptions{
-			Hash:  plumbing.NewHash(github.GitRef.Commit),
-			Force: true,
-		})
-	} else {
-		err = w.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName("refs/heads/main"), // default is main branch
-			Force:  true,
-		})
-	}
 
-	return err
+	return w.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/tags/%s", github.Tag)),
+		Force:  true,
+	})
 }
 
 type GitHubInfo struct {
@@ -140,8 +121,8 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 	return githubRepoInfo, nil
 }
 
-func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, version uint) {
-	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, version)
+func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
+	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, instanceName)
 	files, err := filepath.Glob(path)
 	if err != nil {
 		panic(err)
