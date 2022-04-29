@@ -51,71 +51,168 @@ export default function (data) {
     group("Model Backend API: Upload a model", function () {
       let fd_cls = new FormData();
       let model_name_cls = randomString(10)
+      let model_description = randomString(20)
       fd_cls.append("name", model_name_cls);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("task", "TASK_CLASSIFICATION");
+      fd_cls.append("description", model_description);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+          headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /models/upload (multipart) task cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
+          "POST /models github task cls response status": (r) =>
+          r.status === 200, 
           "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
+          r.json().model.name === model_name_cls,
           "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          r.json().model.full_name === `local-user/${model_name_cls}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /models/upload (multipart) task cls response model.source": (r) =>
+          r.json().model.source === "SOURCE_LOCAL",
+          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
 
       let fd_det = new FormData();
       let model_name_det = randomString(10)
+      model_description = randomString(20)
       fd_det.append("name", model_name_det);
-      fd_det.append("description", randomString(20));
+      fd_det.append("description", model_description);
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
-        "POST /models/upload (multipart) task det response status": (r) =>
-          r.status === 200, // TODO: update status to 201
+          "POST /models/upload (multipart) task det response status": (r) =>
+          r.status === 200, 
           "POST /models/upload (multipart) task det response model.name": (r) =>
-          r.json().model.name !== undefined,
+          r.json().model.name === model_name_det,
           "POST /models/upload (multipart) task det response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task det response model.task": (r) =>
-          r.json().model.task === "TASK_DETECTION",
+          r.json().model.full_name === `local-user/${model_name_det}`,
+          "POST /models/upload (multipart) task det response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task det response model.description": (r) =>
+          r.json().model.description === model_description,
           "POST /models/upload (multipart) task det response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task det response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task det response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task det response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task det response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task det response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task det response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task det response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task det response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task det response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task det response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task det response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_DETECTION", 
+          "POST /models/upload (multipart) task det response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task det response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task det response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task det response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,                               
       });
 
       let fd_unspecified = new FormData();
       let model_name_unspecified = randomString(10)
+      model_description = randomString(20)
       fd_unspecified.append("name", model_name_unspecified);
-      fd_unspecified.append("description", randomString(20));
+      fd_unspecified.append("description", model_description);
       fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
-        "POST /models/upload (multipart) task undefined response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task undefined response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task undefined response model.task": (r) =>
-          r.json().model.task === "TASK_UNSPECIFIED",
-          "POST /models/upload (multipart) task det response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task undefined response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+        "POST /models/upload (multipart) task unspecified response status": (r) =>
+        r.status === 200, 
+        "POST /models/upload (multipart) task unspecified response model.name": (r) =>
+        r.json().model.name === model_name_unspecified,
+        "POST /models/upload (multipart) task unspecified response model.full_name": (r) =>
+        r.json().model.full_name === `local-user/${model_name_unspecified}`,
+        "POST /models/upload (multipart) task unspecified response model.id": (r) =>
+        r.json().model.id !== undefined,
+        "POST /models/upload (multipart) task unspecified response model.description": (r) =>
+        r.json().model.description === model_description,
+        "POST /models/upload (multipart) task unspecified response model.source": (r) =>
+        r.json().model.source === "SOURCE_LOCAL",
+        "POST /models/upload (multipart) task unspecified response model.visibility": (r) =>
+        r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /models/upload (multipart) task unspecified response model.owner.id": (r) =>
+        r.json().model.owner.id !== undefined,
+        "POST /models/upload (multipart) task unspecified response model.owner.username": (r) =>
+        r.json().model.owner.username === "local-user",
+        "POST /models/upload (multipart) task unspecified response model.owner.type": (r) =>
+        r.json().model.owner.type === "user",
+        "POST /models/upload (multipart) task unspecified response model.created_at": (r) =>
+        r.json().model.created_at !== undefined,
+        "POST /models/upload (multipart) task unspecified response model.updated_at": (r) =>
+        r.json().model.updated_at !== undefined,
+        "POST /models/upload (multipart) task unspecified response model.instances.length": (r) =>
+        r.json().model.instances.length === 1,
+        "POST /models/upload (multipart) task unspecified response model.instances[0].name": (r) =>
+        r.json().model.instances[0].name === "latest",
+        "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_name": (r) =>
+        r.json().model.instances[0].model_definition_name === r.json().model.name,
+        "POST /models/upload (multipart) task unspecified response model.instances[0].status": (r) =>
+        r.json().model.instances[0].status === "STATUS_OFFLINE",          
+        "POST /models/upload (multipart) task unspecified response model.instances[0].task": (r) =>
+        r.json().model.instances[0].task === "TASK_UNSPECIFIED", 
+        "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_id": (r) =>
+        r.json().model.instances[0].model_definition_id === r.json().model.id,     
+        "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_source": (r) =>
+        r.json().model.instances[0].model_definition_source === r.json().model.source,    
+        "POST /models/upload (multipart) task unspecified response model.instances[0].created_at": (r) =>
+        r.json().model.instances[0].created_at !== undefined,  
+        "POST /models/upload (multipart) task unspecified response model.instances[0].updated_at": (r) =>
+        r.json().model.instances[0].updated_at !== undefined,   
+      });
+
+      check(http.request("POST", `${apiHost}/models/upload`, fd_unspecified.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+      }), {
+        "POST /models/upload (multipart) already existed response status 409": (r) =>
+        r.status === 409, 
       });
 
       // clean up
@@ -140,221 +237,116 @@ export default function (data) {
     });
   }
 
-  // Model Backend API: auto increase model version
-  {
-    group("Model Backend API: Auto increase model version", function () {
-      let fd_cls = new FormData();
-      let model_name = randomString(10)
-      fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
-      });
-
-      let fd_det = new FormData();
-      fd_det.append("name", model_name);
-      fd_det.append("description", randomString(20));
-      fd_det.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/models/upload`, fd_det.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
-      }), {
-        "POST /models/upload (multipart) det response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task det response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task det response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task det response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task det response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 2,
-      });
-
-      let fd_unspecified = new FormData();
-      fd_unspecified.append("name", model_name);
-      fd_unspecified.append("description", randomString(20));
-      fd_unspecified.append("content", http.file(det_model, "dummy-det-model.zip"));
-      check(http.request("POST", `${apiHost}/models/upload`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
-      }), {
-        "POST /models/upload (multipart) wrong task response status": (r) =>
-          r.status === 400,
-      });
-
-      // clean up
-      check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
-        "DELETE clean up response status": (r) =>
-          r.status === 200 // TODO: update status to 204
-      });
-    });
-  }
-
   // Model Backend API: load model online
   {
     group("Model Backend API: Load model online", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
+      let model_description = randomString(20)
       fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
+      fd_cls.append("description", model_description);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+          headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
+          "POST /models/upload (multipart) task cls response status": (r) =>
+          r.status === 200, 
           "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
+          r.json().model.name === model_name,
           "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
-      check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 2,
-      });
-
-      // Triton loading models takes time
-      sleep(6)
+      sleep(5) // Triton loading models takes time
 
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/latest`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
+        [`PATCH /models/${model_name}/instances/latest online task cls response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.name`]: (r) =>
+          r.json().instance.name === "latest",
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_LOCAL",    
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,                
       });
-
-      // Triton loading models takes time
-      sleep(6)
-
-      payload = JSON.stringify({
-        "status": "STATUS_ONLINE",
-      });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/2`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`PATCH /models/${model_name}/versions/2 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
-      });
-
-      // Triton loading models takes time
-      sleep(6)
+      sleep(5) // Triton loading models takes time
 
       payload = JSON.stringify({
         "status": "STATUS_OFFLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/latest`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 offline task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 offline task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_OFFLINE",
+        [`PATCH /models/${model_name}/instances/latest offline task cls response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest offline task cls response instance.name`]: (r) =>
+          r.json().instance.name === "latest",
+          [`PATCH /models/${model_name}/instances/latest offline task cls response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest offline task cls response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest offline task cls response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest offline task cls response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_OFFLINE",
+          [`PATCH /models/${model_name}/instances/latest offline task cls response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+          [`PATCH /models/${model_name}/instances/latest offline task cls response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_LOCAL",    
+          [`PATCH /models/${model_name}/instances/latest offline task cls response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,      
       });
-
-      // Triton unloading models takes time
-      sleep(6)
-
-      payload = JSON.stringify({
-        "status": "STATUS_OFFLINE",
-      });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/2`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`PATCH /models/${model_name}/versions/2 offline task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 offline task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_OFFLINE",
-      });
+      sleep(6) // Triton unloading models takes time
 
       // clean up
       check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
@@ -374,64 +366,98 @@ export default function (data) {
     group("Model Backend API: Predict Model with classification model", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
+      let model_description = randomString(20)
       fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
+      fd_cls.append("description", model_description);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+          headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
+          "POST /models/upload (multipart) task cls response status": (r) =>
+          r.status === 200, 
           "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
+          r.json().model.name === model_name,
           "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
           "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
           "POST /models/upload (multipart) task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
 
       let payload = JSON.stringify({
-        "status": "STATUS_ONLINE"
+        "status": "STATUS_ONLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/latest`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
+        [`PATCH /models/${model_name}/instances/latest online task cls response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.name`]: (r) =>
+          r.json().instance.name === "latest",
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_LOCAL",    
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,                
       });
+      sleep(5) // Triton loading models takes time
 
       // Predict with url
       payload = JSON.stringify({
         "inputs": [{"image_url": "https://artifacts.instill.tech/dog.jpg"}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs url cls response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs url cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs url cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls contents`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls contents.category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/versions/1/outputs url cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls response contents.score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
 
@@ -439,32 +465,32 @@ export default function (data) {
       payload = JSON.stringify({
         "inputs": [{"image_base64": base64_image,}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs base64 cls response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs base64 cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs base64 cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls contents`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls contents.category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/versions/1/outputs base64 cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls response contents.score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
 
       // Predict with multiple-part
       const fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /models/${model_name}/versions/1/upload/outputs form-data cls response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/upload/outputs form-data cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls contents`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/upload/outputs form-data cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls contents.category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/versions/1/upload/outputs form-data cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response contents.score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
 
@@ -484,71 +510,102 @@ export default function (data) {
   // Model Backend API: make inference
   {
     group("Model Backend API: Predict Model with detection model", function () {
-      let fd_cls = new FormData();
+      let model_description = randomString(20)
+      let fd_det = new FormData();
       let model_name = randomString(10)
-      fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("content", http.file(det_model, "dummy-det-model.zip"));
-      check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      fd_det.append("name", model_name);
+      fd_det.append("description", model_description);
+      fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
+      check(http.request("POST", `${apiHost}/models/upload`, fd_det.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
-        "POST /models/upload (multipart) det response status": (r) =>
-          r.status === 200,
-          "POST /models/upload (multipart) task det response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task det response model.task": (r) =>
-          r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.source": (r) =>
+          "POST /models/upload (multipart) task cls response status": (r) =>
+          r.status === 200, 
+          "POST /models/upload (multipart) task cls response model.name": (r) =>
+          r.json().model.name === model_name,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task det response model.visibility": (r) =>
+          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_DETECTION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
-
-      // Triton loading models takes time
-      sleep(6)
 
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/latest`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
+        [`PATCH /models/${model_name}/instances/latest online task cls response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.name`]: (r) =>
+          r.json().instance.name === "latest",
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_DETECTION",
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_LOCAL",    
+          [`PATCH /models/${model_name}/instances/latest online task cls response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,                
       });
+      sleep(5) // Triton loading models takes time
 
       // Predict with url
       payload = JSON.stringify({
         "inputs": [{"image_url": "https://artifacts.instill.tech/dog.jpg"}],
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs url det response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs url det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs url det output.detection_outputs.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url det output.detection_outputs.length`]: (r) =>
           r.json().output.detection_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
@@ -556,36 +613,36 @@ export default function (data) {
       payload = JSON.stringify({
         "inputs": [{"image_base64": base64_image,}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs base64 det response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs base64 det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs base64 det output.detection_outputs.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 det output.detection_outputs.length`]: (r) =>
           r.json().output.detection_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
       // Predict with multiple-part
       const fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det output.detection_outputs[0].bounding_box_objects.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det output.detection_outputs[0].bounding_box_objects.length`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects.length === 1,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
-          [`POST /models/${model_name}/versions/1/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
@@ -605,71 +662,102 @@ export default function (data) {
   // Model Backend API: make inference
   {
     group("Model Backend API: Predict Model with undefined task model", function () {
+      let model_description = randomString(20)
       let fd = new FormData();
       let model_name = randomString(10)
       fd.append("name", model_name);
-      fd.append("description", randomString(20));
+      fd.append("description", model_description);
       fd.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_UNSPECIFIED",
-          "POST /models/upload (multipart) task cls response model.source": (r) =>
+          "POST /models/upload (multipart) task unspecified response status": (r) =>
+          r.status === 200, 
+          "POST /models/upload (multipart) task unspecified response model.name": (r) =>
+          r.json().model.name === model_name,
+          "POST /models/upload (multipart) task unspecified response model.full_name": (r) =>
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task unspecified response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task unspecified response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /models/upload (multipart) task unspecified response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
+          "POST /models/upload (multipart) task unspecified response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task unspecified response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task unspecified response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task unspecified response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task unspecified response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task unspecified response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task unspecified response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task unspecified response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task unspecified response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_UNSPECIFIED", 
+          "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task unspecified response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task unspecified response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task unspecified response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
-
-      // Triton loading models takes time
-      sleep(6)
 
       let payload = JSON.stringify({
         "status": "STATUS_ONLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/latest`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
+        [`PATCH /models/${model_name}/instances/latest online task unspecified response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.name`]: (r) =>
+          r.json().instance.name === "latest",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_UNSPECIFIED",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_LOCAL",    
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,                
       });
+      sleep(5) // Triton loading models takes time
 
       // Predict with url
       payload = JSON.stringify({
         "inputs": [{"image_url": "https://artifacts.instill.tech/dog.jpg"}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs url undefined response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs url undefined response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs url undefined outputs`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url undefined outputs`]: (r) =>
           r.json().output.outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url undefined parameters`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url undefined parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs url undefined raw_output_contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url undefined raw_output_contents`]: (r) =>
           r.json().output.raw_output_contents.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url undefined raw_output_contents content`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url undefined raw_output_contents content`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
 
@@ -677,36 +765,36 @@ export default function (data) {
       payload = JSON.stringify({
         "inputs": [{"image_base64": base64_image,}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs base64 undefined response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs base64 undefined response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.outputs.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.parameters`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.raw_output_contents.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined output.raw_output_contents.length`]: (r) =>
           r.json().output.raw_output_contents.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs base64 undefined output.raw_output_contents[0]`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
 
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/upload/outputs`, fd.body(), {
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs multipart undefined response status`]: (r) =>
+        [`POST /models/${model_name}/instances/latest/outputs multipart undefined response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.outputs.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.parameters`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.raw_output_contents.length`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined output.raw_output_contents.length`]: (r) =>
           r.json().output.raw_output_contents.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs multipart undefined output.raw_output_contents[0]`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
 
@@ -728,50 +816,102 @@ export default function (data) {
     group("Model Backend API: Get model info", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
+      let model_description = randomString(20)
       fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("content", http.file(det_model, "dummy-det-model.zip"));
+      fd_cls.append("description", model_description);
+      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+          headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /models/upload (multipart) det response status": (r) =>
-          r.status === 200,
-          "POST /models/upload (multipart) task det response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task det response model.task": (r) =>
-          r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.source": (r) =>
+          "POST /models/upload (multipart) task cls response status": (r) =>
+          r.status === 200, 
+          "POST /models/upload (multipart) task cls response model.name": (r) =>
+          r.json().model.name === model_name,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task det response model.visibility": (r) =>
+          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
-
-      // Triton loading models takes time
-      sleep(6)
 
       check(http.get(`${apiHost}/models/${model_name}`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /models/${model_name} response status`]: (r) =>
-          r.status === 200,
-          [`GET /models/${model_name} task`]: (r) =>
-          r.json().model.task === "TASK_DETECTION",
-          [`GET /models/${model_name} model.model_versions.length`]: (r) =>
-          r.json().model.model_versions.length === 1,
-          [`GET /models/${model_name} version model.model_versions[0].created_at`]: (r) =>
-          r.json().model.model_versions[0].created_at !== undefined,
-          [`GET /models/${model_name} version model.model_versions[0].updated_at`]: (r) =>
-          r.json().model.model_versions[0].updated_at !== undefined,
-          [`GET /models/${model_name} version model.model_versions[0].status`]: (r) =>
-          r.json().model.model_versions[0].status === "STATUS_OFFLINE",
-          [`GET /models/${model_name} model.id`]: (r) =>
-          r.json().model.id !== undefined,
-          [`GET /models/${model_name} model.full_name`]: (r) =>
+          [`GET /models/${model_name} response status`]: (r) =>
+          r.status === 200, 
+          [`GET /models/${model_name} response model.name`]: (r) =>
+          r.json().model.name === model_name,
+          [`GET /models/${model_name} response model.full_name`]: (r) =>
           r.json().model.full_name === `local-user/${model_name}`,
+          [`GET /models/${model_name} response model.id`]: (r) =>
+          r.json().model.id !== undefined,
+          [`GET /models/${model_name} response model.description`]: (r) =>
+          r.json().model.description === model_description,
+          [`GET /models/${model_name} response model.source`]: (r) =>
+          r.json().model.source === "SOURCE_LOCAL",
+          [`GET /models/${model_name} response model.visibility`]: (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+          [`GET /models/${model_name} response model.owner.id`]: (r) =>
+          r.json().model.owner.id !== undefined,
+          [`GET /models/${model_name} response model.owner.username`]: (r) =>
+          r.json().model.owner.username === "local-user",
+          [`GET /models/${model_name} response model.owner.type`]: (r) =>
+          r.json().model.owner.type === "user",
+          [`GET /models/${model_name} response model.created_at`]: (r) =>
+          r.json().model.created_at !== undefined,
+          [`GET /models/${model_name} response model.updated_at`]: (r) =>
+          r.json().model.updated_at !== undefined,
+          [`GET /models/${model_name} response model.instances.length`]: (r) =>
+          r.json().model.instances.length === 1,
+          [`GET /models/${model_name} response model.instances[0].name`]: (r) =>
+          r.json().model.instances[0].name === "latest",
+          [`GET /models/${model_name} response model.instances[0].model_definition_name`]: (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          [`GET /models/${model_name} response model.instances[0].status`]: (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          [`GET /models/${model_name} response model.instances[0].task`]: (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          [`GET /models/${model_name} response model.instances[0].model_definition_id`]: (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          [`GET /models/${model_name} response model.instances[0].model_definition_source`]: (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          [`GET /models/${model_name} response model.instances[0].created_at`]: (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          [`GET /models/${model_name} response model.instances[0].updated_at`]: (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
 
       // clean up
@@ -781,9 +921,6 @@ export default function (data) {
         "DELETE clean up response status": (r) =>
           r.status === 200 // TODO: update status to 204
       });
-
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
@@ -792,50 +929,102 @@ export default function (data) {
     group("Model Backend API: Get model list", function () {
       let fd_cls = new FormData();
       let model_name = randomString(10)
+      let model_description = randomString(20)
       fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("content", http.file(det_model, "dummy-det-model.zip"));
+      fd_cls.append("description", model_description);
+      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+          headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /models/upload (multipart) det response status": (r) =>
-          r.status === 200,
-          "POST /models/upload (multipart) task det response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task det response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task det response model.task": (r) =>
-          r.json().model.task === "TASK_DETECTION",
-          "POST /models/upload (multipart) task det response model.source": (r) =>
+          "POST /models/upload (multipart) task cls response status": (r) =>
+          r.status === 200, 
+          "POST /models/upload (multipart) task cls response model.name": (r) =>
+          r.json().model.name === model_name,
+          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
+          r.json().model.full_name === `local-user/${model_name}`,
+          "POST /models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /models/upload (multipart) task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task det response model.visibility": (r) =>
+          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task det response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
+          "POST /models/upload (multipart) task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models/upload (multipart) task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models/upload (multipart) task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models/upload (multipart) task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models/upload (multipart) task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models/upload (multipart) task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "latest",
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models/upload (multipart) task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models/upload (multipart) task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models/upload (multipart) task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models/upload (multipart) task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models/upload (multipart) task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,              
       });
-
-      // Triton loading models takes time
-      sleep(6)
 
       check(http.get(`${apiHost}/models`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /models response status`]: (r) =>
-          r.status === 200,
-          [`GET /models task`]: (r) =>
-          r.json().models[0].task !== undefined,
-          [`GET /models models[0].model_versions.length`]: (r) =>
-          r.json().models[0].model_versions.length > 0,
-          [`GET /models models[0].model_versions[0].created_at`]: (r) =>
-          r.json().models[0].model_versions[0].created_at !== undefined,
-          [`GET /models models[0].model_versions[0].updated_at`]: (r) =>
-          r.json().models[0].model_versions[0].updated_at !== undefined,
-          [`GET /models models[0].model_versions[0].status`]: (r) =>
-          r.json().models[0].model_versions[0].status !== undefined,
-          [`GET /models models[0].id`]: (r) =>
+          "GET /models response status": (r) =>
+          r.status === 200, 
+          "GET /models response model.name": (r) =>
+          r.json().models[0].name === model_name,
+          "GET /models response model.full_name": (r) =>
+          r.json().models[0].full_name === `local-user/${model_name}`,
+          "GET /models response model.id": (r) =>
           r.json().models[0].id !== undefined,
-          [`GET /models models[0].full_name`]: (r) =>
-          r.json().models[0].full_name !== undefined,
+          "GET /models response model.description": (r) =>
+          r.json().models[0].description === model_description,
+          "GET /models response model.source": (r) =>
+          r.json().models[0].source === "SOURCE_LOCAL",
+          "GET /models response model.visibility": (r) =>
+          r.json().models[0].visibility === "VISIBILITY_PRIVATE",
+          "GET /models response model.owner.id": (r) =>
+          r.json().models[0].owner.id !== undefined,
+          "GET /models response model.owner.username": (r) =>
+          r.json().models[0].owner.username === "local-user",
+          "GET /models response model.owner.type": (r) =>
+          r.json().models[0].owner.type === "user",
+          "GET /models response model.created_at": (r) =>
+          r.json().models[0].created_at !== undefined,
+          "GET /models response model.updated_at": (r) =>
+          r.json().models[0].updated_at !== undefined,
+          "GET /models response model.instances.length": (r) =>
+          r.json().models[0].instances.length === 1,
+          "GET /models response model.instances[0].name": (r) =>
+          r.json().models[0].instances[0].name === "latest",
+          "GET /models response model.instances[0].model_definition_name": (r) =>
+          r.json().models[0].instances[0].model_definition_name === r.json().models[0].name,
+          "GET /models response model.instances[0].status": (r) =>
+          r.json().models[0].instances[0].status === "STATUS_OFFLINE",          
+          "GET /models response model.instances[0].task": (r) =>
+          r.json().models[0].instances[0].task === "TASK_CLASSIFICATION", 
+          "GET /models response model.instances[0].model_definition_id": (r) =>
+          r.json().models[0].instances[0].model_definition_id === r.json().models[0].id,     
+          "GET /models response model.instances[0].model_definition_source": (r) =>
+          r.json().models[0].instances[0].model_definition_source === r.json().models[0].source,    
+          "GET /models response model.instances[0].created_at": (r) =>
+          r.json().models[0].instances[0].created_at !== undefined,  
+          "GET /models response model.instances[0].updated_at": (r) =>
+          r.json().models[0].instances[0].updated_at !== undefined,              
       });
 
       // clean up
@@ -846,113 +1035,6 @@ export default function (data) {
           r.status === 200 // TODO: update status to 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
-    });
-  }
-
-  // Model Backend API: update model version description
-  {
-    group("Model Backend API: Update model version description", function () {
-      let fd_cls = new FormData();
-      let model_name = randomString(10)
-      fd_cls.append("name", model_name);
-      fd_cls.append("description", randomString(20));
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
-        "POST /models/upload (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
-      });
-
-      check(http.request("POST", `${apiHost}/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
-        "POST /models (multipart) cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models/upload (multipart) task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models/upload (multipart) task cls response model.full_name": (r) =>
-          r.json().model.full_name !== undefined,
-          "POST /models/upload (multipart) task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models/upload (multipart) task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_LOCAL",
-          "POST /models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-          "POST /models/upload (multipart) task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 2,
-      });
-
-      let new_description = randomString(20)
-      let payload = JSON.stringify({
-        "description": new_description,
-      });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description === new_description,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status !== undefined,
-      });
-
-      let new_description2 = randomString(20)
-      payload = JSON.stringify({
-        "description": new_description2,
-      });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/2`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`PATCH /models/${model_name}/versions/2 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description === new_description2,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/2 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status !== undefined,
-      });
-
-      // clean up
-      check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
-        "DELETE clean up response status": (r) =>
-          r.status === 200 // TODO: update status to 204
-      });
-
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
@@ -963,77 +1045,111 @@ export default function (data) {
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
         "name": model_name,
         "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
+          "repo": "https://github.com/Phelan164/test-repo.git",
+          "tag": "v1.0",
         }
       }), {
         headers: genHeader("application/json"),
       }), {
-        "POST /models by github task cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models by github task cls response model.name": (r) =>
+          "POST /models github task cls response status": (r) =>
+          r.status === 200, 
+          "POST /models github task cls response model.name": (r) =>
           r.json().model.name === model_name,
-          "POST /models by github task cls response model.full_name": (r) =>
+          "POST /models github task cls response model.full_name": (r) =>
           r.json().model.full_name === `local-user/${model_name}`,
-          "POST /models by github task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models by github task cls response model.source": (r) =>
+          "POST /models github task cls response model.id": (r) =>
+          r.json().model.id !== undefined,
+          "POST /models github task cls response model.source": (r) =>
           r.json().model.source === "SOURCE_GITHUB",
-          "POST /models by github task cls response model.visibility": (r) =>
+          "POST /models github task cls response model.configuration.repo": (r) =>
+          r.json().model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
+          "POST /models github task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
-          "POST /models by github task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 1,
-          "POST /models by github task cls response model.model_versions[0].description": (r) =>
-          r.json().model.model_versions[0].description !== undefined,
-          "POST /models by github task cls response model.model_versions[0].version": (r) =>
-          r.json().model.model_versions[0].version == 1,
-          "POST /models by github task cls response model.model_versions[0].created_at": (r) =>
-          r.json().model.model_versions[0].created_at !== undefined,
-          "POST /models by github task cls response model.model_versions[0].updated_at": (r) =>
-          r.json().model.model_versions[0].updated_at !== undefined,
-          "POST /models by github task cls response model.model_versions[0].status": (r) =>
-          r.json().model.model_versions[0].status === "STATUS_OFFLINE",
-          "POST /models by github task cls response model.model_versions[0].model_id": (r) =>
-          r.json().model.model_versions[0].model_id !== undefined,
-          "POST /models by github task cls response model.model_versions[0].github.repo_url": (r) =>
-          r.json().model.model_versions[0].github.repo_url === "https://github.com/Phelan164/test-repo.git",
+          "POST /models github task cls response model.owner.id": (r) =>
+          r.json().model.owner.id !== undefined,
+          "POST /models github task cls response model.owner.username": (r) =>
+          r.json().model.owner.username === "local-user",
+          "POST /models github task cls response model.owner.type": (r) =>
+          r.json().model.owner.type === "user",
+          "POST /models github task cls response model.created_at": (r) =>
+          r.json().model.created_at !== undefined,
+          "POST /models github task cls response model.updated_at": (r) =>
+          r.json().model.updated_at !== undefined,
+          "POST /models github task cls response model.instances.length": (r) =>
+          r.json().model.instances.length === 1,
+          "POST /models github task cls response model.instances[0].name": (r) =>
+          r.json().model.instances[0].name === "v1.0",
+          "POST /models github task cls response model.instances[0].model_definition_name": (r) =>
+          r.json().model.instances[0].model_definition_name === r.json().model.name,
+          "POST /models github task cls response model.instances[0].status": (r) =>
+          r.json().model.instances[0].status === "STATUS_OFFLINE",          
+          "POST /models github task cls response model.instances[0].task": (r) =>
+          r.json().model.instances[0].task === "TASK_CLASSIFICATION", 
+          "POST /models github task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id === r.json().model.id,     
+          "POST /models github task cls response model.instances[0].model_definition_source": (r) =>
+          r.json().model.instances[0].model_definition_source === r.json().model.source,    
+          "POST /models github task cls response model.instances[0].created_at": (r) =>
+          r.json().model.instances[0].created_at !== undefined,  
+          "POST /models github task cls response model.instances[0].updated_at": (r) =>
+          r.json().model.instances[0].updated_at !== undefined,    
+          "POST /models github task cls response model.instances[0].configuration.repo": (r) =>
+          r.json().model.instances[0].configuration.repo === r.json().model.configuration.repo,   
+          "POST /models github task cls response model.instances[0].configuration.tag": (r) =>
+          r.json().model.instances[0].configuration.tag === "v1.0",     
+          "POST /models github task cls response model.instances[0].configuration.html_url": (r) =>
+          r.json().model.instances[0].configuration.html_url === "",     
+          "POST /models github task cls response model.instances[0].model_definition_id": (r) =>
+          r.json().model.instances[0].model_definition_id !== undefined,  
       });
 
       let payload = JSON.stringify({
-        "status": "STATUS_ONLINE"
+        "status": "STATUS_ONLINE",
       });
-      check(http.patch(`${apiHost}/models/${model_name}/versions/1`, payload, {
+      check(http.patch(`${apiHost}/models/${model_name}/instances/v1.0`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`PATCH /models/${model_name}/versions/1 online task cls response status`]: (r) =>
-          r.status === 200, // TODO: update status to 201
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.version`]: (r) =>
-          r.json().model_version.version !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.model_id`]: (r) =>
-          r.json().model_version.model_id !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.description`]: (r) =>
-          r.json().model_version.description !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.created_at`]: (r) =>
-          r.json().model_version.created_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model_version.updated_at`]: (r) =>
-          r.json().model_version.updated_at !== undefined,
-          [`PATCH /models/${model_name}/versions/1 online task cls response model version model_version.status`]: (r) =>
-          r.json().model_version.status === "STATUS_ONLINE",
+        [`PATCH /models/${model_name}/instances/latest online task unspecified response status`]: (r) =>
+          r.status === 200,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.name`]: (r) =>
+          r.json().instance.name === "v1.0",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.model_definition_name`]: (r) =>
+          r.json().instance.model_definition_name === model_name,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.created_at`]: (r) =>
+          r.json().instance.created_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response instance.updated_at`]: (r) =>
+          r.json().instance.updated_at !== undefined,
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.status`]: (r) =>
+          r.json().instance.status === "STATUS_ONLINE",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.model_definition_source`]: (r) =>
+          r.json().instance.model_definition_source === "SOURCE_GITHUB",    
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance.model_definition_id`]: (r) =>
+          r.json().instance.model_definition_id !== undefined,  
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance..configuration.repo`]: (r) =>
+          r.json().instance.configuration.repo === "https://github.com/Phelan164/test-repo.git",         
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance..configuration.tag`]: (r) =>
+          r.json().instance.configuration.tag === "v1.0",         
+          [`PATCH /models/${model_name}/instances/latest online task unspecified response model instance instance..configuration.html_url`]: (r) =>
+          r.json().instance.configuration.html_url === "",                
       });
+      sleep(5) // Triton loading models takes time
 
       // Predict with url
       payload = JSON.stringify({
         "inputs": [{"image_url": "https://artifacts.instill.tech/dog.jpg"}]
       });
-      check(http.post(`${apiHost}/models/${model_name}/versions/1/outputs`, payload, {
+      check(http.post(`${apiHost}/models/${model_name}/instances/v1.0/outputs`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /models/${model_name}/versions/1/outputs url cls response status`]: (r) =>
+        [`POST /models/${model_name}/instances/v1.0/outputs url cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/versions/1/outputs url cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls contents`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/versions/1/outputs url cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls contents.category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/versions/1/outputs url cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls response contents.score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
 
@@ -1041,139 +1157,7 @@ export default function (data) {
         "name": model_name,
         "github": {
           "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-            "commit": "641c76de930003ac9f8dfc4d6b7430a9a98e305b"
-        }
-        }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /models by github task cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models by github task cls response model.name": (r) =>
-          r.json().model.name === model_name,
-          "POST /models by github task cls response model.full_name": (r) =>
-          r.json().model.full_name === `local-user/${model_name}`,
-          "POST /models by github task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models by github task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_GITHUB",
-          "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",
-          "POST /models by github task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 2,
-          "POST /models by github task cls response model.model_versions[1].description": (r) =>
-          r.json().model.model_versions[1].description !== undefined,
-          "POST /models by github task cls response model.model_versions[1].version": (r) =>
-          r.json().model.model_versions[1].version == 2,
-          "POST /models by github task cls response model.model_versions[1].created_at": (r) =>
-          r.json().model.model_versions[1].created_at !== undefined,
-          "POST /models by github task cls response model.model_versions[1].updated_at": (r) =>
-          r.json().model.model_versions[1].updated_at !== undefined,
-          "POST /models by github task cls response model.model_versions[1].status": (r) =>
-          r.json().model.model_versions[1].status === "STATUS_OFFLINE",
-          "POST /models by github task cls response model.model_versions[1].model_id": (r) =>
-          r.json().model.model_versions[1].model_id !== undefined,
-          "POST /models by github task cls response model.model_versions[1].github.repo_url": (r) =>
-          r.json().model.model_versions[1].github.repo_url === "https://github.com/Phelan164/test-repo.git",
-          "POST /models by github task cls response model.model_versions[1].github.git_ref.commit": (r) =>
-          r.json().model.model_versions[1].github.git_ref.commit === "641c76de930003ac9f8dfc4d6b7430a9a98e305b",
-      });
-
-      check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "name": model_name,
-        "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-            "tag": "v1.0"
-        }
-        }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /models by github task cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models by github task cls response model.name": (r) =>
-          r.json().model.name === model_name,
-          "POST /models by github task cls response model.full_name": (r) =>
-          r.json().model.full_name === `local-user/${model_name}`,
-          "POST /models by github task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models by github task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_GITHUB",
-          "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",
-          "POST /models by github task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 3,
-          "POST /models by github task cls response model.model_versions[0].description": (r) =>
-          r.json().model.model_versions[2].description !== undefined,
-          "POST /models by github task cls response model.model_versions[2].version": (r) =>
-          r.json().model.model_versions[2].version == 3,
-          "POST /models by github task cls response model.model_versions[2].created_at": (r) =>
-          r.json().model.model_versions[2].created_at !== undefined,
-          "POST /models by github task cls response model.model_versions[2].updated_at": (r) =>
-          r.json().model.model_versions[2].updated_at !== undefined,
-          "POST /models by github task cls response model.model_versions[2].status": (r) =>
-          r.json().model.model_versions[2].status === "STATUS_OFFLINE",
-          "POST /models by github task cls response model.model_versions[2].model_id": (r) =>
-          r.json().model.model_versions[2].model_id !== undefined,
-          "POST /models by github task cls response model.model_versions[2].github.repo_url": (r) =>
-          r.json().model.model_versions[2].github.repo_url === "https://github.com/Phelan164/test-repo.git",
-          "POST /models by github task cls response model.model_versions[2].github.git_ref.tag": (r) =>
-          r.json().model.model_versions[2].github.git_ref.tag === "v1.0",
-      });
-
-      check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "name": model_name,
-        "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-            "branch": "feat-a"
-        }
-        }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /models by github task cls response status": (r) =>
-          r.status === 200, // TODO: update status to 201
-          "POST /models by github task cls response model.name": (r) =>
-          r.json().model.name !== undefined,
-          "POST /models by github task cls response model.full_name": (r) =>
-          r.json().model.full_name === `local-user/${model_name}`,
-          "POST /models by github task cls response model.task": (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-          "POST /models by github task cls response model.source": (r) =>
-          r.json().model.source === "SOURCE_GITHUB",
-          "POST /models by github task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",
-          "POST /models by github task cls response model.model_versions.length": (r) =>
-          r.json().model.model_versions.length === 4,
-          "POST /models by github task cls response model.model_versions[3].description": (r) =>
-          r.json().model.model_versions[3].description !== undefined,
-          "POST /models by github task cls response model.model_versions[3].version": (r) =>
-          r.json().model.model_versions[3].version == 4,
-          "POST /models by github task cls response model.model_versions[3].created_at": (r) =>
-          r.json().model.model_versions[3].created_at !== undefined,
-          "POST /models by github task cls response model.model_versions[3].updated_at": (r) =>
-          r.json().model.model_versions[3].updated_at !== undefined,
-          "POST /models by github task cls response model.model_versions[3].status": (r) =>
-          r.json().model.model_versions[3].status === "STATUS_OFFLINE",
-          "POST /models by github task cls response model.model_versions[3].model_id": (r) =>
-          r.json().model.model_versions[3].model_id !== undefined,
-          "POST /models by github task cls response model.model_versions[3].github.repo_url": (r) =>
-          r.json().model.model_versions[3].github.repo_url === "https://github.com/Phelan164/test-repo.git",
-          "POST /models by github task cls response model.model_versions[3].github.git_ref.branch": (r) =>
-          r.json().model.model_versions[3].github.git_ref.branch === "feat-a",
-      });
-
-
-      check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "name": model_name,
-        "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-              "branch": "non-existed"
-          }
+          "tag": "non-existed"
         }
       }), {
         headers: genHeader("application/json"),
@@ -1185,10 +1169,7 @@ export default function (data) {
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
         "name": model_name,
         "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-              "tag": "non-existed"
-          }
+          "repo": "https://github.com/Phelan164/non-existed-repo.git",
         }
       }), {
         headers: genHeader("application/json"),
@@ -1198,34 +1179,9 @@ export default function (data) {
       });
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "name": model_name,
         "github": {
-          "repo_url": "https://github.com/Phelan164/test-repo.git",
-          "git_ref": {
-              "commit": "non-existed"
-          }
+          "repo": "https://github.com/Phelan164/test-repo.git"
         }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /models by github invalid url status": (r) =>
-          r.status === 400,
-      });
-
-      check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "name": model_name,
-        "github": {
-          "repo_url": "https://github.com/Phelan164/non-existed-repo.git",
-        }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /models by github invalid url status": (r) =>
-          r.status === 400,
-      });
-
-      check(http.request("POST", `${apiHost}/models`, JSON.stringify({
-        "github_url":  "https://github.com/Phelan164/test-repo.git"
       }), {
         headers: genHeader("application/json"),
       }), {

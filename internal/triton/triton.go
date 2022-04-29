@@ -20,10 +20,10 @@ import (
 type Triton interface {
 	ServerLiveRequest() *inferenceserver.ServerLiveResponse
 	ServerReadyRequest() *inferenceserver.ServerReadyResponse
-	ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse
-	ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse
-	ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
-	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error)
+	ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
+	ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
+	ModelInferRequest(task modelPB.ModelInstance_Task, rawInput [][]byte, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error)
 	LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
 	UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
 	ListModelsRequest() *inferenceserver.RepositoryIndexResponse
@@ -90,7 +90,7 @@ func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 	return serverReadyResponse
 }
 
-func (ts *triton) ModelMetadataRequest(modelName string, modelVersion string) *inferenceserver.ModelMetadataResponse {
+func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -98,7 +98,7 @@ func (ts *triton) ModelMetadataRequest(modelName string, modelVersion string) *i
 	// Create status request for a given model
 	modelMetadataRequest := inferenceserver.ModelMetadataRequest{
 		Name:    modelName,
-		Version: modelVersion,
+		Version: modelInstance,
 	}
 	// Submit modelMetadata request to server
 	modelMetadataResponse, err := ts.tritonClient.ModelMetadata(ctx, &modelMetadataRequest)
@@ -108,7 +108,7 @@ func (ts *triton) ModelMetadataRequest(modelName string, modelVersion string) *i
 	return modelMetadataResponse
 }
 
-func (ts *triton) ModelConfigRequest(modelName string, modelVersion string) *inferenceserver.ModelConfigResponse {
+func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -116,7 +116,7 @@ func (ts *triton) ModelConfigRequest(modelName string, modelVersion string) *inf
 	// Create status request for a given model
 	modelConfigRequest := inferenceserver.ModelConfigRequest{
 		Name:    modelName,
-		Version: modelVersion,
+		Version: modelInstance,
 	}
 	// Submit modelMetadata request to server
 	modelConfigResponse, err := ts.tritonClient.ModelConfig(ctx, &modelConfigRequest)
@@ -126,7 +126,7 @@ func (ts *triton) ModelConfigRequest(modelName string, modelVersion string) *inf
 	return modelConfigResponse
 }
 
-func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, modelName string, modelVersion string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, rawInput [][]byte, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -161,7 +161,7 @@ func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, 
 	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch task {
-		case modelPB.Model_TASK_CLASSIFICATION:
+		case modelPB.ModelInstance_TASK_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 				Parameters: map[string]*inferenceserver.InferParameter{
@@ -172,7 +172,7 @@ func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, 
 					},
 				},
 			})
-		case modelPB.Model_TASK_DETECTION:
+		case modelPB.ModelInstance_TASK_DETECTION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
@@ -185,7 +185,7 @@ func (ts *triton) ModelInferRequest(task modelPB.Model_Task, rawInput [][]byte, 
 	// Create inference request for specific model/version
 	modelInferRequest := inferenceserver.ModelInferRequest{
 		ModelName:    modelName,
-		ModelVersion: modelVersion,
+		ModelVersion: modelInstance,
 		Inputs:       inferInputs,
 		Outputs:      inferOutputs,
 	}
@@ -260,19 +260,19 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
-func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
+func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
 	)
 
 	switch task {
-	case modelPB.Model_TASK_CLASSIFICATION:
+	case modelPB.ModelInstance_TASK_CLASSIFICATION:
 		outputs, err = postProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process classification output: %w", err)
 		}
-	case modelPB.Model_TASK_DETECTION:
+	case modelPB.ModelInstance_TASK_DETECTION:
 		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)

@@ -1,0 +1,56 @@
+# Adapted from https://github.com/NVIDIA/triton-inference-server/blob/master/docs/examples/ensemble_model_repository/preprocess_resnet50_ensemble/config.pbtxt
+name: "ensemble"
+platform: "ensemble"
+max_batch_size: 32
+input [
+  {
+    name: "input"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+]
+output [
+  {
+    name: "output_bboxes"
+    data_type: TYPE_FP32
+    dims: [ -1, 5 ]
+  },
+  {
+    name: "output_labels"
+    data_type: TYPE_STRING
+    dims: [ -1 ]
+  }
+]
+ensemble_scheduling {
+  step [
+    {
+      model_name: "pre"
+      model_version: 1
+      input_map {
+        key: "input"
+        value: "input"
+      }
+      output_map {
+        key: "orig_img_hw"
+        value: "orig_img_hw"
+      }
+    },
+    {
+      model_name: "post"
+      model_version: 1
+      input_map {
+        key: "orig_img_hw"
+        value: "orig_img_hw"
+      }
+      output_map {
+        key: "output_bboxes"
+        value: "output_bboxes"
+      }
+      output_map {
+        key: "output_labels"
+        value: "output_labels"
+      }
+    }
+  ]
+}
+version_policy: { all { }}

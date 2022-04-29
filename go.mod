@@ -25,9 +25,10 @@ require (
 
 require (
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
+	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220412141851-6d2ec225afb9
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220428194357-5555d8b26ad5
 	github.com/knadh/koanf v1.4.0
 	github.com/mitchellh/mapstructure v1.4.3
 	gopkg.in/src-d/go-git.v4 v4.13.1

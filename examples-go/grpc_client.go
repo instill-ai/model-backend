@@ -11,7 +11,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
@@ -98,15 +97,10 @@ func load(c *cli.Context) error {
 	defer conn.Close()
 	client := modelPB.NewModelServiceClient(conn)
 
-	res, err := client.UpdateModelVersion(ctx, &modelPB.UpdateModelVersionRequest{
-		Name:    c.String("name"),
-		Version: uint64(c.Int("version")),
-		VersionPatch: &modelPB.UpdateModelVersionPatch{
-			Status: modelPB.ModelVersion_STATUS_ONLINE,
-		},
-		FieldMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"name", "status"},
-		},
+	res, err := client.UpdateModelInstance(ctx, &modelPB.UpdateModelInstanceRequest{
+		ModelName:    c.String("name"),
+		InstanceName: c.String("instance"),
+		Status:       modelPB.ModelInstance_STATUS_ONLINE,
 	})
 	if err != nil {
 		log.Fatalf("Could not load model into triton server %v", err.Error())
@@ -119,7 +113,7 @@ func load(c *cli.Context) error {
 func predict(c *cli.Context) error {
 	filePath := c.String("file")
 	modelName := c.String("name")
-	modelVersion := c.Int("version")
+	instanceName := c.String("instance")
 	if _, err := os.Stat(filePath); err != nil {
 		log.Fatalf("File image do not exist")
 	}
@@ -167,10 +161,10 @@ func predict(c *cli.Context) error {
 
 		if firstChunk {
 			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
-				Name:        modelName,
-				Version:     uint64(modelVersion),
-				FileLengths: []uint64{uint64(fi1.Size())},
-				Bytes:       buf[:n],
+				ModelName:    modelName,
+				InstanceName: instanceName,
+				FileLengths:  []uint64{uint64(fi1.Size())},
+				Bytes:        buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
@@ -231,11 +225,11 @@ func main() {
 						Usage:    "Model `NAME`",
 						Required: true,
 					},
-					&cli.IntFlag{
-						Name:        "version",
-						Aliases:     []string{"v"},
-						Usage:       "model `VERSION`",
-						DefaultText: "1",
+					&cli.StringFlag{
+						Name:        "instance",
+						Aliases:     []string{"i"},
+						Usage:       "model `INSTANCE` name",
+						DefaultText: "latest",
 						Required:    false,
 					},
 				},
@@ -255,10 +249,10 @@ func main() {
 						Required: true,
 					},
 					&cli.IntFlag{
-						Name:        "version",
-						Aliases:     []string{"v"},
-						Usage:       "model `VERSION`",
-						DefaultText: "1",
+						Name:        "instance",
+						Aliases:     []string{"i"},
+						Usage:       "model `INSTANCE` name",
+						DefaultText: "latest",
 						Required:    false,
 					},
 					&cli.StringFlag{

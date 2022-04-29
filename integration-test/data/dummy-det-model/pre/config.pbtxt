@@ -1,0 +1,29 @@
+name: "pre"
+backend: "python"
+max_batch_size: 32
+input [
+  {
+    name: "input"
+    data_type: TYPE_STRING
+    dims: [ 1 ]
+  }
+]
+output [
+  {
+    name: "orig_img_hw"
+    data_type: TYPE_INT32
+    dims: [ 2 ]
+  }
+]
+instance_group [
+  {
+    count: 1
+    kind: KIND_CPU
+  }
+]
+dynamic_batching { }
+version_policy: { all { }}
+parameters: {
+  key: "EXECUTION_ENV_PATH",
+  value: {string_value: "/conda-pack/python-3-8.tar.gz"}
+}

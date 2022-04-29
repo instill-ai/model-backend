@@ -117,7 +117,7 @@ func (mr *MockTritonMockRecorder) ModelConfigRequest(arg0, arg1 interface{}) *go
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTriton) ModelInferRequest(arg0 modelv1alpha.Model_Task, arg1 [][]byte, arg2, arg3 string, arg4 *inferenceserver.ModelMetadataResponse, arg5 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTriton) ModelInferRequest(arg0 modelv1alpha.ModelInstance_Task, arg1 [][]byte, arg2, arg3 string, arg4 *inferenceserver.ModelMetadataResponse, arg5 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)
@@ -146,7 +146,7 @@ func (mr *MockTritonMockRecorder) ModelMetadataRequest(arg0, arg1 interface{}) *
 }
 
 // PostProcess mocks base method.
-func (m *MockTriton) PostProcess(arg0 *inferenceserver.ModelInferResponse, arg1 *inferenceserver.ModelMetadataResponse, arg2 modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockTriton) PostProcess(arg0 *inferenceserver.ModelInferResponse, arg1 *inferenceserver.ModelMetadataResponse, arg2 modelv1alpha.ModelInstance_Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PostProcess", arg0, arg1, arg2)
 	ret0, _ := ret[0].(interface{})
