@@ -453,13 +453,37 @@ export default function (data) {
       }), {
         [`POST /models/${model_name}/instances/latest/outputs url cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/instances/latest/outputs url cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls output.classification_outputs.length`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/instances/latest/outputs url cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls output.classification_outputs[0].category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/instances/latest/outputs url cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs url cls response output.classification_outputs[0].score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
+
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"},
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs url cls multiple images status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs url cls multiple images output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/outputs url cls multiple images output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+          [`POST /models/${model_name}/instances/latest/outputs url cls multiple images output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+          [`POST /models/${model_name}/instances/latest/outputs url cls multiple images output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+          [`POST /models/${model_name}/instances/latest/outputs url cls multiple images output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,          
+      });      
 
       // Predict with base64
       payload = JSON.stringify({
@@ -470,29 +494,74 @@ export default function (data) {
       }), {
         [`POST /models/${model_name}/instances/latest/outputs base64 cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/instances/latest/outputs base64 cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls output.classification_outputs.length`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/instances/latest/outputs base64 cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls output.classification_outputs[0].category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/instances/latest/outputs base64 cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls response output.classification_outputs[0].score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
 
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_base64": base64_image,},
+          {"image_base64": base64_image,}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images response output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+          [`POST /models/${model_name}/instances/latest/outputs base64 cls multiple images response output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,          
+      });
+
       // Predict with multiple-part
-      const fd = new FormData();
+      let fd = new FormData();
       fd.append("file", http.file(dog_img));
       check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls contents`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls output.classification_outputs.length`]: (r) =>
           r.json().output.classification_outputs.length === 1,
-          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls contents.category`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls output.classification_outputs[0].category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
-          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response contents.score`]: (r) =>
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls routput.classification_outputs[0].score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
+
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+          [`POST /models/${model_name}/instances/latest/upload/outputs form-data cls response output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,          
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
@@ -609,6 +678,34 @@ export default function (data) {
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"},
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"}
+        ],
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs url det multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/outputs url det multiple images output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs url det response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,          
+      });      
+
       // Predict with base64
       payload = JSON.stringify({
         "inputs": [{"image_base64": base64_image,}]
@@ -628,16 +725,44 @@ export default function (data) {
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
 
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_base64": base64_image,},
+          {"image_base64": base64_image,}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images utput.detection_outputs[0].bounding_box_objects.length`]: (r) =>
+          r.json().output.detection_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,          
+      });      
+
       // Predict with multiple-part
-      const fd = new FormData();
+      let fd = new FormData();
       fd.append("file", http.file(dog_img));
       check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response status`]: (r) =>
           r.status === 200,
-          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det output.detection_outputs[0].bounding_box_objects.length`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects.length === 1,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 1,
           [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
           [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
@@ -645,6 +770,32 @@ export default function (data) {
           [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
+
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 2,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].category === "test",
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].score !== undefined,
+          [`POST /models/${model_name}/instances/latest/upload/outputs multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,          
+      });
+
 
       // clean up
       check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
@@ -761,6 +912,30 @@ export default function (data) {
           r.json().output.raw_output_contents[0] !== undefined,
       });
 
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"},
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images outputs`]: (r) =>
+          r.json().output.outputs.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images output.outputs[0].shape[0]`]: (r) =>
+          r.json().output.outputs[0].shape[0] === 2,
+          [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images parameters`]: (r) =>
+          r.json().output.parameters !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images raw_output_contents`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs url undefined multiple images output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
+      });      
+
       // Predict with base64
       payload = JSON.stringify({
         "inputs": [{"image_base64": base64_image,}]
@@ -780,6 +955,30 @@ export default function (data) {
           r.json().output.raw_output_contents[0] !== undefined,
       });
 
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_base64": base64_image,},
+          {"image_base64": base64_image,}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images output.outputs.length`]: (r) =>
+          r.json().output.outputs.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images output.outputs[0].shape[0]`]: (r) =>
+          r.json().output.outputs[0].shape[0] === 2,
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images output.parameters`]: (r) =>
+          r.json().output.parameters !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images output.raw_output_contents.length`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs base64 undefined multiple images output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,      
+      });      
+
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(dog_img));
@@ -797,6 +996,27 @@ export default function (data) {
           [`POST /models/${model_name}/instances/latest/outputs multipart undefined output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
+
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(dog_img));
+      check(http.post(`${apiHost}/models/${model_name}/instances/latest/upload/outputs`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images output.outputs.length`]: (r) =>
+          r.json().output.outputs.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
+          r.json().output.outputs[0].shape[0] === 2,
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images output.parameters`]: (r) =>
+          r.json().output.parameters !== undefined,
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+          [`POST /models/${model_name}/instances/latest/outputs multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/models/${model_name}`, null, {
@@ -1138,7 +1358,9 @@ export default function (data) {
 
       // Predict with url
       payload = JSON.stringify({
-        "inputs": [{"image_url": "https://artifacts.instill.tech/dog.jpg"}]
+        "inputs": [
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"}
+        ]
       });
       check(http.post(`${apiHost}/models/${model_name}/instances/v1.0/outputs`, payload, {
         headers: genHeader(`application/json`),
@@ -1152,6 +1374,30 @@ export default function (data) {
           [`POST /models/${model_name}/instances/v1.0/outputs url cls response contents.score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
+
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "inputs": [
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"},
+          {"image_url": "https://artifacts.instill.tech/dog.jpg"}
+        ]
+      });
+      check(http.post(`${apiHost}/models/${model_name}/instances/v1.0/outputs`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images response status`]: (r) =>
+          r.status === 200,
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+          [`POST /models/${model_name}/instances/v1.0/outputs url cls multiple images output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,          
+      });      
 
       check(http.request("POST", `${apiHost}/models`, JSON.stringify({
         "name": model_name,
