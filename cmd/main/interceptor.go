@@ -26,7 +26,7 @@ func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 		return nil, status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	md.Append("Username", "local-user")
+	md.Append("owner", "local-user")
 
 	newCtx := metadata.NewIncomingContext(ctx, md)
 
@@ -42,7 +42,7 @@ func streamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 		return status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	md.Append("Username", "local-user")
+	md.Append("owner", "local-user")
 
 	newCtx := metadata.NewIncomingContext(stream.Context(), md)
 	wrapped := grpc_middleware.WrapServerStream(stream)

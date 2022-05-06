@@ -131,13 +131,13 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /models/{model_name}/instances/{instance_name}/upload/outputs which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/models/{model_name}/instances/{instance_name}/upload/outputs", appendCustomHeaderMiddleware(handler.HandlePredictModelByUpload)); err != nil {
+	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}/upload:trigge which makes model inference for REST multiple-part form-data
+	if err := gwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/upload:trigger", appendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /models/upload which uploads model for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/models/upload", appendCustomHeaderMiddleware(handler.HandleCreateModelByUpload)); err != nil {
+	if err := gwS.HandlePath("POST", "/v1alpha/models/upload", appendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 

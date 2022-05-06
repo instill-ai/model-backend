@@ -1,0 +1,14 @@
+- title: GitHub
+  id: github
+  name: "model-definitions/github"
+  uid: 909c3278-f7d1-461c-9352-87741bef11d3
+  documentationUrl: https://docs.instill.tech/integrations/models/http
+  icon: http.svg
+  spec: 
+    documentationUrl: https://docs.instill.tech/integrations/models/http
+    specification:
+      repo: 
+      tag:
+  public: true
+  custom: false
+  

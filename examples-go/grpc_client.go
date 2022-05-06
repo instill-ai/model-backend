@@ -60,13 +60,14 @@ func upload(c *cli.Context) error {
 		}
 		if firstChunk {
 			err = streamUploader.Send(&modelPB.CreateModelBinaryFileUploadRequest{
-				Name:        modelName,
-				Description: "YoloV4 for object detection",
-				Bytes:       buf[:n],
+				Model: &modelPB.Model{
+					Id: modelName,
+				},
+				Bytes: buf[:n],
 			})
 			firstChunk = false
 			if err != nil {
-				log.Fatalf("Could not send buffer data to server")
+				log.Fatalf("Could not send buffer data to server in first chunk")
 			}
 		} else {
 			err = streamUploader.Send(&modelPB.CreateModelBinaryFileUploadRequest{
@@ -97,10 +98,8 @@ func load(c *cli.Context) error {
 	defer conn.Close()
 	client := modelPB.NewModelServiceClient(conn)
 
-	res, err := client.UpdateModelInstance(ctx, &modelPB.UpdateModelInstanceRequest{
-		ModelName:    c.String("name"),
-		InstanceName: c.String("instance"),
-		Status:       modelPB.ModelInstance_STATUS_ONLINE,
+	res, err := client.DeployModelInstance(ctx, &modelPB.DeployModelInstanceRequest{
+		Name: fmt.Sprintf("models/%v/instances/%v", c.String("name"), c.String("instance")),
 	})
 	if err != nil {
 		log.Fatalf("Could not load model into triton server %v", err.Error())
@@ -129,7 +128,7 @@ func predict(c *cli.Context) error {
 	defer conn.Close()
 	client := modelPB.NewModelServiceClient(conn)
 
-	streamUploader, err := client.TriggerModelBinaryFileUpload(ctx)
+	streamUploader, err := client.TriggerModelInstanceBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create predict stream")
 	}
@@ -160,18 +159,17 @@ func predict(c *cli.Context) error {
 		}
 
 		if firstChunk {
-			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
-				ModelName:    modelName,
-				InstanceName: instanceName,
-				FileLengths:  []uint64{uint64(fi1.Size())},
-				Bytes:        buf[:n],
+			err = streamUploader.Send(&modelPB.TriggerModelInstanceBinaryFileUploadRequest{
+				Name:        fmt.Sprintf("models/%v/instances/%v", modelName, instanceName),
+				FileLengths: []uint64{uint64(fi1.Size())},
+				Bytes:       buf[:n],
 			})
 			if err != nil {
 				log.Fatalf("Could not send buffer data to server")
 			}
 			firstChunk = false
 		} else {
-			err = streamUploader.Send(&modelPB.TriggerModelBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.TriggerModelInstanceBinaryFileUploadRequest{
 				Bytes: buf[:n],
 			})
 			if err != nil {
@@ -248,7 +246,7 @@ func main() {
 						Usage:    "Model `NAME`",
 						Required: true,
 					},
-					&cli.IntFlag{
+					&cli.StringFlag{
 						Name:        "instance",
 						Aliases:     []string{"i"},
 						Usage:       "model `INSTANCE` name",

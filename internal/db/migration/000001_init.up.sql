@@ -1,64 +1,80 @@
 BEGIN;
 
-CREATE TYPE valid_status AS ENUM (
-  'STATUS_OFFLINE', 
-  'STATUS_ONLINE', 
-  'STATUS_ERROR'
+CREATE TYPE valid_state AS ENUM (
+  'STATE_OFFLINE', 
+  'STATE_ONLINE', 
+  'STATE_ERROR'
 );
 CREATE TYPE valid_visibility AS ENUM (
   'VISIBILITY_PUBLIC', 
   'VISIBILITY_PRIVATE'
 );
-CREATE TYPE valid_source AS ENUM (
-  'SOURCE_GITHUB', 
-  'SOURCE_LOCAL'
+
+CREATE TYPE valid_task AS ENUM (
+  'TASK_UNSPECIFIED', 
+  'TASK_CLASSIFICATION',
+  'TASK_DETECTION'
+);
+
+CREATE TABLE IF NOT EXISTS "model_definition" (
+  "uid" UUID PRIMARY KEY,
+  "id" VARCHAR(63) NOT NULL,
+  "title" varchar(255) NOT NULL,
+  "documentation_url" VARCHAR(1024) NULL,
+  "icon" VARCHAR(1024) NULL,
+  "spec" JSONB NOT NULL,
+  "public" bool,
+  "custom" bool,
+  "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL
 );
 
 CREATE TABLE IF NOT EXISTS "model" (
-  "id" UUID PRIMARY KEY,
-  "name" varchar(256) NOT NULL,
-  "namespace" varchar(39) NOT NULL,
+  "uid" UUID PRIMARY KEY,
+  "id" VARCHAR(63) NOT NULL,
   "description" varchar(1024),
-  "source" VALID_SOURCE DEFAULT 'SOURCE_LOCAL' NOT NULL,
+  "model_definition" varchar(255) NOT NULL,
+  "configuration" JSONB NOT NULL,
   "visibility" VALID_VISIBILITY DEFAULT 'VISIBILITY_PRIVATE' NOT NULL,
-  "config" JSONB,
-  "owner" JSONB,
-  "created_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "deleted_at" timestamptz DEFAULT CURRENT_TIMESTAMP NULL
+  "owner" VARCHAR(255) NULL,
+  "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+  UNIQUE ("id", "owner")
 );
 
-CREATE TABLE IF NOT EXISTS "instance" (
-  "id" UUID PRIMARY KEY,
-  "model_id" UUID NOT NULL,
-  "name" varchar(256) NOT NULL,
-  "created_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "deleted_at" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
-  "status" VALID_STATUS NOT NULL,
-  "config" JSONB,
-  "task" int NOT NULL,
-  UNIQUE ("model_id", "name"),
+CREATE TABLE IF NOT EXISTS "model_instance" (
+  "uid" UUID PRIMARY KEY,
+  "id" VARCHAR(63) NOT NULL,
+  "state" VALID_STATE NOT NULL,
+  "task" VALID_TASK NOT NULL,
+  "model_definition" varchar(255) NULL,
+  "configuration" JSONB NOT NULL,
+  "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+  "model_uid" UUID NOT NULL,
+  UNIQUE ("model_uid", "id"),
   CONSTRAINT fk_instance_model_id
-    FOREIGN KEY ("model_id")
-    REFERENCES model("id")
+    FOREIGN KEY ("model_uid")
+    REFERENCES model("uid")
     ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS "triton_model" (
-  "id" UUID PRIMARY KEY,
-  "name" varchar(256) NOT NULL,
+  "uid" UUID PRIMARY KEY,
+  "name" varchar(255) NOT NULL,
   "version" int NOT NULL,
-  "status" VALID_STATUS NOT NULL,
-  "model_id" UUID NOT NULL,
-  "model_instance" varchar(256) NOT NULL,
+  "state" VALID_STATE NOT NULL,
   "platform" varchar(256),
-  "created_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "updated_at" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "deleted_at" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+  "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+  "model_instance_uid" UUID NOT NULL,
   CONSTRAINT fk_triton_model_instance
-    FOREIGN KEY ("model_id", "model_instance")
-    REFERENCES instance("model_id", "name")
+    FOREIGN KEY ("model_instance_uid")
+    REFERENCES model_instance("uid")
     ON DELETE CASCADE
 );
 

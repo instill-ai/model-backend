@@ -92,7 +92,7 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	return &img, &metadata, nil
 }
 
-func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
+func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (imgsBytes [][]byte, imgsMetadata []*imageMetadata, err error) {
 	for idx, content := range req.Inputs {
 		var (
 			img      *image.Image

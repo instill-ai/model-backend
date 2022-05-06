@@ -9,9 +9,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/gernest/front"
+	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
@@ -63,7 +65,7 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	return &modelMeta, err
 }
 
-func GitHubClone(dir string, github datamodel.InstanceConfiguration) error {
+func GitHubClone(dir string, github datamodel.ModelInstanceConfiguration) error {
 	if !IsGitHubURL(github.Repo) {
 		return fmt.Errorf("Invalid GitHub URL")
 	}
@@ -130,6 +132,57 @@ func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelNa
 	for _, f := range files {
 		if err := os.RemoveAll(f); err != nil {
 			panic(err)
+		}
+	}
+}
+
+// ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.
+func ConvertAllJSONKeySnakeCase(i interface{}) {
+	switch v := i.(type) {
+	case map[string]interface{}:
+		for k, vv := range v {
+			sc := strcase.ToSnake(k)
+			if sc != k {
+				v[sc] = v[k]
+				delete(v, k)
+			}
+			ConvertAllJSONKeySnakeCase(vv)
+		}
+	case []map[string]interface{}:
+		for _, vv := range v {
+			ConvertAllJSONKeySnakeCase(vv)
+		}
+	}
+}
+
+// ConvertAllJSONEnumValueToProtoStyle converts lowercase enum value to the Protobuf naming convention where the enum type is always prefixed and is UPPERCASE snake_case.
+// For examples:
+// - api in a Protobuf `Enum SourceType` type will be converted to SOURCE_TYPE_API
+// - oauth2.0  in a Protobuf `Enum AuthFlowType` type will be converted to AUTH_FLOW_TYPE_OAUTH2_0
+func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i interface{}) {
+	switch v := i.(type) {
+	case map[string]interface{}:
+		for k, vv := range v {
+			if _, ok := enumRegistry[k]; ok {
+				for enumKey := range enumRegistry[k] {
+					if reflect.TypeOf(vv).Kind() == reflect.Slice { // repeated enum type
+						for kk, vvv := range vv.([]interface{}) {
+							if strings.ReplaceAll(vvv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
+								vv.([]interface{})[kk] = enumKey
+							}
+						}
+					} else {
+						if strings.ReplaceAll(vv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
+							v[k] = enumKey
+						}
+					}
+				}
+			}
+			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
+		}
+	case []map[string]interface{}:
+		for _, vv := range v {
+			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
 	}
 }

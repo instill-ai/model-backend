@@ -35,20 +35,6 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateInstance mocks base method.
-func (m *MockRepository) CreateInstance(arg0 datamodel.Instance) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInstance", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateInstance indicates an expected call of CreateInstance.
-func (mr *MockRepositoryMockRecorder) CreateInstance(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockRepository)(nil).CreateInstance), arg0)
-}
-
 // CreateModel mocks base method.
 func (m *MockRepository) CreateModel(arg0 datamodel.Model) error {
 	m.ctrl.T.Helper()
@@ -63,18 +49,32 @@ func (mr *MockRepositoryMockRecorder) CreateModel(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockRepository)(nil).CreateModel), arg0)
 }
 
-// CreateTModel mocks base method.
-func (m *MockRepository) CreateTModel(arg0 datamodel.TritonModel) error {
+// CreateModelInstance mocks base method.
+func (m *MockRepository) CreateModelInstance(arg0 datamodel.ModelInstance) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTModel", arg0)
+	ret := m.ctrl.Call(m, "CreateModelInstance", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateTModel indicates an expected call of CreateTModel.
-func (mr *MockRepositoryMockRecorder) CreateTModel(arg0 interface{}) *gomock.Call {
+// CreateModelInstance indicates an expected call of CreateModelInstance.
+func (mr *MockRepositoryMockRecorder) CreateModelInstance(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTModel", reflect.TypeOf((*MockRepository)(nil).CreateTModel), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelInstance", reflect.TypeOf((*MockRepository)(nil).CreateModelInstance), arg0)
+}
+
+// CreateTritonModel mocks base method.
+func (m *MockRepository) CreateTritonModel(arg0 datamodel.TritonModel) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTritonModel", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateTritonModel indicates an expected call of CreateTritonModel.
+func (mr *MockRepositoryMockRecorder) CreateTritonModel(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTritonModel", reflect.TypeOf((*MockRepository)(nil).CreateTritonModel), arg0)
 }
 
 // DeleteModel mocks base method.
@@ -105,26 +105,26 @@ func (mr *MockRepositoryMockRecorder) DeleteModelInstance(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelInstance", reflect.TypeOf((*MockRepository)(nil).DeleteModelInstance), arg0, arg1)
 }
 
-// GetModelByName mocks base method.
-func (m *MockRepository) GetModelByName(arg0, arg1 string) (datamodel.Model, error) {
+// GetModelById mocks base method.
+func (m *MockRepository) GetModelById(arg0, arg1 string) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByName", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetModelById", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelByName indicates an expected call of GetModelByName.
-func (mr *MockRepositoryMockRecorder) GetModelByName(arg0, arg1 interface{}) *gomock.Call {
+// GetModelById indicates an expected call of GetModelById.
+func (mr *MockRepositoryMockRecorder) GetModelById(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByName", reflect.TypeOf((*MockRepository)(nil).GetModelByName), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelById", reflect.TypeOf((*MockRepository)(nil).GetModelById), arg0, arg1)
 }
 
 // GetModelInstance mocks base method.
-func (m *MockRepository) GetModelInstance(arg0 uuid.UUID, arg1 string) (datamodel.Instance, error) {
+func (m *MockRepository) GetModelInstance(arg0 uuid.UUID, arg1 string) (datamodel.ModelInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelInstance", arg0, arg1)
-	ret0, _ := ret[0].(datamodel.Instance)
+	ret0, _ := ret[0].(datamodel.ModelInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -135,26 +135,11 @@ func (mr *MockRepositoryMockRecorder) GetModelInstance(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelInstance", reflect.TypeOf((*MockRepository)(nil).GetModelInstance), arg0, arg1)
 }
 
-// GetModelInstanceLatest mocks base method.
-func (m *MockRepository) GetModelInstanceLatest(arg0 uuid.UUID) (datamodel.Instance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelInstanceLatest", arg0)
-	ret0, _ := ret[0].(datamodel.Instance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModelInstanceLatest indicates an expected call of GetModelInstanceLatest.
-func (mr *MockRepositoryMockRecorder) GetModelInstanceLatest(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelInstanceLatest", reflect.TypeOf((*MockRepository)(nil).GetModelInstanceLatest), arg0)
-}
-
 // GetModelInstances mocks base method.
-func (m *MockRepository) GetModelInstances(arg0 uuid.UUID) ([]datamodel.Instance, error) {
+func (m *MockRepository) GetModelInstances(arg0 uuid.UUID) ([]datamodel.ModelInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelInstances", arg0)
-	ret0, _ := ret[0].([]datamodel.Instance)
+	ret0, _ := ret[0].([]datamodel.ModelInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -166,33 +151,18 @@ func (mr *MockRepositoryMockRecorder) GetModelInstances(arg0 interface{}) *gomoc
 }
 
 // GetTritonEnsembleModel mocks base method.
-func (m *MockRepository) GetTritonEnsembleModel(arg0 uuid.UUID, arg1 string) (datamodel.TritonModel, error) {
+func (m *MockRepository) GetTritonEnsembleModel(arg0 uuid.UUID) (datamodel.TritonModel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTritonEnsembleModel", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetTritonEnsembleModel", arg0)
 	ret0, _ := ret[0].(datamodel.TritonModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetTritonEnsembleModel indicates an expected call of GetTritonEnsembleModel.
-func (mr *MockRepositoryMockRecorder) GetTritonEnsembleModel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetTritonEnsembleModel(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonEnsembleModel", reflect.TypeOf((*MockRepository)(nil).GetTritonEnsembleModel), arg0, arg1)
-}
-
-// GetTritonModelVersions mocks base method.
-func (m *MockRepository) GetTritonModelVersions(arg0 uuid.UUID, arg1 string) ([]datamodel.TritonModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTritonModelVersions", arg0, arg1)
-	ret0, _ := ret[0].([]datamodel.TritonModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTritonModelVersions indicates an expected call of GetTritonModelVersions.
-func (mr *MockRepositoryMockRecorder) GetTritonModelVersions(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonModelVersions", reflect.TypeOf((*MockRepository)(nil).GetTritonModelVersions), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonEnsembleModel", reflect.TypeOf((*MockRepository)(nil).GetTritonEnsembleModel), arg0)
 }
 
 // GetTritonModels mocks base method.
@@ -226,17 +196,17 @@ func (mr *MockRepositoryMockRecorder) ListModels(arg0 interface{}) *gomock.Call 
 }
 
 // UpdateModelInstance mocks base method.
-func (m *MockRepository) UpdateModelInstance(arg0 uuid.UUID, arg1 string, arg2 datamodel.Instance) error {
+func (m *MockRepository) UpdateModelInstance(arg0 uuid.UUID, arg1 datamodel.ModelInstance) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateModelInstance", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateModelInstance", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateModelInstance indicates an expected call of UpdateModelInstance.
-func (mr *MockRepositoryMockRecorder) UpdateModelInstance(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdateModelInstance(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelInstance", reflect.TypeOf((*MockRepository)(nil).UpdateModelInstance), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelInstance", reflect.TypeOf((*MockRepository)(nil).UpdateModelInstance), arg0, arg1)
 }
 
 // UpdateModelMetaData mocks base method.
