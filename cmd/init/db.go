@@ -9,6 +9,7 @@ import (
 
 func createModelDefinitionRecord(
 	db *gorm.DB,
+	id string,
 	uid string,
 	title string,
 	documentationURL string,
@@ -17,14 +18,16 @@ func createModelDefinitionRecord(
 	custom bool,
 	spec datamodel.Spec,
 ) error {
-	id, _ := uuid.FromString(uid)
+	uid_, _ := uuid.FromString(uid)
 	modelDef := datamodel.ModelDefinition{
-		BaseStatic:       datamodel.BaseStatic{UID: id},
+		BaseStatic:       datamodel.BaseStatic{UID: uid_},
+		ID:               id,
 		DocumentationUrl: documentationURL,
 		Icon:             icon,
 		Spec:             spec,
 		Public:           public,
 		Custom:           custom,
+		Title:            title,
 	}
 
 	if result := db.Model(&datamodel.ModelDefinition{}).Create(&modelDef); result.Error != nil {

@@ -15,6 +15,7 @@ import (
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
 	if err := createModelDefinitionRecord(
 		db,
+		modelDef.GetId(),
 		modelDef.GetUid(),
 		modelDef.GetTitle(),
 		modelDef.GetDocumentationUrl(),

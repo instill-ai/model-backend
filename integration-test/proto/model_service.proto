@@ -1,0 +1,235 @@
+syntax = "proto3";
+
+package instill.model.v1alpha;
+
+// Google API
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+
+import "definition.proto";
+import "model.proto";
+
+// HealthCheckRequest represents a request to health check a service
+message HealthCheckRequest {
+  // Service name to check for its readiness status
+  optional string service = 1 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// HealthCheckResponse represents a response for a service heath status
+message HealthCheckResponse {
+  // ServingStatus enumerates the status of a queried service
+  enum ServingStatus {
+    // Serving status: UNSPECIFIED
+    SERVING_STATUS_UNSPECIFIED = 0;
+    // Serving status: SERVING
+    SERVING_STATUS_SERVING = 1;
+    // Serving status: NOT SERVING
+    SERVING_STATUS_NOT_SERVING = 2;
+  }
+
+  // Status is the instance of the enum type ServingStatus
+  ServingStatus status = 1;
+}
+
+// LivenessRequest represents a request to check a service liveness status
+message LivenessRequest {
+  // HealthCheckRequest message
+  HealthCheckRequest health_check_request = 1
+      [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// LivenessResponse represents a response for a service liveness status
+message LivenessResponse {
+  // HealthCheckResponse message
+  HealthCheckResponse health_check_response = 1;
+}
+
+// ReadinessRequest represents a request to check a service readiness status
+message ReadinessRequest {
+  // HealthCheckRequest message
+  HealthCheckRequest health_check_request = 1
+      [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// ReadinessResponse represents a response for a service readiness status
+message ReadinessResponse {
+  // HealthCheckResponse message
+  HealthCheckResponse health_check_response = 1;
+}
+
+// Model service responds to incoming model requests
+service ModelService {
+  option (google.api.default_host) = "api.instill.tech";
+
+  // Liveness method receives a LivenessRequest message and returns a
+  // LivenessResponse message.
+  // See https://github.com/grpc/grpc/blob/master/doc/health-checking.md
+  rpc Liveness(LivenessRequest) returns (LivenessResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/__liveness"
+      additional_bindings : [ {get : "/v1alpha/health/model"} ]
+    };
+  }
+
+  // Readiness method receives a ReadinessRequest message and returns a
+  // ReadinessResponse message.
+  // See https://github.com/grpc/grpc/blob/master/doc/health-checking.md
+  rpc Readiness(ReadinessRequest) returns (ReadinessResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/__readiness"
+    };
+  }
+
+  // ListModelDefinition method receives a ListModelDefinitionRequest message
+  // and returns a ListModelDefinitionResponse
+  rpc ListModelDefinition(ListModelDefinitionRequest)
+      returns (ListModelDefinitionResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/model-definitions"
+    };
+  }
+
+  // GetModelDefinition method receives a GetModelDefinitionRequest message and
+  // returns a GetModelDefinitionResponse
+  rpc GetModelDefinition(GetModelDefinitionRequest)
+      returns (GetModelDefinitionResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{name=model-definitions/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // ListModel method receives a ListModelRequest message and returns a
+  // ListModelResponse
+  rpc ListModel(ListModelRequest) returns (ListModelResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/models"
+    };
+  }
+
+  // CreateModel method receives a CreateModelRequest message and returns a
+  // CreateModelResponse
+  rpc CreateModel(CreateModelRequest) returns (CreateModelResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/models"
+      body : "model"
+    };
+    option (google.api.method_signature) = "model";
+  }
+
+  // CreateModelBinaryFileUpload method receives a
+  // CreateModelBinaryFileUploadRequest message and returns a
+  // CreateModelBinaryFileUploadResponse message.
+  rpc CreateModelBinaryFileUpload(stream CreateModelBinaryFileUploadRequest)
+      returns (CreateModelBinaryFileUploadResponse) {}
+
+  // GetModel method receives a GetModelRequest message and returns a
+  // GetModelResponse
+  rpc GetModel(GetModelRequest) returns (GetModelResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{name=models/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // UpdateModel method receives a UpdateModelRequest message and returns a
+  // UpdateModelResponse
+  rpc UpdateModel(UpdateModelRequest) returns (UpdateModelResponse) {
+    option (google.api.http) = {
+      patch : "/v1alpha/{model.name=models/*}"
+      body : "model"
+    };
+    option (google.api.method_signature) = "model,update_mask";
+  }
+
+  // DeleteModel method receives a DeleteModelRequest message and returns a
+  // DeleteModelResponse
+  rpc DeleteModel(DeleteModelRequest) returns (DeleteModelResponse) {
+    option (google.api.http) = {
+      delete : "/v1alpha/{name=models/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // RenameModel method rename a model
+  rpc RenameModel(RenameModelRequest) returns (RenameModelResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*}:rename"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name,new_model_id";
+  }
+
+  // ListModelInstance method receives a ListModelInstanceRequest message and
+  // returns a ListModelInstanceResponse
+  rpc ListModelInstance(ListModelInstanceRequest)
+      returns (ListModelInstanceResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{parent=models/*}/instances"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // GetModelInstance method receives a GetModelInstanceRequest message and
+  // returns a GetModelInstanceResponse
+  rpc GetModelInstance(GetModelInstanceRequest)
+      returns (GetModelInstanceResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{name=models/*/instances/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // DeployModelInstance deploy a model instance to online state
+  // TODO: should use [Long-running operations](https://google.aip.dev/151)
+  rpc DeployModelInstance(DeployModelInstanceRequest)
+      returns (DeployModelInstanceResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*/instances/*}:deploy"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // UndeployModelInstance undeploy a model instance to offline state
+  // TODO: should use [Long-running operations](https://google.aip.dev/151)
+  rpc UndeployModelInstance(UndeployModelInstanceRequest)
+      returns (UndeployModelInstanceResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*/instances/*}:undeploy"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // GetModelInstanceCard method receives a GetModelInstanceCardRequest message
+  // and returns a GetModelInstanceCardResponse
+  rpc GetModelInstanceCard(GetModelInstanceCardRequest)
+      returns (GetModelInstanceCardResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{name=models/*/instances/*/readme}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  ///////////////////////////////////////////////////////
+  //
+  // TriggerModel method receives a TriggerModelRequest message and
+  // returns a TriggerModelResponse message.
+  rpc TriggerModelInstance(TriggerModelInstanceRequest)
+      returns (TriggerModelInstanceResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*/instances/*}:trigger"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name,inputs";
+  }
+
+  // TriggerModelBinaryFileUpload method receives a
+  // TriggerModelBinaryFileUploadRequest message and returns a
+  // TriggerModelBinaryFileUploadResponse message.
+  rpc TriggerModelInstanceBinaryFileUpload(
+      stream TriggerModelInstanceBinaryFileUploadRequest)
+      returns (TriggerModelInstanceBinaryFileUploadResponse) {}
+}

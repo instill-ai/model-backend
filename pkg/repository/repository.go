@@ -28,7 +28,7 @@ type Repository interface {
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	DeleteModelInstance(modelUid uuid.UUID, instanceName string) error
-	GetModelDefinition(uid uuid.UUID) (datamodel.ModelDefinition, error)
+	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 }
 
@@ -163,7 +163,7 @@ func (r *repository) GetModelInstances(modelUid uuid.UUID) ([]datamodel.ModelIns
 
 func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Where("model_uid = ?", modelUid).Order("create_time DESC, id DESC")
+	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Order("create_time DESC, id DESC")
 
 	if pageSize == 0 {
 		queryBuilder = queryBuilder.Limit(10)
@@ -197,7 +197,7 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 	}
 
 	if len(instances) > 0 {
-		r.db.Model(&datamodel.Model{}).Where("model_uid = ?", modelUid).Count(&totalSize)
+		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Count(&totalSize)
 		nextPageToken := paginate.EncodeToken(createTime, (instances)[len(instances)-1].UID.String())
 		return instances, nextPageToken, totalSize, nil
 	}
@@ -244,9 +244,9 @@ func (r *repository) DeleteModelInstance(modelUid uuid.UUID, instanceId string) 
 	return nil
 }
 
-func (r *repository) GetModelDefinition(uid uuid.UUID) (datamodel.ModelDefinition, error) {
+func (r *repository) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
 	var definitionDB datamodel.ModelDefinition
-	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("uid", uid).First(&definitionDB); result.Error != nil {
+	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("id", id).First(&definitionDB); result.Error != nil {
 		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
 	}
 	return definitionDB, nil
@@ -288,7 +288,7 @@ func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageTo
 	}
 
 	if len(definitions) > 0 {
-		r.db.Model(&datamodel.Model{}).Count(&totalSize)
+		r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize)
 		nextPageToken := paginate.EncodeToken(createTime, (definitions)[len(definitions)-1].UID.String())
 		return definitions, nextPageToken, totalSize, nil
 	}

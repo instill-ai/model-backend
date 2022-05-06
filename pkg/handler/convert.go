@@ -60,7 +60,7 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		CreateTime:      timestamppb.New(dbModel.CreateTime),
 		UpdateTime:      timestamppb.New(dbModel.UpdateTime),
 		Description:     &dbModel.Description,
-		ModelDefinition: dbModel.ModelDefinition.String(),
+		ModelDefinition: dbModel.ModelDefinition,
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
 		Configuration: func() *modelPB.Spec {
 			if dbModel.Configuration.Specification != nil {
@@ -126,7 +126,8 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 	logger, _ := logger.GetZapLogger()
 
 	pbModelDefinition := modelPB.ModelDefinition{
-		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.UID),
+		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),
+		Id:               dbModelDefinition.ID,
 		Uid:              dbModelDefinition.BaseStatic.UID.String(),
 		Title:            dbModelDefinition.Title,
 		DocumentationUrl: dbModelDefinition.Spec.DocumentationUrl,

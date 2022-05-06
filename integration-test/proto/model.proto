@@ -4,153 +4,380 @@ package instill.model.v1alpha;
 
 // Protobuf standard
 import "google/protobuf/struct.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 
 // Google api
-import "google/api/annotations.proto";
+import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 
 import "definition.proto";
 
-// LivenessRequest represents a request to check a service liveness status
-message LivenessRequest {
-  // Service name to check for its liveness status
-  string service = 1 [ (google.api.field_behavior) = OPTIONAL ];
-}
+// Model represents a model
+message Model {
+  option (google.api.resource) = {
+    type : "api.instill.tech/Model"
+    pattern : "models/{model}"
+  };
 
-// LivenessResponse represents a response for a service liveness status
-message LivenessResponse {
-  // ServingStatus enumerates the status of a queried service
-  enum ServingStatus {
-    // Serving status: UNSPECIFIED
-    SERVING_STATUS_UNSPECIFIED = 0;
-    // Serving status: SERVING
-    SERVING_STATUS_SERVING = 1;
-    // Serving status: NOT SERVING
-    SERVING_STATUS_NOT_SERVING = 2;
+  // Model visibility including public or private
+  enum Visibility {
+    // Visibility: UNSPECIFIED, equivalent to PRIVATE.
+    VISIBILITY_UNSPECIFIED = 0;
+    // Visibility: PRIVATE
+    VISIBILITY_PRIVATE = 1;
+    // Visibility: PUBLIC
+    VISIBILITY_PUBLIC = 2;
   }
 
-  // Status is the instance of the enum type ServingStatus
-  ServingStatus status = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Resource name. It must have the format of "models/{model}".
+  // For example: "models/yolov4"
+  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model ID in UUIDv4
+  string uid = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Resource ID (the last segment of the resource name) used to construct the
+  // resource name. This conforms to RFC-1034, which restricts to letters,
+  // numbers, and hyphen, with the first character a letter, the last a letter
+  // or a number, and a 63 character maximum.
+  string id = 3 [ (google.api.field_behavior) = IMMUTABLE ];
+  // Model description
+  optional string description = 4 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model definition resource name
+  string model_definition = 5 [
+    (google.api.field_behavior) = IMMUTABLE,
+    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
+  ];
+  // Model definition configuration
+  Spec configuration = 6 [ (google.api.field_behavior) = IMMUTABLE ];
+  // Model visibility including public or private
+  Visibility visibility = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model owner
+  oneof owner {
+    // Resource name of an user, e.g., "users/local-user".
+    string user = 8 [
+      (google.api.resource_reference).type = "api.instill.tech/User",
+      (google.api.field_behavior) = OUTPUT_ONLY
+    ];
+    // Resource name of an organization
+    string org = 9 [
+      (google.api.resource_reference).type = "api.instill.tech/Organization",
+      (google.api.field_behavior) = OUTPUT_ONLY
+    ];
+  };
+  // Model create time
+  google.protobuf.Timestamp create_time = 10
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model update time
+  google.protobuf.Timestamp update_time = 11
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// ReadinessRequest represents a request to check a service readiness status
-message ReadinessRequest {
-  // Service name to check for its readiness status
-  string service = 1 [ (google.api.field_behavior) = OPTIONAL ];
-}
+// ModelVersion represents one deployable instance of a model
+message ModelInstance {
+  option (google.api.resource) = {
+    type : "api.instill.tech/ModelInstance",
+    pattern : "models/{model}/instances/{instance}"
+  };
 
-// ReadinessResponse represents a response for a service readiness status
-message ReadinessResponse {
-  // ServingStatus enumerates the status of a queried service
-  enum ServingStatus {
-    // Serving status: UNSPECIFIED
-    SERVING_STATUS_UNSPECIFIED = 0;
-    // Serving status: SERVING
-    SERVING_STATUS_SERVING = 1;
-    // Serving status: NOT SERVING
-    SERVING_STATUS_NOT_SERVING = 2;
+  // Task enumerates the task type of a model instance
+  enum Task {
+    // Task: UNSPECIFIED
+    TASK_UNSPECIFIED = 0;
+    // Task: CLASSIFICATION
+    TASK_CLASSIFICATION = 1;
+    // Task: DETECTION
+    TASK_DETECTION = 2;
+  }
+  // State enumerates the lifecycling state of a model instance
+  enum State {
+    // State: UNSPECIFIED
+    STATE_UNSPECIFIED = 0;
+    // State: OFFLINE
+    STATE_OFFLINE = 1;
+    // State: ONLINE
+    STATE_ONLINE = 2;
+    // State: ERROR
+    STATE_ERROR = 3;
   }
 
-  // Status is the value of ServingStatus enum type
-  ServingStatus status = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Resource name. It must have the format of
+  // "models/{model}/instances/{instance}"
+  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance ID in UUIDv4
+  string uid = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance ID (the last segment of the resource name), used to
+  // construct the resource name. This conforms to RFC-1034, which restricts to
+  // letters, numbers, and hyphen, with the first character a letter, the last a
+  // letter or a number, and a 63 character maximum.
+  string id = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance state
+  State state = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance task
+  Task task = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model definition resource name
+  string model_definition = 6 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
+  ];
+  // Model instance configuration
+  Spec configuration = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance create time
+  google.protobuf.Timestamp create_time = 8
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance update time
+  google.protobuf.Timestamp update_time = 9
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// ModelInstanceCard represents the README card for a model instance. There
+// exists one one and exactly one README card per model instance.
+message ModelInstanceCard {
+  option (google.api.resource) = {
+    type : "api.instill.tech/ModelInstanceCard"
+    pattern : "models/{model}/instances/{instance}/readme"
+  };
+
+  // Resource name. It must have the format of
+  // "models/{model}/instances/{instance}/readme"
+  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Size of the file
+  int32 size = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Type of the resource. Fixed to "file".
+  string type = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Contents of the README file in bytes and base64 format
+  bytes contents = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Encoding type of the contents. Fixed to "base64".
+  string encoding = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// ListModelRequest represents a request to list all models
+message ListModelRequest {
+  // Page size: the maximum number of resources to return. The service may
+  // return fewer than this value. If unspecified, at most 10 users will be
+  // returned. The maximum value is 100; values above 100 will be coereced to
+  // 100.
+  int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  // Page token
+  string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  //  Definition view (default is VIEW_BASIC)
+  View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// ListModelResponse represents a response for a list of models
+message ListModelResponse {
+  // a list of Models
+  repeated Model models = 1;
+  // Next page token
+  string next_page_token = 2;
+  // Total count of models
+  int64 total_size = 3;
+}
+
+// CreateModelRequest represents a request to create a model
+message CreateModelRequest {
+  // The model to be created
+  //
+  // The model `name` field is used to identify the model to create.
+  // Format: models/{model}
+  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// CreateModelResponse represents a response for a model
+message CreateModelResponse {
+  // The created model
+  Model model = 1;
 }
 
 // CreateModelBinaryFileUploadRequest represents a request to create a model
 message CreateModelBinaryFileUploadRequest {
-  // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // The model to be created
+  //
+  // The model `name` field is used to identify the model to create.
+  // Format: models/{model}
+  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
   // Model content in bytes
   bytes bytes = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Model description
-  string description = 3 [ (google.api.field_behavior) = OPTIONAL ];
-  // Model visibility
-  // If does not specify visibility, then default will be VISIBILITY_PRIVATE
-  ModelDefinition.Visibility visibility = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // CreateModelBinaryFileUploadResponse represents a response for a model
 // instance
 message CreateModelBinaryFileUploadResponse {
-  // A model instance
-  ModelDefinition model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
-// CreateModelByGitHubRequest represents a request to create a model from a GitHub repo
-message CreateModelByGitHubRequest {
-  // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model GitHub source
-  Configuration github = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Model mode including public or private
-  // If does not specify visibility, then default will be the same as the visibility of GitHub repository
-  ModelDefinition.Visibility visibility = 3 [ (google.api.field_behavior) = OPTIONAL ];
-}
-
-// CreateModelByGitHubResponse represents a response for a model
-// instance
-message CreateModelByGitHubResponse {
-  // A model instance
-  ModelDefinition model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
-// UpdateModelInstanceRequest represents a request to update a model instance
-message UpdateModelInstanceRequest {
-  // Model name
-  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model instance name
-  string instance_name = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Model instance status
-  ModelInstance.Status status = 3 [ (google.api.field_behavior) = REQUIRED ];
-}
-
-// UpdateModelInstanceResponse represents a response for a model instance
-message UpdateModelInstanceResponse {
-  // A model instance
-  ModelInstance instance = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
-// ListModelRequest represents a request to list models
-message ListModelRequest {}
-
-// ListModelResponse represents a response for a list of models
-message ListModelResponse {
-  // A list of models
-  repeated ModelDefinition models = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // The created model
+  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
 message GetModelRequest {
-  // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Resource name of the model.
+  // For example "models/{model}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
 }
 
-// GetModelResponse represents a response for a model instance
+// GetModelResponse represents a response for a model
 message GetModelResponse {
-  // A model instance
-  ModelDefinition model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // The retrieved model
+  Model model = 1;
+}
+
+// UpdateModelRequest represents a request to update a model
+message UpdateModelRequest {
+  // The model to update
+  //
+  // The model `name` field is used to identify the model to update.
+  // Format: models/{model}
+  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Mask of fields to update.
+  google.protobuf.FieldMask update_mask = 2
+      [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// UpdateModelResponse represents a response for a model
+message UpdateModelResponse {
+  // The updated model
+  Model model = 1;
 }
 
 // DeleteModelRequest represents a request to delete a model
 message DeleteModelRequest {
-  // Model name
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Resource name of the model.
+  // For example "models/{model}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
 }
 
 // DeleteModelResponse represents an empty response
 message DeleteModelResponse {}
 
-// DeleteModelInstanceRequest represents a request to delete a model instance
-message DeleteModelInstanceRequest {
-  // Model name
-  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model instance name
-  string instance_name = 2 [ (google.api.field_behavior) = REQUIRED ];
+// RenameModelRequest represents a request to rename a model
+message RenameModelRequest {
+  // Resource name for the model to be renamed.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
+
+  // New ID of this model
+  string new_model_id = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// DeleteModelInstanceResponse represents an empty response
-message DeleteModelInstanceResponse {}
+// RenameModelResponse represents a response for a model
+message RenameModelResponse {
+  // Renamed model
+  Model model = 1;
+}
 
-// Input represents the input to a model
+// ListModelInstanceRequest represents a request to list all instances of a
+// model
+message ListModelInstanceRequest {
+  // The name of the model whose instances we'd like to list.
+  // e.g., "models/yolov4"
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
+
+  // Page size: the maximum number of resources to return. The service may
+  // return fewer than this value. If unspecified, at most 10 users will be
+  // returned. The maximum value is 100; values above 100 will be coereced to
+  // 100.
+  int64 page_size = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  // Page token
+  string page_token = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  //  Definition view (default is VIEW_BASIC)
+  View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// ListModelInstanceResponse represents a response for a list of model instances
+message ListModelInstanceResponse {
+  // a list of Model instances
+  repeated ModelInstance instances = 1;
+  // Next page token
+  string next_page_token = 2;
+  // Total count of model instances
+  int64 total_size = 3;
+}
+
+// GetModelInstanceRequest represents a request to query a model instance
+message GetModelInstanceRequest {
+  // Resource name of the model instance.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+}
+
+// GetModelInstanceResponse represents a response for a model instance
+message GetModelInstanceResponse {
+  // Retrieved model instance
+  ModelInstance instance = 1;
+}
+
+// DeployModelInstanceRequest represents a request to deploy a model instance to
+// online state
+message DeployModelInstanceRequest {
+  // Resource name for the model instance to be deployed.
+  // Format: models/{model}/instances/{instance}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+}
+
+// DeployModelInstanceResponse represents a response for a deployed model
+// instance
+// TODO: should use [Long-running operations](https://google.aip.dev/151)
+message DeployModelInstanceResponse {
+  // Deployed model instance
+  ModelInstance instance = 1;
+}
+
+// UndeployModelInstanceRequest represents a request to undeploy a model
+// instance to offline state
+message UndeployModelInstanceRequest {
+  // Resource name for the model instance to be undeployed.
+  // Format: models/{model}/instances/{instance}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+}
+
+// UndeployModelInstanceResponse represents a response for a undeployed model
+// instance
+// TODO: should use [Long-running operations](https://google.aip.dev/151)
+message UndeployModelInstanceResponse {
+  // Undeployed model instance
+  ModelInstance instance = 1;
+}
+
+// GetModelInstanceCardRequest represents a request to query a model instance's
+// README card
+message GetModelInstanceCardRequest {
+  // Resource name of the model instance card.
+  // For example "models/{model}/instances/{instance}/readme"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstanceCard"
+  ];
+}
+
+// GetModelInstanceCardResponse represents a response to fetch a model
+// instance's README card
+message GetModelInstanceCardResponse {
+  // Retrieved model instance card
+  ModelInstanceCard readme = 1;
+}
+
+////////////////////////////////////
+//  Custom methods
+
+// Input represents the input to trigger a model instance
 message Input {
   // Input type
   oneof type {
@@ -159,41 +386,6 @@ message Input {
     // Image type base64
     string image_base64 = 2;
   }
-}
-
-// TriggerModelRequest represents a request to trigger a model
-message TriggerModelRequest {
-  // Model name
-  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model instance name, default will be 'latest'
-  string instance_name = 2 [ (google.api.field_behavior) = OPTIONAL ];
-  // Input to the model
-  repeated Input inputs = 3 [ (google.api.field_behavior) = REQUIRED ];
-}
-
-// TriggerModelResponse represents a response for the output of a model
-message TriggerModelResponse {
-  // Output from a model
-  google.protobuf.Struct output = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-}
-
-// TriggerModelBinaryFileUploadRequest represents a request to trigger a model
-message TriggerModelBinaryFileUploadRequest {
-  // Model name
-  string model_name = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Model instance name
-  string instance_name = 2 [ (google.api.field_behavior) = OPTIONAL ];
-  // list of image's file length
-  repeated uint64 file_lengths = 3 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes bytes = 4 [ (google.api.field_behavior) = REQUIRED ];
-}
-
-// TriggerModelBinaryFileUploadResponse represents a response for the output of
-// a model
-message TriggerModelBinaryFileUploadResponse {
-  // Output from a model
-  google.protobuf.Struct output = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // ClassificationOutput represents the output of classification task
@@ -207,7 +399,8 @@ message ClassificationOutput {
 // ClassificationOutputs represents a list of classification task outputs
 message ClassificationOutputs {
   // A list of classification outputs
-  repeated ClassificationOutput classification_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated ClassificationOutput classification_outputs = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // BoundingBox represents the bounding box data structure
@@ -235,109 +428,54 @@ message BoundingBoxObject {
 // DetectionOutput represents the output of detection task
 message DetectionOutput {
   // A list of bounding box objects
-  repeated BoundingBoxObject bounding_box_objects = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated BoundingBoxObject bounding_box_objects = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // DetectionOutputs represents a list of detection task outputs
 message DetectionOutputs {
   // A list of detection outputs
-  repeated DetectionOutput detection_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated DetectionOutput detection_outputs = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// Model service responds to incoming model requests.
-service ModelService {
+// TriggerModelInstanceRequest represents a request to trigger a model instance
+message TriggerModelInstanceRequest {
+  // The resource name of the model instance to trigger.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+  // Input to trigger the model instance
+  repeated Input inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
 
-  // Liveness method receives a LivenessRequest message and returns a
-  // LivenessResponse message.
-  // See https://github.com/grpc/grpc/blob/master/doc/health-checking.md
-  rpc Liveness(LivenessRequest) returns (LivenessResponse) {
-    option (google.api.http) = {
-      get : "/__liveness"
-      additional_bindings : [ {get : "/health/model"} ]
-    };
-  }
+// TriggerModelInstanceResponse represents a response for the output for
+// triggering a model instance
+message TriggerModelInstanceResponse {
+  // Output from a model
+  google.protobuf.Struct output = 1;
+}
 
-  // Readiness method receives a ReadinessRequest message and returns a
-  // ReadinessResponse message.
-  // See https://github.com/grpc/grpc/blob/master/doc/health-checking.md
-  rpc Readiness(ReadinessRequest) returns (ReadinessResponse) {
-    option (google.api.http) = {
-      get : "/__readiness"
-    };
-  }
+// TriggerModelInstanceBinaryFileUploadRequest represents a request to trigger a
+// model instance by uploading binary file
+message TriggerModelInstanceBinaryFileUploadRequest {
+  // The resource name of the model instance to trigger.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes bytes = 3 [ (google.api.field_behavior) = REQUIRED ];
+}
 
-  // CreateModelByGitHub method receives a
-  // CreateModelByGitHubRequest message and returns a
-  // CreateModelByGitHubResponse message.
-  rpc CreateModelByGitHub(CreateModelByGitHubRequest)
-      returns (CreateModelByGitHubResponse) {
-        option (google.api.http) = {
-          post : "/models"
-          body : "*"
-        };
-      }
-
-  // CreateModelBinaryFileUpload method receives a
-  // CreateModelBinaryFileUploadRequest message and returns a
-  // CreateModelBinaryFileUploadResponse message.
-  rpc CreateModelBinaryFileUpload(stream CreateModelBinaryFileUploadRequest)
-      returns (CreateModelBinaryFileUploadResponse) {}
-
-  // CreateModel method receives a CreateModelRequest message and returns
-  // a CreateModelResponse message.
-  rpc ListModel(ListModelRequest) returns (ListModelResponse) {
-    option (google.api.http) = {
-      get : "/models"
-    };
-  }
-
-  // GetModel method receives a GetModelRequest message and returns
-  // a GetModelResponse message.
-  rpc GetModel(GetModelRequest) returns (GetModelResponse) {
-    option (google.api.http) = {
-      get : "/models/{name}"
-    };
-  }
-
-  // UpdateModelInstance method receives a UpdateModelInstanceRequest message and
-  // returns a UpdateModelInstanceResponse message.
-  rpc UpdateModelInstance(UpdateModelInstanceRequest)
-      returns (UpdateModelInstanceResponse) {
-    option (google.api.http) = {
-      patch : "/models/{model_name}/instances/{instance_name}"
-      body : "*"
-    };
-  }
-
-  // DeleteModel method receives a DeleteModelRequest message and returns
-  // a DeleteModelResponse message.
-  rpc DeleteModel(DeleteModelRequest) returns (DeleteModelResponse) {
-    option (google.api.http) = {
-      delete : "/models/{name}"
-    };
-  }
-
-  // DeleteModelInstance method receives a DeleteModelInstanceRequest message and
-  // returns a DeleteModelInstanceResponse message.
-  rpc DeleteModelInstance(DeleteModelInstanceRequest)
-      returns (DeleteModelInstanceResponse) {
-    option (google.api.http) = {
-      delete : "/models/{model_name}/instances/{instance_name}"
-    };
-  }
-
-  // TriggerModel method receives a TriggerModelRequest message and
-  // returns a TriggerModelResponse message.
-  rpc TriggerModel(TriggerModelRequest) returns (TriggerModelResponse) {
-    option (google.api.http) = {
-      post : "/models/{model_name}/instances/{instance_name}/outputs"
-      body : "*"
-    };
-  }
-
-  // TriggerModelBinaryFileUpload method receives a
-  // TriggerModelBinaryFileUploadRequest message and returns a
-  // TriggerModelBinaryFileUploadResponse message.
-  rpc TriggerModelBinaryFileUpload(stream TriggerModelBinaryFileUploadRequest)
-      returns (TriggerModelBinaryFileUploadResponse) {}
+// TriggerModelInstanceBinaryFileUploadResponse represents a response for the
+// output for triggering a model instance
+message TriggerModelInstanceBinaryFileUploadResponse {
+  // Output from a model
+  google.protobuf.Struct output = 1;
 }

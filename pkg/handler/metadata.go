@@ -32,7 +32,7 @@ func getOwner(ctx context.Context) (string, error) {
 
 func getID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "models/")
-	if id == "" {
+	if !strings.HasPrefix(name, "models/") || id == "" {
 		return "", status.Error(codes.InvalidArgument, "Error when extract resource id")
 	}
 	return id, nil

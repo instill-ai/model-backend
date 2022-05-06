@@ -52,6 +52,9 @@ type Spec struct {
 type ModelDefinition struct {
 	BaseStatic
 
+	// ModelDefinition id
+	ID string `json:"id,omitempty"`
+
 	// ModelDefinition title
 	Title string `json:"title,omitempty"`
 
@@ -82,7 +85,7 @@ type Model struct {
 	Description string `json:"description,omitempty"`
 
 	// Model definition
-	ModelDefinition uuid.UUID `json:"model_definition,omitempty"`
+	ModelDefinition string `json:"model_definition,omitempty"`
 
 	// Model definition configuration
 	Configuration Spec `gorm:"configuration:jsonb"`

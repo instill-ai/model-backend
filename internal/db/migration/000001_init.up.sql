@@ -18,6 +18,7 @@ CREATE TYPE valid_task AS ENUM (
 
 CREATE TABLE IF NOT EXISTS "model_definition" (
   "uid" UUID PRIMARY KEY,
+  "id" VARCHAR(63) NOT NULL,
   "title" varchar(255) NOT NULL,
   "documentation_url" VARCHAR(1024) NULL,
   "icon" VARCHAR(1024) NULL,
@@ -33,17 +34,14 @@ CREATE TABLE IF NOT EXISTS "model" (
   "uid" UUID PRIMARY KEY,
   "id" VARCHAR(63) NOT NULL,
   "description" varchar(1024),
-  "model_definition" UUID NOT NULL,
+  "model_definition" varchar(255) NOT NULL,
   "configuration" JSONB NOT NULL,
   "visibility" VALID_VISIBILITY DEFAULT 'VISIBILITY_PRIVATE' NOT NULL,
   "owner" VARCHAR(255) NULL,
   "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
-  UNIQUE ("id", "owner"),
-  CONSTRAINT fk_model_definition
-    FOREIGN KEY ("model_definition")
-    REFERENCES model_definition("uid")
+  UNIQUE ("id", "owner")
 );
 
 CREATE TABLE IF NOT EXISTS "model_instance" (

@@ -47,7 +47,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220505182350-0779e501a75d // indirect
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220506115658-65d504ede087 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

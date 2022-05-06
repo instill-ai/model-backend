@@ -311,15 +311,15 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 
 	var uploadedModel datamodel.Model
 	for {
-		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
+		fileData, err = stream.Recv()
+		if fileData.Model == nil {
+			return "", &datamodel.Model{}, fmt.Errorf("failed unexpectedly while reading chunks from stream")
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-
-			err = errors.Wrapf(err,
-				"failed unexpectedly while reading chunks from stream")
-			return "", &datamodel.Model{}, err
+			return "", &datamodel.Model{}, fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 
 		if firstChunk { //first chunk contains file name
@@ -334,7 +334,7 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 			if fileData.Model.Description != nil {
 				description = *fileData.Model.Description
 			}
-			uid, err := uuid.FromString(*fileData.Model.Description)
+			modelDefName := fileData.Model.ModelDefinition
 			if err != nil {
 				return "", &datamodel.Model{}, err
 			}
@@ -342,10 +342,11 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 				ID:              fileData.Model.Id,
 				Visibility:      datamodel.ModelVisibility(visibility),
 				Description:     description,
-				ModelDefinition: uid,
+				ModelDefinition: modelDefName,
 				Instances: []datamodel.ModelInstance{{
-					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-					ID:    "latest",
+					ModelDefinition: modelDefName,
+					State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+					ID:              "latest",
 				}},
 			}
 			if err != nil {
@@ -463,9 +464,20 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		modelDefinitionId := r.FormValue("model_definition_id")
-		if modelDefinitionId == "" {
-			makeJsonResponse(w, 400, "Missing parameter", "ModelDefinitionId need to be specified")
+		modeId, err := getID(modelName)
+		if err != nil {
+			makeJsonResponse(w, 400, "Missing parameter", "Model name is invalid")
+			return
+		}
+
+		modelDefinitionName := r.FormValue("model_definition_name")
+		if modelDefinitionName == "" {
+			makeJsonResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
+			return
+		}
+		modelDefinitionId, err := getDefinitionUID(modelDefinitionName)
+		if err != nil {
+			makeJsonResponse(w, 400, "Invalid parameter", err.Error())
 			return
 		}
 
@@ -482,7 +494,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			visibility = modelPB.Model_VISIBILITY_PRIVATE
 		}
 
-		err := r.ParseMultipartForm(4 << 20)
+		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
@@ -521,27 +533,29 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		uid, err := uuid.FromString(modelDefinitionId)
-		if err != nil {
-			makeJsonResponse(w, 400, "Parameter invalid", "ModelDefinitionId is in valid")
-			return
-		}
-		var uploadedModel = datamodel.Model{
-			Instances: []datamodel.ModelInstance{{
-				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-				ID:    "latest",
-			}},
-			ID:              modelName,
-			ModelDefinition: uid,
-			Owner:           owner,
-			Visibility:      datamodel.ModelVisibility(visibility),
-			Description:     r.FormValue("description"),
-		}
-
 		db := database.GetConnection()
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		modelService := service.NewService(modelRepository, tritonService)
+
+		_, err = modelRepository.GetModelDefinition(modelDefinitionId)
+		if err != nil {
+			makeJsonResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
+			return
+		}
+
+		var uploadedModel = datamodel.Model{
+			Instances: []datamodel.ModelInstance{{
+				State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+				ID:              "latest",
+				ModelDefinition: modelDefinitionName,
+			}},
+			ID:              modeId,
+			ModelDefinition: modelDefinitionName,
+			Owner:           owner,
+			Visibility:      datamodel.ModelVisibility(visibility),
+			Description:     r.FormValue("description"),
+		}
 
 		_, err = modelService.GetModelById(owner, uploadedModel.ID)
 		if err == nil {
@@ -683,7 +697,11 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, err
 	}
 
-	modelDefinitionId, err := uuid.FromString(req.Model.ModelDefinition)
+	modelDefinitionId, err := getDefinitionUID(req.Model.ModelDefinition)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	}
+	_, err = s.service.GetModelDefinition(modelDefinitionId)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
@@ -691,6 +709,10 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	_, err = s.service.GetModelById(owner, req.Model.Id)
 	if err == nil {
 		return &modelPB.CreateModelResponse{}, fmt.Errorf("The model %v already existed", req.Model.Id)
+	}
+
+	if req.Model.Configuration == nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Missing Configuration")
 	}
 
 	b, err := req.Model.Configuration.Specification.MarshalJSON()
@@ -731,7 +753,7 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 	githubModel := datamodel.Model{
 		ID:              req.Model.Id,
-		ModelDefinition: modelDefinitionId,
+		ModelDefinition: req.Model.ModelDefinition,
 		Owner:           owner,
 		Visibility:      datamodel.ModelVisibility(visibility),
 		Description:     githubInfo.Description,
@@ -740,8 +762,9 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 			Specification:    githubModelConfig,
 		},
 		Instances: []datamodel.ModelInstance{{
-			ID:    github.Tag,
-			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			ID:              github.Tag,
+			ModelDefinition: req.Model.ModelDefinition,
+			State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 			Configuration: datamodel.Spec{
 				DocumentationUrl: "",
 				Specification:    githubConfigObj,
@@ -1250,12 +1273,12 @@ func (s *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 ///////////////////////////////////////////////////////
 /////////////   MODEL DEFINITION HANDLERS /////////////
 func (s *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
-	definitionUid, err := getDefinitionUID(req.Name)
+	definitionId, err := getDefinitionUID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	dbModelDefinition, err := s.service.GetModelDefinition(uuid.FromStringOrNil(definitionUid))
+	dbModelDefinition, err := s.service.GetModelDefinition(definitionId)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
