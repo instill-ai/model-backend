@@ -65,7 +65,7 @@ services:
     depends_on:
       triton_server:
         condition: service_healthy
-      model_backend_migrate:
+      model_backend_init:
         condition: service_completed_successfully
 
   triton_server:
