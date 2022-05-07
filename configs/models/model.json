@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/configs/models/model.json",
+  "description": "Model related data structures",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "$ref": "#/definitions/Model"
+    }
+  },
+  "definitions": {
+    "ModelDefinition": {
+      "type": "object",
+      "title": "ModelDefinition",
+      "description": "The model definition data structure",
+      "required": [
+        "id",
+        "title",
+        "documentation_url",
+        "icon",
+        "model_spec",
+        "model_instance_spec"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Resource name",
+          "description": "The resource name",
+          "readOnly": true,
+          "ui_order": 0,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "uid": {
+          "type": "string",
+          "format": "uuid",
+          "title": "UUID",
+          "description": "The unique UUID",
+          "readOnly": true,
+          "ui_order": 1,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "id": {
+          "type": "string",
+          "title": "Name",
+          "description": "The model definition name",
+          "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+          "minLength": 1,
+          "maxLength": 63,
+          "ui_order": 2,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "title": {
+          "type": "string",
+          "title": "Model definition",
+          "description": "The model definition, e.g. GitHub",
+          "minimum": 1,
+          "minLength": 1,
+          "maxLength": 63,
+          "ui_order": 3,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "documentation_url": {
+          "type": "string",
+          "title": "Setup guide",
+          "description": "Please check the setup guide for this model definition",
+          "ui_order": 4,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "icon": {
+          "type": "string",
+          "title": "Model definition icon",
+          "description": "Icon for this model definition",
+          "ui_order": 5,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "model_spec": {
+          "type": "object",
+          "title": "Specification",
+          "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model",
+          "additionalProperties": false,
+          "ui_order": 6,
+          "ui_hidden": true,
+          "ui_disabled": true
+        },
+        "model_instance_spec": {
+          "type": "object",
+          "title": "Instance specification",
+          "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model instance",
+          "additionalProperties": false,
+          "ui_order": 6,
+          "ui_hidden": true,
+          "ui_disabled": true
+        }
+      }
+    },
+    "Model": {
+      "type": "object",
+      "title": "Model",
+      "description": "The model data structure",
+      "required": ["id", "model_definition", "configuration"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Resource name",
+          "description": "The resource name",
+          "readOnly": true,
+          "ui_order": 0,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "uid": {
+          "type": "string",
+          "format": "uuid",
+          "title": "UUID",
+          "description": "The unique UUID",
+          "readOnly": true,
+          "ui_order": 1,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "id": {
+          "type": "string",
+          "title": "Name",
+          "description": "The model name",
+          "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+          "minLength": 1,
+          "maxLength": 63,
+          "ui_order": 2,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text",
+          "ui_placeholder": "my-model"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description",
+          "description": "Fill with a short description of your model",
+          "minLength": 0,
+          "maxLength": 1023,
+          "ui_order": 3,
+          "ui_component": "textarea_enable_counter"
+        },
+        "model_definition": {
+          "type": "string",
+          "title": "Model definition resource name",
+          "description": "The resource name of the model definition",
+          "ui_order": 4,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "configuration": {
+          "type": "object",
+          "title": "Configuration",
+          "description": "Configuration of the model definition's model specification",
+          "ui_order": 5,
+          "ui_disabled": true
+        },
+        "visibility": {
+          "type": "string",
+          "title": "Visibility",
+          "description": "The model visibility",
+          "enum": [
+            "VISIBILITY_UNSPECIFIED",
+            "VISIBILITY_PRIVATE",
+            "VISIBILITY_PUBLIC"
+          ],
+          "default": "VISIBILITY_UNSPECIFIED",
+          "readOnly": true,
+          "ui_order": 6,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "select",
+          "ui_enum": ["", "Private", "Public"]
+        },
+        "owner": {
+          "type": "string",
+          "format": "uuid",
+          "title": "Owner ID",
+          "description": "The pipeline owner resource name",
+          "oneOf": [
+            {"type": "string", "description": "The resource name of a user"},
+            {
+              "type": "string",
+              "description": "The resource name of an organization"
+            }
+          ],
+          "readOnly": true,
+          "ui_order": 7,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "create_time": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Create time",
+          "description": "The date when the pipeline is created in the format YYYY-MM-DDTHH:MM::SS",
+          "examples": ["2022-04-29T00:20:06.703547Z"],
+          "readOnly": true,
+          "ui_order": 8,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "update_time": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Update time",
+          "description": "The date when the pipeline is updated in the format YYYY-MM-DDTHH:MM::SS",
+          "examples": ["2022-04-29T01:33:34.910865Z"],
+          "readOnly": true,
+          "ui_order": 9,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        }
+      }
+    },
+    "ModelInstance": {
+      "type": "object",
+      "title": "Model instance",
+      "description": "The model instance data structure",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Resource name",
+          "description": "The resource name",
+          "readOnly": true,
+          "ui_order": 0,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "uid": {
+          "type": "string",
+          "format": "uuid",
+          "title": "UUID",
+          "description": "The unique UUID",
+          "readOnly": true,
+          "ui_order": 1,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "id": {
+          "type": "string",
+          "title": "Name",
+          "description": "The model instance name",
+          "minLength": 1,
+          "readOnly": true,
+          "ui_order": 2,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "state": {
+          "type": "string",
+          "title": "State",
+          "description": "The model instance state",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "STATE_OFFLINE",
+            "STATE_ONLINE",
+            "STATE_ERROR"
+          ],
+          "default": "STATE_UNSPECIFIED",
+          "readOnly": true,
+          "ui_order": 3,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "select",
+          "ui_enum": ["", "Offline", "Online", "Error"]
+        },
+        "task": {
+          "type": "string",
+          "title": "Task",
+          "description": "The model instance task",
+          "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION"],
+          "default": "TASK_UNSPECIFIED",
+          "readOnly": true,
+          "ui_order": 4,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "select",
+          "ui_enum": ["", "Image classification", "Object detection"]
+        },
+        "model_definition": {
+          "type": "string",
+          "title": "The model definition resource name",
+          "description": "The resource name of the model definition",
+          "readOnly": true,
+          "ui_order": 5,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "configuration": {
+          "type": "object",
+          "title": "Configuration",
+          "description": "Configuration of the model definition's model instance specification",
+          "readOnly": true,
+          "ui_order": 6,
+          "ui_disabled": true
+        },
+        "create_time": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Create time",
+          "description": "The date when the pipeline is created in the format YYYY-MM-DDTHH:MM::SS",
+          "examples": ["2022-04-29T00:20:06.703547Z"],
+          "readOnly": true,
+          "ui_order": 7,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "update_time": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Update time",
+          "description": "The date when the pipeline is updated in the format YYYY-MM-DDTHH:MM::SS",
+          "examples": ["2022-04-29T01:33:34.910865Z"],
+          "readOnly": true,
+          "ui_order": 8,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        }
+      }
+    },
+    "ModelInstanceCard": {
+      "type": "object",
+      "title": "Model instance",
+      "description": "The model instance data structure",
+      "required": [],
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Resource name",
+          "description": "The resource name",
+          "readOnly": true,
+          "ui_order": 0,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "size": {
+          "type": "integer",
+          "title": "Size",
+          "description": "The size of the file",
+          "readOnly": true,
+          "ui_order": 1,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "type": {
+          "type": "string",
+          "title": "Type",
+          "description": "The type of the file",
+          "readOnly": true,
+          "default": "file",
+          "ui_order": 2,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        },
+        "contents": {
+          "type": "string",
+          "title": "README",
+          "description": "README to describe a model instance",
+          "readOnly": true,
+          "ui_order": 3,
+          "ui_disabled": true,
+          "ui_component": "markdown"
+        },
+        "encoding": {
+          "type": "string",
+          "title": "Encoding type",
+          "description": "The encoding type of the contents",
+          "default": "base64",
+          "readOnly": true,
+          "ui_order": 4,
+          "ui_hidden": true,
+          "ui_disabled": true,
+          "ui_component": "text"
+        }
+      }
+    }
+  }
+}
