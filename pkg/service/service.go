@@ -20,7 +20,7 @@ import (
 )
 
 type Service interface {
-	CreateModel(owner string, model *datamodel.Model) (datamodel.Model, error)
+	CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error)
 	GetModelById(owner string, modelId string) (datamodel.Model, error)
 	DeleteModel(owner string, modelId string) error
 	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
@@ -101,22 +101,6 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 	}
 
 	return nil
-}
-
-func (s *service) createModel(model *datamodel.Model) (*datamodel.Model, error) {
-	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID); existingModel.ID != "" {
-		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your workspace", model.ID)
-	}
-
-	if err := s.repository.CreateModel(*model); err != nil {
-		return &datamodel.Model{}, err
-	}
-
-	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID); err != nil {
-		return &datamodel.Model{}, err
-	} else {
-		return &createdModel, nil
-	}
 }
 
 func (s *service) GetModelById(owner string, modelId string) (datamodel.Model, error) {
@@ -216,44 +200,19 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	}
 }
 
-func createModelInstance(s *service, modelInstance datamodel.ModelInstance) (datamodel.ModelInstance, error) {
-	if err := s.repository.CreateModelInstance(modelInstance); err != nil {
-		return datamodel.ModelInstance{}, err
+func (s *service) CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error) {
+	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID); existingModel.ID != "" {
+		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your workspace", model.ID)
+	}
+	if err := s.repository.CreateModel(*model); err != nil {
+		return &datamodel.Model{}, err
 	}
 
-	if createdInstance, err := s.repository.GetModelInstance(modelInstance.ModelUID, modelInstance.ID); err != nil {
-		return datamodel.ModelInstance{}, err
+	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID); err != nil {
+		return &datamodel.Model{}, err
 	} else {
-		return createdInstance, nil
+		return &createdModel, nil
 	}
-}
-
-func (s *service) CreateModel(owner string, model *datamodel.Model) (datamodel.Model, error) {
-
-	modelInDB, err := s.GetModelById(owner, model.ID)
-	if err != nil {
-		createdModel, err := s.createModel(model)
-		if err != nil {
-			return datamodel.Model{}, err
-		}
-		modelInDB = *createdModel
-	}
-
-	model.Instances[0].ModelUID = modelInDB.UID
-	instanceInDB, err := createModelInstance(s, model.Instances[0])
-	if err != nil {
-		return datamodel.Model{}, fmt.Errorf("Could not create model instance in DB")
-	}
-	for i := 0; i < len(model.TritonModels); i++ {
-		tritonModel := model.TritonModels[i]
-		tritonModel.ModelInstanceUID = instanceInDB.UID
-		err = s.repository.CreateTritonModel(tritonModel)
-		if err != nil {
-			return datamodel.Model{}, fmt.Errorf("Could not create triton model in DB")
-		}
-	}
-
-	return modelInDB, nil
 }
 
 func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {

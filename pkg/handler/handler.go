@@ -46,7 +46,7 @@ import (
 var requiredFields = []string{"Id"}
 
 // immutableFields are Protobuf message fields with IMMUTABLE field_behavior annotation
-var immutableFields = []string{"Id", "ModelDefinition", "Configuration"}
+// var immutableFields = []string{"Id", "ModelDefinition", "Configuration"}
 
 // outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
@@ -213,7 +213,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 			}
 		}
 	}
-	uploadedModel.TritonModels = createdTModels
+	uploadedModel.Instances[0].TritonModels = createdTModels
 	return readmeFilePath, nil
 }
 
@@ -308,7 +308,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			}
 		}
 	}
-	model.TritonModels = createdTModels
+	model.Instances[0].TritonModels = createdTModels
 	return readmeFilePath, nil
 }
 
@@ -608,7 +608,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
-		pbModel := DBModelToPBModel(&dbModel)
+		pbModel := DBModelToPBModel(dbModel)
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
@@ -677,7 +677,7 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	pbModel := DBModelToPBModel(dbModel)
 	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: pbModel})
 	if err != nil {
 		return makeError(codes.Internal, "Add Model Error", err.Error())
@@ -818,7 +818,7 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return nil, err
 	}
 
-	pbModel := DBModelToPBModel(&dbModel)
+	pbModel := DBModelToPBModel(dbModel)
 
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }

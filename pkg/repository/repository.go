@@ -27,7 +27,6 @@ type Repository interface {
 	CreateTritonModel(model datamodel.TritonModel) error
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
-	DeleteModelInstance(modelUid uuid.UUID, instanceName string) error
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 }
@@ -63,7 +62,7 @@ var UpdateModelSelectedFields = []string{
 
 func (r *repository) CreateModel(model datamodel.Model) error {
 	// We ignore the virtual columns
-	if result := r.db.Model(&datamodel.Model{}).Omit("Name", "TritonModels", "Instances").Create(&model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 
@@ -231,15 +230,8 @@ func (r *repository) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamod
 }
 
 func (r *repository) DeleteModel(modelUid uuid.UUID) error {
-	if result := r.db.Model(&datamodel.Model{}).Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}); result.Error != nil {
+	if result := r.db.Select("Instances").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUid)
-	}
-	return nil
-}
-
-func (r *repository) DeleteModelInstance(modelUid uuid.UUID, instanceId string) error {
-	if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"model_uid": modelUid, "id": instanceId}).Select("TritonModels").Delete(&datamodel.ModelInstance{}); result.Error != nil {
-		return status.Errorf(codes.NotFound, "Could not delete model with id %v and instance name %v", modelUid, instanceId)
 	}
 	return nil
 }

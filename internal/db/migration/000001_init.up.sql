@@ -40,9 +40,11 @@ CREATE TABLE IF NOT EXISTS "model" (
   "owner" VARCHAR(255) NULL,
   "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
-  UNIQUE ("id", "owner")
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL
 );
+CREATE UNIQUE INDEX unique_owner_id_delete_time ON model ("owner", "id")
+WHERE "delete_time" IS NULL;
+CREATE INDEX model_id_create_time_pagination ON model ("id", "create_time");
 
 CREATE TABLE IF NOT EXISTS "model_instance" (
   "uid" UUID PRIMARY KEY,
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS "model_instance" (
     REFERENCES model("uid")
     ON DELETE CASCADE
 );
+CREATE INDEX model_instance_id_create_time_pagination ON model_instance ("id", "create_time");
 
 CREATE TABLE IF NOT EXISTS "triton_model" (
   "uid" UUID PRIMARY KEY,
