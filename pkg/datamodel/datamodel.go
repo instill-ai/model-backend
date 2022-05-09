@@ -97,8 +97,7 @@ type Model struct {
 	Owner string `json:"owner,omitempty"`
 
 	// Not stored in DB, only used for processing
-	TritonModels []TritonModel   `gorm:"foreignKey:ModelInstanceUID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Instances    []ModelInstance `gorm:"foreignKey:ModelUID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Instances []ModelInstance `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
 // Triton model
@@ -117,7 +116,7 @@ type TritonModel struct {
 	// Model triton platform, only store ensemble model to make inferencing
 	Platform string `json:"platform,omitempty"`
 
-	// Model Instance Name
+	// Model Instance uid
 	ModelInstanceUID uuid.UUID `json:"model_instance_uid,omitempty"`
 }
 
@@ -141,6 +140,9 @@ type ModelInstance struct {
 
 	// Model id
 	ModelUID uuid.UUID `json:"model_uid,omitempty"`
+
+	// Not stored in DB, only used for processing
+	TritonModels []TritonModel `gorm:"foreignKey:ModelInstanceUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
 // Model configuration

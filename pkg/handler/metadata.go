@@ -33,14 +33,14 @@ func getOwner(ctx context.Context) (string, error) {
 func getID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "models/")
 	if !strings.HasPrefix(name, "models/") || id == "" {
-		return "", status.Error(codes.InvalidArgument, "Error when extract resource id")
+		return "", status.Error(codes.InvalidArgument, "Error when extract models resource id")
 	}
 	return id, nil
 }
 
 func getModelInstanceID(name string) (string, string, error) {
 	if match, _ := regexp.MatchString(`^models/.+/instances/.+$`, name); !match {
-		return "", "", status.Error(codes.InvalidArgument, "Error when extract resource id")
+		return "", "", status.Error(codes.InvalidArgument, "Error when extract models instance resource id")
 	}
 	subs := strings.Split(name, "/")
 	return subs[1], subs[3], nil
@@ -48,8 +48,8 @@ func getModelInstanceID(name string) (string, string, error) {
 
 func getDefinitionUID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
-	if id == "" {
-		return "", status.Error(codes.InvalidArgument, "Error when extract resource id")
+	if !strings.HasPrefix(name, "model-definitions/") || id == "" {
+		return "", status.Error(codes.InvalidArgument, "Error when extract model-definitions resource id")
 	}
 	return id, nil
 }
