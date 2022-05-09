@@ -39,7 +39,17 @@ import (
 
 	database "github.com/instill-ai/model-backend/internal/db"
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	"github.com/instill-ai/x/checkfield"
 )
+
+// requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
+var requiredFields = []string{"Id"}
+
+// immutableFields are Protobuf message fields with IMMUTABLE field_behavior annotation
+var immutableFields = []string{"Id", "ModelDefinition", "Configuration"}
+
+// outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
+var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
 type FileMeta struct {
 	path  string
@@ -683,17 +693,17 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	}
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload pipeline resource
-	if err := checkOutputOnlyFields(req.Model); err != nil {
+	if err := checkfield.CheckOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
 
 	// Return error if REQUIRED fields are not provided in the requested payload pipeline resource
-	if err := checkRequiredFields(req.Model); err != nil {
+	if err := checkfield.CheckRequiredFields(req.Model, requiredFields); err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
 
 	// Return error if resource ID does not follow RFC-1034
-	if err := checkResourceID(req.Model.GetId()); err != nil {
+	if err := checkfield.CheckResourceID(req.Model.GetId()); err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
 
