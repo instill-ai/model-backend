@@ -11,7 +11,7 @@ import "google/protobuf/timestamp.proto";
 import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 
-import "definition.proto";
+import "model_definition.proto";
 
 // Model represents a model
 message Model {
@@ -47,18 +47,20 @@ message Model {
     (google.api.field_behavior) = IMMUTABLE,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model definition configuration
-  Spec configuration = 6 [ (google.api.field_behavior) = IMMUTABLE ];
+  // Model configuration represents the configuration JSON object that has been
+  // validated using the `model_spec` JSON schema of a ModelDefinition
+  google.protobuf.Struct configuration = 6
+      [ (google.api.field_behavior) = IMMUTABLE ];
   // Model visibility including public or private
   Visibility visibility = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model owner
   oneof owner {
-    // Resource name of an user, e.g., "users/local-user".
+    // The resource name of a user, e.g., "users/local-user".
     string user = 8 [
       (google.api.resource_reference).type = "api.instill.tech/User",
       (google.api.field_behavior) = OUTPUT_ONLY
     ];
-    // Resource name of an organization
+    // The resource name of an organization
     string org = 9 [
       (google.api.resource_reference).type = "api.instill.tech/Organization",
       (google.api.field_behavior) = OUTPUT_ONLY
@@ -119,8 +121,11 @@ message ModelInstance {
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model instance configuration
-  Spec configuration = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Model instance configuration represents the JSON configuration that has
+  // been validated using the `model_instance_spec` JSON schema of a
+  // ModelDefinition
+  google.protobuf.Struct configuration = 7
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model instance create time
   google.protobuf.Timestamp create_time = 8
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
@@ -153,7 +158,7 @@ message ModelInstanceCard {
 // ListModelRequest represents a request to list all models
 message ListModelRequest {
   // Page size: the maximum number of resources to return. The service may
-  // return fewer than this value. If unspecified, at most 10 users will be
+  // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
   // 100.
   int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
@@ -203,7 +208,7 @@ message CreateModelBinaryFileUploadRequest {
 // instance
 message CreateModelBinaryFileUploadResponse {
   // The created model
-  Model model = 1  [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  Model model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
@@ -253,6 +258,20 @@ message DeleteModelRequest {
 // DeleteModelResponse represents an empty response
 message DeleteModelResponse {}
 
+// LookUpModelRequest represents a request to query a model instance by
+// permalink
+message LookUpModelRequest {
+  // Permalink of a model. For example:
+  // "models/{uid}"
+  string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// LookUpModelResponse represents a response for a model instance
+message LookUpModelResponse {
+  // A model resource
+  Model model = 1;
+}
+
 // RenameModelRequest represents a request to rename a model
 message RenameModelRequest {
   // Resource name for the model to be renamed.
@@ -282,9 +301,9 @@ message ListModelInstanceRequest {
   ];
 
   // Page size: the maximum number of resources to return. The service may
-  // return fewer than this value. If unspecified, at most 10 users will be
-  // returned. The maximum value is 100; values above 100 will be coereced to
-  // 100.
+  // return fewer than this value. If unspecified, at most 10 model instances
+  // will be returned. The maximum value is 100; values above 100 will be
+  // coereced to 100.
   int64 page_size = 2 [ (google.api.field_behavior) = OPTIONAL ];
   // Page token
   string page_token = 3 [ (google.api.field_behavior) = OPTIONAL ];
@@ -315,6 +334,20 @@ message GetModelInstanceRequest {
 // GetModelInstanceResponse represents a response for a model instance
 message GetModelInstanceResponse {
   // Retrieved model instance
+  ModelInstance instance = 1;
+}
+
+// LookUpModelInstanceRequest represents a request to query a model instance by
+// permalink
+message LookUpModelInstanceRequest {
+  // Permalink of a model instance. For example:
+  // "models/{model_uid}/instances/{instance_uid}"
+  string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// LookUpModelInstanceResponse represents a response for a model instance
+message LookUpModelInstanceResponse {
+  // A model instance
   ModelInstance instance = 1;
 }
 

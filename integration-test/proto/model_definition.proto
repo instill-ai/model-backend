@@ -12,22 +12,12 @@ import "google/protobuf/timestamp.proto";
 import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 
-////////////////////////////////////
-// Spec represents a spec data model
-message Spec {
-  // Spec documentation URL
-  string documentation_url = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Spec specification
-  google.protobuf.Struct specification = 2
-      [ (google.api.field_behavior) = REQUIRED ];
-}
-
 ///////////////////////////////////////////////////////////////////
 // ModelDefinition represents the definition of a model
 message ModelDefinition {
   option (google.api.resource) = {
     type : "api.instill.tech/ModelDefinition"
-    pattern : "model-definitions/{uuid}"
+    pattern : "model-definitions/{model-definition}"
   };
 
   // ModelDefinition resource name. It must have the format of
@@ -45,19 +35,26 @@ message ModelDefinition {
   string documentation_url = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // ModelDefinition icon
   string icon = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // ModelDefinition spec
-  Spec spec = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // ModelDefinition public flag, i.e., true if this definition is available to
-  // all workspaces
-  bool public = 8 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // ModelDefinition custom flag, i.e., true if this is a custom model
-  // definition
-  bool custom = 9 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+
+  // ModelDefinition model specification represents the JSON schema used to
+  // validate the JSON configurations of a model created from a specific model
+  // source. Must be a valid JSON that includes what fields are needed to
+  // create/display a model.
+  google.protobuf.Struct model_spec = 7
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+
+  // ModelDefinition model instance specification represents the JSON schema
+  // used to validate the JSON configurations of a model instance from a
+  // specific model source. Must be a valid JSON that includes what fields are
+  // needed to display a model instance.
+  google.protobuf.Struct model_instance_spec = 8
+      [ (google.api.field_behavior) = REQUIRED ];
+
   // ModelDefinition create time
-  google.protobuf.Timestamp create_time = 10
+  google.protobuf.Timestamp create_time = 9
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // ModelDefinition update time
-  google.protobuf.Timestamp update_time = 11
+  google.protobuf.Timestamp update_time = 10
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
@@ -77,9 +74,9 @@ enum View {
 // definitions
 message ListModelDefinitionRequest {
   // Page size: the maximum number of resources to return. The service may
-  // return fewer than this value. If unspecified, at most 10 users will be
-  // returned. The maximum value is 100; values above 100 will be coereced to
-  // 100.
+  // return fewer than this value. If unspecified, at most 10 ModelDefinitions
+  // will be returned. The maximum value is 100; values above 100 will be
+  // coereced to 100.
   int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
   // Page token
   string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];

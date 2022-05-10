@@ -1,18 +1,21 @@
 package main
 
 import (
+	"encoding/json"
+
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	database "github.com/instill-ai/model-backend/internal/db"
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
+	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
+	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
 	if err := createModelDefinitionRecord(
 		db,
 		modelDef.GetId(),
@@ -20,11 +23,8 @@ func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error
 		modelDef.GetTitle(),
 		modelDef.GetDocumentationUrl(),
 		modelDef.GetIcon(),
-		modelDef.GetPublic(),
-		modelDef.GetCustom(),
-		datamodel.Spec{
-			DocumentationUrl: modelDef.GetDocumentationUrl(),
-		},
+		modelSpecBytes,
+		modelInstanceSpecBytes,
 	); err != nil {
 		return err
 	}

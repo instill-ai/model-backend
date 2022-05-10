@@ -65,12 +65,10 @@ export default function (data) {
           r.json().model_definition.title === "GitHub",
           [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.documentation_url`]: (r) =>
           r.json().model_definition.documentation_url !== undefined,
-          [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.spec`]: (r) =>
-          r.json().model_definition.spec !== undefined,
-          [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.public`]: (r) =>
-          r.json().model_definition.public === true,
-          [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.custom`]: (r) =>
-          r.json().model_definition.custom === false,
+          [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.model_spec`]: (r) =>
+          r.json().model_definition.model_spec !== undefined,
+          [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.model_instance_spec`]: (r) =>
+          r.json().model_definition.model_instance_spec !== undefined,
           [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.create_time`]: (r) =>
           r.json().model_definition.create_time !== undefined,
           [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.update_time`]: (r) =>
@@ -90,29 +88,9 @@ export default function (data) {
           [`GET /v1alpha/model-definitions response next_page_token`]: (r) =>
           r.json().next_page_token !== undefined,
           [`GET /v1alpha/model-definitions response total_size`]: (r) =>
-          r.json().total_size == 1,
+          r.json().total_size == 2,
           [`GET /v1alpha/model-definitions response model_definitions.length`]: (r) =>
-          r.json().model_definitions.length === 1,
-          [`GET /v1alpha/model-definitions response model_definitions[0].name`]: (r) =>
-          r.json().model_definitions[0].name === model_def_name,
-          [`GET /v1alpha/model-definitions response model_definitions[0].id`]: (r) =>
-          r.json().model_definitions[0].id === "github",          
-          [`GET /v1alpha/model-definitions response model_definitions[0].uid`]: (r) =>
-          r.json().model_definitions[0].uid === model_def_uid,
-          [`GET /v1alpha/model-definitions response model_definitions[0].title`]: (r) =>
-          r.json().model_definitions[0].title === "GitHub",
-          [`GET /v1alpha/model-definitions response model_definitions[0].documentation_url`]: (r) =>
-          r.json().model_definitions[0].documentation_url !== undefined,
-          [`GET /v1alpha/model-definitions response model_definitions[0].spec`]: (r) =>
-          r.json().model_definitions[0].spec !== undefined,
-          [`GET /v1alpha/model-definitions response model_definitions[0].public`]: (r) =>
-          r.json().model_definitions[0].public === true,
-          [`GET /v1alpha/model-definitions response model_definitions[0].custom`]: (r) =>
-          r.json().model_definitions[0].custom === false,
-          [`GET /v1alpha/model-definitions response model_definitions[0].create_time`]: (r) =>
-          r.json().model_definitions[0].create_time !== undefined,
-          [`GET /v1alpha/model-definitions response model_definitions[0].update_time`]: (r) =>
-          r.json().model_definitions[0].update_time !== undefined,
+          r.json().model_definitions.length === 2
       });
     });
   }
@@ -1125,12 +1103,9 @@ export default function (data) {
         "id": model_id,
         "model_definition":model_def_name,
         "configuration": {
-          "documentation_url": "",
-          "specification": {
-            "repo": "https://github.com/Phelan164/test-repo.git",
-            "tag": "v1.0",
-            "html_url": ""
-          }
+          "repo": "https://github.com/Phelan164/test-repo.git",
+          "tag": "v1.0",
+          "html_url": ""
         }
       }), {
         headers: genHeader("application/json"),
@@ -1149,10 +1124,10 @@ export default function (data) {
           r.json().model.model_definition === model_def_name,
           "POST /v1alpha/models github task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-          "POST /v1alpha/models github task cls response model.configuration.specification": (r) =>
-          r.json().model.configuration.specification !== undefined,
-          "POST /v1alpha/models github task cls response model.configuration.specification.repo": (r) =>
-          r.json().model.configuration.specification.repo === "https://github.com/Phelan164/test-repo.git",
+          "POST /v1alpha/models github task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+          "POST /v1alpha/models github task cls response model.configuration.repo": (r) =>
+          r.json().model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
           "POST /v1alpha/models github task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
           "POST /v1alpha/models github task cls response model.owner": (r) =>
@@ -1236,12 +1211,9 @@ export default function (data) {
         "id": randomString(10),
         "model_definition":model_def_name,
         "configuration": {
-          "documentation_url": "",
-          "specification": {
             "repo": "https://github.com/Phelan164/test-repo.git",
             "tag": "invalid-tag",
             "html_url": ""
-          }
         }
       }), {
         headers: genHeader("application/json"),
@@ -1254,12 +1226,9 @@ export default function (data) {
         "id": randomString(10),
         "model_definition":model_def_name,
         "configuration": {
-          "documentation_url": "",
-          "specification": {
-            "repo": "https://github.com/Phelan164/non-exited.git",
-            "tag": "v1.0",
-            "html_url": ""
-          }
+          "repo": "https://github.com/Phelan164/non-exited.git",
+          "tag": "v1.0",
+          "html_url": ""
         }
       }), {
         headers: genHeader("application/json"),
@@ -1271,12 +1240,9 @@ export default function (data) {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "model_definition":model_def_name,
         "configuration": {
-          "documentation_url": "",
-          "specification": {
-            "repo": "https://github.com/Phelan164/test-repo.git",
-            "tag": "v1.0",
-            "html_url": ""
-          }
+          "repo": "https://github.com/Phelan164/test-repo.git",
+          "tag": "v1.0",
+          "html_url": ""
         }
       }), {
         headers: genHeader("application/json"),
@@ -1289,11 +1255,8 @@ export default function (data) {
         "id": randomString(10),
         "model_definition":model_def_name,
         "configuration": {
-          "documentation_url": "",
-          "specification": {
-            "tag": "v1.0",
-            "html_url": ""
-          }
+          "tag": "v1.0",
+          "html_url": ""
         }
       }), {
         headers: genHeader("application/json"),
@@ -1462,6 +1425,165 @@ export default function (data) {
 
     });
   }
+
+  // Model Backend API: look up model
+  {
+    group("Model Backend API: Look up model", function () {
+      let fd_cls = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd_cls.append("name", "models/"+model_id);
+      fd_cls.append("description", model_description);
+      fd_cls.append("model_definition_name", model_def_name);
+      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+      let res = http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      })
+      check(res, {
+          "POST /v1alpha/models github task cls response status": (r) =>
+          r.status === 201, 
+          "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+          r.json().model.name === `models/${model_id}`,
+          "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id === model_id,          
+          "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+          "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+          "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+          "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      check(http.get(`${apiHost}/v1alpha/models/${res.json().model.uid}:lookUp`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response status`]: (r) =>
+        r.status === 200, 
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.name`]: (r) =>
+        r.json().model.name === `models/${model_id}`,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.uid`]: (r) =>
+        r.json().model.uid !== undefined,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.id`]: (r) =>
+        r.json().model.id === model_id,          
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.description`]: (r) =>
+        r.json().model.description === model_description,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.model_definition`]: (r) =>
+        r.json().model.model_definition === model_def_name,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.configuration`]: (r) =>
+        r.json().model.configuration !== undefined,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.visibility`]: (r) =>
+        r.json().model.visibility === "VISIBILITY_PRIVATE",
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.owner`]: (r) =>
+        r.json().model.user === 'users/local-user',
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.create_time`]: (r) =>
+        r.json().model.create_time !== undefined,
+        [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.update_time`]: (r) =>
+        r.json().model.update_time !== undefined,           
+      });
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 200 // TODO: update status to 204
+      });
+    });
+  }
+
+  // Model Backend API: Look up model instance
+  {
+    group("Model Backend API: Look up model instance", function () {
+      let fd_cls = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd_cls.append("name", "models/"+model_id);
+      fd_cls.append("description", model_description);
+      fd_cls.append("model_definition_name", model_def_name);
+      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+      let resModel = http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      })
+      check(resModel, {
+          "POST /v1alpha/models github task cls response status": (r) =>
+          r.status === 201, 
+          "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+          r.json().model.name === `models/${model_id}`,
+          "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+          r.json().model.id === model_id,          
+          "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+          "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+          "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+          "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+          "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+          "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      let resModelInstance = http.get(`${apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+        headers: genHeader(`application/json`),
+      })
+      check(resModelInstance, {
+        "GET /v1alpha/models/${model_id}/instances/latest response status": (r) =>
+        r.status === 200
+      });
+      
+      let res = http.get(`${apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp`, {
+        headers: genHeader(`application/json`),
+      })
+      console.log(">>>> res st ", res.status)
+      check(res, {
+        [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response status`]: (r) =>
+          r.status === 200,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.name`]: (r) =>
+          r.json().instance.name === `models/${model_id}/instances/latest`,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.uid`]: (r) =>
+          r.json().instance.uid !== undefined,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.id`]: (r) =>
+          r.json().instance.id === "latest",
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.state`]: (r) =>
+          r.json().instance.state === "STATE_OFFLINE",
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.model_definition`]: (r) =>
+          r.json().instance.model_definition === model_def_name,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.create_time`]: (r) =>
+          r.json().instance.create_time !== undefined,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.update_time`]: (r) =>
+          r.json().instance.update_time !== undefined,
+          [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.configuration`]: (r) =>
+          r.json().instance.configuration !== undefined,      
+      });
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 200 // TODO: update status to 204
+      });
+    });
+  }
+
 }
 
 export function teardown(data) {

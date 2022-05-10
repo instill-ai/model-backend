@@ -62,21 +62,16 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		Description:     &dbModel.Description,
 		ModelDefinition: dbModel.ModelDefinition,
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		Configuration: func() *modelPB.Spec {
-			if dbModel.Configuration.Specification != nil {
+		Configuration: func() *structpb.Struct {
+			if dbModel.Configuration != nil {
 				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModel.Configuration.Specification.String()), specification)
+				err := protojson.Unmarshal([]byte(dbModel.Configuration.String()), specification)
 				if err != nil {
 					logger.Fatal(err.Error())
 				}
-				return &modelPB.Spec{
-					DocumentationUrl: dbModel.Configuration.DocumentationUrl,
-					Specification:    specification,
-				}
+				return specification
 			} else {
-				return &modelPB.Spec{
-					DocumentationUrl: dbModel.Configuration.DocumentationUrl,
-				}
+				return nil
 			}
 		}(),
 	}
@@ -100,21 +95,16 @@ func DBModelInstanceToPBModelInstance(modelId string, dbModelInstance *datamodel
 		ModelDefinition: dbModelInstance.ModelDefinition,
 		State:           modelPB.ModelInstance_State(dbModelInstance.State),
 		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
-		Configuration: func() *modelPB.Spec {
-			if dbModelInstance.Configuration.Specification != nil {
+		Configuration: func() *structpb.Struct {
+			if dbModelInstance.Configuration != nil {
 				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModelInstance.Configuration.Specification.String()), specification)
+				err := protojson.Unmarshal([]byte(dbModelInstance.Configuration.String()), specification)
 				if err != nil {
 					logger.Fatal(err.Error())
 				}
-				return &modelPB.Spec{
-					DocumentationUrl: dbModelInstance.Configuration.DocumentationUrl,
-					Specification:    specification,
-				}
+				return specification
 			} else {
-				return &modelPB.Spec{
-					DocumentationUrl: dbModelInstance.Configuration.DocumentationUrl,
-				}
+				return nil
 			}
 		}(),
 	}
@@ -130,27 +120,32 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 		Id:               dbModelDefinition.ID,
 		Uid:              dbModelDefinition.BaseStatic.UID.String(),
 		Title:            dbModelDefinition.Title,
-		DocumentationUrl: dbModelDefinition.Spec.DocumentationUrl,
+		DocumentationUrl: dbModelDefinition.DocumentationUrl,
 		Icon:             dbModelDefinition.Icon,
-		Public:           dbModelDefinition.Public,
-		Custom:           dbModelDefinition.Custom,
 		CreateTime:       timestamppb.New(dbModelDefinition.CreateTime),
 		UpdateTime:       timestamppb.New(dbModelDefinition.UpdateTime),
-		Spec: func() *modelPB.Spec {
-			if dbModelDefinition.Spec.Specification != nil {
+		ModelSpec: func() *structpb.Struct {
+			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModelDefinition.Spec.Specification.String()), specification)
+				err := protojson.Unmarshal([]byte(dbModelDefinition.ModelSpec.String()), specification)
 				if err != nil {
 					logger.Fatal(err.Error())
 				}
-				return &modelPB.Spec{
-					DocumentationUrl: dbModelDefinition.Spec.DocumentationUrl,
-					Specification:    specification,
-				}
+				return specification
 			} else {
-				return &modelPB.Spec{
-					DocumentationUrl: dbModelDefinition.Spec.DocumentationUrl,
+				return nil
+			}
+		}(),
+		ModelInstanceSpec: func() *structpb.Struct {
+			if dbModelDefinition.ModelInstanceSpec != nil {
+				var specification = &structpb.Struct{}
+				err := protojson.Unmarshal([]byte(dbModelDefinition.ModelInstanceSpec.String()), specification)
+				if err != nil {
+					logger.Fatal(err.Error())
 				}
+				return specification
+			} else {
+				return nil
 			}
 		}(),
 	}
