@@ -14,20 +14,18 @@ func createModelDefinitionRecord(
 	title string,
 	documentationURL string,
 	icon string,
-	public bool,
-	custom bool,
-	spec datamodel.Spec,
+	modelSpec []byte,
+	modelInstanceSpec []byte,
 ) error {
 	uid_, _ := uuid.FromString(uid)
 	modelDef := datamodel.ModelDefinition{
-		BaseStatic:       datamodel.BaseStatic{UID: uid_},
-		ID:               id,
-		DocumentationUrl: documentationURL,
-		Icon:             icon,
-		Spec:             spec,
-		Public:           public,
-		Custom:           custom,
-		Title:            title,
+		BaseStatic:        datamodel.BaseStatic{UID: uid_},
+		ID:                id,
+		DocumentationUrl:  documentationURL,
+		Icon:              icon,
+		ModelSpec:         modelSpec,
+		ModelInstanceSpec: modelInstanceSpec,
+		Title:             title,
 	}
 
 	if result := db.Model(&datamodel.ModelDefinition{}).Create(&modelDef); result.Error != nil {

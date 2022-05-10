@@ -43,12 +43,6 @@ func (base *BaseDynamic) BeforeCreate(db *gorm.DB) error {
 	return nil
 }
 
-type Spec struct {
-	// Spec documentation URL
-	DocumentationUrl string         `json:"documentation_url,omitempty"`
-	Specification    datatypes.JSON `json:"specification,omitempty"`
-}
-
 type ModelDefinition struct {
 	BaseStatic
 
@@ -64,14 +58,11 @@ type ModelDefinition struct {
 	// ModelDefinition icon
 	Icon string `json:"icon,omitempty"`
 
-	// ModelDefinition spec
-	Spec Spec `json:"spec,omitempty"`
+	// ModelDefinition model spec
+	ModelSpec datatypes.JSON `json:"model_spec,omitempty"`
 
-	// ModelDefinition public
-	Public bool `json:"public,omitempty"`
-
-	// ModelDefinition custom
-	Custom bool `json:"custom,omitempty"`
+	// ModelDefinition model instance spec
+	ModelInstanceSpec datatypes.JSON `json:"model_instance_spec,omitempty"`
 }
 
 // Model combines several Triton model. It includes ensemble model.
@@ -88,7 +79,7 @@ type Model struct {
 	ModelDefinition string `json:"model_definition,omitempty"`
 
 	// Model definition configuration
-	Configuration Spec `gorm:"configuration:jsonb"`
+	Configuration datatypes.JSON `json:"configuration,omitempty"`
 
 	// Model visibility
 	Visibility ModelVisibility `json:"visibility,omitempty"`
@@ -136,7 +127,7 @@ type ModelInstance struct {
 	ModelDefinition string `json:"model_definition,omitempty"`
 
 	// Model instance configuration
-	Configuration Spec `gorm:"configuration:jsonb"`
+	Configuration datatypes.JSON `json:"configuration,omitempty"`
 
 	// Model id
 	ModelUID uuid.UUID `json:"model_uid,omitempty"`
@@ -186,23 +177,6 @@ func (v *ModelVisibility) Scan(value interface{}) error {
 
 func (v ModelVisibility) Value() (driver.Value, error) {
 	return modelPB.Model_Visibility(v).String(), nil
-}
-
-func (s *Spec) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal Spec value:", value))
-	}
-
-	if err := json.Unmarshal(bytes, &s); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s Spec) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(s)
-	return string(valueString), err
 }
 
 func (r *ModelInstance) Scan(value interface{}) error {

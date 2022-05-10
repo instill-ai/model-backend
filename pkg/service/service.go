@@ -22,11 +22,13 @@ import (
 type Service interface {
 	CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error)
 	GetModelById(owner string, modelId string) (datamodel.Model, error)
+	GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error)
 	DeleteModel(owner string, modelId string) error
 	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
 	GetModelInstance(modelUid uuid.UUID, instanceId string) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUid uuid.UUID, instanceUid uuid.UUID) (datamodel.ModelInstance, error)
 	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
 	DeployModelInstance(modelInstanceId uuid.UUID) error
 	UndeployModelInstance(modelInstanceId uuid.UUID) error
@@ -105,6 +107,10 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 
 func (s *service) GetModelById(owner string, modelId string) (datamodel.Model, error) {
 	return s.repository.GetModelById(owner, modelId)
+}
+
+func (s *service) GetModelByUid(owner string, uid uuid.UUID) (datamodel.Model, error) {
+	return s.repository.GetModelByUid(owner, uid)
 }
 
 func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error) {
@@ -264,6 +270,10 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 
 func (s *service) GetModelInstance(modelUid uuid.UUID, modelInstanceId string) (datamodel.ModelInstance, error) {
 	return s.repository.GetModelInstance(modelUid, modelInstanceId)
+}
+
+func (s *service) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID) (datamodel.ModelInstance, error) {
+	return s.repository.GetModelInstanceByUid(modelUid, modelInstanceUid)
 }
 
 func (s *service) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {

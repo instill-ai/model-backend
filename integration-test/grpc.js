@@ -11,7 +11,7 @@ import {
 } from "./helpers.js";
 
 const client = new grpc.Client();
-client.load(['proto'], 'definition.proto');
+client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
@@ -425,12 +425,9 @@ export default () => {
                 id: model_id,
                 model_definition: model_def_name,
                 configuration: {
-                    documentation_url: "",
-                    specification: {
-                        repo: "https://github.com/Phelan164/test-repo.git",
-                        tag: "v1.0",
-                        html_url: ""
-                    }
+                    repo: "https://github.com/Phelan164/test-repo.git",
+                    tag: "v1.0",
+                    html_url: ""
                 }
             }
         }), {
@@ -442,7 +439,7 @@ export default () => {
             'CreateModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
             'CreateModel model createTime': (r) => r && r.message.model.createTime !== undefined,
             'CreateModel model updateTime': (r) => r && r.message.model.updateTime !== undefined,
-            'CreateModel model configuration specification repo': (r) => r && r.message.model.configuration.specification.repo === "https://github.com/Phelan164/test-repo.git",
+            'CreateModel model configuration repo': (r) => r && r.message.model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
             'CreateModel model user': (r) => r && r.message.model.user !== undefined,
         });
 
@@ -473,12 +470,9 @@ export default () => {
                 id: randomString(10),
                 model_definition: model_def_name,
                 configuration: {
-                    documentation_url: "",
-                    specification: {
-                        repo: "https://github.com/Phelan164/test-repo.git",
-                        tag: "non-existed",
-                        html_url: ""
-                    }
+                    repo: "https://github.com/Phelan164/test-repo.git",
+                    tag: "non-existed",
+                    html_url: ""
                 }
             }
         }), {
@@ -490,12 +484,9 @@ export default () => {
                 id: randomString(10),
                 model_definition: model_def_name,
                 configuration: {
-                    documentation_url: "",
-                    specification: {
-                        repo: "invalid-repo",
-                        tag: "v1.0",
-                        html_url: ""
-                    }
+                    repo: "invalid-repo",
+                    tag: "v1.0",
+                    html_url: ""
                 }
             }
         }), {
@@ -506,12 +497,9 @@ export default () => {
             model: {
                 model_definition: model_def_name,
                 configuration: {
-                    documentation_url: "",
-                    specification: {
-                        repo: "https://github.com/Phelan164/test-repo.git",
-                        tag: "v1.0",
-                        html_url: ""
-                    }
+                    repo: "https://github.com/Phelan164/test-repo.git",
+                    tag: "v1.0",
+                    html_url: ""
                 }
             }
         }), {
@@ -533,6 +521,213 @@ export default () => {
 
         client.close();
     });
+
+    // LookUpModel check
+    group("Model API: LookUpModel", () => {
+        client.connect('localhost:8080', {
+            plaintext: true
+        });
+
+        let fd_cls = new FormData();
+        let model_id = randomString(10)
+        let model_description = randomString(20)
+        fd_cls.append("name", "models/"+model_id);
+        fd_cls.append("description", model_description);
+        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+        let res = http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
+            headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        })
+        check(res, {
+            "POST /v1alpha/models github task cls response status": (r) =>
+            r.status === 201, 
+            "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+            r.json().model.name === `models/${model_id}`,
+            "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+            r.json().model.uid !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+            r.json().model.id === model_id,          
+            "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+            r.json().model.model_definition === model_def_name,
+            "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+            r.json().model.configuration !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+            r.json().model.user === 'users/local-user',
+            "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+            r.json().model.create_time !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+            r.json().model.update_time !== undefined,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModel', {permalink: "models/"+res.json().model.uid}, {}), {
+            "LookUpModel response status": (r) => r.status === grpc.StatusOK, 
+            "LookUpModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
+            "LookUpModel response model.uid": (r) => r.message.model.uid === res.json().model.uid,
+            "LookUpModel response model.id": (r) => r.message.model.id === model_id,          
+            "LookUpModel response model.description": (r) => r.message.model.description === model_description,
+            "LookUpModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
+            "LookUpModel response model.configuration": (r) => r.message.model.configuration !== undefined,
+            "LookUpModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
+            "LookUpModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "LookUpModel response model.create_time": (r) => r.message.model.createTime !== undefined,
+            "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,    
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModel', {permalink: "models/"+randomString(10)}, {}), {
+            'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: "models/"+model_id}), {
+            'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
+        });
+        client.close();
+    });
+
+    // GetModelInstance check
+    group("Model API: GetModelInstance", () => {
+        client.connect('localhost:8080', {
+            plaintext: true
+        });
+
+        let fd_cls = new FormData();
+        let model_id = randomString(10)
+        let model_description = randomString(20)
+        fd_cls.append("name", "models/"+model_id);
+        fd_cls.append("description", model_description);
+        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+        check(http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
+            headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        }), {
+            "POST /v1alpha/models github task cls response status": (r) =>
+            r.status === 201, 
+            "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+            r.json().model.name === `models/${model_id}`,
+            "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+            r.json().model.uid !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+            r.json().model.id === model_id,          
+            "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
+            r.json().model.description === model_description,
+            "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+            r.json().model.model_definition === model_def_name,
+            "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+            r.json().model.configuration !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
+            r.json().model.visibility === "VISIBILITY_PRIVATE",
+            "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+            r.json().model.user === 'users/local-user',
+            "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+            r.json().model.create_time !== undefined,
+            "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+            r.json().model.update_time !== undefined,
+        });
+
+        let req = {name: `models/${model_id}/instances/latest`}
+        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', req, {}), {
+            'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'GetModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
+            'GetModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
+            'GetModelInstance instance uid': (r) => r && r.message.instance.uid !== undefined,
+            'GetModelInstance instance state': (r) => r && r.message.instance.state === "STATE_OFFLINE",
+            'GetModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
+            'GetModelInstance instance modelDefinition': (r) => r && r.message.instance.modelDefinition === model_def_name,
+            'GetModelInstance instance configuration': (r) => r && r.message.instance.configuration !== undefined,
+            'GetModelInstance instance createTime': (r) => r && r.message.instance.createTime !== undefined,
+            'GetModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
+        });
+        sleep(5) // triton take time after update status
+
+        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', {name: `models/non-existed/instances/latest`}), {
+            'UpdateModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', {name: `models/${model_id}/instances/non-existed`}, {}), {
+            'UpdateModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
+        });
+
+        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: "models/"+model_id}), {
+            'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
+        });
+        client.close();
+    });    
+
+    // LookUpModelInstance check
+    group("Model API: LookUpModelInstance", () => {
+    client.connect('localhost:8080', {
+        plaintext: true
+    });
+
+    let fd_cls = new FormData();
+    let model_id = randomString(10)
+    let model_description = randomString(20)
+    fd_cls.append("name", "models/"+model_id);
+    fd_cls.append("description", model_description);
+    fd_cls.append("model_definition_name", model_def_name);
+    fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+    let res_model = http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+    })
+    check(res_model, {
+        "POST /v1alpha/models github task cls response status": (r) =>
+        r.status === 201, 
+        "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+        r.json().model.name === `models/${model_id}`,
+        "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+        r.json().model.uid !== undefined,
+        "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+        r.json().model.id === model_id,          
+        "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
+        r.json().model.description === model_description,
+        "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+        r.json().model.model_definition === model_def_name,
+        "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+        r.json().model.configuration !== undefined,
+        "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
+        r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+        r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+        r.json().model.create_time !== undefined,
+        "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+        r.json().model.update_time !== undefined,
+    });
+    let res_model_instance = client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', {name: `models/${model_id}/instances/latest`}, {})
+    check(res_model_instance, {
+        'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
+    });    
+
+    let req = {permalink: `models/${res_model.json().model.uid}/instances/${res_model_instance.message.instance.uid}`}
+    check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', req, {}), {
+        'LookUpModelInstance status': (r) => r && r.status === grpc.StatusOK,
+        'LookUpModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
+        'LookUpModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
+        'LookUpModelInstance instance uid': (r) => r && r.message.instance.uid === res_model_instance.message.instance.uid,
+        'LookUpModelInstance instance state': (r) => r && r.message.instance.state === "STATE_OFFLINE",
+        'LookUpModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
+        'LookUpModelInstance instance modelDefinition': (r) => r && r.message.instance.modelDefinition === model_def_name,
+        'LookUpModelInstance instance configuration': (r) => r && r.message.instance.configuration !== undefined,
+        'LookUpModelInstance instance createTime': (r) => r && r.message.instance.createTime !== undefined,
+        'LookUpModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
+    });
+
+    check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', {permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}`}), {
+        'UpdateModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+    });
+
+    check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', {permalink: `models/${res_model.json().model.uid}}/instances/non-existed`}, {}), {
+        'UpdateModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+    });
+
+    check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', {name: "models/"+model_id}), {
+        'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
+    });
+    client.close();
+});     
 };
 
 export function teardown() {

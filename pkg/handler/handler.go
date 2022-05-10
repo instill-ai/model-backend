@@ -725,7 +725,7 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Missing Configuration")
 	}
 
-	b, err := req.Model.Configuration.Specification.MarshalJSON()
+	b, err := req.Model.Configuration.MarshalJSON()
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
@@ -767,18 +767,12 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		Owner:           owner,
 		Visibility:      datamodel.ModelVisibility(visibility),
 		Description:     githubInfo.Description,
-		Configuration: datamodel.Spec{
-			DocumentationUrl: "",
-			Specification:    githubModelConfig,
-		},
+		Configuration:   githubModelConfig,
 		Instances: []datamodel.ModelInstance{{
 			ID:              github.Tag,
 			ModelDefinition: req.Model.ModelDefinition,
 			State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-			Configuration: datamodel.Spec{
-				DocumentationUrl: "",
-				Specification:    githubConfigObj,
-			},
+			Configuration:   githubConfigObj,
 		}},
 	}
 
@@ -846,6 +840,27 @@ func (s *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 	}
 
 	return &resp, nil
+}
+
+func (s *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
+	owner, err := getOwner(ctx)
+	if err != nil {
+		return &modelPB.LookUpModelResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+	}
+	sUid, err := getID(req.Permalink)
+	if err != nil {
+		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+	uid, err := uuid.FromString(sUid)
+	if err != nil {
+		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+	dbModel, err := s.service.GetModelByUid(owner, uid)
+	if err != nil {
+		return &modelPB.LookUpModelResponse{}, status.Error(codes.NotFound, err.Error())
+	}
+	pbModel := DBModelToPBModel(&dbModel)
+	return &modelPB.LookUpModelResponse{Model: pbModel}, err
 }
 
 func (s *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
@@ -919,6 +934,36 @@ func (s *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 
 	pbModelInstance := DBModelInstanceToPBModelInstance(modelId, &dbModelInstance)
 	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
+}
+
+func (s *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
+	owner, err := getOwner(ctx)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, err
+	}
+	sModelUid, sInstanceUid, err := getModelInstanceID(req.Permalink)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+	modelUid, err := uuid.FromString(sModelUid)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+	dbModel, err := s.service.GetModelByUid(owner, modelUid)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
+	}
+	instanceUid, err := uuid.FromString(sInstanceUid)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+	dbModelInstance, err := s.service.GetModelInstanceByUid(dbModel.UID, instanceUid)
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
+	}
+
+	pbModelInstance := DBModelInstanceToPBModelInstance(dbModel.ID, &dbModelInstance)
+	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
 func (s *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelInstanceRequest) (*modelPB.ListModelInstanceResponse, error) {

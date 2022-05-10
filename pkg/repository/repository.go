@@ -16,12 +16,14 @@ import (
 type Repository interface {
 	CreateModel(model datamodel.Model) error
 	GetModelById(owner string, modelId string) (datamodel.Model, error)
+	GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error)
 	DeleteModel(modelUid uuid.UUID) error
 	UpdateModel(modelUid uuid.UUID, updatedModel datamodel.Model) error
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 	CreateModelInstance(instance datamodel.ModelInstance) error
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
 	GetModelInstance(modelUid uuid.UUID, instanceId string) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID) (datamodel.ModelInstance, error)
 	GetModelInstances(modelUid uuid.UUID) ([]datamodel.ModelInstance, error)
 	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
 	CreateTritonModel(model datamodel.TritonModel) error
@@ -73,6 +75,14 @@ func (r *repository) GetModelById(owner string, modelId string) (datamodel.Model
 	var model datamodel.Model
 	if result := r.db.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Where(&datamodel.Model{Owner: owner, ID: modelId}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelId, owner)
+	}
+	return model, nil
+}
+
+func (r *repository) GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error) {
+	var model datamodel.Model
+	if result := r.db.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}).First(&model); result.Error != nil {
+		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUid, owner)
 	}
 	return model, nil
 }
@@ -148,6 +158,14 @@ func (r *repository) GetModelInstance(modelUid uuid.UUID, instanceId string) (da
 	var instanceDB datamodel.ModelInstance
 	if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"model_uid": modelUid, "id": instanceId}).First(&instanceDB); result.Error != nil {
 		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance %v for model %v not found", instanceId, modelUid)
+	}
+	return instanceDB, nil
+}
+
+func (r *repository) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID) (datamodel.ModelInstance, error) {
+	var instanceDB datamodel.ModelInstance
+	if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"model_uid": modelUid, "uid": modelInstanceUid}).First(&instanceDB); result.Error != nil {
+		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance uid %v for model uid %v not found", modelInstanceUid, modelUid)
 	}
 	return instanceDB, nil
 }

@@ -7,7 +7,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 
-import "definition.proto";
+import "model_definition.proto";
 import "model.proto";
 
 // HealthCheckRequest represents a request to health check a service
@@ -152,6 +152,15 @@ service ModelService {
     option (google.api.method_signature) = "name";
   }
 
+  // LookUpModel method receives a LookUpModelRequest message and returns a
+  // LookUpModelResponse
+  rpc LookUpModel(LookUpModelRequest) returns (LookUpModelResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{permalink=models/*}:lookUp"
+    };
+    option (google.api.method_signature) = "permalink";
+  }
+
   // RenameModel method rename a model
   rpc RenameModel(RenameModelRequest) returns (RenameModelResponse) {
     option (google.api.http) = {
@@ -179,6 +188,17 @@ service ModelService {
       get : "/v1alpha/{name=models/*/instances/*}"
     };
     option (google.api.method_signature) = "name";
+  }
+
+  // LookUpModelInstance method receives a LookUpModelInstanceRequest message
+  // and returns a
+  // LookUpModelInstanceResponse
+  rpc LookUpModelInstance(LookUpModelInstanceRequest)
+      returns (LookUpModelInstanceResponse) {
+    option (google.api.http) = {
+      get : "/v1alpha/{permalink=models/*/instances/*}:lookUp"
+    };
+    option (google.api.method_signature) = "permalink";
   }
 
   // DeployModelInstance deploy a model instance to online state
@@ -215,8 +235,8 @@ service ModelService {
 
   ///////////////////////////////////////////////////////
   //
-  // TriggerModel method receives a TriggerModelRequest message and
-  // returns a TriggerModelResponse message.
+  // TriggerModelInstance method receives a TriggerModelInstanceRequest message
+  // and returns a TriggerModelInstanceResponse message.
   rpc TriggerModelInstance(TriggerModelInstanceRequest)
       returns (TriggerModelInstanceResponse) {
     option (google.api.http) = {
@@ -226,9 +246,9 @@ service ModelService {
     option (google.api.method_signature) = "name,inputs";
   }
 
-  // TriggerModelBinaryFileUpload method receives a
-  // TriggerModelBinaryFileUploadRequest message and returns a
-  // TriggerModelBinaryFileUploadResponse message.
+  // TriggerModelInstanceBinaryFileUpload method receives a
+  // TriggerModelInstanceBinaryFileUploadRequest message and returns a
+  // TriggerModelInstanceBinaryFileUploadResponse message.
   rpc TriggerModelInstanceBinaryFileUpload(
       stream TriggerModelInstanceBinaryFileUploadRequest)
       returns (TriggerModelInstanceBinaryFileUploadResponse) {}
