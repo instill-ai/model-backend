@@ -436,16 +436,16 @@ func makeJsonResponse(w http.ResponseWriter, status int, title string, detail st
 	_, _ = w.Write(obj)
 }
 
-func (s *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
-	if !s.triton.IsTritonServerReady() {
+func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
+	if !h.triton.IsTritonServerReady() {
 		return &modelPB.LivenessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
 
 	return &modelPB.LivenessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
-func (s *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
-	if !s.triton.IsTritonServerReady() {
+func (h *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
+	if !h.triton.IsTritonServerReady() {
 		return &modelPB.ReadinessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
 
@@ -629,7 +629,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 }
 
 // AddModel - upload a model to the model server
-func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
 	owner, err := getOwner(stream.Context())
 	if err != nil {
 		return err
@@ -638,7 +638,7 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	if err != nil {
 		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
-	_, err = s.service.GetModelById(owner, uploadedModel.ID)
+	_, err = h.service.GetModelById(owner, uploadedModel.ID)
 	if err == nil {
 		return makeError(codes.AlreadyExists, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 	}
@@ -672,7 +672,7 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 	}
 
-	dbModel, err := s.service.CreateModel(owner, uploadedModel)
+	dbModel, err := h.service.CreateModel(owner, uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
@@ -686,7 +686,7 @@ func (s *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	return
 }
 
-func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
+func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
@@ -711,12 +711,12 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
-	_, err = s.service.GetModelDefinition(modelDefinitionId)
+	_, err = h.service.GetModelDefinition(modelDefinitionId)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
 
-	_, err = s.service.GetModelById(owner, req.Model.Id)
+	_, err = h.service.GetModelById(owner, req.Model.Id)
 	if err == nil {
 		return &modelPB.CreateModelResponse{}, fmt.Errorf("The model %v already existed", req.Model.Id)
 	}
@@ -801,7 +801,7 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	} else {
 		githubModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 	}
-	dbModel, err := s.service.CreateModel(owner, &githubModel)
+	dbModel, err := h.service.CreateModel(owner, &githubModel)
 	if err != nil {
 		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, githubModel.Instances[0].ID)
 		return &modelPB.CreateModelResponse{}, err
@@ -817,13 +817,13 @@ func (s *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
 
-func (s *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
+func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.ListModelResponse{}, err
 	}
 
-	dbModels, nextPageToken, totalSize, err := s.service.ListModel(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModels, nextPageToken, totalSize, err := h.service.ListModel(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelResponse{}, err
 	}
@@ -842,7 +842,7 @@ func (s *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 	return &resp, nil
 }
 
-func (s *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
+func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.FailedPrecondition, err.Error())
@@ -855,7 +855,7 @@ func (s *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := s.service.GetModelByUid(owner, uid)
+	dbModel, err := h.service.GetModelByUid(owner, uid)
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -863,7 +863,7 @@ func (s *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	return &modelPB.LookUpModelResponse{Model: pbModel}, err
 }
 
-func (s *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
+func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
@@ -872,7 +872,7 @@ func (s *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	dbModel, err := s.service.GetModelById(owner, id)
+	dbModel, err := h.service.GetModelById(owner, id)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
@@ -880,19 +880,54 @@ func (s *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	return &modelPB.GetModelResponse{Model: pbModel}, err
 }
 
-func (s *handler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
+func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelRequest) (*modelPB.UpdateModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
-		return &modelPB.DeleteModelResponse{}, err
+		return &modelPB.UpdateModelResponse{}, err
 	}
-	id, err := getID(req.Name)
+	id, err := getID(req.Model.Name)
+	fmt.Println(">>>> id err ", id, err)
 	if err != nil {
-		return &modelPB.DeleteModelResponse{}, err
+		return &modelPB.UpdateModelResponse{}, err
 	}
-	return &modelPB.DeleteModelResponse{}, s.service.DeleteModel(owner, id)
+	dbModel, err := h.service.GetModelById(owner, id)
+
+	if err != nil {
+		return &modelPB.UpdateModelResponse{}, err
+	}
+	updateModel := datamodel.Model{
+		ID: id,
+	}
+	fmt.Println(">>>> updateModel err ", updateModel, err)
+	fmt.Println(">>> req.UpdateMask ", req.UpdateMask)
+	fmt.Println(">>> req.UpdateMask Paths ", req.UpdateMask.Paths)
+	if req.UpdateMask != nil && len(req.UpdateMask.Paths) > 0 {
+		for _, field := range req.UpdateMask.Paths {
+			switch field {
+			case "description":
+				updateModel.Description = *req.Model.Description
+			}
+		}
+	}
+	fmt.Println(">>>> updateModel err1 ", updateModel, err)
+	dbModel, err = h.service.UpdateModel(dbModel.UID, &updateModel)
+	pbModel := DBModelToPBModel(&dbModel)
+	return &modelPB.UpdateModelResponse{Model: pbModel}, err
 }
 
-func (s *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
+func (h *handler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
+	owner, err := getOwner(ctx)
+	if err != nil {
+		return &modelPB.DeleteModelResponse{}, err
+	}
+	id, err := getID(req.Name)
+	if err != nil {
+		return &modelPB.DeleteModelResponse{}, err
+	}
+	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(owner, id)
+}
+
+func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
@@ -901,7 +936,7 @@ func (s *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	dbModel, err := s.service.RenameModel(owner, id, req.NewModelId)
+	dbModel, err := h.service.RenameModel(owner, id, req.NewModelId)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
@@ -911,7 +946,7 @@ func (s *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 
 ///////////////////////////////////////////////////////
 /////////////   MODEL INSTANCE HANDLERS ///////////////
-func (s *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
+func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
@@ -922,12 +957,12 @@ func (s *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	dbModel, err := s.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := s.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
@@ -936,7 +971,7 @@ func (s *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (s *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
+func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, err
@@ -949,7 +984,7 @@ func (s *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := s.service.GetModelByUid(owner, modelUid)
+	dbModel, err := h.service.GetModelByUid(owner, modelUid)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -957,7 +992,7 @@ func (s *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModelInstance, err := s.service.GetModelInstanceByUid(dbModel.UID, instanceUid)
+	dbModelInstance, err := h.service.GetModelInstanceByUid(dbModel.UID, instanceUid)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -966,7 +1001,7 @@ func (s *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (s *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelInstanceRequest) (*modelPB.ListModelInstanceResponse, error) {
+func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelInstanceRequest) (*modelPB.ListModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
@@ -976,12 +1011,12 @@ func (s *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
-	modelInDB, err := s.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
 
-	dbModelInstances, nextPageToken, totalSize, err := s.service.ListModelInstance(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstance(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
@@ -1000,7 +1035,7 @@ func (s *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 	return &resp, nil
 }
 
-func (s *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
+func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
@@ -1011,22 +1046,22 @@ func (s *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModel, err := s.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := s.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	err = s.service.DeployModelInstance(dbModelInstance.UID)
+	err = h.service.DeployModelInstance(dbModelInstance.UID)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err = s.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
@@ -1035,7 +1070,7 @@ func (s *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	return &modelPB.DeployModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (s *handler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
+func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -1046,22 +1081,22 @@ func (s *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModel, err := s.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := s.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	err = s.service.UndeployModelInstance(dbModelInstance.UID)
+	err = h.service.UndeployModelInstance(dbModelInstance.UID)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err = s.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
@@ -1070,8 +1105,8 @@ func (s *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	return &modelPB.UndeployModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (s *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
-	if !s.triton.IsTritonServerReady() {
+func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
+	if !h.triton.IsTritonServerReady() {
 		return makeError(503, "TriggerModelInstanceBinaryFileUpload", "Triton Server not ready yet")
 	}
 
@@ -1085,16 +1120,16 @@ func (s *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 		return makeError(500, "TriggerModelInstanceBinaryFileUpload", "Could not save the file")
 	}
 
-	modelInDB, err := s.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The model %v do not exist", modelId))
 	}
-	modelInstanceInDB, err := s.service.GetModelInstance(modelInDB.UID, instanceId)
+	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceId)
 	if err != nil {
 		return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The model instance %v do not exist", instanceId))
 	}
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := s.service.ModelInfer(modelInstanceInDB.UID, imageBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imageBytes, task)
 	if err != nil {
 		return err
 	}
@@ -1126,7 +1161,7 @@ func (s *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	return err
 }
 
-func (s *handler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
+func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, err
@@ -1137,12 +1172,12 @@ func (s *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		return &modelPB.TriggerModelInstanceResponse{}, err
 	}
 
-	modelInDB, err := s.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.NotFound, "TriggerModelInstance", fmt.Sprintf("The model instance named %v not found in server", req.Name))
 	}
 
-	modelInstanceInDB, err := s.service.GetModelInstance(modelInDB.UID, modelInstanceId)
+	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceId)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.NotFound, "TriggerModelInstance", fmt.Sprintf("The model %v  with instance %v not found in server", modelId, modelInstanceId))
 	}
@@ -1152,7 +1187,7 @@ func (s *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.InvalidArgument, "TriggerModelInstance", err.Error())
 	}
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := s.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.InvalidArgument, "TriggerModelInstance", err.Error())
 	}
@@ -1283,7 +1318,7 @@ func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-func (s *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
+func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
 	owner, err := getOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
@@ -1294,12 +1329,12 @@ func (s *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
 
-	dbModel, err := s.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
 
-	_, err = s.service.GetModelInstance(dbModel.UID, instanceId)
+	_, err = h.service.GetModelInstance(dbModel.UID, instanceId)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
@@ -1327,13 +1362,13 @@ func (s *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 
 ///////////////////////////////////////////////////////
 /////////////   MODEL DEFINITION HANDLERS /////////////
-func (s *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
+func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
 	definitionId, err := getDefinitionUID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	dbModelDefinition, err := s.service.GetModelDefinition(definitionId)
+	dbModelDefinition, err := h.service.GetModelDefinition(definitionId)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
@@ -1342,9 +1377,9 @@ func (s *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelD
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
 }
 
-func (s *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListModelDefinitionRequest) (*modelPB.ListModelDefinitionResponse, error) {
+func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListModelDefinitionRequest) (*modelPB.ListModelDefinitionResponse, error) {
 
-	dbModelDefinitions, nextPageToken, totalSize, err := s.service.ListModelDefinition(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinition(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionResponse{}, err
 	}

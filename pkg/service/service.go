@@ -25,6 +25,7 @@ type Service interface {
 	GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error)
 	DeleteModel(owner string, modelId string) error
 	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
+	UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
 	GetModelInstance(modelUid uuid.UUID, instanceId string) (datamodel.ModelInstance, error)
@@ -266,6 +267,15 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 	}
 
 	return s.GetModelById(owner, newModelId)
+}
+
+func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
+	err := s.repository.UpdateModel(modelUid, *model)
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	return s.GetModelById(model.Owner, model.ID)
 }
 
 func (s *service) GetModelInstance(modelUid uuid.UUID, modelInstanceId string) (datamodel.ModelInstance, error) {
