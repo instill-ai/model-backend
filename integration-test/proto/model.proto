@@ -290,6 +290,38 @@ message RenameModelResponse {
   Model model = 1;
 }
 
+// PublishModelRequest represents a request to publish a model
+message PublishModelRequest {
+  // Resource name of the model.
+  // For example "models/{model}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
+}
+
+// PublishModelResponse represents a response for the published model
+message PublishModelResponse {
+  // Published model
+  Model model = 1;
+}
+
+// UnpublishModelRequest represents a request to unpublish a model
+message UnpublishModelRequest {
+  // Resource name of the model.
+  // For example "models/{model}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model"
+  ];
+}
+
+// UnpublishModelResponse represents a response for the unpublished model
+message UnpublishModelResponse {
+  // Unpublished model
+  Model model = 1;
+}
+
 // ListModelInstanceRequest represents a request to list all instances of a
 // model
 message ListModelInstanceRequest {

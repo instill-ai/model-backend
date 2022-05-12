@@ -56,11 +56,12 @@ var GetModelSelectedFields = []string{
 	`"model"."update_time"`,
 }
 
-var UpdateModelSelectedFields = []string{
-	`"model"."id"`,
-	`"model"."description"`,
-	`"model"."update_time"`,
-}
+// var UpdateModelSelectedFields = []string{
+// 	`"model"."id"`,
+// 	`"model"."description"`,
+// 	`"model"."visibility"`,
+// 	`"model"."update_time"`,
+// }
 
 func (r *repository) CreateModel(model datamodel.Model) error {
 	// We ignore the virtual columns
@@ -132,7 +133,7 @@ func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pa
 }
 
 func (r *repository) UpdateModel(modelUid uuid.UUID, updatedModel datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Select(UpdateModelSelectedFields).Where("uid", modelUid).Updates(&updatedModel); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Where("uid", modelUid).Updates(&updatedModel); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 	return nil

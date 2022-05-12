@@ -623,6 +623,8 @@ github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220506115658-65d504ede087 h1:
 github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220506115658-65d504ede087/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220509135836-cf927b8d2d64 h1:tBhqwux6qhMVQOHtCMdjjTlsfPXS5mLEQ3rrWk7xOJs=
 github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220509135836-cf927b8d2d64/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
+github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220512092200-f1b556b2a282 h1:/JPqpeCACp5oGigPV7IhpryP09rVjQ8QKDx7Ov8uE/A=
+github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220512092200-f1b556b2a282/go.mod h1:q2Pq4P0AY/59RGibT4nSDnOsA4wD4XhLueFRoGYNBjk=
 github.com/instill-ai/x v0.1.0-alpha.0.20220509015502-e81f88dda39b h1:W775VMFICVdiu0/u6NZeJVwuMxYqmLiqB/VRpOWwWFw=
 github.com/instill-ai/x v0.1.0-alpha.0.20220509015502-e81f88dda39b/go.mod h1:fcr6T+YvIrHnhWODm3ympB8IdZFKKc3ahTjRfnEDUy4=
 github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56/go.mod h1:ymszkNOg6tORTn+6F6j+Jc8TOr5osrynvN6ivFWZ2GA=

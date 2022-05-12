@@ -170,6 +170,26 @@ service ModelService {
     option (google.api.method_signature) = "name,new_model_id";
   }
 
+  // PublishModel method receives a PublishModelRequest message and returns a
+  // PublishModelResponse
+  rpc PublishModel(PublishModelRequest) returns (PublishModelResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*}:publish"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // UnpublishModel method receives a UnpublishModelRequest message and returns a
+  // UnpublishModelResponse
+  rpc UnpublishModel(UnpublishModelRequest) returns (UnpublishModelResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*}:unpublish"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
   // ListModelInstance method receives a ListModelInstanceRequest message and
   // returns a ListModelInstanceResponse
   rpc ListModelInstance(ListModelInstanceRequest)

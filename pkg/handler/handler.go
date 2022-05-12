@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -155,7 +154,10 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 				}
 			}
 			filePath := filepath.Join(dstDir, dirName)
-			_ = os.MkdirAll(filePath, os.ModePerm)
+			err = os.MkdirAll(filePath, os.ModePerm)
+			if err != nil {
+				return "", err
+			}
 			continue
 		}
 
@@ -234,7 +236,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		return nil
 	})
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	for _, f := range files {
 		if f.path == modelDir {
@@ -253,7 +255,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		if f.fInfo.IsDir() { // create new folder
 			err = os.Mkdir(filePath, os.ModePerm)
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
 			newModelNameMap[oldModelName] = subStrs[0]
 			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
@@ -270,14 +272,14 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		}
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 		srcFile, err := os.Open(f.path)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 		dstFile.Close()
 		srcFile.Close()
@@ -289,7 +291,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			}
 			err = updateConfigModelName(filePath, oldModelName, subStrs[0])
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
 		}
 	}
@@ -298,7 +300,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		for oldModelName, newModelName := range newModelNameMap {
 			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
-				log.Fatal(err)
+				return "", err
 			}
 		}
 		for i := 0; i < len(createdTModels); i++ {
@@ -707,6 +709,10 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, err
 	}
 
+	_, err = h.service.GetModelById(owner, req.Model.Id)
+	if err == nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.AlreadyExists, "Add Model Error", "Model already existed")
+	}
 	modelDefinitionId, err := getDefinitionUID(req.Model.ModelDefinition)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
@@ -886,21 +892,16 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	id, err := getID(req.Model.Name)
-	fmt.Println(">>>> id err ", id, err)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	dbModel, err := h.service.GetModelById(owner, id)
-
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	updateModel := datamodel.Model{
 		ID: id,
 	}
-	fmt.Println(">>>> updateModel err ", updateModel, err)
-	fmt.Println(">>> req.UpdateMask ", req.UpdateMask)
-	fmt.Println(">>> req.UpdateMask Paths ", req.UpdateMask.Paths)
 	if req.UpdateMask != nil && len(req.UpdateMask.Paths) > 0 {
 		for _, field := range req.UpdateMask.Paths {
 			switch field {
@@ -909,7 +910,6 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 			}
 		}
 	}
-	fmt.Println(">>>> updateModel err1 ", updateModel, err)
 	dbModel, err = h.service.UpdateModel(dbModel.UID, &updateModel)
 	pbModel := DBModelToPBModel(&dbModel)
 	return &modelPB.UpdateModelResponse{Model: pbModel}, err
@@ -942,6 +942,40 @@ func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 	}
 	pbModel := DBModelToPBModel(&dbModel)
 	return &modelPB.RenameModelResponse{Model: pbModel}, nil
+}
+
+func (h *handler) PublishModel(ctx context.Context, req *modelPB.PublishModelRequest) (*modelPB.PublishModelResponse, error) {
+	owner, err := getOwner(ctx)
+	if err != nil {
+		return &modelPB.PublishModelResponse{}, err
+	}
+	id, err := getID(req.Name)
+	if err != nil {
+		return &modelPB.PublishModelResponse{}, err
+	}
+	dbModel, err := h.service.PublishModel(owner, id)
+	if err != nil {
+		return &modelPB.PublishModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&dbModel)
+	return &modelPB.PublishModelResponse{Model: pbModel}, nil
+}
+
+func (h *handler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishModelRequest) (*modelPB.UnpublishModelResponse, error) {
+	owner, err := getOwner(ctx)
+	if err != nil {
+		return &modelPB.UnpublishModelResponse{}, err
+	}
+	id, err := getID(req.Name)
+	if err != nil {
+		return &modelPB.UnpublishModelResponse{}, err
+	}
+	dbModel, err := h.service.UnpublishModel(owner, id)
+	if err != nil {
+		return &modelPB.UnpublishModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&dbModel)
+	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
 ///////////////////////////////////////////////////////

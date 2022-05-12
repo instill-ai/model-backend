@@ -25,6 +25,8 @@ type Service interface {
 	GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error)
 	DeleteModel(owner string, modelId string) error
 	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
+	PublishModel(owner string, modelId string) (datamodel.Model, error)
+	UnpublishModel(owner string, modelId string) (datamodel.Model, error)
 	UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
@@ -267,6 +269,40 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 	}
 
 	return s.GetModelById(owner, newModelId)
+}
+
+func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelById(owner, modelId)
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
+		ID:         modelInDB.ID,
+		Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC),
+	})
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	return s.GetModelById(owner, modelId)
+}
+
+func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelById(owner, modelId)
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
+		ID:         modelInDB.ID,
+		Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE),
+	})
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	return s.GetModelById(owner, modelId)
 }
 
 func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
