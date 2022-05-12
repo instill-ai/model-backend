@@ -100,7 +100,7 @@
           "title": "Instance specification",
           "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model instance",
           "additionalProperties": false,
-          "ui_order": 6,
+          "ui_order": 7,
           "ui_hidden": true,
           "ui_disabled": true
         }
