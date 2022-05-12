@@ -3,7 +3,7 @@
   title: "GitHub"
   documentationUrl: "https://docs.instill.tech/integrations/models/github"
   icon: "github.svg"
-  modelSpecification:
+  modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "GitHub spec for model"
     type: "object"
@@ -32,7 +32,7 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "text"
-  modelInstanceSpecification:
+  modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "GitHub spec for model instance"
     type: "object"
@@ -79,7 +79,7 @@
   title: Local
   documentationUrl: https://docs.instill.tech/integrations/models/local
   icon: "local.svg"
-  modelSpecification:
+  modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "Local spec for model"
     type: "object"
@@ -102,7 +102,7 @@
         ui_order: 1
         ui_disabled: true
         ui_component: "file"
-  modelInstanceSpecification:
+  modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "Local spec for model instance"
     type: "object"
