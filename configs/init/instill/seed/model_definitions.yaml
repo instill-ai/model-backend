@@ -1,22 +1,131 @@
-- title: GitHub
-  id: github
-  name: "model-definitions/github"
-  uid: 909c3278-f7d1-461c-9352-87741bef11d3
-  documentationUrl: https://docs.instill.tech/integrations/models/http
-  icon: http.svg
-  model_spec: 
-      repo: 
-  model_instance_spec: 
-      repo: 
-      tag:        
-- title: Local
-  id: local
-  name: "model-definitions/local"
-  uid: 909c3278-f7d1-461c-9352-87741bef1abc
-  documentationUrl: https://docs.instill.tech/integrations/models/http
-  icon: http.svg
-  model_spec: 
-      repo: 
-  model_instance_spec: 
-      repo: 
-      tag: 
+- id: "github"
+  uid: "909c3278-f7d1-461c-9352-87741bef11d3"
+  title: "GitHub"
+  documentationUrl: "https://docs.instill.tech/integrations/models/github"
+  icon: "github.svg"
+  modelSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "GitHub spec for model"
+    type: "object"
+    required:
+    - "repository"
+    additionalProperties: false
+    properties:
+      repository:
+        type: "string"
+        title: "GitHub repository"
+        description: "The name of a public GitHub repository, e.g. `instill-ai/yolov4`."
+        examples:
+        - "instill-ai/yolov4"
+        - "instill-ai/mobilenetv2"
+        ui_order: 0
+        ui_component: "text"
+      html_url:
+        type: "string"
+        title: "Github repository URL"
+        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/yolov4`"
+        examples:
+        - "https://github.com/instill-ai/yolov4"
+        - "https://github.com/instill-ai/mobilenetv2"
+        readOnly: true
+        ui_order: 1
+        ui_hidden: true
+        ui_disabled: true
+        ui_component: "text"
+  modelInstanceSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "GitHub spec for model instance"
+    type: "object"
+    required:
+    - "repository"
+    - "tag"
+    additionalProperties: false
+    properties:
+      repository:
+        type: "string"
+        title: "GitHub repository"
+        description: "The name of a public GitHub repository, e.g. `instill-ai/yolov4`."
+        examples:
+        - "instill-ai/yolov4"
+        - "instill-ai/mobilenetv2"
+        readOnly: true
+        ui_order: 0
+        ui_disabled: true
+        ui_component: "text"
+      tag:
+        type: "string"
+        title: "GitHub repository"
+        description: "Tag of the GitHub repository, e.g., `v0.1.0`."
+        examples:
+        - "v0.1.0-alpha"
+        - "v1.0.0"
+        readOnly: true
+        ui_order: 1
+        ui_disabled: true
+        ui_component: "text"
+      html_url:
+        type: "string"
+        title: "Github repository URL"
+        description: "GitHub repository URL, e.g., `https://github.com/instill-ai/yolov4/tree/v1.0.0`."
+        examples:
+        - "https://github.com/instill-ai/yolov4/tree/v0.1.0-alpha"
+        - "https://github.com/instill-ai/yolov4/tree/v1.0.0"
+        readOnly: true
+        ui_order: 2
+        ui_disabled: true
+        ui_component: "text"
+- id: local
+  uid: "96b547c2-8927-43ca-a0cd-a72306621696"
+  title: Local
+  documentationUrl: https://docs.instill.tech/integrations/models/local
+  icon: "local.svg"
+  modelSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "Local spec for model"
+    type: "object"
+    required:
+    - "zip_file"
+    additionalProperties: false
+    properties:
+      description:
+        type: "string"
+        title: "Description"
+        description: "Fill with a short description of your model"
+        maxLength: 1023
+        ui_order: 0
+        ui_component: "textarea_enable_counter"
+      zip_file:
+        type: "string"
+        contentMediaType: "application/zip"
+        title: "Upload a file"
+        description: "Create and upload a zip file that contains all the model files from your computer"
+        ui_order: 1
+        ui_disabled: true
+        ui_component: "file"
+  modelInstanceSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "Local spec for model instance"
+    type: "object"
+    required:
+    - "zip_file"
+    additionalProperties: false
+    properties:
+      id:
+        type: "string"
+        title: "ID"
+        description: "Model instance ID. This is fixed to `latest`."
+        readOnly: true
+        ui_order: 0
+        ui_hidden: true
+        ui_disabled: true
+        ui_component: "text"
+      zip_file:
+        type: "string"
+        contentMediaType: "application/zip"
+        title: "Upload a file"
+        description: "Create and upload a zip file that contains all the model files from your computer"
+        readOnly: true
+        ui_order: 1
+        ui_hidden: true
+        ui_disabled: true
+        ui_component: "file"
