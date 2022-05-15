@@ -90,8 +90,53 @@ export default function (data) {
         [`GET /v1alpha/model-definitions response total_size`]: (r) =>
           r.json().total_size == 2,
         [`GET /v1alpha/model-definitions response model_definitions.length`]: (r) =>
-          r.json().model_definitions.length === 2
+          r.json().model_definitions.length === 2,
+        [`GET /v1alpha/model-definitions response model_definitions[0].name`]: (r) =>
+        r.json().model_definitions[0].name === "model-definitions/local",
+        [`GET /v1alpha/model-definitions response model_definitions[0].uid`]: (r) =>
+        r.json().model_definitions[0].uid !== undefined,
+        [`GET /v1alpha/model-definitions response model_definitions[0].id`]: (r) =>
+        r.json().model_definitions[0].id === "local",      
+        [`GET /v1alpha/model-definitions response model_definitions[0].title`]: (r) =>
+        r.json().model_definitions[0].title === "Local",                
+        [`GET /v1alpha/model-definitions response model_definitions[0].documentation_url`]: (r) =>
+        r.json().model_definitions[0].documentation_url === "https://docs.instill.tech/integrations/models/local",          
+        [`GET /v1alpha/model-definitions response model_definitions[0].icon`]: (r) =>
+        r.json().model_definitions[0].icon === "local.svg",
+        [`GET /v1alpha/model-definitions response model_definitions[0].model_spec`]: (r) =>
+        r.json().model_definitions[0].model_spec === null,        
+        [`GET /v1alpha/model-definitions response model_definitions[0].model_instance_spec`]: (r) =>
+        r.json().model_definitions[0].model_instance_spec === null,         
       });
+    });
+
+    check(http.get(`${apiHost}/v1alpha/model-definitions?view=VIEW_FULL`, {
+      headers: genHeader(`application/json`),
+    }), {
+      [`GET /v1alpha/model-definitions}?view=VIEW_FULL response status`]: (r) =>
+        r.status === 200,
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response next_page_token`]: (r) =>
+        r.json().next_page_token !== undefined,
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response total_size`]: (r) =>
+        r.json().total_size == 2,
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions.length`]: (r) =>
+        r.json().model_definitions.length === 2,
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].name`]: (r) =>
+      r.json().model_definitions[0].name === "model-definitions/local",
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].uid`]: (r) =>
+      r.json().model_definitions[0].uid !== undefined,
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].id`]: (r) =>
+      r.json().model_definitions[0].id === "local",      
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].title`]: (r) =>
+      r.json().model_definitions[0].title === "Local",                
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].documentation_url`]: (r) =>
+      r.json().model_definitions[0].documentation_url === "https://docs.instill.tech/integrations/models/local",          
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].icon`]: (r) =>
+      r.json().model_definitions[0].icon === "local.svg",
+      [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].model_spec`]: (r) =>
+      r.json().model_definitions[0].model_spec !== null,        
+      [`GET /v1alpha/model-definitions response model_definitions[0].model_instance_spec`]: (r) =>
+      r.json().model_definitions[0].model_instance_spec !== null,         
     });
   }
 
@@ -1017,37 +1062,43 @@ export default function (data) {
   // Model Backend API: Get model list
   {
     group("Model Backend API: Get model list", function () {
-      let fd_cls = new FormData();
       let model_id = randomString(10)
-      let model_description = randomString(20)
-      fd_cls.append("name", "models/" + model_id);
-      fd_cls.append("description", model_description);
-      fd_cls.append("model_definition_name", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/upload`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": model_def_name,
+        "configuration": {
+          "repo": "https://github.com/Phelan164/test-repo.git",
+          "tag": "v1.0",
+          "html_url": ""
+        }
+      }), {
+        headers: genHeader("application/json"),
       }), {
         "POST /v1alpha/models github task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/upload (multipart) task cls response model.name": (r) =>
+        "POST /v1alpha/models github task cls response model.name": (r) =>
           r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/upload (multipart) task cls response model.uid": (r) =>
+        "POST /v1alpha/models github task cls response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models/upload (multipart) task cls response model.id": (r) =>
+        "POST /v1alpha/models github task cls response model.id": (r) =>
           r.json().model.id === model_id,
-        "POST /v1alpha/models/upload (multipart) task cls response model.description": (r) =>
-          r.json().model.description === model_description,
-        "POST /v1alpha/models/upload (multipart) task cls response model.model_definition": (r) =>
+        "POST /v1alpha/models github task cls response model.description": (r) =>
+          r.json().model.description !== undefined,
+        "POST /v1alpha/models github task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/upload (multipart) task cls response model.configuration": (r) =>
+        "POST /v1alpha/models github task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models/upload (multipart) task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/upload (multipart) task cls response model.owner": (r) =>
+        "POST /v1alpha/models github task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models github task cls response model.configuration.repo": (r) =>
+          r.json().model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
+        "POST /v1alpha/models github task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
+        "POST /v1alpha/models github task cls response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/upload (multipart) task cls response model.create_time": (r) =>
+        "POST /v1alpha/models github task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/upload (multipart) task cls response model.update_time": (r) =>
+        "POST /v1alpha/models github task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
@@ -1069,18 +1120,51 @@ export default function (data) {
         [`GET /v1alpha/models task cls response models[0].id`]: (r) =>
           r.json().models[0].id === model_id,
         [`GET /v1alpha/models task cls response models[0].description`]: (r) =>
-          r.json().models[0].description === model_description,
+          r.json().models[0].description !== undefined,
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === model_def_name,
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
-          r.json().models[0].configuration !== undefined,
+          r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
-          r.json().models[0].visibility === "VISIBILITY_PRIVATE",
+          r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
           r.json().models[0].user === 'users/local-user',
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
+          r.json().models[0].update_time !== undefined,
+      });
+
+      check(http.get(`${apiHost}/v1alpha/models?view=VIEW_FULL`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response status`]: (r) =>
+          r.status === 200,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response total_size`]: (r) =>
+          r.json().total_size == 1,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response next_page_token`]: (r) =>
+          r.json().next_page_token !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models.length`]: (r) =>
+          r.json().models.length === 1,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].name`]: (r) =>
+          r.json().models[0].name === `models/${model_id}`,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].uid`]: (r) =>
+          r.json().models[0].uid !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].id`]: (r) =>
+          r.json().models[0].id === model_id,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].description`]: (r) =>
+          r.json().models[0].description !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
+          r.json().models[0].model_definition === model_def_name,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration`]: (r) =>
+          r.json().models[0].configuration !== null,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
+          r.json().models[0].visibility === "VISIBILITY_PUBLIC",
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
+          r.json().models[0].user === 'users/local-user',
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
+          r.json().models[0].create_time !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
           r.json().models[0].update_time !== undefined,
       });
 
@@ -1348,9 +1432,9 @@ export default function (data) {
     });
   }
 
-  // Model Backend API: Get model instance list
+  // Model Backend API: Get model instance list - local model
   {
-    group("Model Backend API: Get model instance list", function () {
+    group("Model Backend API: Get model instance list local model", function () {
       let fd_cls = new FormData();
       let model_id = randomString(10)
       let model_description = randomString(20)
@@ -1412,7 +1496,7 @@ export default function (data) {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-          r.json().instances[0].configuration !== undefined,
+          r.json().instances[0].configuration === null,
       });
 
       // clean up
@@ -1425,6 +1509,122 @@ export default function (data) {
 
     });
   }
+
+// Model Backend API: Get model instance list - github model
+{
+  group("Model Backend API: Get model instance list github model", function () {
+    let model_id = randomString(10)
+    check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      "id": model_id,
+      "model_definition": model_def_name,
+      "configuration": {
+        "repo": "https://github.com/Phelan164/test-repo.git",
+        "tag": "v1.0",
+        "html_url": ""
+      }
+    }), {
+      headers: genHeader("application/json"),
+    }), {
+      "POST /v1alpha/models github task cls response status": (r) =>
+        r.status === 201,
+      "POST /v1alpha/models github task cls response model.name": (r) =>
+        r.json().model.name === `models/${model_id}`,
+      "POST /v1alpha/models github task cls response model.uid": (r) =>
+        r.json().model.uid !== undefined,
+      "POST /v1alpha/models github task cls response model.id": (r) =>
+        r.json().model.id === model_id,
+      "POST /v1alpha/models github task cls response model.description": (r) =>
+        r.json().model.description !== undefined,
+      "POST /v1alpha/models github task cls response model.model_definition": (r) =>
+        r.json().model.model_definition === model_def_name,
+      "POST /v1alpha/models github task cls response model.configuration": (r) =>
+        r.json().model.configuration !== undefined,
+      "POST /v1alpha/models github task cls response model.configuration": (r) =>
+        r.json().model.configuration !== undefined,
+      "POST /v1alpha/models github task cls response model.configuration.repo": (r) =>
+        r.json().model.configuration.repo === "https://github.com/Phelan164/test-repo.git",
+      "POST /v1alpha/models github task cls response model.visibility": (r) =>
+        r.json().model.visibility === "VISIBILITY_PUBLIC",
+      "POST /v1alpha/models github task cls response model.owner": (r) =>
+        r.json().model.user === 'users/local-user',
+      "POST /v1alpha/models github task cls response model.create_time": (r) =>
+        r.json().model.create_time !== undefined,
+      "POST /v1alpha/models github task cls response model.update_time": (r) =>
+        r.json().model.update_time !== undefined,
+    });
+
+    check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances`, {
+      headers: genHeader(`application/json`),
+    }), {
+      [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
+        r.status === 200,
+      [`GET /v1alpha/models/${model_id}/instances task cls response next_page_token`]: (r) =>
+        r.json().next_page_token !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances task cls response total_size`]: (r) =>
+        r.json().total_size == 1,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances.length`]: (r) =>
+        r.json().instances.length === 1,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].name`]: (r) =>
+        r.json().instances[0].name === `models/${model_id}/instances/v1.0`,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].uid`]: (r) =>
+        r.json().instances[0].uid !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].id`]: (r) =>
+        r.json().instances[0].id === "v1.0",
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].state`]: (r) =>
+        r.json().instances[0].state === "STATE_OFFLINE",
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].task`]: (r) =>
+        r.json().instances[0].task === "TASK_CLASSIFICATION",
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].model_definition`]: (r) =>
+        r.json().instances[0].model_definition === model_def_name,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].create_time`]: (r) =>
+        r.json().instances[0].create_time !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
+        r.json().instances[0].update_time !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
+        r.json().instances[0].configuration === null,
+    });
+
+    check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
+      headers: genHeader(`application/json`),
+    }), {
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response status`]: (r) =>
+        r.status === 200,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response next_page_token`]: (r) =>
+        r.json().next_page_token !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response total_size`]: (r) =>
+        r.json().total_size == 1,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances.length`]: (r) =>
+        r.json().instances.length === 1,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].name`]: (r) =>
+        r.json().instances[0].name === `models/${model_id}/instances/v1.0`,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].uid`]: (r) =>
+        r.json().instances[0].uid !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].id`]: (r) =>
+        r.json().instances[0].id === "v1.0",
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].state`]: (r) =>
+        r.json().instances[0].state === "STATE_OFFLINE",
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].task`]: (r) =>
+        r.json().instances[0].task === "TASK_CLASSIFICATION",
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].model_definition`]: (r) =>
+        r.json().instances[0].model_definition === model_def_name,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].create_time`]: (r) =>
+        r.json().instances[0].create_time !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].update_time`]: (r) =>
+        r.json().instances[0].update_time !== undefined,
+      [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration`]: (r) =>
+        r.json().instances[0].configuration !== null,
+    });
+
+    // clean up
+    check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      headers: genHeader(`application/json`),
+    }), {
+      "DELETE clean up response status": (r) =>
+        r.status === 200 // TODO: update status to 204
+    });
+
+  });
+}  
 
   // Model Backend API: look up model
   {

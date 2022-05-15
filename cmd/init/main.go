@@ -15,7 +15,7 @@ import (
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
 	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
-	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
+	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelInstanceSpec())
 	if err := createModelDefinitionRecord(
 		db,
 		modelDef.GetId(),
