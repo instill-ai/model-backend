@@ -29,8 +29,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220512092200-f1b556b2a282
-	github.com/instill-ai/x v0.1.0-alpha.0.20220509015502-e81f88dda39b
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220513161122-ad182a20e3f9
+	github.com/instill-ai/x v0.1.0-alpha.0.20220513203325-baab8aaa93b2
 	github.com/knadh/koanf v1.4.0
 	github.com/mitchellh/mapstructure v1.4.3
 	gopkg.in/src-d/go-git.v4 v4.13.1
