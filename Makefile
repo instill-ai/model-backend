@@ -1,7 +1,6 @@
 .DEFAULT_GOAL:=help
 
-DEVELOP_SERVICES := model_backend model_backend_migrate
-INSTILL_SERVICES := triton_conda_env
+DEVELOP_SERVICES := model_backend
 3RD_PARTY_SERVICES := pg_sql triton_server
 VOLUMES := model-repository conda-pack
 
@@ -19,6 +18,7 @@ GOBIN := $(if $(shell go env GOBIN),$(shell go env GOBIN),$(GOPATH)/bin)
 PATH := $(GOBIN):$(PATH)
 
 DEV_DB_MIGRATION_BINARY := $(shell mktemp -d)/model-backend-migrate
+DEV_DB_INIT_BINARY := $(shell mktemp -d)/model-backend-init
 
 K6BIN := $(if $(shell command -v k6 2> /dev/null),k6,$(shell mktemp -d)/k6)
 
@@ -27,13 +27,14 @@ K6BIN := $(if $(shell command -v k6 2> /dev/null),k6,$(shell mktemp -d)/k6)
 .PHONY: all
 all:							## Build and launch all services
 	@docker inspect --type=image nvcr.io/nvidia/tritonserver:${TRITONSERVER_VERSION} >/dev/null 2>&1 || printf "\033[1;33mWARNING:\033[0m This may take a while due to the enormous size of the Triton server image, but the image pulling process should be just a one-time effort.\n" && sleep 5
-	docker-compose up -d ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose up -d ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: dev
 dev:							## Lunch only dependant services for local development
-	docker-compose up -d ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose up -d ${3RD_PARTY_SERVICES}
 	while [ "$$(docker inspect --format '{{ .State.Health.Status }}' pg-sql)" != "healthy" ]; do echo "Check if db is ready..." && sleep 1; done
 	go build -o ${DEV_DB_MIGRATION_BINARY} ./cmd/migration && ${DEV_DB_MIGRATION_BINARY} && rm -rf $(dirname ${DEV_DB_MIGRATION_BINARY})
+	go build -o ${DEV_DB_INIT_BINARY} ./cmd/init && ${DEV_DB_INIT_BINARY} && rm -rf $(dirname ${DEV_DB_INIT_BINARY})
 
 .PHONY: logs
 logs:							## Tail all logs with -n 10
@@ -42,23 +43,23 @@ logs:							## Tail all logs with -n 10
 .PHONY: pull
 pull:							## Pull all service images
 	@docker inspect --type=image nvcr.io/nvidia/tritonserver:${TRITONSERVER_VERSION} >/dev/null 2>&1 || printf "\033[1;33mWARNING:\033[0m This may take a while due to the enormous size of the Triton server image, but the image pulling process should be just a one-time effort.\n" && sleep 5
-	docker-compose pull ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose pull ${3RD_PARTY_SERVICES}
 
 .PHONY: stop
 stop:							## Stop all components
-	docker-compose stop ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose stop ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: start
 start:							## Start all stopped services
-	docker-compose start ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose start ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: restart
 restart:						## Restart all services
-	docker-compose restart ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose restart ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: rm
 rm:								## Remove all stopped service containers
-	docker-compose rm -f ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose rm -f ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: down
 down:							## Stop all services and remove all service containers and volumes
@@ -67,15 +68,15 @@ down:							## Stop all services and remove all service containers and volumes
 
 .PHONY: images
 images:							## List all container images
-	docker-compose images ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose images ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: ps
 ps:								## List all service containers
-	docker-compose ps ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose ps ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: top
 top:							## Display all running service processes
-	docker-compose top ${DEVELOP_SERVICES} ${INSTILL_SERVICES} ${3RD_PARTY_SERVICES}
+	docker-compose top ${DEVELOP_SERVICES} ${3RD_PARTY_SERVICES}
 
 .PHONY: prune
 prune:							## Remove all services containers and system prune everything

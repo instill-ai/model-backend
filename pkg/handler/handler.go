@@ -695,7 +695,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	}
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload pipeline resource
-	if err := checkfield.CheckOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
+	if err := checkfield.CheckCreateOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
 

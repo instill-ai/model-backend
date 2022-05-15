@@ -38,8 +38,6 @@ services:
       CFG_DATABASE_PORT: 5432
       CFG_DATABASE_USERNAME: postgres
       CFG_DATABASE_PASSWORD: password
-    volumes:
-      - ./configs:/model-backend/configs
     entrypoint: ./model-backend-init
     depends_on:
       - model_backend_migrate
@@ -51,7 +49,7 @@ services:
     image: instill/model-backend:dev
     restart: unless-stopped
     environment:
-      CFG_SERVER_PORT: 8080
+      CFG_SERVER_PORT: 8083
       CFG_DATABASE_HOST: pg_sql
       CFG_DATABASE_PORT: 5432
       CFG_DATABASE_USERNAME: postgres
@@ -59,7 +57,7 @@ services:
       CFG_TRITONSERVER_GRPCURI: triton-server:8001
       CFG_TRITONSERVER_MODELSTORE: /model-repository
     ports:
-      - 8080:8080
+      - 8083:8083
     volumes:
       - model_repository:/model-repository
     depends_on:
