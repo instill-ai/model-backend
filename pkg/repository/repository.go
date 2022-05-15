@@ -56,15 +56,7 @@ var GetModelSelectedFields = []string{
 	`"model"."update_time"`,
 }
 
-// var UpdateModelSelectedFields = []string{
-// 	`"model"."id"`,
-// 	`"model"."description"`,
-// 	`"model"."visibility"`,
-// 	`"model"."update_time"`,
-// }
-
 func (r *repository) CreateModel(model datamodel.Model) error {
-	// We ignore the virtual columns
 	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}

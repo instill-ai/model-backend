@@ -1,502 +1,493 @@
 package service_test
 
-//go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/internal/triton Triton
-//go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
+import (
+	"fmt"
+	"testing"
 
-const NAMESPACE = "local-user"
+	"github.com/gofrs/uuid"
+	gomock "github.com/golang/mock/gomock"
+	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
+	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/service"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestCreateModel(t *testing.T) {
-// 	t.Run("CreateModel", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
+// go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/internal/triton Triton
+// go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "normalname",
-// 			Namespace: NAMESPACE,
-// 		}
-// 		mockRepository := NewMockRepository(ctrl)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(datamodel.Model{}, nil).
-// 			Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateModel(newModel).
-// 			Return(nil)
+const ID = "modelID"
+const OWNER = "users/909c3278-f7d1-461c-9352-87741bef1ds1"
+const MODEL_DEFINTION = "909c3278-f7d1-461c-9352-87741bef11d3"
 
-// 		s := service.NewService(mockRepository, nil)
+func TestCreateModel(t *testing.T) {
+	t.Run("CreateModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		_, err := s.CreateModel(&newModel)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(datamodel.Model{}, nil).
+			Times(2)
+		mockRepository.
+			EXPECT().
+			CreateModel(newModel).
+			Return(nil)
 
-// func TestCreateModel_InvalidName(t *testing.T) {
-// 	t.Run("CreateModel_InvalidName", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
+		s := service.NewService(mockRepository, nil)
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "#$%^",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 		}
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+		_, err := s.CreateModel(OWNER, &newModel)
+		assert.NoError(t, err)
+	})
+}
 
-// 		_, err := s.CreateModel(&newModel)
-// 		if assert.Error(t, err) {
-// 			assert.Equal(t, err, status.Error(codes.FailedPrecondition, "The name of model is invalid"))
-// 		}
+func TestGetModelById(t *testing.T) {
+	t.Run("TestGetModelById", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 	})
-// }
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(datamodel.Model{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// func TestGetModelByName(t *testing.T) {
-// 	t.Run("GetModelByName", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
+		_, err := s.GetModelById(OWNER, newModel.ID)
+		assert.NoError(t, err)
+	})
+}
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "normalname",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 		}
-// 		mockRepository := NewMockRepository(ctrl)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(datamodel.Model{}, nil).
-// 			Times(1)
-// 		s := service.NewService(mockRepository, nil)
+func TestGetModelByUid(t *testing.T) {
+	t.Run("TestGetModelByUid", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		_, err := s.GetModelByName(NAMESPACE, newModel.Name)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelByUid(gomock.Eq(OWNER), gomock.Eq(newModel.UID)).
+			Return(datamodel.Model{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// func TestCreateVersion(t *testing.T) {
-// 	t.Run("CreateVersion", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+		_, err := s.GetModelByUid(OWNER, uid)
+		assert.NoError(t, err)
+	})
+}
 
-// 		modelVersion := datamodel.Instance{
-// 			ModelID:     1,
-// 			Name:        "latest",
-// 			Description: "This is version 1",
-// 		}
+func TestDeleteModel(t *testing.T) {
+	t.Run("TestDeleteModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateVersion(modelVersion).
-// 			Return(nil)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(datamodel.Instance{}, nil)
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(datamodel.Model{}, nil).
+			Times(1)
+		mockRepository.
+			EXPECT().
+			GetModelInstances(gomock.Eq(newModel.UID)).
+			Return([]datamodel.ModelInstance{}, nil).
+			Times(1)
+		mockRepository.
+			EXPECT().
+			DeleteModel(gomock.Eq(newModel.UID)).
+			Return(nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		_, err := s.CreateVersion(modelVersion)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		err := s.DeleteModel(OWNER, ID)
+		assert.NoError(t, err)
+	})
+}
 
-// func TestGetModelVersion(t *testing.T) {
-// 	t.Run("GetModelVersion", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+func TestRenameModel(t *testing.T) {
+	t.Run("TestRenameModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(datamodel.Instance{}, nil)
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(newModel, nil).
+			Times(1)
+		mockRepository.
+			EXPECT().
+			UpdateModel(newModel.UID, datamodel.Model{
+				ID: "new ID",
+			}).
+			Return(nil).
+			Times(1)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), "new ID").
+			Return(datamodel.Model{
+				BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+				ID:              "new ID",
+				Description:     "this is a test model",
+				ModelDefinition: MODEL_DEFINTION,
+				Owner:           OWNER,
+			}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		_, err := s.GetModelVersion(1, 1)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		_, err := s.RenameModel(OWNER, ID, "new ID")
+		assert.NoError(t, err)
+	})
+}
 
-// func TestGetModelVersions(t *testing.T) {
-// 	t.Run("GetModelVersions", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+func TestPublishModel(t *testing.T) {
+	t.Run("TestPublishModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersions(uint(1)).
-// 			Return([]datamodel.Instance{}, nil)
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(newModel, nil).
+			Times(2)
+		mockRepository.
+			EXPECT().
+			UpdateModel(newModel.UID, datamodel.Model{
+				ID:         ID,
+				Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC),
+			}).
+			Return(nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		_, err := s.GetModelVersions(1)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		_, err := s.PublishModel(OWNER, ID)
+		assert.NoError(t, err)
+	})
+}
 
-// func TestGetModelVersionLatest(t *testing.T) {
-// 	t.Run("GetModelVersionLatest", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+func TestUnpublishModel(t *testing.T) {
+	t.Run("TestUnpublishModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersionLatest(uint(1)).
-// 			Return(datamodel.Instance{}, nil)
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "this is a test model",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(newModel, nil).
+			Times(2)
+		mockRepository.
+			EXPECT().
+			UpdateModel(newModel.UID, datamodel.Model{
+				ID:         ID,
+				Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE),
+			}).
+			Return(nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		_, err := s.GetModelVersionLatest(1)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		_, err := s.UnpublishModel(OWNER, ID)
+		assert.NoError(t, err)
+	})
+}
 
-// func TestGetFullModelData(t *testing.T) {
-// 	t.Run("GetFullModelData", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+func TestUpdateModel(t *testing.T) {
+	t.Run("TestUpdateModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 		}
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(datamodel.Model{}, nil).
-// 			Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateModel(newModel).
-// 			Return(nil)
-// 		_, _ = s.CreateModel(&newModel)
+		uid := uuid.UUID{}
+		newModel := datamodel.Model{
+			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
+			ID:              ID,
+			Description:     "new description",
+			ModelDefinition: MODEL_DEFINTION,
+			Owner:           OWNER,
+		}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			UpdateModel(newModel.UID, newModel).
+			Return(nil).
+			Times(1)
+		mockRepository.
+			EXPECT().
+			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID)).
+			Return(newModel, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		modelVersion := datamodel.Instance{
-// 			ModelID:     uint(1),
-// 			Name:        "latest",
-// 			Description: "This is version 1",
-// 		}
-// 		newModel.Instances = append(newModel.Instances, modelVersion)
+		_, err := s.UpdateModel(newModel.UID, &newModel)
+		assert.NoError(t, err)
+	})
+}
 
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateVersion(modelVersion).
-// 			Return(nil)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(modelVersion, nil)
-// 		_, _ = s.CreateVersion(modelVersion)
+func TestListModell(t *testing.T) {
+	t.Run("TestListModel", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(newModel, nil).
-// 			Times(1)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersions(uint(1)).
-// 			Return([]datamodel.Instance{}, nil)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetTritonModels(uint(1)).
-// 			Return([]datamodel.TritonModel{}, nil)
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			ListModel(OWNER, modelPB.View_VIEW_BASIC, int(100), "").
+			Return([]datamodel.Model{}, "", int64(100), nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		_, err := s.GetFullModelData(NAMESPACE, "test")
-// 		assert.NoError(t, err)
-// 	})
-// }
+		_, _, _, err := s.ListModel(OWNER, modelPB.View_VIEW_BASIC, 100, "")
+		assert.NoError(t, err)
+	})
+}
 
-// func TestModelInfer(t *testing.T) {
-// 	t.Run("ModelInfer", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		triton := NewMockTriton(ctrl)
-// 		s := service.NewService(mockRepository, triton)
+func TestModelInfer(t *testing.T) {
+	t.Run("ModelInfer", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service.NewService(mockRepository, triton)
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 		}
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(datamodel.Model{}, nil).
-// 			Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateModel(newModel).
-// 			Return(nil)
-// 		_, _ = s.CreateModel(&newModel)
+		uid := uuid.UUID{}
 
-// 		modelVersion := datamodel.Instance{
-// 			ModelID:     uint(1),
-// 			Name:        "latest",
-// 			Description: "This is version 1",
-// 		}
-// 		newModel.Instances = append(newModel.Instances, modelVersion)
+		ensembleModel := datamodel.TritonModel{
+			Name:    "essembleModel",
+			Version: 1,
+		}
+		mockRepository.
+			EXPECT().
+			GetTritonEnsembleModel(uid).
+			Return(ensembleModel, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateVersion(modelVersion).
-// 			Return(nil)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(modelVersion, nil)
-// 		_, _ = s.CreateVersion(modelVersion)
+		modelConfigResponse := &inferenceserver.ModelConfigResponse{}
+		modelMetadataResponse := &inferenceserver.ModelMetadataResponse{}
+		modelInferResponse := &inferenceserver.ModelInferResponse{}
+		postResponse := []string{"1.0:dog:1"}
+		triton.
+			EXPECT().
+			ModelMetadataRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
+			Return(modelMetadataResponse)
+		triton.
+			EXPECT().
+			ModelConfigRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
+			Return(modelConfigResponse)
+		triton.
+			EXPECT().
+			ModelInferRequest(modelPB.ModelInstance_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
+			Return(modelInferResponse, nil)
+		triton.
+			EXPECT().
+			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.ModelInstance_TASK_CLASSIFICATION).
+			Return(postResponse, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(newModel, nil).
-// 			Times(1)
-// 		ensembleModel := datamodel.TritonModel{
-// 			Name:    "essembleModel",
-// 			Version: 1,
-// 		}
-// 		mockRepository.
-// 			EXPECT().
-// 			GetTritonEnsembleModel(uint(1), uint(1)).
-// 			Return(ensembleModel, nil)
+		_, err := s.ModelInfer(uid, [][]byte{}, modelPB.ModelInstance_TASK_CLASSIFICATION)
+		assert.NoError(t, err)
+	})
+}
 
-// 		modelConfigResponse := &inferenceserver.ModelConfigResponse{}
-// 		modelMetadataResponse := &inferenceserver.ModelMetadataResponse{}
-// 		modelInferResponse := &inferenceserver.ModelInferResponse{}
-// 		postResponse := []string{"1.0:dog:1"}
-// 		triton.
-// 			EXPECT().
-// 			ModelMetadataRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
-// 			Return(modelMetadataResponse)
-// 		triton.
-// 			EXPECT().
-// 			ModelConfigRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
-// 			Return(modelConfigResponse)
-// 		triton.
-// 			EXPECT().
-// 			ModelInferRequest(modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
-// 			Return(modelInferResponse, nil)
-// 		triton.
-// 			EXPECT().
-// 			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
-// 			Return(postResponse, nil)
+func TestGetModelInstance(t *testing.T) {
+	t.Run("TestGetModelInstance", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		_, err := s.ModelInfer(NAMESPACE, "test", uint(1), [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		uid := uuid.UUID{}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelInstance(uid, "latest").
+			Return(datamodel.ModelInstance{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// func TestCreateModelBinaryFileUpload(t *testing.T) {
-// 	t.Run("CreateModelBinaryFileUpload", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		triton := NewMockTriton(ctrl)
-// 		s := service.NewService(mockRepository, triton)
+		_, err := s.GetModelInstance(uid, "latest")
+		assert.NoError(t, err)
+	})
+}
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{},
-// 		}
-// 		modelVersion := datamodel.Instance{
-// 			ModelID:     uint(1),
-// 			Name:        "latest",
-// 			Description: "This is version 1",
-// 		}
+func TestGetModelInstanceByUid(t *testing.T) {
+	t.Run("TestGetModelInstanceByUid", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(NAMESPACE, newModel.Name).
-// 			Return(newModel, nil).
-// 			Times(1)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersionLatest(uint(1)).
-// 			Return(datamodel.Instance{}, fmt.Errorf("non-existed"))
+		modelUid := uuid.UUID{}
+		instanceUid := uuid.UUID{}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelInstanceByUid(modelUid, instanceUid).
+			Return(datamodel.ModelInstance{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateVersion(modelVersion).
-// 			Return(nil).
-// 			Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(modelVersion, nil).
-// 			Times(2)
-// 		versionInDB, _ := s.CreateVersion(modelVersion)
+		_, err := s.GetModelInstanceByUid(modelUid, instanceUid)
+		assert.NoError(t, err)
+	})
+}
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersions(uint(1)).
-// 			Return([]datamodel.Instance{modelVersion}, nil).Times(2)
-// 		_, _ = s.GetModelVersions(uint(1))
+func TestListModelInstance(t *testing.T) {
+	t.Run("TestListModelInstance", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		uploadModel := datamodel.Model{
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{versionInDB},
-// 		}
-// 		_, err := s.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		modelUid := uuid.UUID{}
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			ListModelInstance(modelUid, modelPB.View_VIEW_BASIC, 100, "").
+			Return([]datamodel.ModelInstance{}, "", int64(100), nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// func TestHandleCreateModelMultiFormDataUpload(t *testing.T) {
-// 	t.Run("HandleCreateModelMultiFormDataUpload", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		triton := NewMockTriton(ctrl)
-// 		s := service.NewService(mockRepository, triton)
+		_, _, _, err := s.ListModelInstance(modelUid, modelPB.View_VIEW_BASIC, 100, "")
+		assert.NoError(t, err)
+	})
+}
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{},
-// 		}
-// 		modelVersion := datamodel.Instance{
-// 			ModelID:     uint(1),
-// 			Name:        "latest",
-// 			Description: "This is version 1",
-// 		}
+func TestDeployModelInstance(t *testing.T) {
+	t.Run("TestDeployModelInstance", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service.NewService(mockRepository, triton)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(gomock.Eq(NAMESPACE), gomock.Eq(newModel.Name)).
-// 			Return(newModel, nil).
-// 			Times(1)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersionLatest(uint(1)).
-// 			Return(datamodel.Instance{}, fmt.Errorf("non-existed"))
+		uid := uuid.UUID{}
 
-// 		mockRepository.
-// 			EXPECT().
-// 			CreateVersion(modelVersion).
-// 			Return(nil).
-// 			Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(modelVersion, nil).
-// 			Times(2)
-// 		versionInDB, _ := s.CreateVersion(modelVersion)
+		ensembleModel := datamodel.TritonModel{
+			Name:    "essembleModel",
+			Version: 1,
+		}
+		mockRepository.
+			EXPECT().
+			GetTritonEnsembleModel(uid).
+			Return(ensembleModel, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersions(uint(1)).
-// 			Return([]datamodel.Instance{modelVersion}, nil).Times(2)
-// 		_, _ = s.GetModelVersions(uint(1))
+		triton.
+			EXPECT().
+			LoadModelRequest(ensembleModel.Name).
+			Return(nil, nil)
 
-// 		uploadModel := datamodel.Model{
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{versionInDB},
-// 		}
-// 		_, err := s.CreateModelBinaryFileUpload(NAMESPACE, &uploadModel)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		mockRepository.
+			EXPECT().
+			UpdateModelInstance(uid, datamodel.ModelInstance{
+				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+			}).
+			Return(nil)
 
-// func TestListModels(t *testing.T) {
-// 	t.Run("ListModels", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+		err := s.DeployModelInstance(uid)
+		assert.NoError(t, err)
+	})
+}
 
-// 		mockRepository.
-// 			EXPECT().
-// 			ListModels(datamodel.ListModelQuery{Namespace: NAMESPACE}).
-// 			Return([]datamodel.Model{}, nil)
+func TestUndeployModelInstance(t *testing.T) {
+	t.Run("TestUndeployModelInstance", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mockRepository := NewMockRepository(ctrl)
+		triton := NewMockTriton(ctrl)
+		s := service.NewService(mockRepository, triton)
 
-// 		_, err := s.ListModels(NAMESPACE)
-// 		assert.NoError(t, err)
-// 	})
-// }
+		uid := uuid.UUID{}
 
-// func TestUpdateModelVersion(t *testing.T) {
-// 	t.Run("UpdateModelVersion", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+		ensembleModel := datamodel.TritonModel{
+			Name:    "essembleModel",
+			Version: 1,
+		}
+		mockRepository.
+			EXPECT().
+			GetTritonModels(uid).
+			Return([]datamodel.TritonModel{ensembleModel}, nil)
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{},
-// 		}
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(NAMESPACE, newModel.Name).
-// 			Return(newModel, nil).
-// 			Times(2)
-// 		_, _ = s.GetModelByName(NAMESPACE, newModel.Name)
+		triton.
+			EXPECT().
+			UnloadModelRequest(ensembleModel.Name).
+			Return(nil, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersion(uint(1), uint(1)).
-// 			Return(datamodel.Instance{}, nil).
-// 			Times(2)
-// 		_, _ = s.GetModelVersion(uint(1), uint(1))
+		mockRepository.
+			EXPECT().
+			UpdateModelInstance(uid, datamodel.ModelInstance{
+				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			}).
+			Return(nil)
 
-// 		_, err := s.UpdateModelVersion(NAMESPACE, &modelPB.UpdateModelVersionRequest{
-// 			Name:    newModel.Name,
-// 			Version: uint64(1),
-// 			VersionPatch: &modelPB.UpdateModelVersionPatch{
-// 				Description: "updated description",
-// 			},
-// 		})
-// 		assert.NoError(t, err)
-// 	})
-// }
+		err := s.UndeployModelInstance(uid)
+		assert.NoError(t, err)
+	})
+}
 
-// func TestDeleteModel(t *testing.T) {
-// 	t.Run("DeleteModel", func(t *testing.T) {
-// 		ctrl := gomock.NewController(t)
-// 		mockRepository := NewMockRepository(ctrl)
-// 		s := service.NewService(mockRepository, nil)
+func TestGetModelDefinition(t *testing.T) {
+	t.Run("TestGetModelDefinition", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 
-// 		newModel := datamodel.Model{
-// 			Model:     gorm.Model{ID: uint(1)},
-// 			Name:      "test",
-// 			Task:      uint(modelPB.Model_TASK_CLASSIFICATION),
-// 			Namespace: NAMESPACE,
-// 			Instances: []datamodel.Instance{},
-// 		}
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelByName(NAMESPACE, newModel.Name).
-// 			Return(newModel, nil).
-// 			Times(2)
-// 		_, _ = s.GetModelByName(NAMESPACE, newModel.Name)
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelDefinition("github").
+			Return(datamodel.ModelDefinition{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
 
-// 		mockRepository.
-// 			EXPECT().
-// 			GetModelVersions(uint(1)).
-// 			Return([]datamodel.Instance{}, nil).Times(2)
-// 		mockRepository.
-// 			EXPECT().
-// 			GetTritonModels(uint(1)).
-// 			Return([]datamodel.TritonModel{}, nil).Times(1)
-// 		mockRepository.
-// 			EXPECT().
-// 			DeleteModel(uint(1)).
-// 			Return(nil).Times(1)
-// 		_, _ = s.GetModelVersions(uint(1))
+		_, err := s.GetModelDefinition("github")
+		assert.NoError(t, err)
+	})
+}
 
-// 		err := s.DeleteModel(NAMESPACE, newModel.Name)
-// 		assert.NoError(t, err)
-// 	})
-// }
+func TestListModelDefinition(t *testing.T) {
+	t.Run("TestListModelDefinition", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			ListModelDefinition(modelPB.View_VIEW_BASIC, int(100), "").
+			Return([]datamodel.ModelDefinition{}, "", int64(100), nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil)
+
+		_, _, _, err := s.ListModelDefinition(modelPB.View_VIEW_BASIC, 100, "")
+		assert.NoError(t, err)
+	})
+}
