@@ -100,6 +100,10 @@ func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pa
 		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
 	}
 
+	if view != modelPB.View_VIEW_FULL {
+		queryBuilder.Omit("configuration")
+	}
+
 	var createTime time.Time // only using one for all loops, we only need the latest one in the end
 	rows, err := queryBuilder.Rows()
 	if err != nil {
@@ -191,6 +195,10 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
 	}
 
+	if view != modelPB.View_VIEW_FULL {
+		queryBuilder.Omit("configuration")
+	}
+
 	var createTime time.Time // only using one for all loops, we only need the latest one in the end
 	rows, err := queryBuilder.Rows()
 	if err != nil {
@@ -273,6 +281,10 @@ func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageTo
 			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
 		}
 		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
+	}
+
+	if view != modelPB.View_VIEW_FULL {
+		queryBuilder.Omit("model_spec", "model_instance_spec")
 	}
 
 	var createTime time.Time // only using one for all loops, we only need the latest one in the end
