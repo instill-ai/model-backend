@@ -19,5 +19,4 @@ COPY --from=build /model-backend-init ./
 COPY --from=build /go/src/configs ./configs
 COPY --from=build /go/src/internal/db/migration ./internal/db/migration
 
-EXPOSE 8080/tcp
 ENTRYPOINT ["./model-backend"]

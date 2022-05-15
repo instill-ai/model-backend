@@ -26,7 +26,7 @@ func upload(c *cli.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.DialContext(ctx, "localhost:8083", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -91,7 +91,7 @@ func load(c *cli.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.DialContext(ctx, "localhost:8083", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -121,7 +121,7 @@ func predict(c *cli.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, "localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.DialContext(ctx, "localhost:8083", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
