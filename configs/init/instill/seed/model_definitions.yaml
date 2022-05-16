@@ -1,7 +1,7 @@
 - id: "github"
   uid: "909c3278-f7d1-461c-9352-87741bef11d3"
   title: "GitHub"
-  documentationUrl: "https://docs.instill.tech/integrations/models/github"
+  documentationUrl: "https://docs.instill.tech/models/definitions/github"
   icon: "github.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
@@ -77,7 +77,7 @@
 - id: local
   uid: "96b547c2-8927-43ca-a0cd-a72306621696"
   title: Local
-  documentationUrl: https://docs.instill.tech/integrations/models/local
+  documentationUrl: "https://docs.instill.tech/models/definitions/local"
   icon: "local.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
