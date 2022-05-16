@@ -84,7 +84,7 @@
     title: "Local spec for model"
     type: "object"
     required:
-    - "zip_file"
+    - "content"
     additionalProperties: false
     properties:
       description:
@@ -94,10 +94,10 @@
         maxLength: 1023
         ui_order: 0
         ui_component: "textarea_enable_counter"
-      zip_file:
+      content:
         type: "string"
         contentMediaType: "application/zip"
-        title: "Upload a file"
+        title: "Upload a .zip file"
         description: "Create and upload a zip file that contains all the model files from your computer"
         ui_order: 1
         ui_disabled: true
@@ -107,7 +107,7 @@
     title: "Local spec for model instance"
     type: "object"
     required:
-    - "zip_file"
+    - "content"
     additionalProperties: false
     properties:
       id:
@@ -119,10 +119,10 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "text"
-      zip_file:
+      content:
         type: "string"
         contentMediaType: "application/zip"
-        title: "Upload a file"
+        title: "Upload a .zip file"
         description: "Create and upload a zip file that contains all the model files from your computer"
         readOnly: true
         ui_order: 1
