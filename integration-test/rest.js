@@ -103,7 +103,7 @@ export function teardown(data) {
         }),
         {
           [`DELETE /v1alpha/models/${model.id} response status is 200`]: (r) =>
-            r.status === 200,
+            r.status === 204,
         }
       );
     }

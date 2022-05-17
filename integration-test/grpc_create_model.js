@@ -57,7 +57,7 @@ export function CreateModel() {
             'CreateModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
             'CreateModel model createTime': (r) => r && r.message.model.createTime !== undefined,
             'CreateModel model updateTime': (r) => r && r.message.model.updateTime !== undefined,
-            'CreateModel model configuration repo': (r) => r && JSON.parse(r.message.model.configuration).repo === "Phelan164/test-repo",
+            'CreateModel model configuration repository': (r) => r && JSON.parse(r.message.model.configuration).repository === "Phelan164/test-repo",
             'CreateModel model user': (r) => r && r.message.model.user !== undefined,
         });
 

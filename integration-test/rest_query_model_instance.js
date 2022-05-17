@@ -202,8 +202,8 @@ export function ListModelInstance() {
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.configuration.repo": (r) =>
-          JSON.parse(r.json().model.configuration).repo === "Phelan164/test-repo",
+        "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
+          JSON.parse(r.json().model.configuration).repository === "Phelan164/test-repo",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
