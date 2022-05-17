@@ -9,15 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_IsGitHubURL(t *testing.T) {
-	assert.Equal(t, IsGitHubURL("https://github.com/foo/bar"), true)
-	assert.Equal(t, IsGitHubURL("https://github.com:443/foo/bar"), true)
-	assert.Equal(t, IsGitHubURL("http://github.com/bar/foo"), true)
-	assert.Equal(t, IsGitHubURL("http://github.com:80/bar/foo"), true)
-	assert.Equal(t, IsGitHubURL("http://other.com"), false)
-	assert.Equal(t, IsGitHubURL("not a valid URL"), false)
-}
-
 func TestGetModelMetaFromReadme_Normal(t *testing.T) {
 	txt := `---
 Task: Detection

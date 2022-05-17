@@ -81,9 +81,7 @@ func (r *repository) GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.
 }
 
 func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-
 	queryBuilder := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Order("create_time DESC, id DESC")
-
 	if pageSize == 0 {
 		queryBuilder = queryBuilder.Limit(10)
 	} else if pageSize > 0 && pageSize <= 100 {
@@ -121,7 +119,13 @@ func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pa
 
 	if len(models) > 0 {
 		r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize)
-		nextPageToken := paginate.EncodeToken(createTime, (models)[len(models)-1].UID.String())
+		var lastModel datamodel.Model // to check the last model in return list or not. If so, return empty page_token
+		r.db.Raw("SELECT uid FROM model WHERE owner = ? order by create_time ASC, id ASC limit 1", owner).Scan(&lastModel)
+		nextPageToken := ""
+		if lastModel.UID != (models)[len(models)-1].UID {
+			nextPageToken = paginate.EncodeToken(createTime, (models)[len(models)-1].UID.String())
+		}
+
 		return models, nextPageToken, totalSize, nil
 	}
 
@@ -216,7 +220,12 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 
 	if len(instances) > 0 {
 		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Count(&totalSize)
-		nextPageToken := paginate.EncodeToken(createTime, (instances)[len(instances)-1].UID.String())
+		var lastModelInstance datamodel.ModelInstance // to check the last model in return list or not. If so, return empty page_token
+		r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUid).Scan(&lastModelInstance)
+		nextPageToken := ""
+		if lastModelInstance.UID != (instances)[len(instances)-1].UID {
+			nextPageToken = paginate.EncodeToken(createTime, (instances)[len(instances)-1].UID.String())
+		}
 		return instances, nextPageToken, totalSize, nil
 	}
 
@@ -304,7 +313,12 @@ func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageTo
 
 	if len(definitions) > 0 {
 		r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize)
-		nextPageToken := paginate.EncodeToken(createTime, (definitions)[len(definitions)-1].UID.String())
+		var lastModelDefinition datamodel.ModelDefinition // to check the last model in return list or not. If so, return empty page_token
+		r.db.Raw("SELECT uid FROM model_definition order by create_time ASC, id ASC limit 1").Scan(&lastModelDefinition)
+		nextPageToken := ""
+		if lastModelDefinition.UID != (definitions)[len(definitions)-1].UID {
+			nextPageToken = paginate.EncodeToken(createTime, (definitions)[len(definitions)-1].UID.String())
+		}
 		return definitions, nextPageToken, totalSize, nil
 	}
 

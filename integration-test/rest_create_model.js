@@ -1,0 +1,331 @@
+import http from "k6/http";
+import { sleep, check, group, fail } from "k6";
+import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
+
+import {
+  genHeader,
+  base64_image,
+} from "./helpers.js";
+
+const apiHost = "http://localhost:8083";
+
+const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
+const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
+const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
+const model_def_name = "model-definitions/github"
+const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
+
+
+export function CreateModelFromLocal() {
+  // Model Backend API: upload model
+  {
+    group("Model Backend API: Upload a model", function () {
+      let fd_cls = new FormData();
+      let model_id_cls = randomString(10)
+      let model_description = randomString(20)
+      fd_cls.append("name", "models/" + model_id_cls);
+      fd_cls.append("description", model_description);
+      fd_cls.append("model_definition_name", model_def_name);
+      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task cls response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+          r.json().model.name === `models/${model_id_cls}`,
+        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+          r.json().model.id === model_id_cls,
+        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+          r.json().model.description === model_description,
+        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      let fd_det = new FormData();
+      let model_id_det = randomString(10)
+      model_description = randomString(20)
+      fd_det.append("name", "models/" + model_id_det);
+      fd_det.append("description", model_description);
+      fd_det.append("model_definition_name", model_def_name);
+      fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task det response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models:multipart task det response model.name": (r) =>
+          r.json().model.name === `models/${model_id_det}`,
+        "POST /v1alpha/models:multipart task det response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task det response model.id": (r) =>
+          r.json().model.id === model_id_det,
+        "POST /v1alpha/models:multipart task det response model.description": (r) =>
+          r.json().model.description === model_description,
+        "POST /v1alpha/models:multipart task det response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+        "POST /v1alpha/models:multipart task det response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task det response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /v1alpha/models:multipart task det response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task det response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task det response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      let fd_unspecified = new FormData();
+      let model_id_unspecified = randomString(10)
+      model_description = randomString(20)
+      fd_unspecified.append("name", "models/" + model_id_unspecified);
+      fd_unspecified.append("description", model_description);
+      fd_unspecified.append("model_definition_name", model_def_name);
+      fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task unspecified response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models:multipart task unspecified response model.name": (r) =>
+          r.json().model.name === `models/${model_id_unspecified}`,
+        "POST /v1alpha/models:multipart task unspecified response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task unspecified response model.id": (r) =>
+          r.json().model.id === model_id_unspecified,
+        "POST /v1alpha/models:multipart task unspecified response model.description": (r) =>
+          r.json().model.description === model_description,
+        "POST /v1alpha/models:multipart task unspecified response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+        "POST /v1alpha/models:multipart task unspecified response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task unspecified response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /v1alpha/models:multipart task unspecified response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task unspecified response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task unspecified response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart already existed response status 409": (r) =>
+          r.status === 409,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_cls}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_det}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
+}
+
+export function CreateModelFromGitHub() {
+  // Model Backend API: upload model by GitHub
+  {
+    group("Model Backend API: Upload a model by GitHub", function () {
+      let model_id = randomString(10)
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": model_def_name,
+        "configuration": JSON.stringify({
+          "repository": "Phelan164/test-repo",
+          "html_url": ""       
+        }),
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models:multipart task cls response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+          r.json().model.name === `models/${model_id}`,
+        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+          r.json().model.id === model_id,
+        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+          r.json().model.description !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+          r.json().model.model_definition === model_def_name,
+        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
+        JSON.parse(r.json().model.configuration).repository === "Phelan164/test-repo",
+        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
+        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.name`]: (r) =>
+          r.json().instance.name === `models/${model_id}/instances/v1.0`,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.uid`]: (r) =>
+          r.json().instance.uid !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.id`]: (r) =>
+          r.json().instance.id === "v1.0",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.state`]: (r) =>
+          r.json().instance.state === "STATE_ONLINE",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.task`]: (r) =>
+          r.json().instance.task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.model_definition`]: (r) =>
+          r.json().instance.model_definition === model_def_name,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.create_time`]: (r) =>
+          r.json().instance.create_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.update_time`]: (r) =>
+          r.json().instance.update_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.configuration`]: (r) =>
+          r.json().instance.configuration !== undefined,
+      });
+      sleep(5) // Triton loading models takes time
+
+      // Predict with url
+      let payload = JSON.stringify({
+        "inputs": [
+          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+        ]
+      });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls contents`]: (r) =>
+          r.json().output.classification_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls contents.category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls response contents.score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+      });
+
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "inputs": [
+          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+        ]
+      });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls multiple images output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,
+      });
+
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": randomString(10),
+        "model_definition": randomString(10),
+        "configuration": JSON.stringify({
+          "repository": "Phelan164/test-repo",
+          "html_url": ""          
+        }),
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models by github invalid url status": (r) =>
+          r.status === 400,
+      });
+
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": randomString(10),
+        "model_definition": model_def_name,
+        "configuration": JSON.stringify({
+          "repository": "Phelan164/non-exited",
+          "html_url": ""
+        })
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models by github invalid url status": (r) =>
+          r.status === 400,
+      });
+
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "model_definition": model_def_name,
+        "configuration": JSON.stringify({
+          "repository": "Phelan164/test-repo",
+          "html_url": ""
+        })
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models by github missing name status": (r) =>
+          r.status === 400,
+      });
+
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": randomString(10),
+        "model_definition": model_def_name,
+        "configuration": JSON.stringify({
+          "html_url": ""
+        })
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models by github missing github_url status": (r) =>
+          r.status === 400,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+
+    });
+  }
+}

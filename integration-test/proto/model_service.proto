@@ -121,8 +121,12 @@ service ModelService {
   // CreateModelBinaryFileUpload method receives a
   // CreateModelBinaryFileUploadRequest message and returns a
   // CreateModelBinaryFileUploadResponse message.
+  //
+  // Endpoint: "POST /v1alpha/models:multipart"
   rpc CreateModelBinaryFileUpload(stream CreateModelBinaryFileUploadRequest)
-      returns (CreateModelBinaryFileUploadResponse) {}
+      returns (CreateModelBinaryFileUploadResponse) {
+    option (google.api.method_signature) = "id,model_definition,content";
+  }
 
   // GetModel method receives a GetModelRequest message and returns a
   // GetModelResponse
@@ -180,8 +184,8 @@ service ModelService {
     option (google.api.method_signature) = "name";
   }
 
-  // UnpublishModel method receives a UnpublishModelRequest message and returns a
-  // UnpublishModelResponse
+  // UnpublishModel method receives a UnpublishModelRequest message and returns
+  // a UnpublishModelResponse
   rpc UnpublishModel(UnpublishModelRequest) returns (UnpublishModelResponse) {
     option (google.api.http) = {
       post : "/v1alpha/{name=models/*}:unpublish"
@@ -269,7 +273,11 @@ service ModelService {
   // TriggerModelInstanceBinaryFileUpload method receives a
   // TriggerModelInstanceBinaryFileUploadRequest message and returns a
   // TriggerModelInstanceBinaryFileUploadResponse message.
+  //
+  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}:trigger-multipart"
   rpc TriggerModelInstanceBinaryFileUpload(
       stream TriggerModelInstanceBinaryFileUploadRequest)
-      returns (TriggerModelInstanceBinaryFileUploadResponse) {}
+      returns (TriggerModelInstanceBinaryFileUploadResponse) {
+    option (google.api.method_signature) = "name,file";
+  }
 }

@@ -51,8 +51,6 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 }
 
 func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
-	logger, _ := logger.GetZapLogger()
-
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
 		Uid:             dbModel.BaseDynamic.UID.String(),
@@ -62,18 +60,7 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		Description:     &dbModel.Description,
 		ModelDefinition: dbModel.ModelDefinition,
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		Configuration: func() *structpb.Struct {
-			if dbModel.Configuration != nil {
-				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModel.Configuration.String()), specification)
-				if err != nil {
-					logger.Fatal(err.Error())
-				}
-				return specification
-			} else {
-				return nil
-			}
-		}(),
+		Configuration:   dbModel.Configuration.String(),
 	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
 		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
@@ -84,8 +71,6 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 }
 
 func DBModelInstanceToPBModelInstance(modelId string, dbModelInstance *datamodel.ModelInstance) *modelPB.ModelInstance {
-	logger, _ := logger.GetZapLogger()
-
 	pbModelInstance := modelPB.ModelInstance{
 		Name:            fmt.Sprintf("models/%s/instances/%s", modelId, dbModelInstance.ID),
 		Uid:             dbModelInstance.BaseDynamic.UID.String(),
@@ -95,18 +80,7 @@ func DBModelInstanceToPBModelInstance(modelId string, dbModelInstance *datamodel
 		ModelDefinition: dbModelInstance.ModelDefinition,
 		State:           modelPB.ModelInstance_State(dbModelInstance.State),
 		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
-		Configuration: func() *structpb.Struct {
-			if dbModelInstance.Configuration != nil {
-				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModelInstance.Configuration.String()), specification)
-				if err != nil {
-					logger.Fatal(err.Error())
-				}
-				return specification
-			} else {
-				return nil
-			}
-		}(),
+		Configuration:   dbModelInstance.Configuration.String(),
 	}
 
 	return &pbModelInstance
