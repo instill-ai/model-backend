@@ -135,6 +135,8 @@ func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelNa
 			panic(err)
 		}
 	}
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", modelRepositoryRoot, namespace, modelName, instanceName)
+	_ = os.Remove(readmeFilePath)
 }
 
 // ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.

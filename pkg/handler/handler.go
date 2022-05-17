@@ -776,6 +776,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 		err = util.GitHubClone(modelSrcDir, instanceConfig)
 		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 			return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 		}
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
