@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 
 // Protobuf standard
 import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Google api
 import "google/api/resource.proto";
@@ -77,11 +78,14 @@ message ListModelDefinitionRequest {
   // return fewer than this value. If unspecified, at most 10 ModelDefinitions
   // will be returned. The maximum value is 100; values above 100 will be
   // coereced to 100.
-  int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  optional int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
   // Page token
-  string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
   // Definition view (default is VIEW_BASIC)
-  View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `ModelDefinition.model_spec` and
+  // `ModelDefinition.model_instance_spec`
+  // VIEW_FULL: show full information
+  optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // ListModelDefinitionResponse represents a response to list all supported model
@@ -101,8 +105,16 @@ message GetModelDefinitionRequest {
   // For example "model-definitions/{uuid}"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
+    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model_definition.name"}
+    }
   ];
+  // Definition view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `ModelDefinition.model_spec` and
+  // `ModelDefinition.model_instance_spec`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // GetModelDefinitionResponse represents a response for a model definition

@@ -6,6 +6,7 @@ package instill.model.v1alpha;
 import "google/protobuf/struct.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Google api
 import "google/api/resource.proto";
@@ -47,10 +48,9 @@ message Model {
     (google.api.field_behavior) = IMMUTABLE,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model configuration represents the configuration JSON object that has been
+  // Model configuration represents the configuration JSON string that has been
   // validated using the `model_spec` JSON schema of a ModelDefinition
-  google.protobuf.Struct configuration = 6
-      [ (google.api.field_behavior) = IMMUTABLE ];
+  string configuration = 6 [ (google.api.field_behavior) = IMMUTABLE ];
   // Model visibility including public or private
   Visibility visibility = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model owner
@@ -121,11 +121,10 @@ message ModelInstance {
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model instance configuration represents the JSON configuration that has
-  // been validated using the `model_instance_spec` JSON schema of a
+  // Model instance configuration represents the configuration JSON string that
+  // has been validated using the `model_instance_spec` JSON schema of a
   // ModelDefinition
-  google.protobuf.Struct configuration = 7
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string configuration = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model instance create time
   google.protobuf.Timestamp create_time = 8
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
@@ -161,11 +160,13 @@ message ListModelRequest {
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
   // 100.
-  int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  optional int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
   // Page token
-  string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
-  //  Definition view (default is VIEW_BASIC)
-  View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // ListModelResponse represents a response for a list of models
@@ -217,8 +218,15 @@ message GetModelRequest {
   // For example "models/{model}"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model"
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model.name"}
+    }
   ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // GetModelResponse represents a response for a model
@@ -251,7 +259,10 @@ message DeleteModelRequest {
   // For example "models/{model}"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model"
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model.name"}
+    }
   ];
 }
 
@@ -264,6 +275,10 @@ message LookUpModelRequest {
   // Permalink of a model. For example:
   // "models/{uid}"
   string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // LookUpModelResponse represents a response for a model instance
@@ -336,11 +351,13 @@ message ListModelInstanceRequest {
   // return fewer than this value. If unspecified, at most 10 model instances
   // will be returned. The maximum value is 100; values above 100 will be
   // coereced to 100.
-  int64 page_size = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional int64 page_size = 2 [ (google.api.field_behavior) = OPTIONAL ];
   // Page token
-  string page_token = 3 [ (google.api.field_behavior) = OPTIONAL ];
-  //  Definition view (default is VIEW_BASIC)
-  View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string page_token = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model instance view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `ModelInstance.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // ListModelInstanceResponse represents a response for a list of model instances
@@ -359,8 +376,15 @@ message GetModelInstanceRequest {
   // For example "models/{model}/instances/{instance}"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model_instance.name"}
+    }
   ];
+  // Model instance view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `ModelInstance.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // GetModelInstanceResponse represents a response for a model instance
@@ -375,6 +399,10 @@ message LookUpModelInstanceRequest {
   // Permalink of a model instance. For example:
   // "models/{model_uid}/instances/{instance_uid}"
   string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model instance view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `ModelInstance.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // LookUpModelInstanceResponse represents a response for a model instance
@@ -428,7 +456,10 @@ message GetModelInstanceCardRequest {
   // For example "models/{model}/instances/{instance}/readme"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelInstanceCard"
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstanceCard",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model_instance.name/readme"}
+    }
   ];
 }
 
@@ -441,6 +472,7 @@ message GetModelInstanceCardResponse {
 
 ////////////////////////////////////
 //  Custom methods
+////////////////////////////////////
 
 // Input represents the input to trigger a model instance
 message Input {

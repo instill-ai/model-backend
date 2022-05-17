@@ -220,7 +220,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 }
 
 // modelDir and dstDir are absolute path
-func updateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, error) {
+func updateModelPath(modelDir string, dstDir string, owner string, modelId string, modelInstance *datamodel.ModelInstance) (string, error) {
 	var createdTModels []datamodel.TritonModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
@@ -249,7 +249,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		}
 		// Triton modelname is folder name
 		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, model.ID, oldModelName, model.Instances[0].ID)
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelId, oldModelName, modelInstance.ID)
 		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
 		if f.fInfo.IsDir() { // create new folder
@@ -310,7 +310,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			}
 		}
 	}
-	model.Instances[0].TritonModels = createdTModels
+	modelInstance.TritonModels = createdTModels
 	return readmeFilePath, nil
 }
 
@@ -727,33 +727,23 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, fmt.Errorf("The model %v already existed", req.Model.Id)
 	}
 
-	if req.Model.Configuration == nil {
+	if req.Model.Configuration == "" {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Missing Configuration")
 	}
 
-	b, err := req.Model.Configuration.MarshalJSON()
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, err
-	}
-	var github datamodel.ModelInstanceConfiguration
-	err = json.Unmarshal(b, &github)
+	var modelConfig datamodel.ModelConfiguration
+	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, err
 	}
 
-	if github.Repo == "" || github.Tag == "" || !util.IsGitHubURL(github.Repo) {
+	if modelConfig.Repository == "" {
 		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Invalid GitHub URL")
 	}
 
-	rdid, _ := uuid.NewV4()
-	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-	err = util.GitHubClone(modelSrcDir, github)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
-	}
-	githubInfo, err := util.GetGitHubRepoInfo(github.Repo)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+	githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
+	if err != nil || len(githubInfo.Tags) == 0 {
+		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Invalid GitHub Info (there is no task, tag)")
 	}
 	visibility := util.Visibility[githubInfo.Visibility]
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
@@ -762,54 +752,73 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		visibility = modelPB.Model_VISIBILITY_PRIVATE
 	}
 
-	githubConfigObj, _ := json.Marshal(github)
-	githubModelConfig, _ := json.Marshal(datamodel.ModelConfiguration{
-		Repo: github.Repo,
+	bModelConfig, _ := json.Marshal(datamodel.ModelConfiguration{
+		Repository: modelConfig.Repository,
+		HtmlUrl:    modelConfig.HtmlUrl,
 	})
-
 	githubModel := datamodel.Model{
 		ID:              req.Model.Id,
 		ModelDefinition: req.Model.ModelDefinition,
 		Owner:           owner,
 		Visibility:      datamodel.ModelVisibility(visibility),
 		Description:     githubInfo.Description,
-		Configuration:   githubModelConfig,
-		Instances: []datamodel.ModelInstance{{
-			ID:              github.Tag,
-			ModelDefinition: req.Model.ModelDefinition,
-			State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-			Configuration:   githubConfigObj,
-		}},
+		Configuration:   bModelConfig,
+		Instances:       []datamodel.ModelInstance{},
 	}
 
-	readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, owner, &githubModel)
-	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-	if err != nil {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, githubModel.Instances[0].ID)
-		return &modelPB.CreateModelResponse{}, err
-	}
-	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-		if err != nil || modelMeta.Task == "" {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, githubModel.Instances[0].ID)
+	for _, tag := range githubInfo.Tags {
+		instanceConfig := datamodel.ModelInstanceConfiguration{
+			Repository: modelConfig.Repository,
+			HtmlUrl:    modelConfig.HtmlUrl,
+			Tag:        tag.Name,
+		}
+		rdid, _ := uuid.NewV4()
+		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
+		err = util.GitHubClone(modelSrcDir, instanceConfig)
+		if err != nil {
+			return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
+		}
+		bInstanceConfig, _ := json.Marshal(instanceConfig)
+		instance := datamodel.ModelInstance{
+			ID:              tag.Name,
+			ModelDefinition: req.Model.ModelDefinition,
+			State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			Configuration:   bInstanceConfig,
+		}
+
+		readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 			return &modelPB.CreateModelResponse{}, err
 		}
-		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-			githubModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
-		} else {
-			if modelMeta.Task != "" {
-				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, githubModel.Instances[0].ID)
-				return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
-			} else {
-				githubModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		if _, err := os.Stat(readmeFilePath); err == nil {
+			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+			if err != nil || modelMeta.Task == "" {
+				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+				return &modelPB.CreateModelResponse{}, err
 			}
+			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+				instance.Task = datamodel.ModelInstanceTask(val)
+			} else {
+				if modelMeta.Task != "" {
+					util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, instance.ID)
+					return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
+				} else {
+					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+				}
+			}
+		} else {
+			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
-	} else {
-		githubModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		githubModel.Instances = append(githubModel.Instances, instance)
 	}
+
 	dbModel, err := h.service.CreateModel(owner, &githubModel)
 	if err != nil {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, githubModel.Instances[0].ID)
+		for _, tag := range githubInfo.Tags {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+		}
 		return &modelPB.CreateModelResponse{}, err
 	}
 
@@ -828,7 +837,6 @@ func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 	if err != nil {
 		return &modelPB.ListModelResponse{}, err
 	}
-
 	dbModels, nextPageToken, totalSize, err := h.service.ListModel(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelResponse{}, err
@@ -924,6 +932,12 @@ func (h *handler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelReque
 	if err != nil {
 		return &modelPB.DeleteModelResponse{}, err
 	}
+
+	// Manually set the custom header to have a StatusNoContent http response for REST endpoint
+	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusNoContent))); err != nil {
+		return nil, err
+	}
+
 	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(owner, id)
 }
 

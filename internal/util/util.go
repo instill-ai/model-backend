@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -21,24 +19,6 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
-
-func IsGitHubURL(input string) bool {
-	if input == "" {
-		return false
-	}
-	u, err := url.Parse(input)
-	if err != nil {
-		return false
-	}
-	host := u.Host
-	if strings.Contains(host, ":") {
-		host, _, err = net.SplitHostPort(host)
-		if err != nil {
-			return false
-		}
-	}
-	return host == "github.com"
-}
 
 type ModelMeta struct {
 	Tags []string
@@ -66,12 +46,16 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 }
 
 func GitHubClone(dir string, github datamodel.ModelInstanceConfiguration) error {
-	if !IsGitHubURL(github.Repo) {
-		return fmt.Errorf("Invalid GitHub URL")
+	urlRepo := github.Repository
+	if !strings.HasPrefix(urlRepo, "https://github.com") {
+		urlRepo = "https://github.com/" + urlRepo
+	}
+	if !strings.HasSuffix(github.Repository, ".git") {
+		urlRepo = urlRepo + ".git"
 	}
 
 	r, err := git.PlainClone(dir, false, &git.CloneOptions{
-		URL: github.Repo,
+		URL: urlRepo,
 	})
 	if err != nil {
 		return err
@@ -93,9 +77,13 @@ func GitHubClone(dir string, github datamodel.ModelInstanceConfiguration) error 
 	})
 }
 
+type Tag struct {
+	Name string `json:"name"`
+}
 type GitHubInfo struct {
 	Description string `json:"description"`
 	Visibility  string `json:"visibility"`
+	Tags        []Tag
 }
 
 func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
@@ -103,11 +91,7 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 		return GitHubInfo{}, fmt.Errorf("invalid repo URL")
 	}
 
-	splited_elems := strings.Split(repo, "github.com/")
-	if len(splited_elems) < 2 {
-		return GitHubInfo{}, fmt.Errorf("invalid repo URL")
-	}
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v", strings.Replace(splited_elems[len(splited_elems)-1], ".git", "", 1)))
+	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v", repo))
 	if err != nil {
 		return GitHubInfo{}, err
 	}
@@ -120,6 +104,23 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 	if err != nil {
 		return GitHubInfo{}, err
 	}
+
+	resp, err = http.Get(fmt.Sprintf("https://api.github.com/repos/%v/tags", repo))
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+
+	tags := []Tag{}
+	err = json.Unmarshal(body, &tags)
+	if err != nil {
+		return GitHubInfo{}, err
+	}
+	githubRepoInfo.Tags = tags
+
 	return githubRepoInfo, nil
 }
 

@@ -138,15 +138,15 @@ type ModelInstance struct {
 
 // Model configuration
 type ModelConfiguration struct {
-	Repo    string `json:"repo,omitempty"`
-	HtmlUrl string `json:"html_url,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	HtmlUrl    string `json:"html_url,omitempty"`
 }
 
 // Model Instance configuration
 type ModelInstanceConfiguration struct {
-	Repo    string `json:"repo,omitempty"`
-	Tag     string `json:"tag,omitempty"`
-	HtmlUrl string `json:"html_url,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	Tag        string `json:"tag,omitempty"`
+	HtmlUrl    string `json:"html_url,omitempty"`
 }
 type ListModelQuery struct {
 	Owner string
