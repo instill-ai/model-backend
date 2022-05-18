@@ -28,6 +28,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/qri-io/jsonschema"
+
 	"github.com/instill-ai/model-backend/configs"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/triton"
@@ -550,9 +552,35 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		tritonService := triton.NewTriton()
 		modelService := service.NewService(modelRepository, tritonService)
 
-		_, err = modelRepository.GetModelDefinition(modelDefinitionId)
+		// validate model configuration
+		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionId)
 		if err != nil {
 			makeJsonResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
+			return
+		}
+
+		rs := &jsonschema.Schema{}
+		if err := json.Unmarshal([]byte(localModelDefinition.ModelSpec.String()), rs); err != nil {
+			makeJsonResponse(w, 500, "Add Model Error", "Could not get model definition")
+			return
+		}
+
+		modelLocalSpec := datamodel.LocalModelConfiguration{
+			Description: r.FormValue("description"),
+			Content:     base64.StdEncoding.EncodeToString(buf.Bytes()),
+		}
+		b, err := json.Marshal(modelLocalSpec)
+		if err != nil {
+			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+			return
+		}
+		errs, err := rs.ValidateBytes(context.Background(), b)
+		if err != nil {
+			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+			return
+		}
+		if len(errs) > 0 {
+			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", errs))
 			return
 		}
 
@@ -731,7 +759,24 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Missing Configuration")
 	}
 
-	var modelConfig datamodel.ModelConfiguration
+	// validate model configuration
+	githubModelDefinition, err := h.service.GetModelDefinition("github")
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Could not get model definition")
+	}
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal([]byte(githubModelDefinition.ModelSpec.String()), rs); err != nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Could not get model definition")
+	}
+	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+	}
+	if len(errs) > 0 {
+		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", errs))
+	}
+
+	var modelConfig datamodel.GitHubModelConfiguration
 	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, err
@@ -743,7 +788,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 	githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
 	if err != nil || len(githubInfo.Tags) == 0 {
-		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Invalid GitHub Info (there is no task, tag)")
+		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "Invalid GitHub Info")
 	}
 	visibility := util.Visibility[githubInfo.Visibility]
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
@@ -752,7 +797,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		visibility = modelPB.Model_VISIBILITY_PRIVATE
 	}
 
-	bModelConfig, _ := json.Marshal(datamodel.ModelConfiguration{
+	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
 		HtmlUrl:    modelConfig.HtmlUrl,
 	})
@@ -767,7 +812,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	}
 
 	for _, tag := range githubInfo.Tags {
-		instanceConfig := datamodel.ModelInstanceConfiguration{
+		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
 			Repository: modelConfig.Repository,
 			HtmlUrl:    modelConfig.HtmlUrl,
 			Tag:        tag.Name,

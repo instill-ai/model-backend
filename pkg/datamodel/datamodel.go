@@ -137,17 +137,23 @@ type ModelInstance struct {
 }
 
 // Model configuration
-type ModelConfiguration struct {
+type GitHubModelConfiguration struct {
 	Repository string `json:"repository,omitempty"`
 	HtmlUrl    string `json:"html_url,omitempty"`
 }
 
 // Model Instance configuration
-type ModelInstanceConfiguration struct {
+type GitHubModelInstanceConfiguration struct {
 	Repository string `json:"repository,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 	HtmlUrl    string `json:"html_url,omitempty"`
 }
+
+type LocalModelConfiguration struct {
+	Description string `json:"description,omitempty"`
+	Content     string `json:"content,omitempty"`
+}
+
 type ListModelQuery struct {
 	Owner string
 }

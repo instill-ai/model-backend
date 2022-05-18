@@ -45,7 +45,7 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	return &modelMeta, err
 }
 
-func GitHubClone(dir string, github datamodel.ModelInstanceConfiguration) error {
+func GitHubClone(dir string, github datamodel.GitHubModelInstanceConfiguration) error {
 	urlRepo := github.Repository
 	if !strings.HasPrefix(urlRepo, "https://github.com") {
 		urlRepo = "https://github.com/" + urlRepo

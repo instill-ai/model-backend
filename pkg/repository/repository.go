@@ -120,7 +120,9 @@ func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pa
 	if len(models) > 0 {
 		r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize)
 		var lastModel datamodel.Model // to check the last model in return list or not. If so, return empty page_token
-		r.db.Raw("SELECT uid FROM model WHERE owner = ? order by create_time ASC, id ASC limit 1", owner).Scan(&lastModel)
+		if res := r.db.Raw("SELECT uid FROM model WHERE owner = ? order by create_time ASC, id ASC limit 1", owner).Scan(&lastModel); res.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		}
 		nextPageToken := ""
 		if lastModel.UID != (models)[len(models)-1].UID {
 			nextPageToken = paginate.EncodeToken(createTime, (models)[len(models)-1].UID.String())
@@ -221,7 +223,9 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 	if len(instances) > 0 {
 		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Count(&totalSize)
 		var lastModelInstance datamodel.ModelInstance // to check the last model in return list or not. If so, return empty page_token
-		r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUid).Scan(&lastModelInstance)
+		if res := r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUid).Scan(&lastModelInstance); res.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		}
 		nextPageToken := ""
 		if lastModelInstance.UID != (instances)[len(instances)-1].UID {
 			nextPageToken = paginate.EncodeToken(createTime, (instances)[len(instances)-1].UID.String())
@@ -314,7 +318,9 @@ func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageTo
 	if len(definitions) > 0 {
 		r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize)
 		var lastModelDefinition datamodel.ModelDefinition // to check the last model in return list or not. If so, return empty page_token
-		r.db.Raw("SELECT uid FROM model_definition order by create_time ASC, id ASC limit 1").Scan(&lastModelDefinition)
+		if res := r.db.Raw("SELECT uid FROM model_definition order by create_time ASC, id ASC limit 1").Scan(&lastModelDefinition); res.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		}
 		nextPageToken := ""
 		if lastModelDefinition.UID != (definitions)[len(definitions)-1].UID {
 			nextPageToken = paginate.EncodeToken(createTime, (definitions)[len(definitions)-1].UID.String())

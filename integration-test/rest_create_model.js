@@ -14,7 +14,6 @@ const apiHost = "http://localhost:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_name = "model-definitions/github"
 const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 
@@ -27,7 +26,7 @@ export function CreateModelFromLocal() {
       let model_description = randomString(20)
       fd_cls.append("name", "models/" + model_id_cls);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition_name", model_def_name);
+      fd_cls.append("model_definition_name", "model-definitions/local");
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -43,7 +42,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task cls response model.description": (r) =>
           r.json().model.description === model_description,
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/local",
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
@@ -61,7 +60,7 @@ export function CreateModelFromLocal() {
       model_description = randomString(20)
       fd_det.append("name", "models/" + model_id_det);
       fd_det.append("description", model_description);
-      fd_det.append("model_definition_name", model_def_name);
+      fd_det.append("model_definition_name", "model-definitions/local");
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
@@ -77,7 +76,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task det response model.description": (r) =>
           r.json().model.description === model_description,
         "POST /v1alpha/models:multipart task det response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/local",
         "POST /v1alpha/models:multipart task det response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task det response model.visibility": (r) =>
@@ -95,7 +94,7 @@ export function CreateModelFromLocal() {
       model_description = randomString(20)
       fd_unspecified.append("name", "models/" + model_id_unspecified);
       fd_unspecified.append("description", model_description);
-      fd_unspecified.append("model_definition_name", model_def_name);
+      fd_unspecified.append("model_definition_name", "model-definitions/local");
       fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
@@ -111,7 +110,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task unspecified response model.description": (r) =>
           r.json().model.description === model_description,
         "POST /v1alpha/models:multipart task unspecified response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/local",
         "POST /v1alpha/models:multipart task unspecified response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task unspecified response model.visibility": (r) =>
@@ -161,7 +160,7 @@ export function CreateModelFromGitHub() {
       let model_id = randomString(10)
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "repository": "Phelan164/test-repo",
           "html_url": ""       
@@ -180,7 +179,7 @@ export function CreateModelFromGitHub() {
         "POST /v1alpha/models:multipart task cls response model.description": (r) =>
           r.json().model.description !== undefined,
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/github",
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
@@ -211,7 +210,7 @@ export function CreateModelFromGitHub() {
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.task`]: (r) =>
           r.json().instance.task === "TASK_CLASSIFICATION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
+          r.json().instance.model_definition === "model-definitions/github",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.create_time`]: (r) =>
           r.json().instance.create_time !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.update_time`]: (r) =>
@@ -280,7 +279,7 @@ export function CreateModelFromGitHub() {
 
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "repository": "Phelan164/non-exited",
           "html_url": ""
@@ -293,7 +292,7 @@ export function CreateModelFromGitHub() {
       });
 
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "repository": "Phelan164/test-repo",
           "html_url": ""
@@ -307,7 +306,7 @@ export function CreateModelFromGitHub() {
 
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "html_url": ""
         })
