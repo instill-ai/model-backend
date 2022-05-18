@@ -584,17 +584,23 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		modelConfiguration := datamodel.LocalModelConfiguration{
+			Content: fileHeader.Filename,
+		}
+		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
 			Instances: []datamodel.ModelInstance{{
 				State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 				ID:              "latest",
 				ModelDefinition: modelDefinitionName,
+				Configuration:   bModelConfig,
 			}},
 			ID:              modeId,
 			ModelDefinition: modelDefinitionName,
 			Owner:           owner,
 			Visibility:      datamodel.ModelVisibility(visibility),
 			Description:     r.FormValue("description"),
+			Configuration:   bModelConfig,
 		}
 
 		_, err = modelService.GetModelById(owner, uploadedModel.ID)
@@ -633,16 +639,6 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 
 		dbModel, err := modelService.CreateModel(owner, &uploadedModel)
-		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-			makeJsonResponse(w, 500, "Add Model Error", err.Error())
-			return
-		}
-
-		modelConfiguration := datamodel.LocalModelConfiguration{
-			Content: fileHeader.Filename,
-		}
-		dbModel.Configuration, err = json.Marshal(modelConfiguration)
 		if err != nil {
 			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())

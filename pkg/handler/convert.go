@@ -62,6 +62,9 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
 		Configuration:   dbModel.Configuration.String(),
 	}
+	if pbModel.Configuration == "" {
+		pbModel.Configuration = "{}"
+	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
 		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
 	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
@@ -82,7 +85,9 @@ func DBModelInstanceToPBModelInstance(modelId string, dbModelInstance *datamodel
 		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
 		Configuration:   dbModelInstance.Configuration.String(),
 	}
-
+	if pbModelInstance.Configuration == "" {
+		pbModelInstance.Configuration = "{}"
+	}
 	return &pbModelInstance
 }
 
