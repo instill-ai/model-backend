@@ -53,7 +53,7 @@ export function GetModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.visibility": (r) =>
                 r.json().model.visibility === "VISIBILITY_PRIVATE",
             "POST /v1alpha/models:multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/local-user',
+                r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "POST /v1alpha/models:multipart (multipart) task cls response model.create_time": (r) =>
                 r.json().model.create_time !== undefined,
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
@@ -69,7 +69,7 @@ export function GetModel() {
             "GetModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "GetModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "GetModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "GetModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "GetModel response model.owner": (r) => r.message.model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "GetModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
@@ -121,7 +121,7 @@ export function ListModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.visibility": (r) =>
                 r.json().model.visibility === "VISIBILITY_PRIVATE",
             "POST /v1alpha/models:multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/local-user',
+                r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "POST /v1alpha/models:multipart (multipart) task cls response model.create_time": (r) =>
                 r.json().model.create_time !== undefined,
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
@@ -139,7 +139,7 @@ export function ListModel() {
             "ListModel response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
             "ListModel response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
             "ListModel response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-            "ListModel response models[0].owner": (r) => r.message.models[0].user === 'users/local-user',
+            "ListModel response models[0].owner": (r) => r.message.models[0].user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "ListModel response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
             "ListModel response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
@@ -186,7 +186,7 @@ export function LookupModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.visibility": (r) =>
                 r.json().model.visibility === "VISIBILITY_PRIVATE",
             "POST /v1alpha/models:multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/local-user',
+                r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "POST /v1alpha/models:multipart (multipart) task cls response model.create_time": (r) =>
                 r.json().model.create_time !== undefined,
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
@@ -202,7 +202,7 @@ export function LookupModel() {
             "LookUpModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "LookUpModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "LookUpModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "LookUpModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "LookUpModel response model.owner": (r) => r.message.model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "LookUpModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });

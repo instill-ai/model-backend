@@ -50,7 +50,7 @@ export function GetModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -124,7 +124,7 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -180,8 +180,7 @@ export function ListModelInstance() {
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
-          "repository": "Phelan164/test-repo",
-          "html_url": ""
+          "repository": "instill-ai/model-dummy-cls"
         })
       }), {
         headers: genHeader("application/json"),
@@ -203,11 +202,11 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
-          JSON.parse(r.json().model.configuration).repository === "Phelan164/test-repo",
+          JSON.parse(r.json().model.configuration).repository === "instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -320,7 +319,7 @@ export function LookupModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>

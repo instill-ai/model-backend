@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -24,7 +23,7 @@ func getOwner(ctx context.Context) (string, error) {
 		if len(metadatas) == 0 {
 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
 		}
-		return fmt.Sprintf("users/%s", metadatas[0]), nil
+		return metadatas[0], nil
 	} else {
 		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
 	}

@@ -54,7 +54,7 @@ export function UpdateModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.visibility": (r) =>
                 r.json().model.visibility === "VISIBILITY_PRIVATE",
             "POST /v1alpha/models:multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/local-user',
+                r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "POST /v1alpha/models:multipart (multipart) task cls response model.create_time": (r) =>
                 r.json().model.create_time !== undefined,
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
@@ -77,7 +77,7 @@ export function UpdateModel() {
             "UpdateModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "UpdateModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "UpdateModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "UpdateModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "UpdateModel response model.owner": (r) => r.message.model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
             "UpdateModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
