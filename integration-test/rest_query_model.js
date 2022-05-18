@@ -155,7 +155,7 @@ export function ListModel() {
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
-          r.json().models[0].configuration === "",
+          r.json().models[0].configuration === "{}",
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>

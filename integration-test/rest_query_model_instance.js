@@ -158,7 +158,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-          r.json().instances[0].configuration === "",
+          r.json().instances[0].configuration === "{}",
       });
 
       // clean up
@@ -241,7 +241,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-          r.json().instances[0].configuration === "",
+          r.json().instances[0].configuration === "{}",
       });
 
       check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
