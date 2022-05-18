@@ -513,7 +513,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
 		}
-		file, _, err := r.FormFile("content")
+		file, fileHeader, err := r.FormFile("content")
 		if err != nil {
 			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
@@ -638,6 +638,17 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
+
+		modelConfiguration := datamodel.LocalModelConfiguration{
+			Content: fileHeader.Filename,
+		}
+		dbModel.Configuration, err = json.Marshal(modelConfiguration)
+		if err != nil {
+			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			makeJsonResponse(w, 500, "Add Model Error", err.Error())
+			return
+		}
+
 		pbModel := DBModelToPBModel(dbModel)
 
 		w.Header().Add("Content-Type", "application/json+problem")
@@ -799,7 +810,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
-		HtmlUrl:    modelConfig.HtmlUrl,
+		HtmlUrl:    "https://github.com/" + modelConfig.Repository,
 	})
 	githubModel := datamodel.Model{
 		ID:              req.Model.Id,

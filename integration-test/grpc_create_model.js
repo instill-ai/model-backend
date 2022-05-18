@@ -44,8 +44,7 @@ export function CreateModel() {
                 id: model_id,
                 model_definition: model_def_name,
                 configuration: JSON.stringify( {
-                    repository: "Phelan164/test-repo",
-                    html_url: ""
+                    repository: "instill-ai/model-dummy-cls"
                 })
             }
         }), {
@@ -57,7 +56,7 @@ export function CreateModel() {
             'CreateModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
             'CreateModel model createTime': (r) => r && r.message.model.createTime !== undefined,
             'CreateModel model updateTime': (r) => r && r.message.model.updateTime !== undefined,
-            'CreateModel model configuration repository': (r) => r && JSON.parse(r.message.model.configuration).repository === "Phelan164/test-repo",
+            'CreateModel model configuration repository': (r) => r && JSON.parse(r.message.model.configuration).repository === "instill-ai/model-dummy-cls",
             'CreateModel model user': (r) => r && r.message.model.user !== undefined,
         });
 
@@ -88,8 +87,7 @@ export function CreateModel() {
                 id: randomString(10),
                 model_definition: randomString(10),
                 configuration: JSON.stringify({
-                    repository: "Phelan164/test-repo",
-                    html_url: ""
+                    repository: "instill-ai/model-dummy-cls"
                 })
             }
         }), {
@@ -101,8 +99,7 @@ export function CreateModel() {
                 id: randomString(10),
                 model_definition: model_def_name,
                 configuration: JSON.stringify({
-                    repository: "invalid-repo",
-                    html_url: ""
+                    repository: "invalid-repo"
                 })
             }
         }), {
@@ -113,8 +110,7 @@ export function CreateModel() {
             model: {
                 model_definition: model_def_name,
                 configuration: JSON.stringify({
-                    repository: "Phelan164/test-repo",
-                    html_url: ""
+                    repository: "instill-ai/model-dummy-cls"
                 })
             }
         }), {
