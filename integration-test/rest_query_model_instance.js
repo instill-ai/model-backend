@@ -16,7 +16,7 @@ const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jp
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_name = "model-definitions/github"
+const model_def_name = "model-definitions/local"
 const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 export function GetModelInstance() {
@@ -178,7 +178,7 @@ export function ListModelInstance() {
       let model_id = randomString(10)
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "repository": "Phelan164/test-repo",
           "html_url": ""
@@ -197,7 +197,7 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.description": (r) =>
           r.json().model.description !== undefined,
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/github",
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
@@ -236,7 +236,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].task`]: (r) =>
           r.json().instances[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].model_definition`]: (r) =>
-          r.json().instances[0].model_definition === model_def_name,
+          r.json().instances[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].create_time`]: (r) =>
           r.json().instances[0].create_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
@@ -267,7 +267,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].task`]: (r) =>
           r.json().instances[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].model_definition`]: (r) =>
-          r.json().instances[0].model_definition === model_def_name,
+          r.json().instances[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].create_time`]: (r) =>
           r.json().instances[0].create_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].update_time`]: (r) =>

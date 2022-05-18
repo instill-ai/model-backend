@@ -14,7 +14,7 @@ const apiHost = "http://localhost:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_name = "model-definitions/github"
+const model_def_name = "model-definitions/local"
 const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 export function UpdateModel() {

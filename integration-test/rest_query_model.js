@@ -13,7 +13,7 @@ const apiHost = "http://localhost:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_name = "model-definitions/github"
+const model_def_name = "model-definitions/local"
 const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 
@@ -100,7 +100,7 @@ export function ListModel() {
       let model_id = randomString(10)
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": model_def_name,
+        "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
           "repository": "Phelan164/test-repo",
           "html_url": ""
@@ -119,7 +119,7 @@ export function ListModel() {
         "POST /v1alpha/models:multipart task cls response model.description": (r) =>
           r.json().model.description !== undefined,
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
+          r.json().model.model_definition === "model-definitions/github",
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
@@ -154,7 +154,7 @@ export function ListModel() {
         [`GET /v1alpha/models task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
-          r.json().models[0].model_definition === model_def_name,
+          r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration === "",
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
@@ -187,7 +187,7 @@ export function ListModel() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
-          r.json().models[0].model_definition === model_def_name,
+          r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration !== "",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>

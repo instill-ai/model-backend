@@ -76,7 +76,7 @@ export default function (data) {
   updateModel.UpdateModel()
 
   // Query Model Definition API
-  queryModelDefinition.GetModelDefinition()
+  // queryModelDefinition.GetModelDefinition()
   queryModelDefinition.ListModelDefinition()
 
   // Query Model Instance API
