@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/configs/models/model_instance_card.json",
+  "type": "object",
+  "title": "Model instance card",
+  "description": "The model instance README card",
+  "additionalProperties": false,
+  "required": ["type", "contents", "encoding"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Resource name",
+      "description": "The resource name",
+      "readOnly": true,
+      "ui_order": 0,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "size": {
+      "type": "integer",
+      "title": "Size",
+      "description": "The size of the file",
+      "readOnly": true,
+      "ui_order": 1,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "type": {
+      "type": "string",
+      "title": "Type",
+      "description": "The type of the file",
+      "readOnly": true,
+      "default": "file",
+      "ui_order": 2,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "contents": {
+      "type": "string",
+      "title": "README",
+      "description": "README to describe a model instance",
+      "readOnly": true,
+      "ui_order": 3,
+      "ui_disabled": true,
+      "ui_component": "markdown"
+    },
+    "encoding": {
+      "type": "string",
+      "title": "Encoding type",
+      "description": "The encoding type of the contents",
+      "default": "base64",
+      "readOnly": true,
+      "ui_order": 4,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    }
+  }
+}

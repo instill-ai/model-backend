@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/configs/models/model_definition.json",
+  "type": "object",
+  "title": "ModelDefinition",
+  "description": "The model definition data structure",
+  "required": [
+    "id",
+    "title",
+    "documentation_url",
+    "icon",
+    "model_spec",
+    "model_instance_spec"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Resource name",
+      "description": "The resource name",
+      "readOnly": true,
+      "ui_order": 0,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "uid": {
+      "type": "string",
+      "format": "uuid",
+      "title": "UUID",
+      "description": "The unique UUID",
+      "readOnly": true,
+      "ui_order": 1,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "id": {
+      "type": "string",
+      "title": "Name",
+      "description": "The model definition name",
+      "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
+      "minLength": 1,
+      "maxLength": 63,
+      "ui_order": 2,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "title": {
+      "type": "string",
+      "title": "Model definition",
+      "description": "The model definition, e.g. GitHub",
+      "minLength": 1,
+      "ui_order": 3,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "documentation_url": {
+      "type": "string",
+      "title": "Setup guide",
+      "description": "Please check the setup guide for this model definition",
+      "ui_order": 4,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "icon": {
+      "type": "string",
+      "title": "Model definition icon",
+      "description": "Icon for this model definition",
+      "ui_order": 5,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "model_spec": {
+      "type": "object",
+      "title": "Specification",
+      "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model",
+      "additionalProperties": false,
+      "ui_order": 6,
+      "ui_hidden": true,
+      "ui_disabled": true
+    },
+    "model_instance_spec": {
+      "type": "object",
+      "title": "Instance specification",
+      "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model instance",
+      "additionalProperties": false,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true
+    }
+  }
+}
