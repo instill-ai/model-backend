@@ -569,7 +569,6 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			Description: r.FormValue("description"),
 			Content:     base64.StdEncoding.EncodeToString(buf.Bytes()),
 		}
-		fmt.Println("???????????? localModelDefinition.ModelSpec.String() ", localModelDefinition.ModelSpec.String())
 		b, err := json.Marshal(modelLocalSpec)
 		if err != nil {
 			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
