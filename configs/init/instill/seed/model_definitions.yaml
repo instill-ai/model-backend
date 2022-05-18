@@ -112,15 +112,6 @@
     - "content"
     additionalProperties: false
     properties:
-      id:
-        type: "string"
-        title: "ID"
-        description: "Model instance ID. This is fixed to `latest`."
-        readOnly: true
-        ui_order: 0
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "text"
       content:
         type: "string"
         contentMediaType: "application/zip"
