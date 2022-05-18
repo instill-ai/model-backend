@@ -92,6 +92,7 @@
         title: "Description"
         description: "Fill with a short description of your model"
         maxLength: 1023
+        writeOnly: true
         ui_order: 0
         ui_component: "textarea_enable_counter"
       content:
@@ -101,6 +102,7 @@
         description: "Create and upload a zip file that contains all the model files from your computer"
         ui_order: 1
         ui_disabled: true
+        ui_hidden: true
         ui_component: "file"
   modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
