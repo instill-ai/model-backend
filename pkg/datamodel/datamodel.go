@@ -154,6 +154,11 @@ type LocalModelConfiguration struct {
 	Content     string `json:"content,omitempty"`
 }
 
+type LocalModelInstanceConfiguration struct {
+	ID      string `json:"id,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 type ListModelQuery struct {
 	Owner string
 }
