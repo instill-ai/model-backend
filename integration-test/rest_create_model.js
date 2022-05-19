@@ -24,9 +24,9 @@ export function CreateModelFromLocal() {
       let fd_cls = new FormData();
       let model_id_cls = randomString(10)
       let model_description = randomString(20)
-      fd_cls.append("name", "models/" + model_id_cls);
+      fd_cls.append("id", model_id_cls);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition_name", "model-definitions/local");
+      fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -58,9 +58,9 @@ export function CreateModelFromLocal() {
       let fd_det = new FormData();
       let model_id_det = randomString(10)
       model_description = randomString(20)
-      fd_det.append("name", "models/" + model_id_det);
+      fd_det.append("id", model_id_det);
       fd_det.append("description", model_description);
-      fd_det.append("model_definition_name", "model-definitions/local");
+      fd_det.append("model_definition", "model-definitions/local");
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
@@ -92,9 +92,9 @@ export function CreateModelFromLocal() {
       let fd_unspecified = new FormData();
       let model_id_unspecified = randomString(10)
       model_description = randomString(20)
-      fd_unspecified.append("name", "models/" + model_id_unspecified);
+      fd_unspecified.append("id", model_id_unspecified);
       fd_unspecified.append("description", model_description);
-      fd_unspecified.append("model_definition_name", "model-definitions/local");
+      fd_unspecified.append("model_definition", "model-definitions/local");
       fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),

@@ -29,9 +29,9 @@ export function GetModelInstance() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -98,9 +98,9 @@ export function GetModelInstance() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         let res_model = http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -173,9 +173,9 @@ export function ListModelInstance() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         let res_model = http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -208,12 +208,12 @@ export function ListModelInstance() {
         check(res_model_instance, {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
         });
-
-        let req = { permalink: `models/${res_model.json().model.uid}/instances/${res_model_instance.message.instance.uid}` }
+        
+        let req = { parent: `models/${res_model.json().model.id}` }
         check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', req, {}), {
             'ListModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'ListModelInstance instances[0] id': (r) => r && r.message.instances[0].id === `latest`,
-            'ListModelInstance instances[0] name': (r) => r && r.message.instance[0].name === `models/${model_id}/instances/latest`,
+            'ListModelInstance instances[0] name': (r) => r && r.message.instances[0].name === `models/${model_id}/instances/latest`,
             'ListModelInstance instances[0] uid': (r) => r && r.message.instances[0].uid === res_model_instance.message.instance.uid,
             'ListModelInstance instances[0] state': (r) => r && r.message.instances[0].state === "STATE_OFFLINE",
             'ListModelInstance instances[0] task': (r) => r && r.message.instances[0].task === "TASK_CLASSIFICATION",
@@ -223,12 +223,8 @@ export function ListModelInstance() {
             'ListModelInstance instances[0] updateTime': (r) => r && r.message.instances[0].updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
-            'ListModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
-        });
-
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
-            'ListModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+        check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', { parent: `models/non-existed` }), {
+            'ListModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
@@ -248,9 +244,9 @@ export function LookupModelInstance() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         let res_model = http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),

@@ -29,9 +29,9 @@ export function GetModel() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -97,9 +97,9 @@ export function ListModel() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -161,9 +161,9 @@ export function LookupModel() {
         let fd_cls = new FormData();
         let model_id = randomString(10)
         let model_description = randomString(20)
-        fd_cls.append("name", "models/" + model_id);
+        fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
-        fd_cls.append("model_definition_name", model_def_name);
+        fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
         let res = http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),

@@ -27,9 +27,9 @@ export function InferModel() {
       let fd_cls = new FormData();
       let model_id = randomString(10)
       let model_description = randomString(20)
-      fd_cls.append("name", "models/" + model_id);
+      fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition_name", model_def_name);
+      fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
@@ -223,9 +223,9 @@ export function InferModel() {
       let fd_det = new FormData();
       let model_id = randomString(10)
       let model_description = randomString(20)
-      fd_det.append("name", "models/" + model_id);
+      fd_det.append("id", model_id);
       fd_det.append("description", model_description);
-      fd_det.append("model_definition_name", model_def_name);
+      fd_det.append("model_definition", model_def_name);
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
@@ -437,9 +437,9 @@ export function InferModel() {
       let fd = new FormData();
       let model_id = randomString(10)
       let model_description = randomString(20)
-      fd.append("name", "models/" + model_id);
+      fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition_name", model_def_name);
+      fd.append("model_definition", model_def_name);
       fd.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
       check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),

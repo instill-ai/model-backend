@@ -478,19 +478,13 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		modelName := r.FormValue("name")
-		if modelName == "" {
-			makeJsonResponse(w, 400, "Missing parameter", "Model name need to be specified")
+		modelId := r.FormValue("id")
+		if modelId == "" {
+			makeJsonResponse(w, 400, "Missing parameter", "Model Id need to be specified")
 			return
 		}
 
-		modeId, err := getID(modelName)
-		if err != nil {
-			makeJsonResponse(w, 400, "Missing parameter", "Model name is invalid")
-			return
-		}
-
-		modelDefinitionName := r.FormValue("model_definition_name")
+		modelDefinitionName := r.FormValue("model_definition")
 		if modelDefinitionName == "" {
 			makeJsonResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
 			return
@@ -601,7 +595,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 				ModelDefinition: modelDefinitionName,
 				Configuration:   bModelConfig,
 			}},
-			ID:              modeId,
+			ID:              modelId,
 			ModelDefinition: modelDefinitionName,
 			Owner:           owner,
 			Visibility:      datamodel.ModelVisibility(visibility),
