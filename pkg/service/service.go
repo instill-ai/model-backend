@@ -210,14 +210,14 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 }
 
 func (s *service) CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error) {
-	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_BASIC); existingModel.ID != "" {
+	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL); existingModel.ID != "" {
 		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your workspace", model.ID)
 	}
 	if err := s.repository.CreateModel(*model); err != nil {
 		return &datamodel.Model{}, err
 	}
 
-	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_BASIC); err != nil {
+	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL); err != nil {
 		return &datamodel.Model{}, err
 	} else {
 		return &createdModel, nil
@@ -229,7 +229,7 @@ func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageT
 }
 
 func (s *service) DeleteModel(owner string, modelId string) error {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (s *service) DeleteModel(owner string, modelId string) error {
 }
 
 func (s *service) RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -272,7 +272,7 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 }
 
 func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -289,7 +289,7 @@ func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, e
 }
 
 func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}

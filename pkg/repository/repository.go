@@ -56,6 +56,18 @@ var GetModelSelectedFields = []string{
 	`"model"."update_time"`,
 }
 
+var GetModelSelectedFieldsWOConfiguration = []string{
+	`CONCAT('models/', id) as name`,
+	`"model"."uid"`,
+	`"model"."id"`,
+	`"model"."description"`,
+	`"model"."model_definition"`,
+	`"model"."visibility"`,
+	`"model"."owner"`,
+	`"model"."create_time"`,
+	`"model"."update_time"`,
+}
+
 func (r *repository) CreateModel(model datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
@@ -66,11 +78,11 @@ func (r *repository) CreateModel(model datamodel.Model) error {
 
 func (r *repository) GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
-	omit := ""
+	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
-		omit = "configuration"
+		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Omit(omit).Where(&datamodel.Model{Owner: owner, ID: modelId}).First(&model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelId}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelId, owner)
 	}
 	return model, nil
@@ -78,11 +90,11 @@ func (r *repository) GetModelById(owner string, modelId string, view modelPB.Vie
 
 func (r *repository) GetModelByUid(owner string, modelUid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
-	omit := ""
+	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
-		omit = "configuration"
+		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(GetModelSelectedFields).Omit(omit).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}).First(&model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUid, owner)
 	}
 	return model, nil

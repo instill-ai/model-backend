@@ -820,7 +820,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
 			Repository: modelConfig.Repository,
-			HtmlUrl:    modelConfig.HtmlUrl,
+			HtmlUrl:    "https://github.com/" + modelConfig.Repository,
 			Tag:        tag.Name,
 		}
 		rdid, _ := uuid.NewV4()

@@ -63,7 +63,7 @@ export default function (data) {
   queryModel.ListModel()
   queryModel.LookupModel()
 
-    // Deploy/Undeploy Model API
+  // Deploy/Undeploy Model API
   deployModel.DeployUndeployModel()
 
   // Infer Model API
@@ -76,7 +76,7 @@ export default function (data) {
   updateModel.UpdateModel()
 
   // Query Model Definition API
-  // queryModelDefinition.GetModelDefinition()
+  queryModelDefinition.GetModelDefinition()
   queryModelDefinition.ListModelDefinition()
 
   // Query Model Instance API
