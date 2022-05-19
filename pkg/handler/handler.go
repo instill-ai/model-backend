@@ -240,6 +240,11 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 	if err != nil {
 		return "", err
 	}
+	modelRootDir := strings.Join([]string{dstDir, owner}, "/")
+	err = os.MkdirAll(modelRootDir, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
 	for _, f := range files {
 		if f.path == modelDir {
 			continue
@@ -255,7 +260,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
 		if f.fInfo.IsDir() { // create new folder
-			err = os.Mkdir(filePath, os.ModePerm)
+			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
 				return "", err
 			}
@@ -272,6 +277,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 		if strings.Contains(filePath, "README") {
 			readmeFilePath = filePath
 		}
+
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
 		if err != nil {
 			return "", err
@@ -817,7 +823,6 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		Configuration:   bModelConfig,
 		Instances:       []datamodel.ModelInstance{},
 	}
-
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
 			Repository: modelConfig.Repository,
