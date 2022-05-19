@@ -603,7 +603,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			Configuration:   bModelConfig,
 		}
 
-		_, err = modelService.GetModelById(owner, uploadedModel.ID)
+		_, err = modelService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 		if err == nil {
 			makeJsonResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 			return
@@ -675,7 +675,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	if err != nil {
 		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
-	_, err = h.service.GetModelById(owner, uploadedModel.ID)
+	_, err = h.service.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return makeError(codes.AlreadyExists, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 	}
@@ -744,7 +744,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, err
 	}
 
-	_, err = h.service.GetModelById(owner, req.Model.Id)
+	_, err = h.service.GetModelById(owner, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.AlreadyExists, "Add Model Error", "Model already existed")
 	}
@@ -757,7 +757,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
 
-	_, err = h.service.GetModelById(owner, req.Model.Id)
+	_, err = h.service.GetModelById(owner, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return &modelPB.CreateModelResponse{}, fmt.Errorf("The model %v already existed", req.Model.Id)
 	}
@@ -921,7 +921,7 @@ func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUid(owner, uid)
+	dbModel, err := h.service.GetModelByUid(owner, uid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -938,7 +938,7 @@ func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(owner, id)
+	dbModel, err := h.service.GetModelById(owner, id, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
@@ -955,7 +955,7 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(owner, id)
+	dbModel, err := h.service.GetModelById(owner, id, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
@@ -1057,12 +1057,12 @@ func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
@@ -1084,7 +1084,7 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUid(owner, modelUid)
+	dbModel, err := h.service.GetModelByUid(owner, modelUid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -1092,7 +1092,7 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModelInstance, err := h.service.GetModelInstanceByUid(dbModel.UID, instanceUid)
+	dbModelInstance, err := h.service.GetModelInstanceByUid(dbModel.UID, instanceUid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
@@ -1111,7 +1111,7 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
-	modelInDB, err := h.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId, req.GetView())
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
@@ -1146,12 +1146,12 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
@@ -1161,7 +1161,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
@@ -1181,12 +1181,12 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
@@ -1196,7 +1196,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId)
+	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
@@ -1220,11 +1220,11 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 		return makeError(500, "TriggerModelInstanceBinaryFileUpload", "Could not save the file")
 	}
 
-	modelInDB, err := h.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The model %v do not exist", modelId))
 	}
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceId)
+	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The model instance %v do not exist", instanceId))
 	}
@@ -1272,12 +1272,12 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		return &modelPB.TriggerModelInstanceResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetModelById(owner, modelId)
+	modelInDB, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.NotFound, "TriggerModelInstance", fmt.Sprintf("The model instance named %v not found in server", req.Name))
 	}
 
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceId)
+	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.NotFound, "TriggerModelInstance", fmt.Sprintf("The model %v  with instance %v not found in server", modelId, modelInstanceId))
 	}
@@ -1346,13 +1346,13 @@ func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 
-		modelInDB, err := modelService.GetModelById(owner, modelId)
+		modelInDB, err := modelService.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJsonResponse(w, 404, "Model not found", "The model not found in server")
 			return
 		}
 
-		modelInstanceInDB, err := modelService.GetModelInstance(modelInDB.UID, instanceId)
+		modelInstanceInDB, err := modelService.GetModelInstance(modelInDB.UID, instanceId, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJsonResponse(w, 404, "Model instance not found", "The model instance not found in server")
 			return
@@ -1429,12 +1429,12 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelId)
+	dbModel, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
 
-	_, err = h.service.GetModelInstance(dbModel.UID, instanceId)
+	_, err = h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}

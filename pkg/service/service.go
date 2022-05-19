@@ -21,8 +21,8 @@ import (
 
 type Service interface {
 	CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error)
-	GetModelById(owner string, modelId string) (datamodel.Model, error)
-	GetModelByUid(owner string, modelUid uuid.UUID) (datamodel.Model, error)
+	GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUid(owner string, modelUid uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(owner string, modelId string) error
 	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
 	PublishModel(owner string, modelId string) (datamodel.Model, error)
@@ -30,8 +30,8 @@ type Service interface {
 	UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
-	GetModelInstance(modelUid uuid.UUID, instanceId string) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUid uuid.UUID, instanceUid uuid.UUID) (datamodel.ModelInstance, error)
+	GetModelInstance(modelUid uuid.UUID, instanceId string, view modelPB.View) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUid uuid.UUID, instanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
 	DeployModelInstance(modelInstanceId uuid.UUID) error
 	UndeployModelInstance(modelInstanceId uuid.UUID) error
@@ -108,12 +108,12 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 	return nil
 }
 
-func (s *service) GetModelById(owner string, modelId string) (datamodel.Model, error) {
-	return s.repository.GetModelById(owner, modelId)
+func (s *service) GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelById(owner, modelId, view)
 }
 
-func (s *service) GetModelByUid(owner string, uid uuid.UUID) (datamodel.Model, error) {
-	return s.repository.GetModelByUid(owner, uid)
+func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByUid(owner, uid, view)
 }
 
 func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error) {
@@ -210,14 +210,14 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 }
 
 func (s *service) CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error) {
-	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID); existingModel.ID != "" {
+	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_BASIC); existingModel.ID != "" {
 		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your workspace", model.ID)
 	}
 	if err := s.repository.CreateModel(*model); err != nil {
 		return &datamodel.Model{}, err
 	}
 
-	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID); err != nil {
+	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_BASIC); err != nil {
 		return &datamodel.Model{}, err
 	} else {
 		return &createdModel, nil
@@ -229,7 +229,7 @@ func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageT
 }
 
 func (s *service) DeleteModel(owner string, modelId string) error {
-	modelInDB, err := s.GetModelById(owner, modelId)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (s *service) DeleteModel(owner string, modelId string) error {
 }
 
 func (s *service) RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -268,11 +268,11 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(owner, newModelId)
+	return s.GetModelById(owner, newModelId, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -285,11 +285,11 @@ func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, e
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(owner, modelId)
+	return s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId)
+	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -302,7 +302,7 @@ func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model,
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(owner, modelId)
+	return s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
@@ -311,15 +311,15 @@ func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datam
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(model.Owner, model.ID)
+	return s.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) GetModelInstance(modelUid uuid.UUID, modelInstanceId string) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstance(modelUid, modelInstanceId)
+func (s *service) GetModelInstance(modelUid uuid.UUID, modelInstanceId string, view modelPB.View) (datamodel.ModelInstance, error) {
+	return s.repository.GetModelInstance(modelUid, modelInstanceId, view)
 }
 
-func (s *service) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstanceByUid(modelUid, modelInstanceUid)
+func (s *service) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
+	return s.repository.GetModelInstanceByUid(modelUid, modelInstanceUid, view)
 }
 
 func (s *service) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
