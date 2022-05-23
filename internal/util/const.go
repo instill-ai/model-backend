@@ -22,6 +22,3 @@ const (
 
 const MaxBatchSize int = 32
 const MaxImageSizeBytes int = 4 * MB
-
-const USER_ID = "2a06c2f7-8da9-4046-91ea-240f88a5d729"
-const TYPE_USER = "user"

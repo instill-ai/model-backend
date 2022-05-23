@@ -467,8 +467,8 @@ func (h *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (
 func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
-		owner := r.Header.Get("owner")
-		if owner == "" {
+		owner, err := getOwnerFromHeader(r)
+		if err != nil || owner == "" {
 			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
 			return
 		}
@@ -725,6 +725,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 
 func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
 	owner, err := getOwner(ctx)
+	fmt.Println(">>>>>>>>>>owner ", owner)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
@@ -1322,9 +1323,8 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
-		owner := r.Header.Get("owner")
-
-		if owner == "" {
+		owner, err := getOwnerFromHeader(r)
+		if err != nil || owner == "" {
 			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
 			return
 		}

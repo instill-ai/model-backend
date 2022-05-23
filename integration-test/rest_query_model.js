@@ -48,7 +48,7 @@ export function GetModel() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -75,7 +75,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -102,7 +102,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -155,7 +155,7 @@ export function ListModel() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -188,7 +188,7 @@ export function ListModel() {
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
-          r.json().models[0].user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().models[0].user === 'users/local-user',
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
@@ -223,7 +223,7 @@ export function ListModel() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
-          r.json().models[0].user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().models[0].user === 'users/local-user',
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
@@ -274,7 +274,7 @@ export function LookupModel() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -301,7 +301,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.update_time`]: (r) =>
@@ -328,7 +328,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.update_time`]: (r) =>

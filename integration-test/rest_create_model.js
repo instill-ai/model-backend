@@ -48,7 +48,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
@@ -82,7 +82,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task det response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task det response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task det response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task det response model.update_time": (r) =>
@@ -116,7 +116,7 @@ export function CreateModelFromLocal() {
         "POST /v1alpha/models:multipart task unspecified response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task unspecified response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task unspecified response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task unspecified response model.update_time": (r) =>
@@ -186,7 +186,7 @@ export function CreateModelFromGitHub() {
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+          r.json().model.user === 'users/local-user',
         "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>

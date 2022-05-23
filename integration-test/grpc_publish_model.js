@@ -54,7 +54,7 @@ export function PublishUnPublishModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.visibility": (r) =>
                 r.json().model.visibility === "VISIBILITY_PRIVATE",
             "POST /v1alpha/models:multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+                r.json().model.user === 'users/local-user',
             "POST /v1alpha/models:multipart (multipart) task cls response model.create_time": (r) =>
                 r.json().model.create_time !== undefined,
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
@@ -70,7 +70,7 @@ export function PublishUnPublishModel() {
             "PublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "PublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "PublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PUBLIC",
-            "PublishModel response model.owner": (r) => r.message.model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+            "PublishModel response model.owner": (r) => r.message.model.user === 'users/local-user',
             "PublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "PublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
@@ -84,7 +84,7 @@ export function PublishUnPublishModel() {
             "UnpublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "UnpublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "UnpublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "UnpublishModel response model.owner": (r) => r.message.model.user === 'users/2a06c2f7-8da9-4046-91ea-240f88a5d729',
+            "UnpublishModel response model.owner": (r) => r.message.model.user === 'users/local-user',
             "UnpublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });

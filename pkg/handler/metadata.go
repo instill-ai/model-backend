@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -23,10 +25,18 @@ func getOwner(ctx context.Context) (string, error) {
 		if len(metadatas) == 0 {
 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
 		}
-		return metadatas[0], nil
+		//TODO: get user info from mgmt-backend
+		return "users/local-user", nil
 	} else {
 		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
 	}
+}
+
+func getOwnerFromHeader(r *http.Request) (string, error) {
+	owner := r.Header.Get("owner")
+	fmt.Println("owner", owner)
+	//TODO: get user info from mgmt-backend
+	return "users/local-user", nil
 }
 
 func getID(name string) (string, error) {
