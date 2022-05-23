@@ -6,18 +6,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/gernest/front"
 	"github.com/iancoleman/strcase"
-	"github.com/mitchellh/mapstructure"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/config"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/mitchellh/mapstructure"
 )
 
 type ModelMeta struct {
@@ -45,36 +42,17 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	return &modelMeta, err
 }
 
-func GitHubClone(dir string, github datamodel.GitHubModelInstanceConfiguration) error {
-	urlRepo := github.Repository
+func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
+	urlRepo := instanceConfig.Repository
 	if !strings.HasPrefix(urlRepo, "https://github.com") {
 		urlRepo = "https://github.com/" + urlRepo
 	}
-	if !strings.HasSuffix(github.Repository, ".git") {
+	if !strings.HasSuffix(urlRepo, ".git") {
 		urlRepo = urlRepo + ".git"
 	}
 
-	r, err := git.PlainClone(dir, false, &git.CloneOptions{
-		URL: urlRepo,
-	})
-	if err != nil {
-		return err
-	}
-	w, err := r.Worktree()
-	if err != nil {
-		return err
-	}
-	err = r.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{"refs/*:refs/*", "HEAD:refs/heads/HEAD"},
-	})
-	if err != nil {
-		return err
-	}
-
-	return w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/tags/%s", github.Tag)),
-		Force:  true,
-	})
+	cmd := exec.Command("git", "clone", "-b", instanceConfig.Tag, urlRepo, dir)
+	return cmd.Run()
 }
 
 type Tag struct {
