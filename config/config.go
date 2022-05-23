@@ -1,4 +1,4 @@
-package configs
+package config
 
 import (
 	"flag"
@@ -62,16 +62,19 @@ func Init() error {
 	parser := yaml.Parser()
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	fileRelativePath := fs.String("file", "configs/config.yaml", "configuration file")
+	fileRelativePath := fs.String("file", "config/config.yaml", "configuration file")
 	flag.Parse()
 
 	if err := k.Load(file.Provider(*fileRelativePath), parser); err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	if err := k.Load(env.Provider("CFG_", ".", func(s string) string {
-		return strings.Replace(strings.ToLower(
-			strings.TrimPrefix(s, "CFG_")), "_", ".", -1)
+	if err := k.Load(env.ProviderWithValue("CFG_", ".", func(s string, v string) (string, interface{}) {
+		key := strings.Replace(strings.ToLower(strings.TrimPrefix(s, "CFG_")), "_", ".", -1)
+		if strings.Contains(v, ",") {
+			return key, strings.Split(strings.TrimSpace(v), ",")
+		}
+		return key, v
 	}), nil); err != nil {
 		return err
 	}

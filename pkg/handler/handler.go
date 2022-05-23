@@ -30,7 +30,7 @@ import (
 
 	"github.com/qri-io/jsonschema"
 
-	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/internal/util"
@@ -609,17 +609,17 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		readmeFilePath, err := unzip(tmpFile, configs.Config.TritonServer.ModelStore, owner, &uploadedModel)
+		readmeFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJsonResponse(w, 400, "Add Model Error", err.Error())
 			return
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil {
-				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 				makeJsonResponse(w, 400, "Add Model Error", err.Error())
 				return
 			}
@@ -629,7 +629,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 				if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 					uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
 				} else {
-					util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 					makeJsonResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 					return
 				}
@@ -640,7 +640,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		dbModel, err := modelService.CreateModel(owner, &uploadedModel)
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -654,7 +654,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		var buffer bytes.Buffer
 		err = m.Marshal(&buffer, &modelPB.CreateModelResponse{Model: pbModel})
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJsonResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -683,16 +683,16 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	uploadedModel.Owner = owner
 
 	// extract zip file from tmp to models directory
-	readmeFilePath, err := unzip(tmpFile, configs.Config.TritonServer.ModelStore, owner, uploadedModel)
+	readmeFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			return makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 		}
 		if modelMeta.Task == "" {
@@ -701,7 +701,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
 			} else {
-				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 				return makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
 			}
 		}
@@ -711,7 +711,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 
 	dbModel, err := h.service.CreateModel(owner, uploadedModel)
 	if err != nil {
-		util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
 	}
 	pbModel := DBModelToPBModel(dbModel)
@@ -827,7 +827,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 		err = util.GitHubClone(modelSrcDir, instanceConfig)
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 			return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 		}
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
@@ -838,23 +838,23 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 			Configuration:   bInstanceConfig,
 		}
 
-		readmeFilePath, err := updateModelPath(modelSrcDir, configs.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
+		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 			return &modelPB.CreateModelResponse{}, err
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil || modelMeta.Task == "" {
-				util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 				return &modelPB.CreateModelResponse{}, err
 			}
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
 				if modelMeta.Task != "" {
-					util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, instance.ID)
+					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, instance.ID)
 					return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", "README.md contains unsupported task")
 				} else {
 					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
@@ -869,7 +869,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	dbModel, err := h.service.CreateModel(owner, &githubModel)
 	if err != nil {
 		for _, tag := range githubInfo.Tags {
-			util.RemoveModelRepository(configs.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 		}
 		return &modelPB.CreateModelResponse{}, err
 	}
@@ -1439,7 +1439,7 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 		return &modelPB.GetModelInstanceCardResponse{}, err
 	}
 
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, owner, modelId, instanceId)
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelId, instanceId)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err

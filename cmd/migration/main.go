@@ -9,10 +9,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
-	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/config"
 )
 
-func checkExist(databaseConfig configs.DatabaseConfig) error {
+func checkExist(databaseConfig config.DatabaseConfig) error {
 	db, err := sql.Open(
 		"postgres",
 		fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%d sslmode=disable TimeZone=%s",
@@ -74,8 +74,8 @@ func checkExist(databaseConfig configs.DatabaseConfig) error {
 func main() {
 	migrateFolder, _ := os.Getwd()
 
-	_ = configs.Init()
-	databaseConfig := configs.Config.Database
+	_ = config.Init()
+	databaseConfig := config.Config.Database
 	if err := checkExist(databaseConfig); err != nil {
 		panic(err)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 
-	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -240,12 +240,12 @@ func (s *service) DeleteModel(owner string, modelId string) error {
 				return err
 			}
 			// remove README.md
-			_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", configs.Config.TritonServer.ModelStore, owner, modelInDB.ID, modelInstancesInDB[i].ID))
+			_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelInDB.ID, modelInstancesInDB[i].ID))
 			tritonModels, err := s.repository.GetTritonModels(modelInstancesInDB[i].UID)
 			if err == nil {
 				// remove model folders
 				for i := 0; i < len(tritonModels); i++ {
-					modelDir := filepath.Join(configs.Config.TritonServer.ModelStore, tritonModels[i].Name)
+					modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
 					_ = os.RemoveAll(modelDir)
 				}
 			}

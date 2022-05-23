@@ -3,7 +3,7 @@ server:
   https:
     cert:   # /ssl/tls.crt
     key:    # /ssl/tls.key
-  cors-origins:
+  corsorigins:
     - http://localhost
     - https://instill-inc.tech
     - https://instill.tech
