@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "$id": "https://github.com/instill-ai/model-backend/blob/main/configs/models/model.json",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model.json",
   "type": "object",
   "title": "Model",
   "description": "The model data structure",

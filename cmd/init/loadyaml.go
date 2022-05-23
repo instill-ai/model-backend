@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	seedDir = "configs/init/%s/seed/%s"
+	seedDir = "config/init/%s/seed/%s"
 )
 
 func loadDefinitions(modelDefs *[]*modelPB.ModelDefinition) error {

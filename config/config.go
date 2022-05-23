@@ -23,7 +23,7 @@ type ServerConfig struct {
 	CORSOrigins []string
 }
 
-// Configs related to database
+// config related to database
 type DatabaseConfig struct {
 	Username string
 	Password string
