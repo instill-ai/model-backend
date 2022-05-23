@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -22,7 +23,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
-	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/handler"
@@ -33,16 +34,22 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
-func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
+func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigins []string) http.Handler {
 	return h2c.NewHandler(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-				grpcServer.ServeHTTP(w, r)
-			} else {
-				gwHandler.ServeHTTP(w, r)
-			}
-		}),
-		&http2.Server{})
+		cors.New(cors.Options{
+			AllowedOrigins:   CORSOrigins,
+			AllowCredentials: true,
+			Debug:            false,
+		}).Handler(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+					grpcServer.ServeHTTP(w, r)
+				} else {
+					gwHandler.ServeHTTP(w, r)
+				}
+			})),
+		&http2.Server{},
+	)
 }
 
 func main() {
@@ -53,7 +60,7 @@ func main() {
 	}()
 	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
-	if err := configs.Init(); err != nil {
+	if err := config.Init(); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -63,8 +70,8 @@ func main() {
 	// Create tls based credential.
 	var creds credentials.TransportCredentials
 	var err error
-	if configs.Config.Server.HTTPS.Cert != "" && configs.Config.Server.HTTPS.Key != "" {
-		creds, err = credentials.NewServerTLSFromFile(configs.Config.Server.HTTPS.Cert, configs.Config.Server.HTTPS.Key)
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
+		creds, err = credentials.NewServerTLSFromFile(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key)
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("failed to create credentials: %v", err))
 		}
@@ -96,7 +103,7 @@ func main() {
 			grpc_recovery.UnaryServerInterceptor(recoveryInterceptorOpt()),
 		)),
 	}
-	if configs.Config.Server.HTTPS.Cert != "" && configs.Config.Server.HTTPS.Key != "" {
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
@@ -142,27 +149,26 @@ func main() {
 	}
 
 	var dialOpts []grpc.DialOption
-	if configs.Config.Server.HTTPS.Cert != "" && configs.Config.Server.HTTPS.Key != "" {
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(creds)}
 	} else {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	}
 
-	if err := modelPB.RegisterModelServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", configs.Config.Server.Port), dialOpts); err != nil {
+	if err := modelPB.RegisterModelServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
-
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%v", configs.Config.Server.Port),
-		Handler: grpcHandlerFunc(grpcS, gwS),
+		Addr:    fmt.Sprintf(":%v", config.Config.Server.Port),
+		Handler: grpcHandlerFunc(grpcS, gwS, config.Config.Server.CORSOrigins),
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
 	quitSig := make(chan os.Signal, 1)
 	errSig := make(chan error)
-	if configs.Config.Server.HTTPS.Cert != "" && configs.Config.Server.HTTPS.Key != "" {
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		go func() {
-			if err := httpServer.ListenAndServeTLS(configs.Config.Server.HTTPS.Cert, configs.Config.Server.HTTPS.Key); err != nil {
+			if err := httpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
 				errSig <- err
 			}
 		}()

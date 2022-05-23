@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/instill-ai/model-backend/configs"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 
 	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
@@ -44,7 +44,7 @@ func NewTriton() Triton {
 }
 
 func (ts *triton) Init() {
-	grpcUri := configs.Config.TritonServer.GrpcUri
+	grpcUri := config.Config.TritonServer.GrpcUri
 	// Connect to gRPC server
 	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
