@@ -62,7 +62,7 @@ export function InferModel() {
         });
 
         let req = { name: `models/${model_id}/instances/latest` }
-        check(client.invoke('instill.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
             'DeployModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
@@ -76,7 +76,7 @@ export function InferModel() {
         });
         sleep(5) // triton take time after update status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModelInstance output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
             'TriggerModelInstance output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
@@ -84,19 +84,19 @@ export function InferModel() {
         });
 
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
             'TriggerModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
             'TriggerModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/non-existed.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/non-existed.jpg" }] }, {}), {
             'TriggerModelInstance non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

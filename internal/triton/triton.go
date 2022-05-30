@@ -14,7 +14,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 type Triton interface {

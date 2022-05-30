@@ -25,7 +25,7 @@ export function CreateModel() {
         client.connect('localhost:8083', {
             plaintext: true
         });
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
             'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
@@ -39,7 +39,7 @@ export function CreateModel() {
             plaintext: true
         });
         let model_id = randomString(10)
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: model_id,
                 model_definition: model_def_name,
@@ -61,7 +61,7 @@ export function CreateModel() {
         });
 
         let req = { name: `models/${model_id}/instances/v1.0` }
-        check(client.invoke('instill.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance instance id': (r) => r && r.message.instance.id === `v1.0`,
             'DeployModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/v1.0`,
@@ -75,14 +75,14 @@ export function CreateModel() {
         });
         sleep(5) // triton take time after update status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModelInstance output classification_outputs length': (r) => r && r.message.output.classification_outputs.length === 1,
             'TriggerModelInstance output classification_outputs category': (r) => r && r.message.output.classification_outputs[0].category === "match",
             'TriggerModelInstance output classification_outputs score': (r) => r && r.message.output.classification_outputs[0].score === 1,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: randomString(10),
@@ -94,7 +94,7 @@ export function CreateModel() {
             'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: model_def_name,
@@ -106,7 +106,7 @@ export function CreateModel() {
             'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 model_definition: model_def_name,
                 configuration: JSON.stringify({
@@ -117,7 +117,7 @@ export function CreateModel() {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: model_def_name,
@@ -126,7 +126,7 @@ export function CreateModel() {
             'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
 

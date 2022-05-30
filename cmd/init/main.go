@@ -10,7 +10,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/logger"
 
 	database "github.com/instill-ai/model-backend/internal/db"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {

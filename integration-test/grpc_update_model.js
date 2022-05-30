@@ -61,7 +61,7 @@ export function UpdateModel() {
                 r.json().model.update_time !== undefined,
         });
 
-        let res = client.invoke('instill.model.v1alpha.ModelService/UpdateModel', {
+        let res = client.invoke('vdp.model.v1alpha.ModelService/UpdateModel', {
             model: {
                 name: "models/" + model_id,
                 description: "new_description"
@@ -82,7 +82,7 @@ export function UpdateModel() {
             "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

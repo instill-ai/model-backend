@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 func upload(c *cli.Context) error {
