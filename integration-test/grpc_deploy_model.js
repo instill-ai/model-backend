@@ -61,7 +61,7 @@ export function DeployUndeployModel() {
         });
 
         let req = { name: `models/${model_id}/instances/latest` }
-        check(client.invoke('instill.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
             'DeployModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
@@ -75,15 +75,15 @@ export function DeployUndeployModel() {
         });
         sleep(5) // triton take time after update status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeployModelInstance', { name: `models/non-existed/instances/latest` }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', { name: `models/non-existed/instances/latest` }), {
             'DeployModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeployModelInstance', { name: `models/${model_id}/instances/non-existed` }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', { name: `models/${model_id}/instances/non-existed` }, {}), {
             'DeployModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

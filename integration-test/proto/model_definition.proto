@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package instill.model.v1alpha;
+package vdp.model.v1alpha;
 
 // Protocol Buffers Well-Known Types
 import "google/protobuf/struct.proto";

@@ -10,7 +10,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 // MockService is a mock of Service interface.

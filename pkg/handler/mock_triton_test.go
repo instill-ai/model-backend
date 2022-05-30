@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 // MockTriton is a mock of Triton interface.

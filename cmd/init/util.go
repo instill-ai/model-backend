@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/instill-ai/model-backend/internal/util"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 // unmarshalModelPB unmarshals a slice of JSON object into a Protobuf Message Go struct element by element

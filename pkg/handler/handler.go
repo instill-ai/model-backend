@@ -39,7 +39,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	database "github.com/instill-ai/model-backend/internal/db"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"github.com/instill-ai/x/checkfield"
 )
 
@@ -448,18 +449,18 @@ func makeJsonResponse(w http.ResponseWriter, status int, title string, detail st
 
 func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.LivenessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
 
-	return &modelPB.LivenessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
+	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
 func (h *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.ReadinessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
 
-	return &modelPB.ReadinessResponse{HealthCheckResponse: &modelPB.HealthCheckResponse{Status: modelPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
+	return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
 ///////////////////////////////////////////////////////

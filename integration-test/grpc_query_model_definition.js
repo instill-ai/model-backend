@@ -24,7 +24,7 @@ export function GetModelDefinition() {
         client.connect('localhost:8083', {
             plaintext: true
         });
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModelDefinition', { name: model_def_name }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModelDefinition', { name: model_def_name }, {}), {
             "GetModelDefinition response status": (r) => r.status === grpc.StatusOK,
             "GetModelDefinition response modelDefinition.name": (r) => r.message.modelDefinition.name === model_def_name,
             "GetModelDefinition response modelDefinition.uid": (r) => r.message.modelDefinition.uid !== undefined,
@@ -46,7 +46,7 @@ export function ListModelDefinition() {
         client.connect('localhost:8083', {
             plaintext: true
         });
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModelDefinition', {}, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/ListModelDefinition', {}, {}), {
             "ListModelDefinition response status": (r) => r.status === grpc.StatusOK,
             "ListModelDefinition response modelDefinitions[0].name": (r) => r.message.modelDefinitions[0].name === "model-definitions/local",
             "ListModelDefinition response modelDefinitions[0].uid": (r) => r.message.modelDefinitions[0].uid !== undefined,

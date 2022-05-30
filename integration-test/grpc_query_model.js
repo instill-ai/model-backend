@@ -60,7 +60,7 @@ export function GetModel() {
                 r.json().model.update_time !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModel', { name: "models/" + model_id }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModel', { name: "models/" + model_id }, {}), {
             "GetModel response status": (r) => r.status === grpc.StatusOK,
             "GetModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
             "GetModel response model.uid": (r) => r.message.model.uid !== undefined,
@@ -74,12 +74,12 @@ export function GetModel() {
             "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModel', { name: "models/" + randomString(10) }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModel', { name: "models/" + randomString(10) }, {}), {
             'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
@@ -127,7 +127,7 @@ export function ListModel() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
                 r.json().model.update_time !== undefined,
         });
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModel', {}, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}), {
             "ListModel response status": (r) => r.status === grpc.StatusOK,
             "ListModel response total_size": (r) => r.message.totalSize == 1,
             "ListModel response next_page_token": (r) => r.message.nextPageToken !== undefined,
@@ -144,7 +144,7 @@ export function ListModel() {
             "ListModel response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
@@ -193,7 +193,7 @@ export function LookupModel() {
                 r.json().model.update_time !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModel', { permalink: "models/" + res.json().model.uid }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModel', { permalink: "models/" + res.json().model.uid }, {}), {
             "LookUpModel response status": (r) => r.status === grpc.StatusOK,
             "LookUpModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
             "LookUpModel response model.uid": (r) => r.message.model.uid === res.json().model.uid,
@@ -207,11 +207,11 @@ export function LookupModel() {
             "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModel', { permalink: "models/" + randomString(10) }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModel', { permalink: "models/" + randomString(10) }, {}), {
             'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

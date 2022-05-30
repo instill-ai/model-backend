@@ -11,7 +11,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 type ModelInstanceState modelPB.ModelInstance_State

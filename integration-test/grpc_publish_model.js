@@ -61,7 +61,7 @@ export function PublishUnPublishModel() {
                 r.json().model.update_time !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/PublishModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/PublishModel', { name: "models/" + model_id }), {
             "PublishModel response status": (r) => r.status === grpc.StatusOK,
             "PublishModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
             "PublishModel response model.uid": (r) => r.message.model.uid !== undefined,
@@ -75,7 +75,7 @@ export function PublishUnPublishModel() {
             "PublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/UnpublishModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/UnpublishModel', { name: "models/" + model_id }), {
             "UnpublishModel response status": (r) => r.status === grpc.StatusOK,
             "UnpublishModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
             "UnpublishModel response model.uid": (r) => r.message.model.uid !== undefined,
@@ -89,15 +89,15 @@ export function PublishUnPublishModel() {
             "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/PublishModel', { name: "models/" + randomString(10) }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/PublishModel', { name: "models/" + randomString(10) }), {
             "PublishModel response not found status": (r) => r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/UnpublishModel', { name: "models/" + randomString(10) }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/UnpublishModel', { name: "models/" + randomString(10) }), {
             "UnpublishModel response not found status": (r) => r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

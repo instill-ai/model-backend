@@ -12,7 +12,7 @@ import (
 
 	"github.com/instill-ai/model-backend/internal/util"
 
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 // Internally used image metadata

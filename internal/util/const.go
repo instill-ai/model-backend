@@ -1,6 +1,6 @@
 package util
 
-import modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+import modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 
 var Tasks = map[string]modelPB.ModelInstance_Task{
 	"TASK_CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,

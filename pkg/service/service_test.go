@@ -12,7 +12,7 @@ import (
 	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
-	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 )
 

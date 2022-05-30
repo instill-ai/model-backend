@@ -61,7 +61,7 @@ export function GetModelInstance() {
         });
 
         let req = { name: `models/${model_id}/instances/latest` }
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', req, {}), {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'GetModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
             'GetModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
@@ -75,15 +75,15 @@ export function GetModelInstance() {
         });
         sleep(5) // triton take time after update status
 
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', { name: `models/non-existed/instances/latest` }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/non-existed/instances/latest` }), {
             'UpdateModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/non-existed` }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/non-existed` }, {}), {
             'UpdateModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
@@ -129,13 +129,13 @@ export function GetModelInstance() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
                 r.json().model.update_time !== undefined,
         });
-        let res_model_instance = client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
+        let res_model_instance = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
         check(res_model_instance, {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
         });
 
         let req = { permalink: `models/${res_model.json().model.uid}/instances/${res_model_instance.message.instance.uid}` }
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', req, {}), {
             'LookUpModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'LookUpModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
             'LookUpModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
@@ -148,15 +148,15 @@ export function GetModelInstance() {
             'LookUpModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
             'LookUpModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
             'LookUpModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
@@ -204,13 +204,13 @@ export function ListModelInstance() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
                 r.json().model.update_time !== undefined,
         });
-        let res_model_instance = client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
+        let res_model_instance = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
         check(res_model_instance, {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
         });
         
         let req = { parent: `models/${res_model.json().model.id}` }
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/ListModelInstance', req, {}), {
             'ListModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'ListModelInstance instances[0] id': (r) => r && r.message.instances[0].id === `latest`,
             'ListModelInstance instances[0] name': (r) => r && r.message.instances[0].name === `models/${model_id}/instances/latest`,
@@ -223,11 +223,11 @@ export function ListModelInstance() {
             'ListModelInstance instances[0] updateTime': (r) => r && r.message.instances[0].updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/ListModelInstance', { parent: `models/non-existed` }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/ListModelInstance', { parent: `models/non-existed` }), {
             'ListModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
@@ -275,13 +275,13 @@ export function LookupModelInstance() {
             "POST /v1alpha/models:multipart (multipart) task cls response model.update_time": (r) =>
                 r.json().model.update_time !== undefined,
         });
-        let res_model_instance = client.invoke('instill.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
+        let res_model_instance = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
         check(res_model_instance, {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
         });
 
         let req = { permalink: `models/${res_model.json().model.uid}/instances/${res_model_instance.message.instance.uid}` }
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', req, {}), {
             'LookUpModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'LookUpModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
             'LookUpModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
@@ -294,15 +294,15 @@ export function LookupModelInstance() {
             'LookUpModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
             'LookUpModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
             'LookUpModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('instill.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
