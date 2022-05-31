@@ -68,7 +68,7 @@ services:
 
   triton_server:
     container_name: triton-server
-    image: nvcr.io/nvidia/tritonserver:22.01-py3
+    image: nvcr.io/nvidia/tritonserver:22.05-py3
     restart: unless-stopped
     command: tritonserver --model-store=/model-repository --model-control-mode=explicit --allow-http=true --strict-model-config=false
     volumes:

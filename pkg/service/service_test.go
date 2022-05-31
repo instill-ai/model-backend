@@ -18,18 +18,19 @@ import (
 
 const ID = "modelID"
 const OWNER = "users/909c3278-f7d1-461c-9352-87741bef1ds1"
-const MODEL_DEFINTION = "909c3278-f7d1-461c-9352-87741bef11d3"
+
+var MODEL_DEFINITION, _ = uuid.FromString("909c3278-f7d1-461c-9352-87741bef11d3")
 
 func TestCreateModel(t *testing.T) {
 	t.Run("CreateModel", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uuid.UUID{}},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -54,11 +55,11 @@ func TestGetModelById(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uuid.UUID{}},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -79,11 +80,11 @@ func TestGetModelByUid(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -104,11 +105,11 @@ func TestDeleteModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -139,11 +140,11 @@ func TestRenameModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -162,11 +163,11 @@ func TestRenameModel(t *testing.T) {
 			EXPECT().
 			GetModelById(gomock.Eq(OWNER), "new ID", modelPB.View_VIEW_FULL).
 			Return(datamodel.Model{
-				BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-				ID:              "new ID",
-				Description:     "this is a test model",
-				ModelDefinition: MODEL_DEFINTION,
-				Owner:           OWNER,
+				BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+				ID:                 "new ID",
+				Description:        "this is a test model",
+				ModelDefinitionUid: MODEL_DEFINITION,
+				Owner:              OWNER,
 			}, nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil)
@@ -182,11 +183,11 @@ func TestPublishModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -220,11 +221,11 @@ func TestUnpublishModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "this is a test model",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "this is a test model",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
@@ -258,11 +259,11 @@ func TestUpdateModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:     datamodel.BaseDynamic{UID: uid},
-			ID:              ID,
-			Description:     "new description",
-			ModelDefinition: MODEL_DEFINTION,
-			Owner:           OWNER,
+			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+			ID:                 ID,
+			Description:        "new description",
+			ModelDefinitionUid: MODEL_DEFINITION,
+			Owner:              OWNER,
 		}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.

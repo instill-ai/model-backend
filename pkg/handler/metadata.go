@@ -56,7 +56,7 @@ func getUserNameByUid(uid string) string {
 	return "local-user"
 }
 
-func getDefinitionUID(name string) (string, error) {
+func getDefinitionID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
 	if !strings.HasPrefix(name, "model-definitions/") || id == "" {
 		return "", status.Error(codes.InvalidArgument, "Error when extract model-definitions resource id")

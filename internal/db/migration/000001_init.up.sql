@@ -33,13 +33,16 @@ CREATE TABLE IF NOT EXISTS "model" (
   "uid" UUID PRIMARY KEY,
   "id" VARCHAR(63) NOT NULL,
   "description" varchar(1024),
-  "model_definition" varchar(255) NOT NULL,
+  "model_definition_uid" UUID NOT NULL,
   "configuration" JSONB NULL,
   "visibility" VALID_VISIBILITY DEFAULT 'VISIBILITY_PRIVATE' NOT NULL,
   "owner" VARCHAR(255) NULL,
   "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL
+  "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+  CONSTRAINT fk_model_definition_uid
+    FOREIGN KEY ("model_definition_uid")
+    REFERENCES model_definition("uid")
 );
 CREATE UNIQUE INDEX unique_owner_id_delete_time ON model ("owner", "id")
 WHERE "delete_time" IS NULL;
@@ -50,14 +53,13 @@ CREATE TABLE IF NOT EXISTS "model_instance" (
   "id" VARCHAR(63) NOT NULL,
   "state" VALID_STATE NOT NULL,
   "task" VALID_TASK NOT NULL,
-  "model_definition" varchar(255) NULL,
   "configuration" JSONB NULL,
   "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
   "model_uid" UUID NOT NULL,
   UNIQUE ("model_uid", "id"),
-  CONSTRAINT fk_instance_model_id
+  CONSTRAINT fk_instance_model_uid
     FOREIGN KEY ("model_uid")
     REFERENCES model("uid")
     ON DELETE CASCADE
@@ -74,7 +76,7 @@ CREATE TABLE IF NOT EXISTS "triton_model" (
   "update_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "delete_time" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
   "model_instance_uid" UUID NOT NULL,
-  CONSTRAINT fk_triton_model_instance
+  CONSTRAINT fk_triton_model_instance_uid
     FOREIGN KEY ("model_instance_uid")
     REFERENCES model_instance("uid")
     ON DELETE CASCADE
