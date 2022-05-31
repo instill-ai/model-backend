@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend .
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-migrate ./cmd/migration
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-init ./cmd/init
 
-FROM alpine:3.5 AS runtime
+FROM alpine:3.16.0 AS runtime
 RUN apk update
 RUN apk add git
 
