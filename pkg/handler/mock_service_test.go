@@ -124,6 +124,21 @@ func (mr *MockServiceMockRecorder) GetModelDefinition(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinition", reflect.TypeOf((*MockService)(nil).GetModelDefinition), arg0)
 }
 
+// GetModelDefinitionByUid mocks base method.
+func (m *MockService) GetModelDefinitionByUid(arg0 string) (datamodel.ModelDefinition, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetModelDefinitionByUid", arg0)
+	ret0, _ := ret[0].(datamodel.ModelDefinition)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetModelDefinitionByUid indicates an expected call of GetModelDefinitionByUid.
+func (mr *MockServiceMockRecorder) GetModelDefinitionByUid(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinitionByUid", reflect.TypeOf((*MockService)(nil).GetModelDefinitionByUid), arg0)
+}
+
 // GetModelInstance mocks base method.
 func (m *MockService) GetModelInstance(arg0 uuid.UUID, arg1 string, arg2 modelv1alpha.View) (datamodel.ModelInstance, error) {
 	m.ctrl.T.Helper()

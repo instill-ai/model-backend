@@ -50,7 +50,7 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 	}
 }
 
-func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
+func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) *modelPB.Model {
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
 		Uid:             dbModel.BaseDynamic.UID.String(),
@@ -58,7 +58,7 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		CreateTime:      timestamppb.New(dbModel.CreateTime),
 		UpdateTime:      timestamppb.New(dbModel.UpdateTime),
 		Description:     &dbModel.Description,
-		ModelDefinition: dbModel.ModelDefinition,
+		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
 		Configuration:   dbModel.Configuration.String(),
 	}
@@ -75,14 +75,14 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 	return &pbModel
 }
 
-func DBModelInstanceToPBModelInstance(modelId string, dbModelInstance *datamodel.ModelInstance) *modelPB.ModelInstance {
+func DBModelInstanceToPBModelInstance(modelDef *datamodel.ModelDefinition, model *datamodel.Model, dbModelInstance *datamodel.ModelInstance) *modelPB.ModelInstance {
 	pbModelInstance := modelPB.ModelInstance{
-		Name:            fmt.Sprintf("models/%s/instances/%s", modelId, dbModelInstance.ID),
+		Name:            fmt.Sprintf("models/%s/instances/%s", model.ID, dbModelInstance.ID),
 		Uid:             dbModelInstance.BaseDynamic.UID.String(),
 		Id:              dbModelInstance.ID,
 		CreateTime:      timestamppb.New(dbModelInstance.CreateTime),
 		UpdateTime:      timestamppb.New(dbModelInstance.UpdateTime),
-		ModelDefinition: dbModelInstance.ModelDefinition,
+		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		State:           modelPB.ModelInstance_State(dbModelInstance.State),
 		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
 		Configuration:   dbModelInstance.Configuration.String(),

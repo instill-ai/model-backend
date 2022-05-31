@@ -36,6 +36,7 @@ type Service interface {
 	DeployModelInstance(modelInstanceId uuid.UUID) error
 	UndeployModelInstance(modelInstanceId uuid.UUID) error
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
+	GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 }
 
@@ -328,6 +329,10 @@ func (s *service) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageS
 
 func (s *service) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
 	return s.repository.GetModelDefinition(id)
+}
+
+func (s *service) GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error) {
+	return s.repository.GetModelDefinitionByUid(uid)
 }
 
 func (s *service) ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error) {

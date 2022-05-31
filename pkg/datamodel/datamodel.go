@@ -76,7 +76,7 @@ type Model struct {
 	Description string `json:"description,omitempty"`
 
 	// Model definition
-	ModelDefinition string `json:"model_definition,omitempty"`
+	ModelDefinitionUid uuid.UUID `json:"model_definition_uid,omitempty"`
 
 	// Model definition configuration
 	Configuration datatypes.JSON `json:"configuration,omitempty"`
@@ -122,9 +122,6 @@ type ModelInstance struct {
 
 	// Model instance task
 	Task ModelInstanceTask `json:"task,omitempty"`
-
-	// Model definition
-	ModelDefinition string `json:"model_definition,omitempty"`
 
 	// Model instance configuration
 	Configuration datatypes.JSON `json:"configuration,omitempty"`

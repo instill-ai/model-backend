@@ -30,6 +30,7 @@ type Repository interface {
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
+	GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 }
 
@@ -48,7 +49,7 @@ var GetModelSelectedFields = []string{
 	`"model"."uid"`,
 	`"model"."id"`,
 	`"model"."description"`,
-	`"model"."model_definition"`,
+	`"model"."model_definition_uid"`,
 	`"model"."configuration"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
@@ -61,7 +62,7 @@ var GetModelSelectedFieldsWOConfiguration = []string{
 	`"model"."uid"`,
 	`"model"."id"`,
 	`"model"."description"`,
-	`"model"."model_definition"`,
+	`"model"."model_definition_uid"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
 	`"model"."create_time"`,
@@ -299,6 +300,14 @@ func (r *repository) DeleteModel(modelUid uuid.UUID) error {
 func (r *repository) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
 	var definitionDB datamodel.ModelDefinition
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("id", id).First(&definitionDB); result.Error != nil {
+		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
+	}
+	return definitionDB, nil
+}
+
+func (r *repository) GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error) {
+	var definitionDB datamodel.ModelDefinition
+	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("uid", uid).First(&definitionDB); result.Error != nil {
 		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
 	}
 	return definitionDB, nil

@@ -323,7 +323,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 	return readmeFilePath, nil
 }
 
-func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, err error) {
+func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionId string, err error) {
 	firstChunk := true
 	var fp *os.File
 	var fileData *modelPB.CreateModelBinaryFileUploadRequest
@@ -334,13 +334,13 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 	for {
 		fileData, err = stream.Recv()
 		if fileData.Model == nil {
-			return "", &datamodel.Model{}, fmt.Errorf("failed unexpectedly while reading chunks from stream")
+			return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			return "", &datamodel.Model{}, fmt.Errorf("failed unexpectedly while reading chunks from stream")
+			return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 
 		if firstChunk { //first chunk contains file name
@@ -357,21 +357,23 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 			}
 			modelDefName := fileData.Model.ModelDefinition
 			if err != nil {
-				return "", &datamodel.Model{}, err
+				return "", &datamodel.Model{}, "", err
+			}
+			modelDefinitionId, err = getDefinitionID(modelDefName)
+			if err != nil {
+				return "", &datamodel.Model{}, "", err
 			}
 			uploadedModel = datamodel.Model{
-				ID:              fileData.Model.Id,
-				Visibility:      datamodel.ModelVisibility(visibility),
-				Description:     description,
-				ModelDefinition: modelDefName,
+				ID:          fileData.Model.Id,
+				Visibility:  datamodel.ModelVisibility(visibility),
+				Description: description,
 				Instances: []datamodel.ModelInstance{{
-					ModelDefinition: modelDefName,
-					State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-					ID:              "latest",
+					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+					ID:    "latest",
 				}},
 			}
 			if err != nil {
-				return "", &datamodel.Model{}, err
+				return "", &datamodel.Model{}, "", err
 			}
 			defer fp.Close()
 
@@ -379,10 +381,10 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 		}
 		err = writeToFp(fp, fileData.Bytes)
 		if err != nil {
-			return "", &datamodel.Model{}, err
+			return "", &datamodel.Model{}, "", err
 		}
 	}
-	return tmpFile, &uploadedModel, nil
+	return tmpFile, &uploadedModel, modelDefinitionId, nil
 }
 
 func savePredictInputs(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelId string, instanceId string, err error) {
@@ -490,7 +492,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJsonResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
 			return
 		}
-		modelDefinitionId, err := getDefinitionUID(modelDefinitionName)
+		modelDefinitionId, err := getDefinitionID(modelDefinitionName)
 		if err != nil {
 			makeJsonResponse(w, 400, "Invalid parameter", err.Error())
 			return
@@ -591,17 +593,16 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
 			Instances: []datamodel.ModelInstance{{
-				State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-				ID:              "latest",
-				ModelDefinition: modelDefinitionName,
-				Configuration:   bModelConfig,
+				State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+				ID:            "latest",
+				Configuration: bModelConfig,
 			}},
-			ID:              modelId,
-			ModelDefinition: modelDefinitionName,
-			Owner:           owner,
-			Visibility:      datamodel.ModelVisibility(visibility),
-			Description:     r.FormValue("description"),
-			Configuration:   bModelConfig,
+			ID:                 modelId,
+			ModelDefinitionUid: localModelDefinition.UID,
+			Owner:              owner,
+			Visibility:         datamodel.ModelVisibility(visibility),
+			Description:        r.FormValue("description"),
+			Configuration:      bModelConfig,
 		}
 
 		_, err = modelService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
@@ -646,7 +647,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		pbModel := DBModelToPBModel(dbModel)
+		pbModel := DBModelToPBModel(&localModelDefinition, dbModel)
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
@@ -672,13 +673,18 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	if err != nil {
 		return err
 	}
-	tmpFile, uploadedModel, err := saveFile(stream)
+	tmpFile, uploadedModel, modelDefId, err := saveFile(stream)
 	if err != nil {
 		return makeError(codes.InvalidArgument, "Save File Error", err.Error())
 	}
 	_, err = h.service.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return makeError(codes.AlreadyExists, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
+	}
+
+	modelDef, err := h.service.GetModelDefinition(modelDefId)
+	if err != nil {
+		return makeError(codes.InvalidArgument, "Model definition invalid", err.Error())
 	}
 
 	uploadedModel.Owner = owner
@@ -715,7 +721,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
 	}
-	pbModel := DBModelToPBModel(dbModel)
+	pbModel := DBModelToPBModel(&modelDef, dbModel)
 	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: pbModel})
 	if err != nil {
 		return makeError(codes.Internal, "Add Model Error", err.Error())
@@ -749,11 +755,11 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	if err == nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.AlreadyExists, "Add Model Error", "Model already existed")
 	}
-	modelDefinitionId, err := getDefinitionUID(req.Model.ModelDefinition)
-	if err != nil {
+	modelDefinitionId, err := getDefinitionID(req.Model.ModelDefinition)
+	if err != nil || modelDefinitionId != "github" {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
-	_, err = h.service.GetModelDefinition(modelDefinitionId)
+	githubModelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}
@@ -768,10 +774,6 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	}
 
 	// validate model configuration
-	githubModelDefinition, err := h.service.GetModelDefinition("github")
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Could not get model definition")
-	}
 	rs := &jsonschema.Schema{}
 	if err := json.Unmarshal([]byte(githubModelDefinition.ModelSpec.String()), rs); err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.FailedPrecondition, "Add Model Error", "Could not get model definition")
@@ -810,13 +812,13 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		HtmlUrl:    "https://github.com/" + modelConfig.Repository,
 	})
 	githubModel := datamodel.Model{
-		ID:              req.Model.Id,
-		ModelDefinition: req.Model.ModelDefinition,
-		Owner:           owner,
-		Visibility:      datamodel.ModelVisibility(visibility),
-		Description:     githubInfo.Description,
-		Configuration:   bModelConfig,
-		Instances:       []datamodel.ModelInstance{},
+		ID:                 req.Model.Id,
+		ModelDefinitionUid: githubModelDefinition.UID,
+		Owner:              owner,
+		Visibility:         datamodel.ModelVisibility(visibility),
+		Description:        githubInfo.Description,
+		Configuration:      bModelConfig,
+		Instances:          []datamodel.ModelInstance{},
 	}
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
@@ -833,10 +835,9 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		}
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
 		instance := datamodel.ModelInstance{
-			ID:              tag.Name,
-			ModelDefinition: req.Model.ModelDefinition,
-			State:           datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-			Configuration:   bInstanceConfig,
+			ID:            tag.Name,
+			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			Configuration: bInstanceConfig,
 		}
 
 		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
@@ -880,7 +881,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return nil, err
 	}
 
-	pbModel := DBModelToPBModel(dbModel)
+	pbModel := DBModelToPBModel(&githubModelDefinition, dbModel)
 
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
@@ -895,9 +896,17 @@ func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 		return &modelPB.ListModelResponse{}, err
 	}
 
+	var modelDef datamodel.ModelDefinition
+	if len(dbModels) > 0 {
+		modelDef, err = h.service.GetModelDefinitionByUid(dbModels[0].ModelDefinitionUid.String())
+		if err != nil {
+			return &modelPB.ListModelResponse{}, err
+		}
+	}
+
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
-		pbModels = append(pbModels, DBModelToPBModel(&dbModel))
+		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel))
 	}
 
 	resp := modelPB.ListModelResponse{
@@ -926,7 +935,11 @@ func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.NotFound, err.Error())
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.LookUpModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.LookUpModelResponse{Model: pbModel}, err
 }
 
@@ -943,7 +956,11 @@ func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.GetModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.GetModelResponse{Model: pbModel}, err
 }
 
@@ -972,7 +989,11 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 		}
 	}
 	dbModel, err = h.service.UpdateModel(dbModel.UID, &updateModel)
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.UpdateModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.UpdateModelResponse{Model: pbModel}, err
 }
 
@@ -1007,7 +1028,11 @@ func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.RenameModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.RenameModelResponse{Model: pbModel}, nil
 }
 
@@ -1024,7 +1049,11 @@ func (h *handler) PublishModel(ctx context.Context, req *modelPB.PublishModelReq
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.PublishModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.PublishModelResponse{Model: pbModel}, nil
 }
 
@@ -1041,7 +1070,11 @@ func (h *handler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishMode
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&dbModel)
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.UnpublishModelResponse{}, err
+	}
+	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
@@ -1063,12 +1096,17 @@ func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.GetModelInstanceResponse{}, err
+	}
+
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	pbModelInstance := DBModelInstanceToPBModelInstance(modelId, &dbModelInstance)
+	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
 	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
@@ -1089,6 +1127,10 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.LookUpModelInstanceResponse{}, err
+	}
 	instanceUid, err := uuid.FromString(sInstanceUid)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
@@ -1098,7 +1140,7 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
-	pbModelInstance := DBModelInstanceToPBModelInstance(dbModel.ID, &dbModelInstance)
+	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
 	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
@@ -1117,6 +1159,11 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
 
+	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.ListModelInstanceResponse{}, err
+	}
+
 	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstance(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
@@ -1124,7 +1171,7 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 
 	pbInstances := []*modelPB.ModelInstance{}
 	for _, dbModelInstance := range dbModelInstances {
-		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(modelId, &dbModelInstance))
+		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(&modelDef, &modelInDB, &dbModelInstance))
 	}
 
 	resp := modelPB.ListModelInstanceResponse{
@@ -1152,6 +1199,11 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
+	}
+
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
@@ -1166,7 +1218,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
-	pbModelInstance := DBModelInstanceToPBModelInstance(modelId, &dbModelInstance)
+	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
 
 	return &modelPB.DeployModelInstanceResponse{Instance: pbModelInstance}, nil
 }
@@ -1187,6 +1239,11 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	if err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+	}
+
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -1201,7 +1258,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
-	pbModelInstance := DBModelInstanceToPBModelInstance(modelId, &dbModelInstance)
+	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
 
 	return &modelPB.UndeployModelInstanceResponse{Instance: pbModelInstance}, nil
 }
@@ -1463,7 +1520,7 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 ///////////////////////////////////////////////////////
 /////////////   MODEL DEFINITION HANDLERS /////////////
 func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
-	definitionId, err := getDefinitionUID(req.Name)
+	definitionId, err := getDefinitionID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
