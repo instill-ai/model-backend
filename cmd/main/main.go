@@ -83,7 +83,7 @@ func main() {
 		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
 			// will not log gRPC calls if it was a call to liveness or readiness and no error was raised
 			if err == nil {
-				if match, _ := regexp.MatchString("instill.model.v1alpha.ModelService/.*ness$", fullMethodName); match {
+				if match, _ := regexp.MatchString("vdp.model.v1alpha.ModelService/.*ness$", fullMethodName); match {
 					return false
 				}
 			}
