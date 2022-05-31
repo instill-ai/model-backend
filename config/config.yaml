@@ -22,3 +22,5 @@ database:
 tritonserver:
   grpcuri: localhost:8001
   modelstore: ./model-repository
+mgmtbackend:
+  uri: localhost:8080

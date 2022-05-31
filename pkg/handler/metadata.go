@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -25,8 +24,7 @@ func getOwner(ctx context.Context) (string, error) {
 		if len(metadatas) == 0 {
 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
 		}
-		//TODO: get user info from mgmt-backend
-		return "users/local-user", nil
+		return metadatas[0], nil
 	} else {
 		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
 	}
@@ -34,9 +32,7 @@ func getOwner(ctx context.Context) (string, error) {
 
 func getOwnerFromHeader(r *http.Request) (string, error) {
 	owner := r.Header.Get("owner")
-	fmt.Println("owner", owner)
-	//TODO: get user info from mgmt-backend
-	return "users/local-user", nil
+	return owner, nil
 }
 
 func getID(name string) (string, error) {
@@ -53,6 +49,11 @@ func getModelInstanceID(name string) (string, string, error) {
 	}
 	subs := strings.Split(name, "/")
 	return subs[1], subs[3], nil
+}
+
+func getUserNameByUid(uid string) string {
+	// TODO request to mgmt-backend
+	return "local-user"
 }
 
 func getDefinitionUID(name string) (string, error) {
