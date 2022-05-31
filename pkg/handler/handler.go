@@ -726,7 +726,6 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 
 func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
 	owner, err := getOwner(ctx)
-	fmt.Println(">>>>>>>>>>owner ", owner)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, makeError(codes.InvalidArgument, "Add Model Error", err.Error())
 	}

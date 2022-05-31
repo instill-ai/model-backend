@@ -66,9 +66,11 @@ func DBModelToPBModel(dbModel *datamodel.Model) *modelPB.Model {
 		pbModel.Configuration = "{}"
 	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
-		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
+		userName := getUserNameByUid(strings.TrimPrefix(dbModel.Owner, "users/"))
+		pbModel.Owner = &modelPB.Model_User{User: "users/" + userName}
 	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
-		pbModel.Owner = &modelPB.Model_Org{Org: dbModel.Owner}
+		userName := getUserNameByUid(strings.TrimPrefix(dbModel.Owner, "organizations/"))
+		pbModel.Owner = &modelPB.Model_Org{Org: "organizations/" + userName}
 	}
 	return &pbModel
 }

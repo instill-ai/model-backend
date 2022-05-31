@@ -44,11 +44,16 @@ type TritonServerConfig struct {
 	ModelStore string
 }
 
+type MgmtBackendConfig struct {
+	Uri string
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server       ServerConfig
 	Database     DatabaseConfig
 	TritonServer TritonServerConfig
+	MgmtBackend  MgmtBackendConfig
 }
 
 // Config - Global variable to export
