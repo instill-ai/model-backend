@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-i
 
 FROM alpine:3.16.0 AS runtime
 RUN apk update
-RUN apk add git
+RUN apk add git git-lfs
 
 WORKDIR /model-backend
 
