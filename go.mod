@@ -1,6 +1,6 @@
 module github.com/instill-ai/model-backend
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gogo/status v1.1.0
