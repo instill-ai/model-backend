@@ -38,6 +38,7 @@ type Service interface {
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
+	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 }
 
 type service struct {
@@ -205,6 +206,29 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			detOutputs.DetectionOutputs = append(detOutputs.DetectionOutputs, detOutput)
 		}
 		return &detOutputs, nil
+	case modelPB.ModelInstance_TASK_KEYPOINT:
+		keypointResponse := postprocessResponse.(triton.KeypointOutput)
+		var contents []*modelPB.KeypointObject
+		for i := range keypointResponse.Keypoints {
+			score := keypointResponse.Scores[i]
+			var keypoints []*modelPB.Keypoint
+			for j := range keypointResponse.Keypoints[i] {
+				keypoint := keypointResponse.Keypoints[i][j]
+				keypoints = append(keypoints, &modelPB.Keypoint{
+					X: keypoint[0],
+					Y: keypoint[1],
+					V: keypoint[2],
+				})
+			}
+			contents = append(contents, &modelPB.KeypointObject{
+				Score:     score,
+				Keypoints: keypoints,
+			})
+		}
+		keypointOutputs := modelPB.KeypointOutputs{
+			KeypointOutputs: contents,
+		}
+		return &keypointOutputs, nil
 	default:
 		return postprocessResponse, nil
 	}
@@ -337,4 +361,8 @@ func (s *service) GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition
 
 func (s *service) ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error) {
 	return s.repository.ListModelDefinition(view, pageSize, pageToken)
+}
+
+func (s *service) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {
+	return s.repository.GetTritonEnsembleModel(modelInstanceUID)
 }

@@ -1286,6 +1286,23 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	if err != nil {
 		return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The model instance %v do not exist", instanceId))
 	}
+
+	// check whether model support batching or not. If not, raise an error
+	if len(imageBytes) > 1 {
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		if err != nil {
+			return makeError(404, "TriggerModelInstanceBinaryFileUpload", fmt.Sprintf("The triton model corresponding to instance %v do not exist", instanceId))
+		}
+		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		if err != nil {
+			return makeError(400, "TriggerModelInstanceBinaryFileUpload", err.Error())
+		}
+		if !doSupportBatch {
+			return makeError(400, "TriggerModelInstanceBinaryFileUpload", "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imageBytes, task)
 	if err != nil {
@@ -1302,6 +1319,11 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
 		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		if err != nil {
+			return makeError(500, "TriggerModelInstanceBinaryFileUpload", err.Error())
+		}
+	case modelPB.ModelInstance_TASK_KEYPOINT:
+		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return makeError(500, "TriggerModelInstanceBinaryFileUpload", err.Error())
 		}
@@ -1344,6 +1366,23 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.InvalidArgument, "TriggerModelInstance", err.Error())
 	}
+
+	// check whether model support batching or not. If not, raise an error
+	if len(imgsBytes) > 1 {
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.NotFound, "TriggerModelInstance", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+		}
+		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.InvalidArgument, "TriggerModelInstance", err.Error())
+		}
+		if !doSupportBatch {
+			return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.InvalidArgument, "TriggerModelInstance", "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
@@ -1360,6 +1399,11 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
 		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.Internal, "TriggerModelInstance", err.Error())
+		}
+	case modelPB.ModelInstance_TASK_KEYPOINT:
+		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, makeError(codes.Internal, "TriggerModelInstance", err.Error())
 		}
@@ -1427,6 +1471,25 @@ func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 
+		// check whether model support batching or not. If not, raise an error
+		if len(imgsBytes) > 1 {
+			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+			if err != nil {
+				makeJsonResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+				return
+			}
+			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+			doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+			if err != nil {
+				makeJsonResponse(w, 400, "Batching Support Error", err.Error())
+				return
+			}
+			if !doSupportBatch {
+				makeJsonResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+				return
+			}
+		}
+
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		response, err := modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 		if err != nil {
@@ -1444,6 +1507,12 @@ func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, 
 			}
 		case modelPB.ModelInstance_TASK_DETECTION:
 			b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+			if err != nil {
+				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+				return
+			}
+		case modelPB.ModelInstance_TASK_KEYPOINT:
+			b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
