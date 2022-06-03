@@ -1,7 +1,9 @@
 package util
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/gernest/front"
@@ -166,4 +169,29 @@ func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int3
 			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
 	}
+}
+
+func DoSupportBatch(configFilePath string) (bool, error) {
+	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	file, err := os.Open(configFilePath)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	r, err := regexp.Compile(`max_batch_size:\s0`) // this can also be a regex
+	if err != nil {
+		return false, err
+	}
+
+	for scanner.Scan() {
+		if r.MatchString(scanner.Text()) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

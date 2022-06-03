@@ -13,6 +13,7 @@ const apiHost = "http://localhost:8083";
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
+const keypoint_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
 const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
@@ -89,6 +90,40 @@ export function CreateModelFromLocal() {
           r.json().model.update_time !== undefined,
       });
 
+      let fd_keypoint = new FormData();
+      let model_id_keypoint = randomString(10)
+      model_description = randomString(20)
+      fd_keypoint.append("id", model_id_keypoint);
+      fd_keypoint.append("description", model_description);
+      fd_keypoint.append("model_definition", "model-definitions/local");
+      fd_keypoint.append("content", http.file(keypoint_model, "dummy-keypoint-model.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_keypoint.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task keypoint response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models:multipart task keypoint response model.name": (r) =>
+          r.json().model.name === `models/${model_id_keypoint}`,
+        "POST /v1alpha/models:multipart task keypoint response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task keypoint response model.id": (r) =>
+          r.json().model.id === model_id_keypoint,
+        "POST /v1alpha/models:multipart task keypoint response model.description": (r) =>
+          r.json().model.description === model_description,
+        "POST /v1alpha/models:multipart task keypoint response model.model_definition": (r) =>
+          r.json().model.model_definition === "model-definitions/local",
+        "POST /v1alpha/models:multipart task keypoint response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task keypoint response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PRIVATE",
+        "POST /v1alpha/models:multipart task keypoint response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task keypoint response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task keypoint response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });      
+
       let fd_unspecified = new FormData();
       let model_id_unspecified = randomString(10)
       model_description = randomString(20)
@@ -143,6 +178,12 @@ export function CreateModelFromLocal() {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });      
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
         headers: genHeader(`application/json`),
       }), {

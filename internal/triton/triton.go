@@ -127,8 +127,8 @@ func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *in
 }
 
 func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, rawInput [][]byte, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Create context for our request with 60 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	// Create request input tensors
@@ -260,6 +260,44 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
+func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameScores string) (interface{}, error) {
+	outputTensorKeypoints, rawOutputContentKeypoints, err := GetOutputFromInferResponse(outputNameKeypoints, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for keypoints")
+	}
+	if rawOutputContentKeypoints == nil {
+		return nil, fmt.Errorf("Unable to find output content for keypoints")
+	}
+	_, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for labels")
+	}
+	if rawOutputContentScores == nil {
+		return nil, fmt.Errorf("Unable to find output content for labels")
+	}
+
+	outputDataKeypoints := DeserializeFloat32Tensor(rawOutputContentKeypoints)
+	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To3D(outputDataKeypoints, outputTensorKeypoints.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for keypoints")
+	}
+
+	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
+	batchedOutputDataScores := outputDataScores
+	if len(batchedOutputDataKeypoints) != len(batchedOutputDataScores) {
+		log.Printf("Keypoints output has length %v but scores has length %v", len(batchedOutputDataKeypoints), len(batchedOutputDataScores))
+		return nil, fmt.Errorf("Inconsistent batch size for keypoints and scores")
+	}
+
+	return KeypointOutput{
+		Keypoints: batchedOutputDataKeypoints,
+		Scores:    batchedOutputDataScores,
+	}, nil
+}
+
 func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error) {
 	var (
 		outputs interface{}
@@ -276,6 +314,11 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
+		}
+	case modelPB.ModelInstance_TASK_KEYPOINT:
+		outputs, err = postProcessKeypoint(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to post-process keypoint output: %w", err)
 		}
 	default:
 		return inferResponse, nil

@@ -29,7 +29,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220530153944-e1c33d5f7d13
+	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220602152220-0b59e6e8b490
 	github.com/instill-ai/x v0.1.0-alpha.0.20220513203325-baab8aaa93b2
 	github.com/knadh/koanf v1.4.0
 	github.com/mitchellh/mapstructure v1.4.3
