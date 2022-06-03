@@ -178,6 +178,12 @@ export function CreateModelFromLocal() {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });      
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
         headers: genHeader(`application/json`),
       }), {
