@@ -61,6 +61,9 @@ func DeserializeBytesTensor(encodedTensor []byte, capacity int64) []string {
 }
 
 func DeserializeFloat32Tensor(encodedTensor []byte) []float32 {
+	if len(encodedTensor) == 0 {
+		return []float32{}
+	}
 	arr := make([]float32, len(encodedTensor)/4)
 	for i := 0; i < len(encodedTensor)/4; i++ {
 		arr[i] = ReadFloat32(encodedTensor[i*4 : i*4+4])
@@ -70,6 +73,10 @@ func DeserializeFloat32Tensor(encodedTensor []byte) []float32 {
 
 // TODO: generalise reshape functions by using interface{} arguments and returned values
 func Reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error) {
+	if len(array) == 0 {
+		return [][]string{}, nil
+	}
+
 	if len(shape) != 2 {
 		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
 	}
@@ -91,6 +98,10 @@ func Reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error)
 }
 
 func Reshape1DArrayFloat32To3D(array []float32, shape []int64) ([][][]float32, error) {
+	if len(array) == 0 {
+		return [][][]float32{}, nil
+	}
+
 	if len(shape) != 3 {
 		return nil, fmt.Errorf("Expected a 3D shape, got %vD shape %v", len(shape), shape)
 	}
