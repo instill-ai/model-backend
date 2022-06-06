@@ -33,14 +33,14 @@ all:							## Build and launch all services
 
 .PHONY: dev
 dev:							## Lunch only dependant services for local development
-	docker-compose up -d ${DB} ${TRITON}
+	@docker-compose up -d ${DB} ${TRITON}
 	while [ "$$(docker inspect --format '{{ .State.Health.Status }}' pg-sql)" != "healthy" ]; do echo "Check if db is ready..." && sleep 1; done
 	go build -o ${DEV_DB_MIGRATION_BINARY} ./cmd/migration && ${DEV_DB_MIGRATION_BINARY} && rm -rf $(dirname ${DEV_DB_MIGRATION_BINARY})
 	go build -o ${DEV_DB_INIT_BINARY} ./cmd/init && ${DEV_DB_INIT_BINARY} && rm -rf $(dirname ${DEV_DB_INIT_BINARY})
 
 .PHONY: logs
 logs:							## Tail all logs with -n 10
-	docker-compose logs --follow --tail=10
+	@docker-compose logs --follow --tail=10
 
 .PHONY: pull
 pull:							## Pull all service images
@@ -49,40 +49,35 @@ pull:							## Pull all service images
 
 .PHONY: stop
 stop:							## Stop all components
-	docker-compose stop
+	@docker-compose stop
 
 .PHONY: start
 start:							## Start all stopped services
-	docker-compose start
+	@docker-compose start
 
 .PHONY: restart
 restart:						## Restart all services
-	docker-compose restart
+	@docker-compose restart
 
 .PHONY: rm
 rm:								## Remove all stopped service containers
-	docker-compose rm -f
+	@docker-compose rm -f
 
 .PHONY: down
 down:							## Stop all services and remove all service containers and volumes
-	docker-compose down -v
+	@docker-compose down -v
 
 .PHONY: images
 images:							## List all container images
-	docker-compose images
+	@docker-compose images
 
 .PHONY: ps
 ps:								## List all service containers
-	docker-compose ps
+	@docker-compose ps
 
 .PHONY: top
 top:							## Display all running service processes
-	docker-compose top
-
-.PHONY: prune
-prune:							## Remove all services containers and system prune everything
-	make down
-	docker system prune -f --volumes
+	@docker-compose top
 
 .PHONY: build
 build:							## Build local docker image
