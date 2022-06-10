@@ -132,9 +132,9 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 
 	uid, _ := resource.GetPermalinkUID(owner)
 	if strings.HasPrefix(owner, "users/") {
-		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:trigger.image.num", uid), int64(len(imgsBytes)))
+		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.image.num", uid), int64(len(imgsBytes)))
 	} else if strings.HasPrefix(owner, "orgs/") {
-		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:trigger.image.num", uid), int64(len(imgsBytes)))
+		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.image.num", uid), int64(len(imgsBytes)))
 	}
 	return s.ModelInfer(modelInstanceUID, imgsBytes, task)
 }

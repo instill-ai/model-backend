@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -10,6 +11,9 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/instill-ai/model-backend/internal/external"
+	"github.com/instill-ai/model-backend/pkg/repository"
+	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 )
 
 // RecoveryInterceptor - panic handler
@@ -27,7 +31,19 @@ func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 	}
 
 	// TODO: Replace with decoded JWT header
-	md.Append("owner", "users/2a06c2f7-8da9-4046-91ea-240f88a5d729")
+	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	defer userServiceClientConn.Close()
+	userPageToken := ""
+	userPageSizeMax := int64(repository.MaxPageSize)
+	userResp, err := userServiceClient.ListUser(context.Background(), &mgmtPB.ListUserRequest{
+		PageSize:  &userPageSizeMax,
+		PageToken: &userPageToken,
+	})
+	if err == nil && len(userResp.Users) > 0 && userResp.Users[0].GetUid() != "" {
+		md.Append("owner", fmt.Sprintf("users/%s", userResp.Users[0].GetUid()))
+	} else {
+		md.Append("owner", "users/45d19b6d-5073-4bc7-b3c6-b668ea98b3c4")
+	}
 
 	newCtx := metadata.NewIncomingContext(ctx, md)
 
@@ -44,7 +60,19 @@ func streamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 	}
 
 	// TODO: Replace with decoded JWT header
-	md.Append("owner", "users/2a06c2f7-8da9-4046-91ea-240f88a5d729")
+	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	defer userServiceClientConn.Close()
+	userPageToken := ""
+	userPageSizeMax := int64(repository.MaxPageSize)
+	userResp, er := userServiceClient.ListUser(context.Background(), &mgmtPB.ListUserRequest{
+		PageSize:  &userPageSizeMax,
+		PageToken: &userPageToken,
+	})
+	if er == nil && len(userResp.Users) > 0 && userResp.Users[0].GetUid() != "" {
+		md.Append("owner", fmt.Sprintf("users/%s", userResp.Users[0].GetUid()))
+	} else {
+		md.Append("owner", "users/45d19b6d-5073-4bc7-b3c6-b668ea98b3c4")
+	}
 
 	newCtx := metadata.NewIncomingContext(stream.Context(), md)
 	wrapped := grpc_middleware.WrapServerStream(stream)
