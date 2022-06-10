@@ -8,6 +8,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	database "github.com/instill-ai/model-backend/internal/db"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
@@ -48,6 +49,8 @@ func main() {
 	db := database.GetConnection()
 	defer database.Close(db)
 
+	datamodel.InitJSONSchema()
+
 	modelDefs := []*modelPB.ModelDefinition{}
 
 	if err := loadDefinitions(&modelDefs); err != nil {
@@ -55,6 +58,11 @@ func main() {
 	}
 
 	for _, def := range modelDefs {
+		// Validate JSON Schema before inserting into db
+		if err := datamodel.ValidateJSONSchema(datamodel.ModelDefJSONSchema, def, true); err != nil {
+			logger.Fatal(err.Error())
+		}
+
 		// Create source definition record
 		if err := createModelDefinition(db, def); err != nil {
 			logger.Fatal(err.Error())

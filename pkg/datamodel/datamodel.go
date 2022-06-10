@@ -76,7 +76,7 @@ type Model struct {
 	Description string `json:"description,omitempty"`
 
 	// Model definition
-	ModelDefinitionUid uuid.UUID `json:"model_definition_uid,omitempty"`
+	ModelDefinitionUid uuid.UUID `gorm:"model_definition_uid,omitempty"`
 
 	// Model definition configuration
 	Configuration datatypes.JSON `json:"configuration,omitempty"`

@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
@@ -66,10 +67,10 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		pbModel.Configuration = "{}"
 	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
-		userName := getUserNameByUid(strings.TrimPrefix(dbModel.Owner, "users/"))
+		userName := resource.GetUserNameByUid(strings.TrimPrefix(dbModel.Owner, "users/"))
 		pbModel.Owner = &modelPB.Model_User{User: "users/" + userName}
 	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
-		userName := getUserNameByUid(strings.TrimPrefix(dbModel.Owner, "organizations/"))
+		userName := resource.GetUserNameByUid(strings.TrimPrefix(dbModel.Owner, "organizations/"))
 		pbModel.Owner = &modelPB.Model_Org{Org: "organizations/" + userName}
 	}
 	return &pbModel

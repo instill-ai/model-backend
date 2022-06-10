@@ -9,7 +9,9 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
@@ -24,14 +26,20 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/external"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/usage"
+	"github.com/instill-ai/x/repo"
 
 	database "github.com/instill-ai/model-backend/internal/db"
+	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
+	usageclient "github.com/instill-ai/usage-client/client"
 )
 
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigins []string) http.Handler {
@@ -51,6 +59,29 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 			})),
 		&http2.Server{},
 	)
+}
+
+func startReporter(ctx context.Context, usageServiceClient usagePB.UsageServiceClient, r repository.Repository, mu mgmtPB.UserServiceClient, rc *redis.Client) {
+	if config.Config.Server.DisableUsage {
+		return
+	}
+
+	logger, _ := logger.GetZapLogger()
+
+	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	go func() {
+		time.Sleep(5 * time.Second)
+
+		usg := usage.NewUsage(r, mu, rc)
+		err = usageclient.StartReporter(ctx, usageServiceClient, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version, usg.RetrieveUsageData)
+		if err != nil {
+			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
+		}
+	}()
 }
 
 func main() {
@@ -113,12 +144,21 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
+	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	defer userServiceClientConn.Close()
+
+	usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
+	defer usageServiceClientConn.Close()
+
+	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
+	defer redisClient.Close()
+
+	repository := repository.NewRepository(db)
+
 	modelPB.RegisterModelServiceServer(
 		grpcS,
 		handler.NewHandler(
-			service.NewService(
-				repository.NewRepository(db),
-				triton),
+			service.NewService(repository, triton, redisClient),
 			triton))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -139,8 +179,8 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}:trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}:trigger-multipart", appendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
+	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}:test-multipart which makes model inference for REST multiple-part form-data
+	if err := gwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}:test-multipart", appendCustomHeaderMiddleware(handler.HandleTestModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
@@ -148,6 +188,9 @@ func main() {
 	if err := gwS.HandlePath("POST", "/v1alpha/models:multipart", appendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
+
+	// Start usage reporter
+	startReporter(ctx, usageServiceClient, repository, userServiceClient, redisClient)
 
 	var dialOpts []grpc.DialOption
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {

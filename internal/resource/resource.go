@@ -1,4 +1,4 @@
-package handler
+package resource
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func extractFromMetadata(ctx context.Context, key string) ([]string, bool) {
+func ExtractFromMetadata(ctx context.Context, key string) ([]string, bool) {
 	if data, ok := metadata.FromIncomingContext(ctx); !ok {
 		return []string{}, false
 	} else {
@@ -19,8 +19,8 @@ func extractFromMetadata(ctx context.Context, key string) ([]string, bool) {
 	}
 }
 
-func getOwner(ctx context.Context) (string, error) {
-	if metadatas, ok := extractFromMetadata(ctx, "owner"); ok {
+func GetOwner(ctx context.Context) (string, error) {
+	if metadatas, ok := ExtractFromMetadata(ctx, "owner"); ok {
 		if len(metadatas) == 0 {
 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
 		}
@@ -30,12 +30,12 @@ func getOwner(ctx context.Context) (string, error) {
 	}
 }
 
-func getOwnerFromHeader(r *http.Request) (string, error) {
+func GetOwnerFromHeader(r *http.Request) (string, error) {
 	owner := r.Header.Get("owner")
 	return owner, nil
 }
 
-func getID(name string) (string, error) {
+func GetID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "models/")
 	if !strings.HasPrefix(name, "models/") || id == "" {
 		return "", status.Error(codes.InvalidArgument, "Error when extract models resource id")
@@ -43,7 +43,7 @@ func getID(name string) (string, error) {
 	return id, nil
 }
 
-func getModelInstanceID(name string) (string, string, error) {
+func GetModelInstanceID(name string) (string, string, error) {
 	if match, _ := regexp.MatchString(`^models/.+/instances/.+$`, name); !match {
 		return "", "", status.Error(codes.InvalidArgument, "Error when extract models instance resource id")
 	}
@@ -51,15 +51,24 @@ func getModelInstanceID(name string) (string, string, error) {
 	return subs[1], subs[3], nil
 }
 
-func getUserNameByUid(uid string) string {
+func GetUserNameByUid(uid string) string {
 	// TODO request to mgmt-backend
 	return "local-user"
 }
 
-func getDefinitionID(name string) (string, error) {
+func GetDefinitionID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
 	if !strings.HasPrefix(name, "model-definitions/") || id == "" {
 		return "", status.Error(codes.InvalidArgument, "Error when extract model-definitions resource id")
 	}
 	return id, nil
+}
+
+// GetPermalinkUID returns the resource UID given a resource permalink
+func GetPermalinkUID(permalink string) (string, error) {
+	uid := permalink[strings.LastIndex(permalink, "/")+1:]
+	if uid == "" {
+		return "", status.Errorf(codes.InvalidArgument, "Error when extract resource id from resource permalink `%s`", permalink)
+	}
+	return uid, nil
 }

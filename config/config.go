@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -15,45 +16,72 @@ import (
 
 // ServerConfig defines HTTP server configurations
 type ServerConfig struct {
-	Port  int
+	Port  int `koanf:"port"`
 	HTTPS struct {
-		Cert string
-		Key  string
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
 	}
-	CORSOrigins []string
+	CORSOrigins  []string `koanf:"corsorigins"`
+	Edition      string   `koanf:"edition"`
+	DisableUsage bool     `koanf:"disableusage"`
+	Debug        bool     `koanf:"debug"`
 }
 
 // config related to database
 type DatabaseConfig struct {
-	Username string
-	Password string
-	Host     string
-	Port     int
-	Name     string
-	Version  uint
-	TimeZone string
+	Username string `koanf:"username"`
+	Password string `koanf:"password"`
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Name     string `koanf:"name"`
+	Version  uint   `koanf:"version"`
+	TimeZone string `koanf:"timezone"`
 	Pool     struct {
-		IdleConnections int
-		MaxConnections  int
-		ConnLifeTime    time.Duration
+		IdleConnections int           `koanf:"idleconnections"`
+		MaxConnections  int           `koanf:"maxconnections"`
+		ConnLifeTime    time.Duration `koanf:"connlifetime"`
 	}
 }
 
 type TritonServerConfig struct {
-	GrpcUri    string
-	ModelStore string
+	GrpcUri    string `koanf:"grpcuri"`
+	ModelStore string `koanf:"modelstore"`
 }
 
+// MgmtBackendConfig related to mgmt-backend
 type MgmtBackendConfig struct {
-	Uri string
+	Host  string `koanf:"host"`
+	Port  int    `koanf:"port"`
+	HTTPS struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
+}
+
+// CacheConfig related to Redis
+type CacheConfig struct {
+	Redis struct {
+		RedisOptions redis.Options `koanf:"redisoptions"`
+	}
+}
+
+type UsageBackendConfig struct {
+	Host  string `koanf:"host"`
+	Port  int    `koanf:"port"`
+	HTTPS struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
 }
 
 // AppConfig defines
 type AppConfig struct {
-	Server       ServerConfig
-	Database     DatabaseConfig
-	TritonServer TritonServerConfig
-	MgmtBackend  MgmtBackendConfig
+	Server       ServerConfig       `koanf:"server"`
+	Database     DatabaseConfig     `koanf:"database"`
+	TritonServer TritonServerConfig `koanf:"tritonserver"`
+	MgmtBackend  MgmtBackendConfig  `koanf:"mgmtbackend"`
+	Cache        CacheConfig        `koanf:"cache"`
+	UsageBackend UsageBackendConfig `koanf:"usagebackend"`
 }
 
 // Config - Global variable to export

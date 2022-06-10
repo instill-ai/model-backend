@@ -20,7 +20,9 @@ WORKDIR /model-backend
 COPY --from=build /model-backend ./
 COPY --from=build /model-backend-migrate ./
 COPY --from=build /model-backend-init ./
+
 COPY --from=build /go/src/config ./config
+COPY --from=build /go/src/release-please ./release-please
 COPY --from=build /go/src/internal/db/migration ./internal/db/migration
 
 ENTRYPOINT ["./model-backend"]

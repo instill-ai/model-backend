@@ -222,14 +222,25 @@ service ModelService {
     option (google.api.method_signature) = "name,inputs";
   }
 
-  // TriggerModelInstanceBinaryFileUpload method receives a
-  // TriggerModelInstanceBinaryFileUploadRequest message and returns a
-  // TriggerModelInstanceBinaryFileUploadResponse message.
+  // TestModelInstance method receives a TestModelInstanceRequest message
+  // and returns a TestModelInstanceResponse message.
+  rpc TestModelInstance(TestModelInstanceRequest)
+      returns (TestModelInstanceResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/{name=models/*/instances/*}:test"
+      body : "*"
+    };
+    option (google.api.method_signature) = "name,inputs";
+  }
+
+  // TestModelInstanceBinaryFileUpload method receives a
+  // TestModelInstanceBinaryFileUploadRequest message and returns a
+  // TestModelInstanceBinaryFileUploadResponse message.
   //
-  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}:trigger-multipart"
-  rpc TriggerModelInstanceBinaryFileUpload(
-      stream TriggerModelInstanceBinaryFileUploadRequest)
-      returns (TriggerModelInstanceBinaryFileUploadResponse) {
+  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}:test-multipart"
+  rpc TestModelInstanceBinaryFileUpload(
+      stream TestModelInstanceBinaryFileUploadRequest)
+      returns (TestModelInstanceBinaryFileUploadResponse) {
     option (google.api.method_signature) = "name,file";
   }
 }
