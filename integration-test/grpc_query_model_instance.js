@@ -3,7 +3,6 @@ import { check, sleep, group } from 'k6';
 import http from "k6/http";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 
 import {
     genHeader,
@@ -295,11 +294,11 @@ export function LookupModelInstance() {
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/non-existed/instances/${res_model_instance.message.instance.uid}` }), {
-            'LookUpModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+            'LookUpModelInstance non-existed model name status invalid uid': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelService/LookUpModelInstance', { permalink: `models/${res_model.json().model.uid}}/instances/non-existed` }, {}), {
-            'LookUpModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+            'LookUpModelInstance non-existed instance name invalid uid': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {

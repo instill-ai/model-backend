@@ -27,7 +27,7 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		log.Printf("Unable to download image at %v. %v", url, err) // The internal error err only appears in the logs, because it's only useful to us
-		return nil, nil, fmt.Errorf("Unable to download image at %v", url)
+		return nil, nil, fmt.Errorf("unable to download image at %v", url)
 	}
 	defer response.Body.Close()
 
@@ -35,12 +35,12 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 	numBytes, err := buff.ReadFrom(response.Body)
 	if err != nil {
 		log.Printf("Unable to read content body from image at %v. %v", url, err) // The internal error err only appears in the logs, because it's only useful to us
-		return nil, nil, fmt.Errorf("Unable to read content body from image at %v", url)
+		return nil, nil, fmt.Errorf("unable to read content body from image at %v", url)
 	}
 
 	if numBytes > int64(util.MaxImageSizeBytes) {
 		return nil, nil, fmt.Errorf(
-			"Image size must be smaller than %vMB. Got %vMB",
+			"image size must be smaller than %vMB. Got %vMB",
 			float32(util.MaxImageSizeBytes)/float32(util.MB),
 			float32(numBytes)/float32(util.MB),
 		)
@@ -49,7 +49,7 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 	img, format, err := image.Decode(buff)
 	if err != nil {
 		log.Printf("Unable to decode image at %v. %v", url, err) // The internal error err only appears in the logs, because it's only useful to us
-		return nil, nil, fmt.Errorf("Unable to decode image at %v", url)
+		return nil, nil, fmt.Errorf("unable to decode image at %v", url)
 	}
 
 	metadata := imageMetadata{
@@ -66,12 +66,12 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		log.Printf("Unable to decode base64 image. %v", err) // The internal error err only appears in the logs, because it's only useful to us
-		return nil, nil, fmt.Errorf("Unable to decode base64 image")
+		return nil, nil, fmt.Errorf("unable to decode base64 image")
 	}
 	numBytes := len(decoded)
 	if numBytes > util.MaxImageSizeBytes {
 		return nil, nil, fmt.Errorf(
-			"Image size must be smaller than %vMB. Got %vMB",
+			"image size must be smaller than %vMB. Got %vMB",
 			float32(util.MaxImageSizeBytes)/float32(util.MB),
 			float32(numBytes)/float32(util.MB),
 		)
@@ -79,7 +79,7 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 	img, format, err := image.Decode(bytes.NewReader(decoded))
 	if err != nil {
 		log.Printf("Unable to decode base64 image. %v", err) // The internal error err only appears in the logs, because it's only useful to us
-		return nil, nil, fmt.Errorf("Unable to decode base64 image")
+		return nil, nil, fmt.Errorf("unable to decode base64 image")
 	}
 
 	metadata := imageMetadata{
@@ -103,16 +103,16 @@ func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 			img, metadata, err = parseImageFromURL(content.GetImageUrl())
 			if err != nil {
 				log.Printf("Unable to parse image %v from url. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us
-				return nil, nil, fmt.Errorf("Unable to parse image %v from url", idx)
+				return nil, nil, fmt.Errorf("unable to parse image %v from url", idx)
 			}
 		} else if len(content.GetImageBase64()) > 0 {
 			img, metadata, err = parseImageFromBase64(content.GetImageBase64())
 			if err != nil {
 				log.Printf("Unable to parse base64 image %v. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us
-				return nil, nil, fmt.Errorf("Unable to parse base64 image %v", idx)
+				return nil, nil, fmt.Errorf("unable to parse base64 image %v", idx)
 			}
 		} else {
-			return nil, nil, fmt.Errorf(`Image %v must define either a "url" or "base64" field. None of them were defined`, idx)
+			return nil, nil, fmt.Errorf(`image %v must define either a "url" or "base64" field. None of them were defined`, idx)
 		}
 
 		// Encode into jpeg to remove alpha channel (hack)
@@ -121,7 +121,7 @@ func ParseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 		err = jpeg.Encode(buff, *img, &jpeg.Options{Quality: 100})
 		if err != nil {
 			log.Printf("Unable to process image %v. %v", idx, err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to process image %v", idx)
+			return nil, nil, fmt.Errorf("unable to process image %v", idx)
 		}
 
 		imgsBytes = append(imgsBytes, buff.Bytes())
@@ -136,19 +136,19 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, img
 		file, err := content.Open()
 		if err != nil {
 			log.Printf("Unable to open file for image %v", err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to open file for image")
+			return nil, nil, fmt.Errorf("unable to open file for image")
 		}
 
 		buff := new(bytes.Buffer) // pointer
 		numBytes, err := buff.ReadFrom(file)
 		if err != nil {
 			log.Printf("Unable to read content body from image %v", err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to read content body from image")
+			return nil, nil, fmt.Errorf("unable to read content body from image")
 		}
 
 		if numBytes > int64(util.MaxImageSizeBytes) {
 			return nil, nil, fmt.Errorf(
-				"Image size must be smaller than %vMB. Got %vMB from image %v",
+				"image size must be smaller than %vMB. Got %vMB from image %v",
 				float32(util.MaxImageSizeBytes)/float32(util.MB),
 				float32(numBytes)/float32(util.MB),
 				content.Filename,
@@ -158,7 +158,7 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, img
 		img, format, err := image.Decode(buff)
 		if err != nil {
 			log.Printf("Unable to decode image: %v", err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to decode image")
+			return nil, nil, fmt.Errorf("unable to decode image")
 		}
 
 		// Encode into jpeg to remove alpha channel (hack)
@@ -167,7 +167,7 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, img
 		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 		if err != nil {
 			log.Printf("Unable to process image: %v", err) // The internal error err only appears in the logs, because it's only useful to us
-			return nil, nil, fmt.Errorf("Unable to process image")
+			return nil, nil, fmt.Errorf("unable to process image")
 		}
 
 		imgsBytes = append(imgsBytes, buff.Bytes())

@@ -85,7 +85,6 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 	if err != nil {
 		return GitHubInfo{}, err
 	}
-
 	resp, err = http.Get(fmt.Sprintf("https://api.github.com/repos/%v/tags", repo))
 	if err != nil {
 		return GitHubInfo{}, err

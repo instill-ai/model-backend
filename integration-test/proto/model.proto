@@ -89,6 +89,8 @@ message ModelInstance {
     TASK_CLASSIFICATION = 1;
     // Task: DETECTION
     TASK_DETECTION = 2;
+    // Task: KEYPOINT
+    TASK_KEYPOINT = 3;
   }
   // State enumerates the lifecycling state of a model instance
   enum State {
@@ -500,6 +502,30 @@ message ClassificationOutputs {
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
+// Keypoint structure which include coordinate and keypoint visibility
+message Keypoint {
+  // x coordinate
+  float x = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // y coordinate
+  float y = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // visibility
+  float v = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// List of keypoints and a score corresponding to a person object
+message KeypointObject {
+  // Keypoints
+  repeated Keypoint keypoints = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Keypoint score
+  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// KeypointOutput represents the output of keypoint detection task
+message KeypointOutputs {
+  // Keypoint Objects
+  repeated KeypointObject keypoint_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
 // BoundingBox represents the bounding box data structure
 message BoundingBox {
   // Bounding box top y-axis value
@@ -555,9 +581,28 @@ message TriggerModelInstanceResponse {
   google.protobuf.Struct output = 1;
 }
 
-// TriggerModelInstanceBinaryFileUploadRequest represents a request to trigger a
+// TestModelInstanceRequest represents a request to test a model instance
+message TestModelInstanceRequest {
+  // The resource name of the model instance to trigger.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+  // Input to trigger the model instance
+  repeated Input inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// TestModelInstanceResponse represents a response for the output for
+// testing a model instance
+message TestModelInstanceResponse {
+  // Output from a model
+  google.protobuf.Struct output = 1;
+}
+
+// TestModelInstanceBinaryFileUploadRequest represents a request to test a
 // model instance by uploading binary file
-message TriggerModelInstanceBinaryFileUploadRequest {
+message TestModelInstanceBinaryFileUploadRequest {
   // The resource name of the model instance to trigger.
   // For example "models/{model}/instances/{instance}"
   string name = 1 [
@@ -570,9 +615,9 @@ message TriggerModelInstanceBinaryFileUploadRequest {
   bytes bytes = 3 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// TriggerModelInstanceBinaryFileUploadResponse represents a response for the
-// output for triggering a model instance
-message TriggerModelInstanceBinaryFileUploadResponse {
+// TestModelInstanceBinaryFileUploadResponse represents a response for the
+// output for testing a model instance
+message TestModelInstanceBinaryFileUploadResponse {
   // Output from a model
   google.protobuf.Struct output = 1;
 }

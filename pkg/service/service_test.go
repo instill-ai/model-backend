@@ -43,7 +43,7 @@ func TestCreateModel(t *testing.T) {
 			CreateModel(newModel).
 			Return(nil)
 
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.CreateModel(OWNER, &newModel)
 		assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestGetModelById(t *testing.T) {
 			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID), modelPB.View_VIEW_FULL).
 			Return(datamodel.Model{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.GetModelById(OWNER, newModel.ID, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
@@ -92,7 +92,7 @@ func TestGetModelByUid(t *testing.T) {
 			GetModelByUid(gomock.Eq(OWNER), gomock.Eq(newModel.UID), modelPB.View_VIEW_FULL).
 			Return(datamodel.Model{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.GetModelByUid(OWNER, uid, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
@@ -127,7 +127,7 @@ func TestDeleteModel(t *testing.T) {
 			DeleteModel(gomock.Eq(newModel.UID)).
 			Return(nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		err := s.DeleteModel(OWNER, ID)
 		assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestRenameModel(t *testing.T) {
 				Owner:              OWNER,
 			}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.RenameModel(OWNER, ID, "new ID")
 		assert.NoError(t, err)
@@ -208,7 +208,7 @@ func TestPublishModel(t *testing.T) {
 			}).
 			Return(nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.PublishModel(OWNER, ID)
 		assert.NoError(t, err)
@@ -246,7 +246,7 @@ func TestUnpublishModel(t *testing.T) {
 			}).
 			Return(nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.UnpublishModel(OWNER, ID)
 		assert.NoError(t, err)
@@ -276,7 +276,7 @@ func TestUpdateModel(t *testing.T) {
 			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID), modelPB.View_VIEW_FULL).
 			Return(newModel, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.UpdateModel(newModel.UID, &newModel)
 		assert.NoError(t, err)
@@ -293,7 +293,7 @@ func TestListModell(t *testing.T) {
 			ListModel(OWNER, modelPB.View_VIEW_FULL, int(100), "").
 			Return([]datamodel.Model{}, "", int64(100), nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, _, _, err := s.ListModel(OWNER, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
@@ -305,7 +305,7 @@ func TestModelInfer(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service.NewService(mockRepository, triton)
+		s := service.NewService(mockRepository, triton, nil)
 
 		uid := uuid.UUID{}
 
@@ -355,7 +355,7 @@ func TestGetModelInstance(t *testing.T) {
 			GetModelInstance(uid, "latest", modelPB.View_VIEW_FULL).
 			Return(datamodel.ModelInstance{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.GetModelInstance(uid, "latest", modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
@@ -374,7 +374,7 @@ func TestGetModelInstanceByUid(t *testing.T) {
 			GetModelInstanceByUid(modelUid, instanceUid, modelPB.View_VIEW_FULL).
 			Return(datamodel.ModelInstance{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.GetModelInstanceByUid(modelUid, instanceUid, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
@@ -392,7 +392,7 @@ func TestListModelInstance(t *testing.T) {
 			ListModelInstance(modelUid, modelPB.View_VIEW_FULL, 100, "").
 			Return([]datamodel.ModelInstance{}, "", int64(100), nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, _, _, err := s.ListModelInstance(modelUid, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
@@ -404,7 +404,7 @@ func TestDeployModelInstance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service.NewService(mockRepository, triton)
+		s := service.NewService(mockRepository, triton, nil)
 
 		uid := uuid.UUID{}
 
@@ -439,7 +439,7 @@ func TestUndeployModelInstance(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service.NewService(mockRepository, triton)
+		s := service.NewService(mockRepository, triton, nil)
 
 		uid := uuid.UUID{}
 
@@ -479,7 +479,7 @@ func TestGetModelDefinition(t *testing.T) {
 			GetModelDefinition("github").
 			Return(datamodel.ModelDefinition{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, err := s.GetModelDefinition("github")
 		assert.NoError(t, err)
@@ -496,7 +496,7 @@ func TestListModelDefinition(t *testing.T) {
 			ListModelDefinition(modelPB.View_VIEW_FULL, int(100), "").
 			Return([]datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil)
+		s := service.NewService(mockRepository, nil, nil)
 
 		_, _, _, err := s.ListModelDefinition(modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)

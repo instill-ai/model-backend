@@ -7,6 +7,9 @@ server:
     - http://localhost
     - https://instill-inc.tech
     - https://instill.tech
+  edition: local-ce:dev
+  disableusage: false
+  debug: false    
 database:
   username: postgres
   password: password
@@ -23,4 +26,17 @@ tritonserver:
   grpcuri: localhost:8001
   modelstore: ./model-repository
 mgmtbackend:
-  uri: localhost:8080
+  host: localhost
+  port: 8080
+  https:
+    cert:   # /ssl/tls.crt
+    key:    # /ssl/tls.key  
+cache:
+  redis:
+    redisoptions:
+      addr: localhost:6379 
+usagebackend:
+  host: localhost
+  port: 8084
+  https:
+    cert:  # /ssl/tls.crt      

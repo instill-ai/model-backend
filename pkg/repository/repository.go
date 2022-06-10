@@ -34,6 +34,12 @@ type Repository interface {
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 }
 
+// DefaultPageSize is the default pagination page size when page size is not assigned
+const DefaultPageSize = 10
+
+// MaxPageSize is the maximum pagination page size if the assigned value is over this number
+const MaxPageSize = 100
+
 type repository struct {
 	db *gorm.DB
 }
@@ -104,11 +110,11 @@ func (r *repository) GetModelByUid(owner string, modelUid uuid.UUID, view modelP
 func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
 	queryBuilder := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Order("create_time DESC, id DESC")
 	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(10)
-	} else if pageSize > 0 && pageSize <= 100 {
+		queryBuilder = queryBuilder.Limit(DefaultPageSize)
+	} else if pageSize > 0 && pageSize <= MaxPageSize {
 		queryBuilder = queryBuilder.Limit(pageSize)
 	} else {
-		queryBuilder = queryBuilder.Limit(100)
+		queryBuilder = queryBuilder.Limit(MaxPageSize)
 	}
 
 	if pageToken != "" {
@@ -215,11 +221,11 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Order("create_time DESC, id DESC")
 
 	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(10)
-	} else if pageSize > 0 && pageSize <= 100 {
+		queryBuilder = queryBuilder.Limit(DefaultPageSize)
+	} else if pageSize > 0 && pageSize <= MaxPageSize {
 		queryBuilder = queryBuilder.Limit(pageSize)
 	} else {
-		queryBuilder = queryBuilder.Limit(100)
+		queryBuilder = queryBuilder.Limit(MaxPageSize)
 	}
 
 	if pageToken != "" {
@@ -318,11 +324,11 @@ func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageTo
 	queryBuilder := r.db.Model(&datamodel.ModelDefinition{}).Order("create_time DESC, id DESC")
 
 	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(10)
-	} else if pageSize > 0 && pageSize <= 100 {
+		queryBuilder = queryBuilder.Limit(DefaultPageSize)
+	} else if pageSize > 0 && pageSize <= MaxPageSize {
 		queryBuilder = queryBuilder.Limit(pageSize)
 	} else {
-		queryBuilder = queryBuilder.Limit(100)
+		queryBuilder = queryBuilder.Limit(MaxPageSize)
 	}
 
 	if pageToken != "" {

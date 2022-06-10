@@ -128,7 +128,7 @@ func predict(c *cli.Context) error {
 	defer conn.Close()
 	client := modelPB.NewModelServiceClient(conn)
 
-	streamUploader, err := client.TriggerModelInstanceBinaryFileUpload(ctx)
+	streamUploader, err := client.TestModelInstanceBinaryFileUpload(ctx)
 	if err != nil {
 		log.Fatalf("Could not create predict stream")
 	}
@@ -159,7 +159,7 @@ func predict(c *cli.Context) error {
 		}
 
 		if firstChunk {
-			err = streamUploader.Send(&modelPB.TriggerModelInstanceBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.TestModelInstanceBinaryFileUploadRequest{
 				Name:        fmt.Sprintf("models/%v/instances/%v", modelName, instanceName),
 				FileLengths: []uint64{uint64(fi1.Size())},
 				Bytes:       buf[:n],
@@ -169,7 +169,7 @@ func predict(c *cli.Context) error {
 			}
 			firstChunk = false
 		} else {
-			err = streamUploader.Send(&modelPB.TriggerModelInstanceBinaryFileUploadRequest{
+			err = streamUploader.Send(&modelPB.TestModelInstanceBinaryFileUploadRequest{
 				Bytes: buf[:n],
 			})
 			if err != nil {

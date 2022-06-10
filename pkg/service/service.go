@@ -1,17 +1,21 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -30,6 +34,7 @@ type Service interface {
 	UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
+	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
 	GetModelInstance(modelUid uuid.UUID, instanceId string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUid uuid.UUID, instanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
@@ -42,14 +47,16 @@ type Service interface {
 }
 
 type service struct {
-	repository repository.Repository
-	triton     triton.Triton
+	repository  repository.Repository
+	triton      triton.Triton
+	redisClient *redis.Client
 }
 
-func NewService(r repository.Repository, t triton.Triton) Service {
+func NewService(r repository.Repository, t triton.Triton, rc *redis.Client) Service {
 	return &service{
-		repository: r,
-		triton:     t,
+		repository:  r,
+		triton:      t,
+		redisClient: rc,
 	}
 }
 
@@ -118,17 +125,31 @@ func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) 
 	return s.repository.GetModelByUid(owner, uid, view)
 }
 
+func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error) {
+	// Increment trigger image numbers
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	uid, _ := resource.GetPermalinkUID(owner)
+	if strings.HasPrefix(owner, "users/") {
+		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:trigger.image.num", uid), int64(len(imgsBytes)))
+	} else if strings.HasPrefix(owner, "orgs/") {
+		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:trigger.image.num", uid), int64(len(imgsBytes)))
+	}
+	return s.ModelInfer(modelInstanceUID, imgsBytes, task)
+}
+
 func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error) {
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
 	if err != nil {
-		return nil, fmt.Errorf("Triton model not found")
+		return nil, fmt.Errorf("triton model not found")
 	}
 
 	ensembleModelName := ensembleModel.Name
 	ensembleModelVersion := ensembleModel.Version
 	modelMetadataResponse := s.triton.ModelMetadataRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
-		return nil, fmt.Errorf("Model is offline")
+		return nil, fmt.Errorf("model is offline")
 	}
 	modelConfigResponse := s.triton.ModelConfigRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
@@ -156,11 +177,11 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
 			if len(clsResSplit) != 3 {
-				return nil, fmt.Errorf("Unable to decode inference output")
+				return nil, fmt.Errorf("unable to decode inference output")
 			}
 			score, err := strconv.ParseFloat(clsResSplit[0], 32)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to decode inference output")
+				return nil, fmt.Errorf("unable to decode inference output")
 			}
 			clsOutput := modelPB.ClassificationOutput{
 				Category: clsResSplit[2],
