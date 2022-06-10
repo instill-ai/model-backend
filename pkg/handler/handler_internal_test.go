@@ -12,7 +12,7 @@ func TestParseImageFromURL(t *testing.T) {
 
 	{
 		_, _, err := parseImageFromURL("https://artifacts.instill.tech/non-existing.jpg")
-		assert.Equal(t, "Unable to decode image at https://artifacts.instill.tech/non-existing.jpg", err.Error())
+		assert.Equal(t, "unable to decode image at https://artifacts.instill.tech/non-existing.jpg", err.Error())
 	}
 
 	{
@@ -27,14 +27,14 @@ func TestParseImageFromBase64(t *testing.T) {
 
 	{
 		_, _, err := parseImageFromBase64("test")
-		assert.Equal(t, "Unable to decode base64 image", err.Error())
+		assert.Equal(t, "unable to decode base64 image", err.Error())
 	}
 	favicon := []byte{
 		0x89, 0x50,
 	}
 	{
 		_, _, err := parseImageFromBase64(string(favicon))
-		assert.Equal(t, "Unable to decode base64 image", err.Error())
+		assert.Equal(t, "unable to decode base64 image", err.Error())
 	}
 
 	{
