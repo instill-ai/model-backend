@@ -22,7 +22,7 @@ const NAMESPACE = "local-user"
 // 		defer cancel()
 // 		readyRes, err := h.Readiness(ctx, &modelPB.ReadinessRequest{})
 // 		assert.NoError(t, err)
-// 		assert.Equal(t, readyRes.Status, modelPB.ReadinessResponse_SERVING_STATUS_SERVING)
+// 		assert.Equal(t, readyRes.HealthCheckResponse.Status, healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING)
 // 	})
 // }
 
@@ -43,6 +43,6 @@ const NAMESPACE = "local-user"
 // 		defer cancel()
 // 		liveRes, err := h.Liveness(ctx, &modelPB.LivenessRequest{})
 // 		assert.NoError(t, err)
-// 		assert.Equal(t, liveRes.Status, modelPB.LivenessResponse_SERVING_STATUS_SERVING)
+// 		assert.Equal(t, liveRes.HealthCheckResponse.Status, healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING)
 // 	})
 // }
