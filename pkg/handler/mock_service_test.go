@@ -169,6 +169,21 @@ func (mr *MockServiceMockRecorder) GetModelInstanceByUid(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelInstanceByUid", reflect.TypeOf((*MockService)(nil).GetModelInstanceByUid), arg0, arg1, arg2)
 }
 
+// GetTritonEnsembleModel mocks base method.
+func (m *MockService) GetTritonEnsembleModel(arg0 uuid.UUID) (datamodel.TritonModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTritonEnsembleModel", arg0)
+	ret0, _ := ret[0].(datamodel.TritonModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTritonEnsembleModel indicates an expected call of GetTritonEnsembleModel.
+func (mr *MockServiceMockRecorder) GetTritonEnsembleModel(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonEnsembleModel", reflect.TypeOf((*MockService)(nil).GetTritonEnsembleModel), arg0)
+}
+
 // ListModel mocks base method.
 func (m *MockService) ListModel(arg0 string, arg1 modelv1alpha.View, arg2 int, arg3 string) ([]datamodel.Model, string, int64, error) {
 	m.ctrl.T.Helper()
@@ -233,6 +248,21 @@ func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alph
 func (mr *MockServiceMockRecorder) ModelInfer(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInfer", reflect.TypeOf((*MockService)(nil).ModelInfer), arg0, arg1, arg2)
+}
+
+// ModelInferTestMode mocks base method.
+func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ModelInferTestMode", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ModelInferTestMode indicates an expected call of ModelInferTestMode.
+func (mr *MockServiceMockRecorder) ModelInferTestMode(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInferTestMode", reflect.TypeOf((*MockService)(nil).ModelInferTestMode), arg0, arg1, arg2, arg3)
 }
 
 // PublishModel mocks base method.
