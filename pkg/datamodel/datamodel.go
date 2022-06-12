@@ -139,11 +139,21 @@ type GitHubModelConfiguration struct {
 	HtmlUrl    string `json:"html_url,omitempty"`
 }
 
+type ArtiVCModelConfiguration struct {
+	Url        string         `json:"url,omitempty"`
+	Credential datatypes.JSON `json:"credential,omitempty"`
+}
+
 // Model Instance configuration
 type GitHubModelInstanceConfiguration struct {
 	Repository string `json:"repository,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 	HtmlUrl    string `json:"html_url,omitempty"`
+}
+
+type ArtiVCModelInstanceConfiguration struct {
+	Tag string `json:"tag,omitempty"`
+	Url string `json:"url,omitempty"`
 }
 
 type LocalModelConfiguration struct {

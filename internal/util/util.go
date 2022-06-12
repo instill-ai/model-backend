@@ -15,9 +15,11 @@ import (
 	"strings"
 
 	"github.com/gernest/front"
+	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/mitchellh/mapstructure"
+	"gorm.io/datatypes"
 )
 
 type ModelMeta struct {
@@ -193,4 +195,73 @@ func DoSupportBatch(configFilePath string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func writeCredential(credential datatypes.JSON) (string, error) {
+	var gcsCredential datamodel.GCSCredential
+	err := json.Unmarshal([]byte(credential), &gcsCredential)
+	if err != nil {
+		return "", err
+	}
+	file, _ := json.MarshalIndent(gcsCredential, "", " ")
+	uid, _ := uuid.NewV4()
+	credentialFile := fmt.Sprintf("/tmp/%v", uid.String())
+	err = ioutil.WriteFile(credentialFile, file, 0644)
+	if err != nil {
+		return "", err
+	}
+	return credentialFile, nil
+}
+
+func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]string, error) {
+	url := config.Url
+	var cmd *exec.Cmd
+	if strings.HasPrefix(url, "gs://") {
+		credentialFile, err := writeCredential(config.Credential)
+		if err != nil {
+			return []string{}, err
+		}
+		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc clone %s %s", credentialFile, url, dir))
+		err = cmd.Run()
+		if err != nil {
+			return []string{}, err
+		}
+
+		out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s ; GOOGLE_APPLICATION_CREDENTIALS=%s avc tag", dir, credentialFile)).Output()
+		if err != nil {
+			return []string{}, err
+		}
+
+		elems := strings.Split(string(out), "\n")
+		tags := []string{}
+		for _, tag := range elems {
+			if strings.Trim(tag, " ") != "" {
+				tags = append(tags, tag)
+			}
+		}
+		_ = os.Remove(credentialFile)
+		return tags, err
+	} else {
+		return []string{}, fmt.Errorf("invalid url %v", url)
+	}
+}
+
+func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelInstanceConfiguration) error {
+	url := modelConfig.Url
+	var cmd *exec.Cmd
+	if strings.HasPrefix(url, "gs://") {
+		credentialFile, err := writeCredential(modelConfig.Credential)
+		if err != nil {
+			return err
+		}
+		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc get -o %s %s@%s", credentialFile, dir, url, instanceConfig.Tag))
+		err = cmd.Run()
+		if err != nil {
+			return err
+		}
+		_ = os.Remove(credentialFile)
+		return err
+	} else {
+		return fmt.Errorf("invalid url %v", url)
+	}
 }
