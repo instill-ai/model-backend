@@ -41,7 +41,7 @@ type Service interface {
 	DeployModelInstance(modelInstanceId uuid.UUID) error
 	UndeployModelInstance(modelInstanceId uuid.UUID) error
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
-	GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error)
+	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 }
@@ -376,7 +376,7 @@ func (s *service) GetModelDefinition(id string) (datamodel.ModelDefinition, erro
 	return s.repository.GetModelDefinition(id)
 }
 
-func (s *service) GetModelDefinitionByUid(uid string) (datamodel.ModelDefinition, error) {
+func (s *service) GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error) {
 	return s.repository.GetModelDefinitionByUid(uid)
 }
 

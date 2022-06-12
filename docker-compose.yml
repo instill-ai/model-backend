@@ -11,29 +11,6 @@ volumes:
     name: model-repository
 
 services:
-  usage_backend_cloud_migrate:
-    container_name: usage-backend-cloud-migrate
-    image: instill/usage-backend-cloud:dev
-    restart: on-failure
-    environment:
-      CFG_DATABASE_HOST: pg_sql
-      CFG_DATABASE_PORT: 5432
-      CFG_DATABASE_USERNAME: postgres
-      CFG_DATABASE_PASSWORD: password
-    entrypoint: ./usage-backend-cloud-migrate
-
-  usage_backend_cloud:
-    container_name: usage-backend-cloud
-    image: instill/usage-backend-cloud:dev
-    restart: unless-stopped
-    environment:
-      CFG_SERVER_PORT: 8084
-      CFG_DATABASE_HOST: pg_sql
-      CFG_DATABASE_PORT: 5432
-      CFG_DATABASE_USERNAME: postgres
-      CFG_DATABASE_PASSWORD: password
-    ports:
-      - 8084:8084
   mgmt_backend_migrate:
     container_name: mgmt-backend-migrate
     image: instill/mgmt-backend:latest

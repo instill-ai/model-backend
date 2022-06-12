@@ -138,7 +138,7 @@ func (mr *MockRepositoryMockRecorder) GetModelDefinition(arg0 interface{}) *gomo
 }
 
 // GetModelDefinitionByUid mocks base method.
-func (m *MockRepository) GetModelDefinitionByUid(arg0 string) (datamodel.ModelDefinition, error) {
+func (m *MockRepository) GetModelDefinitionByUid(arg0 uuid.UUID) (datamodel.ModelDefinition, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModelDefinitionByUid", arg0)
 	ret0, _ := ret[0].(datamodel.ModelDefinition)
