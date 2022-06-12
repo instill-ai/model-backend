@@ -66,8 +66,9 @@ func (u *usage) RetrieveUsageData() interface{} {
 			instanceOfflineStateNum := int64(0) // Number of model instances with 'offline' state
 			modelDefinitionIds := []string{}    // Definition IDs of the model instances. Element in the list should not be duplicated.
 			tasks := []modelPB.ModelInstance_Task{}
-			testImageNum := int64(0) // Number of processed images via model instance testing operations
-
+			testImageNum := int64(0)                               // Number of processed images via model instance testing operations
+			var mTask = make(map[datamodel.ModelInstanceTask]bool) // use for creating unique task list
+			var mDef = make(map[string]bool)                       // use for creating unique model definition list
 			for {
 				dbModels, modelNextPageToken, _, err := u.repository.ListModel(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
 				if err != nil {
@@ -77,6 +78,16 @@ func (u *usage) RetrieveUsageData() interface{} {
 				instancePageToken := ""
 				for _, model := range dbModels {
 					isModelOnline := false
+					modelDef, err := u.repository.GetModelDefinitionByUid(model.ModelDefinitionUid)
+					if err != nil {
+						logger.Error(fmt.Sprintf("%s", err))
+					} else {
+						if !mDef[modelDef.ID] {
+							mDef[modelDef.ID] = true
+							modelDefinitionIds = append(modelDefinitionIds, modelDef.ID)
+						}
+					}
+
 					for {
 						dbInstances, instanceNextPageToken, _, err := u.repository.ListModelInstance(model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
 						if err != nil {
@@ -90,6 +101,11 @@ func (u *usage) RetrieveUsageData() interface{} {
 							}
 							if instance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
 								instanceOfflineStateNum++
+							}
+
+							if !mTask[instance.Task] {
+								mTask[instance.Task] = true
+								tasks = append(tasks, modelPB.ModelInstance_Task(instance.Task))
 							}
 						}
 
@@ -130,7 +146,6 @@ func (u *usage) RetrieveUsageData() interface{} {
 				Tasks:                   tasks,
 				TestImageNum:            testImageNum,
 			})
-
 		}
 
 		if userResp.NextPageToken == "" {
@@ -141,7 +156,6 @@ func (u *usage) RetrieveUsageData() interface{} {
 	}
 
 	logger.Debug("Send retrieved usage data...")
-
 	return &usagePB.SessionReport_ModelUsageData{
 		ModelUsageData: &usagePB.ModelUsageData{
 			Usages: pbModelUsageData,

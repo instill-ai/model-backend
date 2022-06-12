@@ -899,7 +899,7 @@ func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 
 	var modelDef datamodel.ModelDefinition
 	if len(dbModels) > 0 {
-		modelDef, err = h.service.GetModelDefinitionByUid(dbModels[0].ModelDefinitionUid.String())
+		modelDef, err = h.service.GetModelDefinitionByUid(dbModels[0].ModelDefinitionUid)
 		if err != nil {
 			return &modelPB.ListModelResponse{}, err
 		}
@@ -936,7 +936,7 @@ func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
@@ -957,7 +957,7 @@ func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
@@ -993,7 +993,7 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
@@ -1032,7 +1032,7 @@ func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
@@ -1053,7 +1053,7 @@ func (h *handler) PublishModel(ctx context.Context, req *modelPB.PublishModelReq
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
@@ -1074,7 +1074,7 @@ func (h *handler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishMode
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
@@ -1100,7 +1100,7 @@ func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
 	}
@@ -1131,7 +1131,7 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, err
 	}
@@ -1163,7 +1163,7 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.ListModelInstanceResponse{}, err
 	}
@@ -1203,7 +1203,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
@@ -1243,7 +1243,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid.String())
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
