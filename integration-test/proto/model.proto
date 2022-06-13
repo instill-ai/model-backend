@@ -92,7 +92,7 @@ message ModelInstance {
     // Task: KEYPOINT
     TASK_KEYPOINT = 3;
   }
-  // State enumerates the lifecycling state of a model instance
+  // State enumerates a model instance state
   enum State {
     // State: UNSPECIFIED
     STATE_UNSPECIFIED = 0;
@@ -136,7 +136,7 @@ message ModelInstance {
 }
 
 // ModelInstanceCard represents the README card for a model instance. There
-// exists one one and exactly one README card per model instance.
+// exists one and exactly one README card per model instance.
 message ModelInstanceCard {
   option (google.api.resource) = {
     type : "api.instill.tech/ModelInstanceCard"

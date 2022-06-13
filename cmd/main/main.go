@@ -62,10 +62,6 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 }
 
 func startReporter(ctx context.Context, usageServiceClient usagePB.UsageServiceClient, r repository.Repository, mu mgmtPB.UserServiceClient, rc *redis.Client) {
-	if config.Config.Server.DisableUsage {
-		return
-	}
-
 	logger, _ := logger.GetZapLogger()
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
@@ -147,9 +143,6 @@ func main() {
 	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
 	defer userServiceClientConn.Close()
 
-	usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
-	defer usageServiceClientConn.Close()
-
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
@@ -190,7 +183,11 @@ func main() {
 	}
 
 	// Start usage reporter
-	startReporter(ctx, usageServiceClient, repository, userServiceClient, redisClient)
+	if !config.Config.Server.DisableUsage {
+		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
+		defer usageServiceClientConn.Close()
+		startReporter(ctx, usageServiceClient, repository, userServiceClient, redisClient)
+	}
 
 	var dialOpts []grpc.DialOption
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
