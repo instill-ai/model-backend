@@ -9,7 +9,7 @@ server:
     - https://instill.tech
   edition: local-ce:dev
   disableusage: true
-  debug: false    
+  debug: false
 database:
   username: postgres
   password: password
@@ -21,7 +21,7 @@ database:
   pool:
     idleconnections: 5
     maxconnections: 30
-    connlifetime: 30 # In minutes
+    connlifetime: 30m # In minutes, e.g., '60m'
 tritonserver:
   grpcuri: localhost:8001
   modelstore: ./model-repository
@@ -30,13 +30,13 @@ mgmtbackend:
   port: 8080
   https:
     cert:   # /ssl/tls.crt
-    key:    # /ssl/tls.key  
+    key:    # /ssl/tls.key
 cache:
   redis:
     redisoptions:
-      addr: localhost:6379 
+      addr: localhost:6379
 usagebackend:
   host: localhost
   port: 8084
   https:
-    cert:  # /ssl/tls.crt      
+    cert:  # /ssl/tls.crt
