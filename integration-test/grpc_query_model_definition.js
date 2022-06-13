@@ -48,16 +48,16 @@ export function ListModelDefinition() {
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/ListModelDefinition', {}, {}), {
             "ListModelDefinition response status": (r) => r.status === grpc.StatusOK,
-            "ListModelDefinition response modelDefinitions[0].name": (r) => r.message.modelDefinitions[0].name === "model-definitions/local",
-            "ListModelDefinition response modelDefinitions[0].uid": (r) => r.message.modelDefinitions[0].uid !== undefined,
-            "ListModelDefinition response modelDefinitions[0].id": (r) => r.message.modelDefinitions[0].id === "local",
-            "ListModelDefinition response modelDefinitions[0].title": (r) => r.message.modelDefinitions[0].title === "Local",
-            "ListModelDefinition response modelDefinitions[0].icon": (r) => r.message.modelDefinitions[0].icon !== undefined,
-            "ListModelDefinition response modelDefinitions[0].documentationUrl": (r) => r.message.modelDefinitions[0].documentationUrl !== undefined,
-            "ListModelDefinition response modelDefinitions[0].modelSpec": (r) => r.message.modelDefinitions[0].modelSpec !== undefined,
-            "ListModelDefinition response modelDefinitions[0].modelInstanceSpec": (r) => r.message.modelDefinitions[0].modelInstanceSpec !== undefined,
-            "ListModelDefinition response modelDefinitions[0].create_time": (r) => r.message.modelDefinitions[0].createTime !== undefined,
-            "ListModelDefinition response modelDefinitions[0].update_time": (r) => r.message.modelDefinitions[0].updateTime !== undefined,
+            "ListModelDefinition response modelDefinitions[1].name": (r) => r.message.modelDefinitions[1].name === "model-definitions/local",
+            "ListModelDefinition response modelDefinitions[1].uid": (r) => r.message.modelDefinitions[1].uid !== undefined,
+            "ListModelDefinition response modelDefinitions[1].id": (r) => r.message.modelDefinitions[1].id === "local",
+            "ListModelDefinition response modelDefinitions[1].title": (r) => r.message.modelDefinitions[1].title === "Local",
+            "ListModelDefinition response modelDefinitions[1].icon": (r) => r.message.modelDefinitions[1].icon !== undefined,
+            "ListModelDefinition response modelDefinitions[1].documentationUrl": (r) => r.message.modelDefinitions[1].documentationUrl !== undefined,
+            "ListModelDefinition response modelDefinitions[1].modelSpec": (r) => r.message.modelDefinitions[1].modelSpec !== undefined,
+            "ListModelDefinition response modelDefinitions[1].modelInstanceSpec": (r) => r.message.modelDefinitions[1].modelInstanceSpec !== undefined,
+            "ListModelDefinition response modelDefinitions[1].create_time": (r) => r.message.modelDefinitions[1].createTime !== undefined,
+            "ListModelDefinition response modelDefinitions[1].update_time": (r) => r.message.modelDefinitions[1].updateTime !== undefined,
         });      
         client.close();  
     });

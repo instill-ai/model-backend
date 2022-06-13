@@ -739,47 +739,18 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	return
 }
 
-func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, err
-	}
-	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
-	if err := checkfield.CheckCreateOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	// Return error if REQUIRED fields are not provided in the requested payload model resource
-	if err := checkfield.CheckRequiredFields(req.Model, requiredFields); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	// Return error if resource ID does not follow RFC-1034
-	if err := checkfield.CheckResourceID(req.Model.GetId()); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, req.Model, false); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	_, err = h.service.GetModelById(owner, req.Model.Id, modelPB.View_VIEW_FULL)
-	if err == nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.AlreadyExists, "Model already existed")
-	}
+func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
 	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
-	if err != nil || modelDefinitionId != "github" {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	githubModelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if req.Model.Configuration == "" {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Missing Configuration")
+	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	// validate model configuration
 	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(githubModelDefinition.ModelSpec.String()), rs); err != nil {
+	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
 	}
 	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
@@ -814,7 +785,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	})
 	githubModel := datamodel.Model{
 		ID:                 req.Model.Id,
-		ModelDefinitionUid: githubModelDefinition.UID,
+		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
 		Description:        githubInfo.Description,
@@ -882,9 +853,177 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	pbModel := DBModelToPBModel(&githubModelDefinition, dbModel)
+	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
 
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+}
+
+func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
+	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	// validate model configuration
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
+	}
+	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+	}
+	if len(errs) > 0 {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", errs))
+	}
+	var modelConfig datamodel.ArtiVCModelConfiguration
+	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if modelConfig.Url == "" {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
+	}
+
+	visibility := modelPB.Model_VISIBILITY_PRIVATE
+	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		visibility = modelPB.Model_VISIBILITY_PUBLIC
+	}
+	bModelConfig, err := json.Marshal(modelConfig)
+	description := ""
+	if req.Model.Description != nil {
+		description = *req.Model.Description
+	}
+	artivcModel := datamodel.Model{
+		ID:                 req.Model.Id,
+		ModelDefinitionUid: modelDefinition.UID,
+		Owner:              owner,
+		Visibility:         datamodel.ModelVisibility(visibility),
+		Description:        description,
+		Configuration:      bModelConfig,
+		Instances:          []datamodel.ModelInstance{},
+	}
+	rdid, _ := uuid.NewV4()
+	tmpDir := fmt.Sprintf("./%s", rdid.String())
+	tags, err := util.ArtiVCGetTags(tmpDir, modelConfig)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	_ = os.RemoveAll(tmpDir)
+	for _, tag := range tags {
+		instanceConfig := datamodel.ArtiVCModelInstanceConfiguration{
+			Url: modelConfig.Url,
+			Tag: tag,
+		}
+		rdid, _ := uuid.NewV4()
+		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
+		err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig)
+		if err != nil {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+		}
+		bInstanceConfig, _ := json.Marshal(instanceConfig)
+		instance := datamodel.ModelInstance{
+			ID:            tag,
+			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			Configuration: bInstanceConfig,
+		}
+
+		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		if err != nil {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+		}
+		if _, err := os.Stat(readmeFilePath); err == nil {
+			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+			if err != nil || modelMeta.Task == "" {
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+				return &modelPB.CreateModelResponse{}, err
+			}
+			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+				instance.Task = datamodel.ModelInstanceTask(val)
+			} else {
+				if modelMeta.Task != "" {
+					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, instance.ID)
+					return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
+				} else {
+					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+				}
+			}
+		} else {
+			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		}
+		artivcModel.Instances = append(artivcModel.Instances, instance)
+	}
+	dbModel, err := h.service.CreateModel(owner, &artivcModel)
+	if err != nil {
+		for _, tag := range tags {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+		}
+		return &modelPB.CreateModelResponse{}, err
+	}
+
+	// Manually set the custom header to have a StatusCreated http response for REST endpoint
+	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
+
+	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+}
+
+func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
+	resp := &modelPB.CreateModelResponse{}
+	owner, err := resource.GetOwner(ctx)
+	if err != nil {
+		return resp, err
+	}
+	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
+	if err := checkfield.CheckCreateOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
+		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	// Return error if REQUIRED fields are not provided in the requested payload model resource
+	if err := checkfield.CheckRequiredFields(req.Model, requiredFields); err != nil {
+		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	// Return error if resource ID does not follow RFC-1034
+	if err := checkfield.CheckResourceID(req.Model.GetId()); err != nil {
+		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	// Validate ModelDefinition JSON Schema
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, req.Model, false); err != nil {
+		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	_, err = h.service.GetModelById(owner, req.Model.Id, modelPB.View_VIEW_FULL)
+	if err == nil {
+		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
+	}
+
+	if req.Model.Configuration == "" {
+		return resp, status.Errorf(codes.InvalidArgument, "Missing Configuration")
+	}
+
+	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
+	if err != nil {
+		return resp, err
+	}
+
+	switch modelDefinitionId {
+	case "github":
+		return createGitHubModel(h, ctx, req, owner)
+	case "artivc":
+		return createArtiVCModel(h, ctx, req, owner)
+	default:
+		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionId))
+	}
 }
 
 func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
