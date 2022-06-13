@@ -122,3 +122,71 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "file"
+- id: artivc
+  uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
+  title: ArtiVC
+  documentationUrl: "https://docs.instill.tech/models/definitions/artivc"
+  icon: "artivc.svg"
+  modelSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "ArtiVC spec for model"
+    type: "object"
+    required:
+    - "url"
+    - "credential"
+    additionalProperties: false
+    properties:
+      description:
+        type: "string"
+        title: "Description"
+        description: "Fill with a short description of your model"
+        maxLength: 1023
+        writeOnly: true
+        ui_order: 0
+        ui_component: "textarea_enable_counter"
+      url:
+        type: "string"
+        title: "Cloud storage url"
+        description: "the cloud storage url, e.g. `gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4`."
+        examples:
+        - "gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4"
+        - "s3://vdp/public-models/yolov4"
+        readOnly: true
+        ui_order: 1
+        ui_component: "text"       
+      credential:
+        type: "object"
+        title: "Credential"
+        description: "credential to work with cloud storage in json object format"
+        readOnly: true
+        ui_order: 2
+  modelInstanceSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "ArtiVC spec for model instance"
+    type: "object"
+    required:
+    - "url"
+    - "tag"
+    additionalProperties: false
+    properties:
+      url:
+        type: "string"
+        title: "Cloud storage url"
+        description: "the cloud storage url, e.g. `gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4`."
+        examples:
+        - "gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4"
+        - "s3://vdp/public-models/yolov4"
+        readOnly: true
+        ui_order: 0
+        ui_component: "text"    
+      tag:
+        type: "string"
+        title: "ArtiVC version"
+        description: "Tag of the ArtiVC, e.g., `v0.1.0`."
+        examples:
+        - "v0.1.0-alpha"
+        - "v1.0.0"
+        readOnly: true
+        ui_order: 1
+        ui_disabled: true
+        ui_component: "text"

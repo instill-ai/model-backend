@@ -242,7 +242,7 @@ func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]str
 		_ = os.Remove(credentialFile)
 		return tags, err
 	} else {
-		return []string{}, fmt.Errorf("invalid url %v", url)
+		return []string{}, fmt.Errorf("not support url %v", url)
 	}
 }
 
@@ -262,6 +262,6 @@ func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, ins
 		_ = os.Remove(credentialFile)
 		return err
 	} else {
-		return fmt.Errorf("invalid url %v", url)
+		return fmt.Errorf("not support url %v", url)
 	}
 }

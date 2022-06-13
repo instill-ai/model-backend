@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -52,6 +53,22 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 }
 
 func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) *modelPB.Model {
+	// remove credential in ArtiVC model configuration
+	sModelConfig := ""
+	if modelDef.ID == "artivc" {
+		var modelConfig datamodel.ArtiVCModelConfiguration
+		err := json.Unmarshal([]byte(dbModel.Configuration.String()), &modelConfig)
+		if err == nil {
+			b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
+				Url: modelConfig.Url,
+			})
+			if err == nil {
+				sModelConfig = string(b)
+			}
+		}
+	} else {
+		sModelConfig = dbModel.Configuration.String()
+	}
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
 		Uid:             dbModel.BaseDynamic.UID.String(),
@@ -61,7 +78,7 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		Description:     &dbModel.Description,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		Configuration:   dbModel.Configuration.String(),
+		Configuration:   sModelConfig,
 	}
 	if pbModel.Configuration == "" {
 		pbModel.Configuration = "{}"

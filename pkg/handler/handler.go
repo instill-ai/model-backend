@@ -885,7 +885,6 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	if modelConfig.Url == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
@@ -894,24 +893,27 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
 		visibility = modelPB.Model_VISIBILITY_PUBLIC
 	}
-	bModelConfig, _ := json.Marshal(modelConfig)
+	bModelConfig, err := json.Marshal(modelConfig)
+	description := ""
+	if req.Model.Description != nil {
+		description = *req.Model.Description
+	}
 	artivcModel := datamodel.Model{
 		ID:                 req.Model.Id,
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
-		Description:        *req.Model.Description,
+		Description:        description,
 		Configuration:      bModelConfig,
 		Instances:          []datamodel.ModelInstance{},
 	}
-
 	rdid, _ := uuid.NewV4()
-	tmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
+	tmpDir := fmt.Sprintf("./%s", rdid.String())
 	tags, err := util.ArtiVCGetTags(tmpDir, modelConfig)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_ = os.Remove(tmpDir)
+	_ = os.RemoveAll(tmpDir)
 	for _, tag := range tags {
 		instanceConfig := datamodel.ArtiVCModelInstanceConfiguration{
 			Url: modelConfig.Url,
@@ -958,7 +960,6 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		artivcModel.Instances = append(artivcModel.Instances, instance)
 	}
-
 	dbModel, err := h.service.CreateModel(owner, &artivcModel)
 	if err != nil {
 		for _, tag := range tags {
