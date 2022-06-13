@@ -94,6 +94,7 @@ services:
     restart: unless-stopped
     environment:
       CFG_SERVER_PORT: 8083
+      CFG_SERVER_DISABLEUSAGE: ${DISABLEUSAGE}
       CFG_DATABASE_HOST: pg_sql
       CFG_DATABASE_PORT: 5432
       CFG_DATABASE_USERNAME: postgres
