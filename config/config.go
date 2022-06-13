@@ -2,12 +2,12 @@ package config
 
 import (
 	"flag"
+	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v9"
-	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
@@ -89,8 +89,6 @@ var Config AppConfig
 
 // Init - Assign global config to decoded config struct
 func Init() error {
-	logger, _ := logger.GetZapLogger()
-
 	k := koanf.New(".")
 	parser := yaml.Parser()
 
@@ -99,7 +97,7 @@ func Init() error {
 	flag.Parse()
 
 	if err := k.Load(file.Provider(*fileRelativePath), parser); err != nil {
-		logger.Fatal(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	if err := k.Load(env.ProviderWithValue("CFG_", ".", func(s string, v string) (string, interface{}) {

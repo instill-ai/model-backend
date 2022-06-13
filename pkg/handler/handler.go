@@ -893,7 +893,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
 		visibility = modelPB.Model_VISIBILITY_PUBLIC
 	}
-	bModelConfig, err := json.Marshal(modelConfig)
+	bModelConfig, _ := json.Marshal(modelConfig)
 	description := ""
 	if req.Model.Description != nil {
 		description = *req.Model.Description

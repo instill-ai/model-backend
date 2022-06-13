@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -81,16 +82,16 @@ func startReporter(ctx context.Context, usageServiceClient usagePB.UsageServiceC
 }
 
 func main() {
+	if err := config.Init(); err != nil {
+		log.Fatal(err.Error())
+	}
+
 	logger, _ := logger.GetZapLogger()
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
 	}()
 	grpc_zap.ReplaceGrpcLoggerV2(logger)
-
-	if err := config.Init(); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	db := database.GetConnection()
 	defer database.Close(db)
