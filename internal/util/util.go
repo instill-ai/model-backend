@@ -75,7 +75,8 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfigu
 	dvcPath := findDVCPath(dir)
 	if dvcPath != "" {
 		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull", dvcPath))
-		return cmd.Run()
+		err = cmd.Run()
+		return err
 	}
 	return nil
 }
