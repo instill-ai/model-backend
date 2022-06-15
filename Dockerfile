@@ -11,11 +11,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend .
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-migrate ./cmd/migration
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o /model-backend-init ./cmd/init
 
-WORKDIR /go/src/third_party/ArtiVC 
+WORKDIR /go/src/third_party
 ENV CGO_ENABLED=0
 
-RUN go get -d -v ./...
-RUN make build
+RUN git clone https://github.com/InfuseAI/ArtiVC && cd ArtiVC && git checkout tags/v0.9.0 && go get -d -v ./... && make build
 
 FROM alpine:3.16.0 AS runtime
 RUN apk update
