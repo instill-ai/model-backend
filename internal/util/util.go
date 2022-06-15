@@ -47,6 +47,17 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	return &modelMeta, err
 }
 
+func findDVCPath(dir string) string {
+	dvcPath := ""
+	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if f.Name() == ".dvc" {
+			dvcPath = path
+		}
+		return nil
+	})
+	return dvcPath
+}
+
 func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
 	urlRepo := instanceConfig.Repository
 	if !strings.HasPrefix(urlRepo, "https://github.com") {
@@ -57,7 +68,17 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfigu
 	}
 
 	cmd := exec.Command("git", "clone", "-b", instanceConfig.Tag, urlRepo, dir)
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	dvcPath := findDVCPath(dir)
+	if dvcPath != "" {
+		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull", dvcPath))
+		err = cmd.Run()
+		return err
+	}
+	return nil
 }
 
 type Tag struct {
