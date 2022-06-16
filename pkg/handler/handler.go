@@ -390,7 +390,49 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 	return tmpFile, &uploadedModel, modelDefinitionId, nil
 }
 
-func savePredictInputs(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelId string, instanceId string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelId string, instanceId string, err error) {
+	var firstChunk = true
+	var fileData *modelPB.TriggerModelInstanceBinaryFileUploadRequest
+
+	var allContentFiles []byte
+	var length_of_files []uint64
+	for {
+		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			err = errors.Wrapf(err,
+				"failed while reading chunks from stream")
+			return [][]byte{}, "", "", err
+		}
+
+		if firstChunk { //first chunk contains file name
+			modelId, instanceId, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			if err != nil {
+				return [][]byte{}, "", "", err
+			}
+
+			length_of_files = fileData.FileLengths
+
+			firstChunk = false
+		}
+		allContentFiles = append(allContentFiles, fileData.Bytes...)
+	}
+
+	if len(length_of_files) == 0 {
+		return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
+	}
+	start := uint64(0)
+	for i := 0; i < len(length_of_files); i++ {
+		imageBytes = append(imageBytes, allContentFiles[start:start+length_of_files[i]])
+		start = length_of_files[i]
+	}
+	return imageBytes, modelId, instanceId, nil
+}
+
+func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelId string, instanceId string, err error) {
 	var firstChunk = true
 	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
 
@@ -1416,7 +1458,85 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 		return err
 	}
 
-	imageBytes, modelId, instanceId, err := savePredictInputs(stream)
+	imageBytes, modelId, instanceId, err := savePredictInputsTestMode(stream)
+	if err != nil {
+		return status.Error(codes.Internal, "Could not save the file")
+	}
+
+	modelInDB, err := h.service.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return err
+	}
+	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceId, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return err
+	}
+
+	// check whether model support batching or not. If not, raise an error
+	if len(imageBytes) > 1 {
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		if err != nil {
+			return err
+		}
+		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		if err != nil {
+			return status.Error(codes.InvalidArgument, err.Error())
+		}
+		if !doSupportBatch {
+			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+
+	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
+	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imageBytes, task)
+	if err != nil {
+		return err
+	}
+
+	var data = &structpb.Struct{}
+	var b []byte
+	switch task {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION:
+		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	case modelPB.ModelInstance_TASK_DETECTION:
+		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	case modelPB.ModelInstance_TASK_KEYPOINT:
+		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	default:
+		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	}
+	err = protojson.Unmarshal(b, data)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
+	return err
+}
+
+func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
+	if !h.triton.IsTritonServerReady() {
+		return status.Error(codes.Unavailable, "Triton Server not ready yet")
+	}
+
+	owner, err := resource.GetOwner(stream.Context())
+	if err != nil {
+		return err
+	}
+
+	imageBytes, modelId, instanceId, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1480,7 +1600,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
-	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
+	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{Output: data})
 	return err
 }
 
@@ -1647,7 +1767,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	return &modelPB.TestModelInstanceResponse{Output: data}, nil
 }
 
-func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
 		owner, err := resource.GetOwnerFromHeader(r)
@@ -1720,7 +1840,13 @@ func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pat
 		}
 
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-		response, err := modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+		var response interface{}
+		if mode == "test" {
+			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+		} else {
+			response, err = modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+		}
+
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -1771,6 +1897,14 @@ func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pat
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
 	}
+}
+
+func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelInstanceByUpload(w, r, pathParams, "test")
+}
+
+func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelInstanceByUpload(w, r, pathParams, "trigger")
 }
 
 func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {

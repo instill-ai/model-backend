@@ -183,6 +183,18 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls output.classification_outputs[0].score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+      });      
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -204,6 +216,22 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls response output.classification_outputs[1].score`]: (r) =>
           r.json().output.classification_outputs[1].score === 1,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs.length`]: (r) =>
+          r.json().output.classification_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[0].category`]: (r) =>
+          r.json().output.classification_outputs[0].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response output.classification_outputs[0].score`]: (r) =>
+          r.json().output.classification_outputs[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[1].category`]: (r) =>
+          r.json().output.classification_outputs[1].category === "match",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response output.classification_outputs[1].score`]: (r) =>
+          r.json().output.classification_outputs[1].score === 1,
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -393,6 +421,20 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+      });      
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -418,6 +460,26 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].score !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -588,17 +650,31 @@ export function InferModel() {
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined output.outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined output.parameters`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined output.raw_output_contents.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.raw_output_contents.length`]: (r) =>
           r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined output.raw_output_contents[0]`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.outputs.length`]: (r) =>
+          r.json().output.outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.parameters`]: (r) =>
+          r.json().output.parameters !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.raw_output_contents.length`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
+      });      
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -607,19 +683,35 @@ export function InferModel() {
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images output.outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
           r.json().output.outputs[0].shape[0] === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images output.parameters`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
           r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs.length`]: (r) =>
+          r.json().output.outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
+          r.json().output.outputs[0].shape[0] === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.parameters`]: (r) =>
+          r.json().output.parameters !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
+          r.json().output.raw_output_contents.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
+          r.json().output.raw_output_contents[0] !== undefined,
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -766,15 +858,27 @@ export function InferModel() {
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple-part keypoint response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple-part keypoint output.keypoint_outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint output.keypoint_outputs.length`]: (r) =>
           r.json().output.keypoint_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple-part keypoint output.keypoint_outputs[0].keypoints.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint output.keypoint_outputs[0].keypoints.length`]: (r) =>
           r.json().output.keypoint_outputs[0].keypoints.length === 17,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple-part keypoint response output.keypoint_outputs[0].score`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint response output.keypoint_outputs[0].score`]: (r) =>
           r.json().output.keypoint_outputs[0].score === 1,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint output.keypoint_outputs.length`]: (r) =>
+          r.json().output.keypoint_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint output.keypoint_outputs[0].keypoints.length`]: (r) =>
+          r.json().output.keypoint_outputs[0].keypoints.length === 17,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint response output.keypoint_outputs[0].score`]: (r) =>
+          r.json().output.keypoint_outputs[0].score === 1,
+      });      
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -786,6 +890,12 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data keypoint response status`]: (r) =>
           r.status === 400,
       });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data keypoint response status`]: (r) =>
+          r.status === 400,
+      });      
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
