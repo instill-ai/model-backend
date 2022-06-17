@@ -42,7 +42,6 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/catalinc/hashcash v0.0.0-20161205220751-e6bc29ff4de9 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
