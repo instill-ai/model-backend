@@ -27,7 +27,18 @@ type ModelMeta struct {
 	Task string
 }
 
+// validate to prevent security issue as https://codeql.github.com/codeql-query-help/go/go-path-injection/
+func ValidateFilePath(filePath string) error {
+	if strings.Contains(filePath, "..") {
+		return fmt.Errorf("the deleted file should not contain special characters")
+	}
+	return nil
+}
+
 func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
+	if err := ValidateFilePath(readmeFilePath); err != nil {
+		return &ModelMeta{}, err
+	}
 	if _, err := os.Stat(readmeFilePath); err != nil {
 		return &ModelMeta{}, err
 	}
@@ -129,6 +140,10 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 
 func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
 	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, instanceName)
+	if err := ValidateFilePath(path); err != nil {
+		panic(err)
+	}
+
 	files, err := filepath.Glob(path)
 	if err != nil {
 		panic(err)
@@ -139,6 +154,10 @@ func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelNa
 		}
 	}
 	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", modelRepositoryRoot, namespace, modelName, instanceName)
+	if err := ValidateFilePath(readmeFilePath); err != nil {
+		panic(err)
+	}
+
 	_ = os.Remove(readmeFilePath)
 }
 

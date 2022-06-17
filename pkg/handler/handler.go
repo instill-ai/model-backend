@@ -95,6 +95,9 @@ func writeToFp(fp *os.File, data []byte) error {
 func updateConfigModelName(filePath string, oldModelName string, newModelName string) error {
 	regStr := fmt.Sprintf("name:\\s+\"%v\"", oldModelName)
 	nameRegx := regexp.MustCompile(regStr)
+	if err := util.ValidateFilePath(filePath); err != nil {
+		return err
+	}
 	fileData, _ := ioutil.ReadFile(filePath)
 	fileString := string(fileData)
 	fileString = nameRegx.ReplaceAllString(fileString, fmt.Sprintf("name: \"%v\"", newModelName))
@@ -160,6 +163,9 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 				}
 			}
 			filePath := filepath.Join(dstDir, dirName)
+			if err := util.ValidateFilePath(filePath); err != nil {
+				return "", err
+			}
 			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
 				return "", err
@@ -179,6 +185,9 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 		if strings.Contains(f.Name, "README.md") {
 			readmeFilePath = filePath
+		}
+		if err := util.ValidateFilePath(filePath); err != nil {
+			return "", err
 		}
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
