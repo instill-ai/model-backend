@@ -36,7 +36,5 @@ cache:
     redisoptions:
       addr: localhost:6379
 usagebackend:
-  host: localhost
-  port: 8084
-  https:
-    cert:  # /ssl/tls.crt
+  host: usage.instill.tech
+  port: 443
