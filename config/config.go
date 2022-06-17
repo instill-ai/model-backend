@@ -66,12 +66,8 @@ type CacheConfig struct {
 }
 
 type UsageBackendConfig struct {
-	Host  string `koanf:"host"`
-	Port  int    `koanf:"port"`
-	HTTPS struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
+	Host string `koanf:"host"`
+	Port int    `koanf:"port"`
 }
 
 // AppConfig defines
