@@ -133,7 +133,6 @@
     type: "object"
     required:
     - "url"
-    - "credential"
     additionalProperties: false
     properties:
       description:

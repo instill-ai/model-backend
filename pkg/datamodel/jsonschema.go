@@ -24,6 +24,12 @@ var ModelInstanceJSONSchema *jsonschema.Schema
 // ModelInstanceCardJSONSchema represents the Model Instance Card JSON Schema for validating the payload
 var ModelInstanceCardJSONSchema *jsonschema.Schema
 
+// GCSUserAccountJSONSchema represents the GCS User Account JSON Schema for validating the payload
+var GCSUserAccountJSONSchema *jsonschema.Schema
+
+// GCSServiceAccountJSONSchema represents the GCS Service Account JSON Schema for validating the payload
+var GCSServiceAccountJSONSchema *jsonschema.Schema
+
 // InitJSONSchema initialise JSON Schema instances with the given files
 func InitJSONSchema() {
 
@@ -63,6 +69,22 @@ func InitJSONSchema() {
 		}
 	}
 
+	if r, err := os.Open("config/credential/gcs_user_account.json"); err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	} else {
+		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/credential/gcs_user_account.json", r); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+	}
+
+	if r, err := os.Open("config/credential/gcs_service_account.json"); err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	} else {
+		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/credential/gcs_service_account.json", r); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+	}
+
 	var err error
 	ModelDefJSONSchema, err = compiler.Compile("config/model/model_definition.json")
 	if err != nil {
@@ -84,6 +106,15 @@ func InitJSONSchema() {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
+	GCSUserAccountJSONSchema, err = compiler.Compile("config/credential/gcs_user_account.json")
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+
+	GCSServiceAccountJSONSchema, err = compiler.Compile("config/credential/gcs_service_account.json")
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
 }
 
 //ValidateJSONSchema validates the Protobuf message data

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -238,18 +239,65 @@ func DoSupportBatch(configFilePath string) (bool, error) {
 }
 
 func writeCredential(credential datatypes.JSON) (string, error) {
-	var gcsCredential datamodel.GCSCredential
-	err := json.Unmarshal([]byte(credential), &gcsCredential)
-	if err != nil {
-		return "", err
-	}
-	file, _ := json.MarshalIndent(gcsCredential, "", " ")
 	uid, _ := uuid.NewV4()
 	credentialFile := fmt.Sprintf("/tmp/%v", uid.String())
-	err = ioutil.WriteFile(credentialFile, file, 0644)
-	if err != nil {
-		return "", err
+
+	if credential == nil { // download default service account
+		out, err := os.Create(credentialFile)
+		if err != nil {
+			return "", err
+		}
+		defer out.Close()
+		resp, err := http.Get(DEFAULT_GCP_SERVICE_ACCOUNT_FILE)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		var gcsUserAccountCredential datamodel.GCSUserAccount
+		err := json.Unmarshal([]byte(credential), &gcsUserAccountCredential)
+		if err != nil {
+			var gcsServiceAccountCredential datamodel.GCSServiceAccount
+			err := json.Unmarshal([]byte(credential), &gcsServiceAccountCredential)
+			if err != nil {
+				return "", err
+			}
+			file, err := json.MarshalIndent(gcsServiceAccountCredential, "", " ")
+			if err != nil {
+				return "", err
+			}
+			// Validate GCSServiceAccountJSONSchema JSON Schema
+			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSServiceAccountJSONSchema.String(), string(file)); err != nil {
+				return "", err
+			}
+
+			err = ioutil.WriteFile(credentialFile, file, 0644)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			file, err := json.MarshalIndent(gcsUserAccountCredential, "", " ")
+			fmt.Println(">>>> file ", string(file), err)
+			if err != nil {
+				return "", err
+			}
+			// Validate GCSUserAccountJSONSchema JSON Schema
+			fmt.Println(">>>> datamodel.GCSUserAccountJSONSchema.String() ", datamodel.GCSUserAccountJSONSchema.String())
+			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSUserAccountJSONSchema.String(), string(file)); err != nil {
+				fmt.Println("????? err ", err)
+				return "", err
+			}
+			err = ioutil.WriteFile(credentialFile, file, 0644)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
+
 	return credentialFile, nil
 }
 
@@ -264,11 +312,13 @@ func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]str
 		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc clone %s %s", credentialFile, url, dir))
 		err = cmd.Run()
 		if err != nil {
+			_ = os.Remove(credentialFile)
 			return []string{}, err
 		}
 
 		out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s ; GOOGLE_APPLICATION_CREDENTIALS=%s avc tag", dir, credentialFile)).Output()
 		if err != nil {
+			_ = os.Remove(credentialFile)
 			return []string{}, err
 		}
 
