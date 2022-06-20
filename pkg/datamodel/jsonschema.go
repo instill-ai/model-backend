@@ -138,19 +138,13 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopula
 }
 
 // ValidateJSONSchemaString validates the string data given a string schema
-func ValidateJSONSchemaString(schema string, data string) error {
-
-	sch, err := jsonschema.CompileString("schema.json", schema)
-	if err != nil {
-		return err
-	}
-
+func ValidateJSONSchemaString(schema *jsonschema.Schema, data string) error {
 	var v interface{}
 	if err := json.Unmarshal([]byte(data), &v); err != nil {
 		return err
 	}
 
-	if err = sch.Validate(v); err != nil {
+	if err := schema.Validate(v); err != nil {
 		return err
 	}
 

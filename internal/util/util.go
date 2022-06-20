@@ -253,17 +253,24 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 			return "", err
 		}
 		defer resp.Body.Close()
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
+
+		if _, err := io.Copy(out, resp.Body); err != nil {
 			return "", err
 		}
 	} else {
 		var gcsUserAccountCredential datamodel.GCSUserAccount
-		err := json.Unmarshal([]byte(credential), &gcsUserAccountCredential)
+		if err := json.Unmarshal([]byte(credential), &gcsUserAccountCredential); err != nil {
+			return "", err
+		}
+
+		file, err := json.MarshalIndent(gcsUserAccountCredential, "", " ")
 		if err != nil {
+			return "", err
+		}
+		// Validate GCSUserAccountJSONSchema JSON Schema
+		if err := datamodel.ValidateJSONSchemaString(datamodel.GCSUserAccountJSONSchema, string(file)); err != nil {
 			var gcsServiceAccountCredential datamodel.GCSServiceAccount
-			err := json.Unmarshal([]byte(credential), &gcsServiceAccountCredential)
-			if err != nil {
+			if err := json.Unmarshal([]byte(credential), &gcsServiceAccountCredential); err != nil {
 				return "", err
 			}
 			file, err := json.MarshalIndent(gcsServiceAccountCredential, "", " ")
@@ -271,28 +278,13 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 				return "", err
 			}
 			// Validate GCSServiceAccountJSONSchema JSON Schema
-			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSServiceAccountJSONSchema.String(), string(file)); err != nil {
+			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSServiceAccountJSONSchema, string(file)); err != nil {
 				return "", err
 			}
-
-			err = ioutil.WriteFile(credentialFile, file, 0644)
-			if err != nil {
+			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
-		} else {
-			file, err := json.MarshalIndent(gcsUserAccountCredential, "", " ")
-			fmt.Println(">>>> file ", string(file), err)
-			if err != nil {
-				return "", err
-			}
-			// Validate GCSUserAccountJSONSchema JSON Schema
-			fmt.Println(">>>> datamodel.GCSUserAccountJSONSchema.String() ", datamodel.GCSUserAccountJSONSchema.String())
-			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSUserAccountJSONSchema.String(), string(file)); err != nil {
-				fmt.Println("????? err ", err)
-				return "", err
-			}
-			err = ioutil.WriteFile(credentialFile, file, 0644)
-			if err != nil {
+			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
 		}
