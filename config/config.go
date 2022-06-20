@@ -66,8 +66,9 @@ type CacheConfig struct {
 }
 
 type UsageBackendConfig struct {
-	Host string `koanf:"host"`
-	Port int    `koanf:"port"`
+	TLSEnabled bool   `koanf:"tlsenabled"`
+	Host       string `koanf:"host"`
+	Port       int    `koanf:"port"`
 }
 
 // AppConfig defines

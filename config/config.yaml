@@ -36,5 +36,6 @@ cache:
     redisoptions:
       addr: localhost:6379
 usagebackend:
+  tlsenabled: true
   host: usage.instill.tech
   port: 443
