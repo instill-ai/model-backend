@@ -30,7 +30,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/instill-ai/protogen-go v0.1.5-alpha.0.20220615161406-12d8be2b3938
+	github.com/instill-ai/protogen-go v0.2.0-alpha
 	github.com/instill-ai/usage-client v0.0.0-20220607201439-d646c37f5b02
 	github.com/instill-ai/x v0.1.0-alpha.0.20220604235252-39fcffc82edb
 	github.com/knadh/koanf v1.4.1
