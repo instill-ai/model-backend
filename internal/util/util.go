@@ -284,6 +284,7 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
+		} else {
 			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
