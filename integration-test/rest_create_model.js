@@ -9,7 +9,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
@@ -122,7 +122,7 @@ export function CreateModelFromLocal() {
           r.json().model.create_time !== undefined,
         "POST /v1alpha/models:multipart task keypoint response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
-      });      
+      });
 
       let fd_unspecified = new FormData();
       let model_id_unspecified = randomString(10)
@@ -183,7 +183,7 @@ export function CreateModelFromLocal() {
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
-      });      
+      });
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
         headers: genHeader(`application/json`),
       }), {
@@ -203,7 +203,7 @@ export function CreateModelFromGitHub() {
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": JSON.stringify({
-          "repository": "instill-ai/model-dummy-cls"       
+          "repository": "instill-ai/model-dummy-cls"
         }),
       }), {
         headers: genHeader("application/json"),
@@ -307,7 +307,7 @@ export function CreateModelFromGitHub() {
         "id": randomString(10),
         "model_definition": randomString(10),
         "configuration": JSON.stringify({
-          "repository": "instill-ai/model-dummy-cls"          
+          "repository": "instill-ai/model-dummy-cls"
         }),
       }), {
         headers: genHeader("application/json"),

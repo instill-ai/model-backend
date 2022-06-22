@@ -15,14 +15,14 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/github"
 
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
@@ -35,7 +35,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
         let model_id = randomString(10)

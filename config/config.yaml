@@ -8,12 +8,12 @@ server:
     - https://instill-inc.tech
     - https://instill.tech
   edition: local-ce:dev
-  disableusage: true
-  debug: false
+  disableusage: false
+  debug: true
 database:
   username: postgres
   password: password
-  host: localhost
+  host: pg-sql
   port: 5432
   name: model
   version: 1
@@ -23,10 +23,10 @@ database:
     maxconnections: 30
     connlifetime: 30m # In minutes, e.g., '60m'
 tritonserver:
-  grpcuri: localhost:8001
-  modelstore: ./model-repository
+  grpcuri: triton-server:8001
+  modelstore: /model-repository
 mgmtbackend:
-  host: localhost
+  host: mgmt-backend
   port: 8080
   https:
     cert:   # /ssl/tls.crt
@@ -34,7 +34,7 @@ mgmtbackend:
 cache:
   redis:
     redisoptions:
-      addr: localhost:6379
+      addr: redis:6379
 usagebackend:
   tlsenabled: true
   host: usage.instill.tech

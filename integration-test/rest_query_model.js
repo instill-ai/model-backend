@@ -9,7 +9,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
@@ -107,7 +107,7 @@ export function GetModel() {
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -333,7 +333,7 @@ export function LookupModel() {
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {

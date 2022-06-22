@@ -9,7 +9,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 
 export function ListModelDefinition() {
   // Model Backend API: get model definition list
@@ -31,17 +31,17 @@ export function ListModelDefinition() {
         [`GET /v1alpha/model-definitions response model_definitions[0].uid`]: (r) =>
         r.json().model_definitions[1].uid !== undefined,
         [`GET /v1alpha/model-definitions response model_definitions[0].id`]: (r) =>
-        r.json().model_definitions[1].id === "local",      
+        r.json().model_definitions[1].id === "local",
         [`GET /v1alpha/model-definitions response model_definitions[0].title`]: (r) =>
-        r.json().model_definitions[1].title === "Local",                
+        r.json().model_definitions[1].title === "Local",
         [`GET /v1alpha/model-definitions response model_definitions[0].documentation_url`]: (r) =>
-        r.json().model_definitions[1].documentation_url === "https://docs.instill.tech/models/definitions/local",          
+        r.json().model_definitions[1].documentation_url === "https://docs.instill.tech/models/definitions/local",
         [`GET /v1alpha/model-definitions response model_definitions[0].icon`]: (r) =>
         r.json().model_definitions[1].icon === "local.svg",
         [`GET /v1alpha/model-definitions response model_definitions[0].model_spec`]: (r) =>
-        r.json().model_definitions[1].model_spec === null,        
+        r.json().model_definitions[1].model_spec === null,
         [`GET /v1alpha/model-definitions response model_definitions[0].model_instance_spec`]: (r) =>
-        r.json().model_definitions[1].model_instance_spec === null,         
+        r.json().model_definitions[1].model_instance_spec === null,
       });
     });
 
@@ -61,17 +61,17 @@ export function ListModelDefinition() {
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].uid`]: (r) =>
       r.json().model_definitions[1].uid !== undefined,
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].id`]: (r) =>
-      r.json().model_definitions[1].id === "local",      
+      r.json().model_definitions[1].id === "local",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].title`]: (r) =>
-      r.json().model_definitions[1].title === "Local",                
+      r.json().model_definitions[1].title === "Local",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].documentation_url`]: (r) =>
-      r.json().model_definitions[1].documentation_url === "https://docs.instill.tech/models/definitions/local",          
+      r.json().model_definitions[1].documentation_url === "https://docs.instill.tech/models/definitions/local",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].icon`]: (r) =>
       r.json().model_definitions[1].icon === "local.svg",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].model_spec`]: (r) =>
-      r.json().model_definitions[1].model_spec !== null,        
+      r.json().model_definitions[1].model_spec !== null,
       [`GET /v1alpha/model-definitions response model_definitions[0].model_instance_spec`]: (r) =>
-      r.json().model_definitions[1].model_instance_spec !== null,         
+      r.json().model_definitions[1].model_instance_spec !== null,
     });
   }
 }

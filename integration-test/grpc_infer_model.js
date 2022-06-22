@@ -15,7 +15,7 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
@@ -23,7 +23,7 @@ const model_def_name = "model-definitions/local"
 export function InferModel() {
     // TriggerModelInstance check
     group("Model API: TriggerModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -104,7 +104,7 @@ export function InferModel() {
 
     // TestModelInstance check
     group("Model API: TestModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -181,5 +181,5 @@ export function InferModel() {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
-    });    
+    });
 };

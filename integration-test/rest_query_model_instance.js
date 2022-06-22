@@ -9,7 +9,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 
@@ -104,8 +104,8 @@ export function GetModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.content`]: (r) =>
-          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",  
-      });      
+          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -215,7 +215,7 @@ export function ListModelInstance() {
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration.content`]: (r) =>
           JSON.parse(r.json().instances[0].configuration).content === "dummy-cls-model.zip",
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -256,7 +256,7 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
           JSON.parse(r.json().model.configuration).repository === "instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.configuration.html_url": (r) =>
-          JSON.parse(r.json().model.configuration).html_url === "https://github.com/instill-ai/model-dummy-cls",          
+          JSON.parse(r.json().model.configuration).html_url === "https://github.com/instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -438,7 +438,7 @@ export function LookupModelInstance() {
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.configuration.content`]: (r) =>
-          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",  
+          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",
       });
 
 

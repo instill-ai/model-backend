@@ -18,7 +18,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
@@ -57,7 +57,7 @@ export default function (data) {
   // Create Model API
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
-  
+
   // // Query Model API
   queryModel.GetModel()
   queryModel.ListModel()

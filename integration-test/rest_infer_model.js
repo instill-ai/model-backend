@@ -9,7 +9,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 
@@ -194,7 +194,7 @@ export function InferModel() {
           r.json().output.classification_outputs[0].category === "match",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[0].score`]: (r) =>
           r.json().output.classification_outputs[0].score === 1,
-      });      
+      });
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -231,7 +231,7 @@ export function InferModel() {
           r.json().output.classification_outputs[1].category === "match",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response output.classification_outputs[1].score`]: (r) =>
           r.json().output.classification_outputs[1].score === 1,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -434,7 +434,7 @@ export function InferModel() {
           r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
-      });      
+      });
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -479,7 +479,7 @@ export function InferModel() {
           r.json().output.detection_outputs[1].bounding_box_objects[0].score !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -674,7 +674,7 @@ export function InferModel() {
           r.json().output.raw_output_contents.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
-      });      
+      });
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -711,7 +711,7 @@ export function InferModel() {
           r.json().output.raw_output_contents.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
           r.json().output.raw_output_contents[0] !== undefined,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -878,7 +878,7 @@ export function InferModel() {
           r.json().output.keypoint_outputs[0].keypoints.length === 17,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint response output.keypoint_outputs[0].score`]: (r) =>
           r.json().output.keypoint_outputs[0].score === 1,
-      });      
+      });
 
       // Predict multiple images with multiple-part
       fd = new FormData();
@@ -895,7 +895,7 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data keypoint response status`]: (r) =>
           r.status === 400,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -908,5 +908,5 @@ export function InferModel() {
       // Triton unloading models takes time
       sleep(6)
     });
-  }    
+  }
 }

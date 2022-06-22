@@ -15,13 +15,13 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/github"
 
 export function GetModelDefinition() {
     group("Model API: GetModelDefinition", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/GetModelDefinition', { name: model_def_name }, {}), {
@@ -36,14 +36,14 @@ export function GetModelDefinition() {
             "GetModelDefinition response modelDefinition.modelInstanceSpec": (r) => r.message.modelDefinition.modelInstanceSpec !== undefined,
             "GetModelDefinition response modelDefinition.create_time": (r) => r.message.modelDefinition.createTime !== undefined,
             "GetModelDefinition response modelDefinition.update_time": (r) => r.message.modelDefinition.updateTime !== undefined,
-        });    
+        });
         client.close();
     });
 };
 
 export function ListModelDefinition() {
     group("Model API: ListModelDefinition", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/ListModelDefinition', {}, {}), {
@@ -58,7 +58,7 @@ export function ListModelDefinition() {
             "ListModelDefinition response modelDefinitions[1].modelInstanceSpec": (r) => r.message.modelDefinitions[1].modelInstanceSpec !== undefined,
             "ListModelDefinition response modelDefinitions[1].create_time": (r) => r.message.modelDefinitions[1].createTime !== undefined,
             "ListModelDefinition response modelDefinitions[1].update_time": (r) => r.message.modelDefinitions[1].updateTime !== undefined,
-        });      
-        client.close();  
+        });
+        client.close();
     });
 };

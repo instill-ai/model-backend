@@ -1,53 +1,71 @@
-# Model Backend <!-- omit in toc -->
+# model-backend
 
-The service serve for uploading AI model into Instill platform and retrieving AI model info.
+`model-backend` manages all model resources including model definitions and model instances within [Visual Data Preparation (VDP)](https://github.com/instill-ai/vdp) to convert the unstructured visual data to the structured data.
 
-Table of Contents:
-- [Prerequisite](#prerequisite)
-- [Quick start](#quick-start)
-- [Community support](#community-support)
-- [Documentation](#documentation)
-  - [API reference](#api-reference)
-  - [Build docker](#build-docker)
-- [License](#license)
+## Local dev
 
-
-## Prerequisite
-- [sample models](https://artifacts.instill.tech/visual-data-preparation/sample-models/yolov4-onnx-cpu.zip) example CPU models running in Triton server
-To download the sample model, you could run quick-download.sh
-```bash
-$ ./scripts/quick-download.sh
+On the local machine, clone `vdp` repository in your workspace, move to the repository folder, and launch all dependent microservices:
+```
+$ cd <your-workspace>
+$ git clone https://github.com/instill-ai/vdp.git
+$ cd vdp
+$ make dev PROFILE=model
 ```
 
-## Quick start
-
-```bash
-$ make all
-$ go run ./examples-go/grpc_client.go upload --file sample-models/yolov4-onnx-cpu.zip --name yolov4 # upload a YOLOv4 model for object detection; note --task is optional and could be specified as TASK_DETECTION, TASK_CLASSIFICATION, without specifying task will default TASK_UNSPECIFIED
-$ go run ./examples-go/grpc_client.go load -n yolov4 -i latest # deploy the ensemble model
-$ go run ./examples-go/grpc_client.go predict -n yolov4 -i latest -f sample-models/dog.jpg # make inference
+Clone `model-backend` repository in your workspace and move to the repository folder:
+```
+$ cd <your-workspace>
+$ git clone https://github.com/instill-ai/model-backend.git
+$ cd model-backend
 ```
 
-### Create a your own model to run in Triton server
+### Build the dev image
 
-## Community support
-
-For general help using VDP, you can use one of these channels:
-
-- [GitHub](https://github.com/instill-ai/vdp) (bug reports, feature requests, project discussions and contributions)
-- [Discord](https://discord.gg/sevxWsqpGh) (live discussion with the community and the Instill AI Team)
-
-## Documentation
-
-### API reference
-
-### Build docker
-
-You can build a development Docker image using:
 ```bash
-$ docker build -t {tag} .
+$ make build
 ```
+
+### Run the dev container
+
+```bash
+$ make dev
+```
+
+Now, you have the Go project set up in the container, in which you can compile and run the binaries together with the integration test in each container shell.
+
+### Run the server
+
+```bash
+$ docker exec -it model-backend /bin/bash
+$ go run ./cmd/migration
+$ go run ./cmd/init
+$ go run ./cmd/main
+```
+
+### Run the Temporal worker
+
+```bash
+$ docker exec -it model-backend /bin/bash
+$ go run ./cmd/worker
+```
+
+### Run the integration test
+
+``` bash
+$ docker exec -it model-backend /bin/bash
+$ make integration-test
+```
+
+### Stop the dev container
+
+```bash
+$ make stop
+```
+
+### CI/CD
+
+The latest images will be published to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend) at release.
 
 ## License
 
-See the [LICENSE](https://github.com/instill-ai/model-backend/blob/main/LICENSE) file for licensing information.
+See the [LICENSE](./LICENSE) file for licensing information.

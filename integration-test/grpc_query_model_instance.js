@@ -14,14 +14,14 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 export function GetModelInstance() {
     // GetModelInstance check
     group("Model API: GetModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -90,7 +90,7 @@ export function GetModelInstance() {
 
     // LookUpModelInstance check
     group("Model API: LookUpModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -165,7 +165,7 @@ export function GetModelInstance() {
 export function ListModelInstance() {
     // ListModelInstance check
     group("Model API: ListModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -207,7 +207,7 @@ export function ListModelInstance() {
         check(res_model_instance, {
             'GetModelInstance status': (r) => r && r.status === grpc.StatusOK,
         });
-        
+
         let req = { parent: `models/${res_model.json().model.id}` }
         check(client.invoke('vdp.model.v1alpha.ModelService/ListModelInstance', req, {}), {
             'ListModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -236,7 +236,7 @@ export function ListModelInstance() {
 export function LookupModelInstance() {
     // LookUpModelInstance check
     group("Model API: LookUpModelInstance", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 

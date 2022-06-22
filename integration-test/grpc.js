@@ -32,7 +32,7 @@ export default () => {
     // Liveness check
     {
         group("Model API: Liveness", () => {
-            client.connect('localhost:8083', {
+            client.connect('model-backend:8083', {
                 plaintext: true
             });
             const response = client.invoke('vdp.model.v1alpha.ModelService/Liveness', {});
@@ -45,7 +45,7 @@ export default () => {
 
     // Readiness check
     group("Model API: Readiness", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
         const response = client.invoke('vdp.model.v1alpha.ModelService/Readiness', {});
@@ -87,7 +87,7 @@ export default () => {
 };
 
 export function teardown() {
-    client.connect('localhost:8083', {
+    client.connect('model-backend:8083', {
         plaintext: true
     });
     group("Model API: Delete all models created by this test", () => {

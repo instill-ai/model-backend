@@ -15,14 +15,14 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://localhost:8083";
+const apiHost = "http://model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 export function GetModel() {
     // GetModel check
     group("Model API: GetModel", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -90,7 +90,7 @@ export function GetModel() {
 export function ListModel() {
     // ListModel check
     group("Model API: ListModel", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -154,7 +154,7 @@ export function ListModel() {
 export function LookupModel() {
     // LookUpModel check
     group("Model API: LookUpModel", () => {
-        client.connect('localhost:8083', {
+        client.connect('model-backend:8083', {
             plaintext: true
         });
 
@@ -215,5 +215,5 @@ export function LookupModel() {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();
-    });    
+    });
 };
