@@ -1,28 +1,31 @@
-FROM golang:1.18.2 AS build
+FROM --platform=$BUILDPLATFORM golang:1.18.2 AS build
 
 ARG SERVICE_NAME
 
-WORKDIR /go/src
-COPY . /go/src
+WORKDIR /src
 
-RUN go get -d -v ./...
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
 
 ENV CGO_ENABLED=0
 
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o /${SERVICE_NAME} ./cmd/main
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o /${SERVICE_NAME}-migrate ./cmd/migration
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o /${SERVICE_NAME}-init ./cmd/init
+ARG TARGETOS TARGETARCH
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME} ./cmd/main
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
 
-WORKDIR /go/src/third_party
+WORKDIR /src/third_party
 
 RUN git clone https://github.com/InfuseAI/ArtiVC && cd ArtiVC && git checkout tags/v0.9.0 && go get -d -v ./... && make build
 
-FROM alpine:3.16.0 AS runtime
+FROM --platform=$BUILDPLATFORM alpine:3.16.0
 
 ARG SERVICE_NAME
 
 RUN apk update
 RUN apk add git git-lfs
+
 # Install python/pip
 ENV PYTHONUNBUFFERED=1
 RUN apk add --update --no-cache python3-dev && ln -sf python3 /usr/bin/python
@@ -34,13 +37,13 @@ RUN pip3 install dvc[gs]
 
 WORKDIR /${SERVICE_NAME}
 
-COPY --from=build /go/src/config ./config
-COPY --from=build /go/src/release-please ./release-please
-COPY --from=build /go/src/internal/db/migration ./internal/db/migration
+COPY --from=build /src/config ./config
+COPY --from=build /src/release-please ./release-please
+COPY --from=build /src/internal/db/migration ./internal/db/migration
 
 COPY --from=build /${SERVICE_NAME}-migrate ./
 COPY --from=build /${SERVICE_NAME}-init ./
 COPY --from=build /${SERVICE_NAME} ./
 
 # ArtiVC tool to work with cloud storage
-COPY --from=build /go/src/third_party/ArtiVC/bin/avc /bin/avc
+COPY --from=build /src/third_party/ArtiVC/bin/avc /bin/avc
