@@ -69,10 +69,11 @@ func (s *service) DeployModelInstance(modelInstanceId uuid.UUID) error {
 	}
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err = s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+		if err1 := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+
 			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
-		}); err != nil {
-			return err
+		}); err1 != nil {
+			return err1
 		}
 		return err
 	}
@@ -99,10 +100,10 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 		// Unload all models composing the ensemble model
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err = s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+			if err1 := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
 				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
-			}); err != nil {
-				return err
+			}); err1 != nil {
+				return err1
 			}
 			return err
 		}
