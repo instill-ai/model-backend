@@ -161,6 +161,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
 	inferResponse, err := s.triton.ModelInferRequest(task, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
+	fmt.Println(">>>>>>>>>inferResponse ", inferResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +169,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	// over all 16 result elements and print the sum and difference
 	// calculated by the modelPB. */
 	postprocessResponse, err := s.triton.PostProcess(inferResponse, modelMetadataResponse, task)
+	fmt.Println(">>>> postprocessResponse ", postprocessResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -177,22 +179,34 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		var contents []*modelPB.ClassificationOutput
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
-			if len(clsResSplit) != 3 {
+			if len(clsResSplit) == 2 {
+				score, err := strconv.ParseFloat(clsResSplit[0], 32)
+				if err != nil {
+					return nil, fmt.Errorf("unable to decode inference output")
+				}
+				clsOutput := modelPB.ClassificationOutput{
+					Category: clsResSplit[1],
+					Score:    float32(score),
+				}
+				contents = append(contents, &clsOutput)
+			} else if len(clsResSplit) == 3 {
+				score, err := strconv.ParseFloat(clsResSplit[0], 32)
+				if err != nil {
+					return nil, fmt.Errorf("unable to decode inference output")
+				}
+				clsOutput := modelPB.ClassificationOutput{
+					Category: clsResSplit[2],
+					Score:    float32(score),
+				}
+				contents = append(contents, &clsOutput)
+			} else {
 				return nil, fmt.Errorf("unable to decode inference output")
 			}
-			score, err := strconv.ParseFloat(clsResSplit[0], 32)
-			if err != nil {
-				return nil, fmt.Errorf("unable to decode inference output")
-			}
-			clsOutput := modelPB.ClassificationOutput{
-				Category: clsResSplit[2],
-				Score:    float32(score),
-			}
-			contents = append(contents, &clsOutput)
 		}
 		clsOutputs := modelPB.ClassificationOutputs{
 			ClassificationOutputs: contents,
 		}
+		fmt.Println(">>>> clsOutputs ", clsOutputs)
 		return &clsOutputs, nil
 
 	case modelPB.ModelInstance_TASK_DETECTION:
