@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.4.2-alpha...v0.5.0-alpha) (2022-06-26)
+
+
+### Features
+
+* add credential definition ([#109](https://github.com/instill-ai/model-backend/issues/109)) ([92d3391](https://github.com/instill-ai/model-backend/commit/92d3391ef69a8df83dff8ce528439345e3238073))
+* support artivc ([#102](https://github.com/instill-ai/model-backend/issues/102)) ([b8e21a4](https://github.com/instill-ai/model-backend/commit/b8e21a426445e9e40c8cff559be05fc7b1f724e0))
+
+
+### Bug Fixes
+
+* bug usage storage ([#103](https://github.com/instill-ai/model-backend/issues/103)) ([975fdc1](https://github.com/instill-ai/model-backend/commit/975fdc1e2ed93f13dc5b56772eda1e9ca59c6a2f))
+* fix duration configuration bug ([ee4a310](https://github.com/instill-ai/model-backend/commit/ee4a31083fb08670d9b342c22d79c1710b0e57fe))
+* init config before logger ([9d3fb4a](https://github.com/instill-ai/model-backend/commit/9d3fb4a0ba0948819b14a7f420035345df7c4d4e))
+* status code when deploy model error ([#111](https://github.com/instill-ai/model-backend/issues/111)) ([31d3f11](https://github.com/instill-ai/model-backend/commit/31d3f11ba04ee59b12521b8e0dd724849a81b94f))
+* update model definitions and tasks in usage collection ([#100](https://github.com/instill-ai/model-backend/issues/100)) ([c593087](https://github.com/instill-ai/model-backend/commit/c5930870595c5d280d7db005a711c0cc9bff802c))
+* wrong logic when checking user account and service account ([7058db6](https://github.com/instill-ai/model-backend/commit/7058db643bfa9b852164f612c7b2fc5ca65260e8))
+
 ### [0.4.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.4.1-alpha...v0.4.2-alpha) (2022-05-31)
 
 
