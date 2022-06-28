@@ -161,7 +161,6 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference. */
 	inferResponse, err := s.triton.ModelInferRequest(task, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
-	fmt.Println(">>>>>>>>>inferResponse ", inferResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +168,6 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	// over all 16 result elements and print the sum and difference
 	// calculated by the modelPB. */
 	postprocessResponse, err := s.triton.PostProcess(inferResponse, modelMetadataResponse, task)
-	fmt.Println(">>>> postprocessResponse ", postprocessResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +204,6 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		clsOutputs := modelPB.ClassificationOutputs{
 			ClassificationOutputs: contents,
 		}
-		fmt.Println(">>>> clsOutputs ", clsOutputs)
 		return &clsOutputs, nil
 
 	case modelPB.ModelInstance_TASK_DETECTION:

@@ -92,19 +92,6 @@ func writeToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func updateConfigModelName(filePath string, oldModelName string, newModelName string) error {
-	regStr := fmt.Sprintf("name:\\s+\"%v\"", oldModelName)
-	nameRegx := regexp.MustCompile(regStr)
-	if err := util.ValidateFilePath(filePath); err != nil {
-		return err
-	}
-	fileData, _ := ioutil.ReadFile(filePath)
-	fileString := string(fileData)
-	fileString = nameRegx.ReplaceAllString(fileString, fmt.Sprintf("name: \"%v\"", newModelName))
-	fileData = []byte(fileString)
-	return ioutil.WriteFile(filePath, fileData, 0o600)
-}
-
 func isEnsembleConfig(configPath string) bool {
 	fileData, _ := ioutil.ReadFile(configPath)
 	fileString := string(fileData)
@@ -209,7 +196,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 			if isEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
 			}
-			err = updateConfigModelName(filePath, oldModelName, newModelName)
+			err = util.UpdateConfigModelName(filePath, oldModelName, newModelName)
 			if err != nil {
 				return "", err
 			}
@@ -218,7 +205,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 	// Update ModelName in ensemble model config file
 	if ensembleFilePath != "" {
 		for oldModelName, newModelName := range newModelNameMap {
-			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
+			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
 				return "", err
 			}
@@ -310,7 +297,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 			if isEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
 			}
-			err = updateConfigModelName(filePath, oldModelName, subStrs[0])
+			err = util.UpdateConfigModelName(filePath, oldModelName, subStrs[0])
 			if err != nil {
 				return "", err
 			}
@@ -319,7 +306,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 	// Update ModelName in ensemble model config file
 	if ensembleFilePath != "" {
 		for oldModelName, newModelName := range newModelNameMap {
-			err = updateConfigModelName(ensembleFilePath, oldModelName, newModelName)
+			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
 				return "", err
 			}
@@ -1029,6 +1016,137 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
 
+func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
+	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	// validate model configuration
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
+	}
+	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+	}
+	if len(errs) > 0 {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", errs))
+	}
+	var modelConfig datamodel.HuggingFaceModelConfiguration
+	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if modelConfig.Id == "" {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
+	}
+
+	visibility := modelPB.Model_VISIBILITY_PRIVATE
+	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		visibility = modelPB.Model_VISIBILITY_PUBLIC
+	}
+	bModelConfig, _ := json.Marshal(modelConfig)
+	description := ""
+	if req.Model.Description != nil {
+		description = *req.Model.Description
+	}
+	huggingfaceModel := datamodel.Model{
+		ID:                 req.Model.Id,
+		ModelDefinitionUid: modelDefinition.UID,
+		Owner:              owner,
+		Visibility:         datamodel.ModelVisibility(visibility),
+		Description:        description,
+		Configuration:      bModelConfig,
+		Instances:          []datamodel.ModelInstance{},
+	}
+	rdid, _ := uuid.NewV4()
+	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
+	if err = util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
+		// _ = os.RemoveAll(configTmpDir)
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Clone model error %v", err.Error()))
+	}
+	fmt.Println(">>>configTmpDir ", configTmpDir)
+
+	rdid, _ = uuid.NewV4()
+	modelTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
+	if err = util.HuggingFaceExport(modelTmpDir, modelConfig); err != nil {
+		// _ = os.RemoveAll(modelTmpDir)
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
+	}
+	fmt.Println(">>>modelTmpDir ", modelTmpDir)
+
+	rdid, _ = uuid.NewV4()
+	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
+	if err = util.GenerateHuggingFaceModel(modelTmpDir, configTmpDir, modelDir, req.Model.Id); err != nil {
+		// _ = os.RemoveAll(modelDir)
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Create triton model error %v", err.Error()))
+	}
+	fmt.Println(">>>modelDir ", modelDir)
+	// _ = os.RemoveAll(configTmpDir)
+	// _ = os.RemoveAll(modelTmpDir)
+
+	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
+		Id:      modelConfig.Id,
+		HtmlUrl: modelConfig.HtmlUrl,
+	}
+	bInstanceConfig, _ := json.Marshal(instanceConfig)
+
+	instance := datamodel.ModelInstance{
+		ID:            "latest",
+		State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+		Configuration: bInstanceConfig,
+	}
+
+	readmeFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
+	fmt.Println(">>>readmeFilePath ", readmeFilePath)
+	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
+	if err != nil {
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+	}
+	if _, err := os.Stat(readmeFilePath); err == nil {
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil || modelMeta.Task == "" {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+			return &modelPB.CreateModelResponse{}, err
+		}
+		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			instance.Task = datamodel.ModelInstanceTask(val)
+		} else {
+			if modelMeta.Task != "" {
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, instance.ID)
+				return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
+			} else {
+				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+			}
+		}
+	} else {
+		instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+	}
+	huggingfaceModel.Instances = append(huggingfaceModel.Instances, instance)
+
+	dbModel, err := h.service.CreateModel(owner, &huggingfaceModel)
+	if err != nil {
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		return &modelPB.CreateModelResponse{}, err
+	}
+
+	// Manually set the custom header to have a StatusCreated http response for REST endpoint
+	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
+
+	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+}
+
 func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
 	resp := &modelPB.CreateModelResponse{}
 	owner, err := resource.GetOwner(ctx)
@@ -1066,12 +1184,13 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	if err != nil {
 		return resp, err
 	}
-
 	switch modelDefinitionId {
 	case "github":
 		return createGitHubModel(h, ctx, req, owner)
 	case "artivc":
 		return createArtiVCModel(h, ctx, req, owner)
+	case "huggingface":
+		return createHuggingFaceModel(h, ctx, req, owner)
 	default:
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionId))
 	}

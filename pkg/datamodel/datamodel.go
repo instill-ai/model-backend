@@ -144,6 +144,12 @@ type ArtiVCModelConfiguration struct {
 	Credential datatypes.JSON `json:"credential,omitempty"`
 }
 
+type HuggingFaceModelConfiguration struct {
+	Id          string `json:"id,omitempty"`
+	Description string `json:"description,omitempty"`
+	HtmlUrl     string `json:"html_url,omitempty"`
+}
+
 // Model Instance configuration
 type GitHubModelInstanceConfiguration struct {
 	Repository string `json:"repository,omitempty"`
@@ -164,6 +170,11 @@ type LocalModelConfiguration struct {
 type LocalModelInstanceConfiguration struct {
 	ID      string `json:"id,omitempty"`
 	Content string `json:"content,omitempty"`
+}
+
+type HuggingFaceModelInstanceConfiguration struct {
+	Id      string `json:"id,omitempty"`
+	HtmlUrl string `json:"html_url,omitempty"`
 }
 
 type ListModelQuery struct {

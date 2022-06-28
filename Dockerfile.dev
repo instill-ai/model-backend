@@ -15,4 +15,13 @@ COPY . .
 
 RUN go install github.com/cosmtrek/air@latest
 
+RUN apt-get update
+RUN apt-get -y install python3
+RUN apt-get -y install python3-setuptools
+RUN apt-get -y install python3-pip
+RUN pip3 install dvc[gs]
+RUN pip3 install transformers pillow torch onnxruntime
+RUN apt-get -y install git git-lfs
+
+
 ENTRYPOINT ["tail", "-f", "/dev/null"]

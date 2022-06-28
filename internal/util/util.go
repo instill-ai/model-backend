@@ -348,3 +348,81 @@ func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, ins
 		return fmt.Errorf("not support url %v", url)
 	}
 }
+
+func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfiguration) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("git clone https://huggingface.co/%s %s", modelConfig.Id, dir))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s", modelConfig.Id, dir))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateConfigModelName(filePath string, oldModelName string, newModelName string) error {
+	regStr := fmt.Sprintf("name:\\s+\"%v\"", oldModelName)
+	nameRegx := regexp.MustCompile(regStr)
+	if err := ValidateFilePath(filePath); err != nil {
+		return err
+	}
+	fileData, _ := ioutil.ReadFile(filePath)
+	fileString := string(fileData)
+	fileString = nameRegx.ReplaceAllString(fileString, fmt.Sprintf("name: \"%v\"", newModelName))
+	fileData = []byte(fileString)
+	return ioutil.WriteFile(filePath, fileData, 0o600)
+}
+
+func GenerateHuggingFaceModel(modelDir string, confDir string, dest string, modelId string) error {
+	if err := os.Mkdir(dest, os.ModePerm); err != nil {
+		return err
+	}
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp -rf assets/huggingface-vit-template/* %s", dest))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface %s/%s", dest, dest, modelId))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	configEnsemblePath := fmt.Sprintf("%s/%s/config.pbtxt", dest, modelId)
+	if err := UpdateConfigModelName(configEnsemblePath, "huggingface", modelId); err != nil {
+		return err
+	}
+	if err := UpdateConfigModelName(configEnsemblePath, "huggingface-infer", fmt.Sprintf("%s-infer", modelId)); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface-infer %s/%s-infer", dest, dest, modelId))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	configModelInferPath := fmt.Sprintf("%s/%s-infer/config.pbtxt", dest, modelId)
+	if err := UpdateConfigModelName(configModelInferPath, "huggingface-infer", fmt.Sprintf("%s-infer", modelId)); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/model.onnx %s/%s-infer/1/model.onnx", modelDir, dest, modelId))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/*.json %s/pre/1", confDir, dest))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
