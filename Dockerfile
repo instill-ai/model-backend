@@ -34,6 +34,7 @@ RUN pip3 install --no-cache --upgrade pip setuptools
 RUN apk add --no-cache libffi-dev build-base py3-pip python3-dev
 RUN apk add --no-cache libgit2-dev py3-pygit2
 RUN pip3 install dvc[gs]
+RUN pip3 install transformers pillow torch onnxruntime
 
 WORKDIR /${SERVICE_NAME}
 

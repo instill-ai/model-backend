@@ -189,3 +189,74 @@
         ui_order: 1
         ui_disabled: true
         ui_component: "text"
+- id: "huggingface"
+  uid: "5b2e1d10-1fab-462d-9d6a-ba41f4b4d816"
+  title: "HuggingFace"
+  documentationUrl: "https://docs.instill.tech/models/definitions/huggingface"
+  icon: "huggingface.svg"
+  modelSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "HuggingFace spec for model"
+    type: "object"
+    required:
+    - "id"
+    additionalProperties: false
+    properties:
+      id:
+        type: "string"
+        title: "HuggingFace model ID"
+        description: "The name of a public HuggingFace model ID, e.g. `google/vit-base-patch16-224`."
+        examples:
+        - "google/vit-base-patch16-224"
+        - "facebook/deit-base-distilled-patch16-224"
+        ui_order: 0
+        ui_component: "text"
+      description:
+        type: "string"
+        title: "Description"
+        description: "Fill with a short description of your model"
+        maxLength: 1023
+        writeOnly: true
+        ui_order: 1
+        ui_component: "textarea_enable_counter"        
+      html_url:
+        type: "string"
+        title: "HuggingFace repository URL"
+        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224`"
+        examples:
+        - "https://huggingface.co/google/vit-base-patch16-224"
+        - "https://huggingface.co/facebook/deit-base-distilled-patch16-224"
+        readOnly: true
+        ui_order: 2
+        ui_hidden: true
+        ui_disabled: true
+        ui_component: "text"
+  modelInstanceSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "HuggingFace spec for model instance"
+    type: "object"
+    required:
+    - "id"
+    additionalProperties: false
+    properties:
+      id:
+        type: "string"
+        title: "HuggingFace model ID"
+        description: "The name of a public HuggingFace model ID, e.g. `google/vit-base-patch16-224`."
+        examples:
+        - "google/vit-base-patch16-224"
+        - "facebook/deit-base-distilled-patch16-224"
+        ui_order: 0
+        ui_component: "text"
+      html_url:
+        type: "string"
+        title: "HuggingFace repository URL"
+        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224`"
+        examples:
+        - "https://huggingface.co/google/vit-base-patch16-224"
+        - "https://huggingface.co/facebook/deit-base-distilled-patch16-224"
+        readOnly: true
+        ui_order: 1
+        ui_hidden: true
+        ui_disabled: true
+        ui_component: "text"

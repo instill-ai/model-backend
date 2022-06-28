@@ -177,18 +177,29 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		var contents []*modelPB.ClassificationOutput
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
-			if len(clsResSplit) != 3 {
+			if len(clsResSplit) == 2 {
+				score, err := strconv.ParseFloat(clsResSplit[0], 32)
+				if err != nil {
+					return nil, fmt.Errorf("unable to decode inference output")
+				}
+				clsOutput := modelPB.ClassificationOutput{
+					Category: clsResSplit[1],
+					Score:    float32(score),
+				}
+				contents = append(contents, &clsOutput)
+			} else if len(clsResSplit) == 3 {
+				score, err := strconv.ParseFloat(clsResSplit[0], 32)
+				if err != nil {
+					return nil, fmt.Errorf("unable to decode inference output")
+				}
+				clsOutput := modelPB.ClassificationOutput{
+					Category: clsResSplit[2],
+					Score:    float32(score),
+				}
+				contents = append(contents, &clsOutput)
+			} else {
 				return nil, fmt.Errorf("unable to decode inference output")
 			}
-			score, err := strconv.ParseFloat(clsResSplit[0], 32)
-			if err != nil {
-				return nil, fmt.Errorf("unable to decode inference output")
-			}
-			clsOutput := modelPB.ClassificationOutput{
-				Category: clsResSplit[2],
-				Score:    float32(score),
-			}
-			contents = append(contents, &clsOutput)
 		}
 		clsOutputs := modelPB.ClassificationOutputs{
 			ClassificationOutputs: contents,

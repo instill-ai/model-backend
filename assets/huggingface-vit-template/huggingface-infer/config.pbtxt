@@ -1,0 +1,4 @@
+name: "huggingface-infer"
+platform: "onnxruntime_onnx"
+max_batch_size: 32
+version_policy: { all { }}
