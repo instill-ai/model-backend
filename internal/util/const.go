@@ -8,6 +8,13 @@ var Tasks = map[string]modelPB.ModelInstance_Task{
 	"TASK_KEYPOINT":       modelPB.ModelInstance_TASK_KEYPOINT,
 }
 
+var Tags = map[string]modelPB.ModelInstance_Task{
+	"CLASSIFICATION":       modelPB.ModelInstance_TASK_CLASSIFICATION,
+	"DETECTION":            modelPB.ModelInstance_TASK_DETECTION,
+	"IMAGE-CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
+	"IMAGE-DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
+}
+
 var Visibility = map[string]modelPB.Model_Visibility{
 	"public":  modelPB.Model_VISIBILITY_PUBLIC,
 	"private": modelPB.Model_VISIBILITY_PRIVATE,
