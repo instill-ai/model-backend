@@ -353,7 +353,7 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("git clone https://huggingface.co/%s %s", modelConfig.Id, dir))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("git clone https://huggingface.co/%s %s", modelConfig.RepoId, dir))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -364,7 +364,7 @@ func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfigu
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s", modelConfig.Id, dir))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s", modelConfig.RepoId, dir))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -420,6 +420,11 @@ func GenerateHuggingFaceModel(modelDir string, confDir string, dest string, mode
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/*.json %s/pre/1", confDir, dest))
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/README.md %s/", confDir, dest))
 	if err := cmd.Run(); err != nil {
 		return err
 	}

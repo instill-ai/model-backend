@@ -261,6 +261,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelId strin
 
 		if f.fInfo.IsDir() { // create new folder
 			err = os.MkdirAll(filePath, os.ModePerm)
+
 			if err != nil {
 				return "", err
 			}
@@ -1043,7 +1044,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if modelConfig.Id == "" {
+	if modelConfig.RepoId == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
 
@@ -1068,31 +1069,25 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err = util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
-		// _ = os.RemoveAll(configTmpDir)
+		_ = os.RemoveAll(configTmpDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Clone model error %v", err.Error()))
 	}
-	fmt.Println(">>>configTmpDir ", configTmpDir)
-
 	rdid, _ = uuid.NewV4()
 	modelTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err = util.HuggingFaceExport(modelTmpDir, modelConfig); err != nil {
-		// _ = os.RemoveAll(modelTmpDir)
+		_ = os.RemoveAll(modelTmpDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
 	}
-	fmt.Println(">>>modelTmpDir ", modelTmpDir)
-
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err = util.GenerateHuggingFaceModel(modelTmpDir, configTmpDir, modelDir, req.Model.Id); err != nil {
-		// _ = os.RemoveAll(modelDir)
+		_ = os.RemoveAll(modelDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Create triton model error %v", err.Error()))
 	}
-	fmt.Println(">>>modelDir ", modelDir)
-	// _ = os.RemoveAll(configTmpDir)
-	// _ = os.RemoveAll(modelTmpDir)
-
+	_ = os.RemoveAll(configTmpDir)
+	_ = os.RemoveAll(modelTmpDir)
 	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
-		Id:      modelConfig.Id,
+		RepoId:  modelConfig.RepoId,
 		HtmlUrl: modelConfig.HtmlUrl,
 	}
 	bInstanceConfig, _ := json.Marshal(instanceConfig)
@@ -1104,7 +1099,6 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}
 
 	readmeFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
-	fmt.Println(">>>readmeFilePath ", readmeFilePath)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
@@ -1112,20 +1106,32 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-		if err != nil || modelMeta.Task == "" {
+		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 			return &modelPB.CreateModelResponse{}, err
 		}
-		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-			instance.Task = datamodel.ModelInstanceTask(val)
-		} else {
-			if modelMeta.Task != "" {
+
+		if modelMeta.Task != "" {
+			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+				instance.Task = datamodel.ModelInstanceTask(val)
+			} else {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, instance.ID)
 				return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
-			} else {
+			}
+		} else {
+			if len(modelMeta.Tags) == 0 {
 				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+			} else { // check in tags also for HuggingFace model card README.md
+				for _, tag := range modelMeta.Tags {
+					if val, ok := util.Tags[strings.ToUpper(tag)]; ok {
+						instance.Task = datamodel.ModelInstanceTask(val)
+					} else {
+						instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+					}
+				}
 			}
 		}
+
 	} else {
 		instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 	}

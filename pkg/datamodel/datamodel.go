@@ -145,7 +145,7 @@ type ArtiVCModelConfiguration struct {
 }
 
 type HuggingFaceModelConfiguration struct {
-	Id          string `json:"id,omitempty"`
+	RepoId      string `json:"repo_id,omitempty"`
 	Description string `json:"description,omitempty"`
 	HtmlUrl     string `json:"html_url,omitempty"`
 }
@@ -173,7 +173,7 @@ type LocalModelInstanceConfiguration struct {
 }
 
 type HuggingFaceModelInstanceConfiguration struct {
-	Id      string `json:"id,omitempty"`
+	RepoId  string `json:"repo_id,omitempty"`
 	HtmlUrl string `json:"html_url,omitempty"`
 }
 

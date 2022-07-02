@@ -199,10 +199,10 @@
     title: "HuggingFace spec for model"
     type: "object"
     required:
-    - "id"
+    - "repo_id"
     additionalProperties: false
     properties:
-      id:
+      repo_id:
         type: "string"
         title: "HuggingFace model ID"
         description: "The name of a public HuggingFace model ID, e.g. `google/vit-base-patch16-224`."
@@ -236,10 +236,10 @@
     title: "HuggingFace spec for model instance"
     type: "object"
     required:
-    - "id"
+    - "repo_id"
     additionalProperties: false
     properties:
-      id:
+      repo_id:
         type: "string"
         title: "HuggingFace model ID"
         description: "The name of a public HuggingFace model ID, e.g. `google/vit-base-patch16-224`."
