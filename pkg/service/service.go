@@ -216,7 +216,6 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			for j := range batchedOutputDataBboxes[i] {
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
-
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
 				if label != "0" {
 					pred := &modelPB.BoundingBoxObject{
@@ -230,6 +229,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 							Height: box[3] - box[1],
 						},
 					}
+
 					contents = append(contents, pred)
 				}
 			}

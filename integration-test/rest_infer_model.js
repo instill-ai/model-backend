@@ -592,7 +592,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images outputs`]: (r) =>
           r.json().output.outputs.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] === 2,
+          r.json().output.outputs[0].shape[0] == 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images parameters`]: (r) =>
           r.json().output.parameters !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images raw_output_contents`]: (r) =>
@@ -635,7 +635,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] === 2,
+          r.json().output.outputs[0].shape[0] == 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.raw_output_contents.length`]: (r) =>
@@ -688,7 +688,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] === 2,
+          r.json().output.outputs[0].shape[0] == 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
@@ -704,7 +704,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs.length`]: (r) =>
           r.json().output.outputs.length === 1,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] === 2,
+          r.json().output.outputs[0].shape[0] == 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.parameters`]: (r) =>
           r.json().output.parameters !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
