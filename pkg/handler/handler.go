@@ -1212,16 +1212,12 @@ func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) 
 		return &modelPB.ListModelResponse{}, err
 	}
 
-	var modelDef datamodel.ModelDefinition
-	if len(dbModels) > 0 {
-		modelDef, err = h.service.GetModelDefinitionByUid(dbModels[0].ModelDefinitionUid)
+	pbModels := []*modelPB.Model{}
+	for _, dbModel := range dbModels {
+		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 		if err != nil {
 			return &modelPB.ListModelResponse{}, err
 		}
-	}
-
-	pbModels := []*modelPB.Model{}
-	for _, dbModel := range dbModels {
 		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel))
 	}
 
@@ -1632,22 +1628,22 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	var b []byte
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -1710,22 +1706,22 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	var b []byte
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -1790,22 +1786,22 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	var b []byte
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
@@ -1873,22 +1869,22 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	var b []byte
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
@@ -1989,25 +1985,25 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		var b []byte
 		switch task {
 		case modelPB.ModelInstance_TASK_CLASSIFICATION:
-			b, err = json.Marshal(response.(*modelPB.ClassificationOutputs))
+			b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		case modelPB.ModelInstance_TASK_DETECTION:
-			b, err = json.Marshal(response.(*modelPB.DetectionOutputs))
+			b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		case modelPB.ModelInstance_TASK_KEYPOINT:
-			b, err = json.Marshal(response.(*modelPB.KeypointOutputs))
+			b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		default:
-			b, err = json.Marshal(response.(*inferenceserver.ModelInferResponse))
+			b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 			if err != nil {
 				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 				return
@@ -2021,7 +2017,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := json.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
+		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
 		if err != nil {
 			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
 			return
