@@ -44,6 +44,7 @@ type Service interface {
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
+	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 }
 
 type service struct {
@@ -398,4 +399,8 @@ func (s *service) ListModelDefinition(view modelPB.View, pageSize int, pageToken
 
 func (s *service) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {
 	return s.repository.GetTritonEnsembleModel(modelInstanceUID)
+}
+
+func (s *service) GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error) {
+	return s.repository.GetTritonModels(modelInstanceUID)
 }

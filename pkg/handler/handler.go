@@ -839,7 +839,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		rdid, _ := uuid.NewV4()
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-		err = util.GitHubClone(modelSrcDir, instanceConfig)
+		err = util.GitHubCloneWOLargeFile(modelSrcDir, instanceConfig)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
@@ -1073,19 +1073,12 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Clone model error %v", err.Error()))
 	}
 	rdid, _ = uuid.NewV4()
-	modelTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err = util.HuggingFaceExport(modelTmpDir, modelConfig); err != nil {
-		_ = os.RemoveAll(modelTmpDir)
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
-	}
-	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err = util.GenerateHuggingFaceModel(modelTmpDir, configTmpDir, modelDir, req.Model.Id); err != nil {
+	if err = util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
 		_ = os.RemoveAll(modelDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Create triton model error %v", err.Error()))
 	}
 	_ = os.RemoveAll(configTmpDir)
-	_ = os.RemoveAll(modelTmpDir)
 	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
 		RepoId:  modelConfig.RepoId,
 		HtmlUrl: modelConfig.HtmlUrl,
@@ -1522,6 +1515,59 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
+	}
+
+	tritonModels, err := h.service.GetTritonModels(dbModelInstance.UID)
+	if err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
+	}
+
+	// downloading model weight when making inference
+
+	switch modelDef.ID {
+	case "github":
+		var instanceConfig datamodel.GitHubModelInstanceConfiguration
+		if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
+			return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+		}
+		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+			rdid, _ := uuid.NewV4()
+			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
+			if err := util.GitHubCloneWLargeFile(modelSrcDir, instanceConfig); err != nil {
+				_ = os.RemoveAll(modelSrcDir)
+				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+			}
+			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+				_ = os.RemoveAll(modelSrcDir)
+				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+			}
+			_ = os.RemoveAll(modelSrcDir)
+		}
+	case "huggingface":
+		var instanceConfig datamodel.HuggingFaceModelInstanceConfiguration
+		if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
+			return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+		}
+
+		var modelConfig datamodel.HuggingFaceModelConfiguration
+		err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
+		if err != nil {
+			return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
+		}
+
+		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+			rdid, _ := uuid.NewV4()
+			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
+			if err = util.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
+				_ = os.RemoveAll(modelSrcDir)
+				return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
+			}
+			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+				_ = os.RemoveAll(modelSrcDir)
+				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			}
+			_ = os.RemoveAll(modelSrcDir)
+		}
 	}
 
 	err = h.service.DeployModelInstance(dbModelInstance.UID)
@@ -2067,15 +2113,13 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 	f, _ := os.Open(readmeFilePath)
 	reader := bufio.NewReader(f)
 	content, _ := ioutil.ReadAll(reader)
-	// Encode as base64.
-	encoded := base64.StdEncoding.EncodeToString(content)
 
 	return &modelPB.GetModelInstanceCardResponse{Readme: &modelPB.ModelInstanceCard{
 		Name:     req.Name,
 		Size:     int32(stat.Size()),
 		Type:     "file",   // currently only support file type
 		Encoding: "base64", // currently only support base64 encoding
-		Contents: []byte(encoded),
+		Contents: []byte(content),
 	}}, nil
 }
 
