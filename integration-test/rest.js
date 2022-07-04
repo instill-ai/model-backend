@@ -54,35 +54,35 @@ export default function (data) {
   }
 
 
-  // Create Model API
-  createModel.CreateModelFromLocal()
-  createModel.CreateModelFromGitHub()
+  // // Create Model API
+  // createModel.CreateModelFromLocal()
+  // createModel.CreateModelFromGitHub()
 
-  // // Query Model API
-  queryModel.GetModel()
-  queryModel.ListModel()
-  queryModel.LookupModel()
+  // // // Query Model API
+  // queryModel.GetModel()
+  // queryModel.ListModel()
+  // queryModel.LookupModel()
 
-  // Deploy/Undeploy Model API
-  deployModel.DeployUndeployModel()
+  // // Deploy/Undeploy Model API
+  // deployModel.DeployUndeployModel()
 
   // Infer Model API
   inferModel.InferModel()
 
-  // Publish/Unpublish Model API
-  publishModel.PublishUnpublishModel()
+  // // Publish/Unpublish Model API
+  // publishModel.PublishUnpublishModel()
 
-  // Update Model API
-  updateModel.UpdateModel()
+  // // Update Model API
+  // updateModel.UpdateModel()
 
-  // Query Model Definition API
-  queryModelDefinition.GetModelDefinition()
-  queryModelDefinition.ListModelDefinition()
+  // // Query Model Definition API
+  // queryModelDefinition.GetModelDefinition()
+  // queryModelDefinition.ListModelDefinition()
 
-  // Query Model Instance API
-  queryModelInstance.GetModelInstance()
-  queryModelInstance.ListModelInstance()
-  queryModelInstance.LookupModelInstance()
+  // // Query Model Instance API
+  // queryModelInstance.GetModelInstance()
+  // queryModelInstance.ListModelInstance()
+  // queryModelInstance.LookupModelInstance()
 }
 
 export function teardown(data) {
