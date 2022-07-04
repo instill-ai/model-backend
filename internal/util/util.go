@@ -70,7 +70,31 @@ func findDVCPath(dir string) string {
 	return dvcPath
 }
 
-func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
+func findModelFiles(dir string) []string {
+	var modelPaths []string = []string{}
+	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") {
+			modelPaths = append(modelPaths, path)
+		}
+		return nil
+	})
+	return modelPaths
+}
+
+func GitHubCloneWOLargeFile(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
+	urlRepo := instanceConfig.Repository
+	if !strings.HasPrefix(urlRepo, "https://github.com") {
+		urlRepo = "https://github.com/" + urlRepo
+	}
+	if !strings.HasSuffix(urlRepo, ".git") {
+		urlRepo = urlRepo + ".git"
+	}
+
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("GIT_LFS_SKIP_SMUDGE=1 git clone -b %s %s %s", instanceConfig.Tag, urlRepo, dir))
+	return cmd.Run()
+}
+
+func GitHubCloneWLargeFile(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
 	urlRepo := instanceConfig.Repository
 	if !strings.HasPrefix(urlRepo, "https://github.com") {
 		urlRepo = "https://github.com/" + urlRepo
@@ -89,6 +113,32 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfigu
 		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull", dvcPath))
 		err = cmd.Run()
 		return err
+	}
+	return nil
+}
+
+func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []datamodel.TritonModel) error {
+	modelPaths := findModelFiles(dir)
+	for _, modelPath := range modelPaths {
+		folderModelDir := filepath.Dir(modelPath)
+		modelSubNames := strings.Split(folderModelDir, "/")
+		if len(modelSubNames) < 2 {
+			continue
+		}
+		for _, tritonModel := range tritonModels {
+			tritonModelName := tritonModel.Name
+			tritonSubNames := strings.Split(tritonModelName, "#")
+			if len(tritonSubNames) < 4 {
+				continue
+			}
+
+			if tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/%s/1", modelPath, modelRepository, tritonModelName))
+				if err := cmd.Run(); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -353,18 +403,19 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("git clone https://huggingface.co/%s %s", modelConfig.RepoId, dir))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/%s %s", modelConfig.RepoId, dir))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration) error {
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration, modelId string) error {
+	// export model to folder structure similar with triton to support copy the model into model repository later
+	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelId), os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s", modelConfig.RepoId, dir))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelId))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -384,7 +435,7 @@ func UpdateConfigModelName(filePath string, oldModelName string, newModelName st
 	return ioutil.WriteFile(filePath, fileData, 0o600)
 }
 
-func GenerateHuggingFaceModel(modelDir string, confDir string, dest string, modelId string) error {
+func GenerateHuggingFaceModel(confDir string, dest string, modelId string) error {
 	if err := os.Mkdir(dest, os.ModePerm); err != nil {
 		return err
 	}
@@ -414,11 +465,6 @@ func GenerateHuggingFaceModel(modelDir string, confDir string, dest string, mode
 		return err
 	}
 
-	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/model.onnx %s/%s-infer/1/model.onnx", modelDir, dest, modelId))
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
 	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/*.json %s/pre/1", confDir, dest))
 	if err := cmd.Run(); err != nil {
 		return err
@@ -430,4 +476,21 @@ func GenerateHuggingFaceModel(modelDir string, confDir string, dest string, mode
 	}
 
 	return nil
+}
+
+func HasModelWeightFile(modelRepository string, tritonModels []datamodel.TritonModel) bool {
+	for _, tritonModel := range tritonModels {
+		modelDir := fmt.Sprintf("%s/%s", modelRepository, tritonModel.Name)
+		modelFiles := findModelFiles(modelDir)
+		if len(modelFiles) > 0 {
+			for _, modelFile := range modelFiles {
+				fi, _ := os.Stat(modelFile)
+				if fi.Size() < 200 { // 200b
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
 }
