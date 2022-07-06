@@ -809,8 +809,11 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 	githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
-	if err != nil || len(githubInfo.Tags) == 0 {
+	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
+	}
+	if len(githubInfo.Tags) == 0 {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 	}
 	visibility := util.Visibility[githubInfo.Visibility]
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
@@ -878,7 +881,6 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		githubModel.Instances = append(githubModel.Instances, instance)
 	}
-
 	dbModel, err := h.service.CreateModel(owner, &githubModel)
 	if err != nil {
 		for _, tag := range githubInfo.Tags {
@@ -886,7 +888,6 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		return &modelPB.CreateModelResponse{}, err
 	}
-
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1516,14 +1517,12 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
-
 	tritonModels, err := h.service.GetTritonModels(dbModelInstance.UID)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
 	// downloading model weight when making inference
-
 	switch modelDef.ID {
 	case "github":
 		var instanceConfig datamodel.GitHubModelInstanceConfiguration
