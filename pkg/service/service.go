@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
-	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
@@ -71,7 +71,6 @@ func (s *service) DeployModelInstance(modelInstanceId uuid.UUID) error {
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
 		if err1 := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
-
 			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
 		}); err1 != nil {
 			return err1

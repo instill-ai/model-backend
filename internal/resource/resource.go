@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func ExtractFromMetadata(ctx context.Context, key string) ([]string, bool) {

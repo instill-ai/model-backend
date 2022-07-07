@@ -27,7 +27,7 @@ tritonserver:
   modelstore: /model-repository
 mgmtbackend:
   host: mgmt-backend
-  port: 8080
+  port: 8084
   https:
     cert:   # /ssl/tls.crt
     key:    # /ssl/tls.key

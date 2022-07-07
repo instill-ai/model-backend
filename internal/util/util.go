@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gernest/front"
@@ -79,6 +81,25 @@ func findModelFiles(dir string) []string {
 		return nil
 	})
 	return modelPaths
+}
+
+func getPreModelConfigPath(modelRepository string, tritonModels []datamodel.TritonModel) string {
+	modelPath := ""
+	for _, triton := range tritonModels {
+		if strings.Contains(triton.Name, "#pre#") {
+			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
+		}
+	}
+	return modelPath
+}
+func getInferModelConfigPath(modelRepository string, tritonModels []datamodel.TritonModel) string {
+	modelPath := ""
+	for _, triton := range tritonModels {
+		if strings.Contains(triton.Name, "-infer#") {
+			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
+		}
+	}
+	return modelPath
 }
 
 func GitHubCloneWOLargeFile(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
@@ -415,7 +436,8 @@ func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfigu
 	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelId), os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelId))
+	// atol 0.001 mean that accept difference with 0.1%
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --atol 0.001 --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelId))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -493,4 +515,110 @@ func HasModelWeightFile(modelRepository string, tritonModels []datamodel.TritonM
 		}
 	}
 	return false
+}
+
+func updateModelConfigModel(configFilePath string, oldStr string, newStr string) error {
+	if _, err := os.Stat(configFilePath); err != nil {
+		return err
+	}
+	fileData, _ := ioutil.ReadFile(configFilePath)
+	fileString := string(fileData)
+	fileString = strings.ReplaceAll(fileString, oldStr, newStr)
+	fileData = []byte(fileString)
+	return ioutil.WriteFile(configFilePath, fileData, 0o600)
+}
+
+func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonModel) error {
+	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
+	if modelPathDir == "" {
+		return fmt.Errorf("there is no model")
+	}
+	modelFilePath := fmt.Sprintf("%s/1/model.onnx", modelPathDir)
+	if _, err := os.Stat(modelFilePath); err != nil {
+		return err
+	}
+
+	out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 assets/scripts/query_model_onnx.py -f %s", modelFilePath)).Output()
+	if err != nil {
+		return err
+	}
+
+	elems := strings.Split(string(out), ",")
+	if len(elems) != 5 {
+		return fmt.Errorf("wrong output format")
+	}
+	inputDim1, err := strconv.Atoi(elems[1])
+	if err != nil {
+		return err
+	}
+	inputDim2, err := strconv.Atoi(elems[2])
+	if err != nil {
+		return err
+	}
+	outputDim, err := strconv.Atoi(strings.TrimSuffix(elems[4], "\n"))
+	if err != nil {
+		return err
+	}
+
+	inferConfigFilePath := fmt.Sprintf("%s/config.pbtxt", modelPathDir)
+	err = updateModelConfigModel(inferConfigFilePath,
+		"dims: [ 3, 224, 224 ]",
+		fmt.Sprintf("dims: [ 3, %v, %v ]", inputDim1, inputDim2))
+	if err != nil {
+		return err
+	}
+
+	err = updateModelConfigModel(inferConfigFilePath,
+		"dims: [ -1 ]",
+		fmt.Sprintf("dims: [ %v ]", outputDim))
+	if err != nil {
+		return err
+	}
+
+	preModelPathDir := getPreModelConfigPath(modelRepository, tritonModels)
+	preConfigFilePath := fmt.Sprintf("%s/config.pbtxt", preModelPathDir)
+	err = updateModelConfigModel(preConfigFilePath,
+		"dims: [ 3, 224, 224 ]",
+		fmt.Sprintf("dims: [ 3, %v, %v ]", inputDim1, inputDim2))
+	if err != nil {
+		return err
+	}
+
+	file, err := ioutil.ReadFile(fmt.Sprintf("%s/1/config.json", preModelPathDir))
+	if err != nil {
+		return err
+	}
+	var data map[string]interface{}
+	if err := json.Unmarshal(file, &data); err != nil {
+		return err
+	}
+	if id2label, ok := data["id2label"]; ok {
+		mId2label := id2label.(map[string]interface{})
+
+		keys := make([]int, 0, len(mId2label))
+		for k := range mId2label {
+			i, _ := strconv.Atoi(k)
+			keys = append(keys, i)
+		}
+		sort.Ints(keys)
+
+		f, err := os.Create(fmt.Sprintf("%s/label.txt", modelPathDir))
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		for _, k := range keys {
+			if _, err := f.WriteString(fmt.Sprintf("%s\n", mId2label[fmt.Sprintf("%v", k)])); err != nil {
+				return err
+			}
+		}
+		if err := updateModelConfigModel(inferConfigFilePath,
+			fmt.Sprintf("dims: [ %v ]", outputDim),
+			fmt.Sprintf("dims: [ %v ] \n label_filename: \"label.txt\"", outputDim)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

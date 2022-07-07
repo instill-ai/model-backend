@@ -251,10 +251,10 @@
       html_url:
         type: "string"
         title: "HuggingFace repository URL"
-        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224`"
+        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224/tree/main`"
         examples:
-        - "https://huggingface.co/google/vit-base-patch16-224"
-        - "https://huggingface.co/facebook/deit-base-distilled-patch16-224"
+        - "https://huggingface.co/google/vit-base-patch16-224/tree/main"
+        - "https://huggingface.co/facebook/deit-base-distilled-patch16-224/tree/main"
         readOnly: true
         ui_order: 1
         ui_hidden: true
