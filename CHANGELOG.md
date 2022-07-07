@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.5.1-alpha...v0.6.0-alpha) (2022-07-06)
+
+
+### Features
+
+* support creating a HuggingFace model ([#113](https://github.com/instill-ai/model-backend/issues/113)) ([1577d87](https://github.com/instill-ai/model-backend/commit/1577d87b58b0c8674276fe85d5762fc3a30d566c))
+
+
+### Bug Fixes
+
+* model definition in list model and missing zero in output ([#121](https://github.com/instill-ai/model-backend/issues/121)) ([a90072d](https://github.com/instill-ai/model-backend/commit/a90072d19f24d3df9e31ac447a992abf2ec8e525))
+
 ## [0.5.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.5.0-alpha...v0.5.1-alpha) (2022-06-27)
 
 
