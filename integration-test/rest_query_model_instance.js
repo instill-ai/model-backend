@@ -327,7 +327,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.repository`]: (r) =>
           JSON.parse(r.json().instances[0].configuration).repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.html_url`]: (r) =>
-          JSON.parse(r.json().instances[0].configuration).html_url === "https://github.com/instill-ai/model-dummy-cls",
+          JSON.parse(r.json().instances[0].configuration).html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.tag`]: (r) =>
           JSON.parse(r.json().instances[0].configuration).tag === "v1.1",
       });
