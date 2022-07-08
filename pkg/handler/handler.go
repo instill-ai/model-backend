@@ -333,9 +333,6 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 	var uploadedModel datamodel.Model
 	for {
 		fileData, err = stream.Recv()
-		if fileData.Model == nil {
-			return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
-		}
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -344,6 +341,10 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 		}
 
 		if firstChunk { //first chunk contains file name
+			if fileData.Model == nil {
+				return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
+			}
+
 			rdid, _ := uuid.NewV4()
 			tmpFile = path.Join("/tmp", rdid.String()+".zip")
 			fp, err = os.Create(tmpFile)
@@ -356,9 +357,6 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 				description = *fileData.Model.Description
 			}
 			modelDefName := fileData.Model.ModelDefinition
-			if err != nil {
-				return "", &datamodel.Model{}, "", err
-			}
 			modelDefinitionId, err = resource.GetDefinitionID(modelDefName)
 			if err != nil {
 				return "", &datamodel.Model{}, "", err
@@ -729,6 +727,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	if err != nil {
 		return err
 	}
+	uploadedModel.ModelDefinitionUid = modelDef.UID
 
 	// Validate ModelDefinition JSON Schema
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&modelDef, uploadedModel), true); err != nil {
@@ -837,7 +836,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
 			Repository: modelConfig.Repository,
-			HtmlUrl:    "https://github.com/" + modelConfig.Repository,
+			HtmlUrl:    "https://github.com/" + modelConfig.Repository + "/tree/" + tag.Name,
 			Tag:        tag.Name,
 		}
 		rdid, _ := uuid.NewV4()
@@ -1048,6 +1047,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	if modelConfig.RepoId == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
+	modelConfig.HtmlUrl = "https://huggingface.co/" + modelConfig.RepoId
 
 	visibility := modelPB.Model_VISIBILITY_PRIVATE
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
@@ -1082,7 +1082,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	_ = os.RemoveAll(configTmpDir)
 	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
 		RepoId:  modelConfig.RepoId,
-		HtmlUrl: modelConfig.HtmlUrl,
+		HtmlUrl: modelConfig.HtmlUrl + "/tree/main",
 	}
 	bInstanceConfig, _ := json.Marshal(instanceConfig)
 
@@ -1565,13 +1565,18 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 				_ = os.RemoveAll(modelSrcDir)
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 			}
+
+			if err := util.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
+				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			}
 			_ = os.RemoveAll(modelSrcDir)
 		}
 	}
-
 	err = h.service.DeployModelInstance(dbModelInstance.UID)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
+		grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity)))
+		return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 	}
 
 	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
@@ -1611,6 +1616,10 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 
 	err = h.service.UndeployModelInstance(dbModelInstance.UID)
 	if err != nil {
+		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
+		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
+			return &modelPB.UndeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
+		}
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 

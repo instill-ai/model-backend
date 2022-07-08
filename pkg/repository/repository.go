@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/internal/paginate"
