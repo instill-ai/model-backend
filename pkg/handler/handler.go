@@ -377,7 +377,7 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 
 			firstChunk = false
 		}
-		err = writeToFp(fp, fileData.Bytes)
+		err = writeToFp(fp, fileData.Content)
 		if err != nil {
 			return "", &datamodel.Model{}, "", err
 		}
@@ -413,7 +413,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 
 			firstChunk = false
 		}
-		allContentFiles = append(allContentFiles, fileData.Bytes...)
+		allContentFiles = append(allContentFiles, fileData.Content...)
 	}
 
 	if len(length_of_files) == 0 {
@@ -455,7 +455,7 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 
 			firstChunk = false
 		}
-		allContentFiles = append(allContentFiles, fileData.Bytes...)
+		allContentFiles = append(allContentFiles, fileData.Content...)
 	}
 
 	if len(length_of_files) == 0 {
@@ -2127,7 +2127,7 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 		Size:     int32(stat.Size()),
 		Type:     "file",   // currently only support file type
 		Encoding: "base64", // currently only support base64 encoding
-		Contents: []byte(content),
+		Content:  []byte(content),
 	}}, nil
 }
 
