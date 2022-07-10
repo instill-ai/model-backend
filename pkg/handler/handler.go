@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,7 +27,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/qri-io/jsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
@@ -48,9 +46,6 @@ import (
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
 var requiredFields = []string{"Id"}
-
-// immutableFields are Protobuf message fields with IMMUTABLE field_behavior annotation
-// var immutableFields = []string{"Id", "ModelDefinition", "Configuration"}
 
 // outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
@@ -469,7 +464,7 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 	return imageBytes, modelId, instanceId, nil
 }
 
-func makeJsonResponse(w http.ResponseWriter, status int, title string, detail string) {
+func makeJSONResponse(w http.ResponseWriter, status int, title string, detail string) {
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(status)
 	obj, _ := json.Marshal(datamodel.Error{
@@ -503,29 +498,29 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 	if strings.Contains(contentType, "multipart/form-data") {
 		owner, err := resource.GetOwnerFromHeader(r)
 		if err != nil || owner == "" {
-			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
 			return
 		}
 
 		if strings.Contains(owner, "..") {
-			makeJsonResponse(w, 422, "owner error", "The user name should not contain special characters")
+			makeJSONResponse(w, 422, "owner error", "The user name should not contain special characters")
 			return
 		}
 
 		modelId := r.FormValue("id")
 		if modelId == "" {
-			makeJsonResponse(w, 400, "Missing parameter", "Model Id need to be specified")
+			makeJSONResponse(w, 400, "Missing parameter", "Model Id need to be specified")
 			return
 		}
 
 		modelDefinitionName := r.FormValue("model_definition")
 		if modelDefinitionName == "" {
-			makeJsonResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
+			makeJSONResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
 			return
 		}
 		modelDefinitionId, err := resource.GetDefinitionID(modelDefinitionName)
 		if err != nil {
-			makeJsonResponse(w, 400, "Invalid parameter", err.Error())
+			makeJSONResponse(w, 400, "Invalid parameter", err.Error())
 			return
 		}
 
@@ -533,7 +528,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		var visibility modelPB.Model_Visibility
 		if viz != "" {
 			if util.Visibility[viz] == modelPB.Model_VISIBILITY_UNSPECIFIED {
-				makeJsonResponse(w, 400, "Invalid parameter", "Visibility is invalid")
+				makeJSONResponse(w, 400, "Invalid parameter", "Visibility is invalid")
 				return
 			} else {
 				visibility = util.Visibility[viz]
@@ -544,12 +539,12 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJSONResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
 		}
 		file, fileHeader, err := r.FormFile("content")
 		if err != nil {
-			makeJsonResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJSONResponse(w, 500, "Internal Error", "Error while reading file from request")
 			return
 		}
 		defer file.Close()
@@ -565,19 +560,19 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			buf.Write(part[:count])
 		}
 		if err != io.EOF {
-			makeJsonResponse(w, 400, "File Error", "Error reading input file")
+			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		rdid, _ := uuid.NewV4()
 		tmpFile := path.Join("/tmp", rdid.String())
 		fp, err := os.Create(tmpFile)
 		if err != nil {
-			makeJsonResponse(w, 400, "File Error", "Error reading input file")
+			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 		err = writeToFp(fp, buf.Bytes())
 		if err != nil {
-			makeJsonResponse(w, 400, "File Error", "Error reading input file")
+			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
 
@@ -593,38 +588,26 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionId)
 		if err != nil {
-			makeJsonResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
+			makeJSONResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
 			return
 		}
 
 		rs := &jsonschema.Schema{}
 		if err := json.Unmarshal([]byte(localModelDefinition.ModelSpec.String()), rs); err != nil {
-			makeJsonResponse(w, 500, "Add Model Error", "Could not get model definition")
-			return
-		}
-
-		modelLocalSpec := datamodel.LocalModelConfiguration{
-			Description: r.FormValue("description"),
-			Content:     base64.StdEncoding.EncodeToString(buf.Bytes()),
-		}
-		b, err := json.Marshal(modelLocalSpec)
-		if err != nil {
-			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-			return
-		}
-		errs, err := rs.ValidateBytes(context.Background(), b)
-		if err != nil {
-			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-			return
-		}
-		if len(errs) > 0 {
-			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", errs))
+			makeJSONResponse(w, 500, "Add Model Error", "Could not get model definition")
 			return
 		}
 
 		modelConfiguration := datamodel.LocalModelConfiguration{
-			Content: fileHeader.Filename,
+			Description: r.FormValue("description"),
+			Content:     fileHeader.Filename,
 		}
+
+		if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
+			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+			return
+		}
+
 		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
 			Instances: []datamodel.ModelInstance{{
@@ -642,13 +625,13 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		// Validate ModelDefinition JSON Schema
 		if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&localModelDefinition, &uploadedModel), true); err != nil {
-			makeJsonResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", errs))
+			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 			return
 		}
 
 		_, err = modelService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 		if err == nil {
-			makeJsonResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
+			makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 			return
 		}
 
@@ -656,14 +639,14 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-			makeJsonResponse(w, 400, "Add Model Error", err.Error())
+			makeJSONResponse(w, 400, "Add Model Error", err.Error())
 			return
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-				makeJsonResponse(w, 400, "Add Model Error", err.Error())
+				makeJSONResponse(w, 400, "Add Model Error", err.Error())
 				return
 			}
 			if modelMeta.Task == "" {
@@ -673,7 +656,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 					uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
 				} else {
 					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-					makeJsonResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
+					makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 					return
 				}
 			}
@@ -684,7 +667,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		dbModel, err := modelService.CreateModel(owner, &uploadedModel)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-			makeJsonResponse(w, 500, "Add Model Error", err.Error())
+			makeJSONResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
 
@@ -693,15 +676,22 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
 
-		m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
-		var buffer bytes.Buffer
-		err = m.Marshal(&buffer, &modelPB.CreateModelResponse{Model: pbModel})
+		// m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
+		// var buffer bytes.Buffer
+		// err = m.Marshal(&buffer, &modelPB.CreateModelResponse{Model: pbModel})
+		// if err != nil {
+		// 	util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		// 	makeJSONResponse(w, 500, "Add Model Error", err.Error())
+		// 	return
+		// }
+		m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
+		b, err := m.Marshal(&modelPB.CreateModelResponse{Model: pbModel})
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-			makeJsonResponse(w, 500, "Add Model Error", err.Error())
+			makeJSONResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
-		_, _ = w.Write(buffer.Bytes())
+		_, _ = w.Write(b)
 	} else {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
@@ -777,33 +767,15 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	return
 }
 
-func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
-	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	// validate model configuration
-	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
-	}
-	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-	}
-	if len(errs) > 0 {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", errs))
-	}
+func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	var modelConfig datamodel.GitHubModelConfiguration
-	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
+	b, err := req.Model.Configuration.MarshalJSON()
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
 	if modelConfig.Repository == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
@@ -891,37 +863,17 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
-
+	pbModel := DBModelToPBModel(modelDefinition, dbModel)
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
 
-func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
-	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	// validate model configuration
-	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
-	}
-	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-	}
-	if len(errs) > 0 {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", errs))
-	}
+func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	var modelConfig datamodel.ArtiVCModelConfiguration
-	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
+	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.Url == "" {
@@ -1012,36 +964,18 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
+	pbModel := DBModelToPBModel(modelDefinition, dbModel)
 
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
 
-func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string) (*modelPB.CreateModelResponse, error) {
-	modelDefinitionId, err := resource.GetDefinitionID(req.Model.ModelDefinition)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	// validate model configuration
-	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
-	}
-	errs, err := rs.ValidateBytes(ctx, []byte(req.Model.GetConfiguration()))
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-	}
-	if len(errs) > 0 {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", errs))
-	}
+func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	var modelConfig datamodel.HuggingFaceModelConfiguration
-	err = json.Unmarshal([]byte(req.Model.Configuration), &modelConfig)
+	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.RepoId == "" {
@@ -1069,13 +1003,13 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err = util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
+	if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
 		_ = os.RemoveAll(configTmpDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Clone model error %v", err.Error()))
 	}
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err = util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
+	if err := util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
 		_ = os.RemoveAll(modelDir)
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Create triton model error %v", err.Error()))
 	}
@@ -1142,7 +1076,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	pbModel := DBModelToPBModel(&modelDefinition, dbModel)
+	pbModel := DBModelToPBModel(modelDefinition, dbModel)
 
 	return &modelPB.CreateModelResponse{Model: pbModel}, nil
 }
@@ -1176,7 +1110,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
 
-	if req.Model.Configuration == "" {
+	if req.Model.Configuration == nil {
 		return resp, status.Errorf(codes.InvalidArgument, "Missing Configuration")
 	}
 
@@ -1184,13 +1118,28 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	if err != nil {
 		return resp, err
 	}
+
+	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionId)
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	// validate model configuration
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
+	}
+	if err := datamodel.ValidateJSONSchema(rs, req.Model.GetConfiguration(), true); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+	}
+
 	switch modelDefinitionId {
 	case "github":
-		return createGitHubModel(h, ctx, req, owner)
+		return createGitHubModel(h, ctx, req, owner, &modelDefinition)
 	case "artivc":
-		return createArtiVCModel(h, ctx, req, owner)
+		return createArtiVCModel(h, ctx, req, owner, &modelDefinition)
 	case "huggingface":
-		return createHuggingFaceModel(h, ctx, req, owner)
+		return createHuggingFaceModel(h, ctx, req, owner, &modelDefinition)
 	default:
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionId))
 	}
@@ -1956,13 +1905,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	if strings.Contains(contentType, "multipart/form-data") {
 		owner, err := resource.GetOwnerFromHeader(r)
 		if err != nil || owner == "" {
-			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
+			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter Jwt-Sub not found in your header")
 			return
 		}
 
 		instanceName := pathParams["name"]
 		if instanceName == "" {
-			makeJsonResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
+			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
 			return
 		}
 
@@ -1976,31 +1925,31 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		modelId, instanceId, err := resource.GetModelInstanceID(instanceName)
 		if err != nil {
-			makeJsonResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
+			makeJSONResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
 			return
 		}
 
 		modelInDB, err := modelService.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 		if err != nil {
-			makeJsonResponse(w, 404, "Model not found", "The model not found in server")
+			makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 			return
 		}
 
 		modelInstanceInDB, err := modelService.GetModelInstance(modelInDB.UID, instanceId, modelPB.View_VIEW_FULL)
 		if err != nil {
-			makeJsonResponse(w, 404, "Model instance not found", "The model instance not found in server")
+			makeJSONResponse(w, 404, "Model instance not found", "The model instance not found in server")
 			return
 		}
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeJsonResponse(w, 400, "Internal Error", fmt.Sprintf("Error while reading file from request %v", err))
+			makeJSONResponse(w, 400, "Internal Error", fmt.Sprintf("Error while reading file from request %v", err))
 			return
 		}
 
 		imgsBytes, _, err := parseImageFormDataInputsToBytes(r)
 		if err != nil {
-			makeJsonResponse(w, 400, "File Input Error", err.Error())
+			makeJSONResponse(w, 400, "File Input Error", err.Error())
 			return
 		}
 
@@ -2008,17 +1957,17 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		if len(imgsBytes) > 1 {
 			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
 			if err != nil {
-				makeJsonResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
 				return
 			}
 			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 			doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 			if err != nil {
-				makeJsonResponse(w, 400, "Batching Support Error", err.Error())
+				makeJSONResponse(w, 400, "Batching Support Error", err.Error())
 				return
 			}
 			if !doSupportBatch {
-				makeJsonResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+				makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
 				return
 			}
 		}
@@ -2032,7 +1981,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		}
 
 		if err != nil {
-			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 			return
 		}
 		var data = &structpb.Struct{}
@@ -2041,31 +1990,31 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		case modelPB.ModelInstance_TASK_CLASSIFICATION:
 			b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
 			if err != nil {
-				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		case modelPB.ModelInstance_TASK_DETECTION:
 			b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
 			if err != nil {
-				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		case modelPB.ModelInstance_TASK_KEYPOINT:
 			b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
 			if err != nil {
-				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		default:
 			b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
 			if err != nil {
-				makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 				return
 			}
 		}
 		err = protojson.Unmarshal(b, data)
 		if err != nil {
-			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 			return
 		}
 
@@ -2073,7 +2022,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		w.WriteHeader(200)
 		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
 		if err != nil {
-			makeJsonResponse(w, 500, "Error Predict Model", err.Error())
+			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 			return
 		}
 		_, _ = w.Write(res)

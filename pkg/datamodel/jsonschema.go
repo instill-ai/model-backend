@@ -119,19 +119,57 @@ func InitJSONSchema() {
 
 //ValidateJSONSchema validates the Protobuf message data
 func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopulated bool) error {
-	data, err := protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: emitUnpopulated}.Marshal(msg.(proto.Message))
+	var v interface{}
+	var data []byte
+	var err error
+	switch msg := msg.(type) {
+	case proto.Message:
+		data, err = protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: emitUnpopulated}.Marshal(msg)
+		if err != nil {
+			return err
+		}
+	case LocalModelConfiguration:
+		data, err = json.Marshal(msg)
+		if err != nil {
+			return err
+		}
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	if err := schema.Validate(v); err != nil {
+		b, _ := json.MarshalIndent(err.(*jsonschema.ValidationError).DetailedOutput(), "", "  ")
+		return fmt.Errorf(string(b))
+	}
+
+	return nil
+}
+
+func ValidateJSONSchema1(schema *jsonschema.Schema, msg proto.Message, emitUnpopulated bool) error {
+
+	b, err := protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: emitUnpopulated}.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
 	var v interface{}
-	if err := json.Unmarshal(data, &v); err != nil {
+	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
 
 	if err := schema.Validate(v); err != nil {
-		b, _ := json.MarshalIndent(err.(*jsonschema.ValidationError).DetailedOutput(), "", "  ")
-		return fmt.Errorf(string(b))
+		switch e := err.(type) {
+		case *jsonschema.ValidationError:
+			b, err := json.MarshalIndent(e.DetailedOutput(), "", "  ")
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf(string(b))
+		case jsonschema.InvalidJSONTypeError:
+			return e
+		default:
+			return e
+		}
 	}
 
 	return nil

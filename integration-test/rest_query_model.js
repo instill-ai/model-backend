@@ -44,7 +44,7 @@ export function GetModel() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
         "POST /v1alpha/models:multipart task cls response model.configuration.content": (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -71,7 +71,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
-          r.json().model.configuration === "{}",
+          r.json().model.configuration ===  null,
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
@@ -98,7 +98,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration.content`]: (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
@@ -128,9 +128,9 @@ export function ListModel() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "instill-ai/model-dummy-cls"
-        })
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -149,9 +149,9 @@ export function ListModel() {
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
-          JSON.parse(r.json().model.configuration).repository === "instill-ai/model-dummy-cls",
+          r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.configuration.html_url": (r) =>
-          JSON.parse(r.json().model.configuration).html_url === "https://github.com/instill-ai/model-dummy-cls",
+          r.json().model.configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -184,7 +184,7 @@ export function ListModel() {
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
-          r.json().models[0].configuration === "{}",
+          r.json().models[0].configuration ===  null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
@@ -217,9 +217,9 @@ export function ListModel() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
-          JSON.parse(r.json().models[0].configuration).repository  === "instill-ai/model-dummy-cls",
+          r.json().models[0].configuration.repository  === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
-          JSON.parse(r.json().models[0].configuration).html_url  === "https://github.com/instill-ai/model-dummy-cls",
+          r.json().models[0].configuration.html_url  === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
@@ -270,7 +270,7 @@ export function LookupModel() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
         "POST /v1alpha/models:multipart task cls response model.configuration.content": (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -297,7 +297,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.configuration`]: (r) =>
-          r.json().model.configuration === "{}",
+          r.json().model.configuration ===  null,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.owner`]: (r) =>
@@ -324,7 +324,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.configuration.content`]: (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${res.json().model.uid}:lookUp task cls response model.owner`]: (r) =>

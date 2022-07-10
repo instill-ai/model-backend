@@ -7,7 +7,6 @@ import (
 	"github.com/ghodss/yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/instill-ai/model-backend/internal/util"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -58,7 +57,7 @@ func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	util.ConvertAllJSONKeySnakeCase(jsonSliceMap)
+	// util.ConvertAllJSONKeySnakeCase(jsonSliceMap)
 
 	return jsonSliceMap, nil
 }

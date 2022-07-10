@@ -202,9 +202,9 @@ export function CreateModelFromGitHub() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "instill-ai/model-dummy-cls"
-        }),
+        },
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -223,7 +223,7 @@ export function CreateModelFromGitHub() {
         "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
-        JSON.parse(r.json().model.configuration).repository === "instill-ai/model-dummy-cls",
+          r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -306,9 +306,9 @@ export function CreateModelFromGitHub() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": randomString(10),
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "instill-ai/model-dummy-cls"
-        }),
+        },
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -319,9 +319,9 @@ export function CreateModelFromGitHub() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "Phelan164/non-exited"
-        })
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -331,9 +331,9 @@ export function CreateModelFromGitHub() {
 
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "instill-ai/model-dummy-cls"
-        })
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -344,8 +344,8 @@ export function CreateModelFromGitHub() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
-        })
+        "configuration": {
+        }
       }), {
         headers: genHeader("application/json"),
       }), {

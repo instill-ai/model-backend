@@ -30,7 +30,7 @@ export function GetModelInstance() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+      check( http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models:multipart task cls response status": (r) =>
@@ -46,7 +46,7 @@ export function GetModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
         "POST /v1alpha/models:multipart task cls response model.configuration.content": (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -79,7 +79,7 @@ export function GetModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.configuration`]: (r) =>
-          r.json().instance.configuration === "{}",
+          r.json().instance.configuration === null,
       });
 
       check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances/latest?view=VIEW_FULL`, {
@@ -104,7 +104,7 @@ export function GetModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response instance.content`]: (r) =>
-          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",
+          r.json().instance.configuration.content === "dummy-cls-model.zip",
       });
 
       // clean up
@@ -145,7 +145,7 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
         "POST /v1alpha/models:multipart task cls response model.configuration.content": (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -183,7 +183,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-          r.json().instances[0].configuration === "{}",
+          r.json().instances[0].configuration === null,
       });
 
       check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
@@ -214,7 +214,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration.content`]: (r) =>
-          JSON.parse(r.json().instances[0].configuration).content === "dummy-cls-model.zip",
+          r.json().instances[0].configuration.content === "dummy-cls-model.zip",
       });
 
       // clean up
@@ -235,9 +235,9 @@ export function ListModelInstance() {
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
-        "configuration": JSON.stringify({
+        "configuration": {
           "repository": "instill-ai/model-dummy-cls"
-        })
+        }
       }), {
         headers: genHeader("application/json"),
       }), {
@@ -254,9 +254,9 @@ export function ListModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/github",
         "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
-          JSON.parse(r.json().model.configuration).repository === "instill-ai/model-dummy-cls",
+          r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.configuration.html_url": (r) =>
-          JSON.parse(r.json().model.configuration).html_url === "https://github.com/instill-ai/model-dummy-cls",
+          r.json().model.configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -295,7 +295,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-        r.json().instances[0].configuration === "{}",
+        r.json().instances[0].configuration === null,
       });
       check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
@@ -325,11 +325,11 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.repository`]: (r) =>
-          JSON.parse(r.json().instances[0].configuration).repository === "instill-ai/model-dummy-cls",
+          r.json().instances[0].configuration.repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.html_url`]: (r) =>
-          JSON.parse(r.json().instances[0].configuration).html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1",
+          r.json().instances[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.tag`]: (r) =>
-          JSON.parse(r.json().instances[0].configuration).tag === "v1.1",
+          r.json().instances[0].configuration.tag === "v1.1",
       });
 
       // clean up
@@ -372,7 +372,7 @@ export function LookupModelInstance() {
         "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
         "POST /v1alpha/models:multipart task cls response model.configuration.content": (r) =>
-          JSON.parse(r.json().model.configuration).content === "dummy-cls-model.zip",
+          r.json().model.configuration.content === "dummy-cls-model.zip",
         "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
@@ -413,7 +413,7 @@ export function LookupModelInstance() {
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.configuration`]: (r) =>
-          r.json().instance.configuration === "{}",
+          r.json().instance.configuration === null,
       });
 
       check(http.get(`${apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp?view=VIEW_FULL`, {
@@ -438,7 +438,7 @@ export function LookupModelInstance() {
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}:lookUp task cls response instance.configuration.content`]: (r) =>
-          JSON.parse(r.json().instance.configuration).content === "dummy-cls-model.zip",
+          r.json().instance.configuration.content === "dummy-cls-model.zip",
       });
 
 

@@ -81,9 +81,9 @@
       "ui_component": "text"
     },
     "configuration": {
-      "type": "string",
+      "type": "object",
       "title": "Configuration",
-      "description": "Model instance configuration JSON string that has been validated using the `model_spec` JSON schema of a ModelDefinition",
+      "description": "Model instance configuration JSON that has been validated using the `model_spec` JSON schema of a ModelDefinition",
       "readOnly": true,
       "ui_order": 6,
       "ui_disabled": true
