@@ -10,6 +10,8 @@
     required:
     - "repository"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 2
     properties:
       repository:
         type: "string"
@@ -20,10 +22,12 @@
         - "instill-ai/mobilenetv2"
         ui_order: 0
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
       html_url:
         type: "string"
         title: "Github repository URL"
-        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/yolov4`"
+        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/yolov4`."
         examples:
         - "https://github.com/instill-ai/yolov4"
         - "https://github.com/instill-ai/mobilenetv2"
@@ -32,6 +36,8 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
   modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "GitHub spec for model instance"
@@ -40,6 +46,8 @@
     - "repository"
     - "tag"
     additionalProperties: false
+    minProperties: 2
+    maxProperties: 3
     properties:
       repository:
         type: "string"
@@ -52,6 +60,8 @@
         ui_order: 0
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
       tag:
         type: "string"
         title: "GitHub repository"
@@ -63,6 +73,8 @@
         ui_order: 1
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 200
       html_url:
         type: "string"
         title: "Github repository URL"
@@ -74,6 +86,8 @@
         ui_order: 2
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
 - id: local
   uid: "96b547c2-8927-43ca-a0cd-a72306621696"
   title: Local
@@ -86,11 +100,14 @@
     required:
     - "content"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 2
     properties:
       description:
         type: "string"
         title: "Description"
         description: "Fill with a short description of your model"
+        minLength: 0
         maxLength: 1023
         writeOnly: true
         ui_order: 0
@@ -104,6 +121,8 @@
         ui_disabled: true
         ui_hidden: true
         ui_component: "file"
+        minLength: 0
+        maxLength: 1023
   modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "Local spec for model instance"
@@ -111,6 +130,8 @@
     required:
     - "content"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 1
     properties:
       content:
         type: "string"
@@ -122,6 +143,8 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "file"
+        minLength: 0
+        maxLength: 1023
 - id: artivc
   uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
   title: ArtiVC
@@ -134,11 +157,14 @@
     required:
     - "url"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 3
     properties:
       description:
         type: "string"
         title: "Description"
         description: "Fill with a short description of your model"
+        minLength: 0
         maxLength: 1023
         writeOnly: true
         ui_order: 0
@@ -152,7 +178,9 @@
         - "s3://vdp/public-models/yolov4"
         readOnly: true
         ui_order: 1
-        ui_component: "text"       
+        ui_component: "text" 
+        minLength: 0  
+        maxLength: 1023    
       credential:
         type: "object"
         title: "Credential"
@@ -167,6 +195,8 @@
     - "url"
     - "tag"
     additionalProperties: false
+    minProperties: 2
+    maxProperties: 2    
     properties:
       url:
         type: "string"
@@ -177,7 +207,9 @@
         - "s3://vdp/public-models/yolov4"
         readOnly: true
         ui_order: 0
-        ui_component: "text"    
+        ui_component: "text" 
+        minLength: 0   
+        maxLength: 1023
       tag:
         type: "string"
         title: "ArtiVC version"
@@ -189,6 +221,8 @@
         ui_order: 1
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 200
 - id: "huggingface"
   uid: "5b2e1d10-1fab-462d-9d6a-ba41f4b4d816"
   title: "HuggingFace"
@@ -201,6 +235,8 @@
     required:
     - "repo_id"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 3      
     properties:
       repo_id:
         type: "string"
@@ -211,6 +247,8 @@
         - "facebook/deit-base-distilled-patch16-224"
         ui_order: 0
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
       description:
         type: "string"
         title: "Description"
@@ -222,7 +260,7 @@
       html_url:
         type: "string"
         title: "HuggingFace repository URL"
-        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224`"
+        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224`."
         examples:
         - "https://huggingface.co/google/vit-base-patch16-224"
         - "https://huggingface.co/facebook/deit-base-distilled-patch16-224"
@@ -231,6 +269,8 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
   modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "HuggingFace spec for model instance"
@@ -238,6 +278,8 @@
     required:
     - "repo_id"
     additionalProperties: false
+    minProperties: 1
+    maxProperties: 2      
     properties:
       repo_id:
         type: "string"
@@ -248,10 +290,12 @@
         - "facebook/deit-base-distilled-patch16-224"
         ui_order: 0
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023
       html_url:
         type: "string"
         title: "HuggingFace repository URL"
-        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224/tree/main`"
+        description: "The URL of the HuggingFace repository, e.g. `https://huggingface.co/facebook/deit-base-distilled-patch16-224/tree/main`."
         examples:
         - "https://huggingface.co/google/vit-base-patch16-224/tree/main"
         - "https://huggingface.co/facebook/deit-base-distilled-patch16-224/tree/main"
@@ -260,3 +304,5 @@
         ui_hidden: true
         ui_disabled: true
         ui_component: "text"
+        minLength: 0
+        maxLength: 1023

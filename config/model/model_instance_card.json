@@ -5,7 +5,7 @@
   "title": "Model instance card",
   "description": "The model instance README card",
   "additionalProperties": false,
-  "required": ["type", "contents", "encoding"],
+  "required": ["type", "content", "encoding"],
   "properties": {
     "name": {
       "type": "string",
@@ -38,7 +38,7 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
-    "contents": {
+    "content": {
       "type": "string",
       "title": "README",
       "description": "README to describe a model instance",
@@ -50,7 +50,7 @@
     "encoding": {
       "type": "string",
       "title": "Encoding type",
-      "description": "The encoding type of the contents",
+      "description": "The encoding type of the content",
       "default": "base64",
       "readOnly": true,
       "ui_order": 4,

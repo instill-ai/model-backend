@@ -43,9 +43,9 @@ export function CreateModel() {
             model: {
                 id: model_id,
                 model_definition: model_def_name,
-                configuration: JSON.stringify( {
+                configuration: {
                     repository: "instill-ai/model-dummy-cls"
-                })
+                }
             }
         }), {
             'CreateModel status': (r) => r && r.status === grpc.StatusOK,
@@ -56,7 +56,7 @@ export function CreateModel() {
             'CreateModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
             'CreateModel model createTime': (r) => r && r.message.model.createTime !== undefined,
             'CreateModel model updateTime': (r) => r && r.message.model.updateTime !== undefined,
-            'CreateModel model configuration repository': (r) => r && JSON.parse(r.message.model.configuration).repository === "instill-ai/model-dummy-cls",
+            'CreateModel model configuration repository': (r) => r && r.message.model.configuration.repository === "instill-ai/model-dummy-cls",
             'CreateModel model user': (r) => r && r.message.model.user !== undefined,
         });
 
@@ -86,9 +86,9 @@ export function CreateModel() {
             model: {
                 id: randomString(10),
                 model_definition: randomString(10),
-                configuration: JSON.stringify({
+                configuration: {
                     repository: "instill-ai/model-dummy-cls"
-                })
+                }
             }
         }), {
             'status': (r) => r && r.status == grpc.StatusInvalidArgument,
@@ -98,9 +98,9 @@ export function CreateModel() {
             model: {
                 id: randomString(10),
                 model_definition: model_def_name,
-                configuration: JSON.stringify({
+                configuration: {
                     repository: "invalid-repo"
-                })
+                }
             }
         }), {
             'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
@@ -109,9 +109,9 @@ export function CreateModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 model_definition: model_def_name,
-                configuration: JSON.stringify({
+                configuration: {
                     repository: "instill-ai/model-dummy-cls"
-                })
+                }
             }
         }), {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,

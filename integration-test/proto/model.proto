@@ -48,9 +48,9 @@ message Model {
     (google.api.field_behavior) = IMMUTABLE,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model configuration represents the configuration JSON string that has been
+  // Model configuration represents the configuration JSON that has been
   // validated using the `model_spec` JSON schema of a ModelDefinition
-  string configuration = 6 [ (google.api.field_behavior) = IMMUTABLE ];
+  google.protobuf.Struct configuration = 6 [ (google.api.field_behavior) = IMMUTABLE ];
   // Model visibility including public or private
   Visibility visibility = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model owner
@@ -123,10 +123,10 @@ message ModelInstance {
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
   ];
-  // Model instance configuration represents the configuration JSON string that
+  // Model instance configuration represents the configuration JSON that
   // has been validated using the `model_instance_spec` JSON schema of a
   // ModelDefinition
-  string configuration = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Struct configuration = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Model instance create time
   google.protobuf.Timestamp create_time = 8
       [ (google.api.field_behavior) = OUTPUT_ONLY ];
@@ -150,9 +150,9 @@ message ModelInstanceCard {
   int32 size = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
   // Type of the resource. Fixed to "file".
   string type = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Contents of the README file in bytes and base64 format
-  bytes contents = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Encoding type of the contents. Fixed to "base64".
+  // Content of the README file in bytes and base64 format
+  bytes content = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Encoding type of the content. Fixed to "base64".
   string encoding = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
@@ -204,7 +204,7 @@ message CreateModelBinaryFileUploadRequest {
   // Format: models/{model}
   Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
   // Model content in bytes
-  bytes bytes = 2 [ (google.api.field_behavior) = REQUIRED ];
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // CreateModelBinaryFileUploadResponse represents a response for a model
@@ -581,6 +581,28 @@ message TriggerModelInstanceResponse {
   google.protobuf.Struct output = 1;
 }
 
+// TriggerModelInstanceBinaryFileUploadRequest represents a request to test a
+// model instance by uploading binary file
+message TriggerModelInstanceBinaryFileUploadRequest {
+  // The resource name of the model instance to trigger.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
+  ];
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 3 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// TriggerModelInstanceBinaryFileUploadResponse represents a response for the
+// output for testing a model instance
+message TriggerModelInstanceBinaryFileUploadResponse {
+  // Output from a model
+  google.protobuf.Struct output = 1;
+}
+
 // TestModelInstanceRequest represents a request to test a model instance
 message TestModelInstanceRequest {
   // The resource name of the model instance to trigger.
@@ -612,7 +634,7 @@ message TestModelInstanceBinaryFileUploadRequest {
   // The list of file length for each uploaded binary file
   repeated uint64 file_lengths = 2 [ (google.api.field_behavior) = REQUIRED ];
   // Content of images in bytes
-  bytes bytes = 3 [ (google.api.field_behavior) = REQUIRED ];
+  bytes content = 3 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TestModelInstanceBinaryFileUploadResponse represents a response for the

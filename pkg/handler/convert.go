@@ -53,22 +53,8 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 }
 
 func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) *modelPB.Model {
-	// remove credential in ArtiVC model configuration
-	sModelConfig := ""
-	if modelDef.ID == "artivc" {
-		var modelConfig datamodel.ArtiVCModelConfiguration
-		err := json.Unmarshal([]byte(dbModel.Configuration.String()), &modelConfig)
-		if err == nil {
-			b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
-				Url: modelConfig.Url,
-			})
-			if err == nil {
-				sModelConfig = string(b)
-			}
-		}
-	} else {
-		sModelConfig = dbModel.Configuration.String()
-	}
+	logger, _ := logger.GetZapLogger()
+
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
 		Uid:             dbModel.BaseDynamic.UID.String(),
@@ -78,10 +64,34 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		Description:     &dbModel.Description,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		Configuration:   sModelConfig,
-	}
-	if pbModel.Configuration == "" {
-		pbModel.Configuration = "{}"
+		Configuration: func() *structpb.Struct {
+			if dbModel.Configuration != nil {
+				str := structpb.Struct{}
+				// remove credential in ArtiVC model configuration
+				if modelDef.ID == "artivc" {
+					var modelConfig datamodel.ArtiVCModelConfiguration
+					if err := json.Unmarshal([]byte(dbModel.Configuration.String()), &modelConfig); err != nil {
+						logger.Fatal(err.Error())
+					}
+					b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
+						Url: modelConfig.Url,
+					})
+					if err != nil {
+						logger.Fatal(err.Error())
+					}
+					if err := str.UnmarshalJSON(b); err != nil {
+						logger.Fatal(err.Error())
+					}
+				} else {
+					err := str.UnmarshalJSON(dbModel.Configuration)
+					if err != nil {
+						logger.Fatal(err.Error())
+					}
+				}
+				return &str
+			}
+			return nil
+		}(),
 	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
 		userName := resource.GetUserNameByUid(strings.TrimPrefix(dbModel.Owner, "users/"))
@@ -94,6 +104,8 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 }
 
 func DBModelInstanceToPBModelInstance(modelDef *datamodel.ModelDefinition, model *datamodel.Model, dbModelInstance *datamodel.ModelInstance) *modelPB.ModelInstance {
+	logger, _ := logger.GetZapLogger()
+
 	pbModelInstance := modelPB.ModelInstance{
 		Name:            fmt.Sprintf("models/%s/instances/%s", model.ID, dbModelInstance.ID),
 		Uid:             dbModelInstance.BaseDynamic.UID.String(),
@@ -103,10 +115,16 @@ func DBModelInstanceToPBModelInstance(modelDef *datamodel.ModelDefinition, model
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		State:           modelPB.ModelInstance_State(dbModelInstance.State),
 		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
-		Configuration:   dbModelInstance.Configuration.String(),
-	}
-	if pbModelInstance.Configuration == "" {
-		pbModelInstance.Configuration = "{}"
+		Configuration: func() *structpb.Struct {
+			if dbModelInstance.Configuration != nil {
+				str := structpb.Struct{}
+				if err := str.UnmarshalJSON(dbModelInstance.Configuration); err != nil {
+					logger.Fatal(err.Error())
+				}
+				return &str
+			}
+			return nil
+		}(),
 	}
 	return &pbModelInstance
 }
@@ -126,8 +144,7 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 		ModelSpec: func() *structpb.Struct {
 			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModelDefinition.ModelSpec.String()), specification)
-				if err != nil {
+				if err := protojson.Unmarshal([]byte(dbModelDefinition.ModelSpec.String()), specification); err != nil {
 					logger.Fatal(err.Error())
 				}
 				return specification
@@ -138,8 +155,7 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 		ModelInstanceSpec: func() *structpb.Struct {
 			if dbModelDefinition.ModelInstanceSpec != nil {
 				var specification = &structpb.Struct{}
-				err := protojson.Unmarshal([]byte(dbModelDefinition.ModelInstanceSpec.String()), specification)
-				if err != nil {
+				if err := protojson.Unmarshal([]byte(dbModelDefinition.ModelInstanceSpec.String()), specification); err != nil {
 					logger.Fatal(err.Error())
 				}
 				return specification
