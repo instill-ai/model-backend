@@ -144,6 +144,9 @@ func main() {
 	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
 	defer userServiceClientConn.Close()
 
+	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+	defer pipelineServiceClientConn.Close()
+
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
@@ -152,7 +155,7 @@ func main() {
 	modelPB.RegisterModelServiceServer(
 		grpcS,
 		handler.NewHandler(
-			service.NewService(repository, triton, redisClient),
+			service.NewService(repository, triton, pipelineServiceClient, redisClient),
 			triton))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -160,6 +163,7 @@ func main() {
 
 	gwS := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(httpResponseModifier),
+		runtime.WithErrorHandler(errorHandler),
 		runtime.WithIncomingHeaderMatcher(customMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions:   util.MarshalOptions,

@@ -11,16 +11,20 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
 
 type Service interface {
@@ -48,16 +52,18 @@ type Service interface {
 }
 
 type service struct {
-	repository  repository.Repository
-	triton      triton.Triton
-	redisClient *redis.Client
+	repository            repository.Repository
+	triton                triton.Triton
+	redisClient           *redis.Client
+	pipelineServiceClient pipelinePB.PipelineServiceClient
 }
 
-func NewService(r repository.Repository, t triton.Triton, rc *redis.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineServiceClient, rc *redis.Client) Service {
 	return &service{
-		repository:  r,
-		triton:      t,
-		redisClient: rc,
+		repository:            r,
+		triton:                t,
+		pipelineServiceClient: p,
+		redisClient:           rc,
 	}
 }
 
@@ -287,10 +293,41 @@ func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageT
 }
 
 func (s *service) DeleteModel(owner string, modelId string) error {
+	logger, _ := logger.GetZapLogger()
+
 	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
+
+	filter := fmt.Sprintf("recipe.model_instances:\"models/%s\"", modelInDB.UID)
+
+	pipeResp, err := s.pipelineServiceClient.ListPipeline(context.Background(), &pipelinePB.ListPipelineRequest{
+		Filter: &filter,
+	})
+	if err != nil {
+		return err
+	}
+	if len(pipeResp.Pipelines) > 0 {
+		var pipeIDs []string
+		for _, pipe := range pipeResp.Pipelines {
+			pipeIDs = append(pipeIDs, pipe.GetId())
+		}
+		st, err := sterr.CreateErrorPreconditionFailure(
+			"[service] delete model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "DELETE",
+					Subject:     fmt.Sprintf("id %s", modelInDB.ID),
+					Description: fmt.Sprintf("The model is still in use by pipeline: %s ", strings.Join(pipeIDs, " ")),
+				},
+			})
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return st.Err()
+	}
+
 	modelInstancesInDB, err := s.repository.GetModelInstances(modelInDB.UID)
 	if err == nil {
 		for i := 0; i < len(modelInstancesInDB); i++ {
