@@ -65,6 +65,7 @@
       "ui_component": "text"
     },
     "configuration": {
+      "nullable": true,
       "type": "object",
       "title": "Configuration",
       "description": "Model configuration JSON that has been validated using the `model_spec` JSON schema of a ModelDefinition",

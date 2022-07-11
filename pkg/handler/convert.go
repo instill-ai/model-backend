@@ -90,7 +90,7 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 				}
 				return &str
 			}
-			return &structpb.Struct{}
+			return nil
 		}(),
 	}
 	if strings.HasPrefix(dbModel.Owner, "users/") {
