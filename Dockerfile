@@ -35,6 +35,7 @@ ARG SERVICE_NAME
 WORKDIR /${SERVICE_NAME}
 
 COPY --from=build /src/config ./config
+COPY --from=build /src/assets ./assets
 COPY --from=build /src/release-please ./release-please
 COPY --from=build /src/internal/db/migration ./internal/db/migration
 
