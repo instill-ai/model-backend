@@ -1,3 +1,1 @@
-url: git@github.com:instill-ai/ml-classification.git
 branch: main
-sha: bce93dede83630e5060b30e270a2173daaf2c911
