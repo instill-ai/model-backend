@@ -39,3 +39,9 @@ usagebackend:
   tlsenabled: true
   host: usage.instill.tech
   port: 443
+pipelinebackend:
+  host: pipeline-backend
+  port: 8081
+  https:
+    cert:   # /ssl/tls.crt
+    key:    # /ssl/tls.key  

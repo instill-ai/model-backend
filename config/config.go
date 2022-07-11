@@ -71,14 +71,24 @@ type UsageBackendConfig struct {
 	Port       int    `koanf:"port"`
 }
 
+type PipelineBackendConfig struct {
+	Host  string `koanf:"host"`
+	Port  int    `koanf:"port"`
+	HTTPS struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
+}
+
 // AppConfig defines
 type AppConfig struct {
-	Server       ServerConfig       `koanf:"server"`
-	Database     DatabaseConfig     `koanf:"database"`
-	TritonServer TritonServerConfig `koanf:"tritonserver"`
-	MgmtBackend  MgmtBackendConfig  `koanf:"mgmtbackend"`
-	Cache        CacheConfig        `koanf:"cache"`
-	UsageBackend UsageBackendConfig `koanf:"usagebackend"`
+	Server          ServerConfig          `koanf:"server"`
+	Database        DatabaseConfig        `koanf:"database"`
+	TritonServer    TritonServerConfig    `koanf:"tritonserver"`
+	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
+	Cache           CacheConfig           `koanf:"cache"`
+	UsageBackend    UsageBackendConfig    `koanf:"usagebackend"`
+	PipelineBackend PipelineBackendConfig `koanf:"pipelinebackend"`
 }
 
 // Config - Global variable to export

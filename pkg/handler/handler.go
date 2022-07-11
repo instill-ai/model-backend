@@ -30,6 +30,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/external"
 	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/internal/util"
@@ -38,10 +39,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	database "github.com/instill-ai/model-backend/internal/db"
+	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"github.com/instill-ai/x/checkfield"
+	"github.com/instill-ai/x/sterr"
 )
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
@@ -580,10 +583,12 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
+		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
 
-		modelService := service.NewService(modelRepository, tritonService, redisClient)
+		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient)
 
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionId)
@@ -599,8 +604,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 
 		modelConfiguration := datamodel.LocalModelConfiguration{
-			Description: r.FormValue("description"),
-			Content:     fileHeader.Filename,
+			Content: fileHeader.Filename,
 		}
 
 		if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
@@ -676,14 +680,6 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
 
-		// m := jsonpb.Marshaler{OrigName: true, EnumsAsInts: false, EmitDefaults: true}
-		// var buffer bytes.Buffer
-		// err = m.Marshal(&buffer, &modelPB.CreateModelResponse{Model: pbModel})
-		// if err != nil {
-		// 	util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-		// 	makeJSONResponse(w, 500, "Add Model Error", err.Error())
-		// 	return
-		// }
 		m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
 		b, err := m.Marshal(&modelPB.CreateModelResponse{Model: pbModel})
 		if err != nil {
@@ -1442,6 +1438,8 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 }
 
 func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
@@ -1524,8 +1522,19 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	err = h.service.DeployModelInstance(dbModelInstance.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
-		grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity)))
-		return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] deploy model error",
+			"triton-inference-server",
+			"deploy model",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+
+		return &modelPB.DeployModelInstanceResponse{}, st.Err()
 	}
 
 	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceId, modelPB.View_VIEW_FULL)
@@ -1919,9 +1928,11 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
+		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
-		modelService := service.NewService(modelRepository, tritonService, redisClient)
+		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient)
 
 		modelId, instanceId, err := resource.GetModelInstanceID(instanceName)
 		if err != nil {

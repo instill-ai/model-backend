@@ -101,17 +101,8 @@
     - "content"
     additionalProperties: false
     minProperties: 1
-    maxProperties: 2
+    maxProperties: 1
     properties:
-      description:
-        type: "string"
-        title: "Description"
-        description: "Fill with a short description of your model"
-        minLength: 0
-        maxLength: 1023
-        writeOnly: true
-        ui_order: 0
-        ui_component: "textarea_enable_counter"
       content:
         type: "string"
         contentMediaType: "application/zip"
@@ -158,17 +149,8 @@
     - "url"
     additionalProperties: false
     minProperties: 1
-    maxProperties: 3
+    maxProperties: 2
     properties:
-      description:
-        type: "string"
-        title: "Description"
-        description: "Fill with a short description of your model"
-        minLength: 0
-        maxLength: 1023
-        writeOnly: true
-        ui_order: 0
-        ui_component: "textarea_enable_counter"
       url:
         type: "string"
         title: "Cloud storage url"

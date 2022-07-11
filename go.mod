@@ -7,7 +7,6 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-beta.1
 	github.com/gofrs/uuid v4.2.0+incompatible
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -15,7 +14,7 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/instill-ai/protogen-go v0.2.1-alpha.0.20220709051344-5e035024ab8d
 	github.com/instill-ai/usage-client v0.1.1-alpha
-	github.com/instill-ai/x v0.1.0-alpha.0.20220604235252-39fcffc82edb
+	github.com/instill-ai/x v0.1.0-alpha.0.20220706215306-bceeac65f523
 	github.com/knadh/koanf v1.4.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
@@ -25,6 +24,7 @@ require (
 	github.com/urfave/cli/v2 v2.10.3
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220615171555-694bf12d69de
+	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.0.6
@@ -69,7 +69,6 @@ require (
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.3.4 // indirect
