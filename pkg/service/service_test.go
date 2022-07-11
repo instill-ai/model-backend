@@ -99,40 +99,40 @@ func TestGetModelByUid(t *testing.T) {
 	})
 }
 
-func TestDeleteModel(t *testing.T) {
-	t.Run("TestDeleteModel", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
+// func TestDeleteModel(t *testing.T) {
+// 	t.Run("TestDeleteModel", func(t *testing.T) {
+// 		ctrl := gomock.NewController(t)
 
-		uid := uuid.UUID{}
-		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "this is a test model",
-			ModelDefinitionUid: MODEL_DEFINITION,
-			Owner:              OWNER,
-		}
-		mockRepository := NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID), modelPB.View_VIEW_FULL).
-			Return(datamodel.Model{}, nil).
-			Times(1)
-		mockRepository.
-			EXPECT().
-			GetModelInstances(gomock.Eq(newModel.UID)).
-			Return([]datamodel.ModelInstance{}, nil).
-			Times(1)
-		mockRepository.
-			EXPECT().
-			DeleteModel(gomock.Eq(newModel.UID)).
-			Return(nil).
-			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil)
+// 		uid := uuid.UUID{}
+// 		newModel := datamodel.Model{
+// 			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
+// 			ID:                 ID,
+// 			Description:        "this is a test model",
+// 			ModelDefinitionUid: MODEL_DEFINITION,
+// 			Owner:              OWNER,
+// 		}
+// 		mockRepository := NewMockRepository(ctrl)
+// 		mockRepository.
+// 			EXPECT().
+// 			GetModelById(gomock.Eq(OWNER), gomock.Eq(newModel.ID), modelPB.View_VIEW_FULL).
+// 			Return(datamodel.Model{}, nil).
+// 			Times(1)
+// 		mockRepository.
+// 			EXPECT().
+// 			GetModelInstances(gomock.Eq(newModel.UID)).
+// 			Return([]datamodel.ModelInstance{}, nil).
+// 			Times(1)
+// 		mockRepository.
+// 			EXPECT().
+// 			DeleteModel(gomock.Eq(newModel.UID)).
+// 			Return(nil).
+// 			Times(1)
+// 		s := service.NewService(mockRepository, nil, nil, nil)
 
-		err := s.DeleteModel(OWNER, ID)
-		assert.NoError(t, err)
-	})
-}
+// 		err := s.DeleteModel(OWNER, ID)
+// 		assert.NoError(t, err)
+// 	})
+// }
 
 func TestRenameModel(t *testing.T) {
 	t.Run("TestRenameModel", func(t *testing.T) {
