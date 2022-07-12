@@ -1,5 +1,5 @@
 import grpc from 'k6/net/grpc';
-import { check, sleep, group } from 'k6';
+import { check, group } from 'k6';
 import http from "k6/http";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
@@ -7,7 +7,6 @@ import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 
 import {
     genHeader,
-    base64_image,
 } from "./helpers.js";
 
 const client = new grpc.Client();
@@ -15,7 +14,7 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://model-backend:8083";
+const apiHost = "model-backend:8083";
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
@@ -23,7 +22,7 @@ const model_def_name = "model-definitions/local"
 export function PublishUnPublishModel() {
     // PublishModel/UnpublishModel check
     group("Model API: PublishModel/UnpublishModel", () => {
-        client.connect('model-backend:8083', {
+        client.connect(apiHost, {
             plaintext: true
         });
 
@@ -34,7 +33,7 @@ export function PublishUnPublishModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+        check(http.request("POST", `http://${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models:multipart task cls response status": (r) =>
