@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.1-alpha...v0.6.2-alpha) (2022-07-12)
+
+
+### Miscellaneous Chores
+
+* release v0.6.2-alpha ([4365f32](https://github.com/instill-ai/model-backend/commit/4365f32207c4e914a89cb030489e153f12a43cd6))
+
 ## [0.6.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.0-alpha...v0.6.1-alpha) (2022-07-11)
 
 
