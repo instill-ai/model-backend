@@ -2074,8 +2074,16 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 
 	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelId, instanceId)
 	stat, err := os.Stat(readmeFilePath)
-	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+	if err != nil { // return empty content base64
+		return &modelPB.GetModelInstanceCardResponse{
+			Readme: &modelPB.ModelInstanceCard{
+				Name:     req.Name,
+				Size:     0,
+				Type:     "file",
+				Encoding: "base64",
+				Content:  []byte(""),
+			},
+		}, nil
 	}
 
 	f, _ := os.Open(readmeFilePath)

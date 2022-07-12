@@ -1,9 +1,5 @@
 import grpc from 'k6/net/grpc';
-import { check, sleep, group } from 'k6';
-import http from "k6/http";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
+import { check, group } from 'k6';
 
 import * as createModel from "./grpc_create_model.js"
 import * as updateModel from "./grpc_update_model.js"
@@ -14,10 +10,6 @@ import * as publishModel from "./grpc_publish_model.js"
 import * as queryModelInstance from "./grpc_query_model_instance.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
 
-import {
-    genHeader,
-    base64_image,
-} from "./helpers.js";
 
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');

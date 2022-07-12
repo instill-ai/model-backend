@@ -1,28 +1,19 @@
 import grpc from 'k6/net/grpc';
 import { check, sleep, group } from 'k6';
-import http from "k6/http";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
-
-import {
-    genHeader,
-    base64_image,
-} from "./helpers.js";
 
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "http://model-backend:8083";
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
+const apiHost = "model-backend:8083";
 const model_def_name = "model-definitions/github"
 
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect('model-backend:8083', {
+        client.connect(apiHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
@@ -35,7 +26,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect('model-backend:8083', {
+        client.connect(apiHost, {
             plaintext: true
         });
         let model_id = randomString(10)

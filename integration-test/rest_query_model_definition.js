@@ -1,15 +1,13 @@
 import http from "k6/http";
-import { sleep, check, group, fail } from "k6";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
+import { check, group } from "k6";
 
 import {
   genHeader,
-  base64_image,
 } from "./helpers.js";
 
 const apiHost = "http://model-backend:8083";
+
+const model_def_name = "model-definitions/local"
 
 export function ListModelDefinition() {
   // Model Backend API: get model definition list
@@ -88,11 +86,11 @@ export function GetModelDefinition() {
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.name`]: (r) =>
           r.json().model_definition.name === model_def_name,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.id`]: (r) =>
-          r.json().model_definition.id === "github",
+          r.json().model_definition.id === "local",
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.uid`]: (r) =>
-          r.json().model_definition.uid === model_def_uid,
+          r.json().model_definition.uid !== undefined,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.title`]: (r) =>
-          r.json().model_definition.title === "GitHub",
+          r.json().model_definition.title === "Local",
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.documentation_url`]: (r) =>
           r.json().model_definition.documentation_url !== undefined,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.model_spec`]: (r) =>

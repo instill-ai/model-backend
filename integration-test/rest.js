@@ -1,8 +1,5 @@
 import http from "k6/http";
-import { sleep, check, group, fail } from "k6";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
+import { check, group } from "k6";
 
 import * as createModel from "./rest_create_model.js"
 import * as queryModel from "./rest_query_model.js"
@@ -12,19 +9,13 @@ import * as publishModel from "./rest_publish_model.js"
 import * as updateModel from "./rest_update_model.js"
 import * as queryModelDefinition from "./rest_query_model_definition.js"
 import * as queryModelInstance from "./rest_query_model_instance.js"
+import * as getModelCard from "./rest_model_card.js"
 
 import {
   genHeader,
-  base64_image,
 } from "./helpers.js";
 
 const apiHost = "http://model-backend:8083";
-const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
-const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
-const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_name = "model-definitions/github"
-const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 export let options = {
   setupTimeout: '300s',
@@ -83,6 +74,9 @@ export default function (data) {
   queryModelInstance.GetModelInstance()
   queryModelInstance.ListModelInstance()
   queryModelInstance.LookupModelInstance()
+
+  // Get model card
+  getModelCard.GetModelCard()
 }
 
 export function teardown(data) {

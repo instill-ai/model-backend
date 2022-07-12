@@ -1,12 +1,10 @@
 import http from "k6/http";
-import { sleep, check, group, fail } from "k6";
+import { sleep, check, group } from "k6";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
-import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 
 import {
   genHeader,
-  base64_image,
 } from "./helpers.js";
 
 const apiHost = "http://model-backend:8083";
@@ -15,7 +13,6 @@ const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dumm
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const keypoint_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const model_def_uid = "909c3278-f7d1-461c-9352-87741bef11d3"
 
 
 export function CreateModelFromLocal() {
