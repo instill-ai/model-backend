@@ -168,6 +168,8 @@
         description: "If the GCS bucket path is private, please provide the Google Cloud Application Default credential or service account credential in its JSON format to get access to the model. See [ArtiVC Google Cloud Storage setup guide](https://artivc.io/backends/gcs/)."
         readOnly: true
         ui_order: 2
+        minProperties: 0
+        maxProperties: 10     
   modelInstanceSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "ArtiVC spec for model instance"

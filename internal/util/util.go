@@ -83,6 +83,17 @@ func findModelFiles(dir string) []string {
 	return modelPaths
 }
 
+func AddMissingTritonModelFolder(dir string) {
+	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if f.Name() == "config.pbtxt" {
+			if _, err := os.Stat(fmt.Sprintf("%s/1", filepath.Dir(path))); err != nil {
+				os.MkdirAll(fmt.Sprintf("%s/1", filepath.Dir(path)), os.ModePerm)
+			}
+		}
+		return nil
+	})
+}
+
 func getPreModelConfigPath(modelRepository string, tritonModels []datamodel.TritonModel) string {
 	modelPath := ""
 	for _, triton := range tritonModels {
@@ -400,7 +411,10 @@ func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]str
 	}
 }
 
-func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelInstanceConfiguration) error {
+func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelInstanceConfiguration, withLargeFiles bool) error {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
 	url := modelConfig.Url
 	var cmd *exec.Cmd
 	if strings.HasPrefix(url, "gs://") {
@@ -408,6 +422,16 @@ func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, ins
 		if err != nil {
 			return err
 		}
+		if !withLargeFiles {
+			// make artivc ignore large file
+			cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp assets/artivc/avcignore %s/.avcignore", dir))
+			err = cmd.Run()
+			if err != nil {
+				return err
+			}
+		}
+
+		// download other source file such as .py, config.pbtxt
 		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc get -o %s %s@%s", credentialFile, dir, url, instanceConfig.Tag))
 		err = cmd.Run()
 		if err != nil {
