@@ -764,6 +764,8 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 }
 
 func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	var modelConfig datamodel.GitHubModelConfiguration
 	b, err := req.Model.Configuration.MarshalJSON()
 	if err != nil {
@@ -811,8 +813,19 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 		err = util.GitHubCloneWOLargeFile(modelSrcDir, instanceConfig)
 		if err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"GitHub",
+				"Clone repository",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
 		instance := datamodel.ModelInstance{
@@ -824,21 +837,54 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"Model folder structure",
+				"",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil || modelMeta.Task == "" {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"REAME.md file",
+					"Could not get meta data from README.md file",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-				return &modelPB.CreateModelResponse{}, err
+				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
 				if modelMeta.Task != "" {
+					st, err := sterr.CreateErrorResourceInfo(
+						codes.FailedPrecondition,
+						"[handler] create a model error",
+						"REAME.md file",
+						"README.md contains unsupported task",
+						"",
+						err.Error(),
+					)
+					if err != nil {
+						logger.Error(err.Error())
+					}
 					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, instance.ID)
-					return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
+					return &modelPB.CreateModelResponse{}, st.Err()
 				} else {
 					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 				}
@@ -850,10 +896,21 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	}
 	dbModel, err := h.service.CreateModel(owner, &githubModel)
 	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] create a model error",
+			"Model service",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		for _, tag := range githubInfo.Tags {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 		}
-		return &modelPB.CreateModelResponse{}, err
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
@@ -864,6 +921,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 }
 
 func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	var modelConfig datamodel.ArtiVCModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
@@ -898,7 +957,18 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	tmpDir := fmt.Sprintf("./%s", rdid.String())
 	tags, err := util.ArtiVCGetTags(tmpDir, modelConfig)
 	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"ArtiVC",
+			"Get tags",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	_ = os.RemoveAll(tmpDir)
 	for _, tag := range tags {
@@ -910,9 +980,20 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 		err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, false)
 		if err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"ArtiVC",
+				"Clone repository",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
 			_ = os.RemoveAll(modelSrcDir)
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
@@ -925,21 +1006,54 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"Model folder structure",
+				"",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-			return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil || modelMeta.Task == "" {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"REAME.md file",
+					"Could not get meta data from README.md file",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-				return &modelPB.CreateModelResponse{}, err
+				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
 				if modelMeta.Task != "" {
+					st, err := sterr.CreateErrorResourceInfo(
+						codes.FailedPrecondition,
+						"[handler] create a model error",
+						"REAME.md file",
+						"README.md contains unsupported task",
+						"",
+						err.Error(),
+					)
+					if err != nil {
+						logger.Error(err.Error())
+					}
 					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, instance.ID)
-					return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
+					return &modelPB.CreateModelResponse{}, st.Err()
 				} else {
 					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 				}
@@ -951,10 +1065,21 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	}
 	dbModel, err := h.service.CreateModel(owner, &artivcModel)
 	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] create a model error",
+			"Model service",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		for _, tag := range tags {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
 		}
-		return &modelPB.CreateModelResponse{}, err
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
@@ -968,6 +1093,8 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 }
 
 func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	var modelConfig datamodel.HuggingFaceModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
@@ -1002,14 +1129,36 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"GitHub",
+			"Clone model repository",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		_ = os.RemoveAll(configTmpDir)
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Clone model error %v", err.Error()))
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err := util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"GitHub",
+			"Generate HuggingFace model",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		_ = os.RemoveAll(modelDir)
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Create triton model error %v", err.Error()))
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	_ = os.RemoveAll(configTmpDir)
 	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
@@ -1027,22 +1176,55 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	readmeFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"Model folder structure",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.Internal, err.Error())
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"REAME.md file",
+				"Could not get meta data from README.md file",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-			return &modelPB.CreateModelResponse{}, err
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 
 		if modelMeta.Task != "" {
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"REAME.md file",
+					"README.md contains unsupported task",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, instance.ID)
-				return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
+				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 		} else {
 			if len(modelMeta.Tags) == 0 {
@@ -1065,8 +1247,19 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 
 	dbModel, err := h.service.CreateModel(owner, &huggingfaceModel)
 	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] create a model error",
+			"Model service",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-		return &modelPB.CreateModelResponse{}, err
+		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
@@ -1548,7 +1741,6 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	}
 	err = h.service.DeployModelInstance(dbModelInstance.UID)
 	if err != nil {
-		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			"[handler] deploy model error",
