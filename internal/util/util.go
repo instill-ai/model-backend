@@ -465,13 +465,13 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 	return nil
 }
 
-func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration, modelId string) error {
+func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration, modelID string) error {
 	// export model to folder structure similar with triton to support copy the model into model repository later
-	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelId), os.ModePerm); err != nil {
+	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelID), os.ModePerm); err != nil {
 		return err
 	}
 	// atol 0.001 mean that accept difference with 0.1%
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --atol 0.001 --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelId))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --atol 0.001 --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelID))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -491,7 +491,7 @@ func UpdateConfigModelName(filePath string, oldModelName string, newModelName st
 	return ioutil.WriteFile(filePath, fileData, 0o600)
 }
 
-func GenerateHuggingFaceModel(confDir string, dest string, modelId string) error {
+func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error {
 	if err := os.Mkdir(dest, os.ModePerm); err != nil {
 		return err
 	}
@@ -499,25 +499,25 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelId string) error
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface %s/%s", dest, dest, modelId))
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface %s/%s", dest, dest, modelID))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 
-	configEnsemblePath := fmt.Sprintf("%s/%s/config.pbtxt", dest, modelId)
-	if err := UpdateConfigModelName(configEnsemblePath, "huggingface", modelId); err != nil {
+	configEnsemblePath := fmt.Sprintf("%s/%s/config.pbtxt", dest, modelID)
+	if err := UpdateConfigModelName(configEnsemblePath, "huggingface", modelID); err != nil {
 		return err
 	}
-	if err := UpdateConfigModelName(configEnsemblePath, "huggingface-infer", fmt.Sprintf("%s-infer", modelId)); err != nil {
+	if err := UpdateConfigModelName(configEnsemblePath, "huggingface-infer", fmt.Sprintf("%s-infer", modelID)); err != nil {
 		return err
 	}
 
-	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface-infer %s/%s-infer", dest, dest, modelId))
+	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("mv %s/huggingface-infer %s/%s-infer", dest, dest, modelID))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	configModelInferPath := fmt.Sprintf("%s/%s-infer/config.pbtxt", dest, modelId)
-	if err := UpdateConfigModelName(configModelInferPath, "huggingface-infer", fmt.Sprintf("%s-infer", modelId)); err != nil {
+	configModelInferPath := fmt.Sprintf("%s/%s-infer/config.pbtxt", dest, modelID)
+	if err := UpdateConfigModelName(configModelInferPath, "huggingface-infer", fmt.Sprintf("%s-infer", modelID)); err != nil {
 		return err
 	}
 
