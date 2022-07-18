@@ -1,5 +1,5 @@
 import grpc from 'k6/net/grpc';
-import { check, sleep, group } from 'k6';
+import { check, group } from 'k6';
 import http from "k6/http";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
@@ -71,7 +71,6 @@ export function DeployUndeployModel() {
             'DeployModelInstance instance createTime': (r) => r && r.message.instance.createTime !== undefined,
             'DeployModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         });
-        sleep(5) // triton take time after update status
 
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', { name: `models/non-existed/instances/latest` }), {
             'DeployModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
