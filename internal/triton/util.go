@@ -128,6 +128,34 @@ func Reshape1DArrayFloat32To3D(array []float32, shape []int64) ([][][]float32, e
 	return res, nil
 }
 
+func Reshape1DArrayFloat32To2D(array []float32, shape []int64) ([][]float32, error) {
+	if len(array) == 0 {
+		return [][]float32{}, nil
+	}
+
+	if len(shape) != 2 {
+		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
+	}
+
+	var prod int64 = 1
+	for _, s := range shape {
+		prod *= s
+	}
+	if prod != int64(len(array)) {
+		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+	}
+
+	res := make([][]float32, shape[0])
+	for i := int64(0); i < shape[0]; i++ {
+		res[i] = make([]float32, shape[1])
+		start := i * shape[0]
+		end := start + shape[1]
+		res[i] = array[start:end]
+	}
+
+	return res, nil
+}
+
 func GetOutputFromInferResponse(name string, response *inferenceserver.ModelInferResponse) (*inferenceserver.ModelInferResponse_InferOutputTensor, []byte, error) {
 	for idx, output := range response.Outputs {
 		if output.Name == name {

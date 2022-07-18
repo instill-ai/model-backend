@@ -246,6 +246,7 @@ func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelNa
 
 // ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.
 func ConvertAllJSONKeySnakeCase(i interface{}) {
+
 	switch v := i.(type) {
 	case map[string]interface{}:
 		for k, vv := range v {
@@ -258,6 +259,15 @@ func ConvertAllJSONKeySnakeCase(i interface{}) {
 		}
 	case []map[string]interface{}:
 		for _, vv := range v {
+			ConvertAllJSONKeySnakeCase(vv)
+		}
+	case map[string][]map[string]interface{}:
+		for k, vv := range v {
+			sc := strcase.ToSnake(k)
+			if sc != k {
+				v[sc] = v[k]
+				delete(v, k)
+			}
 			ConvertAllJSONKeySnakeCase(vv)
 		}
 	}

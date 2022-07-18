@@ -203,7 +203,6 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, rawInput []
 
 func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
-
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to find inference output for boxes")
@@ -258,6 +257,69 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	outputData := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
 
 	return outputData, nil
+}
+
+func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferResponse, outputs []*inferenceserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
+	var postprocessedOutputs []BatchUnspecifiedTaskOutputs
+	for _, output := range outputs {
+		outputTensor, rawOutputContent, err := GetOutputFromInferResponse(output.Name, modelInferResponse)
+		if err != nil {
+			log.Printf("%v", err.Error())
+			return nil, fmt.Errorf("Unable to find inference output")
+		}
+		if rawOutputContent == nil {
+			return nil, fmt.Errorf("Unable to find output content")
+		}
+
+		var serializedOutputs []interface{}
+		switch output.Datatype {
+		case "BYTES":
+			deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+			reshapedOutputs, _ := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
+			for _, reshapedOutput := range reshapedOutputs {
+				serializedOutputs = append(serializedOutputs, reshapedOutput)
+			}
+		case "FP32":
+			deserializedRawOutput := DeserializeFloat32Tensor(rawOutputContent)
+			if len(outputTensor.Shape) == 1 {
+				serializedOutputs = append(serializedOutputs, deserializedRawOutput)
+			} else if len(outputTensor.Shape) == 2 {
+				reshapedOutputs, err := Reshape1DArrayFloat32To2D(deserializedRawOutput, outputTensor.Shape)
+				if err != nil {
+					return nil, err
+				}
+				for _, reshapedOutput := range reshapedOutputs {
+					serializedOutputs = append(serializedOutputs, reshapedOutput)
+				}
+			} else if len(outputTensor.Shape) == 3 {
+				reshapedOutputs, err := Reshape1DArrayFloat32To3D(deserializedRawOutput, outputTensor.Shape)
+				if err != nil {
+					return nil, err
+				}
+				for _, reshapedOutput := range reshapedOutputs {
+					serializedOutputs = append(serializedOutputs, reshapedOutput)
+				}
+			}
+		case "STRING":
+			deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+			reshapedOutputs, err := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
+			if err != nil {
+				return nil, err
+			}
+			for _, reshapedOutput := range reshapedOutputs {
+				serializedOutputs = append(serializedOutputs, reshapedOutput)
+			}
+		default:
+			return nil, fmt.Errorf("Unable to decode inference output")
+		}
+		postprocessedOutputs = append(postprocessedOutputs, BatchUnspecifiedTaskOutputs{
+			Name:              output.Name,
+			Shape:             outputTensor.Shape[1:],
+			DataType:          output.Datatype,
+			SerializedOutputs: serializedOutputs,
+		})
+	}
+	return postprocessedOutputs, nil
 }
 
 func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameScores string) (interface{}, error) {
@@ -321,7 +383,10 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			return nil, fmt.Errorf("Unable to post-process keypoint output: %w", err)
 		}
 	default:
-		return inferResponse, nil
+		outputs, err = postProcessUnspecifiedTask(inferResponse, modelMetadata.Outputs)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to post-process unspecified output: %w", err)
+		}
 	}
 
 	return outputs, nil

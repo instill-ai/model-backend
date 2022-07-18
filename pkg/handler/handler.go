@@ -2032,7 +2032,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
@@ -2115,7 +2115,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 		}

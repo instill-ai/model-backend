@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,15 +11,19 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
+
 	"github.com/gofrs/uuid"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/sterr"
@@ -269,7 +274,51 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		}
 		return &keypointOutputs, nil
 	default:
-		return postprocessResponse, nil
+		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
+		var rawOutputs []*structpb.Struct
+		if len(outputs) == 0 {
+			return &modelPB.UnspecifiedTaskOutputs{
+				RawOutputs: rawOutputs,
+			}, nil
+		}
+
+		deserializedOutputs := outputs[0].SerializedOutputs
+		for i := range deserializedOutputs {
+			var singleImageOutput []triton.SingleOutputUnspecifiedTaskOutput
+			for _, output := range outputs {
+				singleImageOutput = append(singleImageOutput, triton.SingleOutputUnspecifiedTaskOutput{
+					Name:     output.Name,
+					Shape:    output.Shape,
+					DataType: output.DataType,
+					Data:     output.SerializedOutputs[i],
+				})
+			}
+			output := triton.UnspecifiedTaskOutput{
+				RawOutput: singleImageOutput,
+			}
+			var mapOutput map[string][]map[string]interface{}
+			b, err := json.Marshal(output)
+			if err != nil {
+				return nil, err
+			}
+			json.Unmarshal(b, &mapOutput)
+			util.ConvertAllJSONKeySnakeCase(mapOutput)
+
+			b, err = json.Marshal(mapOutput)
+			if err != nil {
+				return nil, err
+			}
+			var data = &structpb.Struct{}
+			err = protojson.Unmarshal(b, data)
+
+			if err != nil {
+				return nil, err
+			}
+			rawOutputs = append(rawOutputs, data)
+		}
+		return &modelPB.UnspecifiedTaskOutputs{
+			RawOutputs: rawOutputs,
+		}, nil
 	}
 }
 
