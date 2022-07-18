@@ -15,17 +15,17 @@ import (
 
 type Repository interface {
 	CreateModel(model datamodel.Model) error
-	GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUid(owner string, modelUid uuid.UUID, view modelPB.View) (datamodel.Model, error)
-	DeleteModel(modelUid uuid.UUID) error
-	UpdateModel(modelUid uuid.UUID, updatedModel datamodel.Model) error
+	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	DeleteModel(modelUID uuid.UUID) error
+	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 	CreateModelInstance(instance datamodel.ModelInstance) error
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
-	GetModelInstance(modelUid uuid.UUID, instanceId string, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstances(modelUid uuid.UUID) ([]datamodel.ModelInstance, error)
-	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
+	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
+	GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelInstance, error)
+	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
 	CreateTritonModel(model datamodel.TritonModel) error
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
@@ -83,26 +83,26 @@ func (r *repository) CreateModel(model datamodel.Model) error {
 	return nil
 }
 
-func (r *repository) GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
 		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelId}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelId, owner)
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelID}).First(&model); result.Error != nil {
+		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelID, owner)
 	}
 	return model, nil
 }
 
-func (r *repository) GetModelByUid(owner string, modelUid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
 		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUid, owner)
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
+		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUID, owner)
 	}
 	return model, nil
 }
@@ -161,8 +161,8 @@ func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pa
 	return nil, "", 0, nil
 }
 
-func (r *repository) UpdateModel(modelUid uuid.UUID, updatedModel datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Where("uid", modelUid).Updates(&updatedModel); result.Error != nil {
+func (r *repository) UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error {
+	if result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 	return nil
@@ -184,41 +184,41 @@ func (r *repository) UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInf
 	return nil
 }
 
-func (r *repository) GetModelInstance(modelUid uuid.UUID, instanceId string, view modelPB.View) (datamodel.ModelInstance, error) {
+func (r *repository) GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error) {
 	var instanceDB datamodel.ModelInstance
 	omit := ""
 	if view != modelPB.View_VIEW_FULL {
 		omit = "configuration"
 	}
-	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUid, "id": instanceId}).First(&instanceDB); result.Error != nil {
-		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance %v for model %v not found", instanceId, modelUid)
+	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUID, "id": instanceID}).First(&instanceDB); result.Error != nil {
+		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance %v for model %v not found", instanceID, modelUID)
 	}
 	return instanceDB, nil
 }
 
-func (r *repository) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
+func (r *repository) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
 	var instanceDB datamodel.ModelInstance
 	omit := ""
 	if view != modelPB.View_VIEW_FULL {
 		omit = "configuration"
 	}
-	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUid, "uid": modelInstanceUid}).First(&instanceDB); result.Error != nil {
-		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance uid %v for model uid %v not found", modelInstanceUid, modelUid)
+	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUID, "uid": modelInstanceUid}).First(&instanceDB); result.Error != nil {
+		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance uid %v for model uid %v not found", modelInstanceUid, modelUID)
 	}
 	return instanceDB, nil
 }
 
-func (r *repository) GetModelInstances(modelUid uuid.UUID) ([]datamodel.ModelInstance, error) {
+func (r *repository) GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelInstance, error) {
 	var instances []datamodel.ModelInstance
-	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid", modelUid).Order("id asc").Find(&instances); result.Error != nil {
-		return []datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance for model %v not found", modelUid)
+	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid", modelUID).Order("id asc").Find(&instances); result.Error != nil {
+		return []datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance for model %v not found", modelUID)
 	}
 	return instances, nil
 }
 
-func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
 
-	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Order("create_time DESC, id DESC")
+	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Order("create_time DESC, id DESC")
 
 	if pageSize == 0 {
 		queryBuilder = queryBuilder.Limit(DefaultPageSize)
@@ -256,9 +256,9 @@ func (r *repository) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pa
 	}
 
 	if len(instances) > 0 {
-		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUid).Count(&totalSize)
+		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Count(&totalSize)
 		var lastModelInstance datamodel.ModelInstance // to check the last model in return list or not. If so, return empty page_token
-		if res := r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUid).Scan(&lastModelInstance); res.Error != nil {
+		if res := r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUID).Scan(&lastModelInstance); res.Error != nil {
 			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
 		}
 		nextPageToken := ""
@@ -296,9 +296,9 @@ func (r *repository) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamod
 	return ensembleModel, nil
 }
 
-func (r *repository) DeleteModel(modelUid uuid.UUID) error {
-	if result := r.db.Select("Instances").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUid}}); result.Error != nil {
-		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUid)
+func (r *repository) DeleteModel(modelUID uuid.UUID) error {
+	if result := r.db.Select("Instances").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
+		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUID)
 	}
 	return nil
 }

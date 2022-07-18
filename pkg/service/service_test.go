@@ -366,17 +366,17 @@ func TestGetModelInstanceByUid(t *testing.T) {
 	t.Run("TestGetModelInstanceByUid", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		modelUid := uuid.UUID{}
-		instanceUid := uuid.UUID{}
+		modelUID := uuid.UUID{}
+		instanceUID := uuid.UUID{}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			GetModelInstanceByUid(modelUid, instanceUid, modelPB.View_VIEW_FULL).
+			GetModelInstanceByUid(modelUID, instanceUID, modelPB.View_VIEW_FULL).
 			Return(datamodel.ModelInstance{}, nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil)
 
-		_, err := s.GetModelInstanceByUid(modelUid, instanceUid, modelPB.View_VIEW_FULL)
+		_, err := s.GetModelInstanceByUid(modelUID, instanceUID, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
 	})
 }
@@ -385,16 +385,16 @@ func TestListModelInstance(t *testing.T) {
 	t.Run("TestListModelInstance", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		modelUid := uuid.UUID{}
+		modelUID := uuid.UUID{}
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			ListModelInstance(modelUid, modelPB.View_VIEW_FULL, 100, "").
+			ListModelInstance(modelUID, modelPB.View_VIEW_FULL, 100, "").
 			Return([]datamodel.ModelInstance{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil)
 
-		_, _, _, err := s.ListModelInstance(modelUid, modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModelInstance(modelUID, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }

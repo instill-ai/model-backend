@@ -34,21 +34,21 @@ import (
 
 type Service interface {
 	CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error)
-	GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUid(owner string, modelUid uuid.UUID, view modelPB.View) (datamodel.Model, error)
-	DeleteModel(owner string, modelId string) error
-	RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error)
-	PublishModel(owner string, modelId string) (datamodel.Model, error)
-	UnpublishModel(owner string, modelId string) (datamodel.Model, error)
-	UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
+	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	DeleteModel(owner string, modelID string) error
+	RenameModel(owner string, modelID string, newModelId string) (datamodel.Model, error)
+	PublishModel(owner string, modelID string) (datamodel.Model, error)
+	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
+	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
 	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error)
-	GetModelInstance(modelUid uuid.UUID, instanceId string, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUid uuid.UUID, instanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
-	ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
-	DeployModelInstance(modelInstanceId uuid.UUID) error
-	UndeployModelInstance(modelInstanceId uuid.UUID) error
+	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
+	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
+	DeployModelInstance(modelInstanceID uuid.UUID) error
+	UndeployModelInstance(modelInstanceID uuid.UUID) error
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
@@ -72,16 +72,16 @@ func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineS
 	}
 }
 
-func (s *service) DeployModelInstance(modelInstanceId uuid.UUID) error {
+func (s *service) DeployModelInstance(modelInstanceID uuid.UUID) error {
 	var tEnsembleModel datamodel.TritonModel
 	var err error
 
-	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelInstanceId); err != nil {
+	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelInstanceID); err != nil {
 		return err
 	}
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err1 := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+		if err1 := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
 			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
 		}); err1 != nil {
 			return err1
@@ -89,7 +89,7 @@ func (s *service) DeployModelInstance(modelInstanceId uuid.UUID) error {
 		return err
 	}
 
-	if err = s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+	if err = s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
 		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
 	}); err != nil {
 		return err
@@ -98,12 +98,12 @@ func (s *service) DeployModelInstance(modelInstanceId uuid.UUID) error {
 	return nil
 }
 
-func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
+func (s *service) UndeployModelInstance(modelInstanceID uuid.UUID) error {
 
 	var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = s.repository.GetTritonModels(modelInstanceId); err != nil {
+	if tritonModels, err = s.repository.GetTritonModels(modelInstanceID); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 		// Unload all models composing the ensemble model
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err1 := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+			if err1 := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
 				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
 			}); err1 != nil {
 				return err1
@@ -120,7 +120,7 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 		}
 	}
 
-	if err := s.repository.UpdateModelInstance(modelInstanceId, datamodel.ModelInstance{
+	if err := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
 		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 	}); err != nil {
 		return err
@@ -129,8 +129,8 @@ func (s *service) UndeployModelInstance(modelInstanceId uuid.UUID) error {
 	return nil
 }
 
-func (s *service) GetModelById(owner string, modelId string, view modelPB.View) (datamodel.Model, error) {
-	return s.repository.GetModelById(owner, modelId, view)
+func (s *service) GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelById(owner, modelID, view)
 }
 
 func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
@@ -152,6 +152,7 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 }
 
 func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) (interface{}, error) {
+
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")
@@ -167,21 +168,24 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	if modelMetadataResponse == nil {
 		return nil, err
 	}
-	// /* We use a simple model that takes 2 input tensors of 16 integers
+
+	// We use a simple model that takes 2 input tensors of 16 integers
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
-	// output is the element-wise difference. */
+	// output is the element-wise difference.
 	inferResponse, err := s.triton.ModelInferRequest(task, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
 	if err != nil {
 		return nil, err
 	}
-	// /* We expect there to be 2 results (each with batch-size 1). Walk
+
+	// We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
-	// calculated by the modelPB. */
+	// calculated by the modelPB.
 	postprocessResponse, err := s.triton.PostProcess(inferResponse, modelMetadataResponse, task)
 	if err != nil {
 		return nil, err
 	}
+
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
@@ -341,10 +345,10 @@ func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageT
 	return s.repository.ListModel(owner, view, pageSize, pageToken)
 }
 
-func (s *service) DeleteModel(owner string, modelId string) error {
+func (s *service) DeleteModel(owner string, modelID string) error {
 	logger, _ := logger.GetZapLogger()
 
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -399,8 +403,8 @@ func (s *service) DeleteModel(owner string, modelId string) error {
 	return s.repository.DeleteModel(modelInDB.UID)
 }
 
-func (s *service) RenameModel(owner string, modelId string, newModelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+func (s *service) RenameModel(owner string, modelID string, newModelId string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -415,8 +419,8 @@ func (s *service) RenameModel(owner string, modelId string, newModelId string) (
 	return s.GetModelById(owner, newModelId, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+func (s *service) PublishModel(owner string, modelID string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -429,11 +433,11 @@ func (s *service) PublishModel(owner string, modelId string) (datamodel.Model, e
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+	return s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+func (s *service) UnpublishModel(owner string, modelID string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -446,11 +450,11 @@ func (s *service) UnpublishModel(owner string, modelId string) (datamodel.Model,
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(owner, modelId, modelPB.View_VIEW_FULL)
+	return s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
-	err := s.repository.UpdateModel(modelUid, *model)
+func (s *service) UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
+	err := s.repository.UpdateModel(modelUID, *model)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -458,16 +462,16 @@ func (s *service) UpdateModel(modelUid uuid.UUID, model *datamodel.Model) (datam
 	return s.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) GetModelInstance(modelUid uuid.UUID, modelInstanceId string, view modelPB.View) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstance(modelUid, modelInstanceId, view)
+func (s *service) GetModelInstance(modelUID uuid.UUID, modelInstanceID string, view modelPB.View) (datamodel.ModelInstance, error) {
+	return s.repository.GetModelInstance(modelUID, modelInstanceID, view)
 }
 
-func (s *service) GetModelInstanceByUid(modelUid uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstanceByUid(modelUid, modelInstanceUid, view)
+func (s *service) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
+	return s.repository.GetModelInstanceByUid(modelUID, modelInstanceUid, view)
 }
 
-func (s *service) ListModelInstance(modelUid uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
-	return s.repository.ListModelInstance(modelUid, view, pageSize, pageToken)
+func (s *service) ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
+	return s.repository.ListModelInstance(modelUID, view, pageSize, pageToken)
 }
 
 func (s *service) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
