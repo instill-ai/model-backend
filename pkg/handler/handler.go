@@ -389,37 +389,36 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 	var allContentFiles []byte
 	var fileLengths []uint64
 	for {
-		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
+		fileData, err = stream.Recv()
+		if err == io.EOF {
+			break
+		} else if err != nil {
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
 			return [][]byte{}, "", "", err
 		}
 
-		if firstChunk { //first chunk contains file name
+		if firstChunk { //first chunk contains model instance name
+			firstChunk = false
 			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
 			if err != nil {
 				return [][]byte{}, "", "", err
 			}
-
 			fileLengths = fileData.FileLengths
-
-			firstChunk = false
+			if len(fileLengths) == 0 {
+				return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
+			}
+		} else {
+			allContentFiles = append(allContentFiles, fileData.Content...)
 		}
-		allContentFiles = append(allContentFiles, fileData.Content...)
 	}
 
-	if len(fileLengths) == 0 {
-		return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
-	}
+	imageBytes = make([][]byte, len(fileLengths))
+
 	start := uint64(0)
 	for i := 0; i < len(fileLengths); i++ {
-		imageBytes = append(imageBytes, allContentFiles[start:start+fileLengths[i]])
-		start = fileLengths[i]
+		imageBytes[i] = allContentFiles[start : start+fileLengths[i]]
+		start += fileLengths[i]
 	}
 
 	return imageBytes, modelID, instanceID, nil
@@ -1894,7 +1893,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 		return err
 	}
 
-	imageBytes, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
+	imgsBytes, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1909,7 +1908,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	// check whether model support batching or not. If not, raise an error
-	if len(imageBytes) > 1 {
+	if len(imgsBytes) > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return err
@@ -1925,7 +1924,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imageBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
 		return err
 	}
