@@ -20,9 +20,11 @@ import (
 	"github.com/gernest/front"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/datatypes"
+
+	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
 type ModelMeta struct {
@@ -84,10 +86,13 @@ func findModelFiles(dir string) []string {
 }
 
 func AddMissingTritonModelFolder(dir string) {
+	logger, _ := logger.GetZapLogger()
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if f.Name() == "config.pbtxt" {
 			if _, err := os.Stat(fmt.Sprintf("%s/1", filepath.Dir(path))); err != nil {
-				os.MkdirAll(fmt.Sprintf("%s/1", filepath.Dir(path)), os.ModePerm)
+				if err := os.MkdirAll(fmt.Sprintf("%s/1", filepath.Dir(path)), os.ModePerm); err != nil {
+					logger.Error(err.Error())
+				}
 			}
 		}
 		return nil

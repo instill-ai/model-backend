@@ -1,8 +1,9 @@
 package util
 
 import (
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 var Tasks = map[string]modelPB.ModelInstance_Task{
