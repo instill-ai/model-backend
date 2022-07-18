@@ -11,6 +11,7 @@ import {
 const apiHost = "http://model-backend:8083";
 
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
+const dog_rgba_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog-rgba.png`, "b");
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
@@ -1235,6 +1236,100 @@ export function InferModel() {
 
       // Triton unloading models takes time
       sleep(6)
+    });
+  }
+  
+  // Model Backend API: make inference
+  {
+    group("Model Backend API: Predict object detection model with 4 channel image", function () {
+      let model_id = randomString(10)
+      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": "model-definitions/github",
+        "configuration": {
+            "repository": "instill-ai/model-yolov4"
+        },
+      }), {
+        headers: genHeader("application/json"),
+      }), {
+        "POST /v1alpha/models:multipart task cls response status": (r) =>
+          r.status == 201,
+        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+          r.json().model.name === `models/${model_id}`,
+        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+          r.json().model.uid !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+          r.json().model.id === model_id,
+        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+          r.json().model.description !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+          r.json().model.model_definition === "model-definitions/github",
+        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+          r.json().model.configuration !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
+          r.json().model.configuration.repository === "instill-ai/model-yolov4",
+        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+          r.json().model.visibility === "VISIBILITY_PUBLIC",
+        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+          r.json().model.user === 'users/local-user',
+        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+          r.json().model.create_time !== undefined,
+        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+          r.json().model.update_time !== undefined,
+      });
+
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu:deploy`, {}, {
+        headers: genHeader(`application/json`),
+        timeout: '600s'
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.name`]: (r) =>
+          r.json().instance.name === `models/${model_id}/instances/v1.0-cpu`,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.uid`]: (r) =>
+          r.json().instance.uid !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.id`]: (r) =>
+          r.json().instance.id === "v1.0-cpu",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.state`]: (r) =>
+          r.json().instance.state === "STATE_ONLINE",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.task`]: (r) =>
+          r.json().instance.task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.model_definition`]: (r) =>
+          r.json().instance.model_definition === "model-definitions/github",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.create_time`]: (r) =>
+          r.json().instance.create_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.update_time`]: (r) =>
+          r.json().instance.update_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.configuration`]: (r) =>
+          r.json().instance.configuration !== undefined,
+      });
+      sleep(5) // Triton loading models takes time
+     
+      // Predict with multiple-part
+      let fd = new FormData();
+      fd.append("file", http.file(dog_rgba_img));
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart url det response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det output.detection_outputs.length`]: (r) =>
+          r.json().output.detection_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].category === "dog",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
+      }); 
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
     });
   }  
 }
