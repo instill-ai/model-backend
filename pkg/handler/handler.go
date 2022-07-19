@@ -408,13 +408,13 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 			if len(fileLengths) == 0 {
 				return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
 			}
+			allContentFiles = append(allContentFiles, fileData.Content...)
 		} else {
 			allContentFiles = append(allContentFiles, fileData.Content...)
 		}
 	}
 
 	imageBytes = make([][]byte, len(fileLengths))
-
 	start := uint64(0)
 	for i := 0; i < len(fileLengths); i++ {
 		imageBytes[i] = allContentFiles[start : start+fileLengths[i]]
