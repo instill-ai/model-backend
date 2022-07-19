@@ -305,7 +305,9 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			if err != nil {
 				return nil, err
 			}
-			json.Unmarshal(b, &mapOutput)
+			if err := json.Unmarshal(b, &mapOutput); err != nil {
+				return nil, err
+			}
 			util.ConvertAllJSONKeySnakeCase(mapOutput)
 
 			b, err = json.Marshal(mapOutput)

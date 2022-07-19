@@ -104,6 +104,9 @@ mysql-persistence/
 # built binary
 model-backend
 
+# local protogen-go
+protogen-go
+
 # air related files and folders
 .air.toml
 tmp

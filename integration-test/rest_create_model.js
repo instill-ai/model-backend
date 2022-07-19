@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { sleep, check, group } from "k6";
+import { check, group } from "k6";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
@@ -255,7 +255,6 @@ export function CreateModelFromGitHub() {
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       // Predict with url
       let payload = JSON.stringify({

@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { sleep, check, group } from "k6";
+import { check, group } from "k6";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
@@ -49,7 +49,6 @@ export function DeployUndeployModel() {
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -75,7 +74,6 @@ export function DeployUndeployModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:undeploy`, {}, {
         headers: genHeader(`application/json`),

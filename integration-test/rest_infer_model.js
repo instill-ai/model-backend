@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check, sleep, group } from "k6";
+import { check, group } from "k6";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
@@ -12,6 +12,8 @@ const apiHost = "http://model-backend:8083";
 
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 const dog_rgba_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog-rgba.png`, "b");
+const cat_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/cat.jpg`, "b");
+const bear_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/bear.jpg`, "b");
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
@@ -22,7 +24,7 @@ const model_def_name = "model-definitions/local"
 
 
 export function InferModel() {
-  // Model Backend API: make inference
+  // Model Backend API: Predict Model with classification model
   {
     group("Model Backend API: Predict Model with classification model", function () {
       let fd_cls = new FormData();
@@ -58,7 +60,6 @@ export function InferModel() {
         "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -84,7 +85,6 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       // Predict with url
       let payload = JSON.stringify({
@@ -199,14 +199,15 @@ export function InferModel() {
       // Predict multiple images with multiple-part
       fd = new FormData();
       fd.append("file", http.file(dog_img));
-      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(cat_img));
+      fd.append("file", http.file(bear_img));
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls output.classification_outputs.length`]: (r) =>
-          r.json().output.classification_outputs.length === 2,
+          r.json().output.classification_outputs.length === 3,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls output.classification_outputs[0].category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart form-data cls response output.classification_outputs[0].score`]: (r) =>
@@ -222,7 +223,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs.length`]: (r) =>
-          r.json().output.classification_outputs.length === 2,
+          r.json().output.classification_outputs.length === 3,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls output.classification_outputs[0].category`]: (r) =>
           r.json().output.classification_outputs[0].category === "match",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart form-data cls response output.classification_outputs[0].score`]: (r) =>
@@ -241,12 +242,10 @@ export function InferModel() {
           r.status === 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
-  // Model Backend API: make inference
+  // Model Backend API: Predict Model with detection model
   {
     group("Model Backend API: Predict Model with detection model", function () {
       let fd_det = new FormData();
@@ -282,7 +281,6 @@ export function InferModel() {
         "POST /v1alpha/models:multipart task det response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -308,7 +306,6 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task det response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       // Predict with url
       let payload = JSON.stringify({
@@ -439,14 +436,15 @@ export function InferModel() {
       // Predict multiple images with multiple-part
       fd = new FormData();
       fd.append("file", http.file(dog_img));
-      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(cat_img));
+      fd.append("file", http.file(bear_img));
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs.length`]: (r) =>
-          r.json().output.detection_outputs.length === 2,
+          r.json().output.detection_outputs.length === 3,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
@@ -466,7 +464,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs.length`]: (r) =>
-          r.json().output.detection_outputs.length === 2,
+          r.json().output.detection_outputs.length === 3,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].category === "test",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].score`]: (r) =>
@@ -489,12 +487,10 @@ export function InferModel() {
           r.status === 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
-  // Model Backend API: make inference
+  // Model Backend API: Predict Model with undefined task model
   {
     group("Model Backend API: Predict Model with undefined task model", function () {
       let fd = new FormData();
@@ -530,7 +526,6 @@ export function InferModel() {
         "POST /v1alpha/models:multipart task unspecified response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -556,7 +551,6 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task unspecified response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       // Predict with url
       let payload = JSON.stringify({
@@ -567,14 +561,10 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined outputs`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined raw_output_contents`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined raw_output_contents content`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
       });
 
       // Predict multiple images with url
@@ -589,16 +579,10 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images outputs`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] == 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images raw_output_contents`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
       });
 
       // Predict with base64
@@ -610,14 +594,10 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
       });
 
       // Predict multiple images with base64
@@ -632,86 +612,63 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] == 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
       });
 
-      // Predict with multiple-part
-      fd = new FormData();
-      fd.append("file", http.file(dog_img));
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined response status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
-      });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined response status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
-      });
+      // // Predict with multiple-part
+      // fd = new FormData();
+      // fd.append("file", http.file(dog_img));
+      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      // }), {
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined response status`]: (r) =>
+      //     r.status === 200,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs (model-level)`]: (r) =>
+      //     r.json().output.raw_outputs.length === 1,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+      //     r.json().output.raw_outputs[0].raw_output.length === 1,
+      // });
 
-      // Predict multiple images with multiple-part
-      fd = new FormData();
-      fd.append("file", http.file(dog_img));
-      fd.append("file", http.file(dog_img));
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images response status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] == 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
-      });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images response status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs.length`]: (r) =>
-          r.json().output.outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.outputs[0].shape[0]`]: (r) =>
-          r.json().output.outputs[0].shape[0] == 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.parameters`]: (r) =>
-          r.json().output.parameters !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents.length`]: (r) =>
-          r.json().output.raw_output_contents.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images output.raw_output_contents[0]`]: (r) =>
-          r.json().output.raw_output_contents[0] !== undefined,
-      });
+      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      // }), {
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined response status`]: (r) =>
+      //     r.status === 200,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs (model-level)`]: (r) =>
+      //     r.json().output.raw_outputs.length === 1,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+      //     r.json().output.raw_outputs[0].raw_output.length === 1,
+      // });
+
+      // // Predict multiple images with multiple-part
+      // fd = new FormData();
+      // fd.append("file", http.file(dog_img));
+      // fd.append("file", http.file(cat_img));
+      // fd.append("file", http.file(bear_img));
+      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      // }), {
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images response status`]: (r) =>
+      //     r.status === 200,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
+      //     r.json().output.raw_outputs.length === 1,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+      //     r.json().output.raw_outputs[0].raw_output.length === 1,
+      // });
+
+      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      // }), {
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images response status`]: (r) =>
+      //     r.status === 200,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
+      //     r.json().output.raw_outputs.length === 1,
+      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+      //     r.json().output.raw_outputs[0].raw_output.length === 1,
+      // });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -721,12 +678,10 @@ export function InferModel() {
           r.status === 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
-  // Model Backend API: make inference
+  // Model Backend API: Predict Model with keypoint model
   {
     group("Model Backend API: Predict Model with keypoint model", function () {
       let fd_keypoint = new FormData();
@@ -762,7 +717,6 @@ export function InferModel() {
         "POST /v1alpha/models:multipart task keypoint response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -788,7 +742,6 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task keypoint response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       // Predict with url
       let payload = JSON.stringify({
@@ -905,12 +858,10 @@ export function InferModel() {
           r.status === 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
 
-  // Model Backend API: make inference
+  // Model Backend API: Predict Model with empty response
   {
     group("Model Backend API: Predict Model with empty response", function () {
       let fd_empty = new FormData();
@@ -946,7 +897,6 @@ export function InferModel() {
         "POST /v1alpha/models:multipart response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
         headers: genHeader(`application/json`),
@@ -972,9 +922,8 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:deploy online response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
 
-     // Predict with url
+      // Predict with url
       let payload = JSON.stringify({
         "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }],
       });
@@ -992,13 +941,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,                                
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with url
@@ -1028,13 +977,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,            
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,
       });
 
       // Predict with base64
@@ -1055,13 +1004,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,             
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with base64
@@ -1085,27 +1034,27 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,            
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].category === "",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].score === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
-          [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[1].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,  
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[1].bounding_box_objects[0].bounding_box.top`]: (r) =>
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[1].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[1].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url base64 det multiple output.detection_outputs[1].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,            
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,
       });
 
       // Predict with multiple-part
@@ -1139,13 +1088,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,          
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with multiple-part
@@ -1166,13 +1115,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,            
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].category === "",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
@@ -1180,13 +1129,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple-part det multiple images output.detection_outputs[1].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,              
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1202,13 +1151,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,            
+          r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box.height === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].category`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].category === "",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].score`]: (r) =>
@@ -1216,13 +1165,13 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images response output.detection_outputs[1].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.top`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.top === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.left`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.left === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.width`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,  
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.width === 0,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple-part det multiple images output.detection_outputs[0].bounding_box_objects[0].bounding_box.height`]: (r) =>
-          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,           
+          r.json().output.detection_outputs[1].bounding_box_objects[0].bounding_box.height === 0,
       });
 
 
@@ -1234,12 +1183,10 @@ export function InferModel() {
           r.status === 204
       });
 
-      // Triton unloading models takes time
-      sleep(6)
     });
   }
-  
-  // Model Backend API: make inference
+
+  // Model Backend API: Predict object detection model with 4 channel image
   {
     group("Model Backend API: Predict object detection model with 4 channel image", function () {
       let model_id = randomString(10)
@@ -1247,34 +1194,34 @@ export function InferModel() {
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
-            "repository": "instill-ai/model-yolov4"
+          "repository": "instill-ai/model-yolov4"
         },
       }), {
         headers: genHeader("application/json"),
       }), {
-        "POST /v1alpha/models:multipart task cls response status": (r) =>
+        "POST /v1alpha/models:multipart task det response status": (r) =>
           r.status == 201,
-        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+        "POST /v1alpha/models:multipart task det response model.name": (r) =>
           r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+        "POST /v1alpha/models:multipart task det response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+        "POST /v1alpha/models:multipart task det response model.id": (r) =>
           r.json().model.id === model_id,
-        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+        "POST /v1alpha/models:multipart task det response model.description": (r) =>
           r.json().model.description !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+        "POST /v1alpha/models:multipart task det response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/github",
-        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+        "POST /v1alpha/models:multipart task det response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
+        "POST /v1alpha/models:multipart task det response model.configuration.repository": (r) =>
           r.json().model.configuration.repository === "instill-ai/model-yolov4",
-        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+        "POST /v1alpha/models:multipart task det response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
-        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+        "POST /v1alpha/models:multipart task det response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+        "POST /v1alpha/models:multipart task det response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+        "POST /v1alpha/models:multipart task det response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
@@ -1303,8 +1250,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task det response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
-      sleep(5) // Triton loading models takes time
-     
+
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_rgba_img));
@@ -1321,7 +1267,7 @@ export function InferModel() {
           r.json().output.detection_outputs[0].bounding_box_objects[0].score !== undefined,
         [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det response output.detection_outputs[0].bounding_box_objects[0].bounding_box`]: (r) =>
           r.json().output.detection_outputs[0].bounding_box_objects[0].bounding_box !== undefined,
-      }); 
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
@@ -1331,5 +1277,5 @@ export function InferModel() {
           r.status === 204
       });
     });
-  }  
+  }
 }

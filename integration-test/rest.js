@@ -49,7 +49,7 @@ export default function (data) {
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 
-  // // Query Model API
+  // Query Model API
   queryModel.GetModel()
   queryModel.ListModel()
   queryModel.LookupModel()
