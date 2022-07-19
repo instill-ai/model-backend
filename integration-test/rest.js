@@ -44,7 +44,6 @@ export default function (data) {
     });
   }
 
-
   // Create Model API
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
@@ -96,7 +95,7 @@ export function teardown(data) {
           headers: genHeader("application/json"),
         }),
         {
-          [`DELETE /v1alpha/models/${model.id} response status is 200`]: (r) =>
+          [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
             r.status === 204,
         }
       );

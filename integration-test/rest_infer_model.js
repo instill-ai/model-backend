@@ -618,57 +618,57 @@ export function InferModel() {
           r.json().output.raw_outputs[0].raw_output.length === 1,
       });
 
-      // // Predict with multiple-part
-      // fd = new FormData();
-      // fd.append("file", http.file(dog_img));
-      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
-      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      // }), {
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined response status`]: (r) =>
-      //     r.status === 200,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs (model-level)`]: (r) =>
-      //     r.json().output.raw_outputs.length === 1,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
-      //     r.json().output.raw_outputs[0].raw_output.length === 1,
-      // });
+      // Predict with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(dog_img));
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
+      });
 
-      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
-      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      // }), {
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined response status`]: (r) =>
-      //     r.status === 200,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs (model-level)`]: (r) =>
-      //     r.json().output.raw_outputs.length === 1,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
-      //     r.json().output.raw_outputs[0].raw_output.length === 1,
-      // });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
+      });
 
-      // // Predict multiple images with multiple-part
-      // fd = new FormData();
-      // fd.append("file", http.file(dog_img));
-      // fd.append("file", http.file(cat_img));
-      // fd.append("file", http.file(bear_img));
-      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
-      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      // }), {
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images response status`]: (r) =>
-      //     r.status === 200,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
-      //     r.json().output.raw_outputs.length === 1,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
-      //     r.json().output.raw_outputs[0].raw_output.length === 1,
-      // });
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(dog_img));
+      fd.append("file", http.file(cat_img));
+      fd.append("file", http.file(bear_img));
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
+      });
 
-      // check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
-      //   headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-      // }), {
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images response status`]: (r) =>
-      //     r.status === 200,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
-      //     r.json().output.raw_outputs.length === 1,
-      //   [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
-      //     r.json().output.raw_outputs[0].raw_output.length === 1,
-      // });
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs (model-level)`]: (r) =>
+          r.json().output.raw_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined multiple images raw_outputs[0].raw_output (image-level)`]: (r) =>
+          r.json().output.raw_outputs[0].raw_output.length === 1,
+      });
 
       // clean up
       check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {

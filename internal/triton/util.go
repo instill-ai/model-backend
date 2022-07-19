@@ -144,15 +144,13 @@ func Reshape1DArrayFloat32To2D(array []float32, shape []int64) ([][]float32, err
 	if prod != int64(len(array)) {
 		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
 	}
-
 	res := make([][]float32, shape[0])
 	for i := int64(0); i < shape[0]; i++ {
 		res[i] = make([]float32, shape[1])
-		start := i * shape[0]
+		start := i * shape[1]
 		end := start + shape[1]
 		res[i] = array[start:end]
 	}
-
 	return res, nil
 }
 

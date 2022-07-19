@@ -30,7 +30,6 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/external"
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/internal/triton"
@@ -449,7 +448,10 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 			}
 
 			fileLengths = fileData.FileLengths
-
+			if len(fileLengths) == 0 {
+				return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
+			}
+			allContentFiles = append(allContentFiles, fileData.Content...)
 			firstChunk = false
 		}
 		allContentFiles = append(allContentFiles, fileData.Content...)
@@ -460,8 +462,8 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 	}
 	start := uint64(0)
 	for i := 0; i < len(fileLengths); i++ {
-		imageBytes = append(imageBytes, allContentFiles[start:start+fileLengths[i]])
-		start = fileLengths[i]
+		imageBytes[i] = allContentFiles[start : start+fileLengths[i]]
+		start += fileLengths[i]
 	}
 	return imageBytes, modelID, instanceID, nil
 }
@@ -1870,7 +1872,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 			return status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -1894,6 +1896,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	imgsBytes, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
+	fmt.Println("-------->savePredictInputsTriggerMode  ", err)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1925,6 +1928,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+	fmt.Println("--------> ModelInfer response, err  ", response, err)
 	if err != nil {
 		return err
 	}
@@ -1948,7 +1952,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 			return status.Error(codes.Internal, err.Error())
 		}
 	default:
-		b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
+		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
 		if err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -2232,7 +2236,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				return
 			}
 		default:
-			b, err = util.MarshalOptions.Marshal(response.(*inferenceserver.ModelInferResponse))
+			b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
 			if err != nil {
 				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 				return
