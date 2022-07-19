@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.2-alpha...v0.6.3-alpha) (2022-07-19)
+
+
+### Bug Fixes
+
+* fix client stream server recv wrong file length interval ([#143](https://github.com/instill-ai/model-backend/issues/143)) ([0e06f7c](https://github.com/instill-ai/model-backend/commit/0e06f7c32fcde81db61ae40f8f5aa35b51ec7000))
+* post process for unspecified task output ([ad88068](https://github.com/instill-ai/model-backend/commit/ad880680abd382e175d60428a2864ca36168341f))
+* trigger image with 4 channel ([#141](https://github.com/instill-ai/model-backend/issues/141)) ([7445f5f](https://github.com/instill-ai/model-backend/commit/7445f5fcd4c796aa56c11f47c75244f0acf49411))
+
 ## [0.6.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.1-alpha...v0.6.2-alpha) (2022-07-12)
 
 
