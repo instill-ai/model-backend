@@ -7,7 +7,7 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = "model-backend:8083";
+const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
 const model_def_name = "model-definitions/github"
 
 export function CreateModel() {

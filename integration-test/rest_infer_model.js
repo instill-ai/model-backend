@@ -8,7 +8,7 @@ import {
   base64_image,
 } from "./helpers.js";
 
-const apiHost = "http://model-backend:8083";
+const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
 
 const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog.jpg`, "b");
 const dog_rgba_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dog-rgba.png`, "b");

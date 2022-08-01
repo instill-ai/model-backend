@@ -8,7 +8,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = "http://model-backend:8083";
+const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const cls_no_readme_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-no-readme.zip`, "b");
@@ -60,11 +60,11 @@ export function GetModelCard() {
         [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.size`]: (r) =>
           r.json().readme.size !== undefined,
         [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.type`]: (r) =>
-          r.json().readme.type === "file",  
+          r.json().readme.type === "file",
         [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.encoding`]: (r) =>
-          r.json().readme.encoding === "base64",                    
+          r.json().readme.encoding === "base64",
         [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.content`]: (r) =>
-          r.json().readme.content !== undefined,      
+          r.json().readme.content !== undefined,
       });
 
       // clean up
@@ -121,11 +121,11 @@ export function GetModelCard() {
       [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.size`]: (r) =>
         r.json().readme.size === 0,
       [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.type`]: (r) =>
-        r.json().readme.type === "file",  
+        r.json().readme.type === "file",
       [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.encoding`]: (r) =>
-        r.json().readme.encoding === "base64",                    
+        r.json().readme.encoding === "base64",
       [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.content`]: (r) =>
-        r.json().readme.content === "",      
+        r.json().readme.content === "",
     });
 
     // clean up
@@ -136,5 +136,5 @@ export function GetModelCard() {
         r.status === 204
     });
   });
-}  
+}
 }

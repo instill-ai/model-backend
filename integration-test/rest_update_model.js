@@ -7,7 +7,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = "http://model-backend:8083";
+const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
 
 const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"

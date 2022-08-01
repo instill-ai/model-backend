@@ -5,7 +5,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = "http://model-backend:8083";
+const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
 
 const model_def_name = "model-definitions/local"
 
