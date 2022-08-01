@@ -17,6 +17,7 @@ var Tags = map[string]modelPB.ModelInstance_Task{
 	"DETECTION":            modelPB.ModelInstance_TASK_DETECTION,
 	"IMAGE-CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
 	"IMAGE-DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
+	"OBJECT-DETECTION":     modelPB.ModelInstance_TASK_DETECTION,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{
@@ -33,7 +34,7 @@ const (
 )
 
 const MaxBatchSize int = 32
-const MaxImageSizeBytes int = 4 * MB
+const MaxImageSizeBytes int = 12 * MB
 
 const DEFAULT_GCP_SERVICE_ACCOUNT_FILE = "https://artifacts.instill.tech/default-service-account.json"
 
