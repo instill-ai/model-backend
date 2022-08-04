@@ -1230,11 +1230,11 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 			if len(modelMeta.Tags) == 0 {
 				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 			} else { // check in tags also for HuggingFace model card README.md
+				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 				for _, tag := range modelMeta.Tags {
 					if val, ok := util.Tags[strings.ToUpper(tag)]; ok {
 						instance.Task = datamodel.ModelInstanceTask(val)
-					} else {
-						instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+						break
 					}
 				}
 			}
