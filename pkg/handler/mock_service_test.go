@@ -184,6 +184,21 @@ func (mr *MockServiceMockRecorder) GetTritonEnsembleModel(arg0 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonEnsembleModel", reflect.TypeOf((*MockService)(nil).GetTritonEnsembleModel), arg0)
 }
 
+// GetTritonModels mocks base method.
+func (m *MockService) GetTritonModels(arg0 uuid.UUID) ([]datamodel.TritonModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTritonModels", arg0)
+	ret0, _ := ret[0].([]datamodel.TritonModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTritonModels indicates an expected call of GetTritonModels.
+func (mr *MockServiceMockRecorder) GetTritonModels(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTritonModels", reflect.TypeOf((*MockService)(nil).GetTritonModels), arg0)
+}
+
 // ListModel mocks base method.
 func (m *MockService) ListModel(arg0 string, arg1 modelv1alpha.View, arg2 int, arg3 string) ([]datamodel.Model, string, int64, error) {
 	m.ctrl.T.Helper()
@@ -236,10 +251,10 @@ func (mr *MockServiceMockRecorder) ListModelInstance(arg0, arg1, arg2, arg3 inte
 }
 
 // ModelInfer mocks base method.
-func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alpha.ModelInstance_Task) (interface{}, error) {
+func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.ModelInstanceInferenceResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInfer", arg0, arg1, arg2)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].([]*modelv1alpha.ModelInstanceInferenceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -251,10 +266,10 @@ func (mr *MockServiceMockRecorder) ModelInfer(arg0, arg1, arg2 interface{}) *gom
 }
 
 // ModelInferTestMode mocks base method.
-func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) (interface{}, error) {
+func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.ModelInstanceInferenceResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferTestMode", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].([]*modelv1alpha.ModelInstanceInferenceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
+	"gorm.io/datatypes"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/external"
@@ -358,9 +358,10 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 				return "", &datamodel.Model{}, "", err
 			}
 			uploadedModel = datamodel.Model{
-				ID:          fileData.Model.Id,
-				Visibility:  datamodel.ModelVisibility(visibility),
-				Description: description,
+				ID:            fileData.Model.Id,
+				Visibility:    datamodel.ModelVisibility(visibility),
+				Description:   description,
+				Configuration: datatypes.JSON{},
 				Instances: []datamodel.ModelInstance{{
 					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 					ID:    "latest",
@@ -1853,35 +1854,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 		return err
 	}
 
-	var data = &structpb.Struct{}
-	var b []byte
-	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	default:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	}
-	err = protojson.Unmarshal(b, data)
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
+	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{BatchOutputs: response})
 	return err
 }
 
@@ -1896,7 +1869,6 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	imgsBytes, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
-	fmt.Println("-------->savePredictInputsTriggerMode  ", err)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1928,40 +1900,11 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
-	fmt.Println("--------> ModelInfer response, err  ", response, err)
 	if err != nil {
 		return err
 	}
 
-	var data = &structpb.Struct{}
-	var b []byte
-	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	default:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
-		if err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-	}
-	err = protojson.Unmarshal(b, data)
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{Output: data})
+	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{BatchOutputs: response})
 	return err
 }
 
@@ -2012,37 +1955,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	var data = &structpb.Struct{}
-	var b []byte
-	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
-		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
-		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
-		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	default:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
-		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	}
-	err = protojson.Unmarshal(b, data)
-	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-	}
-
-	return &modelPB.TriggerModelInstanceResponse{Output: data}, nil
+	return &modelPB.TriggerModelInstanceResponse{BatchOutputs: response}, nil
 }
 
 func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
@@ -2096,36 +2009,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 	}
 
-	var data = &structpb.Struct{}
-	var b []byte
-	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
-		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_DETECTION:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
-		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	case modelPB.ModelInstance_TASK_KEYPOINT:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
-		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	default:
-		b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
-		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-		}
-	}
-	err = protojson.Unmarshal(b, data)
-	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-	}
-
-	return &modelPB.TestModelInstanceResponse{Output: data}, nil
+	return &modelPB.TestModelInstanceResponse{BatchOutputs: response}, nil
 }
 
 func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
@@ -2201,48 +2085,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				return
 			}
 		}
-
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-		var response interface{}
+		var response []*modelPB.ModelInstanceInferenceResponse
 		if mode == "test" {
 			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
 		} else {
 			response, err = modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 		}
-
-		if err != nil {
-			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-			return
-		}
-		var data = &structpb.Struct{}
-		var b []byte
-		switch task {
-		case modelPB.ModelInstance_TASK_CLASSIFICATION:
-			b, err = util.MarshalOptions.Marshal(response.(*modelPB.ClassificationOutputs))
-			if err != nil {
-				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-				return
-			}
-		case modelPB.ModelInstance_TASK_DETECTION:
-			b, err = util.MarshalOptions.Marshal(response.(*modelPB.DetectionOutputs))
-			if err != nil {
-				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-				return
-			}
-		case modelPB.ModelInstance_TASK_KEYPOINT:
-			b, err = util.MarshalOptions.Marshal(response.(*modelPB.KeypointOutputs))
-			if err != nil {
-				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-				return
-			}
-		default:
-			b, err = util.MarshalOptions.Marshal(response.(*modelPB.UnspecifiedTaskOutputs))
-			if err != nil {
-				makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-				return
-			}
-		}
-		err = protojson.Unmarshal(b, data)
 		if err != nil {
 			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 			return
@@ -2250,7 +2099,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{Output: data})
+		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{BatchOutputs: response})
 		if err != nil {
 			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
 			return
