@@ -74,7 +74,7 @@ export default function (data) {
   queryModelInstance.ListModelInstance()
   queryModelInstance.LookupModelInstance()
 
-  // Get model card
+  // // Get model card
   getModelCard.GetModelCard()
 }
 
