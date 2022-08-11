@@ -275,10 +275,15 @@ func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferRe
 		var serializedOutputs []interface{}
 		switch output.Datatype {
 		case "BYTES":
-			deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
-			reshapedOutputs, _ := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
-			for _, reshapedOutput := range reshapedOutputs {
-				serializedOutputs = append(serializedOutputs, reshapedOutput)
+			if len(outputTensor.Shape) == 1 {
+				deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0])
+				serializedOutputs = append(serializedOutputs, deserializedRawOutput)
+			} else {
+				deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+				reshapedOutputs, _ := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
+				for _, reshapedOutput := range reshapedOutputs {
+					serializedOutputs = append(serializedOutputs, reshapedOutput)
+				}
 			}
 		case "FP32":
 			deserializedRawOutput := DeserializeFloat32Tensor(rawOutputContent)
@@ -313,9 +318,15 @@ func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferRe
 		default:
 			return nil, fmt.Errorf("Unable to decode inference output")
 		}
+		var shape []int64
+		if len(outputTensor.Shape) == 1 {
+			shape = outputTensor.Shape
+		} else {
+			shape = outputTensor.Shape[1:]
+		}
 		postprocessedOutputs = append(postprocessedOutputs, BatchUnspecifiedTaskOutputs{
 			Name:              output.Name,
-			Shape:             outputTensor.Shape[1:],
+			Shape:             shape,
 			DataType:          output.Datatype,
 			SerializedOutputs: serializedOutputs,
 		})
