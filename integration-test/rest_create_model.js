@@ -267,14 +267,14 @@ export function CreateModelFromGitHub() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls status`]: (r) =>
           r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs.length`]: (r) =>
           r.json().batch_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].task`]: (r) =>
-          r.json().batch_outputs[0].task === "CLASSIFICATION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].classification.category`]: (r) =>
           r.json().batch_outputs[0].classification.category === "match",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].classification.score`]: (r) =>
-          r.json().batch_outputs[0].classification.score === 1,             
+          r.json().batch_outputs[0].classification.score === 1,
       });
 
       // Predict multiple images with url
@@ -289,20 +289,18 @@ export function CreateModelFromGitHub() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls status`]: (r) =>
           r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs.length`]: (r) =>
           r.json().batch_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].task`]: (r) =>
-          r.json().batch_outputs[0].task === "CLASSIFICATION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].classification.category`]: (r) =>
           r.json().batch_outputs[0].classification.category === "match",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[0].classification.score`]: (r) =>
-          r.json().batch_outputs[0].classification.score === 1,  
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[1].task`]: (r) =>
-          r.json().batch_outputs[1].task === "CLASSIFICATION",
+          r.json().batch_outputs[0].classification.score === 1,
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[1].classification.category`]: (r) =>
           r.json().batch_outputs[1].classification.category === "match",
         [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls batch_outputs[1].classification.score`]: (r) =>
-          r.json().batch_outputs[1].classification.score === 1,            
+          r.json().batch_outputs[1].classification.score === 1,
       });
 
       check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
