@@ -16,6 +16,7 @@ func createModelDefinitionRecord(
 	icon string,
 	modelSpec []byte,
 	modelInstanceSpec []byte,
+	releaseStage datamodel.ReleaseStage,
 ) error {
 	uid_, _ := uuid.FromString(uid)
 	modelDef := datamodel.ModelDefinition{
@@ -26,6 +27,7 @@ func createModelDefinitionRecord(
 		ModelSpec:         modelSpec,
 		ModelInstanceSpec: modelInstanceSpec,
 		Title:             title,
+		ReleaseStage:      releaseStage,
 	}
 
 	if result := db.Model(&datamodel.ModelDefinition{}).Create(&modelDef); result.Error != nil {

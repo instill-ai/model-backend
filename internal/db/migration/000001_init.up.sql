@@ -18,12 +18,21 @@ CREATE TYPE valid_task AS ENUM (
   'TASK_OCR'
 );
 
+CREATE TYPE valid_release_stage AS ENUM (
+  'RELEASE_STAGE_UNSPECIFIED',
+  'RELEASE_STAGE_ALPHA',
+  'RELEASE_STAGE_BETA',
+  'RELEASE_STAGE_GENERALLY_AVAILABLE',
+  'RELEASE_STAGE_CUSTOM'
+);
+
 CREATE TABLE IF NOT EXISTS "model_definition" (
   "uid" UUID PRIMARY KEY,
   "id" VARCHAR(63) NOT NULL,
   "title" varchar(255) NOT NULL,
   "documentation_url" VARCHAR(1024) NULL,
   "icon" VARCHAR(1024) NULL,
+  "release_stage" VALID_RELEASE_STAGE DEFAULT 'RELEASE_STAGE_UNSPECIFIED' NOT NULL,
   "model_spec" JSONB NOT NULL,
   "model_instance_spec" JSONB NOT NULL,
   "create_time" timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,

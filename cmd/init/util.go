@@ -57,7 +57,8 @@ func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// util.ConvertAllJSONKeySnakeCase(jsonSliceMap)
+	ConvertAllJSONKeySnakeCase(jsonSliceMap)
+	ConvertAllJSONEnumValueToProtoStyle(enumRegistry, jsonSliceMap)
 
 	return jsonSliceMap, nil
 }

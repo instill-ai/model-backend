@@ -63,6 +63,8 @@ type ModelDefinition struct {
 
 	// ModelDefinition model instance spec
 	ModelInstanceSpec datatypes.JSON `json:"model_instance_spec,omitempty"`
+
+	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
 }
 
 // Model combines several Triton model. It includes ensemble model.
@@ -221,4 +223,18 @@ func (r *ModelInstance) Scan(value interface{}) error {
 func (r *ModelInstance) Value() (driver.Value, error) {
 	valueString, err := json.Marshal(r)
 	return string(valueString), err
+}
+
+// ReleaseStage is an alias type for Protobuf enum ReleaseStage
+type ReleaseStage modelPB.ReleaseStage
+
+// Scan function for custom GORM type ReleaseStage
+func (r *ReleaseStage) Scan(value interface{}) error {
+	*r = ReleaseStage(modelPB.ReleaseStage_value[value.(string)])
+	return nil
+}
+
+// Value function for custom GORM type ReleaseStage
+func (r ReleaseStage) Value() (driver.Value, error) {
+	return modelPB.ReleaseStage(r).String(), nil
 }

@@ -3,6 +3,7 @@
   title: "GitHub"
   documentationUrl: "https://www.instill.tech/docs/import-models/github"
   icon: "github.svg"
+  releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "GitHub spec for model"
@@ -93,6 +94,7 @@
   title: Local
   documentationUrl: "https://www.instill.tech/docs/import-models/local"
   icon: "local.svg"
+  releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "Local spec for model"
@@ -141,6 +143,7 @@
   title: ArtiVC
   documentationUrl: "https://www.instill.tech/docs/import-models/artivc"
   icon: "artivc.svg"
+  releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "ArtiVC spec for model"
@@ -210,6 +213,7 @@
   title: "Hugging Face"
   documentationUrl: "https://www.instill.tech/docs/import-models/huggingface"
   icon: "huggingface.svg"
+  releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
     title: "Hugging Face spec for model"

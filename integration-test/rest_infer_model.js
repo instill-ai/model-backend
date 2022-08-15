@@ -179,7 +179,9 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls task`]: (r) =>
@@ -482,7 +484,9 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task`]: (r) =>
@@ -837,7 +841,9 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task`]: (r) =>
@@ -856,7 +862,9 @@ export function InferModel() {
           r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
       });
 
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs.length`]: (r) =>
@@ -880,7 +888,9 @@ export function InferModel() {
       fd.append("file", http.file(dog_img));
       fd.append("file", http.file(cat_img));
       fd.append("file", http.file(bear_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task`]: (r) =>
@@ -915,7 +925,9 @@ export function InferModel() {
           r.json().batch_outputs[2].unspecified.raw_outputs[0].shape !== undefined,
       });
 
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs.length`]: (r) =>
@@ -1096,7 +1108,9 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task`]: (r) =>
@@ -1366,7 +1380,9 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task`]: (r) =>
@@ -1570,7 +1586,9 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(dog_rgba_img));
-      check(res, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task`]: (r) =>
