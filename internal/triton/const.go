@@ -5,6 +5,11 @@ type DetectionOutput struct {
 	Labels [][]string
 }
 
+type OcrOutput struct {
+	Boxes [][][]float32
+	Texts [][]string
+}
+
 type KeypointOutput struct {
 	Keypoints [][][]float32
 	Scores    []float32

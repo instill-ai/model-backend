@@ -290,6 +290,36 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		})
 
 		return keypointOutputs, nil
+	case modelPB.ModelInstance_TASK_OCR:
+		detResponses := postprocessResponse.(triton.OcrOutput)
+		batchedOutputDataBboxes := detResponses.Boxes
+		batchedOutputDataTexts := detResponses.Texts
+		var ocrOutputs []*modelPB.ModelInstanceOutput
+		for i := range batchedOutputDataBboxes {
+			var ocrOutput = modelPB.ModelInstanceOutput{
+				Output: &modelPB.ModelInstanceOutput_Ocr{
+					Ocr: &modelPB.OcrOutput{
+						BoundingBoxes: []*modelPB.BoundingBox{},
+					},
+				},
+			}
+			for j := range batchedOutputDataBboxes[i] {
+				box := batchedOutputDataBboxes[i][j]
+				text := batchedOutputDataTexts[i][j]
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				if text != "" && box[0] != -1 {
+					ocrOutput.GetOcr().BoundingBoxes = append(ocrOutput.GetOcr().BoundingBoxes, &modelPB.BoundingBox{
+						Left:   box[0],
+						Top:    box[1],
+						Width:  box[2],
+						Height: box[3],
+					})
+					ocrOutput.GetOcr().Texts = append(ocrOutput.GetOcr().Texts, text)
+				}
+			}
+			ocrOutputs = append(ocrOutputs, &ocrOutput)
+		}
+		return ocrOutputs, nil
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.ModelInstanceOutput

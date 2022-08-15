@@ -10,6 +10,7 @@ var Tasks = map[string]modelPB.ModelInstance_Task{
 	"TASK_CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
 	"TASK_DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
 	"TASK_KEYPOINT":       modelPB.ModelInstance_TASK_KEYPOINT,
+	"TASK_OCR":            modelPB.ModelInstance_TASK_OCR,
 }
 
 var Tags = map[string]modelPB.ModelInstance_Task{
@@ -18,6 +19,7 @@ var Tags = map[string]modelPB.ModelInstance_Task{
 	"IMAGE-CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
 	"IMAGE-DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
 	"OBJECT-DETECTION":     modelPB.ModelInstance_TASK_DETECTION,
+	"OCR":                  modelPB.ModelInstance_TASK_OCR,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{
