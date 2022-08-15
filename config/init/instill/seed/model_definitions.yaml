@@ -1,7 +1,7 @@
 - id: "github"
   uid: "909c3278-f7d1-461c-9352-87741bef11d3"
   title: "GitHub"
-  documentationUrl: "https://docs.instill.tech/models/definitions/github"
+  documentationUrl: "https://www.instill.tech/docs/import-models/github"
   icon: "github.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
@@ -91,7 +91,7 @@
 - id: local
   uid: "96b547c2-8927-43ca-a0cd-a72306621696"
   title: Local
-  documentationUrl: "https://docs.instill.tech/models/definitions/local"
+  documentationUrl: "https://www.instill.tech/docs/import-models/local"
   icon: "local.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
@@ -139,7 +139,7 @@
 - id: artivc
   uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
   title: ArtiVC
-  documentationUrl: "https://docs.instill.tech/models/definitions/artivc"
+  documentationUrl: "https://www.instill.tech/docs/import-models/artivc"
   icon: "artivc.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
@@ -208,7 +208,7 @@
 - id: "huggingface"
   uid: "5b2e1d10-1fab-462d-9d6a-ba41f4b4d816"
   title: "Hugging Face"
-  documentationUrl: "https://docs.instill.tech/models/definitions/huggingface"
+  documentationUrl: "https://www.instill.tech/docs/import-models/huggingface"
   icon: "huggingface.svg"
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
