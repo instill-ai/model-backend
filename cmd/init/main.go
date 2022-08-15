@@ -14,6 +14,10 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
+var enumRegistry = map[string]map[string]int32{
+	"release_stage": modelPB.ReleaseStage_value,
+}
+
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
 	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
 	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelInstanceSpec())
@@ -26,6 +30,7 @@ func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error
 		modelDef.GetIcon(),
 		modelSpecBytes,
 		modelInstanceSpecBytes,
+		datamodel.ReleaseStage(modelDef.GetReleaseStage()),
 	); err != nil {
 		return err
 	}
@@ -62,7 +67,6 @@ func main() {
 		if err := datamodel.ValidateJSONSchema(datamodel.ModelDefJSONSchema, def, true); err != nil {
 			logger.Fatal(err.Error())
 		}
-
 		// Create source definition record
 		if err := createModelDefinition(db, def); err != nil {
 			logger.Fatal(err.Error())

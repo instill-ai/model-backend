@@ -10,7 +10,8 @@
     "documentation_url",
     "icon",
     "model_spec",
-    "model_instance_spec"
+    "model_instance_spec",
+    "release_stage"
   ],
   "properties": {
     "name": {
@@ -39,8 +40,8 @@
       "title": "Name",
       "description": "The model definition name",
       "pattern": "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$",
-      "minLength": 1,
-      "maxLength": 63,
+      "min_length": 1,
+      "max_length": 63,
       "ui_order": 2,
       "ui_hidden": true,
       "ui_disabled": true,
@@ -50,7 +51,7 @@
       "type": "string",
       "title": "Model definition",
       "description": "The model definition, e.g. GitHub",
-      "minLength": 1,
+      "min_length": 1,
       "ui_order": 3,
       "ui_hidden": true,
       "ui_disabled": true,
@@ -91,6 +92,27 @@
       "ui_order": 7,
       "ui_hidden": true,
       "ui_disabled": true
+    },
+    "release_stage": {
+      "type": "string",
+      "title": "Release stage",
+      "description": "The release stage of the connector",
+      "enum": [
+        "RELEASE_STAGE_UNSPECIFIED",
+        "RELEASE_STAGE_ALPHA",
+        "RELEASE_STAGE_BETA",
+        "RELEASE_STAGE_GENERALLY_AVAILABLE",
+        "RELEASE_STAGE_CUSTOM"
+      ],
+      "min_length": 1,
+      "max_length": 63,
+      "default": "RELEASE_STAGE_UNSPECIFIED",
+      "readOnly": true,
+      "ui_order": 8,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "select",
+      "ui_enum": ["", "Alpha", "Beta", "Generally available", "Custom"]
     }
   }
 }

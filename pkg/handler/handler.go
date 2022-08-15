@@ -579,7 +579,6 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
-
 		db := database.GetConnection()
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
@@ -597,13 +596,11 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJSONResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
 			return
 		}
-
 		rs := &jsonschema.Schema{}
 		if err := json.Unmarshal([]byte(localModelDefinition.ModelSpec.String()), rs); err != nil {
 			makeJSONResponse(w, 500, "Add Model Error", "Could not get model definition")
 			return
 		}
-
 		modelConfiguration := datamodel.LocalModelConfiguration{
 			Content: fileHeader.Filename,
 		}
@@ -612,7 +609,6 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 			return
 		}
-
 		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
 			Instances: []datamodel.ModelInstance{{

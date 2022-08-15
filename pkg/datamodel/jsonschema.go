@@ -145,36 +145,6 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopula
 	return nil
 }
 
-func ValidateJSONSchema1(schema *jsonschema.Schema, msg proto.Message, emitUnpopulated bool) error {
-
-	b, err := protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: emitUnpopulated}.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	var v interface{}
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-
-	if err := schema.Validate(v); err != nil {
-		switch e := err.(type) {
-		case *jsonschema.ValidationError:
-			b, err := json.MarshalIndent(e.DetailedOutput(), "", "  ")
-			if err != nil {
-				return err
-			}
-			return fmt.Errorf(string(b))
-		case jsonschema.InvalidJSONTypeError:
-			return e
-		default:
-			return e
-		}
-	}
-
-	return nil
-}
-
 // ValidateJSONSchemaString validates the string data given a string schema
 func ValidateJSONSchemaString(schema *jsonschema.Schema, data string) error {
 	var v interface{}
