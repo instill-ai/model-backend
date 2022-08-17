@@ -13,7 +13,8 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/instill-ai/protogen-go v0.3.0-alpha
-	github.com/instill-ai/x v0.1.0-alpha.0.20220706215306-bceeac65f523
+	github.com/instill-ai/usage-client v0.1.1-alpha
+	github.com/instill-ai/x v0.2.0-alpha
 	github.com/knadh/koanf v1.4.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
@@ -32,6 +33,7 @@ require (
 )
 
 require (
+	github.com/catalinc/hashcash v0.0.0-20161205220751-e6bc29ff4de9 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/containerd v1.6.6 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect

@@ -83,10 +83,10 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 						logger.Fatal(err.Error())
 					}
 				} else {
-					_ = str.UnmarshalJSON(dbModel.Configuration)
-					// if err != nil {
-					// 	logger.Fatal(err.Error())
-					// }
+					err := str.UnmarshalJSON(dbModel.Configuration)
+					if err != nil {
+						logger.Fatal(err.Error())
+					}
 				}
 				return &str
 			}
