@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.3-alpha...v0.7.0-alpha) (2022-08-17)
+
+
+### Features
+
+* add release stage for model definition ([#153](https://github.com/instill-ai/model-backend/issues/153)) ([4e13ba5](https://github.com/instill-ai/model-backend/commit/4e13ba5ff13a407de932d084468dd72cb36fd108))
+* support ocr task ([#150](https://github.com/instill-ai/model-backend/issues/150)) ([7766c6f](https://github.com/instill-ai/model-backend/commit/7766c6fd82e2a711333c8131fb8fd82a8f462224))
+
 ## [0.6.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.2-alpha...v0.6.3-alpha) (2022-07-19)
 
 
