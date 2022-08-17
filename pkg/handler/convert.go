@@ -141,6 +141,7 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 		Icon:             dbModelDefinition.Icon,
 		CreateTime:       timestamppb.New(dbModelDefinition.CreateTime),
 		UpdateTime:       timestamppb.New(dbModelDefinition.UpdateTime),
+		ReleaseStage:     modelPB.ReleaseStage(dbModelDefinition.ReleaseStage),
 		ModelSpec: func() *structpb.Struct {
 			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
