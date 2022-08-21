@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -34,13 +33,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
-	"github.com/instill-ai/x/repo"
 
 	database "github.com/instill-ai/model-backend/internal/db"
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
-	usageclient "github.com/instill-ai/usage-client/client"
 )
 
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigins []string) http.Handler {
@@ -60,25 +55,6 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 			})),
 		&http2.Server{},
 	)
-}
-
-func startReporter(ctx context.Context, usageServiceClient usagePB.UsageServiceClient, r repository.Repository, mu mgmtPB.UserServiceClient, rc *redis.Client) {
-	logger, _ := logger.GetZapLogger()
-
-	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	go func() {
-		time.Sleep(5 * time.Second)
-
-		usg := usage.NewUsage(r, mu, rc)
-		err = usageclient.StartReporter(ctx, usageServiceClient, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version, usg.RetrieveUsageData)
-		if err != nil {
-			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
-		}
-	}()
 }
 
 func main() {
@@ -187,10 +163,12 @@ func main() {
 	}
 
 	// Start usage reporter
+	var usg usage.Usage
 	if !config.Config.Server.DisableUsage {
 		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
 		defer usageServiceClientConn.Close()
-		startReporter(ctx, usageServiceClient, repository, userServiceClient, redisClient)
+		usg = usage.NewUsage(ctx, repository, userServiceClient, redisClient, usageServiceClient)
+		usg.StartReporter(ctx)
 	}
 
 	var dialOpts []grpc.DialOption
@@ -235,6 +213,9 @@ func main() {
 	case err := <-errSig:
 		logger.Error(fmt.Sprintf("Fatal error: %v\n", err))
 	case <-quitSig:
+		if !config.Config.Server.DisableUsage {
+			usg.TriggerSingleReporter(ctx)
+		}
 		logger.Info("Shutting down server...")
 		grpcS.GracefulStop()
 	}

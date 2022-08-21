@@ -3,35 +3,58 @@ package usage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v9"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/x/repo"
 
 	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
+	usageClient "github.com/instill-ai/usage-client/client"
+	usageReporter "github.com/instill-ai/usage-client/reporter"
 )
 
 // Usage interface
 type Usage interface {
 	RetrieveUsageData() interface{}
+	StartReporter(ctx context.Context)
+	TriggerSingleReporter(ctx context.Context)
 }
 
 type usage struct {
 	repository        repository.Repository
 	userServiceClient mgmtPB.UserServiceClient
 	redisClient       *redis.Client
+	reporter          usageReporter.Reporter
+	version           string
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(r repository.Repository, mu mgmtPB.UserServiceClient, rc *redis.Client) Usage {
+func NewUsage(ctx context.Context, r repository.Repository, mu mgmtPB.UserServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
+	logger, _ := logger.GetZapLogger()
+
+	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	reporter, err := usageClient.InitReporter(ctx, usc, usagePB.Session_SERVICE_MGMT, config.Config.Server.Edition, version)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
 	return &usage{
 		repository:        r,
 		userServiceClient: mu,
 		redisClient:       rc,
+		reporter:          reporter,
+		version:           version,
 	}
 }
 
@@ -160,5 +183,31 @@ func (u *usage) RetrieveUsageData() interface{} {
 		ModelUsageData: &usagePB.ModelUsageData{
 			Usages: pbModelUsageData,
 		},
+	}
+}
+
+func (u *usage) StartReporter(ctx context.Context) {
+	if u.reporter == nil {
+		return
+	}
+
+	logger, _ := logger.GetZapLogger()
+	go func() {
+		time.Sleep(5 * time.Second)
+		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MGMT, config.Config.Server.Edition, u.version, u.RetrieveUsageData)
+		if err != nil {
+			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
+		}
+	}()
+}
+
+func (u *usage) TriggerSingleReporter(ctx context.Context) {
+	if u.reporter == nil {
+		return
+	}
+	logger, _ := logger.GetZapLogger()
+	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MGMT, config.Config.Server.Edition, u.version, u.RetrieveUsageData())
+	if err != nil {
+		logger.Fatal(err.Error())
 	}
 }
