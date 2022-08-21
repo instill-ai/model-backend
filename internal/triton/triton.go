@@ -270,7 +270,7 @@ func postProcessOcr(modelInferResponse *inferenceserver.ModelInferResponse, outp
 		return nil, fmt.Errorf("Unable to reshape inference output for boxes")
 	}
 
-	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorBboxes.Shape[0]*outputTensorBboxes.Shape[1])
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
 	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -399,7 +399,7 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	if rawOutputContentKeypoints == nil {
 		return nil, fmt.Errorf("Unable to find output content for keypoints")
 	}
-	_, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
+	outputTensorScores, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to find inference output for labels")
@@ -409,14 +409,18 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	}
 
 	outputDataKeypoints := DeserializeFloat32Tensor(rawOutputContentKeypoints)
-	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To3D(outputDataKeypoints, outputTensorKeypoints.Shape)
+	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To4D(outputDataKeypoints, outputTensorKeypoints.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to reshape inference output for keypoints")
 	}
 
 	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
-	batchedOutputDataScores := outputDataScores
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for keypoints")
+	}
 	if len(batchedOutputDataKeypoints) != len(batchedOutputDataScores) {
 		log.Printf("Keypoints output has length %v but scores has length %v", len(batchedOutputDataKeypoints), len(batchedOutputDataScores))
 		return nil, fmt.Errorf("Inconsistent batch size for keypoints and scores")
