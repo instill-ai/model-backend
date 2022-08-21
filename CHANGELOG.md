@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.0-alpha...v0.7.1-alpha) (2022-08-21)
+
+
+### Bug Fixes
+
+* post process ocr task ([e387154](https://github.com/instill-ai/model-backend/commit/e38715481b18cbcecf25b5fba841ff887909dcc1))
+
 ## [0.7.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.6.3-alpha...v0.7.0-alpha) (2022-08-17)
 
 
