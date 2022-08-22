@@ -63,15 +63,15 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	return &modelMeta, err
 }
 
-func findDVCPath(dir string) string {
-	dvcPath := ""
+func findDVCPaths(dir string) []string {
+	dvcPaths := []string{}
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if f.Name() == ".dvc" {
-			dvcPath = path
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".dvc") {
+			dvcPaths = append(dvcPaths, path)
 		}
 		return nil
 	})
-	return dvcPath
+	return dvcPaths
 }
 
 func findModelFiles(dir string) []string {
@@ -145,12 +145,15 @@ func GitHubCloneWLargeFile(dir string, instanceConfig datamodel.GitHubModelInsta
 	if err != nil {
 		return err
 	}
-	dvcPath := findDVCPath(dir)
-	if dvcPath != "" {
-		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull", dvcPath))
+	dvcPaths := findDVCPaths(dir)
+	for _, dvcPath := range dvcPaths {
+		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull %s", dir, dvcPath))
 		err = cmd.Run()
-		return err
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
