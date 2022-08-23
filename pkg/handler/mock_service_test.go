@@ -251,10 +251,10 @@ func (mr *MockServiceMockRecorder) ListModelInstance(arg0, arg1, arg2, arg3 inte
 }
 
 // ModelInfer mocks base method.
-func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.ModelInstanceOutput, error) {
+func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.BatchOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInfer", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]*modelv1alpha.ModelInstanceOutput)
+	ret0, _ := ret[0].([]*modelv1alpha.BatchOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -266,10 +266,10 @@ func (mr *MockServiceMockRecorder) ModelInfer(arg0, arg1, arg2 interface{}) *gom
 }
 
 // ModelInferTestMode mocks base method.
-func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.ModelInstanceOutput, error) {
+func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.BatchOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferTestMode", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].([]*modelv1alpha.ModelInstanceOutput)
+	ret0, _ := ret[0].([]*modelv1alpha.BatchOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

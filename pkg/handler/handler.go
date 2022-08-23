@@ -2095,7 +2095,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 		}
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-		var response []*modelPB.ModelInstanceOutput
+		var response []*modelPB.BatchOutput
 		if mode == "test" {
 			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
 		} else {

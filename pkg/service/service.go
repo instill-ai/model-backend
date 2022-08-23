@@ -42,8 +42,8 @@ type Service interface {
 	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.ModelInstanceOutput, error)
-	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.ModelInstanceOutput, error)
+	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.BatchOutput, error)
+	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.BatchOutput, error)
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
@@ -137,7 +137,7 @@ func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) 
 	return s.repository.GetModelByUid(owner, uid, view)
 }
 
-func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.ModelInstanceOutput, error) {
+func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.BatchOutput, error) {
 	// Increment trigger image numbers
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -151,7 +151,7 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 	return s.ModelInfer(modelInstanceUID, imgsBytes, task)
 }
 
-func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.ModelInstanceOutput, error) {
+func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.BatchOutput, error) {
 
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
 	if err != nil {
@@ -189,7 +189,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	switch task {
 	case modelPB.ModelInstance_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
-		var clsOutputs []*modelPB.ModelInstanceOutput
+		var clsOutputs []*modelPB.BatchOutput
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
 			if len(clsResSplit) == 2 {
@@ -197,8 +197,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				if err != nil {
 					return nil, fmt.Errorf("unable to decode inference output")
 				}
-				clsOutput := modelPB.ModelInstanceOutput{
-					Output: &modelPB.ModelInstanceOutput_Classification{
+				clsOutput := modelPB.BatchOutput{
+					Output: &modelPB.BatchOutput_Classification{
 						Classification: &modelPB.ClassificationOutput{
 							Category: clsResSplit[1],
 							Score:    float32(score),
@@ -211,8 +211,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				if err != nil {
 					return nil, fmt.Errorf("unable to decode inference output")
 				}
-				clsOutput := modelPB.ModelInstanceOutput{
-					Output: &modelPB.ModelInstanceOutput_Classification{
+				clsOutput := modelPB.BatchOutput{
+					Output: &modelPB.BatchOutput_Classification{
 						Classification: &modelPB.ClassificationOutput{
 							Category: clsResSplit[2],
 							Score:    float32(score),
@@ -230,10 +230,10 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		detResponses := postprocessResponse.(triton.DetectionOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataLabels := detResponses.Labels
-		var detOutputs []*modelPB.ModelInstanceOutput
+		var detOutputs []*modelPB.BatchOutput
 		for i := range batchedOutputDataBboxes {
-			var detOutput = modelPB.ModelInstanceOutput{
-				Output: &modelPB.ModelInstanceOutput_Detection{
+			var detOutput = modelPB.BatchOutput{
+				Output: &modelPB.BatchOutput_Detection{
 					Detection: &modelPB.DetectionOutput{
 						BoundingBoxes: []*modelPB.BoundingBoxObject{},
 					},
@@ -263,7 +263,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		return detOutputs, nil
 	case modelPB.ModelInstance_TASK_KEYPOINT: // no batching
 		keypointResponse := postprocessResponse.(triton.KeypointOutput)
-		var keypointOutputs []*modelPB.ModelInstanceOutput
+		var keypointOutputs []*modelPB.BatchOutput
 		var keypointGroups []*modelPB.KeypointObject
 		for i := range keypointResponse.Keypoints {
 			score := keypointResponse.Scores[i]
@@ -281,8 +281,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				Score:         score,
 			})
 		}
-		keypointOutputs = append(keypointOutputs, &modelPB.ModelInstanceOutput{
-			Output: &modelPB.ModelInstanceOutput_Keypoint{
+		keypointOutputs = append(keypointOutputs, &modelPB.BatchOutput{
+			Output: &modelPB.BatchOutput_Keypoint{
 				Keypoint: &modelPB.KeypointOutput{
 					KeypointGroups: keypointGroups,
 				},
@@ -294,10 +294,10 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		detResponses := postprocessResponse.(triton.OcrOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataTexts := detResponses.Texts
-		var ocrOutputs []*modelPB.ModelInstanceOutput
+		var ocrOutputs []*modelPB.BatchOutput
 		for i := range batchedOutputDataBboxes {
-			var ocrOutput = modelPB.ModelInstanceOutput{
-				Output: &modelPB.ModelInstanceOutput_Ocr{
+			var ocrOutput = modelPB.BatchOutput{
+				Output: &modelPB.BatchOutput_Ocr{
 					Ocr: &modelPB.OcrOutput{
 						BoundingBoxes: []*modelPB.BoundingBox{},
 					},
@@ -322,9 +322,9 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		return ocrOutputs, nil
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
-		var rawOutputs []*modelPB.ModelInstanceOutput
+		var rawOutputs []*modelPB.BatchOutput
 		if len(outputs) == 0 {
-			return []*modelPB.ModelInstanceOutput{}, nil
+			return []*modelPB.BatchOutput{}, nil
 		}
 		deserializedOutputs := outputs[0].SerializedOutputs
 		for i := range deserializedOutputs {
@@ -361,9 +361,9 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				singleImageOutput = append(singleImageOutput, structData)
 			}
 
-			rawOutputs = append(rawOutputs, &modelPB.ModelInstanceOutput{
-				Output: &modelPB.ModelInstanceOutput_Unspecified{
-					Unspecified: &modelPB.UnspecifiedTaskOutput{
+			rawOutputs = append(rawOutputs, &modelPB.BatchOutput{
+				Output: &modelPB.BatchOutput_Unspecified{
+					Unspecified: &modelPB.UnspecifiedOutput{
 						RawOutputs: singleImageOutput,
 					},
 				},
