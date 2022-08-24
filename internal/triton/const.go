@@ -11,8 +11,9 @@ type OcrOutput struct {
 }
 
 type KeypointOutput struct {
-	Keypoints [][][]float32
-	Scores    []float32
+	Keypoints [][][][]float32
+	Boxes     [][][]float32
+	Scores    [][]float32
 }
 
 type BatchUnspecifiedTaskOutputs struct {

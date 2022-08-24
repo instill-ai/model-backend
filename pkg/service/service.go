@@ -261,33 +261,46 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			detOutputs = append(detOutputs, &detOutput)
 		}
 		return detOutputs, nil
-	case modelPB.ModelInstance_TASK_KEYPOINT: // no batching
+	case modelPB.ModelInstance_TASK_KEYPOINT:
 		keypointResponse := postprocessResponse.(triton.KeypointOutput)
 		var keypointOutputs []*modelPB.BatchOutput
-		var keypointGroups []*modelPB.KeypointObject
-		for i := range keypointResponse.Keypoints {
-			score := keypointResponse.Scores[i]
-			var keypoints []*modelPB.Keypoint
-			for j := range keypointResponse.Keypoints[i] {
-				keypoint := keypointResponse.Keypoints[i][j]
-				keypoints = append(keypoints, &modelPB.Keypoint{
-					X: keypoint[0],
-					Y: keypoint[1],
-					V: keypoint[2],
+		for i := range keypointResponse.Keypoints { // batch size
+			var keypointGroups []*modelPB.KeypointObject
+			for j := range keypointResponse.Keypoints[i] { // n keypoints in one image
+				if keypointResponse.Scores[i][j] == -1 { // dummy object for batching to make sure every images have same output shape
+					continue
+				}
+				var keypoints []*modelPB.Keypoint
+				points := keypointResponse.Keypoints[i][j]
+				for k := range points { // 17 point for each keypoint
+					if points[k][0] == -1 && points[k][1] == -1 && points[k][2] == -1 { // dummy output for batching to make sure every images have same output shape
+						continue
+					}
+					keypoints = append(keypoints, &modelPB.Keypoint{
+						X: points[k][0],
+						Y: points[k][1],
+						V: points[k][2],
+					})
+				}
+				keypointGroups = append(keypointGroups, &modelPB.KeypointObject{
+					KeypointGroup: keypoints,
+					BoundingBox: &modelPB.BoundingBox{
+						Left:   keypointResponse.Boxes[i][j][0],
+						Top:    keypointResponse.Boxes[i][j][1],
+						Width:  keypointResponse.Boxes[i][j][2],
+						Height: keypointResponse.Boxes[i][j][3],
+					},
+					Score: keypointResponse.Scores[i][j],
 				})
 			}
-			keypointGroups = append(keypointGroups, &modelPB.KeypointObject{
-				KeypointGroup: keypoints,
-				Score:         score,
+			keypointOutputs = append(keypointOutputs, &modelPB.BatchOutput{
+				Output: &modelPB.BatchOutput_Keypoint{
+					Keypoint: &modelPB.KeypointOutput{
+						KeypointGroups: keypointGroups,
+					},
+				},
 			})
 		}
-		keypointOutputs = append(keypointOutputs, &modelPB.BatchOutput{
-			Output: &modelPB.BatchOutput_Keypoint{
-				Keypoint: &modelPB.KeypointOutput{
-					KeypointGroups: keypointGroups,
-				},
-			},
-		})
 
 		return keypointOutputs, nil
 	case modelPB.ModelInstance_TASK_OCR:

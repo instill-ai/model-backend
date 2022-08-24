@@ -2077,23 +2077,23 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		}
 
 		// check whether model support batching or not. If not, raise an error
-		if len(imgsBytes) > 1 {
-			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
-			if err != nil {
-				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
-				return
-			}
-			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-			doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
-			if err != nil {
-				makeJSONResponse(w, 400, "Batching Support Error", err.Error())
-				return
-			}
-			if !doSupportBatch {
-				makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
-				return
-			}
-		}
+		// if len(imgsBytes) > 1 {
+		// 	tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		// 	if err != nil {
+		// 		makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+		// 		return
+		// 	}
+		// 	configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+		// 	doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		// 	if err != nil {
+		// 		makeJSONResponse(w, 400, "Batching Support Error", err.Error())
+		// 		return
+		// 	}
+		// 	if !doSupportBatch {
+		// 		makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+		// 		return
+		// 	}
+		// }
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		var response []*modelPB.BatchOutput
 		if mode == "test" {
