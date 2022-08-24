@@ -4,7 +4,7 @@ server:
     cert:   # /ssl/tls.crt
     key:    # /ssl/tls.key
   corsorigins:
-    - http://localhost
+    - http://localhost:3000
     - https://instill-inc.tech
     - https://instill.tech
   edition: local-ce:dev
@@ -44,4 +44,4 @@ pipelinebackend:
   port: 8081
   https:
     cert:   # /ssl/tls.crt
-    key:    # /ssl/tls.key  
+    key:    # /ssl/tls.key
