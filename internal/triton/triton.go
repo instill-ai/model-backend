@@ -390,7 +390,7 @@ func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferRe
 	return postprocessedOutputs, nil
 }
 
-func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameScores string) (interface{}, error) {
+func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
 	outputTensorKeypoints, rawOutputContentKeypoints, err := GetOutputFromInferResponse(outputNameKeypoints, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -399,7 +399,17 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	if rawOutputContentKeypoints == nil {
 		return nil, fmt.Errorf("Unable to find output content for keypoints")
 	}
-	_, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
+
+	outputTensorBoxes, rawOutputContentBoxes, err := GetOutputFromInferResponse(outputNameBoxes, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for labels")
+	}
+	if rawOutputContentBoxes == nil {
+		return nil, fmt.Errorf("Unable to find output content for labels")
+	}
+
+	outputTensorScores, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to find inference output for labels")
@@ -409,21 +419,33 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	}
 
 	outputDataKeypoints := DeserializeFloat32Tensor(rawOutputContentKeypoints)
-	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To3D(outputDataKeypoints, outputTensorKeypoints.Shape)
+	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To4D(outputDataKeypoints, outputTensorKeypoints.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to reshape inference output for keypoints")
 	}
 
+	outputDataBoxes := DeserializeFloat32Tensor(rawOutputContentBoxes)
+	batchedOutputDataBoxes, err := Reshape1DArrayFloat32To3D(outputDataBoxes, outputTensorBoxes.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for boxes")
+	}
+
 	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
-	batchedOutputDataScores := outputDataScores
-	if len(batchedOutputDataKeypoints) != len(batchedOutputDataScores) {
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for scores")
+	}
+	if len(batchedOutputDataKeypoints) != len(batchedOutputDataBoxes) || len(batchedOutputDataBoxes) != len(batchedOutputDataScores) {
 		log.Printf("Keypoints output has length %v but scores has length %v", len(batchedOutputDataKeypoints), len(batchedOutputDataScores))
 		return nil, fmt.Errorf("Inconsistent batch size for keypoints and scores")
 	}
 
 	return KeypointOutput{
 		Keypoints: batchedOutputDataKeypoints,
+		Boxes:     batchedOutputDataBoxes,
 		Scores:    batchedOutputDataScores,
 	}, nil
 }
@@ -441,16 +463,25 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			return nil, fmt.Errorf("Unable to post-process classification output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("Wrong output format of detection task")
+		}
 		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
-		outputs, err = postProcessKeypoint(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+		if len(modelMetadata.Outputs) < 3 {
+			return nil, fmt.Errorf("Wrong output format of keypoint detection task")
+		}
+		outputs, err = postProcessKeypoint(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process keypoint output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_OCR:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("Wrong output format of OCR task")
+		}
 		outputs, err = postProcessOcr(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
