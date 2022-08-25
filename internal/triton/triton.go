@@ -463,16 +463,25 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			return nil, fmt.Errorf("Unable to post-process classification output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_DETECTION:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("Wrong output format of detection task")
+		}
 		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_KEYPOINT:
+		if len(modelMetadata.Outputs) < 3 {
+			return nil, fmt.Errorf("Wrong output format of keypoint detection task")
+		}
 		outputs, err = postProcessKeypoint(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process keypoint output: %w", err)
 		}
 	case modelPB.ModelInstance_TASK_OCR:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("Wrong output format of OCR task")
+		}
 		outputs, err = postProcessOcr(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
