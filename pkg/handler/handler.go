@@ -1736,7 +1736,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	}
 	err = h.service.DeployModelInstance(dbModelInstance.UID)
 	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
+		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			"[handler] deploy model error",
 			"triton-inference-server",
@@ -1744,8 +1744,19 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 			"",
 			err.Error(),
 		)
-		if err != nil {
-			logger.Error(err.Error())
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, e = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] deploy model error",
+				"triton-inference-server",
+				"Out of memory for deploying the model to triton server, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+
+		if e != nil {
+			logger.Error(e.Error())
 		}
 
 		return &modelPB.DeployModelInstanceResponse{}, st.Err()
