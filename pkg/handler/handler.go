@@ -1805,6 +1805,8 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 }
 
 func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) error {
+	logger, _ := logger.GetZapLogger()
+
 	if !h.triton.IsTritonServerReady() {
 		return status.Error(codes.Unavailable, "Triton Server not ready yet")
 	}
@@ -1847,7 +1849,29 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imageBytes, task)
 	if err != nil {
-		return err
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] inference model error",
+			"Triton inference server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, err = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"Triton inference server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return st.Err()
 	}
 
 	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{
@@ -1858,6 +1882,8 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 }
 
 func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
+	logger, _ := logger.GetZapLogger()
+
 	if !h.triton.IsTritonServerReady() {
 		return status.Error(codes.Unavailable, "Triton Server not ready yet")
 	}
@@ -1900,7 +1926,28 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
-		return err
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] inference model error",
+			"Triton inference server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, err = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"Triton inference server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return st.Err()
 	}
 
 	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{
@@ -1911,6 +1958,8 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 }
 
 func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, err
@@ -1955,7 +2004,28 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] inference model error",
+			"Triton inference server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, err = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"Triton inference server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return &modelPB.TriggerModelInstanceResponse{}, st.Err()
 	}
 
 	return &modelPB.TriggerModelInstanceResponse{
@@ -1965,6 +2035,8 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 }
 
 func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.TestModelInstanceResponse{}, err
@@ -2012,7 +2084,28 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] inference model error",
+			"Triton inference server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, err = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"Triton inference server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return &modelPB.TestModelInstanceResponse{}, st.Err()
 	}
 
 	return &modelPB.TestModelInstanceResponse{
@@ -2022,6 +2115,8 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 }
 
 func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
+	logger, _ := logger.GetZapLogger()
+
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
 		owner, err := resource.GetOwnerFromHeader(r)
@@ -2102,7 +2197,28 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			response, err = modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 		}
 		if err != nil {
-			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] inference model error",
+				"Triton inference server",
+				"",
+				"",
+				err.Error(),
+			)
+			if strings.Contains(err.Error(), "Failed to allocate memory") {
+				st, err = sterr.CreateErrorResourceInfo(
+					codes.ResourceExhausted,
+					"[handler] inference model error",
+					"Triton inference server OOM",
+					"Out of memory for running the model, maybe try with smaller batch size",
+					"",
+					err.Error(),
+				)
+			}
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			makeJSONResponse(w, 500, "Error Predict Model", st.Err().Error())
 			return
 		}
 
