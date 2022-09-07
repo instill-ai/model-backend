@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.2-alpha...v0.7.3-alpha) (2022-09-07)
+
+
+### Features
+
+* handle oom ([#163](https://github.com/instill-ai/model-backend/issues/163)) ([4db1c45](https://github.com/instill-ai/model-backend/commit/4db1c45da75e308b85561b8d496d097671289c45))
+
+
+### Miscellaneous Chores
+
+* release 0.7.3-alpha ([9033c50](https://github.com/instill-ai/model-backend/commit/9033c502eaa36b4885cba4ef1add4f5353c1a5ff))
+
 ## [0.7.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.1-alpha...v0.7.2-alpha) (2022-08-22)
 
 
