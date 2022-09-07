@@ -90,14 +90,14 @@ type MaxBatchSizeConfig struct {
 
 // AppConfig defines
 type AppConfig struct {
-	Server          ServerConfig          `koanf:"server"`
-	Database        DatabaseConfig        `koanf:"database"`
-	TritonServer    TritonServerConfig    `koanf:"tritonserver"`
-	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
-	Cache           CacheConfig           `koanf:"cache"`
-	UsageBackend    UsageBackendConfig    `koanf:"usagebackend"`
-	PipelineBackend PipelineBackendConfig `koanf:"pipelinebackend"`
-	MaxBatchSize    MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
+	Server                 ServerConfig          `koanf:"server"`
+	Database               DatabaseConfig        `koanf:"database"`
+	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
+	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
+	Cache                  CacheConfig           `koanf:"cache"`
+	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
+	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
+	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 }
 
 // Config - Global variable to export

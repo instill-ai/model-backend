@@ -690,15 +690,15 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		allowedMaxBatchSize := 0
 		switch uploadedModel.Instances[0].Task {
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		}
 
 		if maxBatchSize > allowedMaxBatchSize {
@@ -823,15 +823,15 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	allowedMaxBatchSize := 0
 	switch uploadedModel.Instances[0].Task {
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 	}
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -1014,15 +1014,15 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		allowedMaxBatchSize := 0
 		switch instance.Task {
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		}
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -1229,15 +1229,15 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		allowedMaxBatchSize := 0
 		switch instance.Task {
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		}
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -1458,15 +1458,15 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	allowedMaxBatchSize := 0
 	switch instance.Task {
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-		allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 	}
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
