@@ -21,6 +21,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -94,11 +95,11 @@ func isEnsembleConfig(configPath string) bool {
 	return strings.Contains(fileString, "platform: \"ensemble\"")
 }
 
-func unzip(filePath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, error) {
+func unzip(filePath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return "", err
+		return "", "", err
 	}
 	defer archive.Close()
 	var readmeFilePath string
@@ -116,7 +117,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return "", fmt.Errorf("invalid file path")
+			return "", "", fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
 			dirName := f.Name
@@ -147,11 +148,11 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 			}
 			filePath := filepath.Join(dstDir, dirName)
 			if err := util.ValidateFilePath(filePath); err != nil {
-				return "", err
+				return "", "", err
 			}
 			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			continue
 		}
@@ -170,18 +171,18 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 			readmeFilePath = filePath
 		}
 		if err := util.ValidateFilePath(filePath); err != nil {
-			return "", err
+			return "", "", err
 		}
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return "", err
+			return "", "", err
 		}
 
 		dstFile.Close()
@@ -194,7 +195,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 			}
 			err = util.UpdateConfigModelName(filePath, oldModelName, newModelName)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 		}
 	}
@@ -203,7 +204,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		for oldModelName, newModelName := range newModelNameMap {
 			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 		}
 		for i := 0; i < len(createdTModels); i++ {
@@ -214,11 +215,11 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		}
 	}
 	uploadedModel.Instances[0].TritonModels = createdTModels
-	return readmeFilePath, nil
+	return readmeFilePath, ensembleFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
-func updateModelPath(modelDir string, dstDir string, owner string, modelID string, modelInstance *datamodel.ModelInstance) (string, error) {
+func updateModelPath(modelDir string, dstDir string, owner string, modelID string, modelInstance *datamodel.ModelInstance) (string, string, error) {
 	var createdTModels []datamodel.TritonModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
@@ -234,12 +235,12 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		return nil
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	modelRootDir := strings.Join([]string{dstDir, owner}, "/")
 	err = os.MkdirAll(modelRootDir, os.ModePerm)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	for _, f := range files {
 		if f.path == modelDir {
@@ -259,7 +260,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 			err = os.MkdirAll(filePath, os.ModePerm)
 
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			newModelNameMap[oldModelName] = subStrs[0]
 			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
@@ -277,14 +278,14 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		srcFile, err := os.Open(f.path)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			return "", err
+			return "", "", err
 		}
 		dstFile.Close()
 		srcFile.Close()
@@ -296,7 +297,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 			}
 			err = util.UpdateConfigModelName(filePath, oldModelName, subStrs[0])
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 		}
 	}
@@ -305,7 +306,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		for oldModelName, newModelName := range newModelNameMap {
 			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 		}
 		for i := 0; i < len(createdTModels); i++ {
@@ -316,7 +317,7 @@ func updateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		}
 	}
 	modelInstance.TritonModels = createdTModels
-	return readmeFilePath, nil
+	return readmeFilePath, ensembleFilePath, nil
 }
 
 func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
@@ -498,6 +499,8 @@ func (h *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (
 
 // HandleCreateModelByMultiPartFormData is a custom handler
 func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	logger, _ := logger.GetZapLogger()
+
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") {
 		owner, err := resource.GetOwnerFromHeader(r)
@@ -636,7 +639,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		readmeFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
+		readmeFilePath, ensembleFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -663,6 +666,58 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			}
 		} else {
 			uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		}
+
+		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"Local model",
+				"Missing ensemble model",
+				"",
+				"err.Error()",
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			obj, _ := json.Marshal(st.Details())
+			makeJSONResponse(w, 400, st.Message(), string(obj))
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			return
+		}
+
+		allowedMaxBatchSize := 0
+		switch uploadedModel.Instances[0].Task {
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+		}
+
+		if maxBatchSize > allowedMaxBatchSize {
+			st, e := sterr.CreateErrorPreconditionFailure(
+				"[handler] create a model",
+				[]*errdetails.PreconditionFailure_Violation{
+					{
+						Type:        "MAX BATCH SIZE LIMITATION",
+						Subject:     "Create a model error",
+						Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+					},
+				})
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			obj, _ := json.Marshal(st.Details())
+			makeJSONResponse(w, 400, st.Message(), string(obj))
+			return
 		}
 
 		dbModel, err := modelService.CreateModel(owner, &uploadedModel)
@@ -693,6 +748,8 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 // AddModel - upload a model to the model server
 func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+	logger, _ := logger.GetZapLogger()
+
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
@@ -720,7 +777,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	uploadedModel.Owner = owner
 
 	// extract zip file from tmp to models directory
-	readmeFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
+	readmeFilePath, ensembleFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -744,6 +801,54 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		}
 	} else {
 		uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+	}
+
+	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"Local model",
+			"Missing ensemble model",
+			"",
+			err.Error(),
+		)
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		return st.Err()
+	}
+
+	allowedMaxBatchSize := 0
+	switch uploadedModel.Instances[0].Task {
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+	}
+
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		return st.Err()
 	}
 
 	dbModel, err := h.service.CreateModel(owner, uploadedModel)
@@ -831,7 +936,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			Configuration: bInstanceConfig,
 		}
 
-		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
+		readmeFilePath, ensembleFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
@@ -889,6 +994,52 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		} else {
 			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
+
+		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"GitHub model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+
+		allowedMaxBatchSize := 0
+		switch instance.Task {
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+		}
+		if maxBatchSize > allowedMaxBatchSize {
+			st, e := sterr.CreateErrorPreconditionFailure(
+				"[handler] create a model",
+				[]*errdetails.PreconditionFailure_Violation{
+					{
+						Type:        "MAX BATCH SIZE LIMITATION",
+						Subject:     "Create a model error",
+						Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+					},
+				})
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+
 		githubModel.Instances = append(githubModel.Instances, instance)
 	}
 	dbModel, err := h.service.CreateModel(owner, &githubModel)
@@ -1000,7 +1151,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			Configuration: bInstanceConfig,
 		}
 
-		readmeFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
+		readmeFilePath, ensembleFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
@@ -1058,6 +1209,53 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		} else {
 			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
+
+		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"ArtiVC model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+
+		allowedMaxBatchSize := 0
+		switch instance.Task {
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+			allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+		}
+		if maxBatchSize > allowedMaxBatchSize {
+			st, e := sterr.CreateErrorPreconditionFailure(
+				"[handler] create a model",
+				[]*errdetails.PreconditionFailure_Violation{
+					{
+						Type:        "MAX BATCH SIZE LIMITATION",
+						Subject:     "Create a model error",
+						Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+					},
+				})
+
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+
 		artivcModel.Instances = append(artivcModel.Instances, instance)
 	}
 	dbModel, err := h.service.CreateModel(owner, &artivcModel)
@@ -1170,7 +1368,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		Configuration: bInstanceConfig,
 	}
 
-	readmeFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
+	readmeFilePath, ensembleFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -1240,6 +1438,52 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	} else {
 		instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 	}
+
+	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			"[handler] create a model error",
+			"HuggingFace model",
+			"Missing ensemble model",
+			"",
+			err.Error(),
+		)
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	allowedMaxBatchSize := 0
+	switch instance.Task {
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Unspecified
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Classification
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Detection
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Keypoint
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+		allowedMaxBatchSize = config.Config.MaxBatchSize.Ocr
+	}
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
 	huggingfaceModel.Instances = append(huggingfaceModel.Instances, instance)
 
 	dbModel, err := h.service.CreateModel(owner, &huggingfaceModel)
@@ -2233,7 +2477,8 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			makeJSONResponse(w, 500, "Error Predict Model", st.Err().Error())
+			obj, _ := json.Marshal(st.Details())
+			makeJSONResponse(w, 500, st.Message(), string(obj))
 			return
 		}
 

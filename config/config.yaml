@@ -45,3 +45,7 @@ pipelinebackend:
   https:
     cert:   # /ssl/tls.crt
     key:    # /ssl/tls.key
+maxbatchsize: 32
+  
+maxtresource: 14gb
+  

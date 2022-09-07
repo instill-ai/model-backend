@@ -313,6 +313,35 @@ func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int3
 	}
 }
 
+func GetMaxBatchSize(configFilePath string) (int, error) {
+	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
+		return -1, err
+	}
+	file, err := os.Open(configFilePath)
+	if err != nil {
+		return -1, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	r, err := regexp.Compile(`max_batch_size:`)
+	if err != nil {
+		return -1, err
+	}
+
+	for scanner.Scan() {
+		if r.MatchString(scanner.Text()) {
+			maxBatchSize := scanner.Text()
+			maxBatchSize = strings.Trim(maxBatchSize, "max_batch_size:")
+			maxBatchSize = strings.Trim(maxBatchSize, " ")
+			intMaxBatchSize, err := strconv.Atoi(maxBatchSize)
+			return intMaxBatchSize, err
+		}
+	}
+
+	return -1, fmt.Errorf("not found")
+}
+
 func DoSupportBatch(configFilePath string) (bool, error) {
 	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
 		return false, err

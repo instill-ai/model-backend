@@ -13,6 +13,10 @@ const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dumm
 const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
 const keypoint_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model.zip`, "b");
 const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
+const cls_model_bz17 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model-bz17.zip`, "b");
+const det_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model-bz9.zip`, "b");
+const keypoint_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model-bz9.zip`, "b");
+const unspecified_model_bz3 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model-bz3.zip`, "b");
 
 
 export function CreateModelFromLocal() {
@@ -188,6 +192,90 @@ export function CreateModelFromLocal() {
           r.status === 204
       });
     });
+
+    group("Model Backend API: Upload a model which exceed max batch size limitation", function () {
+      let fd_cls = new FormData();
+      let model_id_cls = randomString(10)
+      let model_description = randomString(20)
+      fd_cls.append("id", model_id_cls);
+      fd_cls.append("description", model_description);
+      fd_cls.append("model_definition", "model-definitions/local");
+      fd_cls.append("content", http.file(cls_model_bz17, "dummy-cls-model-bz17.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task cls response status": (r) =>
+          r.status === 400,
+      });
+
+      let fd_det = new FormData();
+      let model_id_det = randomString(10)
+      model_description = randomString(20)
+      fd_det.append("id", model_id_det);
+      fd_det.append("description", model_description);
+      fd_det.append("model_definition", "model-definitions/local");
+      fd_det.append("content", http.file(det_model_bz9, "dummy-det-model-bz9.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task det response status": (r) =>
+          r.status === 400,
+      });
+
+      let fd_keypoint = new FormData();
+      let model_id_keypoint = randomString(10)
+      model_description = randomString(20)
+      fd_keypoint.append("id", model_id_keypoint);
+      fd_keypoint.append("description", model_description);
+      fd_keypoint.append("model_definition", "model-definitions/local");
+      fd_keypoint.append("content", http.file(keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_keypoint.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task keypoint response status": (r) =>
+          r.status === 400,
+      });
+
+      let fd_unspecified = new FormData();
+      let model_id_unspecified = randomString(10)
+      model_description = randomString(20)
+      fd_unspecified.append("id", model_id_unspecified);
+      fd_unspecified.append("description", model_description);
+      fd_unspecified.append("model_definition", "model-definitions/local");
+      fd_unspecified.append("content", http.file(unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
+      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+      }), {
+        "POST /v1alpha/models:multipart task unspecified response status": (r) =>
+          r.status === 400,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_cls}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 404
+      });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_det}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 404
+      });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 404
+      });
+      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 404
+      });
+    });    
   }
 }
 

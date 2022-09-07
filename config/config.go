@@ -80,6 +80,14 @@ type PipelineBackendConfig struct {
 	}
 }
 
+type MaxBatchSizeConfig struct {
+	Unspecified    int `koanf:"unspecified"`
+	Classification int `koanf:"classification"`
+	Detection      int `koanf:"detection"`
+	Keypoint       int `koanf:"keypoint"`
+	Ocr            int `koanf:"ocr"`
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server          ServerConfig          `koanf:"server"`
@@ -89,6 +97,7 @@ type AppConfig struct {
 	Cache           CacheConfig           `koanf:"cache"`
 	UsageBackend    UsageBackendConfig    `koanf:"usagebackend"`
 	PipelineBackend PipelineBackendConfig `koanf:"pipelinebackend"`
+	MaxBatchSize    MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 }
 
 // Config - Global variable to export
