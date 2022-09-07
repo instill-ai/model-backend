@@ -44,7 +44,7 @@ export default function (data) {
     });
   }
 
-  // Create Model API
+  // // Create Model API
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 

@@ -80,15 +80,24 @@ type PipelineBackendConfig struct {
 	}
 }
 
+type MaxBatchSizeConfig struct {
+	Unspecified    int `koanf:"unspecified"`
+	Classification int `koanf:"classification"`
+	Detection      int `koanf:"detection"`
+	Keypoint       int `koanf:"keypoint"`
+	Ocr            int `koanf:"ocr"`
+}
+
 // AppConfig defines
 type AppConfig struct {
-	Server          ServerConfig          `koanf:"server"`
-	Database        DatabaseConfig        `koanf:"database"`
-	TritonServer    TritonServerConfig    `koanf:"tritonserver"`
-	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
-	Cache           CacheConfig           `koanf:"cache"`
-	UsageBackend    UsageBackendConfig    `koanf:"usagebackend"`
-	PipelineBackend PipelineBackendConfig `koanf:"pipelinebackend"`
+	Server                 ServerConfig          `koanf:"server"`
+	Database               DatabaseConfig        `koanf:"database"`
+	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
+	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
+	Cache                  CacheConfig           `koanf:"cache"`
+	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
+	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
+	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 }
 
 // Config - Global variable to export

@@ -120,6 +120,8 @@ func errorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.
 				switch v.Violations[0].Type {
 				case "UPDATE", "DELETE", "STATE", "RENAME":
 					httpStatus = http.StatusUnprocessableEntity
+				case "MAX BATCH SIZE LIMITATION":
+					httpStatus = http.StatusBadRequest
 				}
 			default:
 				httpStatus = runtime.HTTPStatusFromCode(s.Code())

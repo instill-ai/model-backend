@@ -1,6 +1,6 @@
 name: "huggingface-infer"
 platform: "onnxruntime_onnx"
-max_batch_size: 32
+max_batch_size: 16
 input [
   {
     name: "pixel_values"

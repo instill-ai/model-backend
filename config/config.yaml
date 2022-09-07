@@ -45,3 +45,9 @@ pipelinebackend:
   https:
     cert:   # /ssl/tls.crt
     key:    # /ssl/tls.key
+maxbatchsizelimitation:
+  unspecified: 2
+  classification: 16 
+  detection: 8
+  keypoint: 8
+  ocr: 2
