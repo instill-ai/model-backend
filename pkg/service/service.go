@@ -234,7 +234,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		for i := range batchedOutputDataBboxes {
 			var detOutput = modelPB.BatchOutput{
 				Output: &modelPB.BatchOutput_Detection{
-					Detection: &modelPB.DetectionOutput{
+					Detection: &modelPB.BoundingBoxOutput{
 						BoundingBoxes: []*modelPB.BoundingBoxObject{},
 					},
 				},
@@ -245,8 +245,10 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
 				if label != "0" {
 					bbObj := &modelPB.BoundingBoxObject{
-						Category: label,
-						Score:    box[4],
+						TaskField: &modelPB.BoundingBoxObject_Category{
+							Category: label,
+						},
+						Score: box[4],
 						// Convert x1y1x2y2 to xywh where xy is top-left corner
 						BoundingBox: &modelPB.BoundingBox{
 							Left:   box[0],
@@ -265,7 +267,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		keypointResponse := postprocessResponse.(triton.KeypointOutput)
 		var keypointOutputs []*modelPB.BatchOutput
 		for i := range keypointResponse.Keypoints { // batch size
-			var keypointGroups []*modelPB.KeypointObject
+			var keypointGroups []*modelPB.BoundingBoxObject
 			for j := range keypointResponse.Keypoints[i] { // n keypoints in one image
 				if keypointResponse.Scores[i][j] == -1 { // dummy object for batching to make sure every images have same output shape
 					continue
@@ -282,8 +284,12 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 						V: points[k][2],
 					})
 				}
-				keypointGroups = append(keypointGroups, &modelPB.KeypointObject{
-					KeypointGroup: keypoints,
+				keypointGroups = append(keypointGroups, &modelPB.BoundingBoxObject{
+					TaskField: &modelPB.BoundingBoxObject_KeypointGroup{
+						KeypointGroup: &modelPB.KeypointGroup{
+							Keypoints: keypoints,
+						},
+					},
 					BoundingBox: &modelPB.BoundingBox{
 						Left:   keypointResponse.Boxes[i][j][0],
 						Top:    keypointResponse.Boxes[i][j][1],
@@ -295,8 +301,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			}
 			keypointOutputs = append(keypointOutputs, &modelPB.BatchOutput{
 				Output: &modelPB.BatchOutput_Keypoint{
-					Keypoint: &modelPB.KeypointOutput{
-						KeypointGroups: keypointGroups,
+					Keypoint: &modelPB.BoundingBoxOutput{
+						BoundingBoxes: keypointGroups,
 					},
 				},
 			})
@@ -311,8 +317,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		for i := range batchedOutputDataBboxes {
 			var ocrOutput = modelPB.BatchOutput{
 				Output: &modelPB.BatchOutput_Ocr{
-					Ocr: &modelPB.OcrOutput{
-						BoundingBoxes: []*modelPB.BoundingBox{},
+					Ocr: &modelPB.BoundingBoxOutput{
+						BoundingBoxes: []*modelPB.BoundingBoxObject{},
 					},
 				},
 			}
@@ -321,13 +327,18 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				text := batchedOutputDataTexts[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
 				if text != "" && box[0] != -1 {
-					ocrOutput.GetOcr().BoundingBoxes = append(ocrOutput.GetOcr().BoundingBoxes, &modelPB.BoundingBox{
-						Left:   box[0],
-						Top:    box[1],
-						Width:  box[2],
-						Height: box[3],
+					ocrOutput.GetOcr().BoundingBoxes = append(ocrOutput.GetOcr().BoundingBoxes, &modelPB.BoundingBoxObject{
+						BoundingBox: &modelPB.BoundingBox{
+							Left:   box[0],
+							Top:    box[1],
+							Width:  box[2],
+							Height: box[3],
+						},
+						Score: 1.0,
+						TaskField: &modelPB.BoundingBoxObject_Text{
+							Text: text,
+						},
 					})
-					ocrOutput.GetOcr().Texts = append(ocrOutput.GetOcr().Texts, text)
 				}
 			}
 			ocrOutputs = append(ocrOutputs, &ocrOutput)
