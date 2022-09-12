@@ -97,12 +97,12 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
   //     });
 
   //     // Predict multiple images with url
@@ -119,16 +119,16 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images batch_outputs[1].classification.category`]: (r) =>
-  //         r.json().batch_outputs[1].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls response batch_outputs[1].classification.score`]: (r) =>
-  //         r.json().batch_outputs[1].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls multiple images task_outputs[1].classification.category`]: (r) =>
+  //         r.json().task_outputs[1].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url cls response task_outputs[1].classification.score`]: (r) =>
+  //         r.json().task_outputs[1].classification.score === 1,
   //     });
 
   //     // Predict with base64
@@ -142,12 +142,12 @@ export function InferModel() {
   //         r.status === 200,
   //         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
   //     });
 
   //     // Predict multiple images with base64
@@ -164,16 +164,16 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images batch_outputs[1].classification.category`]: (r) =>
-  //         r.json().batch_outputs[1].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls response batch_outputs[1].classification.score`]: (r) =>
-  //         r.json().batch_outputs[1].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls multiple images task_outputs[1].classification.category`]: (r) =>
+  //         r.json().task_outputs[1].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 cls response task_outputs[1].classification.score`]: (r) =>
+  //         r.json().task_outputs[1].classification.score === 1,
   //     });
 
   //     // Predict with multiple-part
@@ -186,12 +186,12 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -200,12 +200,12 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
   //     });
 
   //     // Predict multiple images with multiple-part
@@ -220,20 +220,20 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images batch_outputs[1].classification.category`]: (r) =>
-  //         r.json().batch_outputs[1].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls response batch_outputs[1].classification.score`]: (r) =>
-  //         r.json().batch_outputs[1].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images batch_outputs[2].classification.category`]: (r) =>
-  //         r.json().batch_outputs[2].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls response batch_outputs[2].classification.score`]: (r) =>
-  //         r.json().batch_outputs[2].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+  //         r.json().task_outputs[1].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls response task_outputs[1].classification.score`]: (r) =>
+  //         r.json().task_outputs[1].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+  //         r.json().task_outputs[2].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart cls response task_outputs[2].classification.score`]: (r) =>
+  //         r.json().task_outputs[2].classification.score === 1,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -242,20 +242,20 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task`]: (r) =>
   //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[0].classification.category`]: (r) =>
-  //         r.json().batch_outputs[0].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[0].classification.score`]: (r) =>
-  //         r.json().batch_outputs[0].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[1].classification.category`]: (r) =>
-  //         r.json().batch_outputs[1].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls response batch_outputs[1].classification.score`]: (r) =>
-  //         r.json().batch_outputs[1].classification.score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images batch_outputs[2].classification.category`]: (r) =>
-  //         r.json().batch_outputs[2].classification.category === "match",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls response batch_outputs[2].classification.score`]: (r) =>
-  //         r.json().batch_outputs[2].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+  //         r.json().task_outputs[0].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+  //         r.json().task_outputs[0].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+  //         r.json().task_outputs[1].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls response task_outputs[1].classification.score`]: (r) =>
+  //         r.json().task_outputs[1].classification.score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+  //         r.json().task_outputs[2].classification.category === "match",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart cls response task_outputs[2].classification.score`]: (r) =>
+  //         r.json().task_outputs[2].classification.score === 1,
   //     });
 
   //     // clean up
@@ -342,22 +342,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with url
@@ -374,36 +374,36 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict with base64
@@ -417,22 +417,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with base64
@@ -449,36 +449,36 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict with multiple-part
@@ -491,22 +491,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -515,22 +515,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with multiple-part
@@ -545,50 +545,50 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -597,50 +597,50 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].category === "test",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].score === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det batch_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].category === "test",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].score === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // clean up
@@ -727,18 +727,18 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // Predict multiple images with url
@@ -755,26 +755,26 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url multiple images undefined task_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // Predict with base64
@@ -788,18 +788,18 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // Predict multiple images with base64
@@ -816,26 +816,26 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined batch_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images undefined task_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // Predict with multiple-part
@@ -848,18 +848,18 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
@@ -867,20 +867,20 @@ export function InferModel() {
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined status`]: (r) =>
   //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // Predict multiple images with multiple-part
@@ -895,34 +895,34 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[2].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[2].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[2].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart undefined task_outputs[2].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
@@ -930,36 +930,36 @@ export function InferModel() {
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined status`]: (r) =>
   //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 3,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 3,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task`]: (r) =>
   //         r.json().task === "TASK_UNSPECIFIED",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs.length`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].data`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].data !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].data_type`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].data_type === "FP32",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].name`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].name === "output",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined batch_outputs[2].unspecified.raw_outputs[0].shape`]: (r) =>
-  //         r.json().batch_outputs[2].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs.length`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[0].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[1].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[1].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[1].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[1].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[2].unspecified.raw_outputs[0].data`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].data !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[2].unspecified.raw_outputs[0].data_type`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].data_type === "FP32",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[2].unspecified.raw_outputs[0].name`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].name === "output",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart undefined task_outputs[2].unspecified.raw_outputs[0].shape`]: (r) =>
+  //         r.json().task_outputs[2].unspecified.raw_outputs[0].shape !== undefined,
   //     });
 
   //     // clean up
@@ -1046,22 +1046,22 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,              
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,              
       });
 
       // Predict multiple images with url
@@ -1078,36 +1078,36 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,  
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,            
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,  
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,            
       });
 
       // Predict with base64
@@ -1121,22 +1121,22 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,                              
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,                              
       });
 
       // Predict multiple images with base64
@@ -1153,36 +1153,36 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,  
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,            
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,  
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,            
       });
 
       // Predict with multiple-part
@@ -1195,22 +1195,22 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,           
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,           
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1219,22 +1219,22 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-          [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,           
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+          [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1,           
       });
 
       // Predict multiple images with multiple-part
@@ -1248,36 +1248,36 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1, 
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,              
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1, 
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,              
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1286,36 +1286,36 @@ export function InferModel() {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task`]: (r) =>
           r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs.length`]: (r) =>
-          r.json().batch_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1, 
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
-          r.json().batch_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,   
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_groups[0].bounding_box.height === 1, 
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].keypoint_group`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].keypoint_group.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_groups[0].bounding_box.height === 1,   
       });
 
       // clean up
@@ -1402,22 +1402,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with url
@@ -1432,36 +1432,36 @@ export function InferModel() {
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images status`]: (r) =>
   //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict with base64
@@ -1475,22 +1475,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with base64
@@ -1507,34 +1507,34 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict with multiple-part
@@ -1547,22 +1547,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1571,22 +1571,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
   //     // Predict multiple images with multiple-part
@@ -1600,70 +1600,70 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
   //     check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images status`]: (r) =>
   //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 2,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 2,
   //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].category === "",
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].score === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images batch_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
   //     });
 
 
@@ -1753,22 +1753,22 @@ export function InferModel() {
   //         r.status === 200,
   //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task`]: (r) =>
   //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs.length`]: (r) =>
-  //         r.json().batch_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes.length`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].category === "dog",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].score !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/lv1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.top !== 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.left !== 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.width !== 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det batch_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-  //         r.json().batch_outputs[0].detection.bounding_boxes[0].bounding_box.height !== 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs.length`]: (r) =>
+  //         r.json().task_outputs.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes.length === 1,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].category === "dog",
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].score !== undefined,
+  //       [`POST /v1alpha/models/${model_id}/instances/lv1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top !== 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left !== 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width !== 0,
+  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
+  //         r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height !== 0,
   //     });
 
   //     // clean up
