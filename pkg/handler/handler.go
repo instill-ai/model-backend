@@ -2130,8 +2130,8 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	}
 
 	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{
-		Task:         task,
-		BatchOutputs: response,
+		Task:        task,
+		TaskOutputs: response,
 	})
 	return err
 }
@@ -2207,8 +2207,8 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{
-		Task:         task,
-		BatchOutputs: response,
+		Task:        task,
+		TaskOutputs: response,
 	})
 	return err
 }
@@ -2286,8 +2286,8 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	}
 
 	return &modelPB.TriggerModelInstanceResponse{
-		Task:         task,
-		BatchOutputs: response,
+		Task:        task,
+		TaskOutputs: response,
 	}, nil
 }
 
@@ -2367,8 +2367,8 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	}
 
 	return &modelPB.TestModelInstanceResponse{
-		Task:         task,
-		BatchOutputs: response,
+		Task:        task,
+		TaskOutputs: response,
 	}, nil
 }
 
@@ -2448,7 +2448,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 		}
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-		var response []*modelPB.BatchOutput
+		var response []*modelPB.TaskOutput
 		if mode == "test" {
 			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
 		} else {
@@ -2485,8 +2485,8 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
 		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{
-			Task:         task,
-			BatchOutputs: response,
+			Task:        task,
+			TaskOutputs: response,
 		})
 		if err != nil {
 			makeJSONResponse(w, 500, "Error Predict Model", err.Error())
