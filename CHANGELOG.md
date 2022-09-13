@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.3-alpha...v0.8.0-alpha) (2022-09-13)
+
+
+### Features
+
+* add confidence score for ocr output ([#167](https://github.com/instill-ai/model-backend/issues/167)) ([e915452](https://github.com/instill-ai/model-backend/commit/e91545247b6128c84117d17dffc4dede171d2e3f))
+
+
+### Miscellaneous Chores
+
+* release 0.8.0-alpha ([641acbe](https://github.com/instill-ai/model-backend/commit/641acbe3a6d2ce49faf374f71927d3cffc10eab5))
+
 ## [0.7.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.2-alpha...v0.7.3-alpha) (2022-09-07)
 
 
