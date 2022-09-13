@@ -234,8 +234,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		for i := range batchedOutputDataBboxes {
 			var detOutput = modelPB.TaskOutput{
 				Output: &modelPB.TaskOutput_Detection{
-					Detection: &modelPB.BoundingBoxOutput{
-						BoundingBoxes: []*modelPB.BoundingBoxObject{},
+					Detection: &modelPB.DetectionOutput{
+						DetectionObjects: []*modelPB.DetectionObject{},
 					},
 				},
 			}
@@ -244,11 +244,9 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 				label := batchedOutputDataLabels[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
 				if label != "0" {
-					bbObj := &modelPB.BoundingBoxObject{
-						TaskField: &modelPB.BoundingBoxObject_Category{
-							Category: label,
-						},
-						Score: box[4],
+					bbObj := &modelPB.DetectionObject{
+						Category: label,
+						Score:    box[4],
 						// Convert x1y1x2y2 to xywh where xy is top-left corner
 						BoundingBox: &modelPB.BoundingBox{
 							Left:   box[0],
@@ -257,7 +255,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 							Height: box[3] - box[1],
 						},
 					}
-					detOutput.GetDetection().BoundingBoxes = append(detOutput.GetDetection().BoundingBoxes, bbObj)
+					detOutput.GetDetection().DetectionObjects = append(detOutput.GetDetection().DetectionObjects, bbObj)
 				}
 			}
 			detOutputs = append(detOutputs, &detOutput)
@@ -267,7 +265,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		keypointResponse := postprocessResponse.(triton.KeypointOutput)
 		var keypointOutputs []*modelPB.TaskOutput
 		for i := range keypointResponse.Keypoints { // batch size
-			var keypointGroups []*modelPB.BoundingBoxObject
+			var keypointObjs []*modelPB.KeypointObject
 			for j := range keypointResponse.Keypoints[i] { // n keypoints in one image
 				if keypointResponse.Scores[i][j] == -1 { // dummy object for batching to make sure every images have same output shape
 					continue
@@ -284,12 +282,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 						V: points[k][2],
 					})
 				}
-				keypointGroups = append(keypointGroups, &modelPB.BoundingBoxObject{
-					TaskField: &modelPB.BoundingBoxObject_KeypointGroup{
-						KeypointGroup: &modelPB.KeypointGroup{
-							Keypoints: keypoints,
-						},
-					},
+				keypointObjs = append(keypointObjs, &modelPB.KeypointObject{
+					Keypoints: keypoints,
 					BoundingBox: &modelPB.BoundingBox{
 						Left:   keypointResponse.Boxes[i][j][0],
 						Top:    keypointResponse.Boxes[i][j][1],
@@ -301,8 +295,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			}
 			keypointOutputs = append(keypointOutputs, &modelPB.TaskOutput{
 				Output: &modelPB.TaskOutput_Keypoint{
-					Keypoint: &modelPB.BoundingBoxOutput{
-						BoundingBoxes: keypointGroups,
+					Keypoint: &modelPB.KeypointOutput{
+						KeypointObjects: keypointObjs,
 					},
 				},
 			})
@@ -313,31 +307,31 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		detResponses := postprocessResponse.(triton.OcrOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataTexts := detResponses.Texts
+		batchedOutputDataScores := detResponses.Scores
 		var ocrOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataBboxes {
 			var ocrOutput = modelPB.TaskOutput{
 				Output: &modelPB.TaskOutput_Ocr{
-					Ocr: &modelPB.BoundingBoxOutput{
-						BoundingBoxes: []*modelPB.BoundingBoxObject{},
+					Ocr: &modelPB.OcrOutput{
+						OcrObjects: []*modelPB.OcrObject{},
 					},
 				},
 			}
 			for j := range batchedOutputDataBboxes[i] {
 				box := batchedOutputDataBboxes[i][j]
 				text := batchedOutputDataTexts[i][j]
+				score := batchedOutputDataScores[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
 				if text != "" && box[0] != -1 {
-					ocrOutput.GetOcr().BoundingBoxes = append(ocrOutput.GetOcr().BoundingBoxes, &modelPB.BoundingBoxObject{
+					ocrOutput.GetOcr().OcrObjects = append(ocrOutput.GetOcr().OcrObjects, &modelPB.OcrObject{
 						BoundingBox: &modelPB.BoundingBox{
 							Left:   box[0],
 							Top:    box[1],
 							Width:  box[2],
 							Height: box[3],
 						},
-						Score: 1.0,
-						TaskField: &modelPB.BoundingBoxObject_Text{
-							Text: text,
-						},
+						Score: score,
+						Text:  text,
 					})
 				}
 			}
