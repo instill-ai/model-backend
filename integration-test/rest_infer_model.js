@@ -344,20 +344,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with url
@@ -376,34 +376,34 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict with base64
@@ -419,20 +419,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with base64
@@ -451,34 +451,34 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict with multiple-part
@@ -493,20 +493,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -517,20 +517,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with multiple-part
@@ -547,48 +547,48 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.height === 0,
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -599,48 +599,48 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].category === "test",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[2].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].category === "test",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images det task_outputs[2].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // clean up
@@ -1031,20 +1031,20 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,              
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,              
       });
 
       // Predict multiple images with url
@@ -1063,34 +1063,34 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,  
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height === 1,            
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,  
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images url keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height === 1,            
       });
 
       // Predict with base64
@@ -1106,20 +1106,20 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,                              
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,                              
       });
 
       // Predict multiple images with base64
@@ -1138,34 +1138,34 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,  
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height === 1,            
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,  
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger multiple images base64 keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height === 1,            
       });
 
       // Predict with multiple-part
@@ -1180,20 +1180,20 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,           
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,           
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1204,20 +1204,20 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-          [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1,           
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+          [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1,           
       });
 
       // Predict multiple images with multiple-part
@@ -1233,34 +1233,34 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1, 
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height === 1,              
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1, 
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height === 1,              
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1271,34 +1271,34 @@ export function InferModel() {
           r.json().task === "TASK_KEYPOINT",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.bounding_boxes[0].bounding_box.height === 1, 
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].keypoint_group.keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.top === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.left === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.width === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].keypoint.bounding_boxes[0].bounding_box.height === 1,   
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].keypoint.keypoint_objects[0].bounding_box.height === 1, 
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects.length`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].keypoints`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].keypoints.length > 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].score === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.top === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.left === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.width === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart multiple images keypoint task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].keypoint.keypoint_objects[0].bounding_box.height === 1,   
       });
 
       // clean up
@@ -1387,20 +1387,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with url
@@ -1419,32 +1419,32 @@ export function InferModel() {
           r.json().task_outputs.length === 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task`]: (r) =>
           r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict with base64
@@ -1460,20 +1460,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with base64
@@ -1492,32 +1492,32 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger base64 det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger url det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict with multiple-part
@@ -1532,20 +1532,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1556,20 +1556,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
       });
 
       // Predict multiple images with multiple-part
@@ -1585,32 +1585,32 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:test-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
       });
       check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
@@ -1621,32 +1621,32 @@ export function InferModel() {
           r.json().task_outputs.length === 2,
         [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task`]: (r) =>
           r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].category === "",
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].score === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.top === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.left === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.width === 0,
-        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.bounding_boxes[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].category === "",
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].score === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.top === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.left === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.width === 0,
+        [`POST /v1alpha/models/${model_id}/instances/latest:trigger-multipart det multiple images task_outputs[1].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.detection_objects[0].bounding_box.height === 0,
       });
 
 
@@ -1738,20 +1738,20 @@ export function InferModel() {
           r.json().task === "TASK_DETECTION",
         [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes.length`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].category === "dog",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].score !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/lv1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.top !== 0,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.left !== 0,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.width !== 0,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.bounding_boxes[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.bounding_boxes[0].bounding_box.height !== 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].category === "dog",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].score !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/lv1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.top !== 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.left !== 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.width !== 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu:test-multipart det task_outputs[0].detection.detection_objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.detection_objects[0].bounding_box.height !== 0,
       });
 
       // clean up
