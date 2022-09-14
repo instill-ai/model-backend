@@ -71,8 +71,8 @@ func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
 	}
 }
 
-//writeToFp takes in a file pointer and byte array and writes the byte array into the file
-//returns error if pointer is nil or error in writing to file
+// writeToFp takes in a file pointer and byte array and writes the byte array into the file
+// returns error if pointer is nil or error in writing to file
 func writeToFp(fp *os.File, data []byte) error {
 	w := 0
 	n := len(data)
@@ -896,12 +896,16 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		Repository: modelConfig.Repository,
 		HtmlUrl:    "https://github.com/" + modelConfig.Repository,
 	})
+	description := ""
+	if req.Model.Description != nil {
+		description = *req.Model.Description
+	}
 	githubModel := datamodel.Model{
 		ID:                 req.Model.Id,
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
-		Description:        githubInfo.Description,
+		Description:        description,
 		Configuration:      bModelConfig,
 		Instances:          []datamodel.ModelInstance{},
 	}
