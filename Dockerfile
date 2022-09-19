@@ -28,7 +28,7 @@ RUN apt update && \
                    python3 \
                    python3-pip && \
     rm -rf /var/lib/apt/lists
-RUN python3 -m pip install --no-cache-dir transformers pillow torch onnxruntime dvc[gs]
+RUN python3 -m pip install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]
 
 ARG SERVICE_NAME
 
