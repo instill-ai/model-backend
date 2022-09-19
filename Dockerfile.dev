@@ -17,6 +17,6 @@ RUN go install github.com/cosmtrek/air@latest
 
 RUN apt-get update
 RUN apt-get -y install python3 python3-setuptools python3-pip git git-lfs
-RUN pip3 install --no-cache-dir transformers pillow torch onnxruntime dvc[gs]
+RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
