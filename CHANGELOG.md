@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.8.0-alpha...v0.8.1-alpha) (2022-09-19)
+
+
+### Bug Fixes
+
+* update description for GitHub model from user input ([#173](https://github.com/instill-ai/model-backend/issues/173)) ([821dab3](https://github.com/instill-ai/model-backend/commit/821dab3768dad53f1c4e49ac786e758643825eb3))
+
 ## [0.8.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.7.3-alpha...v0.8.0-alpha) (2022-09-14)
 
 
