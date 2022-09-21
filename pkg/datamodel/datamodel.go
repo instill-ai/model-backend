@@ -1,6 +1,7 @@
 package datamodel
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -75,7 +76,7 @@ type Model struct {
 	ID string `json:"id,omitempty"`
 
 	// Model description
-	Description string `json:"description,omitempty"`
+	Description sql.NullString
 
 	// Model definition
 	ModelDefinitionUid uuid.UUID `gorm:"model_definition_uid,omitempty"`
