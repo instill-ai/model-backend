@@ -4,6 +4,7 @@ package service_test
 //go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -26,9 +27,12 @@ func TestCreateModel(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uuid.UUID{}},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -55,9 +59,12 @@ func TestGetModelById(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uuid.UUID{}},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uuid.UUID{}},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -80,9 +87,12 @@ func TestGetModelByUid(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uid},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -140,9 +150,12 @@ func TestRenameModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uid},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -163,9 +176,12 @@ func TestRenameModel(t *testing.T) {
 			EXPECT().
 			GetModelById(gomock.Eq(OWNER), "new ID", modelPB.View_VIEW_FULL).
 			Return(datamodel.Model{
-				BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-				ID:                 "new ID",
-				Description:        "this is a test model",
+				BaseDynamic: datamodel.BaseDynamic{UID: uid},
+				ID:          "new ID",
+				Description: sql.NullString{
+					String: "this is a test model",
+					Valid:  true,
+				},
 				ModelDefinitionUid: MODEL_DEFINITION,
 				Owner:              OWNER,
 			}, nil).
@@ -183,9 +199,12 @@ func TestPublishModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uid},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -221,9 +240,12 @@ func TestUnpublishModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "this is a test model",
+			BaseDynamic: datamodel.BaseDynamic{UID: uid},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
@@ -259,9 +281,12 @@ func TestUpdateModel(t *testing.T) {
 
 		uid := uuid.UUID{}
 		newModel := datamodel.Model{
-			BaseDynamic:        datamodel.BaseDynamic{UID: uid},
-			ID:                 ID,
-			Description:        "new description",
+			BaseDynamic: datamodel.BaseDynamic{UID: uid},
+			ID:          ID,
+			Description: sql.NullString{
+				String: "this is a test model",
+				Valid:  true,
+			},
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}

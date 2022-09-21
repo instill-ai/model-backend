@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -359,9 +360,12 @@ func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (ou
 				return "", &datamodel.Model{}, "", err
 			}
 			uploadedModel = datamodel.Model{
-				ID:            fileData.Model.Id,
-				Visibility:    datamodel.ModelVisibility(visibility),
-				Description:   description,
+				ID:         fileData.Model.Id,
+				Visibility: datamodel.ModelVisibility(visibility),
+				Description: sql.NullString{
+					String: description,
+					Valid:  true,
+				},
 				Configuration: datatypes.JSON{},
 				Instances: []datamodel.ModelInstance{{
 					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
@@ -623,8 +627,11 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			ModelDefinitionUid: localModelDefinition.UID,
 			Owner:              owner,
 			Visibility:         datamodel.ModelVisibility(visibility),
-			Description:        r.FormValue("description"),
-			Configuration:      bModelConfig,
+			Description: sql.NullString{
+				String: r.FormValue("description"),
+				Valid:  true,
+			},
+			Configuration: bModelConfig,
 		}
 
 		// Validate ModelDefinition JSON Schema
@@ -905,9 +912,12 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
-		Description:        description,
-		Configuration:      bModelConfig,
-		Instances:          []datamodel.ModelInstance{},
+		Description: sql.NullString{
+			String: description,
+			Valid:  true,
+		},
+		Configuration: bModelConfig,
+		Instances:     []datamodel.ModelInstance{},
 	}
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
@@ -1101,9 +1111,12 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
-		Description:        description,
-		Configuration:      bModelConfig,
-		Instances:          []datamodel.ModelInstance{},
+		Description: sql.NullString{
+			String: description,
+			Valid:  true,
+		},
+		Configuration: bModelConfig,
+		Instances:     []datamodel.ModelInstance{},
 	}
 	rdid, _ := uuid.NewV4()
 	tmpDir := fmt.Sprintf("./%s", rdid.String())
@@ -1321,9 +1334,12 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
-		Description:        description,
-		Configuration:      bModelConfig,
-		Instances:          []datamodel.ModelInstance{},
+		Description: sql.NullString{
+			String: description,
+			Valid:  true,
+		},
+		Configuration: bModelConfig,
+		Instances:     []datamodel.ModelInstance{},
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
@@ -1675,7 +1691,10 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 		for _, field := range req.UpdateMask.Paths {
 			switch field {
 			case "description":
-				updateModel.Description = *req.Model.Description
+				updateModel.Description = sql.NullString{
+					String: *req.Model.Description,
+					Valid:  true,
+				}
 			}
 		}
 	}

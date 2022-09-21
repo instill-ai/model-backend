@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -47,8 +48,11 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 				return time.Time{}
 			}(),
 		},
-		ID:          pbModel.GetId(),
-		Description: pbModel.GetDescription(),
+		ID: pbModel.GetId(),
+		Description: sql.NullString{
+			String: pbModel.GetDescription(),
+			Valid:  true,
+		},
 	}
 }
 
@@ -61,7 +65,7 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		Id:              dbModel.ID,
 		CreateTime:      timestamppb.New(dbModel.CreateTime),
 		UpdateTime:      timestamppb.New(dbModel.UpdateTime),
-		Description:     &dbModel.Description,
+		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
 		Configuration: func() *structpb.Struct {
