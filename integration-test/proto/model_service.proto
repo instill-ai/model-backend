@@ -74,7 +74,7 @@ service ModelService {
   // CreateModelBinaryFileUploadRequest message and returns a
   // CreateModelBinaryFileUploadResponse message.
   //
-  // Endpoint: "POST /v1alpha/models:multipart"
+  // Endpoint: "POST /v1alpha/models/multipart"
   rpc CreateModelBinaryFileUpload(stream CreateModelBinaryFileUploadRequest)
       returns (CreateModelBinaryFileUploadResponse) {
     option (google.api.method_signature) = "id,model_definition,content";
@@ -112,7 +112,7 @@ service ModelService {
   // LookUpModelResponse
   rpc LookUpModel(LookUpModelRequest) returns (LookUpModelResponse) {
     option (google.api.http) = {
-      get : "/v1alpha/{permalink=models/*}:lookUp"
+      get : "/v1alpha/{permalink=models/*}/lookUp"
     };
     option (google.api.method_signature) = "permalink";
   }
@@ -120,7 +120,7 @@ service ModelService {
   // RenameModel method rename a model
   rpc RenameModel(RenameModelRequest) returns (RenameModelResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*}:rename"
+      post : "/v1alpha/{name=models/*}/rename"
       body : "*"
     };
     option (google.api.method_signature) = "name,new_model_id";
@@ -130,7 +130,7 @@ service ModelService {
   // PublishModelResponse
   rpc PublishModel(PublishModelRequest) returns (PublishModelResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*}:publish"
+      post : "/v1alpha/{name=models/*}/publish"
       body : "*"
     };
     option (google.api.method_signature) = "name";
@@ -140,7 +140,7 @@ service ModelService {
   // a UnpublishModelResponse
   rpc UnpublishModel(UnpublishModelRequest) returns (UnpublishModelResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*}:unpublish"
+      post : "/v1alpha/{name=models/*}/unpublish"
       body : "*"
     };
     option (google.api.method_signature) = "name";
@@ -172,7 +172,7 @@ service ModelService {
   rpc LookUpModelInstance(LookUpModelInstanceRequest)
       returns (LookUpModelInstanceResponse) {
     option (google.api.http) = {
-      get : "/v1alpha/{permalink=models/*/instances/*}:lookUp"
+      get : "/v1alpha/{permalink=models/*/instances/*}/lookUp"
     };
     option (google.api.method_signature) = "permalink";
   }
@@ -182,7 +182,7 @@ service ModelService {
   rpc DeployModelInstance(DeployModelInstanceRequest)
       returns (DeployModelInstanceResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*/instances/*}:deploy"
+      post : "/v1alpha/{name=models/*/instances/*}/deploy"
       body : "*"
     };
     option (google.api.method_signature) = "name";
@@ -193,7 +193,7 @@ service ModelService {
   rpc UndeployModelInstance(UndeployModelInstanceRequest)
       returns (UndeployModelInstanceResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*/instances/*}:undeploy"
+      post : "/v1alpha/{name=models/*/instances/*}/undeploy"
       body : "*"
     };
     option (google.api.method_signature) = "name";
@@ -216,7 +216,7 @@ service ModelService {
   rpc TriggerModelInstance(TriggerModelInstanceRequest)
       returns (TriggerModelInstanceResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*/instances/*}:trigger"
+      post : "/v1alpha/{name=models/*/instances/*}/trigger"
       body : "*"
     };
     option (google.api.method_signature) = "name,inputs";
@@ -226,7 +226,7 @@ service ModelService {
   // TriggerModelInstanceBinaryFileUploadRequest message and returns a
   // TriggerModelInstanceBinaryFileUploadResponse message.
   //
-  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}:trigger-multipart"
+  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}/trigger-multipart"
   rpc TriggerModelInstanceBinaryFileUpload(
       stream TriggerModelInstanceBinaryFileUploadRequest)
       returns (TriggerModelInstanceBinaryFileUploadResponse) {
@@ -238,7 +238,7 @@ service ModelService {
   rpc TestModelInstance(TestModelInstanceRequest)
       returns (TestModelInstanceResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/{name=models/*/instances/*}:test"
+      post : "/v1alpha/{name=models/*/instances/*}/test"
       body : "*"
     };
     option (google.api.method_signature) = "name,inputs";
@@ -248,7 +248,7 @@ service ModelService {
   // TestModelInstanceBinaryFileUploadRequest message and returns a
   // TestModelInstanceBinaryFileUploadResponse message.
   //
-  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}:test-multipart"
+  // Endpoint: "POST/v1alpha/{name=models/*/instances/*}/test-multipart"
   rpc TestModelInstanceBinaryFileUpload(
       stream TestModelInstanceBinaryFileUploadRequest)
       returns (TestModelInstanceBinaryFileUploadResponse) {
