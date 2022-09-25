@@ -23,80 +23,80 @@ export function DeployUndeployModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task cls response status": (r) =>
+        "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
           r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
           r.json().model.id === model_id,
-        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:deploy`, {}, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.name`]: (r) =>
           r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.uid`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.uid`]: (r) =>
           r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.id`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.id`]: (r) =>
           r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.state`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.state`]: (r) =>
           r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.task`]: (r) =>
           r.json().instance.task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.model_definition`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.model_definition`]: (r) =>
           r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.create_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.create_time`]: (r) =>
           r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.update_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:deploy online task cls response instance.configuration`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest:undeploy`, {}, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.name`]: (r) =>
           r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.uid`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.uid`]: (r) =>
           r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.id`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.id`]: (r) =>
           r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.state`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.state`]: (r) =>
           r.json().instance.state === "STATE_OFFLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.task`]: (r) =>
           r.json().instance.task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.model_definition`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.model_definition`]: (r) =>
           r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.create_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.create_time`]: (r) =>
           r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.update_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest:undeploy online task cls response instance.configuration`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
 

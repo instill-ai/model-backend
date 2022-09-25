@@ -30,30 +30,30 @@ export function CreateModelFromLocal() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task cls response status": (r) =>
+        "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
           r.json().model.name === `models/${model_id_cls}`,
-        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
           r.json().model.id === model_id_cls,
-        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/local",
-        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
@@ -64,30 +64,30 @@ export function CreateModelFromLocal() {
       fd_det.append("description", model_description);
       fd_det.append("model_definition", "model-definitions/local");
       fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task det response status": (r) =>
+        "POST /v1alpha/models/multipart task det response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task det response model.name": (r) =>
+        "POST /v1alpha/models/multipart task det response model.name": (r) =>
           r.json().model.name === `models/${model_id_det}`,
-        "POST /v1alpha/models:multipart task det response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task det response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task det response model.id": (r) =>
+        "POST /v1alpha/models/multipart task det response model.id": (r) =>
           r.json().model.id === model_id_det,
-        "POST /v1alpha/models:multipart task det response model.description": (r) =>
+        "POST /v1alpha/models/multipart task det response model.description": (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models:multipart task det response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task det response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/local",
-        "POST /v1alpha/models:multipart task det response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task det response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task det response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task det response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models:multipart task det response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task det response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task det response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task det response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task det response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task det response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
@@ -98,30 +98,30 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("description", model_description);
       fd_keypoint.append("model_definition", "model-definitions/local");
       fd_keypoint.append("content", http.file(keypoint_model, "dummy-keypoint-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_keypoint.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task keypoint response status": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task keypoint response model.name": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.name": (r) =>
           r.json().model.name === `models/${model_id_keypoint}`,
-        "POST /v1alpha/models:multipart task keypoint response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task keypoint response model.id": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.id": (r) =>
           r.json().model.id === model_id_keypoint,
-        "POST /v1alpha/models:multipart task keypoint response model.description": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.description": (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models:multipart task keypoint response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/local",
-        "POST /v1alpha/models:multipart task keypoint response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task keypoint response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models:multipart task keypoint response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task keypoint response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task keypoint response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
@@ -132,37 +132,37 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("description", model_description);
       fd_unspecified.append("model_definition", "model-definitions/local");
       fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task unspecified response status": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task unspecified response model.name": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.name": (r) =>
           r.json().model.name === `models/${model_id_unspecified}`,
-        "POST /v1alpha/models:multipart task unspecified response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task unspecified response model.id": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.id": (r) =>
           r.json().model.id === model_id_unspecified,
-        "POST /v1alpha/models:multipart task unspecified response model.description": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.description": (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models:multipart task unspecified response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/local",
-        "POST /v1alpha/models:multipart task unspecified response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task unspecified response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models:multipart task unspecified response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task unspecified response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task unspecified response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart already existed response status 409": (r) =>
+        "POST /v1alpha/models/multipart already existed response status 409": (r) =>
           r.status === 409,
       });
 
@@ -201,10 +201,10 @@ export function CreateModelFromLocal() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(cls_model_bz17, "dummy-cls-model-bz17.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_cls.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task cls response status": (r) =>
+        "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 400,
       });
 
@@ -215,10 +215,10 @@ export function CreateModelFromLocal() {
       fd_det.append("description", model_description);
       fd_det.append("model_definition", "model-definitions/local");
       fd_det.append("content", http.file(det_model_bz9, "dummy-det-model-bz9.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_det.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task det response status": (r) =>
+        "POST /v1alpha/models/multipart task det response status": (r) =>
           r.status === 400,
       });
 
@@ -229,10 +229,10 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("description", model_description);
       fd_keypoint.append("model_definition", "model-definitions/local");
       fd_keypoint.append("content", http.file(keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_keypoint.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task keypoint response status": (r) =>
+        "POST /v1alpha/models/multipart task keypoint response status": (r) =>
           r.status === 400,
       });
 
@@ -243,10 +243,10 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("description", model_description);
       fd_unspecified.append("model_definition", "model-definitions/local");
       fd_unspecified.append("content", http.file(unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models:multipart`, fd_unspecified.body(), {
+      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
-        "POST /v1alpha/models:multipart task unspecified response status": (r) =>
+        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
           r.status === 400,
       });
 
@@ -293,54 +293,54 @@ export function CreateModelFromGitHub() {
       }), {
         headers: genHeader("application/json"),
       }), {
-        "POST /v1alpha/models:multipart task cls response status": (r) =>
+        "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models:multipart task cls response model.name": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
           r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models:multipart task cls response model.uid": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.id": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
           r.json().model.id === model_id,
-        "POST /v1alpha/models:multipart task cls response model.description": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
           r.json().model.description !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.model_definition": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
           r.json().model.model_definition === "model-definitions/github",
-        "POST /v1alpha/models:multipart task cls response model.configuration": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.configuration": (r) =>
           r.json().model.configuration !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.configuration.repository": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.configuration.repository": (r) =>
           r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
-        "POST /v1alpha/models:multipart task cls response model.visibility": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
-        "POST /v1alpha/models:multipart task cls response model.owner": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models:multipart task cls response model.create_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models:multipart task cls response model.update_time": (r) =>
+        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:deploy`, {}, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.name`]: (r) =>
           r.json().instance.name === `models/${model_id}/instances/v1.0`,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.uid`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.uid`]: (r) =>
           r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.id`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.id`]: (r) =>
           r.json().instance.id === "v1.0",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.state`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.state`]: (r) =>
           r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.task`]: (r) =>
           r.json().instance.task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.model_definition`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.model_definition`]: (r) =>
           r.json().instance.model_definition === "model-definitions/github",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.create_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.create_time`]: (r) =>
           r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.update_time`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.update_time`]: (r) =>
           r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:deploy online task cls response instance.configuration`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response instance.configuration`]: (r) =>
           r.json().instance.configuration !== undefined,
       });
 
@@ -350,18 +350,18 @@ export function CreateModelFromGitHub() {
           { "image_url": "https://artifacts.instill.tech/dog.jpg" }
         ]
       });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:trigger`, payload, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task`]: (r) =>
           r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[0].classification.category`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[0].classification.category`]: (r) =>
           r.json().task_outputs[0].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[0].classification.score`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[0].classification.score`]: (r) =>
           r.json().task_outputs[0].classification.score === 1,
       });
 
@@ -372,22 +372,22 @@ export function CreateModelFromGitHub() {
           { "image_url": "https://artifacts.instill.tech/dog.jpg" }
         ]
       });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0:trigger`, payload, {
+      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task`]: (r) =>
           r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[0].classification.category`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[0].classification.category`]: (r) =>
           r.json().task_outputs[0].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[0].classification.score`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[0].classification.score`]: (r) =>
           r.json().task_outputs[0].classification.score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[1].classification.category`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[1].classification.category`]: (r) =>
           r.json().task_outputs[1].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0:trigger url cls task_outputs[1].classification.score`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls task_outputs[1].classification.score`]: (r) =>
           r.json().task_outputs[1].classification.score === 1,
       });
 

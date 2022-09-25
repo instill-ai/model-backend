@@ -44,7 +44,10 @@ export default function (data) {
     });
   }
 
-  // // Create Model API
+  // Infer Model API
+  inferModel.InferModel()
+
+  // Create Model API
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 
@@ -55,9 +58,6 @@ export default function (data) {
 
   // Deploy/Undeploy Model API
   deployModel.DeployUndeployModel()
-
-  // Infer Model API
-  inferModel.InferModel()
 
   // Publish/Unpublish Model API
   publishModel.PublishUnpublishModel()
