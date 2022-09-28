@@ -6,9 +6,9 @@ package vdp.model.v1alpha;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 
-import "healthcheck.proto";
-import "model_definition.proto";
-import "model.proto";
+import "./healthcheck.proto";
+import "./model_definition.proto";
+import "./model.proto";
 
 // Model service responds to incoming model requests
 service ModelService {
@@ -74,7 +74,7 @@ service ModelService {
   // CreateModelBinaryFileUploadRequest message and returns a
   // CreateModelBinaryFileUploadResponse message.
   //
-  // Endpoint: "POST /v1alpha/models/multipart"
+  // Endpoint: "POST /v1alpha/models:multipart"
   rpc CreateModelBinaryFileUpload(stream CreateModelBinaryFileUploadRequest)
       returns (CreateModelBinaryFileUploadResponse) {
     option (google.api.method_signature) = "id,model_definition,content";

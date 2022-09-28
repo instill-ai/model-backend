@@ -36,6 +36,10 @@ top:							## Display all running service processes
 build:							## Build dev docker image
 	docker build --build-arg SERVICE_NAME=${SERVICE_NAME} -f Dockerfile.dev  -t instill/${SERVICE_NAME}:dev .
 
+.PHONY: build1
+build1:							## Build dev docker image
+	docker build --build-arg SERVICE_NAME=${SERVICE_NAME} -f Dockerfile  -t instill/${SERVICE_NAME}:latest .	
+
 .PHONY: go-gen
 go-gen:       					## Generate codes
 	go generate ./...
@@ -55,6 +59,7 @@ integration-test:				## Run integration test
 		go install go.k6.io/xk6/cmd/xk6@latest;\
 		xk6 build --with github.com/szkiba/xk6-jose@latest --output ${K6BIN};\
 	fi
+	@TEST_FOLDER_ABS_PATH=${PWD} ${K6BIN} run -e HOSTNAME=$(HOSTNAME) integration-test/grpc.js --no-usage-report
 	@TEST_FOLDER_ABS_PATH=${PWD} ${K6BIN} run -e HOSTNAME=$(HOSTNAME) integration-test/rest.js --no-usage-report
 	@if [ ${K6BIN} != "k6" ]; then rm -rf $(dirname ${K6BIN}); fi
 

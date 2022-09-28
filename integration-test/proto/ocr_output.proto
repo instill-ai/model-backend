@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package vdp.model.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+
+import "./common.proto";
+
+// OcrObject represents a predicted ocr object
+message OcrObject {
+  // OCR text
+  string text = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // OCR text score
+  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // OCR bounding box
+  BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// OcrOutput represents the output of ocr task
+message OcrOutput {
+  // A list of OCR objects
+  repeated OcrObject objects = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}

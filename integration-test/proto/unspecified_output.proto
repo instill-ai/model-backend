@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package vdp.model.v1alpha;
+
+// Google api
+import "google/protobuf/struct.proto";
+
+import "google/api/field_behavior.proto";
+
+// UnspecifiedOutput represents a list of unspecified task output
+message UnspecifiedOutput {
+  // A list of unspecified task outputs
+  repeated google.protobuf.Struct raw_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}

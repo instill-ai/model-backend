@@ -65,7 +65,7 @@ export default () => {
     // Publish Model API
     publishModel.PublishUnPublishModel()
 
-    // Infer Model API
+    // // Infer Model API
     inferModel.InferModel()
 
     // Query Model Instance API

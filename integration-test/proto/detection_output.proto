@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package vdp.model.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+
+import "./common.proto";
+
+// DetectionObject represents a predicted object
+message DetectionObject {
+  // Detection object category
+  string category = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Detection object score
+  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Detection bounding box
+  BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// DetectionOutput represents the output of detection task
+message DetectionOutput {
+  // A list of detection objects
+  repeated DetectionObject objects = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
