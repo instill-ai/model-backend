@@ -36,10 +36,6 @@ top:							## Display all running service processes
 build:							## Build dev docker image
 	docker build --build-arg SERVICE_NAME=${SERVICE_NAME} -f Dockerfile.dev  -t instill/${SERVICE_NAME}:dev .
 
-.PHONY: build1
-build1:							## Build dev docker image
-	docker build --build-arg SERVICE_NAME=${SERVICE_NAME} -f Dockerfile  -t instill/${SERVICE_NAME}:latest .	
-
 .PHONY: go-gen
 go-gen:       					## Generate codes
 	go generate ./...
