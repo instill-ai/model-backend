@@ -51,3 +51,4 @@ maxbatchsizelimitation:
   detection: 8
   keypoint: 8
   ocr: 2
+itmode: false

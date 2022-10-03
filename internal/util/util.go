@@ -59,7 +59,6 @@ func GetModelMetaFromReadme(readmeFilePath string) (*ModelMeta, error) {
 	}
 	var modelMeta ModelMeta
 	err = mapstructure.Decode(meta, &modelMeta)
-
 	return &modelMeta, err
 }
 
@@ -561,6 +560,10 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/*.json %s/pre/1", confDir, dest))
 	if err := cmd.Run(); err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(fmt.Sprintf("%s/README.md", confDir)); err != nil {
+		return fmt.Errorf("there is no README file")
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/README.md %s/", confDir, dest))

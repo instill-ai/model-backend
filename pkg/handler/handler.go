@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -927,21 +928,30 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		rdid, _ := uuid.NewV4()
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-		err = util.GitHubCloneWOLargeFile(modelSrcDir, instanceConfig)
-		if err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"GitHub",
-				"Clone repository",
-				"",
-				err.Error(),
-			)
-			if err != nil {
-				logger.Error(err.Error())
+
+		if config.Config.IntegrationTestMode { // use local model for testing to remove internet connection issue while testing
+			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+			if err := cmd.Run(); err != nil {
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+				return &modelPB.CreateModelResponse{}, err
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-			return &modelPB.CreateModelResponse{}, st.Err()
+		} else {
+			err = util.GitHubCloneWOLargeFile(modelSrcDir, instanceConfig)
+			if err != nil {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"GitHub",
+					"Clone repository",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+				return &modelPB.CreateModelResponse{}, st.Err()
+			}
 		}
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
 		instance := datamodel.ModelInstance{
@@ -1343,20 +1353,28 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			"[handler] create a model error",
-			"GitHub",
-			"Clone model repository",
-			"",
-			err.Error(),
-		)
-		if err != nil {
-			logger.Error(err.Error())
+	if config.Config.IntegrationTestMode { // use local model for testing to remove internet connection issue while testing
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
+		if err := cmd.Run(); err != nil {
+			_ = os.RemoveAll(configTmpDir)
+			return &modelPB.CreateModelResponse{}, err
 		}
-		_ = os.RemoveAll(configTmpDir)
-		return &modelPB.CreateModelResponse{}, st.Err()
+	} else {
+		if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"Huggingface",
+				"Clone model repository",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			_ = os.RemoveAll(configTmpDir)
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
 	}
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
@@ -1364,7 +1382,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			"[handler] create a model error",
-			"GitHub",
+			"Huggingface",
 			"Generate HuggingFace model",
 			"",
 			err.Error(),
@@ -1387,7 +1405,6 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 		Configuration: bInstanceConfig,
 	}
-
 	readmeFilePath, ensembleFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
@@ -1422,8 +1439,8 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-
 		if modelMeta.Task != "" {
+
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
@@ -1458,7 +1475,6 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	} else {
 		instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 	}
-
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -1929,13 +1945,14 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	// downloading model weight when making inference
 	switch modelDef.ID {
 	case "github":
-		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.IntegrationTestMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var instanceConfig datamodel.GitHubModelInstanceConfiguration
 			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
 			}
 			rdid, _ := uuid.NewV4()
 			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
+
 			if err := util.GitHubCloneWLargeFile(modelSrcDir, instanceConfig); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
@@ -1961,10 +1978,20 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 
 			rdid, _ := uuid.NewV4()
 			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
-			if err = util.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
+			if config.Config.IntegrationTestMode { // use local model to remove internet connection issue while integration testing
+				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
+					RepoId: "assets/tiny-vit-random",
+				}, dbModel.ID); err != nil {
+					_ = os.RemoveAll(modelSrcDir)
+					return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
+				}
+			} else {
+				if err = util.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
+					_ = os.RemoveAll(modelSrcDir)
+					return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
+				}
 			}
+
 			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())

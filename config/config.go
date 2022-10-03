@@ -98,6 +98,7 @@ type AppConfig struct {
 	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
+	IntegrationTestMode    bool                  `koanf:"itmode"`
 }
 
 // Config - Global variable to export
