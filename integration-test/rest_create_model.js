@@ -191,7 +191,7 @@ export function CreateModelFromLocal() {
       fd_cls.append("id", model_id_cls);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
-      fd_cls.append("content", http.file(constant.constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
+      fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
       check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
@@ -205,7 +205,7 @@ export function CreateModelFromLocal() {
       fd_det.append("id", model_id_det);
       fd_det.append("description", model_description);
       fd_det.append("model_definition", "model-definitions/local");
-      fd_det.append("content", http.file(constant.constant.det_model_bz9, "dummy-det-model-bz9.zip"));
+      fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
       check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
@@ -219,7 +219,7 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("id", model_id_keypoint);
       fd_keypoint.append("description", model_description);
       fd_keypoint.append("model_definition", "model-definitions/local");
-      fd_keypoint.append("content", http.file(constant.constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
+      fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
       check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       }), {
@@ -233,7 +233,7 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("id", model_id_unspecified);
       fd_unspecified.append("description", model_description);
       fd_unspecified.append("model_definition", "model-definitions/local");
-      fd_unspecified.append("content", http.file(constant.constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
+      fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
       check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
