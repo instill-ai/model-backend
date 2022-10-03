@@ -5,7 +5,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
+import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/local"
 
@@ -13,7 +13,7 @@ export function ListModelDefinition() {
   // Model Backend API: get model definition list
   {
     group("Model Backend API: get model definition list", function () {
-      check(http.get(`${apiHost}/v1alpha/model-definitions`, {
+      check(http.get(`${constant.apiHost}/v1alpha/model-definitions`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/model-definitions} response status`]: (r) =>
@@ -43,7 +43,7 @@ export function ListModelDefinition() {
       });
     });
 
-    check(http.get(`${apiHost}/v1alpha/model-definitions?view=VIEW_FULL`, {
+    check(http.get(`${constant.apiHost}/v1alpha/model-definitions?view=VIEW_FULL`, {
       headers: genHeader(`application/json`),
     }), {
       [`GET /v1alpha/model-definitions}?view=VIEW_FULL response status`]: (r) =>
@@ -78,7 +78,7 @@ export function GetModelDefinition() {
   // Model Backend API: get model definition
   {
     group("Model Backend API: get model definition", function () {
-      check(http.get(`${apiHost}/v1alpha/${model_def_name}`, {
+      check(http.get(`${constant.apiHost}/v1alpha/${model_def_name}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/model-definitions/${model_def_name} response status`]: (r) =>

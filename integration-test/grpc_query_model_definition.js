@@ -1,17 +1,18 @@
 import grpc from 'k6/net/grpc';
 import { check, group } from 'k6';
 
+import * as constant from "./const.js"
+
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}:8083` : "model-backend:8083";
 const model_def_name = "model-definitions/github"
 
 export function GetModelDefinition() {
     group("Model API: GetModelDefinition", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/GetModelDefinition', { name: model_def_name }, {}), {
@@ -33,7 +34,7 @@ export function GetModelDefinition() {
 
 export function ListModelDefinition() {
     group("Model API: ListModelDefinition", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/ListModelDefinition', {}, {}), {

@@ -7,9 +7,8 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
+import * as constant from "./const.js"
 
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 export function DeployUndeployModel() {
@@ -22,8 +21,8 @@ export function DeployUndeployModel() {
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -50,7 +49,7 @@ export function DeployUndeployModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
@@ -75,7 +74,7 @@ export function DeployUndeployModel() {
           r.json().instance.configuration !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response status`]: (r) =>
@@ -101,7 +100,7 @@ export function DeployUndeployModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

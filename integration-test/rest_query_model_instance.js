@@ -7,9 +7,8 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
+import * as constant from "./const.js"
 
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 export function GetModelInstance() {
@@ -22,8 +21,8 @@ export function GetModelInstance() {
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check( http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      check( http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -50,7 +49,7 @@ export function GetModelInstance() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response status`]: (r) =>
@@ -75,7 +74,7 @@ export function GetModelInstance() {
           r.json().instance.configuration === null,
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances/latest?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances/latest task cls response status`]: (r) =>
@@ -101,7 +100,7 @@ export function GetModelInstance() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -121,8 +120,8 @@ export function ListModelInstance() {
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -148,7 +147,7 @@ export function ListModelInstance() {
         "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
           r.json().model.update_time !== undefined,
       });
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
@@ -179,7 +178,7 @@ export function ListModelInstance() {
           r.json().instances[0].configuration === null,
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
@@ -211,7 +210,7 @@ export function ListModelInstance() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -225,7 +224,7 @@ export function ListModelInstance() {
   {
     group("Model Backend API: Get model instance list github model", function () {
       let model_id = randomString(10)
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -260,7 +259,7 @@ export function ListModelInstance() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
@@ -290,7 +289,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
         r.json().instances[0].configuration === null,
       });
-      check(http.get(`${apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response status`]: (r) =>
@@ -326,7 +325,7 @@ export function ListModelInstance() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -347,8 +346,8 @@ export function LookupModelInstance() {
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      let resModel = http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      let resModel = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(resModel, {
@@ -376,7 +375,7 @@ export function LookupModelInstance() {
           r.json().model.update_time !== undefined,
       });
 
-      let resModelInstance = http.get(`${apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+      let resModelInstance = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
       })
       check(resModelInstance, {
@@ -384,7 +383,7 @@ export function LookupModelInstance() {
           r.status === 200
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp task cls response status`]: (r) =>
@@ -409,7 +408,7 @@ export function LookupModelInstance() {
           r.json().instance.configuration === null,
       });
 
-      check(http.get(`${apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${resModel.json().model.uid}/instances/${resModelInstance.json().instance.uid}/lookUp task cls response status`]: (r) =>
@@ -436,7 +435,7 @@ export function LookupModelInstance() {
 
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
