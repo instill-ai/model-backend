@@ -25,6 +25,7 @@ type ServerConfig struct {
 	Edition      string   `koanf:"edition"`
 	DisableUsage bool     `koanf:"disableusage"`
 	Debug        bool     `koanf:"debug"`
+	ItMode       bool     `koanf:"itmode"`
 }
 
 // config related to database
@@ -98,7 +99,6 @@ type AppConfig struct {
 	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
-	IntegrationTestMode    bool                  `koanf:"itmode"`
 }
 
 // Config - Global variable to export

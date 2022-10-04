@@ -929,7 +929,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		rdid, _ := uuid.NewV4()
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 
-		if config.Config.IntegrationTestMode { // use local model for testing to remove internet connection issue while testing
+		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
 			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 			if err := cmd.Run(); err != nil {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
@@ -1353,7 +1353,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if config.Config.IntegrationTestMode { // use local model for testing to remove internet connection issue while testing
+	if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
 		if err := cmd.Run(); err != nil {
 			_ = os.RemoveAll(configTmpDir)
@@ -1945,7 +1945,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	// downloading model weight when making inference
 	switch modelDef.ID {
 	case "github":
-		if !config.Config.IntegrationTestMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var instanceConfig datamodel.GitHubModelInstanceConfiguration
 			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
@@ -1978,7 +1978,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 
 			rdid, _ := uuid.NewV4()
 			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
-			if config.Config.IntegrationTestMode { // use local model to remove internet connection issue while integration testing
+			if config.Config.Server.ItMode { // use local model to remove internet connection issue while integration testing
 				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
 					RepoId: "assets/tiny-vit-random",
 				}, dbModel.ID); err != nil {

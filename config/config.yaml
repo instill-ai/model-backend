@@ -10,6 +10,7 @@ server:
   edition: local-ce:dev
   disableusage: false
   debug: true
+  itmode: false
 database:
   username: postgres
   password: password
@@ -51,4 +52,3 @@ maxbatchsizelimitation:
   detection: 8
   keypoint: 8
   ocr: 2
-itmode: false
