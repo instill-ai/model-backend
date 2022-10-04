@@ -8,20 +8,20 @@ import {
     genHeader,
 } from "./helpers.js";
 
+import * as constant from "./const.js"
+
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}:8083` : "model-backend:8083";
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 
 export function InferModel() {
     // TriggerModelInstance check
     group("Model API: TriggerModelInstance", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
 
@@ -31,8 +31,8 @@ export function InferModel() {
         fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
-        fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -101,7 +101,7 @@ export function InferModel() {
 
     // TestModelInstance check
     group("Model API: TestModelInstance", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
 
@@ -111,8 +111,8 @@ export function InferModel() {
         fd_cls.append("id", model_id);
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
-        fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>

@@ -10,6 +10,7 @@ server:
   edition: local-ce:dev
   disableusage: false
   debug: true
+  itmode: false
 database:
   username: postgres
   password: password

@@ -10,6 +10,7 @@ import * as publishModel from "./grpc_publish_model.js"
 import * as queryModelInstance from "./grpc_query_model_instance.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
 
+import * as constant from "./const.js"
 
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
@@ -24,7 +25,7 @@ export default () => {
     // Liveness check
     {
         group("Model API: Liveness", () => {
-            client.connect('model-backend:8083', {
+            client.connect(constant.gRPCHost, {
                 plaintext: true
             });
             const response = client.invoke('vdp.model.v1alpha.ModelService/Liveness', {});
@@ -37,7 +38,7 @@ export default () => {
 
     // Readiness check
     group("Model API: Readiness", () => {
-        client.connect('model-backend:8083', {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
         const response = client.invoke('vdp.model.v1alpha.ModelService/Readiness', {});
@@ -79,7 +80,7 @@ export default () => {
 };
 
 export function teardown() {
-    client.connect('model-backend:8083', {
+    client.connect(constant.gRPCHost, {
         plaintext: true
     });
     group("Model API: Delete all models created by this test", () => {

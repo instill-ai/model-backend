@@ -7,16 +7,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
-
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
-const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model.zip`, "b");
-const keypoint_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model.zip`, "b");
-const unspecified_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model.zip`, "b");
-const cls_model_bz17 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model-bz17.zip`, "b");
-const det_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-det-model-bz9.zip`, "b");
-const keypoint_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-keypoint-model-bz9.zip`, "b");
-const unspecified_model_bz3 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-unspecified-model-bz3.zip`, "b");
+import * as constant from "./const.js"
 
 
 export function CreateModelFromLocal() {
@@ -29,8 +20,8 @@ export function CreateModelFromLocal() {
       fd_cls.append("id", model_id_cls);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -63,8 +54,8 @@ export function CreateModelFromLocal() {
       fd_det.append("id", model_id_det);
       fd_det.append("description", model_description);
       fd_det.append("model_definition", "model-definitions/local");
-      fd_det.append("content", http.file(det_model, "dummy-det-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_det.body(), {
+      fd_det.append("content", http.file(constant.det_model, "dummy-det-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task det response status": (r) =>
@@ -97,8 +88,8 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("id", model_id_keypoint);
       fd_keypoint.append("description", model_description);
       fd_keypoint.append("model_definition", "model-definitions/local");
-      fd_keypoint.append("content", http.file(keypoint_model, "dummy-keypoint-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
+      fd_keypoint.append("content", http.file(constant.keypoint_model, "dummy-keypoint-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task keypoint response status": (r) =>
@@ -131,8 +122,8 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("id", model_id_unspecified);
       fd_unspecified.append("description", model_description);
       fd_unspecified.append("model_definition", "model-definitions/local");
-      fd_unspecified.append("content", http.file(unspecified_model, "dummy-unspecified-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
+      fd_unspecified.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
@@ -159,7 +150,7 @@ export function CreateModelFromLocal() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
         "POST /v1alpha/models/multipart already existed response status 409": (r) =>
@@ -167,25 +158,25 @@ export function CreateModelFromLocal() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_cls}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_cls}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_det}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_det}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -200,8 +191,8 @@ export function CreateModelFromLocal() {
       fd_cls.append("id", model_id_cls);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
-      fd_cls.append("content", http.file(cls_model_bz17, "dummy-cls-model-bz17.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -214,8 +205,8 @@ export function CreateModelFromLocal() {
       fd_det.append("id", model_id_det);
       fd_det.append("description", model_description);
       fd_det.append("model_definition", "model-definitions/local");
-      fd_det.append("content", http.file(det_model_bz9, "dummy-det-model-bz9.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_det.body(), {
+      fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task det response status": (r) =>
@@ -228,8 +219,8 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("id", model_id_keypoint);
       fd_keypoint.append("description", model_description);
       fd_keypoint.append("model_definition", "model-definitions/local");
-      fd_keypoint.append("content", http.file(keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
+      fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task keypoint response status": (r) =>
@@ -242,8 +233,8 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("id", model_id_unspecified);
       fd_unspecified.append("description", model_description);
       fd_unspecified.append("model_definition", "model-definitions/local");
-      fd_unspecified.append("content", http.file(unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
+      fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
@@ -251,25 +242,25 @@ export function CreateModelFromLocal() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_cls}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_cls}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_det}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_det}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_keypoint}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_unspecified}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -284,7 +275,7 @@ export function CreateModelFromGitHub() {
   {
     group("Model Backend API: Upload a model by GitHub", function () {
       let model_id = randomString(10)
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -319,7 +310,7 @@ export function CreateModelFromGitHub() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/deploy`, {}, {
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0/deploy online task cls response status`]: (r) =>
@@ -350,7 +341,7 @@ export function CreateModelFromGitHub() {
           { "image_url": "https://artifacts.instill.tech/dog.jpg" }
         ]
       });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls status`]: (r) =>
@@ -372,7 +363,7 @@ export function CreateModelFromGitHub() {
           { "image_url": "https://artifacts.instill.tech/dog.jpg" }
         ]
       });
-      check(http.post(`${apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/v1.0/trigger url cls status`]: (r) =>
@@ -391,7 +382,7 @@ export function CreateModelFromGitHub() {
           r.json().task_outputs[1].classification.score === 1,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": randomString(10),
         "configuration": {
@@ -404,7 +395,7 @@ export function CreateModelFromGitHub() {
           r.status === 400,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -417,7 +408,7 @@ export function CreateModelFromGitHub() {
           r.status === 400,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "model_definition": "model-definitions/github",
         "configuration": {
           "repository": "instill-ai/model-dummy-cls"
@@ -429,7 +420,7 @@ export function CreateModelFromGitHub() {
           r.status === 400,
       });
 
-      check(http.request("POST", `${apiHost}/v1alpha/models`, JSON.stringify({
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": randomString(10),
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -442,7 +433,7 @@ export function CreateModelFromGitHub() {
       });
 
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

@@ -7,9 +7,8 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
+import * as constant from "./const.js"
 
-const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 const model_def_name = "model-definitions/local"
 
 export function UpdateModel() {
@@ -22,8 +21,8 @@ export function UpdateModel() {
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -54,7 +53,7 @@ export function UpdateModel() {
       let payload = JSON.stringify({
         "description": new_description
       })
-      check(http.patch(`${apiHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiHost}/v1alpha/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls response status`]: (r) =>
@@ -84,7 +83,7 @@ export function UpdateModel() {
       payload = JSON.stringify({
         "description": ""
       })
-      check(http.patch(`${apiHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiHost}/v1alpha/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response status`]: (r) =>
@@ -111,7 +110,7 @@ export function UpdateModel() {
           r.json().model.update_time !== undefined,
       });
       // clean up
-      check(http.request("DELETE", `${apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

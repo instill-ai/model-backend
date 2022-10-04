@@ -15,7 +15,7 @@ import {
   genHeader,
 } from "./helpers.js";
 
-const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://model-backend:8083";
+import * as constant from "./const.js"
 
 export let options = {
   setupTimeout: '300s',
@@ -35,10 +35,10 @@ export default function (data) {
   // Health check
   {
     group("Model API: __liveness check", () => {
-      check(http.request("GET", `${apiHost}/v1alpha/__liveness`), {
+      check(http.request("GET", `${constant.apiHost}/v1alpha/__liveness`), {
         "GET /__liveness response status is 200": (r) => r.status === 200,
       });
-      check(http.request("GET", `${apiHost}/v1alpha/__readiness`), {
+      check(http.request("GET", `${constant.apiHost}/v1alpha/__readiness`), {
         "GET /__readiness response status is 200": (r) => r.status === 200,
       });
     });
@@ -81,7 +81,7 @@ export default function (data) {
 export function teardown(data) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-      .request("GET", `${apiHost}/v1alpha/models`, null, {
+      .request("GET", `${constant.apiHost}/v1alpha/models`, null, {
         headers: genHeader(
           "application/json"
         ),
@@ -91,7 +91,7 @@ export function teardown(data) {
         "GET /clients response contents[*] id": (c) => c.id !== undefined,
       });
       check(
-        http.request("DELETE", `${apiHost}/v1alpha/models/${model.id}`, null, {
+        http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model.id}`, null, {
           headers: genHeader("application/json"),
         }),
         {

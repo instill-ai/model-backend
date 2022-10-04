@@ -25,6 +25,7 @@ type ServerConfig struct {
 	Edition      string   `koanf:"edition"`
 	DisableUsage bool     `koanf:"disableusage"`
 	Debug        bool     `koanf:"debug"`
+	ItMode       bool     `koanf:"itmode"`
 }
 
 // config related to database

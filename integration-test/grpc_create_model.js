@@ -7,13 +7,14 @@ client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 
-const apiHost = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}:8083` : "model-backend:8083";
+import * as constant from "./const.js"
+
 const model_def_name = "model-definitions/github"
 
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
@@ -26,7 +27,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect(apiHost, {
+        client.connect(constant.gRPCHost, {
             plaintext: true
         });
         let model_id = randomString(10)
