@@ -304,10 +304,10 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 
 		return keypointOutputs, nil
 	case modelPB.ModelInstance_TASK_OCR:
-		detResponses := postprocessResponse.(triton.OcrOutput)
-		batchedOutputDataBboxes := detResponses.Boxes
-		batchedOutputDataTexts := detResponses.Texts
-		batchedOutputDataScores := detResponses.Scores
+		ocrResponses := postprocessResponse.(triton.OcrOutput)
+		batchedOutputDataBboxes := ocrResponses.Boxes
+		batchedOutputDataTexts := ocrResponses.Texts
+		batchedOutputDataScores := ocrResponses.Scores
 		var ocrOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataBboxes {
 			var ocrOutput = modelPB.TaskOutput{
@@ -338,6 +338,46 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			ocrOutputs = append(ocrOutputs, &ocrOutput)
 		}
 		return ocrOutputs, nil
+
+	case modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION:
+		instanceSegmentationResponses := postprocessResponse.(triton.InstanceSegmentationOutput)
+		batchedOutputDataRles := instanceSegmentationResponses.Rles
+		batchedOutputDataBboxes := instanceSegmentationResponses.Boxes
+		batchedOutputDataLabels := instanceSegmentationResponses.Labels
+		batchedOutputDataScores := instanceSegmentationResponses.Scores
+		var instanceSegmentationOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataBboxes {
+			var instanceSegmentationOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_InstanceSegmentation{
+					InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
+						Objects: []*modelPB.InstanceSegmentationObject{},
+					},
+				},
+			}
+			for j := range batchedOutputDataBboxes[i] {
+				rle := batchedOutputDataRles[i][j]
+				box := batchedOutputDataBboxes[i][j]
+				label := batchedOutputDataLabels[i][j]
+				score := batchedOutputDataScores[i][j]
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				if label != "" && rle != "" {
+					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelPB.InstanceSegmentationObject{
+						Rle: rle,
+						BoundingBox: &modelPB.BoundingBox{
+							Left:   box[0],
+							Top:    box[1],
+							Width:  box[2],
+							Height: box[3],
+						},
+						Score: score,
+						Label: label,
+					})
+				}
+			}
+			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &instanceSegmentationOutput)
+		}
+		return instanceSegmentationOutputs, nil
+
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput

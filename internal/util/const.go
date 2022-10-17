@@ -7,19 +7,23 @@ import (
 )
 
 var Tasks = map[string]modelPB.ModelInstance_Task{
-	"TASK_CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
-	"TASK_DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
-	"TASK_KEYPOINT":       modelPB.ModelInstance_TASK_KEYPOINT,
-	"TASK_OCR":            modelPB.ModelInstance_TASK_OCR,
+	"TASK_CLASSIFICATION":        modelPB.ModelInstance_TASK_CLASSIFICATION,
+	"TASK_DETECTION":             modelPB.ModelInstance_TASK_DETECTION,
+	"TASK_KEYPOINT":              modelPB.ModelInstance_TASK_KEYPOINT,
+	"TASK_OCR":                   modelPB.ModelInstance_TASK_OCR,
+	"TASK_INSTANCESEGMENTATION":  modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+	"TASK_INSTANCE_SEGMENTATION": modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
 }
 
 var Tags = map[string]modelPB.ModelInstance_Task{
-	"CLASSIFICATION":       modelPB.ModelInstance_TASK_CLASSIFICATION,
-	"DETECTION":            modelPB.ModelInstance_TASK_DETECTION,
-	"IMAGE-CLASSIFICATION": modelPB.ModelInstance_TASK_CLASSIFICATION,
-	"IMAGE-DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
-	"OBJECT-DETECTION":     modelPB.ModelInstance_TASK_DETECTION,
-	"OCR":                  modelPB.ModelInstance_TASK_OCR,
+	"CLASSIFICATION":        modelPB.ModelInstance_TASK_CLASSIFICATION,
+	"DETECTION":             modelPB.ModelInstance_TASK_DETECTION,
+	"IMAGE-CLASSIFICATION":  modelPB.ModelInstance_TASK_CLASSIFICATION,
+	"IMAGE-DETECTION":       modelPB.ModelInstance_TASK_DETECTION,
+	"OBJECT-DETECTION":      modelPB.ModelInstance_TASK_DETECTION,
+	"OCR":                   modelPB.ModelInstance_TASK_OCR,
+	"INSTANCESEGMENTATION":  modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+	"INSTANCE_SEGMENTATION": modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{

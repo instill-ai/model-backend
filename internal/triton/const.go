@@ -34,3 +34,10 @@ type SingleOutputUnspecifiedTaskOutput struct {
 type UnspecifiedTaskOutput struct {
 	RawOutput []SingleOutputUnspecifiedTaskOutput
 }
+
+type InstanceSegmentationOutput struct {
+	Rles   [][]string
+	Boxes  [][][]float32
+	Scores [][]float32
+	Labels [][]string
+}
