@@ -139,6 +139,37 @@ func Reshape1DArrayFloat32To3D(array []float32, shape []int64) ([][][]float32, e
 	return res, nil
 }
 
+func Reshape1DArrayInt32To3D(array []int32, shape []int64) ([][][]int32, error) {
+	if len(array) == 0 {
+		return [][][]int32{}, nil
+	}
+
+	if len(shape) != 3 {
+		return nil, fmt.Errorf("Expected a 3D shape, got %vD shape %v", len(shape), shape)
+	}
+
+	var prod int64 = 1
+	for _, s := range shape {
+		prod *= s
+	}
+	if prod != int64(len(array)) {
+		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+	}
+
+	res := make([][][]int32, shape[0])
+	for i := int64(0); i < shape[0]; i++ {
+		res[i] = make([][]int32, shape[1])
+		for j := int64(0); j < shape[1]; j++ {
+			start := i*shape[1]*shape[2] + j*shape[2]
+			end := start + shape[2]
+			res[i][j] = array[start:end]
+		}
+
+	}
+
+	return res, nil
+}
+
 func Reshape1DArrayFloat32To4D(array []float32, shape []int64) ([][][][]float32, error) {
 	if len(array) == 0 {
 		return [][][][]float32{}, nil

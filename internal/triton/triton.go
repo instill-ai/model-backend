@@ -519,6 +519,85 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	}, nil
 }
 
+func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for RLEs")
+	}
+	if rawOutputContentRles == nil {
+		return nil, fmt.Errorf("Unable to find output content for RLEs")
+	}
+
+	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for boxes")
+	}
+	if rawOutputContentBboxes == nil {
+		return nil, fmt.Errorf("Unable to find output content for boxes")
+	}
+	outputTensorLabels, rawOutputContentLabels, err := GetOutputFromInferResponse(outputNameLabels, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for labels")
+	}
+	if rawOutputContentLabels == nil {
+		return nil, fmt.Errorf("Unable to find output content for labels")
+	}
+
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
+	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for labels")
+	}
+
+	outputTensorScores, rawOutputContentScores, err := GetOutputFromInferResponse(outputNameScores, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for scores")
+	}
+	if rawOutputContentScores == nil {
+		return nil, fmt.Errorf("Unable to find output content for scores")
+	}
+	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorBboxes.Shape[1])
+	batchedOutputDataRles, err := Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for RLEs")
+	}
+
+	outputDataBboxes := DeserializeFloat32Tensor(rawOutputContentBboxes)
+	batchedOutputDataBboxes, err := Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for boxes")
+	}
+
+	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for scores")
+	}
+
+	if len(batchedOutputDataBboxes) != len(batchedOutputDataLabels) ||
+		len(batchedOutputDataBboxes) != len(batchedOutputDataRles) ||
+		len(batchedOutputDataBboxes) != len(batchedOutputDataScores) {
+		log.Printf("Rles output has length %v Bboxes output has length %v but labels has length %v scores have length %v",
+			len(batchedOutputDataRles), len(batchedOutputDataBboxes), len(batchedOutputDataLabels), len(batchedOutputDataScores))
+		return nil, fmt.Errorf("Inconsistent batch size for rles, bboxes, labels and scores")
+	}
+
+	return InstanceSegmentationOutput{
+		Rles:   batchedOutputDataRles,
+		Boxes:  batchedOutputDataBboxes,
+		Labels: batchedOutputDataLabels,
+		Scores: batchedOutputDataScores,
+	}, nil
+}
+
 func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error) {
 	var (
 		outputs interface{}
@@ -562,6 +641,15 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			if err != nil {
 				return nil, fmt.Errorf("Unable to post-process detection output: %w", err)
 			}
+		}
+
+	case modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION:
+		if len(modelMetadata.Outputs) < 4 {
+			return nil, fmt.Errorf("Wrong output format of instance segmentation task")
+		}
+		outputs, err = postProcessInstanceSegmentation(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name, modelMetadata.Outputs[3].Name)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to post-process instance segmentation output: %w", err)
 		}
 
 	default:

@@ -82,11 +82,12 @@ type PipelineBackendConfig struct {
 }
 
 type MaxBatchSizeConfig struct {
-	Unspecified    int `koanf:"unspecified"`
-	Classification int `koanf:"classification"`
-	Detection      int `koanf:"detection"`
-	Keypoint       int `koanf:"keypoint"`
-	Ocr            int `koanf:"ocr"`
+	Unspecified          int `koanf:"unspecified"`
+	Classification       int `koanf:"classification"`
+	Detection            int `koanf:"detection"`
+	Keypoint             int `koanf:"keypoint"`
+	Ocr                  int `koanf:"ocr"`
+	InstanceSegmentation int `koanf:"instancesegmentation"`
 }
 
 // AppConfig defines
