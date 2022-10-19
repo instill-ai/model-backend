@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.8.1-alpha...v0.9.0-alpha) (2022-10-19)
+
+
+### Features
+
+* support instance segmentation task ([#183](https://github.com/instill-ai/model-backend/issues/183)) ([d28cfdc](https://github.com/instill-ai/model-backend/commit/d28cfdc50ecca72571c2bfd0cdf53dd2bab6567c))
+
+
+### Bug Fixes
+
+* allow updating emtpy description for a model ([#177](https://github.com/instill-ai/model-backend/issues/177)) ([100ec84](https://github.com/instill-ai/model-backend/commit/100ec84eed90ca7d3ec7fd04117d0ecc1e40cd22))
+
 ## [0.8.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.8.0-alpha...v0.8.1-alpha) (2022-09-19)
 
 
