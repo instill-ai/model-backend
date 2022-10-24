@@ -30,7 +30,7 @@ func createModelDefinitionRecord(
 		ReleaseStage:      releaseStage,
 	}
 
-	if result := db.Model(&datamodel.ModelDefinition{}).Create(&modelDef); result.Error != nil {
+	if result := db.Model(&datamodel.ModelDefinition{}).FirstOrCreate(&modelDef); result.Error != nil {
 		return result.Error
 	}
 
