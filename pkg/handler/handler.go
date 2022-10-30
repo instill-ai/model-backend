@@ -1134,24 +1134,29 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		Configuration: bModelConfig,
 		Instances:     []datamodel.ModelInstance{},
 	}
-	rdid, _ := uuid.NewV4()
-	tmpDir := fmt.Sprintf("./%s", rdid.String())
-	tags, err := util.ArtiVCGetTags(tmpDir, modelConfig)
-	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			"[handler] create a model error",
-			"ArtiVC",
-			"Get tags",
-			"",
-			err.Error(),
-		)
+	var tags []string
+	if !config.Config.Server.ItMode {
+		rdid, _ := uuid.NewV4()
+		tmpDir := fmt.Sprintf("./%s", rdid.String())
+		tags, err = util.ArtiVCGetTags(tmpDir, modelConfig)
 		if err != nil {
-			logger.Error(err.Error())
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"ArtiVC",
+				"Get tags",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		return &modelPB.CreateModelResponse{}, st.Err()
+		_ = os.RemoveAll(tmpDir)
+	} else {
+		tags = append(tags, "v1.0") // use local model for integration test mode
 	}
-	_ = os.RemoveAll(tmpDir)
 	for _, tag := range tags {
 		instanceConfig := datamodel.ArtiVCModelInstanceConfiguration{
 			Url: modelConfig.Url,
