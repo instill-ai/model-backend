@@ -1159,24 +1159,32 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		rdid, _ := uuid.NewV4()
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-		err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, false)
-		if err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"ArtiVC",
-				"Clone repository",
-				"",
-				err.Error(),
-			)
-			if err != nil {
-				logger.Error(err.Error())
+		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
+			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+			if err := cmd.Run(); err != nil {
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+				return &modelPB.CreateModelResponse{}, err
 			}
-			_ = os.RemoveAll(modelSrcDir)
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-			return &modelPB.CreateModelResponse{}, st.Err()
+		} else {
+			err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, false)
+			if err != nil {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"ArtiVC",
+					"Clone repository",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+				_ = os.RemoveAll(modelSrcDir)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
+				return &modelPB.CreateModelResponse{}, st.Err()
+			}
+			util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
 		}
-		util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
 		bInstanceConfig, _ := json.Marshal(instanceConfig)
 		instance := datamodel.ModelInstance{
 			ID:            tag,
@@ -2013,7 +2021,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 			_ = os.RemoveAll(modelSrcDir)
 		}
 	case "artivc":
-		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var instanceConfig datamodel.ArtiVCModelInstanceConfiguration
 			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
 				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
