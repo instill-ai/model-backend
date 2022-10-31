@@ -1155,7 +1155,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		}
 		_ = os.RemoveAll(tmpDir)
 	} else {
-		tags = append(tags, "v1.0") // use local model for integration test mode
+		tags = append(tags, "v1.0-cpu") // use local model for integration test mode
 	}
 	for _, tag := range tags {
 		instanceConfig := datamodel.ArtiVCModelInstanceConfiguration{
