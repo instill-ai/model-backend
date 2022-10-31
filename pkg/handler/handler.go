@@ -900,7 +900,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	} else {
 		githubInfo = util.GitHubInfo{
 			Description: "this is dummy model for integration-test",
-			Visibility:  modelPB.Model_VISIBILITY_PUBLIC.String(),
+			Visibility:  "public",
 			Tags: []util.Tag{{
 				Name: "v1.0-cpu",
 			}},
