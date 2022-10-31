@@ -891,10 +891,21 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if modelConfig.Repository == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
-	githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
+	var githubInfo util.GitHubInfo
+	if !config.Config.Server.ItMode {
+		githubInfo, err = util.GetGitHubRepoInfo(modelConfig.Repository)
+		if err != nil {
+			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
+		}
+	} else {
+		githubInfo = util.GitHubInfo{
+			Description: "this is dummy model for integration-test",
+			Tags: []util.Tag{{
+				Name: "v1.0-cpu",
+			}},
+		}
 	}
+
 	if len(githubInfo.Tags) == 0 {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 	}
