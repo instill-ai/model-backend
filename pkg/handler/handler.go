@@ -902,7 +902,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			Description: "this is dummy model for integration-test",
 			Visibility:  "public",
 			Tags: []util.Tag{{
-				Name: "v1.0-cpu",
+				Name: "v1.0",
 			}},
 		}
 	}
