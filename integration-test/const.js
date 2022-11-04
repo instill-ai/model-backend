@@ -1,5 +1,9 @@
-export const gRPCHost = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}:8083` : "localhost:8083";
-export const apiHost = __ENV.HOSTNAME ? `http://${__ENV.HOSTNAME}:8083` : "http://localhost:8083";
+let host = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}` : "localhost"
+let port = 8083
+if (__ENV.HOSTNAME=="api-gateway") { host = "localhost" }
+if (__ENV.HOSTNAME=="api-gateway") { port = 8000 }
+export const gRPCHost = `http://${host}:${port}`
+export const apiHost = `http://${host}:${port}`
 
 export const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 export const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-det-model.zip`, "b");

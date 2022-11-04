@@ -34,12 +34,9 @@ export default function (data) {
 
   // Health check
   {
-    group("Model API: __liveness check", () => {
-      check(http.request("GET", `${constant.apiHost}/v1alpha/__liveness`), {
-        "GET /__liveness response status is 200": (r) => r.status === 200,
-      });
-      check(http.request("GET", `${constant.apiHost}/v1alpha/__readiness`), {
-        "GET /__readiness response status is 200": (r) => r.status === 200,
+    group("Model API: health check", () => {
+      check(http.request("GET", `${constant.apiHost}/v1alpha/health/model`), {
+        "GET /v1alpha/health/model response status is 200": (r) => r.status === 200,
       });
     });
   }
