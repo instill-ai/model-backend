@@ -26,7 +26,8 @@ RUN apt update && \
                    build-essential \
                    python3 python3-setuptools python3-pip git git-lfs && \
     rm -rf /var/lib/apt/lists
-RUN python3 -m pip install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]
+RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
 
 ARG SERVICE_NAME
 
