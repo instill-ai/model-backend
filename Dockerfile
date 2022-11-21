@@ -24,9 +24,7 @@ FROM --platform=$BUILDPLATFORM ubuntu:20.04
 RUN apt update && \
     apt install -y bash \
                    build-essential \
-                   git git-lfs\
-                   python3 \
-                   python3-pip && \
+                   python3 python3-setuptools python3-pip git git-lfs && \
     rm -rf /var/lib/apt/lists
 RUN python3 -m pip install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]
 
