@@ -8,7 +8,7 @@ server:
     - https://instill-inc.tech
     - https://instill.tech
   edition: local-ce:dev
-  disableusage: true
+  disableusage: false
   debug: true
   itmode: false
 database:
