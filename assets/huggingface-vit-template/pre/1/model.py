@@ -48,8 +48,8 @@ class TritonPythonModel(object):
             for img in batch_in:  # img is shape (1,)
                 pil_img = Image.open(io.BytesIO(img.astype(bytes)))
                 inputs = self.feature_extractor(images=pil_img, return_tensors="pt")
-                
-            batch_out = np.asarray(inputs['pixel_values'])
+                batch_out.append(np.squeeze(np.asarray(inputs['pixel_values']), axis=0))
+            batch_out = np.asarray(batch_out)
             # Format outputs to build an InferenceResponse
             # Assumes there is only one output
             output_tensors = [Tensor(output_name, batch_out)]
