@@ -73,19 +73,26 @@ export function InferModel() {
             'DeployModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
             'TriggerModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
             'TriggerModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }] }, {}), {
+            'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'TriggerModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
+            'TriggerModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category !== undefined,
+            'TriggerModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score !== undefined,
+        });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TriggerModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TriggerModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
@@ -153,19 +160,25 @@ export function InferModel() {
             'DeployModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TestModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TestModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
             'TestModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
             'TestModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
+        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }] }, {}), {
+            'TestModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'TestModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
+            'TestModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category !== undefined,
+            'TestModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score !== undefined,
+        });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/non-existed/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TestModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/non-existed`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TestModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 

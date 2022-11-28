@@ -65,7 +65,7 @@ export function CreateModel() {
             'DeployModelInstance instance createTime': (r) => r && r.message.instance.createTime !== undefined,
             'DeployModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
         }); 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
             'TriggerModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",

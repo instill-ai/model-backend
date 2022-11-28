@@ -78,7 +78,7 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }]
+        "inputs": [{ "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
@@ -98,8 +98,8 @@ export function InferModel() {
       // Predict multiple images with url
       payload = JSON.stringify({
         "inputs": [
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
         ]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -323,7 +323,7 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }],
+        "inputs": [{ "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
@@ -353,8 +353,8 @@ export function InferModel() {
       // Predict multiple images with url
       payload = JSON.stringify({
         "inputs": [
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
         ],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -708,7 +708,7 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }]
+        "inputs": [{ "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
@@ -734,8 +734,8 @@ export function InferModel() {
       // Predict multiple images with url
       payload = JSON.stringify({
         "inputs": [
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
         ]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1010,7 +1010,7 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }]
+        "inputs": [{ "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
@@ -1040,8 +1040,8 @@ export function InferModel() {
       // Predict multiple images with url
       payload = JSON.stringify({
         "inputs": [
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
         ]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1366,7 +1366,7 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{ "image_url": "https://artifacts.instill.tech/dog.jpg" }],
+        "inputs": [{ "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
@@ -1396,8 +1396,8 @@ export function InferModel() {
       // Predict multiple images with url
       payload = JSON.stringify({
         "inputs": [
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" },
-          { "image_url": "https://artifacts.instill.tech/dog.jpg" }
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" },
+          { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
         ],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {

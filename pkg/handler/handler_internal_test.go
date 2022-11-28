@@ -16,7 +16,7 @@ func TestParseImageFromURL(t *testing.T) {
 	}
 
 	{
-		_, _, err := parseImageFromURL("https://artifacts.instill.tech/dog.jpg")
+		_, _, err := parseImageFromURL("https://artifacts.instill.tech/imgs/dog.jpg")
 		assert.Equal(t, nil, err)
 	}
 
