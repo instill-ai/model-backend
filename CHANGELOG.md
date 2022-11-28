@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.9.0-alpha...v0.9.1-alpha) (2022-11-28)
+
+
+### Bug Fixes
+
+* HuggingFace batching bug in preprocess model ([b1582e8](https://github.com/instill-ai/model-backend/commit/b1582e8f48dd5a88a1ad8f8dcddce13d382b9e86))
+
 ## [0.9.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.8.1-alpha...v0.9.0-alpha) (2022-10-19)
 
 
