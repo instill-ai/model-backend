@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"path"
 
+	_ "golang.org/x/image/tiff"
+
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/util"
 
