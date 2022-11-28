@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -92,7 +91,7 @@ func writeToFp(fp *os.File, data []byte) error {
 }
 
 func isEnsembleConfig(configPath string) bool {
-	fileData, _ := ioutil.ReadFile(configPath)
+	fileData, _ := os.ReadFile(configPath)
 	fileString := string(fileData)
 	return strings.Contains(fileString, "platform: \"ensemble\"")
 }
@@ -2615,9 +2614,7 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 		}, nil
 	}
 
-	f, _ := os.Open(readmeFilePath)
-	reader := bufio.NewReader(f)
-	content, _ := ioutil.ReadAll(reader)
+	content, _ := os.ReadFile(readmeFilePath)
 
 	return &modelPB.GetModelInstanceCardResponse{Readme: &modelPB.ModelInstanceCard{
 		Name:     req.Name,
