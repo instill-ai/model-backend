@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"net/http"
 	"os"
@@ -422,7 +424,16 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 	imageBytes = make([][]byte, len(fileLengths))
 	start := uint64(0)
 	for i := 0; i < len(fileLengths); i++ {
-		imageBytes[i] = allContentFiles[start : start+fileLengths[i]]
+		buff := new(bytes.Buffer)
+		img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
+		if err != nil {
+			return [][]byte{}, "", "", err
+		}
+		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
+		if err != nil {
+			return [][]byte{}, "", "", err
+		}
+		imageBytes[i] = buff.Bytes()
 		start += fileLengths[i]
 	}
 
@@ -468,7 +479,16 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 	}
 	start := uint64(0)
 	for i := 0; i < len(fileLengths); i++ {
-		imageBytes[i] = allContentFiles[start : start+fileLengths[i]]
+		buff := new(bytes.Buffer)
+		img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
+		if err != nil {
+			return [][]byte{}, "", "", err
+		}
+		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
+		if err != nil {
+			return [][]byte{}, "", "", err
+		}
+		imageBytes[i] = buff.Bytes()
 		start += fileLengths[i]
 	}
 	return imageBytes, modelID, instanceID, nil
