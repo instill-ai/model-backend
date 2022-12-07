@@ -12,6 +12,7 @@ import (
 
 	_ "golang.org/x/image/tiff"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/util"
 
@@ -44,10 +45,10 @@ func parseImageFromURL(url string) (*image.Image, *imageMetadata, error) {
 		return nil, nil, fmt.Errorf("unable to read content body from image at %v", url)
 	}
 
-	if numBytes > int64(util.MaxImageSizeBytes) {
+	if numBytes > int64(config.Config.Server.MaxImageSize*util.MB) {
 		return nil, nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
-			float32(util.MaxImageSizeBytes)/float32(util.MB),
+			config.Config.Server.MaxImageSize,
 			float32(numBytes)/float32(util.MB),
 		)
 	}

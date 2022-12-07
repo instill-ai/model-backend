@@ -40,7 +40,6 @@ const (
 )
 
 const MaxBatchSize int = 32
-const MaxImageSizeBytes int = 12 * MB
 
 const DEFAULT_GCP_SERVICE_ACCOUNT_FILE = "https://artifacts.instill.tech/default-service-account.json"
 
