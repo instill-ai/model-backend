@@ -26,6 +26,7 @@ type ServerConfig struct {
 	DisableUsage bool     `koanf:"disableusage"`
 	Debug        bool     `koanf:"debug"`
 	ItMode       bool     `koanf:"itmode"`
+	MaxImageSize int      `koanf:"maximagesize"`
 }
 
 // config related to database

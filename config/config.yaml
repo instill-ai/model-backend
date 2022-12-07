@@ -11,6 +11,7 @@ server:
   disableusage: false
   debug: true
   itmode: false
+  maximagesize: 12 # MB in unit
 database:
   username: postgres
   password: password
