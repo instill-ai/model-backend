@@ -79,10 +79,10 @@ func parseImageFromBase64(encoded string) (*image.Image, *imageMetadata, error) 
 		return nil, nil, fmt.Errorf("unable to decode base64 image")
 	}
 	numBytes := len(decoded)
-	if numBytes > util.MaxImageSizeBytes {
+	if numBytes > config.Config.Server.MaxImageSize*util.MB {
 		return nil, nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
-			float32(util.MaxImageSizeBytes)/float32(util.MB),
+			config.Config.Server.MaxImageSize,
 			float32(numBytes)/float32(util.MB),
 		)
 	}
@@ -166,10 +166,10 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, img
 			return nil, nil, fmt.Errorf("unable to read content body from image")
 		}
 
-		if numBytes > int64(util.MaxImageSizeBytes) {
+		if numBytes > int64(config.Config.Server.MaxImageSize*util.MB) {
 			return nil, nil, fmt.Errorf(
 				"image size must be smaller than %vMB. Got %vMB from image %v",
-				float32(util.MaxImageSizeBytes)/float32(util.MB),
+				config.Config.Server.MaxImageSize,
 				float32(numBytes)/float32(util.MB),
 				content.Filename,
 			)
