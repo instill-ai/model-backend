@@ -369,8 +369,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 							Width:  box[2],
 							Height: box[3],
 						},
-						Score: score,
-						Label: label,
+						Score:    score,
+						Category: label,
 					})
 				}
 			}
