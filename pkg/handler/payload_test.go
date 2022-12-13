@@ -26,9 +26,8 @@ func TestParseImageFromURL(t *testing.T) {
 }
 
 func TestParseImageFromBase64(t *testing.T) {
-	if err := config.Init(); err != nil {
-		log.Fatal(err.Error())
-	}
+	config.Config.Server.MaxImageSize = 12
+
 	{
 		_, _, err := parseImageFromBase64("test")
 		assert.Equal(t, "unable to decode base64 image", err.Error())
