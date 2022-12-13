@@ -331,7 +331,7 @@ func GetMaxBatchSize(configFilePath string) (int, error) {
 	for scanner.Scan() {
 		if r.MatchString(scanner.Text()) {
 			maxBatchSize := scanner.Text()
-			maxBatchSize = strings.Trim(maxBatchSize, "max_batch_size:")
+			maxBatchSize = strings.TrimPrefix(maxBatchSize, "max_batch_size:")
 			maxBatchSize = strings.Trim(maxBatchSize, " ")
 			intMaxBatchSize, err := strconv.Atoi(maxBatchSize)
 			return intMaxBatchSize, err
