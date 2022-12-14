@@ -1,7 +1,7 @@
-let host = __ENV.HOSTNAME ? `${__ENV.HOSTNAME}` : "localhost"
+let host = __ENV.HOST ? `${__ENV.HOST}` : "localhost"
 let port = 8083
-if (__ENV.HOSTNAME=="api-gateway") { host = "localhost" }
-if (__ENV.HOSTNAME=="api-gateway") { port = 8000 }
+if (__ENV.HOST == "api-gateway") { host = "localhost" }
+if (__ENV.HOST == "api-gateway") { port = 8000 }
 export const gRPCHost = `${host}:${port}`
 export const apiHost = `http://${host}:${port}`
 
