@@ -169,7 +169,7 @@ export function CancelLongRunningOperation() {
       check(http.post(`${constant.apiHost}/v1alpha/${operationRes.json().operation.name}/cancel`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST v1alpha/${operationRes.json().operation.name} response status`]: (r) =>
+        [`POST /v1alpha/${operationRes.json().operation.name}/cancel response status`]: (r) =>
           r.status === 200
       });
 
