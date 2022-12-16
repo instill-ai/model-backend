@@ -5,7 +5,7 @@ server:
     key:
   corsorigins:
   edition: local-ce:dev
-  disableusage: false
+  disableusage: true
   debug: true
   itmode: false
   maximagesize: 12 # MB in unit
@@ -52,3 +52,6 @@ maxbatchsizelimitation:
   ocr: 2
   instancesegmentation: 8
   semanticsegmentation: 8
+temporal:
+  clientoptions:
+    hostport: temporal:7233

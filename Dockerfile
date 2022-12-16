@@ -14,6 +14,7 @@ ARG TARGETOS TARGETARCH
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME} ./cmd/main
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
 
 WORKDIR /src/third_party
 
@@ -41,6 +42,7 @@ COPY --from=build /src/internal/db/migration ./internal/db/migration
 COPY --from=build /${SERVICE_NAME}-migrate ./
 COPY --from=build /${SERVICE_NAME}-init ./
 COPY --from=build /${SERVICE_NAME} ./
+COPY --from=build /${SERVICE_NAME}-worker ./
 
 # ArtiVC tool to work with cloud storage
 COPY --from=build /src/third_party/ArtiVC/bin/avc /bin/avc

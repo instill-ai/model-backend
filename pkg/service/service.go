@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
+	"go.temporal.io/sdk/client"
 
 	"github.com/gofrs/uuid"
+	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,6 +26,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/internal/worker"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/sterr"
@@ -46,14 +49,18 @@ type Service interface {
 	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
+	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
 	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
-	DeployModelInstance(modelInstanceID uuid.UUID) error
-	UndeployModelInstance(modelInstanceID uuid.UUID) error
+	DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
+	UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
+	GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, error)
+	ListOperation(pageSize int, pageToken string) ([]*longrunning.Operation, []*worker.ModelInstanceParams, string, int64, error)
+	CancelOperation(workflowId string) error
 }
 
 type service struct {
@@ -61,14 +68,16 @@ type service struct {
 	triton                triton.Triton
 	redisClient           *redis.Client
 	pipelineServiceClient pipelinePB.PipelineServiceClient
+	temporalClient        client.Client
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineServiceClient, rc *redis.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineServiceClient, rc *redis.Client, tc client.Client) Service {
 	return &service{
 		repository:            r,
 		triton:                t,
 		pipelineServiceClient: p,
 		redisClient:           rc,
+		temporalClient:        tc,
 	}
 }
 
@@ -597,6 +606,10 @@ func (s *service) UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datam
 
 func (s *service) GetModelInstance(modelUID uuid.UUID, modelInstanceID string, view modelPB.View) (datamodel.ModelInstance, error) {
 	return s.repository.GetModelInstance(modelUID, modelInstanceID, view)
+}
+
+func (s *service) UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error {
+	return s.repository.UpdateModelInstance(modelInstanceUID, instanceInfo)
 }
 
 func (s *service) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {

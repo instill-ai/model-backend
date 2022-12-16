@@ -135,6 +135,18 @@ type ModelInstance struct {
 	// Not stored in DB, only used for processing
 	TritonModels []TritonModel `gorm:"foreignKey:ModelInstanceUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
+type ModelInstanceInferResult struct {
+	BaseDynamic
+
+	// Inference id: `instance model id.{datetime}.infer` created by temporal
+	ID string `json:"id,omitempty"`
+
+	// Inference result
+	Result datatypes.JSON `json:"result,omitempty"`
+
+	// Model Instance uid
+	ModelInstanceUID uuid.UUID `json:"model_instance_uid,omitempty"`
+}
 
 // Model configuration
 type GitHubModelConfiguration struct {

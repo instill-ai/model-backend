@@ -24,6 +24,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"go.temporal.io/sdk/client"
+	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -43,6 +45,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
+	"github.com/instill-ai/x/zapadapter"
+
+	"google.golang.org/protobuf/types/known/anypb"
 
 	database "github.com/instill-ai/model-backend/internal/db"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
@@ -615,7 +620,18 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
 
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient)
+		temporalClient, err := client.Dial(client.Options{
+			// ZapAdapter implements log.Logger interface and can be passed
+			// to the client constructor using client using client.Options.
+			Logger:   zapadapter.NewZapAdapter(logger),
+			HostPort: config.Config.Temporal.ClientOptions.HostPort,
+		})
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		defer temporalClient.Close()
+
+		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
 
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionID)
@@ -1980,107 +1996,42 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
-	}
-
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
-	tritonModels, err := h.service.GetTritonModels(dbModelInstance.UID)
+
+	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] deploy model error",
+			"wrong state",
+			fmt.Sprintf("deploy model only work with offline model state, current model state is %v", dbModelInstance.State),
+			"",
+			err.Error(),
+		)
+
+		if e != nil {
+			logger.Error(e.Error())
+		}
+
+		return &modelPB.DeployModelInstanceResponse{}, st.Err()
+	}
+
+	_, err = h.service.GetTritonModels(dbModelInstance.UID)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
-	// downloading model weight when making inference
-	switch modelDef.ID {
-	case "github":
-		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
-			var instanceConfig datamodel.GitHubModelInstanceConfiguration
-			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-			}
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
-
-			if err := util.GitHubCloneWLargeFile(modelSrcDir, instanceConfig); err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-			}
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-			}
-			_ = os.RemoveAll(modelSrcDir)
-		}
-	case "huggingface":
-		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
-			var instanceConfig datamodel.HuggingFaceModelInstanceConfiguration
-			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-			}
-
-			var modelConfig datamodel.HuggingFaceModelConfiguration
-			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
-			if err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
-			}
-
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
-			if config.Config.Server.ItMode { // use local model to remove internet connection issue while integration testing
-				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
-					RepoId: "assets/tiny-vit-random",
-				}, dbModel.ID); err != nil {
-					_ = os.RemoveAll(modelSrcDir)
-					return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
-				}
-			} else {
-				if err = util.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
-					_ = os.RemoveAll(modelSrcDir)
-					return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("Export model error %v", err.Error()))
-				}
-			}
-
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-			}
-
-			if err := util.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-			}
-			_ = os.RemoveAll(modelSrcDir)
-		}
-	case "artivc":
-		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
-			var instanceConfig datamodel.ArtiVCModelInstanceConfiguration
-			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.Internal, err.Error())
-			}
-
-			var modelConfig datamodel.ArtiVCModelConfiguration
-			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
-			if err != nil {
-				return &modelPB.DeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
-			}
-
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-			err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, true)
-			if err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-			}
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
-				_ = os.RemoveAll(modelSrcDir)
-				return &modelPB.DeployModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-			}
-		}
+	// temporary change state to STATE_UNSPECIFIED during deploying the model
+	// the state will be changed after deploying to STATE_ONLINE or STATE_ERROR
+	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
+		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
+	}); err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
 	}
-	err = h.service.DeployModelInstance(dbModelInstance.UID)
+
+	wfId, err := h.service.DeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -2108,16 +2059,18 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, st.Err()
 	}
 
-	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
-	}
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-
-	return &modelPB.DeployModelInstanceResponse{Instance: pbModelInstance}, nil
+	return &modelPB.DeployModelInstanceResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
 
 func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -2133,17 +2086,36 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
-	}
-
 	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	err = h.service.UndeployModelInstance(dbModelInstance.UID)
+	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			"[handler] undeploy model error",
+			"wrong state",
+			fmt.Sprintf("undeploy model only work with online model state, current model state is %v", dbModelInstance.State),
+			"",
+			err.Error(),
+		)
+
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.UndeployModelInstanceResponse{}, st.Err()
+	}
+
+	// temporary change state to STATE_UNSPECIFIED during undeploying the model
+	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
+	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
+		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
+	}); err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+	}
+
+	wfId, err := h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
@@ -2152,13 +2124,13 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	dbModelInstance, err = h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
-	}
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-
-	return &modelPB.UndeployModelInstanceResponse{Instance: pbModelInstance}, nil
+	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
 
 func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) error {
@@ -2499,7 +2471,17 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient)
+		temporalClient, err := client.Dial(client.Options{
+			// ZapAdapter implements log.Logger interface and can be passed
+			// to the client constructor using client using client.Options.
+			Logger:   zapadapter.NewZapAdapter(logger),
+			HostPort: config.Config.Temporal.ClientOptions.HostPort,
+		})
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		defer temporalClient.Close()
+		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
 
 		modelID, instanceID, err := resource.GetModelInstanceID(instanceName)
 		if err != nil {
@@ -2689,4 +2671,133 @@ func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListMode
 	}
 
 	return &resp, nil
+}
+
+func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
+	operationId, err := resource.GetOperationID(req.Name)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+	operation, modelInstanceParam, err := h.service.GetOperation(operationId)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+
+	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+
+	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
+
+	res, err := anypb.New(pbModelInstance)
+	if err != nil {
+		return &modelPB.GetModelOperationResponse{}, err
+	}
+
+	operation.Result = &longrunning.Operation_Response{
+		Response: res,
+	}
+	return &modelPB.GetModelOperationResponse{
+		Operation: operation,
+	}, nil
+}
+
+func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationRequest) (*modelPB.ListModelOperationResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
+	pageSize := 10
+	if req.PageSize != nil {
+		pageSize = int(*req.PageSize)
+	}
+	operations, modelInstanceParams, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
+	if err != nil {
+		return &modelPB.ListModelOperationResponse{}, err
+	}
+
+	for idx, operation := range operations {
+		modelInstanceParam := modelInstanceParams[idx]
+		dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
+		if err != nil {
+			logger.Info(err.Error())
+			continue
+		}
+		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+		if err != nil {
+			logger.Info(err.Error())
+			continue
+		}
+		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+		if err != nil {
+			logger.Info(err.Error())
+			continue
+		}
+		pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
+		res, err := anypb.New(pbModelInstance)
+		if err != nil {
+			logger.Info(err.Error())
+			continue
+		}
+		operation.Result = &longrunning.Operation_Response{
+			Response: res,
+		}
+	}
+	return &modelPB.ListModelOperationResponse{
+		Operations:    operations,
+		NextPageToken: nextPageToken,
+		TotalSize:     totalSize,
+	}, nil
+}
+
+func (h *handler) CancelModelOperation(ctx context.Context, req *modelPB.CancelModelOperationRequest) (*modelPB.CancelModelOperationResponse, error) {
+	operationId, err := resource.GetOperationID(req.Name)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	_, modelInstanceParam, err := h.service.GetOperation(operationId)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	if err = h.service.CancelOperation(operationId); err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	owner, err := resource.GetOwner(ctx)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	// Fix for corner case: maybe when cancel operation in Temporal, the Temporal workflow already trigger Triton server to deploy model
+	// So we will undeploy model if the model is deployed
+	if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
+		if _, err = h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID); err != nil {
+			// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
+			if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
+				return &modelPB.CancelModelOperationResponse{}, status.Errorf(codes.Internal, err.Error())
+			}
+			return &modelPB.CancelModelOperationResponse{}, err
+		}
+	}
+
+	return &modelPB.CancelModelOperationResponse{}, nil
 }

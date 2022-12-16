@@ -359,6 +359,7 @@ func postProcessOcrWithoutScore(modelInferResponse *inferenceserver.ModelInferRe
 
 func postProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (interface{}, error) {
 	outputTensor, rawOutputContent, err := GetOutputFromInferResponse(outputName, modelInferResponse)
+
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("Unable to find inference output")
@@ -366,9 +367,7 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	if rawOutputContent == nil {
 		return nil, fmt.Errorf("Unable to find output content")
 	}
-
 	outputData := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
-
 	return outputData, nil
 }
 

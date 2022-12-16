@@ -10,6 +10,7 @@ import * as updateModel from "./rest_update_model.js"
 import * as queryModelDefinition from "./rest_query_model_definition.js"
 import * as queryModelInstance from "./rest_query_model_instance.js"
 import * as getModelCard from "./rest_model_card.js"
+import * as longrunningOperation from "./rest_longrunning_operation.js"
 
 import {
   genHeader,
@@ -53,7 +54,7 @@ export default function (data) {
   queryModel.ListModel()
   queryModel.LookupModel()
 
-  // Deploy/Undeploy Model API
+  // // Deploy/Undeploy Model API
   deployModel.DeployUndeployModel()
 
   // Publish/Unpublish Model API
@@ -73,6 +74,11 @@ export default function (data) {
 
   // Get model card
   getModelCard.GetModelCard()
+
+  // Long-running Operation
+  longrunningOperation.GetLongRunningOperation()
+  longrunningOperation.ListLongRunningOperation()
+  longrunningOperation.CancelLongRunningOperation()
 }
 
 export function teardown(data) {

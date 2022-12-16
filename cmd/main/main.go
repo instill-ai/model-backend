@@ -14,6 +14,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
+	"go.temporal.io/sdk/client"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -33,8 +34,10 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
+	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/internal/db"
+	modelWorker "github.com/instill-ai/model-backend/internal/worker"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -126,12 +129,24 @@ func main() {
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
+	temporalClient, err := client.Dial(client.Options{
+		// ZapAdapter implements log.Logger interface and can be passed
+		// to the client constructor using client using client.Options.
+		Namespace: modelWorker.Namespace,
+		Logger:    zapadapter.NewZapAdapter(logger),
+		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
+	})
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	defer temporalClient.Close()
+
 	repository := repository.NewRepository(db)
 
 	modelPB.RegisterModelServiceServer(
 		grpcS,
 		handler.NewHandler(
-			service.NewService(repository, triton, pipelineServiceClient, redisClient),
+			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
 			triton))
 
 	ctx, cancel := context.WithCancel(context.Background())

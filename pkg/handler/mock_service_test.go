@@ -65,18 +65,18 @@ func (mr *MockServiceMockRecorder) DeleteModel(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockService)(nil).DeleteModel), arg0, arg1)
 }
 
-// DeployModelInstance mocks base method.
-func (m *MockService) DeployModelInstance(arg0 uuid.UUID) error {
+// DeployModelInstanceAsync mocks base method.
+func (m *MockService) DeployModelInstanceAsync(arg0 uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeployModelInstance", arg0)
+	ret := m.ctrl.Call(m, "DeployModelInstanceAsync", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeployModelInstance indicates an expected call of DeployModelInstance.
-func (mr *MockServiceMockRecorder) DeployModelInstance(arg0 interface{}) *gomock.Call {
+// DeployModelInstanceAsync indicates an expected call of DeployModelInstanceAsync.
+func (mr *MockServiceMockRecorder) DeployModelInstanceAsync(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployModelInstance", reflect.TypeOf((*MockService)(nil).DeployModelInstance), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployModelInstanceAsync", reflect.TypeOf((*MockService)(nil).DeployModelInstanceAsync), arg0)
 }
 
 // GetModelById mocks base method.
@@ -310,18 +310,18 @@ func (mr *MockServiceMockRecorder) RenameModel(arg0, arg1, arg2 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameModel", reflect.TypeOf((*MockService)(nil).RenameModel), arg0, arg1, arg2)
 }
 
-// UndeployModelInstance mocks base method.
-func (m *MockService) UndeployModelInstance(arg0 uuid.UUID) error {
+// UndeployModelInstanceAsync mocks base method.
+func (m *MockService) UndeployModelInstanceAsync(arg0 uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UndeployModelInstance", arg0)
+	ret := m.ctrl.Call(m, "UndeployModelInstanceAsync", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UndeployModelInstance indicates an expected call of UndeployModelInstance.
-func (mr *MockServiceMockRecorder) UndeployModelInstance(arg0 interface{}) *gomock.Call {
+// UndeployModelInstanceAsync indicates an expected call of UndeployModelInstanceAsync.
+func (mr *MockServiceMockRecorder) UndeployModelInstanceAsync(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndeployModelInstance", reflect.TypeOf((*MockService)(nil).UndeployModelInstance), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndeployModelInstanceAsync", reflect.TypeOf((*MockService)(nil).UndeployModelInstanceAsync), arg0)
 }
 
 // UnpublishModel mocks base method.

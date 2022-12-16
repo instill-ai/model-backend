@@ -12,6 +12,7 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
+	"go.temporal.io/sdk/client"
 )
 
 // ServerConfig defines HTTP server configurations
@@ -92,6 +93,10 @@ type MaxBatchSizeConfig struct {
 	SemanticSegmentation int `koanf:"semanticsegmentation"`
 }
 
+type TemporalConfig struct {
+	ClientOptions client.Options `koanf:"clientoptions"`
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig          `koanf:"server"`
@@ -102,6 +107,7 @@ type AppConfig struct {
 	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
+	Temporal               TemporalConfig        `koanf:"temporal"`
 }
 
 // Config - Global variable to export

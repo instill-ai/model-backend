@@ -49,34 +49,34 @@ export default () => {
         client.close();
     });
 
-    // Create model API
-    createModel.CreateModel()
+    // // Create model API
+    // createModel.CreateModel()
 
-    // Update model API
-    updateModel.UpdateModel()
+    // // Update model API
+    // updateModel.UpdateModel()
 
-    // Deploy Model API
-    deployModel.DeployUndeployModel()
+    // // Deploy Model API
+    // deployModel.DeployUndeployModel()
 
-    // Query Model API
-    queryModel.GetModel()
-    queryModel.ListModel()
-    queryModel.LookupModel()
+    // // Query Model API
+    // queryModel.GetModel()
+    // queryModel.ListModel()
+    // queryModel.LookupModel()
 
-    // Publish Model API
-    publishModel.PublishUnPublishModel()
+    // // Publish Model API
+    // publishModel.PublishUnPublishModel()
 
     // // Infer Model API
     inferModel.InferModel()
 
-    // Query Model Instance API
-    queryModelInstance.GetModelInstance()
-    queryModelInstance.ListModelInstance()
-    queryModelInstance.LookupModelInstance()
+    // // Query Model Instance API
+    // queryModelInstance.GetModelInstance()
+    // queryModelInstance.ListModelInstance()
+    // queryModelInstance.LookupModelInstance()
 
-    // Query Model Definition API
-    queryModelDefinition.GetModelDefinition()
-    queryModelDefinition.ListModelDefinition()
+    // // Query Model Definition API
+    // queryModelDefinition.GetModelDefinition()
+    // queryModelDefinition.ListModelDefinition()
 };
 
 export function teardown() {
