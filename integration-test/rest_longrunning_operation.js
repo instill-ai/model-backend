@@ -166,6 +166,7 @@ export function CancelLongRunningOperation() {
           r.json().operation.response !== undefined,
       });
 
+      sleep(1)
       check(http.post(`${constant.apiHost}/v1alpha/${operationRes.json().operation.name}/cancel`, {}, {
         headers: genHeader(`application/json`),
       }), {

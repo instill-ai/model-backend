@@ -54,7 +54,7 @@ export default function (data) {
   queryModel.ListModel()
   queryModel.LookupModel()
 
-  // // Deploy/Undeploy Model API
+  // Deploy/Undeploy Model API
   deployModel.DeployUndeployModel()
 
   // Publish/Unpublish Model API
