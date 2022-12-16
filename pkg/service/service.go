@@ -378,6 +378,34 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 		}
 		return instanceSegmentationOutputs, nil
 
+	case modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION:
+		semanticSegmentationResponses := postprocessResponse.(triton.SemanticSegmentationOutput)
+		batchedOutputDataRles := semanticSegmentationResponses.Rles
+		batchedOutputDataCategories := semanticSegmentationResponses.Categories
+		var semanticSegmentationOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataCategories { // loop over images
+			var semanticSegmentationOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_SemanticSegmentation{
+					SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
+						Stuffs: []*modelPB.SemanticSegmentationStuff{},
+					},
+				},
+			}
+			for j := range batchedOutputDataCategories[i] { // single image
+				rle := batchedOutputDataRles[i][j]
+				category := batchedOutputDataCategories[i][j]
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				if category != "" && rle != "" {
+					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelPB.SemanticSegmentationStuff{
+						Rle:      rle,
+						Category: category,
+					})
+				}
+			}
+			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &semanticSegmentationOutput)
+		}
+		return semanticSegmentationOutputs, nil
+
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput

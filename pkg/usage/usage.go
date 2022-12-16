@@ -169,7 +169,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 				InstanceOfflineStateNum: instanceOfflineStateNum,
 				ModelDefinitionIds:      modelDefinitionIds,
 				Tasks:                   tasks,
-				TestImageNum:            testImageNum,
+				TestNum:                 testImageNum,
 			})
 		}
 

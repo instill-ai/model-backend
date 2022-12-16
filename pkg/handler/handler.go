@@ -728,6 +728,8 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 		}
 
 		if maxBatchSize > allowedMaxBatchSize {
@@ -863,6 +865,8 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 	}
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -1072,6 +1076,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 		}
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -1305,6 +1311,8 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
 			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 		}
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -1545,6 +1553,8 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 	}
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(

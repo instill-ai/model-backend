@@ -598,6 +598,51 @@ func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelIn
 	}, nil
 }
 
+func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
+	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for RLEs")
+	}
+	if rawOutputContentRles == nil {
+		return nil, fmt.Errorf("Unable to find output content for RLEs")
+	}
+
+	outputTensorCategories, rawOutputContentCategories, err := GetOutputFromInferResponse(outputNameCategories, modelInferResponse)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to find inference output for labels")
+	}
+	if rawOutputContentCategories == nil {
+		return nil, fmt.Errorf("Unable to find output content for labels")
+	}
+
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentCategories, outputTensorCategories.Shape[0]*outputTensorCategories.Shape[1])
+	batchedOutputDataCategories, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorCategories.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for labels")
+	}
+
+	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
+	batchedOutputDataRles, err := Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
+	if err != nil {
+		log.Printf("%v", err.Error())
+		return nil, fmt.Errorf("Unable to reshape inference output for RLEs")
+	}
+
+	if len(batchedOutputDataCategories) != len(batchedOutputDataRles) {
+		log.Printf("Rles output has length %v but categories has length %v",
+			len(batchedOutputDataCategories), len(batchedOutputDataRles))
+		return nil, fmt.Errorf("Inconsistent batch size for rles and categories")
+	}
+
+	return SemanticSegmentationOutput{
+		Rles:       batchedOutputDataRles,
+		Categories: batchedOutputDataCategories,
+	}, nil
+}
+
 func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error) {
 	var (
 		outputs interface{}
@@ -650,6 +695,15 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 		outputs, err = postProcessInstanceSegmentation(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name, modelMetadata.Outputs[3].Name)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to post-process instance segmentation output: %w", err)
+		}
+
+	case modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("Wrong output format of semantic segmentation task")
+		}
+		outputs, err = postProcessSemanticSegmentation(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to post-process semantic segmentation output: %w", err)
 		}
 
 	default:

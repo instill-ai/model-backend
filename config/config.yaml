@@ -51,3 +51,4 @@ maxbatchsizelimitation:
   keypoint: 8
   ocr: 2
   instancesegmentation: 8
+  semanticsegmentation: 8
