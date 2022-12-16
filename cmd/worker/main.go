@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os/exec"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -17,6 +19,49 @@ import (
 	modelWorker "github.com/instill-ai/model-backend/internal/worker"
 )
 
+func initialize() {
+	logger, _ := logger.GetZapLogger()
+	defer func() {
+		// can't handle the error due to https://github.com/uber-go/zap/issues/880
+		_ = logger.Sync()
+	}()
+
+	runCmd := exec.CommandContext(context.Background(),
+		"docker",
+		"run",
+		"-i",
+		"--rm",
+		"--restart", "no",
+		"--network", "host",
+		"--entrypoint", "tctl",
+		"--env", "TEMPORAL_CLI_ADDRESS=localhost:7233",
+		"temporalio/admin-tools:1.14.0",
+		"--namespace", "model-backend", "namespace", "register",
+	)
+	if err := runCmd.Run(); err != nil {
+		logger.Debug(err.Error())
+	}
+
+	runCmd = exec.CommandContext(context.Background(),
+		"docker",
+		"run",
+		"-i",
+		"--rm",
+		"--restart", "no",
+		"--network", "host",
+		"--entrypoint", "tctl",
+		"--env", "TEMPORAL_CLI_ADDRESS=localhost:7233",
+		"temporalio/admin-tools:1.14.0",
+		"--auto_confirm", "admin", "cluster", "add-search-attributes",
+		"--name", "ModelUID", "--type", "Text",
+		"--name", "ModelInstanceUID", "--type", "Text",
+		"--name", "Owner", "--type", "Text",
+	)
+	if err := runCmd.Run(); err != nil {
+		logger.Debug(err.Error())
+	}
+}
+
 func main() {
 	logger, _ := logger.GetZapLogger()
 	defer func() {
@@ -27,6 +72,8 @@ func main() {
 	if err := config.Init(); err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	initialize()
 
 	db := database.GetConnection()
 	defer database.Close(db)

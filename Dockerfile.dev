@@ -4,6 +4,7 @@ FROM --platform=$BUILDPLATFORM golang:1.18.2
 
 ARG SERVICE_NAME
 
+COPY --from=docker:dind /usr/local/bin/docker /usr/local/bin/
 COPY --from=k6official /usr/bin/k6 /usr/bin/k6
 
 WORKDIR /${SERVICE_NAME}
