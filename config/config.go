@@ -89,6 +89,7 @@ type MaxBatchSizeConfig struct {
 	Keypoint             int `koanf:"keypoint"`
 	Ocr                  int `koanf:"ocr"`
 	InstanceSegmentation int `koanf:"instancesegmentation"`
+	SemanticSegmentation int `koanf:"semanticsegmentation"`
 }
 
 // AppConfig defines

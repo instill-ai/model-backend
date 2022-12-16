@@ -41,3 +41,8 @@ type InstanceSegmentationOutput struct {
 	Scores [][]float32
 	Labels [][]string
 }
+
+type SemanticSegmentationOutput struct {
+	Rles       [][]string
+	Categories [][]string
+}
