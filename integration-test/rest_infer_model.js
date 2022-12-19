@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check, group } from "k6";
+import { check, group, sleep } from "k6";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
@@ -56,25 +56,29 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.name`]: (r) =>
-          r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.uid`]: (r) =>
-          r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.id`]: (r) =>
-          r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.task`]: (r) =>
-          r.json().instance.task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.create_time`]: (r) =>
-          r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.update_time`]: (r) =>
-          r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response instance.configuration`]: (r) =>
-          r.json().instance.configuration !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
       });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+            headers: genHeader(`application/json`),
+          })
+          if (res.json().instance.state === "STATE_ONLINE") {
+              break
+          }
+          sleep(1)
+          currentTime = new Date().getTime();
+      }        
 
       // Predict with url
       let payload = JSON.stringify({
@@ -301,25 +305,29 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.name`]: (r) =>
-          r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.uid`]: (r) =>
-          r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.id`]: (r) =>
-          r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.task`]: (r) =>
-          r.json().instance.task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.create_time`]: (r) =>
-          r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.update_time`]: (r) =>
-          r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task det response instance.configuration`]: (r) =>
-          r.json().instance.configuration !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
       });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+            headers: genHeader(`application/json`),
+          })
+          if (res.json().instance.state === "STATE_ONLINE") {
+              break
+          }
+          sleep(1)
+          currentTime = new Date().getTime();
+      }        
 
       // Predict with url
       let payload = JSON.stringify({
@@ -686,25 +694,29 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.name`]: (r) =>
-          r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.uid`]: (r) =>
-          r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.id`]: (r) =>
-          r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.task`]: (r) =>
-          r.json().instance.task === "TASK_UNSPECIFIED",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.create_time`]: (r) =>
-          r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.update_time`]: (r) =>
-          r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task unspecified response instance.configuration`]: (r) =>
-          r.json().instance.configuration !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+        r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
       });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+            headers: genHeader(`application/json`),
+          })
+          if (res.json().instance.state === "STATE_ONLINE") {
+              break
+          }
+          sleep(1)
+          currentTime = new Date().getTime();
+      }        
 
       // Predict with url
       let payload = JSON.stringify({
@@ -988,25 +1000,29 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.name`]: (r) =>
-          r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.uid`]: (r) =>
-          r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.id`]: (r) =>
-          r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.task`]: (r) =>
-          r.json().instance.task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.create_time`]: (r) =>
-          r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.update_time`]: (r) =>
-          r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task keypoint response instance.configuration`]: (r) =>
-          r.json().instance.configuration !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
       });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+            headers: genHeader(`application/json`),
+          })
+          if (res.json().instance.state === "STATE_ONLINE") {
+              break
+          }
+          sleep(1)
+          currentTime = new Date().getTime();
+      }        
 
       // Predict with url
       let payload = JSON.stringify({
@@ -1344,25 +1360,29 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.name`]: (r) =>
-          r.json().instance.name === `models/${model_id}/instances/latest`,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.uid`]: (r) =>
-          r.json().instance.uid !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.id`]: (r) =>
-          r.json().instance.id === "latest",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_ONLINE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.task`]: (r) =>
-          r.json().instance.task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.model_definition`]: (r) =>
-          r.json().instance.model_definition === model_def_name,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.create_time`]: (r) =>
-          r.json().instance.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.update_time`]: (r) =>
-          r.json().instance.update_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online response instance.configuration`]: (r) =>
-          r.json().instance.configuration !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
       });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+            headers: genHeader(`application/json`),
+          })
+          if (res.json().instance.state === "STATE_ONLINE") {
+              break
+          }
+          sleep(1)
+          currentTime = new Date().getTime();
+      }  
 
       // Predict with url
       let payload = JSON.stringify({

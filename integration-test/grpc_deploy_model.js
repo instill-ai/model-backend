@@ -1,5 +1,5 @@
 import grpc from 'k6/net/grpc';
-import { check, group } from 'k6';
+import { check, group, sleep } from 'k6';
 import http from "k6/http";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
@@ -61,16 +61,22 @@ export function DeployUndeployModel() {
         let req = { name: `models/${model_id}/instances/latest` }
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
-            'DeployModelInstance instance id': (r) => r && r.message.instance.id === `latest`,
-            'DeployModelInstance instance name': (r) => r && r.message.instance.name === `models/${model_id}/instances/latest`,
-            'DeployModelInstance instance uid': (r) => r && r.message.instance.uid !== undefined,
-            'DeployModelInstance instance state': (r) => r && r.message.instance.state === "STATE_ONLINE",
-            'DeployModelInstance instance task': (r) => r && r.message.instance.task === "TASK_CLASSIFICATION",
-            'DeployModelInstance instance modelDefinition': (r) => r && r.message.instance.modelDefinition === model_def_name,
-            'DeployModelInstance instance configuration': (r) => r && r.message.instance.configuration !== undefined,
-            'DeployModelInstance instance createTime': (r) => r && r.message.instance.createTime !== undefined,
-            'DeployModelInstance instance updateTime': (r) => r && r.message.instance.updateTime !== undefined,
+            'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
+            'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
+            'DeployModelInstance operation done': (r) => r && r.message.operation.done === false,
         });
+
+        // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
+        while (timeoutTime > currentTime) {
+            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/latest` }, {})
+            if (res.message.instance.state === "STATE_ONLINE") {
+                break
+            }
+            sleep(1)
+            currentTime = new Date().getTime();
+        }            
 
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', { name: `models/non-existed/instances/latest` }), {
             'DeployModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
