@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -42,6 +43,8 @@ func initialize() {
 		logger.Debug(err.Error())
 	}
 
+	time.Sleep(2000) //make sure namespace already registered
+
 	runCmd = exec.CommandContext(context.Background(),
 		"docker",
 		"run",
@@ -74,6 +77,7 @@ func main() {
 	}
 
 	initialize()
+	time.Sleep(5000) // make sure namespace already registered
 
 	db := database.GetConnection()
 	defer database.Close(db)

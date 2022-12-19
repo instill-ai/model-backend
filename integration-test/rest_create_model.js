@@ -241,6 +241,34 @@ export function CreateModelFromLocal() {
           r.status === 400,
       });
 
+      let fd_semantic = new FormData();
+      let model_id_semantic = randomString(10)
+      model_description = randomString(20)
+      fd_semantic.append("id", model_id_semantic);
+      fd_semantic.append("description", model_description);
+      fd_semantic.append("model_definition", "model-definitions/local");
+      fd_semantic.append("content", http.file(constant.semantic_segmentation_model_bz9, "dummy-semantic-segmentation-model-bz9.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_semantic.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`),
+      }), {
+        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+          r.status === 400,
+      });   
+      
+      let fd_instance = new FormData();
+      let model_id_instance = randomString(10)
+      model_description = randomString(20)
+      fd_instance.append("id", model_id_instance);
+      fd_instance.append("description", model_description);
+      fd_instance.append("model_definition", "model-definitions/local");
+      fd_instance.append("content", http.file(constant.instance_segmentation_model_bz9, "dummy-instance-segmentation-model-bz9.zip"));
+      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_instance.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`),
+      }), {
+        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+          r.status === 400,
+      });         
+
       // clean up
       check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_cls}`, null, {
         headers: genHeader(`application/json`),

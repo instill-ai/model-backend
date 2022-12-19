@@ -560,7 +560,7 @@ func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelIn
 	if rawOutputContentScores == nil {
 		return nil, fmt.Errorf("Unable to find output content for scores")
 	}
-	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorBboxes.Shape[1])
+	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
 	batchedOutputDataRles, err := Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
