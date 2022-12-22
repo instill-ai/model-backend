@@ -488,7 +488,7 @@ message GetModelInstanceCardResponse {
 //  Trigger methods
 ////////////////////////////////////
 
-// TaskOutput represents the output of a CV Task result from a model instance
+// TaskOutput represents the output of an AI task result from a model instance
 message TaskOutput {
   // The inference task output
   oneof output {
