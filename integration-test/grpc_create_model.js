@@ -1,6 +1,12 @@
 import grpc from 'k6/net/grpc';
-import { check, group, sleep } from 'k6';
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import {
+    check,
+    group,
+    sleep
+} from 'k6';
+import {
+    randomString
+} from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
@@ -27,7 +33,7 @@ export function CreateModel() {
     group("Model API: CreateModel with GitHub", () => {
         client.connect(constant.gRPCHost);
         let model_id = randomString(10)
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        let createOperationRes = client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: model_id,
                 model_definition: model_def_name,
@@ -35,20 +41,29 @@ export function CreateModel() {
                     repository: "instill-ai/model-dummy-cls"
                 }
             }
-        }), {
+        })
+        check(createOperationRes, {
             'CreateModel status': (r) => r && r.status === grpc.StatusOK,
-            'CreateModel model name': (r) => r && r.message.model.name === "models/" + model_id,
-            'CreateModel model id': (r) => r && r.message.model.id === model_id,
-            'CreateModel model uid': (r) => r && r.message.model.uid !== undefined,
-            'CreateModel model description': (r) => r && r.message.model.description !== undefined,
-            'CreateModel model visibility': (r) => r && r.message.model.visibility === "VISIBILITY_PUBLIC",
-            'CreateModel model createTime': (r) => r && r.message.model.createTime !== undefined,
-            'CreateModel model updateTime': (r) => r && r.message.model.updateTime !== undefined,
-            'CreateModel model configuration repository': (r) => r && r.message.model.configuration.repository === "instill-ai/model-dummy-cls",
-            'CreateModel model user': (r) => r && r.message.model.user !== undefined,
+            'CreateModel operation name': (r) => r && r.message.operation.name !== undefined,
         });
 
-        let req = { name: `models/${model_id}/instances/v1.0` }
+        // Check model creation finished
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
+        while (timeoutTime > currentTime) {
+            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+                name: createOperationRes.message.operation.name
+            }, {})
+            if (res.message.operation.done === true) {
+                break
+            }
+            sleep(1)
+            currentTime = new Date().getTime();
+        }
+
+        let req = {
+            name: `models/${model_id}/instances/v1.0`
+        }
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
@@ -57,10 +72,12 @@ export function CreateModel() {
         });
 
         // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
-        let currentTime = new Date().getTime();
-        let timeoutTime = new Date().getTime() + 120000;
+        currentTime = new Date().getTime();
+        timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', { name: `models/${model_id}/instances/v1.0` }, {})
+            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
+                name: `models/${model_id}/instances/v1.0`
+            }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
                 break
             }
@@ -68,7 +85,12 @@ export function CreateModel() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+            name: `models/${model_id}/instances/v1.0`,
+            inputs: [{
+                image_url: "https://artifacts.instill.tech/imgs/dog.jpg"
+            }]
+        }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'TriggerModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
             'TriggerModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
@@ -109,7 +131,7 @@ export function CreateModel() {
         }), {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
-
+        
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: randomString(10),
@@ -119,7 +141,9 @@ export function CreateModel() {
             'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+            name: "models/" + model_id
+        }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
 

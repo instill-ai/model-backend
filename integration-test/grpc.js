@@ -1,5 +1,8 @@
 import grpc from 'k6/net/grpc';
-import { check, group } from 'k6';
+import {
+    check,
+    group
+} from 'k6';
 
 import * as createModel from "./grpc_create_model.js"
 import * as updateModel from "./grpc_update_model.js"
@@ -22,8 +25,7 @@ client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
-export function setup() {
-}
+export function setup() {}
 
 export default () => {
     // Liveness check
@@ -83,7 +85,9 @@ export function teardown() {
     client.connect(constant.gRPCHost);
     group("Model API: Delete all models created by this test", () => {
         for (const model of client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}).message.models) {
-            check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: model.name }), {
+            check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+                name: model.name
+            }), {
                 'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
             });
         }

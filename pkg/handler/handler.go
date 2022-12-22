@@ -50,6 +50,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	database "github.com/instill-ai/model-backend/internal/db"
+	modelWorker "github.com/instill-ai/model-backend/internal/worker"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -623,8 +624,9 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		temporalClient, err := client.Dial(client.Options{
 			// ZapAdapter implements log.Logger interface and can be passed
 			// to the client constructor using client using client.Options.
-			Logger:   zapadapter.NewZapAdapter(logger),
-			HostPort: config.Config.Temporal.ClientOptions.HostPort,
+			Logger:    zapadapter.NewZapAdapter(logger),
+			HostPort:  config.Config.Temporal.ClientOptions.HostPort,
+			Namespace: modelWorker.Namespace,
 		})
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -733,23 +735,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			}
 		}
 
-		allowedMaxBatchSize := 0
-		switch uploadedModel.Instances[0].Task {
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-		}
+		allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Instances[0].Task)
 
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -770,20 +756,24 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		dbModel, err := modelService.CreateModel(owner, &uploadedModel)
+		wfId, err := modelService.CreateModelAsync(owner, &uploadedModel)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
 
-		pbModel := DBModelToPBModel(&localModelDefinition, dbModel)
-
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
 
 		m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
-		b, err := m.Marshal(&modelPB.CreateModelResponse{Model: pbModel})
+		b, err := m.Marshal(&modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+			Name: fmt.Sprintf("operations/%s", wfId),
+			Done: false,
+			Result: &longrunning.Operation_Response{
+				Response: &anypb.Any{},
+			},
+		}})
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -870,23 +860,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		return st.Err()
 	}
 
-	allowedMaxBatchSize := 0
-	switch uploadedModel.Instances[0].Task {
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	}
+	allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Instances[0].Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -905,13 +879,19 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		return st.Err()
 	}
 
-	dbModel, err := h.service.CreateModel(owner, uploadedModel)
+	wfId, err := h.service.CreateModelAsync(owner, uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
 	}
-	pbModel := DBModelToPBModel(&modelDef, dbModel)
-	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Model: pbModel})
+
+	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}})
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
 	}
@@ -1081,23 +1061,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 
-		allowedMaxBatchSize := 0
-		switch instance.Task {
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-		}
+		allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
+
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
 				"[handler] create a model",
@@ -1116,7 +1081,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 
 		githubModel.Instances = append(githubModel.Instances, instance)
 	}
-	dbModel, err := h.service.CreateModel(owner, &githubModel)
+	wfId, err := h.service.CreateModelAsync(owner, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1138,8 +1103,14 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	pbModel := DBModelToPBModel(modelDefinition, dbModel)
-	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+
+	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
 
 func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
@@ -1316,23 +1287,8 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 
-		allowedMaxBatchSize := 0
-		switch instance.Task {
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-		case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
-			allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-		}
+		allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
+
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
 				"[handler] create a model",
@@ -1352,7 +1308,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 
 		artivcModel.Instances = append(artivcModel.Instances, instance)
 	}
-	dbModel, err := h.service.CreateModel(owner, &artivcModel)
+	wfId, err := h.service.CreateModelAsync(owner, &artivcModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1376,9 +1332,13 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	pbModel := DBModelToPBModel(modelDefinition, dbModel)
-
-	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
 
 func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
@@ -1558,23 +1518,8 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	allowedMaxBatchSize := 0
-	switch instance.Task {
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	}
+	allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
+
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
 			"[handler] create a model",
@@ -1593,7 +1538,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 
 	huggingfaceModel.Instances = append(huggingfaceModel.Instances, instance)
 
-	dbModel, err := h.service.CreateModel(owner, &huggingfaceModel)
+	wfId, err := h.service.CreateModelAsync(owner, &huggingfaceModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1615,9 +1560,13 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	pbModel := DBModelToPBModel(modelDefinition, dbModel)
-
-	return &modelPB.CreateModelResponse{Model: pbModel}, nil
+	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunning.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
 
 func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
@@ -2066,7 +2015,6 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
-
 	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -2095,7 +2043,6 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	}); err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
-
 	wfId, err := h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
@@ -2455,8 +2402,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		temporalClient, err := client.Dial(client.Options{
 			// ZapAdapter implements log.Logger interface and can be passed
 			// to the client constructor using client using client.Options.
-			Logger:   zapadapter.NewZapAdapter(logger),
-			HostPort: config.Config.Temporal.ClientOptions.HostPort,
+			Logger:    zapadapter.NewZapAdapter(logger),
+			HostPort:  config.Config.Temporal.ClientOptions.HostPort,
+			Namespace: modelWorker.Namespace,
 		})
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -2656,12 +2604,20 @@ func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListMode
 
 func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
 	operationId, err := resource.GetOperationID(req.Name)
+	fmt.Println("operationId", operationId)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	operation, modelInstanceParam, err := h.service.GetOperation(operationId)
+	operation, modelInstanceParam, operationType, err := h.service.GetOperation(operationId)
+	fmt.Println("operation, modelInstanceParam, operationType, err", operation, modelInstanceParam, operationType, err)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
+	}
+
+	if !operation.Done {
+		return &modelPB.GetModelOperationResponse{
+			Operation: operation,
+		}, nil
 	}
 
 	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
@@ -2673,23 +2629,41 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
-	}
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
+	switch operationType {
+	case string(util.OperationTypeCreate):
+		pbModel := DBModelToPBModel(&modelDef, &dbModel)
+		res, err := anypb.New(pbModel)
+		if err != nil {
+			return &modelPB.GetModelOperationResponse{}, err
+		}
 
-	res, err := anypb.New(pbModelInstance)
-	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
-	}
+		operation.Result = &longrunning.Operation_Response{
+			Response: res,
+		}
+		return &modelPB.GetModelOperationResponse{
+			Operation: operation,
+		}, nil
+	case string(util.OperationTypeDeploy), string(util.OperationTypeUnDeploy):
+		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+		if err != nil {
+			return &modelPB.GetModelOperationResponse{}, err
+		}
+		pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
 
-	operation.Result = &longrunning.Operation_Response{
-		Response: res,
+		res, err := anypb.New(pbModelInstance)
+		if err != nil {
+			return &modelPB.GetModelOperationResponse{}, err
+		}
+
+		operation.Result = &longrunning.Operation_Response{
+			Response: res,
+		}
+		return &modelPB.GetModelOperationResponse{
+			Operation: operation,
+		}, nil
+	default:
+		return &modelPB.GetModelOperationResponse{}, fmt.Errorf("operation type not supported")
 	}
-	return &modelPB.GetModelOperationResponse{
-		Operation: operation,
-	}, nil
 }
 
 func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationRequest) (*modelPB.ListModelOperationResponse, error) {
@@ -2744,7 +2718,13 @@ func (h *handler) CancelModelOperation(ctx context.Context, req *modelPB.CancelM
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
 
-	_, modelInstanceParam, err := h.service.GetOperation(operationId)
+	_, modelInstanceParam, operationType, err := h.service.GetOperation(operationId)
+	if err != nil {
+		return &modelPB.CancelModelOperationResponse{}, err
+	}
+
+	// get model instance state before cancel operation to set in case of operation in progess and state is UNSPECIFIED
+	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
@@ -2753,30 +2733,23 @@ func (h *handler) CancelModelOperation(ctx context.Context, req *modelPB.CancelM
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
 
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	// Fix for corner case: maybe when cancel operation in Temporal, the Temporal workflow already trigger Triton server to deploy model
-	// So we will undeploy model if the model is deployed
-	if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
-		if _, err = h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID); err != nil {
-			// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
-			if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
-				return &modelPB.CancelModelOperationResponse{}, status.Errorf(codes.Internal, err.Error())
+	// Fix for corner case: maybe when cancel operation in Temporal, the Temporal workflow already trigger Triton server to deploy/undeploy model instance
+	switch operationType {
+	case string(util.OperationTypeDeploy):
+		if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
+			if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
+				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+			}); err != nil {
+				return &modelPB.CancelModelOperationResponse{}, err
 			}
-			return &modelPB.CancelModelOperationResponse{}, err
+		}
+	case string(util.OperationTypeUnDeploy):
+		if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
+			if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
+				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+			}); err != nil {
+				return &modelPB.CancelModelOperationResponse{}, err
+			}
 		}
 	}
 

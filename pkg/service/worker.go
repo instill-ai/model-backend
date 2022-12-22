@@ -7,6 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/worker"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
@@ -62,6 +63,7 @@ func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, m
 			ModelUID:         modelUID,
 			ModelInstanceUID: modelInstanceUID,
 		})
+
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
 		return "", err
@@ -72,7 +74,7 @@ func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, m
 	return id.String(), nil
 }
 
-func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunning.Operation, *worker.ModelInstanceParams, error) {
+func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunning.Operation, *worker.ModelInstanceParams, string, error) {
 	operation := longrunning.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -106,20 +108,27 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 
 	// Get search attributes that were provided when workflow was started.
 	modelInstanceParams := worker.ModelInstanceParams{}
+	operationType := ""
 	for k, v := range workflowExecutionInfo.GetSearchAttributes().GetIndexedFields() {
-		if k != "ModelUID" && k != "ModelInstanceUID" && k != "Owner" {
+		if k != "ModelUID" && k != "ModelInstanceUID" && k != "Owner" && k != "Type" {
 			continue
 		}
 		var currentVal string
 		if err := converter.GetDefaultDataConverter().FromPayload(v, &currentVal); err != nil {
-			return nil, nil, err
+			return nil, nil, "", err
 		}
 		if currentVal == "" {
 			continue
 		}
+
+		if k == "Type" {
+			operationType = currentVal
+			continue
+		}
+
 		uid, err := uuid.FromString(currentVal)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, "", err
 		}
 		if k == "ModelUID" {
 			modelInstanceParams.ModelUID = uid
@@ -130,15 +139,15 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 		}
 	}
 	operation.Name = fmt.Sprintf("operations/%s", workflowExecutionInfo.Execution.WorkflowId)
-	return &operation, &modelInstanceParams, nil
+	return &operation, &modelInstanceParams, operationType, nil
 }
 
-func (s *service) GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, error) {
+func (s *service) GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, string, error) {
 	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(context.Background(), workflowId, "")
-	if err != nil {
-		return nil, nil, err
-	}
 
+	if err != nil {
+		return nil, nil, "", err
+	}
 	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
 }
 
@@ -158,7 +167,7 @@ func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunning.
 	var operations []*longrunning.Operation
 	var modelInstanceParams []*worker.ModelInstanceParams
 	for _, wf := range executions {
-		operation, modelInstanceParam, err := getOperationFromWorkflowInfo(wf)
+		operation, modelInstanceParam, _, err := getOperationFromWorkflowInfo(wf)
 
 		if err != nil {
 			return nil, nil, "", 0, err
@@ -171,4 +180,30 @@ func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunning.
 
 func (s *service) CancelOperation(workflowId string) error {
 	return s.temporalClient.CancelWorkflow(context.Background(), workflowId, "")
+}
+
+func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string, error) {
+	logger, _ := logger.GetZapLogger()
+	id, _ := uuid.NewV4()
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        id.String(),
+		TaskQueue: worker.TaskQueue,
+	}
+
+	we, err := s.temporalClient.ExecuteWorkflow(
+		context.Background(),
+		workflowOptions,
+		"CreateModelWorkflow",
+		&worker.ModelParams{
+			Model: model,
+			Owner: owner,
+		})
+	if err != nil {
+		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
+		return "", err
+	}
+
+	logger.Info(fmt.Sprintf("started workflow with WorkflowID %s and RunID %s", we.GetID(), we.GetRunID()))
+
+	return id.String(), nil
 }

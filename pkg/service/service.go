@@ -16,8 +16,6 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -36,7 +34,7 @@ import (
 )
 
 type Service interface {
-	CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error)
+	CreateModelAsync(owner string, model *datamodel.Model) (string, error)
 	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(owner string, modelID string) error
@@ -58,7 +56,7 @@ type Service interface {
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
-	GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, error)
+	GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, string, error)
 	ListOperation(pageSize int, pageToken string) ([]*longrunning.Operation, []*worker.ModelInstanceParams, string, int64, error)
 	CancelOperation(workflowId string) error
 }
@@ -468,21 +466,6 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	}
 }
 
-func (s *service) CreateModel(owner string, model *datamodel.Model) (*datamodel.Model, error) {
-	if existingModel, _ := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL); existingModel.ID != "" {
-		return &datamodel.Model{}, status.Errorf(codes.FailedPrecondition, "The name %s is existing in your workspace", model.ID)
-	}
-	if err := s.repository.CreateModel(*model); err != nil {
-		return &datamodel.Model{}, err
-	}
-
-	if createdModel, err := s.repository.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL); err != nil {
-		return &datamodel.Model{}, err
-	} else {
-		return &createdModel, nil
-	}
-}
-
 func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {
 	return s.repository.ListModel(owner, view, pageSize, pageToken)
 }
@@ -526,6 +509,21 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 	modelInstancesInDB, err := s.repository.GetModelInstances(modelInDB.UID)
 	if err == nil {
 		for i := 0; i < len(modelInstancesInDB); i++ {
+			if modelInstancesInDB[i].State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
+				st, err := sterr.CreateErrorPreconditionFailure(
+					"[service] delete model",
+					[]*errdetails.PreconditionFailure_Violation{
+						{
+							Type:        "DELETE",
+							Subject:     fmt.Sprintf("id %s", modelInDB.ID),
+							Description: "The model is still in operations, please wait the operation finish and try it again",
+						},
+					})
+				if err != nil {
+					logger.Error(err.Error())
+				}
+				return st.Err()
+			}
 			if err := s.UndeployModelInstance(modelInstancesInDB[i].UID); err != nil {
 				return err
 			}

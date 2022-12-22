@@ -52,19 +52,19 @@ func (mr *MockServiceMockRecorder) CancelOperation(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelOperation", reflect.TypeOf((*MockService)(nil).CancelOperation), arg0)
 }
 
-// CreateModel mocks base method.
-func (m *MockService) CreateModel(arg0 string, arg1 *datamodel.Model) (*datamodel.Model, error) {
+// CreateModelAsync mocks base method.
+func (m *MockService) CreateModelAsync(arg0 string, arg1 *datamodel.Model) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModel", arg0, arg1)
-	ret0, _ := ret[0].(*datamodel.Model)
+	ret := m.ctrl.Call(m, "CreateModelAsync", arg0, arg1)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateModel indicates an expected call of CreateModel.
-func (mr *MockServiceMockRecorder) CreateModel(arg0, arg1 interface{}) *gomock.Call {
+// CreateModelAsync indicates an expected call of CreateModelAsync.
+func (mr *MockServiceMockRecorder) CreateModelAsync(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockService)(nil).CreateModel), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelAsync", reflect.TypeOf((*MockService)(nil).CreateModelAsync), arg0, arg1)
 }
 
 // DeleteModel mocks base method.
@@ -187,13 +187,14 @@ func (mr *MockServiceMockRecorder) GetModelInstanceByUid(arg0, arg1, arg2 interf
 }
 
 // GetOperation mocks base method.
-func (m *MockService) GetOperation(arg0 string) (*longrunningpb.Operation, *worker.ModelInstanceParams, error) {
+func (m *MockService) GetOperation(arg0 string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOperation", arg0)
 	ret0, _ := ret[0].(*longrunningpb.Operation)
 	ret1, _ := ret[1].(*worker.ModelInstanceParams)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret2, _ := ret[2].(string)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // GetOperation indicates an expected call of GetOperation.

@@ -180,6 +180,7 @@ func (r *repository) UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInf
 	if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"uid": modelInstanceUID}).Updates(&instanceInfo); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
+	//TODO: gorm do not update the zero value with struct, so we need to update the state manually.
 	if instanceInfo.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
 		if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"uid": modelInstanceUID}).Updates(map[string]interface{}{"state": instanceInfo.State}); result.Error != nil {
 			return status.Errorf(codes.Internal, "Error %v", result.Error)

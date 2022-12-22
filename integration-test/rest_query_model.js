@@ -1,7 +1,15 @@
 import http from "k6/http";
-import { check, group } from "k6";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import {
+  check,
+  group,
+  sleep
+} from "k6";
+import {
+  FormData
+} from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import {
+  randomString
+} from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 import {
   genHeader,
@@ -22,32 +30,29 @@ export function GetModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
+      })
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description === model_description,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/multipart task cls response model.configuration.content": (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
       });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
@@ -65,7 +70,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
-          r.json().model.configuration ===  null,
+          r.json().model.configuration === null,
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
@@ -119,7 +124,7 @@ export function ListModel() {
   {
     group("Model Backend API: Get model list", function () {
       let model_id = randomString(10)
-      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -127,34 +132,27 @@ export function ListModel() {
         }
       }), {
         headers: genHeader("application/json"),
-      }), {
+      })
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === "model-definitions/github",
-        "POST /v1alpha/models/multipart task cls response model.configuration": (r) =>
-          r.json().model.configuration !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.configuration.repository": (r) =>
-          r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
-        "POST /v1alpha/models/multipart task cls response model.configuration.html_url": (r) =>
-          r.json().model.configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
       });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       check(http.get(`${constant.apiHost}/v1alpha/models`, {
         headers: genHeader(`application/json`),
@@ -178,7 +176,7 @@ export function ListModel() {
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
-          r.json().models[0].configuration ===  null,
+          r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
@@ -211,9 +209,9 @@ export function ListModel() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
-          r.json().models[0].configuration.repository  === "instill-ai/model-dummy-cls",
+          r.json().models[0].configuration.repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
-          r.json().models[0].configuration.html_url  === "https://github.com/instill-ai/model-dummy-cls",
+          r.json().models[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
@@ -253,79 +251,77 @@ export function LookupModel() {
       check(res, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let r = http.get(`${constant.apiHost}/v1alpha/${res.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (r.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+      let modelOperation = http.get(`${constant.apiHost}/v1alpha/${res.json().operation.name}`, {
+        headers: genHeader(`application/json`),
+      })
+      check(http.get(`${constant.apiHost}/v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
+          r.status === 200,
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.name`]: (r) =>
           r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.id`]: (r) =>
           r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/multipart task cls response model.configuration.content": (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration`]: (r) =>
+          r.json().model.configuration === null,
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.owner`]: (r) =>
           r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/models/${res.json().model.uid}/lookUp`, {
+      check(http.get(`${constant.apiHost}/v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response status`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.name`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.name`]: (r) =>
           r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.uid`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.id`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.id`]: (r) =>
           r.json().model.id === model_id,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.description`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.model_definition`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.configuration`]: (r) =>
-          r.json().model.configuration ===  null,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
-      });
-
-      check(http.get(`${constant.apiHost}/v1alpha/models/${res.json().model.uid}/lookUp?view=VIEW_FULL`, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response status`]: (r) =>
-          r.status === 200,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.uid`]: (r) =>
-          r.json().model.uid !== undefined,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.id`]: (r) =>
-          r.json().model.id === model_id,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.description`]: (r) =>
-          r.json().model.description === model_description,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.configuration.content`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration.content`]: (r) =>
           r.json().model.configuration.content === "dummy-cls-model.zip",
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.owner`]: (r) =>
           r.json().model.user === 'users/local-user',
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
-        [`GET /v1alpha/models/${res.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
 

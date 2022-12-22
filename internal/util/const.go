@@ -56,3 +56,11 @@ var MarshalOptions protojson.MarshalOptions = protojson.MarshalOptions{
 var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
 	DiscardUnknown: true,
 }
+
+type OperationType string
+
+const (
+	OperationTypeCreate   OperationType = "create"
+	OperationTypeDeploy   OperationType = "deploy"
+	OperationTypeUnDeploy OperationType = "undeploy"
+)

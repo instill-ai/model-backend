@@ -22,12 +22,18 @@ type ModelInstanceParams struct {
 	Owner            string
 }
 
+type ModelParams struct {
+	Model *datamodel.Model
+	Owner string
+}
+
 func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("DeployModelWorkflow started")
 
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
+		"Type":             util.OperationTypeDeploy,
 		"ModelUID":         param.ModelUID.String(),
 		"ModelInstanceUID": param.ModelInstanceUID.String(),
 		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
@@ -206,6 +212,7 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelInstanc
 
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
+		"Type":             util.OperationTypeUnDeploy,
 		"ModelUID":         param.ModelUID.String(),
 		"ModelInstanceUID": param.ModelInstanceUID.String(),
 		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
@@ -258,6 +265,40 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelInstance
 	}); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error {
+	fmt.Println("CreateModelWorkflow started")
+	logger := workflow.GetLogger(ctx)
+	logger.Info("CreateModelWorkflow started")
+
+	if err := w.repository.CreateModel(*param.Model); err != nil {
+		return err
+	}
+
+	dbModel, err := w.repository.GetModelById(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
+	if err != nil {
+		return err
+	}
+
+	// Upsert search attributes.
+	attributes := map[string]interface{}{
+		"Type":             util.OperationTypeCreate,
+		"ModelUID":         dbModel.UID,
+		"ModelInstanceUID": "",
+		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
+	}
+
+	// This won't persist search attributes on server because commands are not sent to server,
+	// but local cache will be updated.
+	err = workflow.UpsertSearchAttributes(ctx, attributes)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("CreateModelWorkflow completed")
 
 	return nil
 }
