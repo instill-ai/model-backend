@@ -1,6 +1,6 @@
 # model-backend
 
-`model-backend` manages all model resources including model definitions and model instances within [Visual Data Preparation (VDP)](https://github.com/instill-ai/vdp) to convert the unstructured visual data to the structured data.
+`model-backend` manages all model resources including model definitions and model instances within [Versatile Data Pipeline (VDP)](https://github.com/instill-ai/vdp) to convert the unstructured data to meaningful data representations.
 
 ## Local dev
 
