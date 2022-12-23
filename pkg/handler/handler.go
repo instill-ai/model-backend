@@ -2002,20 +2002,9 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	}
 
 	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			"[handler] deploy model error",
-			"wrong state",
-			fmt.Sprintf("deploy model only work with offline model state, current model state is %v", dbModelInstance.State),
-			"",
-			err.Error(),
-		)
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-
-		return &modelPB.DeployModelInstanceResponse{}, st.Err()
+		return &modelPB.DeployModelInstanceResponse{},
+			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model instance state, current model state is %s",
+				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
 	}
 
 	_, err = h.service.GetTritonModels(dbModelInstance.UID)
@@ -2069,7 +2058,6 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 }
 
 func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
-	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
@@ -2092,19 +2080,9 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	}
 
 	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			"[handler] undeploy model error",
-			"wrong state",
-			fmt.Sprintf("undeploy model only work with online model state, current model state is %v", dbModelInstance.State),
-			"",
-			err.Error(),
-		)
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		return &modelPB.UndeployModelInstanceResponse{}, st.Err()
+		return &modelPB.UndeployModelInstanceResponse{},
+			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
+				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
 	}
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
