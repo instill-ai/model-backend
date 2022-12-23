@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.9.1-alpha...v0.10.0-alpha) (2022-12-23)
+
+
+### Features
+
+* support async deploy and undeploy model instance ([#192](https://github.com/instill-ai/model-backend/issues/192)) ([ed36dc7](https://github.com/instill-ai/model-backend/commit/ed36dc77df2819be822e57bb7020e2bd06cb2edc))
+* support semantic segmentation ([#203](https://github.com/instill-ai/model-backend/issues/203)) ([f22262c](https://github.com/instill-ai/model-backend/commit/f22262cf4da1c64f9e45244a76baf2680ae4dd5d))
+
+
+### Bug Fixes
+
+* model instance state update to unspecified state ([#206](https://github.com/instill-ai/model-backend/issues/206)) ([14c87d5](https://github.com/instill-ai/model-backend/commit/14c87d5afc3a7a1ad957ff1a05908b14c9902d0c))
+* panic error with nil object ([#208](https://github.com/instill-ai/model-backend/issues/208)) ([a342113](https://github.com/instill-ai/model-backend/commit/a342113ae119646e7de775cb2d8d5f3e7e082f58))
+
 ## [0.9.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.9.0-alpha...v0.9.1-alpha) (2022-11-28)
 
 
