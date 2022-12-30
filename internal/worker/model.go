@@ -166,22 +166,35 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 	var tEnsembleModel datamodel.TritonModel
 
 	if tEnsembleModel, err = w.repository.GetTritonEnsembleModel(param.ModelInstanceUID); err != nil {
-		return err
-	}
-	// Load one ensemble model, which will also load all its dependent models
-	if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err1 := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
-			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
-		}); err1 != nil {
-			return err1
+		tritonModels, err = w.repository.GetTritonModels(dbModelInstance.UID)
+		if err != nil {
+			return err
 		}
-		return err
-	}
+		for _, tModel := range tritonModels {
+			if _, err = w.triton.LoadModelRequest(tModel.Name); err != nil {
+				if err1 := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
+				}); err1 != nil {
+					return err1
+				}
+			}
+		}
+	} else {
+		// Load one ensemble model, which will also load all its dependent models
+		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
+			if err1 := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
+			}); err1 != nil {
+				return err1
+			}
+			return err
+		}
 
-	if err = w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
-	}); err != nil {
-		return err
+		if err = w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil
