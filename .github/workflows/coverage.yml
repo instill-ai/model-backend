@@ -17,7 +17,7 @@ jobs:
           envFile: .env
           expand: true
 
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GOLANG_VERSION }}
 
