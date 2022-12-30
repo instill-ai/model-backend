@@ -14,9 +14,7 @@ const model_def_name = "model-definitions/github"
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
             'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
@@ -27,9 +25,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
         let model_id = randomString(10)
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
@@ -58,7 +54,7 @@ export function CreateModel() {
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
             'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
             'DeployModelInstance operation done': (r) => r && r.message.operation.done === false,
-        }); 
+        });
 
         // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
         let currentTime = new Date().getTime();
@@ -70,7 +66,7 @@ export function CreateModel() {
             }
             sleep(1)
             currentTime = new Date().getTime();
-        }    
+        }
 
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/v1.0`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,

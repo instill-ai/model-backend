@@ -1,4 +1,7 @@
-FROM --platform=$BUILDPLATFORM golang:1.18.2 AS build
+ARG GOLANG_VERSION
+ARG UBUNTU_VERSION
+
+FROM --platform=$BUILDPLATFORM golang:${GOLANG_VERSION} AS build
 
 ARG SERVICE_NAME
 
@@ -20,12 +23,12 @@ WORKDIR /src/third_party
 
 RUN git clone https://github.com/InfuseAI/ArtiVC && cd ArtiVC && git checkout tags/v0.9.0 && go get -d -v ./... && make build
 
-FROM --platform=$BUILDPLATFORM ubuntu:20.04
+FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 
 RUN apt update && \
     apt install -y bash \
-                   build-essential \
-                   python3 python3-setuptools python3-pip git git-lfs && \
+    build-essential \
+    python3 python3-setuptools python3-pip git git-lfs && \
     rm -rf /var/lib/apt/lists
 RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
@@ -48,4 +51,3 @@ COPY --from=build /${SERVICE_NAME}-worker ./
 
 # ArtiVC tool to work with cloud storage
 COPY --from=build /src/third_party/ArtiVC/bin/avc /bin/avc
-

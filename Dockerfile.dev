@@ -1,6 +1,8 @@
+ARG GOLANG_VERSION
+
 FROM loadimpact/k6:latest AS k6official
 
-FROM --platform=$BUILDPLATFORM golang:1.18.2
+FROM golang:${GOLANG_VERSION}
 
 ARG SERVICE_NAME
 
@@ -8,7 +10,6 @@ COPY --from=docker:dind /usr/local/bin/docker /usr/local/bin/
 COPY --from=k6official /usr/bin/k6 /usr/bin/k6
 
 WORKDIR /${SERVICE_NAME}
-COPY . /${SERVICE_NAME}
 
 COPY go.mod go.sum ./
 RUN go mod download

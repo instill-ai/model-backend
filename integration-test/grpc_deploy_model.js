@@ -20,9 +20,7 @@ const model_def_name = "model-definitions/local"
 export function DeployUndeployModel() {
     // Deploy ModelInstance check
     group("Model API: Deploy ModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -31,7 +29,7 @@ export function DeployUndeployModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -76,7 +74,7 @@ export function DeployUndeployModel() {
             }
             sleep(1)
             currentTime = new Date().getTime();
-        }            
+        }
 
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', { name: `models/non-existed/instances/latest` }), {
             'DeployModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,

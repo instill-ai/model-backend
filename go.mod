@@ -1,8 +1,9 @@
 module github.com/instill-ai/model-backend
 
-go 1.18
+go 1.19
 
 require (
+	cloud.google.com/go/longrunning v0.3.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/ghodss/yaml v1.0.0
@@ -36,7 +37,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/catalinc/hashcash v0.0.0-20220723060415-5e3ec3e24f67 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

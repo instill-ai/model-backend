@@ -21,9 +21,7 @@ const model_def_name = "model-definitions/local"
 export function InferModel() {
     // TriggerModelInstance check
     group("Model API: TriggerModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -32,7 +30,7 @@ export function InferModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -77,7 +75,7 @@ export function InferModel() {
             }
             sleep(1)
             currentTime = new Date().getTime();
-        }                 
+        }
         res = client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {})
         check(res, {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -114,9 +112,7 @@ export function InferModel() {
 
     // TestModelInstance check
     group("Model API: TestModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -125,7 +121,7 @@ export function InferModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -170,7 +166,7 @@ export function InferModel() {
             }
             sleep(1)
             currentTime = new Date().getTime();
-        }            
+        }
 
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', { name: `models/${model_id}/instances/latest`, inputs: [{ image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }] }, {}), {
             'TestModelInstance status': (r) => r && r.status === grpc.StatusOK,

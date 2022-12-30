@@ -1,9 +1,19 @@
-let host = __ENV.HOST ? `${__ENV.HOST}` : "localhost"
-let port = 8083
-if (__ENV.HOST == "api-gateway") { host = "localhost" }
-if (__ENV.HOST == "api-gateway") { port = 8000 }
+let proto, host, port
+
+if (__ENV.HOST == "localhost") {
+    // api-gateway mode (outside container)
+    proto = "https"
+    host = "localhost"
+    port = 8080
+} else {
+    // container mode (inside container)
+    proto = "http"
+    host = "model-backend"
+    port = 8083
+}
+
 export const gRPCHost = `${host}:${port}`
-export const apiHost = `http://${host}:${port}`
+export const apiHost = `${proto}://${host}:${port}`
 
 export const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 export const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-det-model.zip`, "b");
