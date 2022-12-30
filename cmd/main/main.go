@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -111,11 +112,13 @@ func main() {
 			grpc_recovery.UnaryServerInterceptor(recoveryInterceptorOpt()),
 		)),
 	}
+
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
 	grpcS := grpc.NewServer(grpcServerOpts...)
+	reflection.Register(grpcS)
 
 	triton := triton.NewTriton()
 	defer triton.Close()
