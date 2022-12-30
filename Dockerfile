@@ -1,4 +1,7 @@
-FROM --platform=$BUILDPLATFORM golang:1.18.2 AS build
+ARG GOLANG_VERSION
+ARG UBUNTU_VERSION
+
+FROM --platform=$BUILDPLATFORM golang:${GOLANG_VERSION} AS build
 
 ARG SERVICE_NAME
 
@@ -20,7 +23,7 @@ WORKDIR /src/third_party
 
 RUN git clone https://github.com/InfuseAI/ArtiVC && cd ArtiVC && git checkout tags/v0.9.0 && go get -d -v ./... && make build
 
-FROM --platform=$BUILDPLATFORM ubuntu:20.04
+FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 
 RUN apt update && \
     apt install -y bash \
