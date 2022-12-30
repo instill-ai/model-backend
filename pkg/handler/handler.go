@@ -711,23 +711,26 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
 
-		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"Local model",
-				"Missing ensemble model",
-				"",
-				"err.Error()",
-			)
-			if e != nil {
-				logger.Error(e.Error())
+		maxBatchSize := 0
+		if ensembleFilePath != "" {
+			maxBatchSize, err = util.GetMaxBatchSize(ensembleFilePath)
+			if err != nil {
+				st, e := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"Local model",
+					"Missing ensemble model",
+					"",
+					"err.Error()",
+				)
+				if e != nil {
+					logger.Error(e.Error())
+				}
+				obj, _ := json.Marshal(st.Details())
+				makeJSONResponse(w, 400, st.Message(), string(obj))
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				return
 			}
-			obj, _ := json.Marshal(st.Details())
-			makeJSONResponse(w, 400, st.Message(), string(obj))
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
-			return
 		}
 
 		allowedMaxBatchSize := 0
