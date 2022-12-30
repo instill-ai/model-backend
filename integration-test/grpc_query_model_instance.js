@@ -20,9 +20,7 @@ const model_def_name = "model-definitions/local"
 export function GetModelInstance() {
     // GetModelInstance check
     group("Model API: GetModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -31,7 +29,7 @@ export function GetModelInstance() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         }), {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -88,9 +86,7 @@ export function GetModelInstance() {
 
     // LookUpModelInstance check
     group("Model API: LookUpModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -99,7 +95,7 @@ export function GetModelInstance() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let res_model = http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let res_model = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(res_model, {
@@ -163,9 +159,7 @@ export function GetModelInstance() {
 export function ListModelInstance() {
     // ListModelInstance check
     group("Model API: ListModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -174,7 +168,7 @@ export function ListModelInstance() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let res_model = http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let res_model = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(res_model, {
@@ -234,9 +228,7 @@ export function ListModelInstance() {
 export function LookupModelInstance() {
     // LookUpModelInstance check
     group("Model API: LookUpModelInstance", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
+        client.connect(constant.gRPCHost);
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -245,7 +237,7 @@ export function LookupModelInstance() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let res_model = http.request("POST", `http://${constant.gRPCHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let res_model = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(res_model, {
