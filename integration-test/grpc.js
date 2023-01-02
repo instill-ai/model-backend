@@ -12,6 +12,10 @@ import * as queryModelDefinition from "./grpc_query_model_definition.js"
 
 import * as constant from "./const.js"
 
+export const options = {
+    insecureSkipTLSVerify: true,
+};
+
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
