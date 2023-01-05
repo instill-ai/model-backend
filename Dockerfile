@@ -11,17 +11,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-ENV CGO_ENABLED=0
-
 ARG TARGETOS TARGETARCH
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME} ./cmd/main
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
-
-WORKDIR /src/third_party
-
-RUN git clone https://github.com/InfuseAI/ArtiVC && cd ArtiVC && git checkout tags/v0.9.0 && go get -d -v ./... && make build
 
 FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 

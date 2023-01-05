@@ -46,6 +46,8 @@ build:							## Build dev docker image
 	@docker build \
 		--build-arg SERVICE_NAME=${SERVICE_NAME} \
 		--build-arg GOLANG_VERSION=${GOLANG_VERSION} \
+		--build-arg ARTIVC_VERSION=${ARTIVC_VERSION} \
+		--build-arg K6_VERSION=${K6_VERSION} \
 		-f Dockerfile.dev  -t instill/${SERVICE_NAME}:dev .
 
 .PHONY: go-gen
