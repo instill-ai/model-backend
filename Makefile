@@ -6,8 +6,6 @@
 include .env
 export
 
-K6BIN := $(if $(shell command -v k6 2> /dev/null),k6,$(shell mktemp -d)/k6)
-
 #============================================================================
 
 .PHONY: dev
@@ -63,15 +61,8 @@ unit-test:       				## Run unit test
 
 .PHONY: integration-test
 integration-test:				## Run integration test
-	@if [ ${K6BIN} != "k6" ]; then\
-		echo "Install k6 binary at ${K6BIN}";\
-		go version;\
-		go install go.k6.io/xk6/cmd/xk6@latest;\
-		xk6 build --with github.com/szkiba/xk6-jose@latest --output ${K6BIN};\
-	fi
-	@TEST_FOLDER_ABS_PATH=${PWD} ${K6BIN} run -e HOST=$(HOST) integration-test/grpc.js --no-usage-report
-	@TEST_FOLDER_ABS_PATH=${PWD} ${K6BIN} run -e HOST=$(HOST) integration-test/rest.js --no-usage-report
-	@if [ ${K6BIN} != "k6" ]; then rm -rf $(dirname ${K6BIN}); fi
+	@TEST_FOLDER_ABS_PATH=${PWD} k6 run -e HOST=$(HOST) integration-test/grpc.js --no-usage-report
+	@TEST_FOLDER_ABS_PATH=${PWD} k6 run -e HOST=$(HOST) integration-test/rest.js --no-usage-report
 
 .PHONY: help
 help:       	 				## Show this help

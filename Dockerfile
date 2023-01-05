@@ -44,4 +44,6 @@ COPY --from=build /${SERVICE_NAME} ./
 COPY --from=build /${SERVICE_NAME}-worker ./
 
 # ArtiVC tool to work with cloud storage
-COPY --from=build /src/third_party/ArtiVC/bin/avc /bin/avc
+ARG TARGETOS TARGETARCH ARTIVC_VERSION
+ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
+RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /bin
