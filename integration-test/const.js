@@ -1,12 +1,17 @@
 let proto, host, port
 
-if (__ENV.HOST == "localhost") {
-    // api-gateway mode (outside container)
+if (__ENV.MODE == "api-gateway") {
+    // api-gateway mode
+    proto = "https"
+    host = "api-gateway"
+    port = 8080
+} else if (__ENV.MODE == "localhost") {
+    // localhost mode for GitHub Actions
     proto = "https"
     host = "localhost"
     port = 8080
 } else {
-    // container mode (inside container)
+    // direct microservice mode
     proto = "http"
     host = "model-backend"
     port = 8083
