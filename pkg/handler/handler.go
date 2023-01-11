@@ -2620,7 +2620,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 		}, nil
 	}
 
-	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
@@ -2644,7 +2644,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 			Operation: operation,
 		}, nil
 	case string(util.OperationTypeDeploy), string(util.OperationTypeUnDeploy):
-		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, req.GetView())
 		if err != nil {
 			return &modelPB.GetModelOperationResponse{}, err
 		}
@@ -2667,44 +2667,15 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 }
 
 func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationRequest) (*modelPB.ListModelOperationResponse, error) {
-	logger, _ := logger.GetZapLogger()
-
-	pageSize := 10
+	pageSize := util.DefaultPageSize
 	if req.PageSize != nil {
 		pageSize = int(*req.PageSize)
 	}
-	operations, modelInstanceParams, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
+	operations, _, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
 	if err != nil {
 		return &modelPB.ListModelOperationResponse{}, err
 	}
 
-	for idx, operation := range operations {
-		modelInstanceParam := modelInstanceParams[idx]
-		dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, modelPB.View_VIEW_FULL)
-		if err != nil {
-			logger.Info(err.Error())
-			continue
-		}
-		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-		if err != nil {
-			logger.Info(err.Error())
-			continue
-		}
-		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
-		if err != nil {
-			logger.Info(err.Error())
-			continue
-		}
-		pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-		res, err := anypb.New(pbModelInstance)
-		if err != nil {
-			logger.Info(err.Error())
-			continue
-		}
-		operation.Result = &longrunning.Operation_Response{
-			Response: res,
-		}
-	}
 	return &modelPB.ListModelOperationResponse{
 		Operations:    operations,
 		NextPageToken: nextPageToken,

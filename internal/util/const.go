@@ -64,3 +64,5 @@ const (
 	OperationTypeDeploy   OperationType = "deploy"
 	OperationTypeUnDeploy OperationType = "undeploy"
 )
+
+const DefaultPageSize = 10
