@@ -23,8 +23,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/datatypes"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 type ModelMeta struct {
@@ -695,4 +697,25 @@ func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonMo
 	}
 
 	return nil
+}
+
+func GetSupportedBatchSize(task datamodel.ModelInstanceTask) int {
+	allowedMaxBatchSize := 0
+	switch task {
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
+	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
+	}
+	return allowedMaxBatchSize
 }

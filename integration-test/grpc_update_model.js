@@ -1,8 +1,16 @@
 import grpc from 'k6/net/grpc';
-import { check, group } from 'k6';
+import {
+    check,
+    group,
+    sleep
+} from 'k6';
 import http from "k6/http";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import {
+    FormData
+} from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import {
+    randomString
+} from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 import {
     genHeader,
@@ -30,33 +38,29 @@ export function UpdateModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-        }), {
+        })
+        check(createClsModelRes, {
             "POST /v1alpha/models/multipart task cls response status": (r) =>
                 r.status === 201,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.name": (r) =>
-                r.json().model.name === `models/${model_id}`,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.uid": (r) =>
-                r.json().model.uid !== undefined,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.id": (r) =>
-                r.json().model.id === model_id,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.description": (r) =>
-                r.json().model.description === model_description,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.model_definition": (r) =>
-                r.json().model.model_definition === model_def_name,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.configuration": (r) =>
-                r.json().model.configuration !== undefined,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.visibility": (r) =>
-                r.json().model.visibility === "VISIBILITY_PRIVATE",
-            "POST /v1alpha/models/multipart (multipart) task cls response model.owner": (r) =>
-                r.json().model.user === 'users/local-user',
-            "POST /v1alpha/models/multipart (multipart) task cls response model.create_time": (r) =>
-                r.json().model.create_time !== undefined,
-            "POST /v1alpha/models/multipart (multipart) task cls response model.update_time": (r) =>
-                r.json().model.update_time !== undefined,
+            "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+                r.json().operation.name !== undefined,
         });
 
+        // Check model creation finished
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
+        while (timeoutTime > currentTime) {
+            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+                name: createClsModelRes.json().operation.name
+            }, {})
+            if (res.message.operation.done === true) {
+                break
+            }
+            sleep(1)
+            currentTime = new Date().getTime();
+        }
         let res = client.invoke('vdp.model.v1alpha.ModelService/UpdateModel', {
             model: {
                 name: "models/" + model_id,
@@ -78,7 +82,9 @@ export function UpdateModel() {
             "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', { name: "models/" + model_id }), {
+        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+            name: "models/" + model_id
+        }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
         client.close();

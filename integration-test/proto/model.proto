@@ -19,6 +19,7 @@ import "./detection_output.proto";
 import "./keypoint_output.proto";
 import "./ocr_output.proto";
 import "./instance_segmentation_output.proto";
+import "./semantic_segmentation_output.proto";
 import "./unspecified_output.proto";
 
 // Model represents a model
@@ -103,6 +104,8 @@ message ModelInstance {
     TASK_OCR = 4;
     // Task: INSTANCE SEGMENTATION
     TASK_INSTANCE_SEGMENTATION = 5;
+    // Task: SEMANTIC SEGMENTATION
+    TASK_SEMANTIC_SEGMENTATION = 6;
   }
 
   // State enumerates a model instance state
@@ -206,8 +209,8 @@ message CreateModelRequest {
 
 // CreateModelResponse represents a response for a model
 message CreateModelResponse {
-  // The created model
-  Model model = 1;
+  // Create model operation message
+  google.longrunning.Operation operation = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // CreateModelBinaryFileUploadRequest represents a request to create a model
@@ -224,8 +227,8 @@ message CreateModelBinaryFileUploadRequest {
 // CreateModelBinaryFileUploadResponse represents a response for a model
 // instance
 message CreateModelBinaryFileUploadResponse {
-  // The created model
-  Model model = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Create model operation message
+  google.longrunning.Operation operation = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
@@ -488,7 +491,7 @@ message GetModelInstanceCardResponse {
 //  Trigger methods
 ////////////////////////////////////
 
-// TaskOutput represents the output of an AI task result from a model instance
+// TaskOutput represents the output of a CV Task result from a model instance
 message TaskOutput {
   // The inference task output
   oneof output {
@@ -503,8 +506,10 @@ message TaskOutput {
     OcrOutput ocr = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The instance segmentation output
     InstanceSegmentationOutput instance_segmentation = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    // The semantic segmentation output
+    SemanticSegmentationOutput semantic_segmentation = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The unspecified task output
-    UnspecifiedOutput unspecified = 6
+    UnspecifiedOutput unspecified = 7
         [ (google.api.field_behavior) = OUTPUT_ONLY ];
   }
 }

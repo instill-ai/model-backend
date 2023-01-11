@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package vdp.model.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+
+// SemanticSegmentationStuff corresponding to a semantic segmentation stuff
+message SemanticSegmentationStuff {
+  // RLE segmentation mask
+  string rle = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Stuff category
+  string category = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// SemanticSegmentationOutput represents the output of semantic segmentation
+// task
+message SemanticSegmentationOutput {
+  // A list of semantic segmentation stuffs
+  repeated SemanticSegmentationStuff stuffs = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}

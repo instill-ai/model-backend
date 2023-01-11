@@ -35,10 +35,6 @@ stop:							## Stop container
 top:							## Display all running service processes
 	@docker top ${SERVICE_NAME}
 
-.PHONY: build-dev
-build-dev:							## Build dev docker image
-	docker build --build-arg SERVICE_NAME=${SERVICE_NAME} -f Dockerfile.dev  -t instill/${SERVICE_NAME}:dev .
-
 .PHONY: build
 build:							## Build dev docker image
 	@docker build \

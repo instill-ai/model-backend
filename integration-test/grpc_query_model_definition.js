@@ -1,5 +1,8 @@
 import grpc from 'k6/net/grpc';
-import { check, group } from 'k6';
+import {
+    check,
+    group
+} from 'k6';
 
 import * as constant from "./const.js"
 

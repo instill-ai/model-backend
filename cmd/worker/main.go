@@ -43,7 +43,7 @@ func initialize() {
 		logger.Debug(err.Error())
 	}
 
-	time.Sleep(2000) //make sure namespace already registered
+	time.Sleep(5000) //make sure namespace already registered
 
 	runCmd = exec.CommandContext(context.Background(),
 		"docker",
@@ -56,6 +56,7 @@ func initialize() {
 		"--env", "TEMPORAL_CLI_ADDRESS=localhost:7233",
 		"temporalio/admin-tools:1.14.0",
 		"--auto_confirm", "admin", "cluster", "add-search-attributes",
+		"--name", "Type", "--type", "Text",
 		"--name", "ModelUID", "--type", "Text",
 		"--name", "ModelInstanceUID", "--type", "Text",
 		"--name", "Owner", "--type", "Text",
@@ -75,9 +76,10 @@ func main() {
 	if err := config.Init(); err != nil {
 		logger.Fatal(err.Error())
 	}
-
+	logger.Info("Config initialized")
 	initialize()
-	time.Sleep(5000) // make sure namespace already registered
+	logger.Info("Initialization finished")
+	time.Sleep(10000) // make sure namespace already registered
 
 	db := database.GetConnection()
 	defer database.Close(db)
@@ -106,6 +108,7 @@ func main() {
 	w.RegisterActivity(cw.DeployModelActivity)
 	w.RegisterWorkflow(cw.UnDeployModelWorkflow)
 	w.RegisterActivity(cw.UnDeployModelActivity)
+	w.RegisterWorkflow(cw.CreateModelWorkflow)
 
 	err = w.Run(worker.InterruptCh())
 	if err != nil {

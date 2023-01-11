@@ -1,7 +1,15 @@
 import http from "k6/http";
-import { check, group } from "k6";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import {
+  check,
+  group,
+  sleep
+} from "k6";
+import {
+  FormData
+} from "https://jslib.k6.io/formdata/0.0.2/index.js";
+import {
+  randomString
+} from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 import {
   genHeader,
@@ -22,32 +30,29 @@ export function GetModelInstance() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      check( http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
+      })
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description === model_description,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/multipart task cls response model.configuration.content": (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
       });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
@@ -121,32 +126,30 @@ export function ListModelInstance() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      check(http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      }), {
+      })
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description === model_description,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/multipart task cls response model.configuration.content": (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
       });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances`, {
         headers: genHeader(`application/json`),
       }), {
@@ -224,7 +227,7 @@ export function ListModelInstance() {
   {
     group("Model Backend API: Get model instance list github model", function () {
       let model_id = randomString(10)
-      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -232,32 +235,27 @@ export function ListModelInstance() {
         }
       }), {
         headers: genHeader("application/json"),
-      }), {
+      })
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === "model-definitions/github",
-        "POST /v1alpha/models/multipart task cls response model.configuration.repository": (r) =>
-          r.json().model.configuration.repository === "instill-ai/model-dummy-cls",
-        "POST /v1alpha/models/multipart task cls response model.configuration.html_url": (r) =>
-          r.json().model.configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PUBLIC",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
       });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances`, {
         headers: genHeader(`application/json`),
@@ -287,7 +285,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
           r.json().instances[0].update_time !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
-        r.json().instances[0].configuration === null,
+          r.json().instances[0].configuration === null,
       });
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
@@ -347,32 +345,36 @@ export function LookupModelInstance() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let resModel = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let resCreateModel = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
-      check(resModel, {
+      check(resCreateModel, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response model.name": (r) =>
-          r.json().model.name === `models/${model_id}`,
-        "POST /v1alpha/models/multipart task cls response model.uid": (r) =>
-          r.json().model.uid !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.id": (r) =>
-          r.json().model.id === model_id,
-        "POST /v1alpha/models/multipart task cls response model.description": (r) =>
-          r.json().model.description === model_description,
-        "POST /v1alpha/models/multipart task cls response model.model_definition": (r) =>
-          r.json().model.model_definition === model_def_name,
-        "POST /v1alpha/models/multipart task cls response model.configuration.content": (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        "POST /v1alpha/models/multipart task cls response model.visibility": (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        "POST /v1alpha/models/multipart task cls response model.owner": (r) =>
-          r.json().model.user === 'users/local-user',
-        "POST /v1alpha/models/multipart task cls response model.create_time": (r) =>
-          r.json().model.create_time !== undefined,
-        "POST /v1alpha/models/multipart task cls response model.update_time": (r) =>
-          r.json().model.update_time !== undefined,
+        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiHost}/v1alpha/${resCreateModel.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      let resModel = http.get(`${constant.apiHost}/v1alpha/models/${model_id}`, {
+        headers: genHeader(`application/json`),
+      })
+      check(resModel, {
+        "GET /v1alpha/models/${model_id} response status": (r) =>
+          r.status === 200
       });
 
       let resModelInstance = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
