@@ -21,7 +21,7 @@ import * as constant from "./const.js"
 export function CreateModelFromLocal() {
   // Model Backend API: upload model
   {
-    group("Model Backend API: Upload a model", function () {
+    group("Model Backend API: CreateModelFromLocal", function () {
       let fd_cls = new FormData();
       let model_id_cls = randomString(10)
       let model_description = randomString(20)
@@ -60,7 +60,7 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.description`]: (r) => r.json().operation.response.description === model_description,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.content`]: (r) => r.json().operation.response.configuration.content === "dummy-cls-model.zip",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.content`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
@@ -105,7 +105,7 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.description`]: (r) => r.json().operation.response.description === model_description,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.configuration.content`]: (r) => r.json().operation.response.configuration.content === "dummy-det-model.zip",
+        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
@@ -150,7 +150,7 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.description`]: (r) => r.json().operation.response.description === model_description,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.configuration.content`]: (r) => r.json().operation.response.configuration.content === "dummy-keypoint-model.zip",
+        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
@@ -195,7 +195,7 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.description`]: (r) => r.json().operation.response.description === model_description,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.configuration.content`]: (r) => r.json().operation.response.configuration.content === "dummy-unspecified-model.zip",
+        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.configuration`]: (r) => r.json().operation.response.configuration ===null,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
@@ -386,7 +386,7 @@ export function CreateModelFromGitHub() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`) , {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls status`]: (r) => r.status === 200,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.done`]: (r) => r.json().operation.done === true,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id}`,
@@ -394,8 +394,7 @@ export function CreateModelFromGitHub() {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.description`]: (r) => r.json().operation.response.description !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/github",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.repository`]: (r) => r.json().operation.response.configuration.repository === "instill-ai/model-dummy-cls",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.html_url`]: (r) => r.json().operation.response.configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PUBLIC",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
