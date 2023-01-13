@@ -29,7 +29,9 @@ const model_def_name = "model-definitions/local"
 export function UpdateModel() {
     // UpdateModel check
     group("Model API: UpdateModel", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)

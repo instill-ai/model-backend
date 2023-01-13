@@ -31,7 +31,9 @@ const model_def_name = "model-definitions/local"
 export function PublishUnPublishModel() {
     // PublishModel/UnpublishModel check
     group("Model API: PublishModel/UnpublishModel", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
