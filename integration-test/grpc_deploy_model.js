@@ -28,7 +28,9 @@ const model_def_name = "model-definitions/local"
 export function DeployUndeployModel() {
     // Deploy ModelInstance check
     group("Model API: Deploy ModelInstance", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)

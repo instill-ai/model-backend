@@ -28,7 +28,9 @@ const model_def_name = "model-definitions/local"
 export function GetModel() {
     // GetModel check
     group("Model API: GetModel", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -97,7 +99,9 @@ export function GetModel() {
 export function ListModel() {
     // ListModel check
     group("Model API: ListModel", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)
@@ -158,7 +162,9 @@ export function ListModel() {
 export function LookupModel() {
     // LookUpModel check
     group("Model API: LookUpModel", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
 
         let fd_cls = new FormData();
         let model_id = randomString(10)

@@ -20,7 +20,9 @@ const model_def_name = "model-definitions/github"
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
             'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
@@ -31,7 +33,9 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
         let model_id = randomString(10)
         let createOperationRes = client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
@@ -131,7 +135,7 @@ export function CreateModel() {
         }), {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
-        
+
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
                 id: randomString(10),

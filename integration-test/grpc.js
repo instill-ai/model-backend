@@ -25,13 +25,15 @@ client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
-export function setup() {}
+export function setup() { }
 
 export default () => {
     // Liveness check
     {
         group("Model API: Liveness", () => {
-            client.connect(constant.gRPCHost);
+            client.connect(constant.gRPCHost, {
+                plaintext: true
+            });
             const response = client.invoke('vdp.model.v1alpha.ModelService/Liveness', {});
             check(response, {
                 'Status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -42,7 +44,9 @@ export default () => {
 
     // Readiness check
     group("Model API: Readiness", () => {
-        client.connect(constant.gRPCHost);
+        client.connect(constant.gRPCHost, {
+            plaintext: true
+        });
         const response = client.invoke('vdp.model.v1alpha.ModelService/Readiness', {});
         check(response, {
             'Status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -82,7 +86,9 @@ export default () => {
 };
 
 export function teardown() {
-    client.connect(constant.gRPCHost);
+    client.connect(constant.gRPCHost, {
+        plaintext: true
+    });
     group("Model API: Delete all models created by this test", () => {
         for (const model of client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}).message.models) {
             check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
