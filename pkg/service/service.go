@@ -59,6 +59,7 @@ type Service interface {
 	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error)
 	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error)
 	CancelOperation(workflowId string) error
+	HealthWorkflow() error
 }
 
 type service struct {

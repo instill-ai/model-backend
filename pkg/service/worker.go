@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
@@ -206,4 +207,43 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 	logger.Info(fmt.Sprintf("started workflow with WorkflowID %s and RunID %s", we.GetID(), we.GetRunID()))
 
 	return id.String(), nil
+}
+
+func (s *service) HealthWorkflow() error {
+	logger, _ := logger.GetZapLogger()
+	id, _ := uuid.NewV4()
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        id.String(),
+		TaskQueue: worker.TaskQueue,
+	}
+
+	ctx := context.Background()
+	we, err := s.temporalClient.ExecuteWorkflow(
+		ctx,
+		workflowOptions,
+		"HealthWorkflow",
+	)
+	if err != nil {
+		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
+		return err
+	}
+
+	logger.Info(fmt.Sprintf("started workflow with WorkflowID %s and RunID %s", we.GetID(), we.GetRunID()))
+
+	start := time.Now()
+	for {
+		if time.Since(start) > 10*time.Second {
+			return fmt.Errorf("health workflow timed out")
+		}
+		workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, we.GetID(), we.GetRunID())
+		if err != nil {
+			continue
+		}
+		if workflowExecutionRes.WorkflowExecutionInfo.Status == enums.WORKFLOW_EXECUTION_STATUS_COMPLETED {
+			return nil
+		} else if workflowExecutionRes.WorkflowExecutionInfo.Status == enums.WORKFLOW_EXECUTION_STATUS_FAILED {
+			return fmt.Errorf("health workflow failed")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
