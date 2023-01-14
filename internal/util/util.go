@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -202,7 +201,7 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 	if err != nil {
 		return GitHubInfo{}, err
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return GitHubInfo{}, err
 	}
@@ -215,7 +214,7 @@ func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
 	if err != nil {
 		return GitHubInfo{}, err
 	}
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return GitHubInfo{}, err
 	}
@@ -411,11 +410,11 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 			if err := datamodel.ValidateJSONSchemaString(datamodel.GCSServiceAccountJSONSchema, string(file)); err != nil {
 				return "", err
 			}
-			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
+			if err := os.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
 		} else {
-			if err := ioutil.WriteFile(credentialFile, file, 0644); err != nil {
+			if err := os.WriteFile(credentialFile, file, 0644); err != nil {
 				return "", err
 			}
 		}
@@ -522,11 +521,11 @@ func UpdateConfigModelName(filePath string, oldModelName string, newModelName st
 	if err := ValidateFilePath(filePath); err != nil {
 		return err
 	}
-	fileData, _ := ioutil.ReadFile(filePath)
+	fileData, _ := os.ReadFile(filePath)
 	fileString := string(fileData)
 	fileString = nameRegx.ReplaceAllString(fileString, fmt.Sprintf("name: \"%v\"", newModelName))
 	fileData = []byte(fileString)
-	return ioutil.WriteFile(filePath, fileData, 0o600)
+	return os.WriteFile(filePath, fileData, 0o600)
 }
 
 func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error {
@@ -597,11 +596,11 @@ func updateModelConfigModel(configFilePath string, oldStr string, newStr string)
 	if _, err := os.Stat(configFilePath); err != nil {
 		return err
 	}
-	fileData, _ := ioutil.ReadFile(configFilePath)
+	fileData, _ := os.ReadFile(configFilePath)
 	fileString := string(fileData)
 	fileString = strings.ReplaceAll(fileString, oldStr, newStr)
 	fileData = []byte(fileString)
-	return ioutil.WriteFile(configFilePath, fileData, 0o600)
+	return os.WriteFile(configFilePath, fileData, 0o600)
 }
 
 func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonModel) error {
@@ -660,7 +659,7 @@ func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonMo
 		return err
 	}
 
-	file, err := ioutil.ReadFile(fmt.Sprintf("%s/1/config.json", preModelPathDir))
+	file, err := os.ReadFile(fmt.Sprintf("%s/1/config.json", preModelPathDir))
 	if err != nil {
 		return err
 	}

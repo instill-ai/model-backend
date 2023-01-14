@@ -13,8 +13,8 @@ import (
 	"github.com/go-redis/redis/v9"
 	"go.temporal.io/sdk/client"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -56,8 +56,8 @@ type Service interface {
 	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
-	GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, string, error)
-	ListOperation(pageSize int, pageToken string) ([]*longrunning.Operation, []*worker.ModelInstanceParams, string, int64, error)
+	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error)
+	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error)
 	CancelOperation(workflowId string) error
 }
 

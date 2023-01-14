@@ -20,12 +20,12 @@ import (
 	"strconv"
 	"strings"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"go.temporal.io/sdk/client"
-	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -767,10 +767,10 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(201)
 
 		m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
-		b, err := m.Marshal(&modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+		b, err := m.Marshal(&modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 			Name: fmt.Sprintf("operations/%s", wfId),
 			Done: false,
-			Result: &longrunning.Operation_Response{
+			Result: &longrunningpb.Operation_Response{
 				Response: &anypb.Any{},
 			},
 		}})
@@ -885,10 +885,10 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 		return err
 	}
 
-	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Operation: &longrunning.Operation{
+	err = stream.SendAndClose(&modelPB.CreateModelBinaryFileUploadResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}})
@@ -1104,10 +1104,10 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}}, nil
@@ -1332,10 +1332,10 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}}, nil
@@ -1560,10 +1560,10 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &modelPB.CreateModelResponse{Operation: &longrunning.Operation{
+	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}}, nil
@@ -2000,10 +2000,10 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 		return &modelPB.DeployModelInstanceResponse{}, st.Err()
 	}
 
-	return &modelPB.DeployModelInstanceResponse{Operation: &longrunning.Operation{
+	return &modelPB.DeployModelInstanceResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}}, nil
@@ -2052,10 +2052,10 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
 
-	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunning.Operation{
+	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
-		Result: &longrunning.Operation_Response{
+		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
 		},
 	}}, nil
@@ -2637,7 +2637,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 			return &modelPB.GetModelOperationResponse{}, err
 		}
 
-		operation.Result = &longrunning.Operation_Response{
+		operation.Result = &longrunningpb.Operation_Response{
 			Response: res,
 		}
 		return &modelPB.GetModelOperationResponse{
@@ -2655,7 +2655,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 			return &modelPB.GetModelOperationResponse{}, err
 		}
 
-		operation.Result = &longrunning.Operation_Response{
+		operation.Result = &longrunningpb.Operation_Response{
 			Response: res,
 		}
 		return &modelPB.GetModelOperationResponse{
