@@ -60,9 +60,10 @@ var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
 type OperationType string
 
 const (
-	OperationTypeCreate   OperationType = "create"
-	OperationTypeDeploy   OperationType = "deploy"
-	OperationTypeUnDeploy OperationType = "undeploy"
+	OperationTypeCreate      OperationType = "create"
+	OperationTypeDeploy      OperationType = "deploy"
+	OperationTypeUnDeploy    OperationType = "undeploy"
+	OperationTypeHealthCheck OperationType = "healthcheck"
 )
 
 const DefaultPageSize = 10

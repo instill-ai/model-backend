@@ -27,6 +27,30 @@ type ModelParams struct {
 	Owner string
 }
 
+func (w *worker) HealthWorkflow(ctx workflow.Context) error {
+	logger := workflow.GetLogger(ctx)
+	logger.Info("HealthWorkflow started")
+
+	// Upsert search attributes.
+	attributes := map[string]interface{}{
+		"Type":             util.OperationTypeHealthCheck,
+		"ModelUID":         "ModelUID test",
+		"ModelInstanceUID": "ModelInstanceUID test",
+		"Owner":            "",
+	}
+
+	// This won't persist search attributes on server because commands are not sent to server,
+	// but local cache will be updated.
+	err := workflow.UpsertSearchAttributes(ctx, attributes)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("HealthWorkflow completed")
+
+	return nil
+}
+
 func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("DeployModelWorkflow started")
