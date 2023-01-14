@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/worker"
@@ -12,7 +13,6 @@ import (
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
-	"google.golang.org/genproto/googleapis/longrunning"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -74,29 +74,29 @@ func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, m
 	return id.String(), nil
 }
 
-func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunning.Operation, *worker.ModelInstanceParams, string, error) {
-	operation := longrunning.Operation{}
+func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error) {
+	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
-		operation = longrunning.Operation{
+		operation = longrunningpb.Operation{
 			Done: true,
-			Result: &longrunning.Operation_Response{
+			Result: &longrunningpb.Operation_Response{
 				Response: &anypb.Any{},
 			},
 		}
 	case enums.WORKFLOW_EXECUTION_STATUS_RUNNING:
 	case enums.WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW:
-		operation = longrunning.Operation{
+		operation = longrunningpb.Operation{
 			Done: false,
-			Result: &longrunning.Operation_Response{
+			Result: &longrunningpb.Operation_Response{
 				Response: &anypb.Any{},
 			},
 		}
 	default:
-		operation = longrunning.Operation{
+		operation = longrunningpb.Operation{
 			Done: true,
-			Result: &longrunning.Operation_Error{
+			Result: &longrunningpb.Operation_Error{
 				Error: &status.Status{
 					Code:    int32(workflowExecutionInfo.Status),
 					Details: []*anypb.Any{},
@@ -142,7 +142,7 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 	return &operation, &modelInstanceParams, operationType, nil
 }
 
-func (s *service) GetOperation(workflowId string) (*longrunning.Operation, *worker.ModelInstanceParams, string, error) {
+func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error) {
 	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(context.Background(), workflowId, "")
 
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *service) GetOperation(workflowId string) (*longrunning.Operation, *work
 	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
 }
 
-func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunning.Operation, []*worker.ModelInstanceParams, string, int64, error) {
+func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error) {
 	var executions []*workflowpb.WorkflowExecutionInfo
 	// could support query such as by model or model instance
 	resp, err := s.temporalClient.ListWorkflow(context.Background(), &workflowservice.ListWorkflowExecutionsRequest{
@@ -164,7 +164,7 @@ func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunning.
 	}
 
 	executions = append(executions, resp.Executions...)
-	var operations []*longrunning.Operation
+	var operations []*longrunningpb.Operation
 	var modelInstanceParams []*worker.ModelInstanceParams
 	for _, wf := range executions {
 		operation, modelInstanceParam, _, err := getOperationFromWorkflowInfo(wf)

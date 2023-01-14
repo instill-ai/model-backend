@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/ghodss/yaml"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -42,7 +42,7 @@ func unmarshalModelPB(jsonSliceMap interface{}, pb interface{}) error {
 
 func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
 
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

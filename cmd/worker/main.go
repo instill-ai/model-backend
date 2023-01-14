@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
 	"os/exec"
-	"time"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -21,6 +21,7 @@ import (
 )
 
 func initialize() {
+
 	logger, _ := logger.GetZapLogger()
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
@@ -33,14 +34,19 @@ func initialize() {
 		"temporal-admin-tools",
 		"/bin/bash",
 		"-c",
-		"tctl",
-		"--namespace", "model-backend", "namespace", "register",
+		"tctl --namespace model-backend namespace register",
 	)
+
+	var out bytes.Buffer
+	runCmd.Stdout = &out
+	runCmd.Stderr = &out
+
 	if err := runCmd.Run(); err != nil {
 		logger.Debug(err.Error())
 	}
 
-	time.Sleep(5000) //make sure namespace already registered
+	logger.Info(fmt.Sprintf("Docker exec tctl - add namespace registration model-backend: %s", out.String()))
+	out.Reset()
 
 	runCmd = exec.CommandContext(context.Background(),
 		"docker",
@@ -48,16 +54,20 @@ func initialize() {
 		"temporal-admin-tools",
 		"/bin/bash",
 		"-c",
-		"tctl",
-		"--auto_confirm", "admin", "cluster", "add-search-attributes",
-		"--name", "Type", "--type", "Text",
-		"--name", "ModelUID", "--type", "Text",
-		"--name", "ModelInstanceUID", "--type", "Text",
-		"--name", "Owner", "--type", "Text",
+		`tctl --auto_confirm admin cluster add-search-attributes \
+			--name Type --type Text --name ModelUID --type Text \
+			--name ModelInstanceUID --type Text --name Owner --type Text`,
 	)
+
+	runCmd.Stdout = &out
+	runCmd.Stderr = &out
+
 	if err := runCmd.Run(); err != nil {
 		logger.Debug(err.Error())
 	}
+
+	logger.Info(fmt.Sprintf("Docker exec tctl - add search attributes: %s", out.String()))
+	out.Reset()
 }
 
 func main() {
@@ -73,7 +83,6 @@ func main() {
 	logger.Info("Config initialized")
 	initialize()
 	logger.Info("Initialization finished")
-	time.Sleep(10000) // make sure namespace already registered
 
 	db := database.GetConnection()
 	defer database.Close(db)
