@@ -122,7 +122,7 @@ func main() {
 	w.RegisterWorkflow(cw.UnDeployModelWorkflow)
 	w.RegisterActivity(cw.UnDeployModelActivity)
 	w.RegisterWorkflow(cw.CreateModelWorkflow)
-	w.RegisterWorkflow(cw.HealthWorkflow)
+	w.RegisterWorkflow(cw.SearchAttributeReadyWorkflow)
 
 	err = w.Run(worker.InterruptCh())
 	if err != nil {

@@ -22,7 +22,7 @@ type Worker interface {
 	UnDeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error
 	UnDeployModelActivity(ctx context.Context, param *ModelInstanceParams) error
 	CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error
-	HealthWorkflow(ctx workflow.Context) error
+	SearchAttributeReadyWorkflow(ctx workflow.Context) error
 }
 
 // worker represents resources required to run Temporal workflow and activity
