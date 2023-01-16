@@ -27,9 +27,9 @@ type ModelParams struct {
 	Owner string
 }
 
-func (w *worker) HealthWorkflow(ctx workflow.Context) error {
+func (w *worker) SearchAttributeReadyWorkflow(ctx workflow.Context) error {
 	logger := workflow.GetLogger(ctx)
-	logger.Info("HealthWorkflow started")
+	logger.Info("SearchAttributeReadyWorkflow started")
 
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
@@ -39,14 +39,12 @@ func (w *worker) HealthWorkflow(ctx workflow.Context) error {
 		"Owner":            "",
 	}
 
-	// This won't persist search attributes on server because commands are not sent to server,
-	// but local cache will be updated.
 	err := workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err
 	}
 
-	logger.Info("HealthWorkflow completed")
+	logger.Info("SearchAttributeReadyWorkflow completed")
 
 	return nil
 }
@@ -63,8 +61,6 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceP
 		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
 	}
 
-	// This won't persist search attributes on server because commands are not sent to server,
-	// but local cache will be updated.
 	err := workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err
@@ -242,8 +238,6 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelInstanc
 		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
 	}
 
-	// This won't persist search attributes on server because commands are not sent to server,
-	// but local cache will be updated.
 	err := workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err
@@ -315,8 +309,6 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		"Owner":            strings.TrimPrefix(param.Owner, "users/"),
 	}
 
-	// This won't persist search attributes on server because commands are not sent to server,
-	// but local cache will be updated.
 	err = workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err

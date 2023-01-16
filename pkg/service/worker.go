@@ -209,7 +209,7 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 	return id.String(), nil
 }
 
-func (s *service) HealthWorkflow() error {
+func (s *service) SearchAttributeReadyWorkflow() error {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
@@ -221,7 +221,7 @@ func (s *service) HealthWorkflow() error {
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
-		"HealthWorkflow",
+		"SearchAttributeReadyWorkflow",
 	)
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
