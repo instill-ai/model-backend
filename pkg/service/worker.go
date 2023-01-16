@@ -209,7 +209,7 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 	return id.String(), nil
 }
 
-func (s *service) SearchAttributeReadyWorkflow() error {
+func (s *service) SearchAttributeReady() error {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
