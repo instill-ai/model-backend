@@ -22,7 +22,7 @@ FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 RUN apt update && \
     apt install -y bash \
     build-essential \
-    python3 python3-setuptools python3-pip git git-lfs && \
+    python3 python3-setuptools python3-pip git git-lfs curl && \
     rm -rf /var/lib/apt/lists
 RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
