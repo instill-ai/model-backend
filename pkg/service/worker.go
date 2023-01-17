@@ -221,7 +221,7 @@ func (s *service) SearchAttributeReady() error {
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
-		"SearchAttributeReadyWorkflow",
+		"AddSearchAttributeWorkflow",
 	)
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
