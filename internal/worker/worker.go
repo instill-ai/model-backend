@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/allegro/bigcache"
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/allegro/bigcache"
 	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/repository"
 )
@@ -22,7 +22,7 @@ type Worker interface {
 	UnDeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error
 	UnDeployModelActivity(ctx context.Context, param *ModelInstanceParams) error
 	CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error
-	SearchAttributeReadyWorkflow(ctx workflow.Context) error
+	AddSearchAttributeWorkflow(ctx workflow.Context) error
 }
 
 // worker represents resources required to run Temporal workflow and activity

@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"go.temporal.io/sdk/workflow"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	"go.temporal.io/sdk/workflow"
 )
 
 type ModelInstanceParams struct {
@@ -27,24 +29,32 @@ type ModelParams struct {
 	Owner string
 }
 
-func (w *worker) SearchAttributeReadyWorkflow(ctx workflow.Context) error {
+func (w *worker) AddSearchAttributeWorkflow(ctx workflow.Context) error {
 	logger := workflow.GetLogger(ctx)
-	logger.Info("SearchAttributeReadyWorkflow started")
+	logger.Info("AddSearchAttributeWorkflow started")
 
 	// Upsert search attributes.
+	modelUID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+	modelInstanceUID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
 	attributes := map[string]interface{}{
 		"Type":             util.OperationTypeHealthCheck,
-		"ModelUID":         "ModelUID test",
-		"ModelInstanceUID": "ModelInstanceUID test",
+		"ModelUID":         modelUID.String(),
+		"ModelInstanceUID": modelInstanceUID.String(),
 		"Owner":            "",
 	}
 
-	err := workflow.UpsertSearchAttributes(ctx, attributes)
+	err = workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err
 	}
 
-	logger.Info("SearchAttributeReadyWorkflow completed")
+	logger.Info("AddSearchAttributeWorkflow completed")
 
 	return nil
 }
