@@ -34,14 +34,22 @@ func (w *worker) AddSearchAttributeWorkflow(ctx workflow.Context) error {
 	logger.Info("AddSearchAttributeWorkflow started")
 
 	// Upsert search attributes.
+	modelUID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+	modelInstanceUID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
 	attributes := map[string]interface{}{
 		"Type":             util.OperationTypeHealthCheck,
-		"ModelUID":         "",
-		"ModelInstanceUID": "",
+		"ModelUID":         modelUID.String(),
+		"ModelInstanceUID": modelInstanceUID.String(),
 		"Owner":            "",
 	}
 
-	err := workflow.UpsertSearchAttributes(ctx, attributes)
+	err = workflow.UpsertSearchAttributes(ctx, attributes)
 	if err != nil {
 		return err
 	}
