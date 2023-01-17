@@ -36,8 +36,8 @@ func (w *worker) AddSearchAttributeWorkflow(ctx workflow.Context) error {
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
 		"Type":             util.OperationTypeHealthCheck,
-		"ModelUID":         "ModelUID test",
-		"ModelInstanceUID": "ModelInstanceUID test",
+		"ModelUID":         "",
+		"ModelInstanceUID": "",
 		"Owner":            "",
 	}
 
