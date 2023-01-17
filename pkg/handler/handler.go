@@ -917,12 +917,21 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if modelConfig.Repository == "" {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
-	githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
-	}
-	if len(githubInfo.Tags) == 0 {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
+	var githubInfo *util.GitHubInfo
+	if config.Config.Server.ItMode {
+		githubInfo = &util.GitHubInfo{
+			Description: "This is a test model",
+			Visibility:  "public",
+			Tags:        []util.Tag{{Name: "v1.0"}, {Name: "v1.1"}},
+		}
+	} else {
+		githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
+		if err != nil {
+			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
+		}
+		if len(githubInfo.Tags) == 0 {
+			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
+		}
 	}
 	visibility := util.Visibility[githubInfo.Visibility]
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {

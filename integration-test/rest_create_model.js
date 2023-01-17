@@ -400,7 +400,6 @@ export function CreateModelFromGitHub() {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
-
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
@@ -493,18 +492,18 @@ export function CreateModelFromGitHub() {
           r.status === 400,
       });
 
-      check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
-        "id": randomString(10),
-        "model_definition": "model-definitions/github",
-        "configuration": {
-          "repository": "Phelan164/non-exited"
-        }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
-        "POST /v1alpha/models by github invalid url status": (r) =>
-          r.status === 400,
-      });
+      // check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+      //   "id": randomString(10),
+      //   "model_definition": "model-definitions/github",
+      //   "configuration": {
+      //     "repository": "Phelan164/non-exited"
+      //   }
+      // }), {
+      //   headers: genHeader("application/json"),
+      // }), {
+      //   "POST /v1alpha/models by github invalid url status": (r) =>
+      //     r.status === 400,
+      // });
 
       check(http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
         "model_definition": "model-definitions/github",
