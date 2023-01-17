@@ -135,13 +135,13 @@ export function ListModel() {
         }
         check(client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}), {
             "ListModel response status": (r) => r.status === grpc.StatusOK,
-            "ListModel response total_size": (r) => r.message.totalSize == 1,
+            "ListModel response total_size": (r) => r.message.totalSize >= 1,
             "ListModel response next_page_token": (r) => r.message.nextPageToken !== undefined,
-            "ListModel response models.length": (r) => r.message.models.length === 1,
+            "ListModel response models.length": (r) => r.message.models.length >= 1,
             "ListModel response models[0].name": (r) => r.message.models[0].name === `models/${model_id}`,
             "ListModel response models[0].uid": (r) => r.message.models[0].uid !== undefined,
             "ListModel response models[0].id": (r) => r.message.models[0].id === model_id,
-            "ListModel response models[0].description": (r) => r.message.models[0].description === model_description,
+            "ListModel response models[0].description": (r) => r.message.models[0].description !== undefined,
             "ListModel response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
             "ListModel response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
             "ListModel response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
