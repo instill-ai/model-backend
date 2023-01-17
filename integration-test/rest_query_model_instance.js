@@ -269,11 +269,11 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances.length`]: (r) =>
           r.json().instances.length == 2,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].name`]: (r) =>
-          r.json().instances[0].name === `models/${model_id}/instances/v1.1`,
+          r.json().instances[0].name === `models/${model_id}/instances/v1.1-cpu`,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].uid`]: (r) =>
           r.json().instances[0].uid !== undefined,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].id`]: (r) =>
-          r.json().instances[0].id === "v1.1",
+          r.json().instances[0].id === "v1.1-cpu",
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].state`]: (r) =>
           r.json().instances[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].task`]: (r) =>
@@ -299,11 +299,11 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances.length`]: (r) =>
           r.json().instances.length === 2,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].name`]: (r) =>
-          r.json().instances[0].name === `models/${model_id}/instances/v1.1`,
+          r.json().instances[0].name === `models/${model_id}/instances/v1.1-cpu`,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].uid`]: (r) =>
           r.json().instances[0].uid !== undefined,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].id`]: (r) =>
-          r.json().instances[0].id === "v1.1",
+          r.json().instances[0].id === "v1.1-cpu",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].state`]: (r) =>
           r.json().instances[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].task`]: (r) =>
@@ -317,9 +317,9 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.repository`]: (r) =>
           r.json().instances[0].configuration.repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.html_url`]: (r) =>
-          r.json().instances[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1",
+          r.json().instances[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1-cpu",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.tag`]: (r) =>
-          r.json().instances[0].configuration.tag === "v1.1",
+          r.json().instances[0].configuration.tag === "v1.1-cpu",
       });
 
       // clean up

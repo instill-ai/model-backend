@@ -16,7 +16,11 @@ import * as queryModelDefinition from "./grpc_query_model_definition.js"
 import * as constant from "./const.js"
 
 export const options = {
+    setupTimeout: '300s',
     insecureSkipTLSVerify: true,
+    thresholds: {
+        checks: ["rate == 1.0"],
+    },
 };
 
 const client = new grpc.Client();
@@ -25,7 +29,7 @@ client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
-export function setup() { }
+export function setup() {}
 
 export default () => {
     // Liveness check

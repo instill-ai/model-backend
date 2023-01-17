@@ -922,7 +922,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		githubInfo = &util.GitHubInfo{
 			Description: "This is a test model",
 			Visibility:  "public",
-			Tags:        []util.Tag{{Name: "v1.0"}, {Name: "v1.1"}},
+			Tags:        []util.Tag{{Name: "v1.0-cpu"}, {Name: "v1.1-cpu"}},
 		}
 	} else {
 		githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
