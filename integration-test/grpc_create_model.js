@@ -66,7 +66,7 @@ export function CreateModel() {
         }
 
         let req = {
-            name: `models/${model_id}/instances/v1.0`
+            name: `models/${model_id}/instances/v1.0-cpu`
         }
         check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -80,7 +80,7 @@ export function CreateModel() {
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
             var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
-                name: `models/${model_id}/instances/v1.0`
+                name: `models/${model_id}/instances/v1.0-cpu`
             }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
                 break
@@ -90,7 +90,7 @@ export function CreateModel() {
         }
 
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
-            name: `models/${model_id}/instances/v1.0`,
+            name: `models/${model_id}/instances/v1.0-cpu`,
             inputs: [{
                 image_url: "https://artifacts.instill.tech/imgs/dog.jpg"
             }]
