@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.11.0-alpha...v0.11.1-alpha) (2023-01-18)
+
+
+### Bug Fixes
+
+* fix list long-run operation error ([#220](https://github.com/instill-ai/model-backend/issues/220)) ([472696d](https://github.com/instill-ai/model-backend/commit/472696dd974e996e247c66750033f0b724668bfc))
+* integration test gRPC ([18cec64](https://github.com/instill-ai/model-backend/commit/18cec6499be2e3877d0a1ac0bd6bdab60087e83b))
+
 ## [0.11.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.10.0-alpha...v0.11.0-alpha) (2023-01-14)
 
 
