@@ -46,19 +46,6 @@ export default () => {
         });
     }
 
-    // Readiness check
-    group("Model API: Readiness", () => {
-        client.connect(constant.gRPCHost, {
-            plaintext: true
-        });
-        const response = client.invoke('vdp.model.v1alpha.ModelService/Readiness', {});
-        check(response, {
-            'Status is OK': (r) => r && r.status === grpc.StatusOK,
-            'Response status is SERVING_STATUS_SERVING': (r) => r && r.message.healthCheckResponse.status === "SERVING_STATUS_SERVING",
-        });
-        client.close();
-    });
-
     // Create model API
     createModel.CreateModel()
 

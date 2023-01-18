@@ -19,8 +19,18 @@ message InstanceSegmentationObject {
   BoundingBox bounding_box = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// InstanceSegmentationOutput represents the output of instance segmentation
-// task
+// InstanceSegmentationInput represents the input of instance segmentation task
+message InstanceSegmentationInput {
+  // Input type
+  oneof type {
+    // Image type URL
+    string image_url = 1;
+    // Image type base64
+    string image_base64 = 2;
+  }
+}
+
+// InstanceSegmentationOutput represents the output of instance segmentation task
 message InstanceSegmentationOutput {
   // A list of instance segmentation objects
   repeated InstanceSegmentationObject objects = 1

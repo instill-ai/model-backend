@@ -7,7 +7,13 @@ import "google/protobuf/struct.proto";
 
 import "google/api/field_behavior.proto";
 
-// UnspecifiedOutput represents a list of unspecified task output
+// UnspecifiedInput represents the input of unspecified task
+message UnspecifiedInput {
+  // A list of unspecified task inputs
+  repeated google.protobuf.Struct raw_inputs = 1;
+}
+
+// UnspecifiedOutput represents the output of unspecified task
 message UnspecifiedOutput {
   // A list of unspecified task outputs
   repeated google.protobuf.Struct raw_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];

@@ -17,6 +17,17 @@ message OcrObject {
   BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
+// OcrInput represents the input of ocr task
+message OcrInput {
+  // Input type
+  oneof type {
+    // Image type URL
+    string image_url = 1;
+    // Image type base64
+    string image_base64 = 2;
+  }
+}
+
 // OcrOutput represents the output of ocr task
 message OcrOutput {
   // A list of OCR objects

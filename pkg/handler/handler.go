@@ -512,6 +512,7 @@ func makeJSONResponse(w http.ResponseWriter, status int, title string, detail st
 }
 
 func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
+	fmt.Println("------>>>> live", h.triton.IsTritonServerReady())
 	if !h.triton.IsTritonServerReady() {
 		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
@@ -2330,8 +2331,8 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	}
 
 	imgsBytes, _, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
-		Name:   req.Name,
-		Inputs: req.Inputs,
+		Name:       req.Name,
+		TaskInputs: req.TaskInputs,
 	})
 	if err != nil {
 		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
