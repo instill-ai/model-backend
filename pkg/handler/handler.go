@@ -512,7 +512,6 @@ func makeJSONResponse(w http.ResponseWriter, status int, title string, detail st
 }
 
 func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
-	fmt.Println("------>>>> live", h.triton.IsTritonServerReady())
 	if !h.triton.IsTritonServerReady() {
 		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
