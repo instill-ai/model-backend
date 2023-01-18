@@ -113,17 +113,18 @@ export function CreateModel() {
             'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
-            model: {
-                id: randomString(10),
-                model_definition: model_def_name,
-                configuration: {
-                    repository: "invalid-repo"
-                }
-            }
-        }), {
-            'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
-        });
+        //// test with dummy model instead of GitHub model, then the test case is invalid
+        // check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        //     model: {
+        //         id: randomString(10),
+        //         model_definition: model_def_name,
+        //         configuration: {
+        //             repository: "invalid-repo"
+        //         }
+        //     }
+        // }), {
+        //     'invalid github repo status': (r) => r && r.status == grpc.StatusInvalidArgument,
+        // });
 
         check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
             model: {
