@@ -30,6 +30,7 @@ service ModelService {
   rpc Readiness(ReadinessRequest) returns (ReadinessResponse) {
     option (google.api.http) = {
       get : "/v1alpha/__readiness"
+      additional_bindings : [ {get : "/v1alpha/ready/model"} ]
     };
   }
 

@@ -431,8 +431,10 @@ export function CreateModelFromGitHub() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
@@ -452,11 +454,11 @@ export function CreateModelFromGitHub() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {"image_url": "https://artifacts.instill.tech/imgs/dog.jpg"}
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "classification": {"image_url": "https://artifacts.instill.tech/imgs/dog.jpg"}
           }
         ]
       });

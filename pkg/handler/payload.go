@@ -106,20 +106,41 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 
 	logger, _ := logger.GetZapLogger()
 
-	for idx, content := range req.Inputs {
+	for idx, taskInput := range req.TaskInputs {
+		var imgUrl, imgBase64 string
+		switch taskInput.Input.(type) {
+		case *modelPB.TaskInput_Classification:
+			imgUrl = taskInput.GetClassification().GetImageUrl()
+			imgBase64 = taskInput.GetClassification().GetImageBase64()
+		case *modelPB.TaskInput_Detection:
+			imgUrl = taskInput.GetDetection().GetImageUrl()
+			imgBase64 = taskInput.GetDetection().GetImageBase64()
+		case *modelPB.TaskInput_Ocr:
+			imgUrl = taskInput.GetOcr().GetImageUrl()
+			imgBase64 = taskInput.GetOcr().GetImageBase64()
+		case *modelPB.TaskInput_InstanceSegmentation:
+			imgUrl = taskInput.GetInstanceSegmentation().GetImageUrl()
+			imgBase64 = taskInput.GetInstanceSegmentation().GetImageBase64()
+		case *modelPB.TaskInput_SemanticSegmentation:
+			imgUrl = taskInput.GetSemanticSegmentation().GetImageUrl()
+			imgBase64 = taskInput.GetSemanticSegmentation().GetImageBase64()
+		default:
+			return nil, nil, fmt.Errorf("unknown task input type")
+		}
 		var (
 			img      *image.Image
 			metadata *imageMetadata
 			err      error
 		)
-		if len(content.GetImageUrl()) > 0 {
-			img, metadata, err = parseImageFromURL(content.GetImageUrl())
+
+		if len(imgUrl) > 0 {
+			img, metadata, err = parseImageFromURL(imgUrl)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to parse image %v from url. %v", idx, err))
 				return nil, nil, fmt.Errorf("unable to parse image %v from url", idx)
 			}
-		} else if len(content.GetImageBase64()) > 0 {
-			img, metadata, err = parseImageFromBase64(content.GetImageBase64())
+		} else if len(imgBase64) > 0 {
+			img, metadata, err = parseImageFromBase64(imgBase64)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to parse base64 image %v. %v", idx, err))
 				return nil, nil, fmt.Errorf("unable to parse base64 image %v", idx)

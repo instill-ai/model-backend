@@ -27,6 +27,17 @@ message KeypointObject {
   BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
+// KeypointInput represents the input of keypoint detection task
+message KeypointInput {
+  // Input type
+  oneof type {
+    // Image type URL
+    string image_url = 1;
+    // Image type base64
+    string image_base64 = 2;
+  }
+}
+
 // KeypointOutput represents the output of keypoint detection task
 message KeypointOutput {
   // A list of keypoint objects

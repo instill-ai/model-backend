@@ -87,8 +87,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -108,11 +110,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
           }
         ]
       });
@@ -137,8 +143,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -158,11 +166,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -344,8 +356,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -375,11 +389,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           }
         ],
       });
@@ -424,8 +442,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -455,11 +475,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -741,8 +765,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -768,11 +794,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
           }
         ]
       });
@@ -807,8 +837,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -834,11 +866,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -1055,8 +1091,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1086,11 +1124,11 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {"image_url": "https://artifacts.instill.tech/imgs/dog.jpg"}
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "classification": {"image_url": "https://artifacts.instill.tech/imgs/dog.jpg"}
           }
         ]
       });
@@ -1135,8 +1173,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1166,11 +1206,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -1423,8 +1467,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }],
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1454,11 +1500,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           }
         ],
       });
@@ -1501,8 +1551,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1532,11 +1584,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -1783,8 +1839,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1806,11 +1864,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
           }
         ]
       });
@@ -1839,8 +1901,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -1862,11 +1926,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });
@@ -2067,8 +2135,10 @@ export function InferModel() {
 
       // Predict with url
       let payload = JSON.stringify({
-        "inputs": [{
-          "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -2100,11 +2170,15 @@ export function InferModel() {
 
       // Predict multiple images with url
       payload = JSON.stringify({
-        "inputs": [{
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
           },
           {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
           }
         ]
       });
@@ -2151,8 +2225,10 @@ export function InferModel() {
 
       // Predict with base64
       payload = JSON.stringify({
-        "inputs": [{
-          "image_base64": base64_image,
+        "task_inputs": [{
+          "classification": {
+            "image_base64": base64_image,
+          }
         }]
       });
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
@@ -2184,11 +2260,15 @@ export function InferModel() {
 
       // Predict multiple images with base64
       payload = JSON.stringify({
-        "inputs": [{
-            "image_base64": base64_image,
+        "task_inputs": [{
+            "classification": {
+              "image_base64": base64_image,
+            }
           },
           {
-            "image_base64": base64_image,
+            "classification": {
+              "image_base64": base64_image,
+            }
           }
         ]
       });

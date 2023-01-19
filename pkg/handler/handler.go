@@ -2331,8 +2331,8 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	}
 
 	imgsBytes, _, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
-		Name:   req.Name,
-		Inputs: req.Inputs,
+		Name:       req.Name,
+		TaskInputs: req.TaskInputs,
 	})
 	if err != nil {
 		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())

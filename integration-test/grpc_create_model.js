@@ -91,8 +91,8 @@ export function CreateModel() {
 
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/${model_id}/instances/v1.0-cpu`,
-            inputs: [{
-                image_url: "https://artifacts.instill.tech/imgs/dog.jpg"
+            task_inputs: [{
+                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
             }]
         }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
