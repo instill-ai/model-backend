@@ -14,13 +14,14 @@ import "google/api/field_behavior.proto";
 import "google/longrunning/operations.proto";
 
 import "./model_definition.proto";
-import "./classification_output.proto";
-import "./detection_output.proto";
-import "./keypoint_output.proto";
-import "./ocr_output.proto";
-import "./instance_segmentation_output.proto";
-import "./semantic_segmentation_output.proto";
-import "./unspecified_output.proto";
+import "./task_classification.proto";
+import "./task_detection.proto";
+import "./task_keypoint.proto";
+import "./task_ocr.proto";
+import "./task_instance_segmentation.proto";
+import "./task_semantic_segmentation.proto";
+import "./task_text_to_image.proto";
+import "./task_unspecified.proto";
 
 // Model represents a model
 message Model {
@@ -491,6 +492,29 @@ message GetModelInstanceCardResponse {
 //  Trigger methods
 ////////////////////////////////////
 
+// Input represents the input to trigger a model instance
+message TaskInput {
+  // Input type
+  oneof input {
+    // The classification input
+    ClassificationInput classification = 1;
+    // The detection input
+    DetectionInput detection = 2;
+    // The keypoint input
+    KeypointInput keypoint = 3;
+    // The ocr input
+    OcrInput ocr = 4;
+    // The instance segmentation input
+    InstanceSegmentationInput instance_segmentation = 5;
+    // The semantic segmentation input
+    SemanticSegmentationInput semantic_segmentation = 6;
+    // The text to image input
+    TextToImageInput text_to_image = 7;
+    // The unspecified task input
+    UnspecifiedInput unspecified = 8;
+  }
+}
+
 // TaskOutput represents the output of a CV Task result from a model instance
 message TaskOutput {
   // The inference task output
@@ -508,20 +532,11 @@ message TaskOutput {
     InstanceSegmentationOutput instance_segmentation = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The semantic segmentation output
     SemanticSegmentationOutput semantic_segmentation = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    // The text to image output
+    TextToImageOutput text_to_image = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The unspecified task output
-    UnspecifiedOutput unspecified = 7
+    UnspecifiedOutput unspecified = 8
         [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  }
-}
-
-// Input represents the input to trigger a model instance
-message Input {
-  // Input type
-  oneof type {
-    // Image type URL
-    string image_url = 1;
-    // Image type base64
-    string image_base64 = 2;
   }
 }
 
@@ -534,7 +549,7 @@ message TriggerModelInstanceRequest {
     (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
   ];
   // Input to trigger the model instance
-  repeated Input inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskInput task_inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TriggerModelInstanceResponse represents a response for the output for
@@ -580,7 +595,7 @@ message TestModelInstanceRequest {
     (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
   ];
   // Input to trigger the model instance
-  repeated Input inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskInput task_inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TestModelInstanceResponse represents a response for the output for
@@ -624,6 +639,10 @@ message GetModelOperationRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED
   ];
+  // View (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`, `ModelInstance.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // GetModelOperationResponse represents a response for a model operation
@@ -643,6 +662,10 @@ message ListModelOperationRequest {
   string page_token = 2;
   // Filter expression to list operations
   optional string filter = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  // View (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`, `ModelInstance.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
 // ListModelOperationResponse represents a response for a list of model operations including deploy and undeploy

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package vdp.model.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+
+// TextToImageInput represents the input of text to image task
+message TextToImageInput {
+  // The input text
+  string text = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
+
+// TextToImageOutput represents the output of text to image task
+message TextToImageOutput {
+  // List of generated images
+  repeated string images = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+}
