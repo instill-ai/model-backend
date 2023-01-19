@@ -5,6 +5,17 @@ package vdp.model.v1alpha;
 // Google api
 import "google/api/field_behavior.proto";
 
+// ClassificationInput represents the input of classification task
+message ClassificationInput {
+  // Input type
+  oneof type {
+    // Image type URL
+    string image_url = 1;
+    // Image type base64
+    string image_base64 = 2;
+  }
+}
+
 // ClassificationOutput represents the output of classification task
 message ClassificationOutput {
   // Classification category

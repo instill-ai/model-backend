@@ -13,8 +13,18 @@ message SemanticSegmentationStuff {
   string category = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// SemanticSegmentationOutput represents the output of semantic segmentation
-// task
+// SemanticSegmentationInput represents the input of semantic segmentation task
+message SemanticSegmentationInput {
+  // Input type
+  oneof type {
+    // Image type URL
+    string image_url = 1;
+    // Image type base64
+    string image_base64 = 2;
+  }
+}
+
+// SemanticSegmentationOutput represents the output of semantic segmentation task
 message SemanticSegmentationOutput {
   // A list of semantic segmentation stuffs
   repeated SemanticSegmentationStuff stuffs = 1
