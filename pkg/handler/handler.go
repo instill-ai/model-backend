@@ -925,7 +925,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			Tags:        []util.Tag{{Name: "v1.0-cpu"}, {Name: "v1.1-cpu"}},
 		}
 	} else {
-		githubInfo, err := util.GetGitHubRepoInfo(modelConfig.Repository)
+		githubInfo, err = util.GetGitHubRepoInfo(modelConfig.Repository)
 		if err != nil {
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
 		}
@@ -959,6 +959,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		Configuration: bModelConfig,
 		Instances:     []datamodel.ModelInstance{},
 	}
+
 	for _, tag := range githubInfo.Tags {
 		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
 			Repository: modelConfig.Repository,

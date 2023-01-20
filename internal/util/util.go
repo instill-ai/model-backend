@@ -25,6 +25,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -192,41 +193,41 @@ type GitHubInfo struct {
 	Tags        []Tag
 }
 
-func GetGitHubRepoInfo(repo string) (GitHubInfo, error) {
+func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	if repo == "" {
-		return GitHubInfo{}, fmt.Errorf("invalid repo URL")
+		return &GitHubInfo{}, fmt.Errorf("invalid repo URL")
 	}
 
 	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v", repo))
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 	githubRepoInfo := GitHubInfo{}
 	err = json.Unmarshal(body, &githubRepoInfo)
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 	resp, err = http.Get(fmt.Sprintf("https://api.github.com/repos/%v/tags", repo))
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 
 	tags := []Tag{}
 	err = json.Unmarshal(body, &tags)
 	if err != nil {
-		return GitHubInfo{}, err
+		return &GitHubInfo{}, err
 	}
 	githubRepoInfo.Tags = tags
 
-	return githubRepoInfo, nil
+	return &githubRepoInfo, nil
 }
 
 func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
