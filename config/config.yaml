@@ -7,7 +7,7 @@ server:
   edition: local-ce:dev
   disableusage: true
   debug: true
-  itmode: false
+  itmode: true
   maximagesize: 12 # MB in unit
 database:
   username: postgres
