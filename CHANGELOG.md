@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.11.0-alpha...v0.11.1-alpha) (2023-01-20)
+
+
+### Bug Fixes
+
+* fix list long-run operation error ([#220](https://github.com/instill-ai/model-backend/issues/220)) ([472696d](https://github.com/instill-ai/model-backend/commit/472696dd974e996e247c66750033f0b724668bfc))
+
 ## [0.11.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.10.0-alpha...v0.11.0-alpha) (2023-01-14)
 
 
