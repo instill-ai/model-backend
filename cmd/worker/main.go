@@ -81,23 +81,16 @@ func main() {
 	}
 	defer clientNamespace.Close()
 
-	retention := time.Duration(24 * time.Hour)
+	retention := time.Duration(72 * time.Hour)
 	if err = clientNamespace.Register(context.Background(), &workflowservice.RegisterNamespaceRequest{
 		Namespace:                        modelWorker.Namespace,
 		Description:                      "For workflows triggered in the model-backend",
 		OwnerEmail:                       "infra@instill.tech",
 		WorkflowExecutionRetentionPeriod: &retention,
 	}); err != nil {
-		logger.Error(fmt.Sprintf("Unable to register namespace: %s", err))
-	}
-
-	for start := time.Now(); time.Since(start) < time.Second*30; {
-		_, err := clientNamespace.Describe(context.Background(), modelWorker.Namespace)
-		_, ok := err.(*serviceerror.NamespaceNotFound)
-		if !ok {
-			break
+		if _, ok := err.(*serviceerror.NamespaceAlreadyExists); !ok {
+			logger.Error(fmt.Sprintf("Unable to register namespace: %s", err))
 		}
-		time.Sleep(time.Second * 1)
 	}
 
 	cw := modelWorker.NewWorker(repository.NewRepository(db), triton)
@@ -109,6 +102,10 @@ func main() {
 		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
 		Namespace: modelWorker.Namespace,
 	})
+
+	// Note that Namespace registration using this API takes up to 10 seconds to complete.
+	// Ensure to wait for this registration to complete before starting the Workflow Execution against the Namespace.
+	time.Sleep(time.Second * 10)
 
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
@@ -124,8 +121,8 @@ func main() {
 	w.RegisterWorkflow(cw.CreateModelWorkflow)
 	w.RegisterWorkflow(cw.AddSearchAttributeWorkflow)
 
-	err = w.Run(worker.InterruptCh())
-	if err != nil {
+	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
 	}
+
 }
