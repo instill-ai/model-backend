@@ -33,6 +33,8 @@ import (
 	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
 
+type InferInput interface{}
+
 type Service interface {
 	CreateModelAsync(owner string, model *datamodel.Model) (string, error)
 	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
@@ -43,8 +45,8 @@ type Service interface {
 	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-	ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
-	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
+	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
+	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
@@ -145,21 +147,40 @@ func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) 
 	return s.repository.GetModelByUid(owner, uid, view)
 }
 
-func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
 	// Increment trigger image numbers
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	uid, _ := resource.GetPermalinkUID(owner)
-	if strings.HasPrefix(owner, "users/") {
-		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(imgsBytes)))
-	} else if strings.HasPrefix(owner, "orgs/") {
-		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(imgsBytes)))
+	switch task {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_UNSPECIFIED:
+
+		if strings.HasPrefix(owner, "users/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([][]byte))))
+		} else if strings.HasPrefix(owner, "orgs/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([][]byte))))
+		}
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		if strings.HasPrefix(owner, "users/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([]triton.TextToImageInput))))
+		} else if strings.HasPrefix(owner, "orgs/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([]triton.TextToImageInput))))
+		}
+	default:
+		return nil, fmt.Errorf("unknown task input type")
 	}
-	return s.ModelInfer(modelInstanceUID, imgsBytes, task)
+
+	return s.ModelInfer(modelInstanceUID, inferInput, task)
 }
 
-func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
 
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
 	if err != nil {
@@ -181,7 +202,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference.
-	inferResponse, err := s.triton.ModelInferRequest(task, imgsBytes, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := s.triton.ModelInferRequest(task, inferInput, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +434,22 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, imgsBytes [][]byte, tas
 			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &semanticSegmentationOutput)
 		}
 		return semanticSegmentationOutputs, nil
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImageResponses := postprocessResponse.(triton.TextToImageOutput)
+		batchedOutputDataImages := textToImageResponses.Images
+		var textToImageOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataImages { // loop over images
+			var textToImageOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_TextToImage{
+					TextToImage: &modelPB.TextToImageOutput{
+						Images: batchedOutputDataImages[i],
+					},
+				},
+			}
 
+			textToImageOutputs = append(textToImageOutputs, &textToImageOutput)
+		}
+		return textToImageOutputs, nil
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput

@@ -529,6 +529,18 @@ func UpdateConfigModelName(filePath string, oldModelName string, newModelName st
 	return os.WriteFile(filePath, fileData, 0o600)
 }
 
+func UpdateModelName(filePath string, oldModelName string, newModelName string) error {
+	nameRegx := regexp.MustCompile(oldModelName)
+	if err := ValidateFilePath(filePath); err != nil {
+		return err
+	}
+	fileData, _ := os.ReadFile(filePath)
+	fileString := string(fileData)
+	fileString = nameRegx.ReplaceAllString(fileString, newModelName)
+	fileData = []byte(fileString)
+	return os.WriteFile(filePath, fileData, 0o600)
+}
+
 func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error {
 	if err := os.Mkdir(dest, os.ModePerm); err != nil {
 		return err

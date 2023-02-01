@@ -104,6 +104,14 @@ func isEnsembleConfig(configPath string) bool {
 	return strings.Contains(fileString, "platform: \"ensemble\"")
 }
 
+// TODO: should have other approach
+func couldBeEnsembleConfig(configPath string) bool {
+	fileData, _ := os.ReadFile(configPath)
+	fileString := string(fileData)
+	return strings.Contains(fileString, "instance_group")
+}
+
+// TODO: need to clean up this function
 func unzip(filePath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
@@ -117,6 +125,7 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 	var currentOldModelName string
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
+	var configFiles []string
 	for _, f := range archive.File {
 		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
 			continue
@@ -199,10 +208,26 @@ func unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		// Update ModelName in config.pbtxt
 		fileExtension := filepath.Ext(filePath)
 		if fileExtension == ".pbtxt" {
+			configFiles = append(configFiles, filePath)
 			if isEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
 			}
 			err = util.UpdateConfigModelName(filePath, oldModelName, newModelName)
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	if ensembleFilePath == "" {
+		for _, filePath := range configFiles {
+			if couldBeEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+				break
+			}
+		}
+
+		for oldModelName, newModelName := range newModelNameMap {
+			err = util.UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
 			if err != nil {
 				return "", "", err
 			}
@@ -2251,13 +2276,33 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		return &modelPB.TriggerModelInstanceResponse{}, err
 	}
 
-	imgsBytes, _, err := parseImageRequestInputsToBytes(req)
-	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	var inputInfer interface{}
+	var lenInputs = 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_UNSPECIFIED:
+		visionInput, err := parseImageRequestInputsToBytes(req)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(visionInput)
+		inputInfer = visionInput
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(req)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textToImage)
+		inputInfer = textToImage
 	}
 
 	// check whether model support batching or not. If not, raise an error
-	if len(imgsBytes) > 1 {
+	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, err
@@ -2273,7 +2318,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2329,16 +2374,39 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		return &modelPB.TestModelInstanceResponse{}, err
 	}
 
-	imgsBytes, _, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
-		Name:       req.Name,
-		TaskInputs: req.TaskInputs,
-	})
-	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	var inputInfer interface{}
+	var lenInputs = 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_UNSPECIFIED:
+		visionInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
+			Name:       req.Name,
+			TaskInputs: req.TaskInputs,
+		})
+		if err != nil {
+			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(visionInput)
+		inputInfer = visionInput
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelInstanceRequest{
+			Name:       req.Name,
+			TaskInputs: req.TaskInputs,
+		})
+		if err != nil {
+			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textToImage)
+		inputInfer = textToImage
 	}
 
 	// check whether model support batching or not. If not, raise an error
-	if len(imgsBytes) > 1 {
+	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, err
@@ -2354,7 +2422,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2449,14 +2517,35 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		imgsBytes, _, err := parseImageFormDataInputsToBytes(r)
-		if err != nil {
-			makeJSONResponse(w, 400, "File Input Error", err.Error())
-			return
+		var inputInfer interface{}
+		var lenInputs = 1
+		switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+		case modelPB.ModelInstance_TASK_CLASSIFICATION,
+			modelPB.ModelInstance_TASK_DETECTION,
+			modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+			modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+			modelPB.ModelInstance_TASK_OCR,
+			modelPB.ModelInstance_TASK_KEYPOINT,
+			modelPB.ModelInstance_TASK_UNSPECIFIED:
+			visionInput, err := parseImageFormDataInputsToBytes(r)
+			if err != nil {
+				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				return
+			}
+			lenInputs = len(visionInput)
+			inputInfer = visionInput
+		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+			textToImage, err := parseImageFormDataTextToImageInputs(r)
+			if err != nil {
+				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				return
+			}
+			lenInputs = len(textToImage)
+			inputInfer = textToImage
 		}
 
 		// check whether model support batching or not. If not, raise an error
-		if len(imgsBytes) > 1 {
+		if lenInputs > 1 {
 			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
 			if err != nil {
 				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
@@ -2476,9 +2565,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+			response, err = modelService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(

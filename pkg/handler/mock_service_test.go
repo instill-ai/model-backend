@@ -12,6 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	worker "github.com/instill-ai/model-backend/internal/worker"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
+	service "github.com/instill-ai/model-backend/pkg/service"
 	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -303,7 +304,7 @@ func (mr *MockServiceMockRecorder) ListOperation(arg0, arg1 interface{}) *gomock
 }
 
 // ModelInfer mocks base method.
-func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 [][]byte, arg2 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.TaskOutput, error) {
+func (m *MockService) ModelInfer(arg0 uuid.UUID, arg1 service.InferInput, arg2 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.TaskOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInfer", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*modelv1alpha.TaskOutput)
@@ -318,7 +319,7 @@ func (mr *MockServiceMockRecorder) ModelInfer(arg0, arg1, arg2 interface{}) *gom
 }
 
 // ModelInferTestMode mocks base method.
-func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 [][]byte, arg3 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.TaskOutput, error) {
+func (m *MockService) ModelInferTestMode(arg0 string, arg1 uuid.UUID, arg2 service.InferInput, arg3 modelv1alpha.ModelInstance_Task) ([]*modelv1alpha.TaskOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferTestMode", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]*modelv1alpha.TaskOutput)
@@ -360,6 +361,20 @@ func (m *MockService) RenameModel(arg0, arg1, arg2 string) (datamodel.Model, err
 func (mr *MockServiceMockRecorder) RenameModel(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameModel", reflect.TypeOf((*MockService)(nil).RenameModel), arg0, arg1, arg2)
+}
+
+// SearchAttributeReady mocks base method.
+func (m *MockService) SearchAttributeReady() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchAttributeReady")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SearchAttributeReady indicates an expected call of SearchAttributeReady.
+func (mr *MockServiceMockRecorder) SearchAttributeReady() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchAttributeReady", reflect.TypeOf((*MockService)(nil).SearchAttributeReady))
 }
 
 // UndeployModelInstanceAsync mocks base method.

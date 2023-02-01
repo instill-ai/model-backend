@@ -4,8 +4,11 @@ package triton
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"google.golang.org/grpc"
@@ -17,12 +20,27 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
+type InferInput interface{}
+
+type TextToImageInput struct {
+	Prompt   string
+	Steps    int64
+	CfgScale int64
+	Seed     int64
+	Samples  int64
+}
+
+type VisionInput struct {
+	ImgUrl    string
+	ImgBase64 string
+}
+
 type Triton interface {
 	ServerLiveRequest() *inferenceserver.ServerLiveResponse
 	ServerReadyRequest() *inferenceserver.ServerReadyResponse
 	ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
 	ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
-	ModelInferRequest(task modelPB.ModelInstance_Task, rawInput [][]byte, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	ModelInferRequest(task modelPB.ModelInstance_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
 	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error)
 	LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
 	UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
@@ -126,33 +144,54 @@ func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *in
 	return modelConfigResponse
 }
 
-func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, rawInput [][]byte, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
-	// Create context for our request with 60 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+	// Create context for our request with 5 minutes timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*60*time.Second)
 	defer cancel()
 
 	// Create request input tensors
-	batchSize := int64(len(rawInput))
 	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
-		if modelConfig.Config.Platform == "ensemble" {
+		switch task {
+		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+				Name:     modelMetadata.Inputs[i].Name,
+				Datatype: modelMetadata.Inputs[i].Datatype,
+				Shape:    []int64{1},
+			})
+		case modelPB.ModelInstance_TASK_CLASSIFICATION,
+			modelPB.ModelInstance_TASK_DETECTION,
+			modelPB.ModelInstance_TASK_KEYPOINT,
+			modelPB.ModelInstance_TASK_OCR,
+			modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+			modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION:
+			batchSize := int64(len(inferInput.([][]byte)))
+			if modelConfig.Config.Platform == "ensemble" {
+				inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+					Name:     modelMetadata.Inputs[i].Name,
+					Datatype: modelMetadata.Inputs[i].Datatype,
+					Shape:    []int64{batchSize, 1},
+				})
+			} else {
+				c, h, w := ParseModel(modelMetadata, modelConfig)
+				var shape []int64
+				if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
+					shape = []int64{1, h, w, c}
+				} else {
+					shape = []int64{1, c, h, w}
+				}
+				inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+					Name:     modelMetadata.Inputs[i].Name,
+					Datatype: modelMetadata.Inputs[i].Datatype,
+					Shape:    shape,
+				})
+			}
+		default:
+			batchSize := int64(len(inferInput.([][]byte)))
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{batchSize, 1},
-			})
-		} else {
-			c, h, w := ParseModel(modelMetadata, modelConfig)
-			var shape []int64
-			if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
-				shape = []int64{1, h, w, c}
-			} else {
-				shape = []int64{1, c, h, w}
-			}
-			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
-				Name:     modelMetadata.Inputs[i].Name,
-				Datatype: modelMetadata.Inputs[i].Datatype,
-				Shape:    shape,
 			})
 		}
 	}
@@ -190,7 +229,35 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, rawInput []
 		Inputs:       inferInputs,
 		Outputs:      inferOutputs,
 	}
-	modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(rawInput))
+
+	switch task {
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImageInputs := inferInput.([]TextToImageInput)
+		samples := make([]byte, 4)
+		binary.LittleEndian.PutUint32(samples, uint32(textToImageInputs[0].Samples))
+		steps := make([]byte, 4)
+		binary.LittleEndian.PutUint32(steps, uint32(textToImageInputs[0].Steps))
+		guidanceScale := make([]byte, 4)
+		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(7.5)) // Fixed value.
+		seed := make([]byte, 8)
+		binary.LittleEndian.PutUint64(seed, uint64(1024))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInputs[0].Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION:
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
+	default:
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
+	}
 
 	// Submit inference request to server
 	modelInferResponse, err := ts.tritonClient.ModelInfer(ctx, &modelInferRequest)
@@ -645,18 +712,17 @@ func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelIn
 func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string) (interface{}, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
-		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to find inference output for images")
 	}
 	if outputTensorImages == nil {
 		return nil, fmt.Errorf("unable to find output content for images")
 	}
 
-	outputDataImages := DeserializeBytesTensor(rawOutputContentImages, outputTensorImages.Shape[0]*outputTensorImages.Shape[1])
-	batchedOutputDataImages, err := Reshape1DArrayStringTo2D(outputDataImages, outputTensorImages.Shape)
-	if err != nil {
-		log.Printf("%v", err.Error())
-		return nil, fmt.Errorf("unable to reshape inference output for images")
+	var batchedOutputDataImages [][]string
+	var lenSingleImage int = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
+	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
+		base64EncodedStr := base64.StdEncoding.EncodeToString(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
+		batchedOutputDataImages = append(batchedOutputDataImages, []string{base64EncodedStr})
 	}
 
 	return TextToImageOutput{
