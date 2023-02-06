@@ -44,7 +44,7 @@ func NewTriton() Triton {
 }
 
 func (ts *triton) Init() {
-	grpcUri := config.Config.TritonServer.GrpcUri
+	grpcUri := config.Config.TritonServer.GrpcURI
 	// Connect to gRPC server
 	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

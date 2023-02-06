@@ -10,7 +10,7 @@ import (
 )
 
 func TestParseImageFromURL(t *testing.T) {
-	config.Config.Server.MaxImageSize = 12
+	config.Config.Server.MaxDataSize = 12
 
 	{
 		_, _, err := parseImageFromURL("https://artifacts.instill.tech/non-existing.jpg")
@@ -26,7 +26,7 @@ func TestParseImageFromURL(t *testing.T) {
 }
 
 func TestParseImageFromBase64(t *testing.T) {
-	config.Config.Server.MaxImageSize = 12
+	config.Config.Server.MaxDataSize = 12
 
 	{
 		_, _, err := parseImageFromBase64("test")

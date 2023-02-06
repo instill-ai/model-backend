@@ -27,10 +27,10 @@ type ServerConfig struct {
 	DisableUsage bool     `koanf:"disableusage"`
 	Debug        bool     `koanf:"debug"`
 	ItMode       bool     `koanf:"itmode"`
-	MaxImageSize int      `koanf:"maximagesize"`
+	MaxDataSize  int      `koanf:"maxdatasize"`
 }
 
-// config related to database
+// DatabaseConfig related to database
 type DatabaseConfig struct {
 	Username string `koanf:"username"`
 	Password string `koanf:"password"`
@@ -46,8 +46,9 @@ type DatabaseConfig struct {
 	}
 }
 
+// TritonServerConfig related to Triton server
 type TritonServerConfig struct {
-	GrpcUri    string `koanf:"grpcuri"`
+	GrpcURI    string `koanf:"grpcuri"`
 	ModelStore string `koanf:"modelstore"`
 }
 
@@ -68,12 +69,14 @@ type CacheConfig struct {
 	}
 }
 
-type UsageBackendConfig struct {
+// UsageServerConfig related to usage-server
+type UsageServerConfig struct {
 	TLSEnabled bool   `koanf:"tlsenabled"`
 	Host       string `koanf:"host"`
 	Port       int    `koanf:"port"`
 }
 
+// PipelineBackendConfig related to pipeline-backend
 type PipelineBackendConfig struct {
 	Host  string `koanf:"host"`
 	Port  int    `koanf:"port"`
@@ -83,6 +86,7 @@ type PipelineBackendConfig struct {
 	}
 }
 
+// MaxBatchSizeConfig defines the maximum size of the batch of a AI task
 type MaxBatchSizeConfig struct {
 	Unspecified          int `koanf:"unspecified"`
 	Classification       int `koanf:"classification"`
@@ -93,6 +97,7 @@ type MaxBatchSizeConfig struct {
 	SemanticSegmentation int `koanf:"semanticsegmentation"`
 }
 
+// TemporalConfig related to Temporal
 type TemporalConfig struct {
 	ClientOptions client.Options `koanf:"clientoptions"`
 }
@@ -104,7 +109,7 @@ type AppConfig struct {
 	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
 	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
 	Cache                  CacheConfig           `koanf:"cache"`
-	UsageBackend           UsageBackendConfig    `koanf:"usagebackend"`
+	UsageServer            UsageServerConfig     `koanf:"usageserver"`
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`

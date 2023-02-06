@@ -7,8 +7,8 @@ server:
   edition: local-ce:dev
   disableusage: true
   debug: true
-  itmode: true
-  maximagesize: 12 # MB in unit
+  itmode: false
+  maxdatasize: 12 # MB in unit
 database:
   username: postgres
   password: password
@@ -34,7 +34,7 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-usagebackend:
+usageserver:
   tlsenabled: true
   host: usage.instill.tech
   port: 443
