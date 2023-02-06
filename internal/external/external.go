@@ -49,7 +49,7 @@ func InitUsageServiceClient() (usagePB.UsageServiceClient, *grpc.ClientConn) {
 	logger, _ := logger.GetZapLogger()
 
 	var clientDialOpts grpc.DialOption
-	if config.Config.UsageBackend.TLSEnabled {
+	if config.Config.UsageServer.TLSEnabled {
 		roots, err := x509.SystemCertPool()
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -66,7 +66,7 @@ func InitUsageServiceClient() (usagePB.UsageServiceClient, *grpc.ClientConn) {
 	}
 
 	clientConn, err := grpc.Dial(
-		fmt.Sprintf("%v:%v", config.Config.UsageBackend.Host, config.Config.UsageBackend.Port),
+		fmt.Sprintf("%v:%v", config.Config.UsageServer.Host, config.Config.UsageServer.Port),
 		clientDialOpts,
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
