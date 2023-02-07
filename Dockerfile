@@ -17,33 +17,47 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
 
+# ArtiVC to work with cloud storage
+ARG TARGETOS TARGETARCH ARTIVC_VERSION
+ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
+RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /usr/local/bin
+
+RUN mkdir /etc/vdp
+RUN mkdir /vdp
+
 FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 
-RUN apt update && \
-    apt install -y bash \
+RUN apt update && apt install -y \
+    bash \
     build-essential \
-    python3 python3-setuptools python3-pip git git-lfs curl && \
-    rm -rf /var/lib/apt/lists
+    python3 \
+    python3-setuptools \
+    python3-pip \
+    git \
+    git-lfs \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
+
+USER nobody
 
 ARG SERVICE_NAME
 
 WORKDIR /${SERVICE_NAME}
 
-COPY --from=docker:dind /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:dind-rootless --chown=nobody:nogroup /usr/local/bin/docker /usr/local/bin
 
-COPY --from=build /src/config ./config
-COPY --from=build /src/assets ./assets
-COPY --from=build /src/release-please ./release-please
-COPY --from=build /src/internal/db/migration ./internal/db/migration
+COPY --from=build --chown=nobody:nogroup /src/config ./config
+COPY --from=build --chown=nobody:nogroup /src/assets ./assets
+COPY --from=build --chown=nobody:nogroup /src/release-please ./release-please
+COPY --from=build --chown=nobody:nogroup /src/internal/db/migration ./internal/db/migration
 
-COPY --from=build /${SERVICE_NAME}-migrate ./
-COPY --from=build /${SERVICE_NAME}-init ./
-COPY --from=build /${SERVICE_NAME} ./
-COPY --from=build /${SERVICE_NAME}-worker ./
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-migrate ./
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
+COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 
-# ArtiVC tool to work with cloud storage
-ARG TARGETOS TARGETARCH ARTIVC_VERSION
-ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
-RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /bin
+COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
+COPY --from=build --chown=nobody:nogroup /vdp /vdp

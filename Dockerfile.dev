@@ -3,31 +3,56 @@ FROM golang:${GOLANG_VERSION}
 
 ARG SERVICE_NAME
 
-COPY --from=docker:dind /usr/local/bin/docker /usr/local/bin/
-
 WORKDIR /${SERVICE_NAME}
+
+# -- DinD
+
+COPY --from=docker:dind-rootless --chown=nobody:nogroup /usr/local/bin/docker /usr/local/bin
+
+# -- install 3rd-party
+
+ARG TARGETOS TARGETARCH K6_VERSION ARTIVC_VERSION
+
+# air
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go install github.com/cosmtrek/air@latest
+
+# k6
+ARG K6_VERSION
+ADD https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz
+RUN tar -xf k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz --strip-components 1 -C /usr/bin
+
+# ArtiVC to work with cloud storage
+ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
+RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /bin
+
+# tools to work with versatile model import
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-setuptools \
+    python3-pip \
+    git \
+    git-lfs \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install jsonschema pyyaml
+RUN pip install --upgrade pip setuptools wheel
+RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
+
+# -- set up Go
+
+RUN chown -R nobody:nogroup /go
+ENV GOCACHE /go/.cache/go-build
+ENV GOENV /go/.config/go/env
 
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-ARG TARGETOS TARGETARCH ARTIVC_VERSION
+# -- set up mounting points
 
-# Install air
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go install github.com/cosmtrek/air@latest
-
-# Install k6
-ARG K6_VERSION
-ADD https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz
-RUN tar -xf k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz --strip-components 1 -C /usr/bin
-
-# ArtiVC tool to work with cloud storage
-ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
-RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /bin
-
-RUN apt-get update
-RUN apt-get -y install python3 python3-setuptools python3-pip git git-lfs curl
-RUN pip install --upgrade pip setuptools wheel
-RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
+RUN mkdir /etc/vdp && chown -R nobody:nogroup /etc/vdp
+RUN mkdir /vdp && chown -R nobody:nogroup /vdp
+RUN mkdir /model-repository && chown -R nobody:nogroup /model-repository
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
