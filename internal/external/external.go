@@ -19,8 +19,8 @@ import (
 	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
 )
 
-// InitUserServiceClient initialises a UserServiceClient instance
-func InitUserServiceClient() (mgmtPB.UserServiceClient, *grpc.ClientConn) {
+// InitMgmtAdminServiceClient initialises a MgmtAdminServiceClient instance
+func InitMgmtAdminServiceClient() (mgmtPB.MgmtAdminServiceClient, *grpc.ClientConn) {
 	logger, _ := logger.GetZapLogger()
 
 	var clientDialOpts grpc.DialOption
@@ -36,12 +36,12 @@ func InitUserServiceClient() (mgmtPB.UserServiceClient, *grpc.ClientConn) {
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.Port), clientDialOpts)
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.AdminPort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	return mgmtPB.NewUserServiceClient(clientConn), clientConn
+	return mgmtPB.NewMgmtAdminServiceClient(clientConn), clientConn
 }
 
 // InitUsageServiceClient initializes a UsageServiceClient instance

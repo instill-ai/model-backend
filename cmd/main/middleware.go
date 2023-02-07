@@ -14,7 +14,7 @@ import (
 func appendCustomHeaderMiddleware(next runtime.HandlerFunc) runtime.HandlerFunc {
 	return runtime.HandlerFunc(func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		// TODO: Replace with decoded JWT header
-		userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+		userServiceClient, userServiceClientConn := external.InitMgmtAdminServiceClient()
 		defer userServiceClientConn.Close()
 		userPageToken := ""
 		userPageSizeMax := int64(repository.MaxPageSize)
