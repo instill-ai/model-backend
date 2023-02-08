@@ -5,7 +5,7 @@ server:
     key:
   corsorigins:
   edition: local-ce:dev
-  disableusage: true
+  disableusage: false
   debug: true
   itmode: false
   maxdatasize: 12 # MB in unit
