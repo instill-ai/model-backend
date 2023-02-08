@@ -41,18 +41,20 @@ RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchv
 
 # -- set up Go
 
-RUN chown -R nobody:nogroup /go
-ENV GOCACHE /go/.cache/go-build
-ENV GOENV /go/.config/go/env
-
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+
+RUN chown -R nobody:nogroup /go
+ENV GOCACHE /go/.cache/go-build
+ENV GOENV /go/.config/go/env
 
 # -- set up mounting points
 
 RUN mkdir /etc/vdp && chown -R nobody:nogroup /etc/vdp
 RUN mkdir /vdp && chown -R nobody:nogroup /vdp
 RUN mkdir /model-repository && chown -R nobody:nogroup /model-repository
+
+USER nobody
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
