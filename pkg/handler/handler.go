@@ -980,7 +980,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			if err != nil {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
-					"[handler] create a model error",
+					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 					"GitHub",
 					"Clone repository",
 					"",
@@ -999,13 +999,12 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 			Configuration: bInstanceConfig,
 		}
-
 		readmeFilePath, ensembleFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"Model folder structure",
 				"",
 				"",
@@ -1022,8 +1021,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			if err != nil || modelMeta.Task == "" {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
-					"[handler] create a model error",
-					"REAME.md file",
+					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+					"README.md file",
 					"Could not get meta data from README.md file",
 					"",
 					err.Error(),
@@ -1040,8 +1039,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 				if modelMeta.Task != "" {
 					st, err := sterr.CreateErrorResourceInfo(
 						codes.FailedPrecondition,
-						"[handler] create a model error",
-						"REAME.md file",
+						fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+						"README.md file",
 						"README.md contains unsupported task",
 						"",
 						err.Error(),
@@ -1058,12 +1057,11 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		} else {
 			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
-
 		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"GitHub model",
 				"Missing ensemble model",
 				"",
@@ -1099,7 +1097,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model service",
 			"",
 			"",
@@ -1171,7 +1169,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"ArtiVC",
 				"Get tags",
 				"",
@@ -1202,16 +1200,16 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		} else {
 			err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, false)
 			if err != nil {
-				st, err := sterr.CreateErrorResourceInfo(
+				st, e := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
-					"[handler] create a model error",
+					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 					"ArtiVC",
 					"Clone repository",
 					"",
 					err.Error(),
 				)
-				if err != nil {
-					logger.Error(err.Error())
+				if e != nil {
+					logger.Error(e.Error())
 				}
 				_ = os.RemoveAll(modelSrcDir)
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
@@ -1231,7 +1229,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"Model folder structure",
 				"",
 				"",
@@ -1246,16 +1244,16 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil || modelMeta.Task == "" {
-				st, err := sterr.CreateErrorResourceInfo(
+				st, e := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
-					"[handler] create a model error",
-					"REAME.md file",
+					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+					"README.md file",
 					"Could not get meta data from README.md file",
 					"",
 					err.Error(),
 				)
-				if err != nil {
-					logger.Error(err.Error())
+				if e != nil {
+					logger.Error(e.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
 				return &modelPB.CreateModelResponse{}, st.Err()
@@ -1267,7 +1265,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 					st, err := sterr.CreateErrorResourceInfo(
 						codes.FailedPrecondition,
 						"[handler] create a model error",
-						"REAME.md file",
+						"README.md file",
 						"README.md contains unsupported task",
 						"",
 						err.Error(),
@@ -1289,7 +1287,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"ArtiVC model",
 				"Missing ensemble model",
 				"",
@@ -1324,16 +1322,16 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	}
 	wfId, err := h.service.CreateModelAsync(owner, &artivcModel)
 	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
+		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model service",
 			"",
 			"",
 			err.Error(),
 		)
-		if err != nil {
-			logger.Error(err.Error())
+		if e != nil {
+			logger.Error(e.Error())
 		}
 		for _, tag := range tags {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
@@ -1402,16 +1400,16 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		}
 	} else {
 		if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
+			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 				"Huggingface",
 				"Clone model repository",
 				"",
 				err.Error(),
 			)
-			if err != nil {
-				logger.Error(err.Error())
+			if e != nil {
+				logger.Error(e.Error())
 			}
 			_ = os.RemoveAll(configTmpDir)
 			return &modelPB.CreateModelResponse{}, st.Err()
@@ -1420,16 +1418,16 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if err := util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
+		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Huggingface",
 			"Generate HuggingFace model",
 			"",
 			err.Error(),
 		)
-		if err != nil {
-			logger.Error(err.Error())
+		if e != nil {
+			logger.Error(e.Error())
 		}
 		_ = os.RemoveAll(modelDir)
 		return &modelPB.CreateModelResponse{}, st.Err()
@@ -1449,16 +1447,16 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	readmeFilePath, ensembleFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
+		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model folder structure",
 			"",
 			"",
 			err.Error(),
 		)
-		if err != nil {
-			logger.Error(err.Error())
+		if e != nil {
+			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 		return &modelPB.CreateModelResponse{}, st.Err()
@@ -1466,16 +1464,16 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
+			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"REAME.md file",
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"README.md file",
 				"Could not get meta data from README.md file",
 				"",
 				err.Error(),
 			)
-			if err != nil {
-				logger.Error(err.Error())
+			if e != nil {
+				logger.Error(e.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 			return &modelPB.CreateModelResponse{}, st.Err()
@@ -1488,7 +1486,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
 					"[handler] create a model error",
-					"REAME.md file",
+					"README.md file",
 					"README.md contains unsupported task",
 					"",
 					err.Error(),
@@ -1520,7 +1518,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"HuggingFace model",
 			"Missing ensemble model",
 			"",
@@ -1554,16 +1552,16 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 
 	wfId, err := h.service.CreateModelAsync(owner, &huggingfaceModel)
 	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
+		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
-			"[handler] create a model error",
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model service",
 			"",
 			"",
 			err.Error(),
 		)
-		if err != nil {
-			logger.Error(err.Error())
+		if e != nil {
+			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 		return &modelPB.CreateModelResponse{}, st.Err()
@@ -1645,6 +1643,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 	default:
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 	}
+
 }
 
 func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
@@ -1990,7 +1989,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
-			"[handler] deploy model error",
+			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
 			"triton-inference-server",
 			"deploy model",
 			"",
@@ -2122,7 +2121,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] inference model error",
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
 			"Triton inference server",
 			"",
 			"",
@@ -2199,7 +2198,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] inference model error",
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
 			"Triton inference server",
 			"",
 			"",
@@ -2278,7 +2277,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] inference model error",
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
 			"Triton inference server",
 			"",
 			"",
@@ -2359,7 +2358,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
-			"[handler] inference model error",
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
 			"Triton inference server",
 			"",
 			"",
@@ -2484,7 +2483,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
-				"[handler] inference model error",
+				fmt.Sprintf("[handler] inference model error: %s", err.Error()),
 				"Triton inference server",
 				"",
 				"",

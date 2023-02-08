@@ -29,7 +29,7 @@ client.load(['proto'], 'model.proto');
 client.load(['proto'], 'model_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
-export function setup() {}
+export function setup() { }
 
 export default () => {
     // Liveness check
