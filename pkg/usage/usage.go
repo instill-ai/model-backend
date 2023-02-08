@@ -79,6 +79,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 		})
 		if err != nil {
 			logger.Error(fmt.Sprintf("[mgmt-backend: ListUser] %s", err))
+			break
 		}
 
 		// Roll all model resources on a user
