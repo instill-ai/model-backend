@@ -204,6 +204,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 	var newModelNameMap = make(map[string]string)
 	var readmeFilePath string
 	files := []FileMeta{}
+	var configFiles []string
 	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
 		if !strings.Contains(path, ".git") {
 			files = append(files, FileMeta{
@@ -271,10 +272,26 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		// Update ModelName in config.pbtxt
 		fileExtension := filepath.Ext(filePath)
 		if fileExtension == ".pbtxt" {
+			configFiles = append(configFiles, filePath)
 			if isEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
 			}
 			err = UpdateConfigModelName(filePath, oldModelName, subStrs[0])
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	if ensembleFilePath == "" {
+		for _, filePath := range configFiles {
+			if couldBeEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+				break
+			}
+		}
+
+		for oldModelName, newModelName := range newModelNameMap {
+			err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
 			if err != nil {
 				return "", "", err
 			}
