@@ -33,7 +33,7 @@ func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 	}
 
 	// TODO: Replace with decoded JWT header
-	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	userServiceClient, userServiceClientConn := external.InitMgmtAdminServiceClient()
 	defer userServiceClientConn.Close()
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
@@ -62,7 +62,7 @@ func streamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 	}
 
 	// TODO: Replace with decoded JWT header
-	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	userServiceClient, userServiceClientConn := external.InitMgmtAdminServiceClient()
 	defer userServiceClientConn.Close()
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)

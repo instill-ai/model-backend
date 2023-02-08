@@ -5,7 +5,7 @@ server:
     key:
   corsorigins:
   edition: local-ce:dev
-  disableusage: true
+  disableusage: false
   debug: true
   itmode: false
   maxdatasize: 12 # MB in unit
@@ -25,8 +25,8 @@ tritonserver:
   grpcuri: triton-server:8001
   modelstore: /model-repository
 mgmtbackend:
-  host: mgmt-backend
-  port: 8084
+  adminhost: mgmt-backend-admin
+  adminport: 3084
   https:
     cert:
     key:

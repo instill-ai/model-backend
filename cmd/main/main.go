@@ -123,7 +123,7 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	userServiceClient, userServiceClientConn := external.InitUserServiceClient()
+	userServiceClient, userServiceClientConn := external.InitMgmtAdminServiceClient()
 	defer userServiceClientConn.Close()
 
 	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
