@@ -90,7 +90,7 @@ export function InferModel() {
         res = client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {})
         check(res, {
@@ -103,7 +103,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
             }]
         }, {}), {
             'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -116,7 +116,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/non-existed/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
             'TriggerModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
@@ -125,7 +125,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/${model_id}/instances/non-existed`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
             'TriggerModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
@@ -134,7 +134,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/non-existed.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
             }]
         }, {}), {
             'TriggerModelInstance non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
@@ -212,7 +212,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
             'TestModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -224,7 +224,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
             }]
         }, {}), {
             'TestModelInstance status': (r) => r && r.status === grpc.StatusOK,
@@ -236,7 +236,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
             name: `models/non-existed/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
             'TestModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
@@ -245,7 +245,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
             name: `models/${model_id}/instances/non-existed`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/imgs/dog.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
             'TestModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
@@ -254,7 +254,7 @@ export function InferModel() {
         check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
-                classification: {image_url: "https://artifacts.instill.tech/non-existed.jpg"}
+                classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
             }]
         }, {}), {
             'TestModelInstance non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,

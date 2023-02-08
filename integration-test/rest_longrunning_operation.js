@@ -201,7 +201,7 @@ export function CancelLongRunningOperation() {
   // Model Backend API: CancelLongRunningOperation
   {
     group("Model Backend API: Cancel Deploy LongRunning Operation", function () {
-     let fd_cls = new FormData();
+      let fd_cls = new FormData();
       let model_id = randomString(10)
       let model_description = randomString(20)
       fd_cls.append("id", model_id);
