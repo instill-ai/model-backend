@@ -238,9 +238,9 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput 
 		steps := make([]byte, 4)
 		binary.LittleEndian.PutUint32(steps, uint32(textToImageInputs[0].Steps))
 		guidanceScale := make([]byte, 4)
-		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(7.5)) // Fixed value.
+		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(textToImageInputs[0].CfgScale)) // Fixed value.
 		seed := make([]byte, 8)
-		binary.LittleEndian.PutUint64(seed, uint64(1024))
+		binary.LittleEndian.PutUint64(seed, uint64(textToImageInputs[0].Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInputs[0].Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
