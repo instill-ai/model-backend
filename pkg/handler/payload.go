@@ -238,9 +238,9 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		}
 	}
 
-	cfgScale := 7
+	cfgScale := 7.0
 	if len(cfgScaleStr) > 0 {
-		cfgScale, err = strconv.Atoi(cfgScaleStr[0])
+		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
@@ -257,7 +257,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 	return []triton.TextToImageInput{{
 		Prompt:   prompts[0],
 		Steps:    int64(step),
-		CfgScale: int64(cfgScale),
+		CfgScale: float32(cfgScale),
 		Seed:     int64(seed),
 		Samples:  1,
 	}}, nil

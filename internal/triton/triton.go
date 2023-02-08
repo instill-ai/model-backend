@@ -25,7 +25,7 @@ type InferInput interface{}
 type TextToImageInput struct {
 	Prompt   string
 	Steps    int64
-	CfgScale int64
+	CfgScale float32
 	Seed     int64
 	Samples  int64
 }
