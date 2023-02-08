@@ -123,8 +123,8 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	userServiceClient, userServiceClientConn := external.InitMgmtAdminServiceClient()
-	defer userServiceClientConn.Close()
+	mgmtAdminServiceClient, mgmtAdminServiceClientConn := external.InitMgmtAdminServiceClient()
+	defer mgmtAdminServiceClientConn.Close()
 
 	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
 	defer pipelineServiceClientConn.Close()
@@ -185,7 +185,7 @@ func main() {
 	if !config.Config.Server.DisableUsage {
 		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
 		defer usageServiceClientConn.Close()
-		usg = usage.NewUsage(ctx, repository, userServiceClient, redisClient, usageServiceClient)
+		usg = usage.NewUsage(ctx, repository, mgmtAdminServiceClient, redisClient, usageServiceClient)
 		if usg != nil {
 			usg.StartReporter(ctx)
 		}

@@ -29,7 +29,7 @@ type Usage interface {
 
 type usage struct {
 	repository        repository.Repository
-	userServiceClient mgmtPB.MgmtAdminServiceClient
+	mgmtAdminServiceClient mgmtPB.MgmtAdminServiceClient
 	redisClient       *redis.Client
 	reporter          usageReporter.Reporter
 	version           string
@@ -53,7 +53,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtAdminSe
 
 	return &usage{
 		repository:        r,
-		userServiceClient: u,
+		mgmtAdminServiceClient: u,
 		redisClient:       rc,
 		reporter:          reporter,
 		version:           version,
@@ -73,7 +73,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
 	for {
-		userResp, err := u.userServiceClient.ListUser(ctx, &mgmtPB.ListUserRequest{
+		userResp, err := u.mgmtAdminServiceClient.ListUser(ctx, &mgmtPB.ListUserRequest{
 			PageSize:  &userPageSizeMax,
 			PageToken: &userPageToken,
 		})
