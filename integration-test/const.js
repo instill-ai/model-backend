@@ -40,3 +40,4 @@ export const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//dat
 export const dog_rgba_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dog-rgba.png`, "b");
 export const cat_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/cat.jpg`, "b");
 export const bear_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/bear.jpg`, "b");
+export const dance_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dance.jpg`, "b");
