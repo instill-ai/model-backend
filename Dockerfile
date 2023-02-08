@@ -22,8 +22,10 @@ ARG TARGETOS TARGETARCH ARTIVC_VERSION
 ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
 RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /usr/local/bin
 
+# Mounting points
 RUN mkdir /etc/vdp
 RUN mkdir /vdp
+RUN mkdir /model-repository
 
 FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 
@@ -61,3 +63,4 @@ COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
+COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
