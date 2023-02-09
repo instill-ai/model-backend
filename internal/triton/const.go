@@ -46,3 +46,7 @@ type SemanticSegmentationOutput struct {
 	Rles       [][]string
 	Categories [][]string
 }
+
+type TextToImageOutput struct {
+	Images [][]string
+}

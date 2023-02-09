@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
+	triton "github.com/instill-ai/model-backend/internal/triton"
 	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -117,7 +118,7 @@ func (mr *MockTritonMockRecorder) ModelConfigRequest(arg0, arg1 interface{}) *go
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTriton) ModelInferRequest(arg0 modelv1alpha.ModelInstance_Task, arg1 [][]byte, arg2, arg3 string, arg4 *inferenceserver.ModelMetadataResponse, arg5 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTriton) ModelInferRequest(arg0 modelv1alpha.ModelInstance_Task, arg1 triton.InferInput, arg2, arg3 string, arg4 *inferenceserver.ModelMetadataResponse, arg5 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)

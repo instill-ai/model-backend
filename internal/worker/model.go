@@ -78,7 +78,7 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceP
 
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
-		StartToCloseTimeout: 10 * time.Minute,
+		StartToCloseTimeout: 60 * time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
@@ -107,8 +107,9 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 	if err != nil {
 		return err
 	}
-	tritonModels, err := w.repository.GetTritonModels(dbModelInstance.UID)
-	if err != nil {
+
+	var tritonModels []datamodel.TritonModel
+	if tritonModels, err = w.repository.GetTritonModels(dbModelInstance.UID); err != nil {
 		return err
 	}
 
@@ -199,38 +200,35 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 		}
 	}
 
-	var tEnsembleModel datamodel.TritonModel
+	tEnsembleModel, _ := w.repository.GetTritonEnsembleModel(param.ModelInstanceUID)
+	for _, tModel := range tritonModels {
+		if tEnsembleModel.Name != "" && tEnsembleModel.Name == tModel.Name { // load ensemble model last.
+			continue
+		}
+		if _, err = w.triton.LoadModelRequest(tModel.Name); err == nil {
+			continue
+		}
+		if e := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
+		}); e != nil {
+			return e
+		}
+	}
 
-	if tEnsembleModel, err = w.repository.GetTritonEnsembleModel(param.ModelInstanceUID); err != nil {
-		tritonModels, err = w.repository.GetTritonModels(dbModelInstance.UID)
-		if err != nil {
-			return err
-		}
-		for _, tModel := range tritonModels {
-			if _, err = w.triton.LoadModelRequest(tModel.Name); err != nil {
-				if err1 := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
-					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
-				}); err1 != nil {
-					return err1
-				}
-			}
-		}
-	} else {
-		// Load one ensemble model, which will also load all its dependent models
+	if tEnsembleModel.Name != "" { // load ensemble model.
 		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-			if err1 := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+			if e := w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
 				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
-			}); err1 != nil {
-				return err1
+			}); e != nil {
+				return e
 			}
-			return err
 		}
+	}
 
-		if err = w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
-			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
-		}); err != nil {
-			return err
-		}
+	if err = w.repository.UpdateModelInstance(param.ModelInstanceUID, datamodel.ModelInstance{
+		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+	}); err != nil {
+		return err
 	}
 
 	return nil

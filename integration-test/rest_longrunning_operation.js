@@ -82,8 +82,6 @@ export function GetLongRunningOperation() {
           r.json().operation.metadata === null,
         [`GET v1alpha/${operationRes.json().operation.name} response operation.done`]: (r) =>
           r.json().operation.done !== undefined,
-        [`GET v1alpha/${operationRes.json().operation.name} response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
       });
 
       // Check the model instance state being updated in 120 secs

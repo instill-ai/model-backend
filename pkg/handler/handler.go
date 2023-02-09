@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"archive/zip"
 	"bufio"
 	"bytes"
 	"context"
@@ -15,8 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -32,7 +29,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gorm.io/datatypes"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/external"
@@ -61,11 +57,6 @@ var requiredFields = []string{"Id"}
 // outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
-type FileMeta struct {
-	path  string
-	fInfo os.FileInfo
-}
-
 type handler struct {
 	modelPB.UnimplementedModelServiceServer
 	service service.Service
@@ -78,321 +69,6 @@ func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
 		service: s,
 		triton:  t,
 	}
-}
-
-// writeToFp takes in a file pointer and byte array and writes the byte array into the file
-// returns error if pointer is nil or error in writing to file
-func writeToFp(fp *os.File, data []byte) error {
-	w := 0
-	n := len(data)
-	for {
-
-		nw, err := fp.Write(data[w:])
-		if err != nil {
-			return err
-		}
-		w += nw
-		if nw >= n {
-			return nil
-		}
-	}
-}
-
-func isEnsembleConfig(configPath string) bool {
-	fileData, _ := os.ReadFile(configPath)
-	fileString := string(fileData)
-	return strings.Contains(fileString, "platform: \"ensemble\"")
-}
-
-func unzip(filePath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
-	archive, err := zip.OpenReader(filePath)
-	if err != nil {
-		fmt.Println("Error when open zip file ", err)
-		return "", "", err
-	}
-	defer archive.Close()
-	var readmeFilePath string
-	var createdTModels []datamodel.TritonModel
-	var currentNewModelName string
-	var currentOldModelName string
-	var ensembleFilePath string
-	var newModelNameMap = make(map[string]string)
-	for _, f := range archive.File {
-		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
-			continue
-		}
-		filePath := filepath.Join(dstDir, f.Name)
-		fmt.Println("unzipping file ", filePath)
-
-		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
-			fmt.Println("invalid file path")
-			return "", "", fmt.Errorf("invalid file path")
-		}
-		if f.FileInfo().IsDir() {
-			dirName := f.Name
-			if string(dirName[len(dirName)-1]) == "/" {
-				dirName = dirName[:len(dirName)-1]
-			}
-			if !strings.Contains(dirName, "/") { // top directory model
-				currentOldModelName = dirName
-				dirName = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, dirName, uploadedModel.Instances[0].ID)
-				currentNewModelName = dirName
-				newModelNameMap[currentOldModelName] = currentNewModelName
-			} else { // version folder
-				dirName = strings.Replace(dirName, currentOldModelName, currentNewModelName, 1)
-				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentNewModelName)
-				match, _ := regexp.MatchString(patternVersionFolder, dirName)
-				if match {
-					elems := strings.Split(dirName, "/")
-					sVersion := elems[len(elems)-1]
-					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
-					if err == nil {
-						createdTModels = append(createdTModels, datamodel.TritonModel{
-							Name:    currentNewModelName, // Triton model name
-							State:   datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-							Version: int(iVersion),
-						})
-					}
-				}
-			}
-			filePath := filepath.Join(dstDir, dirName)
-			if err := util.ValidateFilePath(filePath); err != nil {
-				return "", "", err
-			}
-			err = os.MkdirAll(filePath, os.ModePerm)
-			if err != nil {
-				return "", "", err
-			}
-			continue
-		}
-
-		// Update triton folder into format {model_name}#{task_name}#{task_version}
-		subStrs := strings.Split(f.Name, "/")
-		if len(subStrs) < 1 {
-			continue
-		}
-		// Triton modelname is folder name
-		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], uploadedModel.Instances[0].ID)
-		newModelName := subStrs[0]
-		filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
-		if strings.Contains(f.Name, "README.md") {
-			readmeFilePath = filePath
-		}
-		if err := util.ValidateFilePath(filePath); err != nil {
-			return "", "", err
-		}
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return "", "", err
-		}
-		fileInArchive, err := f.Open()
-		if err != nil {
-			return "", "", err
-		}
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return "", "", err
-		}
-
-		dstFile.Close()
-		fileInArchive.Close()
-		// Update ModelName in config.pbtxt
-		fileExtension := filepath.Ext(filePath)
-		if fileExtension == ".pbtxt" {
-			if isEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
-			}
-			err = util.UpdateConfigModelName(filePath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
-		}
-	}
-	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" {
-		for oldModelName, newModelName := range newModelNameMap {
-			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
-		}
-		for i := 0; i < len(createdTModels); i++ {
-			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
-				createdTModels[i].Platform = "ensemble"
-				break
-			}
-		}
-	}
-	uploadedModel.Instances[0].TritonModels = createdTModels
-	return readmeFilePath, ensembleFilePath, nil
-}
-
-// modelDir and dstDir are absolute path
-func updateModelPath(modelDir string, dstDir string, owner string, modelID string, modelInstance *datamodel.ModelInstance) (string, string, error) {
-	var createdTModels []datamodel.TritonModel
-	var ensembleFilePath string
-	var newModelNameMap = make(map[string]string)
-	var readmeFilePath string
-	files := []FileMeta{}
-	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
-		if !strings.Contains(path, ".git") {
-			files = append(files, FileMeta{
-				path:  path,
-				fInfo: f,
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		return "", "", err
-	}
-	modelRootDir := strings.Join([]string{dstDir, owner}, "/")
-	err = os.MkdirAll(modelRootDir, os.ModePerm)
-	if err != nil {
-		return "", "", err
-	}
-	for _, f := range files {
-		if f.path == modelDir {
-			continue
-		}
-		// Update triton folder into format {model_name}#{task_name}#{task_version}
-		subStrs := strings.Split(strings.Replace(f.path, modelDir+"/", "", 1), "/")
-		if len(subStrs) < 1 {
-			continue
-		}
-		// Triton modelname is folder name
-		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelID, oldModelName, modelInstance.ID)
-		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
-
-		if f.fInfo.IsDir() { // create new folder
-			err = os.MkdirAll(filePath, os.ModePerm)
-
-			if err != nil {
-				return "", "", err
-			}
-			newModelNameMap[oldModelName] = subStrs[0]
-			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
-				createdTModels = append(createdTModels, datamodel.TritonModel{
-					Name:    subStrs[0], // Triton model name
-					State:   datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-					Version: int(v),
-				})
-			}
-			continue
-		}
-		if strings.Contains(filePath, "README") {
-			readmeFilePath = filePath
-		}
-
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
-		if err != nil {
-			return "", "", err
-		}
-		srcFile, err := os.Open(f.path)
-		if err != nil {
-			return "", "", err
-		}
-		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			return "", "", err
-		}
-		dstFile.Close()
-		srcFile.Close()
-		// Update ModelName in config.pbtxt
-		fileExtension := filepath.Ext(filePath)
-		if fileExtension == ".pbtxt" {
-			if isEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
-			}
-			err = util.UpdateConfigModelName(filePath, oldModelName, subStrs[0])
-			if err != nil {
-				return "", "", err
-			}
-		}
-	}
-	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" {
-		for oldModelName, newModelName := range newModelNameMap {
-			err = util.UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
-		}
-		for i := 0; i < len(createdTModels); i++ {
-			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
-				createdTModels[i].Platform = "ensemble"
-				break
-			}
-		}
-	}
-	modelInstance.TritonModels = createdTModels
-	return readmeFilePath, ensembleFilePath, nil
-}
-
-func saveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
-	firstChunk := true
-	var fp *os.File
-	var fileData *modelPB.CreateModelBinaryFileUploadRequest
-
-	var tmpFile string
-
-	var uploadedModel datamodel.Model
-	for {
-		fileData, err = stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
-		}
-
-		if firstChunk { //first chunk contains file name
-			if fileData.Model == nil {
-				return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
-			}
-
-			rdid, _ := uuid.NewV4()
-			tmpFile = path.Join("/tmp", rdid.String()+".zip")
-			fp, err = os.Create(tmpFile)
-			visibility := modelPB.Model_VISIBILITY_PRIVATE
-			if fileData.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-				visibility = modelPB.Model_VISIBILITY_PUBLIC
-			}
-			var description = ""
-			if fileData.Model.Description != nil {
-				description = *fileData.Model.Description
-			}
-			modelDefName := fileData.Model.ModelDefinition
-			modelDefinitionID, err = resource.GetDefinitionID(modelDefName)
-			if err != nil {
-				return "", &datamodel.Model{}, "", err
-			}
-			uploadedModel = datamodel.Model{
-				ID:         fileData.Model.Id,
-				Visibility: datamodel.ModelVisibility(visibility),
-				Description: sql.NullString{
-					String: description,
-					Valid:  true,
-				},
-				Configuration: datatypes.JSON{},
-				Instances: []datamodel.ModelInstance{{
-					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-					ID:    "latest",
-				}},
-			}
-			if err != nil {
-				return "", &datamodel.Model{}, "", err
-			}
-			defer fp.Close()
-
-			firstChunk = false
-		}
-		err = writeToFp(fp, fileData.Content)
-		if err != nil {
-			return "", &datamodel.Model{}, "", err
-		}
-	}
-	return tmpFile, &uploadedModel, modelDefinitionID, nil
 }
 
 func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelID string, instanceID string, err error) {
@@ -611,7 +287,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
 		}
-		err = writeToFp(fp, buf.Bytes())
+		err = util.WriteToFp(fp, buf.Bytes())
 		if err != nil {
 			makeJSONResponse(w, 400, "File Error", "Error reading input file")
 			return
@@ -688,7 +364,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		readmeFilePath, ensembleFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
+		readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -798,7 +474,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	if err != nil {
 		return err
 	}
-	tmpFile, uploadedModel, modelDefID, err := saveFile(stream)
+	tmpFile, uploadedModel, modelDefID, err := util.SaveFile(stream)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -821,7 +497,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_Create
 	uploadedModel.Owner = owner
 
 	// extract zip file from tmp to models directory
-	readmeFilePath, ensembleFilePath, err := unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
+	readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -999,7 +675,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 			Configuration: bInstanceConfig,
 		}
-		readmeFilePath, ensembleFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
+
+		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
@@ -1224,7 +901,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 			Configuration: bInstanceConfig,
 		}
 
-		readmeFilePath, ensembleFilePath, err := updateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
+		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
@@ -1444,7 +1121,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 		State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
 		Configuration: bInstanceConfig,
 	}
-	readmeFilePath, ensembleFilePath, err := updateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
+	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2251,13 +1928,33 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		return &modelPB.TriggerModelInstanceResponse{}, err
 	}
 
-	imgsBytes, _, err := parseImageRequestInputsToBytes(req)
-	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	var inputInfer interface{}
+	var lenInputs = 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_UNSPECIFIED:
+		visionInput, err := parseImageRequestInputsToBytes(req)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(visionInput)
+		inputInfer = visionInput
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(req)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textToImage)
+		inputInfer = textToImage
 	}
 
 	// check whether model support batching or not. If not, raise an error
-	if len(imgsBytes) > 1 {
+	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, err
@@ -2273,7 +1970,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2329,16 +2026,39 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		return &modelPB.TestModelInstanceResponse{}, err
 	}
 
-	imgsBytes, _, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
-		Name:       req.Name,
-		TaskInputs: req.TaskInputs,
-	})
-	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	var inputInfer interface{}
+	var lenInputs = 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT,
+		modelPB.ModelInstance_TASK_UNSPECIFIED:
+		visionInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
+			Name:       req.Name,
+			TaskInputs: req.TaskInputs,
+		})
+		if err != nil {
+			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(visionInput)
+		inputInfer = visionInput
+	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelInstanceRequest{
+			Name:       req.Name,
+			TaskInputs: req.TaskInputs,
+		})
+		if err != nil {
+			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textToImage)
+		inputInfer = textToImage
 	}
 
 	// check whether model support batching or not. If not, raise an error
-	if len(imgsBytes) > 1 {
+	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, err
@@ -2354,7 +2074,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2449,14 +2169,35 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		imgsBytes, _, err := parseImageFormDataInputsToBytes(r)
-		if err != nil {
-			makeJSONResponse(w, 400, "File Input Error", err.Error())
-			return
+		var inputInfer interface{}
+		var lenInputs = 1
+		switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+		case modelPB.ModelInstance_TASK_CLASSIFICATION,
+			modelPB.ModelInstance_TASK_DETECTION,
+			modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+			modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+			modelPB.ModelInstance_TASK_OCR,
+			modelPB.ModelInstance_TASK_KEYPOINT,
+			modelPB.ModelInstance_TASK_UNSPECIFIED:
+			visionInput, err := parseImageFormDataInputsToBytes(r)
+			if err != nil {
+				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				return
+			}
+			lenInputs = len(visionInput)
+			inputInfer = visionInput
+		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+			textToImage, err := parseImageFormDataTextToImageInputs(r)
+			if err != nil {
+				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				return
+			}
+			lenInputs = len(textToImage)
+			inputInfer = textToImage
 		}
 
 		// check whether model support batching or not. If not, raise an error
-		if len(imgsBytes) > 1 {
+		if lenInputs > 1 {
 			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
 			if err != nil {
 				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
@@ -2476,9 +2217,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, imgsBytes, task)
+			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelService.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+			response, err = modelService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(

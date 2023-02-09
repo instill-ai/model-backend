@@ -15,6 +15,8 @@ var Tasks = map[string]modelPB.ModelInstance_Task{
 	"TASK_INSTANCE_SEGMENTATION": modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
 	"TASK_SEMANTIC_SEGMENTATION": modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
 	"TASK_SEMANTICSEGMENTATION":  modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+	"TASK_TEXT_TO_IMAGE":         modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
+	"TASK_TEXTTOIMAGE":           modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 }
 
 var Tags = map[string]modelPB.ModelInstance_Task{
@@ -28,6 +30,8 @@ var Tags = map[string]modelPB.ModelInstance_Task{
 	"INSTANCE_SEGMENTATION": modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
 	"SEMANTIC_SEGMENTATION": modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
 	"SEMANTICSEGMENTATION":  modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+	"TEXT_TO_IMAGE":         modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
+	"TEXTTOIMAGE":           modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{
