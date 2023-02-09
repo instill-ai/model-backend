@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"go.temporal.io/api/serviceerror"
@@ -22,37 +20,6 @@ import (
 	modelWorker "github.com/instill-ai/model-backend/internal/worker"
 )
 
-func initialize() {
-
-	logger, _ := logger.GetZapLogger()
-	defer func() {
-		// can't handle the error due to https://github.com/uber-go/zap/issues/880
-		_ = logger.Sync()
-	}()
-
-	runCmd := exec.CommandContext(context.Background(),
-		"docker",
-		"exec",
-		"temporal-admin-tools",
-		"/bin/bash",
-		"-c",
-		`tctl --auto_confirm admin cluster add-search-attributes \
-			--name Type --type Text --name ModelUID --type Text \
-			--name ModelInstanceUID --type Text --name Owner --type Text`,
-	)
-
-	var out bytes.Buffer
-	runCmd.Stdout = &out
-	runCmd.Stderr = &out
-
-	if err := runCmd.Run(); err != nil {
-		logger.Debug(err.Error())
-	}
-
-	logger.Info(fmt.Sprintf("Docker exec tctl - add search attributes: %s", out.String()))
-	out.Reset()
-}
-
 func main() {
 	logger, _ := logger.GetZapLogger()
 	defer func() {
@@ -63,9 +30,6 @@ func main() {
 	if err := config.Init(); err != nil {
 		logger.Fatal(err.Error())
 	}
-	logger.Info("Config initialized")
-	initialize()
-	logger.Info("Initialization finished")
 
 	db := database.GetConnection()
 	defer database.Close(db)
