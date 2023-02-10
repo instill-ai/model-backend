@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.11.1-alpha...v0.12.0-alpha) (2023-02-10)
+
+
+### Features
+
+* add text to image task ([#239](https://github.com/instill-ai/model-backend/issues/239)) ([421eb1a](https://github.com/instill-ai/model-backend/commit/421eb1aa203fc297e4df22b22a72e419329b5869))
+
+
+### Bug Fixes
+
+* fix usage client nil issue when mgmt-backend not ready ([#241](https://github.com/instill-ai/model-backend/issues/241)) ([4290159](https://github.com/instill-ai/model-backend/commit/429015957de074a0ea2e68a7cb2423a61829c5f1))
+
 ## [0.11.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.11.0-alpha...v0.11.1-alpha) (2023-01-20)
 
 
