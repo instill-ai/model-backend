@@ -11,9 +11,11 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 )
 
-// TaskQueue is the task queue name for connector-backend
-const TaskQueue = "model-backend"
+// Namespace is the Temporal namespace for model-backend
 const Namespace = "model-backend"
+
+// TaskQueue is the Temporal task queue name for model-backend
+const TaskQueue = "model-backend"
 
 // Worker interface
 type Worker interface {
