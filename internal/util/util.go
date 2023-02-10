@@ -78,7 +78,7 @@ func findDVCPaths(dir string) []string {
 func findModelFiles(dir string) []string {
 	var modelPaths []string = []string{}
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") {
+		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") || strings.HasSuffix(f.Name(), ".weight") || strings.HasPrefix(f.Name(), "onnx__") {
 			modelPaths = append(modelPaths, path)
 		}
 		return nil
