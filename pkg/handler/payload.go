@@ -102,6 +102,11 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 				ImgUrl:    taskInput.GetOcr().GetImageUrl(),
 				ImgBase64: taskInput.GetOcr().GetImageBase64(),
 			}
+		case *modelPB.TaskInput_Keypoint:
+			visionInp = triton.VisionInput{
+				ImgUrl:    taskInput.GetKeypoint().GetImageUrl(),
+				ImgBase64: taskInput.GetKeypoint().GetImageBase64(),
+			}
 		case *modelPB.TaskInput_InstanceSegmentation:
 			visionInp = triton.VisionInput{
 				ImgUrl:    taskInput.GetInstanceSegmentation().GetImageUrl(),
