@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.12.0-alpha...v0.12.1-alpha) (2023-02-12)
+
+
+### Bug Fixes
+
+* fix keypoint model payload parser ([#249](https://github.com/instill-ai/model-backend/issues/249)) ([461d54a](https://github.com/instill-ai/model-backend/commit/461d54a99463cdcf58e6567f5eb41e76515acd9d))
+
 ## [0.12.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.11.1-alpha...v0.12.0-alpha) (2023-02-10)
 
 
