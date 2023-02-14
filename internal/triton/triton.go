@@ -30,6 +30,15 @@ type TextToImageInput struct {
 	Samples  int64
 }
 
+type TextGenerationInput struct {
+	Prompt   string
+	OutputLen    int64
+	BadWordsList string
+	StopWordsList string
+	TopK     int64
+	Seed  int64
+}
+
 type VisionInput struct {
 	ImgUrl    string
 	ImgBase64 string
@@ -159,6 +168,12 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput 
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
+		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
+				Name:     modelMetadata.Inputs[i].Name,
+				Datatype: modelMetadata.Inputs[i].Datatype,
+				Shape:    []int64{1, 1},
+			})
 		case modelPB.ModelInstance_TASK_CLASSIFICATION,
 			modelPB.ModelInstance_TASK_DETECTION,
 			modelPB.ModelInstance_TASK_KEYPOINT,
@@ -247,6 +262,20 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput 
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		textGenerationInputs := inferInput.([]TextGenerationInput)
+		outputLen := make([]byte, 4)
+		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInputs[0].OutputLen))
+		topK := make([]byte, 4)
+		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInputs[0].TopK))
+		seed := make([]byte, 8)
+		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInputs[0].Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].BadWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].StopWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case modelPB.ModelInstance_TASK_CLASSIFICATION,
 		modelPB.ModelInstance_TASK_DETECTION,
@@ -730,6 +759,22 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 	}, nil
 }
 
+func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string) (interface{}, error) {
+	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find inference output for generated texts")
+	}
+	if outputTensorTexts == nil {
+		return nil, fmt.Errorf("unable to find output content for generated texts")
+	}
+
+	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0]*outputTensorTexts.Shape[1])
+
+	return TextGenerationOutput{
+		Text: outputTexts,
+	}, nil
+}
+
 func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.ModelInstance_Task) (interface{}, error) {
 	var (
 		outputs interface{}
@@ -795,6 +840,12 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 
 	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
+		}
+
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}

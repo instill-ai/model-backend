@@ -52,6 +52,7 @@ maxbatchsizelimitation:
   ocr: 2
   instancesegmentation: 8
   semanticsegmentation: 8
+  textgeneration: 1
 temporal:
   clientoptions:
     hostport: temporal:7233

@@ -173,6 +173,12 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 		} else if strings.HasPrefix(owner, "orgs/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([]triton.TextToImageInput))))
 		}
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		if strings.HasPrefix(owner, "users/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([]triton.TextGenerationInput))))
+		} else if strings.HasPrefix(owner, "orgs/") {
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([]triton.TextGenerationOutput))))
+		}
 	default:
 		return nil, fmt.Errorf("unknown task input type")
 	}
@@ -450,6 +456,22 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			textToImageOutputs = append(textToImageOutputs, &textToImageOutput)
 		}
 		return textToImageOutputs, nil
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		textGenerationResponses := postprocessResponse.(triton.TextGenerationOutput)
+		batchedOutputDataTexts := textGenerationResponses.Text
+		var textGenerationOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataTexts {
+			var textGenerationOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_TextGeneration{
+					TextGeneration: &modelPB.TextGenerationOutput{
+						Text: batchedOutputDataTexts[i],
+					},
+				},
+			}
+
+			textGenerationOutputs = append(textGenerationOutputs, &textGenerationOutput)
+		}
+		return textGenerationOutputs, nil
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput

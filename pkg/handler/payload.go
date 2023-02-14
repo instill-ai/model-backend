@@ -189,6 +189,21 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 	return textToImageInputs, nil
 }
 
+func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput []triton.TextGenerationInput, err error) {
+	var textGenerationInputs []triton.TextGenerationInput
+	for _, taskInput := range req.TaskInputs {
+		textGenerationInputs = append(textGenerationInputs, triton.TextGenerationInput{
+			Prompt:   taskInput.GetTextGeneration().Prompt,
+			OutputLen:    *taskInput.GetTextGeneration().OutputLen,
+			BadWordsList: *taskInput.GetTextGeneration().BadWordsList,
+			StopWordsList:     *taskInput.GetTextGeneration().StopWordsList,
+			TopK:     *taskInput.GetTextGeneration().Topk,
+			Seed:     *taskInput.GetTextGeneration().Seed,
+		})
+	}
+	return textGenerationInputs, nil
+}
+
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
 
 	logger, _ := logger.GetZapLogger()
@@ -282,5 +297,50 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		CfgScale: float32(cfgScale),
 		Seed:     int64(seed),
 		Samples:  1,
+	}}, nil
+}
+
+func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []triton.TextGenerationInput, err error) {
+	prompts := req.MultipartForm.Value["prompt"]
+	if len(prompts) != 1 {
+		return nil, fmt.Errorf("invalid input")
+	}
+
+	output_len := req.MultipartForm.Value["output_len"]
+	top_k := req.MultipartForm.Value["top_k"]
+	seed := req.MultipartForm.Value["seed"]
+
+	_output_len := 100
+	if len(output_len) > 0 {
+		_output_len, err = strconv.Atoi(output_len[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+
+	_top_k := 1
+	if len(top_k) > 0 {
+		_top_k, err = strconv.Atoi(top_k[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+
+	_seed := 0
+	if len(seed) > 0 {
+		_seed, err = strconv.Atoi(seed[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+	// TODO: add support for bad/stop words
+
+	return []triton.TextGenerationInput{{
+		Prompt:   		prompts[0],
+		OutputLen:    	int64(_output_len),
+		BadWordsList:	"",
+		StopWordsList:	"",
+		TopK:  			int64(_top_k),
+		Seed: 			int64(_seed),
 	}}, nil
 }
