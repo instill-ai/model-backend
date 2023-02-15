@@ -78,7 +78,7 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceP
 
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
-		StartToCloseTimeout: 60 * time.Minute,
+		StartToCloseTimeout: 300 * time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
