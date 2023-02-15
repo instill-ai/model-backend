@@ -71,3 +71,10 @@ const (
 )
 
 const DefaultPageSize = 10
+
+const (
+	TEXT_TO_IMAGE_STEPS     = int64(10)
+	IMAGE_TO_TEXT_CFG_SCALE = float32(7)
+	IMAGE_TO_TEXT_SEED      = int64(1024)
+	IMAGE_TO_TEXT_SAMPLES   = int64(1)
+)

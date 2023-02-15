@@ -1907,7 +1907,6 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 
 func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
 	logger, _ := logger.GetZapLogger()
-
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, err
@@ -1927,7 +1926,6 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	if err != nil {
 		return &modelPB.TriggerModelInstanceResponse{}, err
 	}
-
 	var inputInfer interface{}
 	var lenInputs = 1
 	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
@@ -1952,7 +1950,6 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		lenInputs = len(textToImage)
 		inputInfer = textToImage
 	}
-
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
@@ -1968,7 +1965,6 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 	if err != nil {
