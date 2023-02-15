@@ -162,11 +162,28 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textToImageInput []triton.TextToImageInput, err error) {
 	var textToImageInputs []triton.TextToImageInput
 	for _, taskInput := range req.TaskInputs {
+		steps := int64(util.TEXT_TO_IMAGE_STEPS)
+		if taskInput.GetTextToImage().Steps != nil {
+			steps = int64(*taskInput.GetTextToImage().Steps)
+		}
+		cfgScale := float32(util.IMAGE_TO_TEXT_CFG_SCALE)
+		if taskInput.GetTextToImage().CfgScale != nil {
+			cfgScale = float32(*taskInput.GetTextToImage().CfgScale)
+		}
+		seed := int64(util.IMAGE_TO_TEXT_SEED)
+		if taskInput.GetTextToImage().Seed != nil {
+			seed = int64(*taskInput.GetTextToImage().Seed)
+		}
+		samples := int64(util.IMAGE_TO_TEXT_SAMPLES)
+		if taskInput.GetTextToImage().Samples != nil {
+			samples = int64(*taskInput.GetTextToImage().Samples)
+		}
 		textToImageInputs = append(textToImageInputs, triton.TextToImageInput{
 			Prompt:   taskInput.GetTextToImage().Prompt,
-			Steps:    *taskInput.GetTextToImage().Steps,
-			CfgScale: *taskInput.GetTextToImage().CfgScale,
-			Seed:     *taskInput.GetTextToImage().Seed,
+			Steps:    steps,
+			CfgScale: cfgScale,
+			Seed:     seed,
+			Samples:  samples,
 		})
 	}
 	return textToImageInputs, nil
