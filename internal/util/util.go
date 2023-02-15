@@ -78,7 +78,8 @@ func findDVCPaths(dir string) []string {
 func findModelFiles(dir string) []string {
 	var modelPaths []string = []string{}
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") || strings.HasSuffix(f.Name(), ".weight") || strings.HasPrefix(f.Name(), "onnx__") {
+		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") ||
+			strings.HasSuffix(f.Name(), ".weight") || strings.HasSuffix(f.Name(), ".ini") || strings.HasSuffix(f.Name(), ".bin") {
 			modelPaths = append(modelPaths, path)
 		}
 		return nil
@@ -175,6 +176,16 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 
 			if tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
 				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/%s/1", modelPath, modelRepository, tritonModelName))
+				if err := cmd.Run(); err != nil {
+					return err
+				}
+			// TODO: add general function to check if backend use fastertransformer, which has different model file structure
+			} else if modelSubNames[len(modelSubNames)-3] == "fastertransformer" && tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
+				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
+				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
+					return err
+				}
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/", modelPath, targetPath))
 				if err := cmd.Run(); err != nil {
 					return err
 				}
