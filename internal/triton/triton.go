@@ -767,8 +767,7 @@ func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferRes
 	if outputTensorTexts == nil {
 		return nil, fmt.Errorf("unable to find output content for generated texts")
 	}
-
-	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0]*outputTensorTexts.Shape[1])
+	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
 
 	return TextGenerationOutput{
 		Text: outputTexts,

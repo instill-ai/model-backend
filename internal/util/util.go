@@ -729,7 +729,7 @@ func GetSupportedBatchSize(task datamodel.ModelInstanceTask) int {
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
 	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_TEXT_GENERATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
+		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.TextGeneration
 	}
 	return allowedMaxBatchSize
 }
