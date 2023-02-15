@@ -31,12 +31,12 @@ type TextToImageInput struct {
 }
 
 type TextGenerationInput struct {
-	Prompt   string
-	OutputLen    int64
-	BadWordsList string
+	Prompt        string
+	OutputLen     int64
+	BadWordsList  string
 	StopWordsList string
-	TopK     int64
-	Seed  int64
+	TopK          int64
+	Seed          int64
 }
 
 type VisionInput struct {

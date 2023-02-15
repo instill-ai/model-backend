@@ -95,7 +95,7 @@ type MaxBatchSizeConfig struct {
 	Ocr                  int `koanf:"ocr"`
 	InstanceSegmentation int `koanf:"instancesegmentation"`
 	SemanticSegmentation int `koanf:"semanticsegmentation"`
-	TextGeneration		 int `koanf:"textgeneration"`
+	TextGeneration       int `koanf:"textgeneration"`
 }
 
 // TemporalConfig related to Temporal

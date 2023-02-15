@@ -2063,7 +2063,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 			&modelPB.TriggerModelInstanceRequest{
 				Name:       req.Name,
 				TaskInputs: req.TaskInputs,
-		})
+			})
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}

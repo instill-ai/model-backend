@@ -193,12 +193,12 @@ func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (
 	var textGenerationInputs []triton.TextGenerationInput
 	for _, taskInput := range req.TaskInputs {
 		textGenerationInputs = append(textGenerationInputs, triton.TextGenerationInput{
-			Prompt:   taskInput.GetTextGeneration().Prompt,
-			OutputLen:    *taskInput.GetTextGeneration().OutputLen,
-			BadWordsList: *taskInput.GetTextGeneration().BadWordsList,
-			StopWordsList:     *taskInput.GetTextGeneration().StopWordsList,
-			TopK:     *taskInput.GetTextGeneration().Topk,
-			Seed:     *taskInput.GetTextGeneration().Seed,
+			Prompt:        taskInput.GetTextGeneration().Prompt,
+			OutputLen:     *taskInput.GetTextGeneration().OutputLen,
+			BadWordsList:  *taskInput.GetTextGeneration().BadWordsList,
+			StopWordsList: *taskInput.GetTextGeneration().StopWordsList,
+			TopK:          *taskInput.GetTextGeneration().Topk,
+			Seed:          *taskInput.GetTextGeneration().Seed,
 		})
 	}
 	return textGenerationInputs, nil
@@ -336,11 +336,11 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []
 	// TODO: add support for bad/stop words
 
 	return []triton.TextGenerationInput{{
-		Prompt:   		prompts[0],
-		OutputLen:    	int64(_output_len),
-		BadWordsList:	"",
-		StopWordsList:	"",
-		TopK:  			int64(_top_k),
-		Seed: 			int64(_seed),
+		Prompt:        prompts[0],
+		OutputLen:     int64(_output_len),
+		BadWordsList:  "",
+		StopWordsList: "",
+		TopK:          int64(_top_k),
+		Seed:          int64(_seed),
 	}}, nil
 }

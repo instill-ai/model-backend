@@ -35,7 +35,7 @@ var Tags = map[string]modelPB.ModelInstance_Task{
 	"TEXT_TO_IMAGE":         modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 	"TEXTTOIMAGE":           modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 	"TEXT_GENERATION":       modelPB.ModelInstance_TASK_TEXT_GENERATION,
-	"TEXTGENERATION":		 modelPB.ModelInstance_TASK_TEXT_GENERATION,
+	"TEXTGENERATION":        modelPB.ModelInstance_TASK_TEXT_GENERATION,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{
