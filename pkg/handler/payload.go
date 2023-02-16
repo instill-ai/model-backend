@@ -192,34 +192,33 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput []triton.TextGenerationInput, err error) {
 	var textGenerationInputs []triton.TextGenerationInput
 	for _, taskInput := range req.TaskInputs {
-		outputLen := taskInput.GetTextGeneration().OutputLen
-		badWordsList := taskInput.GetTextGeneration().BadWordsList
-		stopWordsList := taskInput.GetTextGeneration().StopWordsList
-		topK := taskInput.GetTextGeneration().Topk
-		seed := taskInput.GetTextGeneration().Seed
-		if outputLen == nil {
-			outputLen = new(int64)
-			*outputLen = 100
-		} else if badWordsList == nil {
-			badWordsList = new(string)
-			*badWordsList = ""
-		} else if stopWordsList == nil {
-			stopWordsList = new(string)
-			*stopWordsList = ""
-		} else if topK == nil {
-			topK = new(int64)
-			*topK = 1
-		} else if seed == nil {
-			seed = new(int64)
-			*seed = 0
+		outputLen := int64(util.TEXT_GENERATION_OUTPUT_LEN)
+		if taskInput.GetTextGeneration().OutputLen != nil {
+			outputLen = int64(*taskInput.GetTextGeneration().OutputLen)
+		}
+		badWordsList := string("")
+		if taskInput.GetTextGeneration().BadWordsList != nil {
+			badWordsList = *taskInput.GetTextGeneration().BadWordsList
+		}
+		stopWordsList := string("")
+		if taskInput.GetTextGeneration().StopWordsList != nil {
+			stopWordsList = *taskInput.GetTextGeneration().BadWordsList
+		}
+		topK := int64(util.TEXT_GENERATION_TOP_K)
+		if taskInput.GetTextGeneration().Topk != nil {
+			topK = int64(*taskInput.GetTextGeneration().Topk)
+		}
+		seed := int64(util.TEXT_GENERATION_SEED)
+		if taskInput.GetTextGeneration().Seed != nil {
+			seed = int64(*taskInput.GetTextGeneration().Seed)
 		}
 		textGenerationInputs = append(textGenerationInputs, triton.TextGenerationInput{
 			Prompt:        taskInput.GetTextGeneration().Prompt,
-			OutputLen:     *outputLen,
-			BadWordsList:  *badWordsList,
-			StopWordsList: *stopWordsList,
-			TopK:          *topK,
-			Seed:          *seed,
+			OutputLen:     outputLen,
+			BadWordsList:  badWordsList,
+			StopWordsList: stopWordsList,
+			TopK:          topK,
+			Seed:          seed,
 		})
 	}
 	return textGenerationInputs, nil
@@ -324,12 +323,23 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []triton.TextGenerationInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
-		return nil, fmt.Errorf("batch size cannot exceed 1")
+		return nil, fmt.Errorf("only support batchsize 1")
+	}
+	badWordsListInput := req.MultipartForm.Value["stop_words_list"]
+	stopWordsListInput := req.MultipartForm.Value["stop_words_list"]
+	outputLenInput := req.MultipartForm.Value["output_len"]
+	topKInput := req.MultipartForm.Value["topk"]
+	seedInput := req.MultipartForm.Value["seed"]
+
+	badWordsList := string("")
+	if len(badWordsListInput) > 0 {
+		badWordsList = badWordsListInput[0]
 	}
 
-	outputLenInput := req.MultipartForm.Value["output_len"]
-	topKInput := req.MultipartForm.Value["top_k"]
-	seedInput := req.MultipartForm.Value["seed"]
+	stopWordsList := string("")
+	if len(stopWordsListInput) > 0 {
+		stopWordsList = stopWordsListInput[0]
+	}
 
 	outputLen := 100
 	if len(outputLenInput) > 0 {
@@ -354,13 +364,13 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
 	}
-	// TODO: add support for bad/stop words
 
+	// TODO: add support for bad/stop words
 	return []triton.TextGenerationInput{{
 		Prompt:        prompts[0],
 		OutputLen:     int64(outputLen),
-		BadWordsList:  "",
-		StopWordsList: "",
+		BadWordsList:  badWordsList,
+		StopWordsList: stopWordsList,
 		TopK:          int64(topK),
 		Seed:          int64(seed),
 	}}, nil

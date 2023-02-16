@@ -82,3 +82,9 @@ const (
 	IMAGE_TO_TEXT_SEED      = int64(1024)
 	IMAGE_TO_TEXT_SAMPLES   = int64(1)
 )
+
+const (
+	TEXT_GENERATION_OUTPUT_LEN = int64(100)
+	TEXT_GENERATION_TOP_K      = int64(1)
+	TEXT_GENERATION_SEED       = int64(0)
+)
