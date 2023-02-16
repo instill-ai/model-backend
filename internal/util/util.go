@@ -179,7 +179,7 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 				if err := cmd.Run(); err != nil {
 					return err
 				}
-			// TODO: add general function to check if backend use fastertransformer, which has different model file structure
+				// TODO: add general function to check if backend use fastertransformer, which has different model file structure
 			} else if modelSubNames[len(modelSubNames)-3] == "fastertransformer" && tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
 				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
 				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
