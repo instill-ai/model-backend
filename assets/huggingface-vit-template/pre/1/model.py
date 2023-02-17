@@ -6,9 +6,8 @@ from typing import List
 from PIL import Image
 from transformers import AutoFeatureExtractor
 
-from triton_python_backend_utils import Tensor, InferenceResponse, \
-    get_input_tensor_by_name, InferenceRequest
-
+from triton_python_backend_utils import get_input_tensor_by_name
+from c_python_backend_utils import Tensor, InferenceResponse, InferenceRequest
 
 class TritonPythonModel(object):
     def __init__(self):
