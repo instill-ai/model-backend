@@ -3,10 +3,14 @@
 package triton
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"image"
+	"image/color"
+	"image/jpeg"
 	"log"
 	"math"
 	"time"
@@ -146,7 +150,7 @@ func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *in
 
 func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	// Create context for our request with 5 minutes timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*60*time.Second)
 	defer cancel()
 
 	// Create request input tensors
@@ -721,10 +725,29 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 	var batchedOutputDataImages [][]string
 	var lenSingleImage int = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
 	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
-		base64EncodedStr := base64.StdEncoding.EncodeToString(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
+		imgRaw := DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
+
+		width := int(outputTensorImages.Shape[1])
+		height := int(outputTensorImages.Shape[2])
+		upLeft := image.Point{0, 0}
+		lowRight := image.Point{width, height}
+
+		imgRGBA := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+		for x := 0; x < width; x++ {
+			for y := 0; y < height; y++ {
+				imgRGBA.Set(x, y, color.RGBA{uint8(imgRaw[3*(x+width*y)] * 255), uint8(imgRaw[3*(x+width*y)+1] * 255), uint8(imgRaw[3*(x+width*y)+2] * 255), 0xff})
+			}
+		}
+
+		buff := new(bytes.Buffer)
+		err = jpeg.Encode(buff, imgRGBA, &jpeg.Options{Quality: 100})
+		if err != nil {
+			return nil, fmt.Errorf("jpeg.Encode %w", err)
+		}
+
+		base64EncodedStr := base64.StdEncoding.EncodeToString(buff.Bytes())
 		batchedOutputDataImages = append(batchedOutputDataImages, []string{base64EncodedStr})
 	}
-
 	return TextToImageOutput{
 		Images: batchedOutputDataImages,
 	}, nil
