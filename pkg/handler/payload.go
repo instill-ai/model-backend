@@ -244,19 +244,19 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 
 func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []triton.TextToImageInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
-	if len(prompts) != 1 {
-		return nil, fmt.Errorf("invalid input")
+	if len(prompts) == 0 {
+		return nil, fmt.Errorf("invalid prompt input")
 	}
-
 	stepStr := req.MultipartForm.Value["steps"]
 	cfgScaleStr := req.MultipartForm.Value["cfg_scale"]
 	seedStr := req.MultipartForm.Value["seed"]
+	samplesStr := req.MultipartForm.Value["samples"]
 
 	step := 10
 	if len(stepStr) > 0 {
 		step, err = strconv.Atoi(stepStr[0])
 		if err != nil {
-			return nil, fmt.Errorf("invalid input %w", err)
+			return nil, fmt.Errorf("invalid step input %w", err)
 		}
 	}
 
@@ -264,7 +264,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
-			return nil, fmt.Errorf("invalid input %w", err)
+			return nil, fmt.Errorf("invalid cfgScale input %w", err)
 		}
 	}
 
@@ -272,7 +272,15 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 	if len(seedStr) > 0 {
 		seed, err = strconv.Atoi(seedStr[0])
 		if err != nil {
-			return nil, fmt.Errorf("invalid input %w", err)
+			return nil, fmt.Errorf("invalid seed input %w", err)
+		}
+	}
+
+	samples := 1
+	if len(samplesStr) > 0 {
+		samples, err = strconv.Atoi(samplesStr[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid samples input %w", err)
 		}
 	}
 
@@ -281,6 +289,6 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		Steps:    int64(step),
 		CfgScale: float32(cfgScale),
 		Seed:     int64(seed),
-		Samples:  1,
+		Samples:  int64(samples),
 	}}, nil
 }
