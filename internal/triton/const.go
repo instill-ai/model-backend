@@ -50,3 +50,7 @@ type SemanticSegmentationOutput struct {
 type TextToImageOutput struct {
 	Images [][]string
 }
+
+type TextGenerationOutput struct {
+	Text []string
+}

@@ -17,6 +17,8 @@ var Tasks = map[string]modelPB.ModelInstance_Task{
 	"TASK_SEMANTICSEGMENTATION":  modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
 	"TASK_TEXT_TO_IMAGE":         modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 	"TASK_TEXTTOIMAGE":           modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
+	"TASK_TEXT_GENERATION":       modelPB.ModelInstance_TASK_TEXT_GENERATION,
+	"TASK_TEXTGENERATION":        modelPB.ModelInstance_TASK_TEXT_GENERATION,
 }
 
 var Tags = map[string]modelPB.ModelInstance_Task{
@@ -32,6 +34,8 @@ var Tags = map[string]modelPB.ModelInstance_Task{
 	"SEMANTICSEGMENTATION":  modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
 	"TEXT_TO_IMAGE":         modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
 	"TEXTTOIMAGE":           modelPB.ModelInstance_TASK_TEXT_TO_IMAGE,
+	"TEXT_GENERATION":       modelPB.ModelInstance_TASK_TEXT_GENERATION,
+	"TEXTGENERATION":        modelPB.ModelInstance_TASK_TEXT_GENERATION,
 }
 
 var Visibility = map[string]modelPB.Model_Visibility{
@@ -77,4 +81,10 @@ const (
 	IMAGE_TO_TEXT_CFG_SCALE = float32(7)
 	IMAGE_TO_TEXT_SEED      = int64(1024)
 	IMAGE_TO_TEXT_SAMPLES   = int64(1)
+)
+
+const (
+	TEXT_GENERATION_OUTPUT_LEN = int64(100)
+	TEXT_GENERATION_TOP_K      = int64(1)
+	TEXT_GENERATION_SEED       = int64(0)
 )

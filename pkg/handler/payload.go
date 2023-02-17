@@ -189,6 +189,41 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 	return textToImageInputs, nil
 }
 
+func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput []triton.TextGenerationInput, err error) {
+	var textGenerationInputs []triton.TextGenerationInput
+	for _, taskInput := range req.TaskInputs {
+		outputLen := int64(util.TEXT_GENERATION_OUTPUT_LEN)
+		if taskInput.GetTextGeneration().OutputLen != nil {
+			outputLen = int64(*taskInput.GetTextGeneration().OutputLen)
+		}
+		badWordsList := string("")
+		if taskInput.GetTextGeneration().BadWordsList != nil {
+			badWordsList = *taskInput.GetTextGeneration().BadWordsList
+		}
+		stopWordsList := string("")
+		if taskInput.GetTextGeneration().StopWordsList != nil {
+			stopWordsList = *taskInput.GetTextGeneration().BadWordsList
+		}
+		topK := int64(util.TEXT_GENERATION_TOP_K)
+		if taskInput.GetTextGeneration().Topk != nil {
+			topK = int64(*taskInput.GetTextGeneration().Topk)
+		}
+		seed := int64(util.TEXT_GENERATION_SEED)
+		if taskInput.GetTextGeneration().Seed != nil {
+			seed = int64(*taskInput.GetTextGeneration().Seed)
+		}
+		textGenerationInputs = append(textGenerationInputs, triton.TextGenerationInput{
+			Prompt:        taskInput.GetTextGeneration().Prompt,
+			OutputLen:     outputLen,
+			BadWordsList:  badWordsList,
+			StopWordsList: stopWordsList,
+			TopK:          topK,
+			Seed:          seed,
+		})
+	}
+	return textGenerationInputs, nil
+}
+
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
 
 	logger, _ := logger.GetZapLogger()
@@ -290,5 +325,61 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		CfgScale: float32(cfgScale),
 		Seed:     int64(seed),
 		Samples:  int64(samples),
+	}}, nil
+}
+
+func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []triton.TextGenerationInput, err error) {
+	prompts := req.MultipartForm.Value["prompt"]
+	if len(prompts) != 1 {
+		return nil, fmt.Errorf("only support batchsize 1")
+	}
+	badWordsListInput := req.MultipartForm.Value["stop_words_list"]
+	stopWordsListInput := req.MultipartForm.Value["stop_words_list"]
+	outputLenInput := req.MultipartForm.Value["output_len"]
+	topKInput := req.MultipartForm.Value["topk"]
+	seedInput := req.MultipartForm.Value["seed"]
+
+	badWordsList := string("")
+	if len(badWordsListInput) > 0 {
+		badWordsList = badWordsListInput[0]
+	}
+
+	stopWordsList := string("")
+	if len(stopWordsListInput) > 0 {
+		stopWordsList = stopWordsListInput[0]
+	}
+
+	outputLen := 100
+	if len(outputLenInput) > 0 {
+		outputLen, err = strconv.Atoi(outputLenInput[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+
+	topK := 1
+	if len(topKInput) > 0 {
+		topK, err = strconv.Atoi(topKInput[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+
+	seed := 0
+	if len(seedInput) > 0 {
+		seed, err = strconv.Atoi(seedInput[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+	}
+
+	// TODO: add support for bad/stop words
+	return []triton.TextGenerationInput{{
+		Prompt:        prompts[0],
+		OutputLen:     int64(outputLen),
+		BadWordsList:  badWordsList,
+		StopWordsList: stopWordsList,
+		TopK:          int64(topK),
+		Seed:          int64(seed),
 	}}, nil
 }

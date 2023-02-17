@@ -1949,6 +1949,13 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		}
 		lenInputs = len(textToImage)
 		inputInfer = textToImage
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		textGeneration, err := parseTexGenerationRequestInputs(req)
+		if err != nil {
+			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textGeneration)
+		inputInfer = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
@@ -2051,6 +2058,17 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		}
 		lenInputs = len(textToImage)
 		inputInfer = textToImage
+	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		textGeneration, err := parseTexGenerationRequestInputs(
+			&modelPB.TriggerModelInstanceRequest{
+				Name:       req.Name,
+				TaskInputs: req.TaskInputs,
+			})
+		if err != nil {
+			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(textGeneration)
+		inputInfer = textGeneration
 	}
 
 	// check whether model support batching or not. If not, raise an error
@@ -2190,6 +2208,14 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 			lenInputs = len(textToImage)
 			inputInfer = textToImage
+		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+			textGeneration, err := parseTextFormDataTextGenerationInputs(r)
+			if err != nil {
+				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				return
+			}
+			lenInputs = len(textGeneration)
+			inputInfer = textGeneration
 		}
 
 		// check whether model support batching or not. If not, raise an error
