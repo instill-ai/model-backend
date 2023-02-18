@@ -2502,7 +2502,7 @@ export function InferModel() {
     });
   }
 
-  // Model Backend API: Predict Model with text generation rodel
+  // Model Backend API: Predict Model with text generation model
   {
     group("Model Backend API: Predict Model with text generation model", function () {
       let fd = new FormData();
