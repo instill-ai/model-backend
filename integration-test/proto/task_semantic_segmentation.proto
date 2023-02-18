@@ -24,7 +24,8 @@ message SemanticSegmentationInput {
   }
 }
 
-// SemanticSegmentationOutput represents the output of semantic segmentation task
+// SemanticSegmentationOutput represents the output of semantic segmentation
+// task
 message SemanticSegmentationOutput {
   // A list of semantic segmentation stuffs
   repeated SemanticSegmentationStuff stuffs = 1

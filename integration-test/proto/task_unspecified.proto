@@ -16,5 +16,6 @@ message UnspecifiedInput {
 // UnspecifiedOutput represents the output of unspecified task
 message UnspecifiedOutput {
   // A list of unspecified task outputs
-  repeated google.protobuf.Struct raw_outputs = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  repeated google.protobuf.Struct raw_outputs = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }

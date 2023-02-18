@@ -30,7 +30,8 @@ message InstanceSegmentationInput {
   }
 }
 
-// InstanceSegmentationOutput represents the output of instance segmentation task
+// InstanceSegmentationOutput represents the output of instance segmentation
+// task
 message InstanceSegmentationOutput {
   // A list of instance segmentation objects
   repeated InstanceSegmentationObject objects = 1
