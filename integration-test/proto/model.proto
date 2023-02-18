@@ -21,6 +21,7 @@ import "./task_ocr.proto";
 import "./task_instance_segmentation.proto";
 import "./task_semantic_segmentation.proto";
 import "./task_text_to_image.proto";
+import "./task_text_generation.proto";
 import "./task_unspecified.proto";
 
 // Model represents a model
@@ -107,6 +108,10 @@ message ModelInstance {
     TASK_INSTANCE_SEGMENTATION = 5;
     // Task: SEMANTIC SEGMENTATION
     TASK_SEMANTIC_SEGMENTATION = 6;
+    // Task: TEXT TO IMAGE
+    TASK_TEXT_TO_IMAGE = 7;
+    // Task: TEXT Generation
+    TASK_TEXT_GENERATION = 8;
   }
 
   // State enumerates a model instance state
@@ -211,7 +216,8 @@ message CreateModelRequest {
 // CreateModelResponse represents a response for a model
 message CreateModelResponse {
   // Create model operation message
-  google.longrunning.Operation operation = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.longrunning.Operation operation = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // CreateModelBinaryFileUploadRequest represents a request to create a model
@@ -229,7 +235,8 @@ message CreateModelBinaryFileUploadRequest {
 // instance
 message CreateModelBinaryFileUploadResponse {
   // Create model operation message
-  google.longrunning.Operation operation = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.longrunning.Operation operation = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 // GetModelRequest represents a request to query a model
@@ -510,8 +517,10 @@ message TaskInput {
     SemanticSegmentationInput semantic_segmentation = 6;
     // The text to image input
     TextToImageInput text_to_image = 7;
+    // The text generation input
+    TextGenerationInput text_generation = 8;
     // The unspecified task input
-    UnspecifiedInput unspecified = 8;
+    UnspecifiedInput unspecified = 9;
   }
 }
 
@@ -529,13 +538,19 @@ message TaskOutput {
     // The ocr output
     OcrOutput ocr = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The instance segmentation output
-    InstanceSegmentationOutput instance_segmentation = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    InstanceSegmentationOutput instance_segmentation = 5
+        [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The semantic segmentation output
-    SemanticSegmentationOutput semantic_segmentation = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    SemanticSegmentationOutput semantic_segmentation = 6
+        [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The text to image output
-    TextToImageOutput text_to_image = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    TextToImageOutput text_to_image = 7
+        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    // The text generation output
+    TextGenerationOutput text_generation = 8
+        [ (google.api.field_behavior) = OUTPUT_ONLY ];
     // The unspecified task output
-    UnspecifiedOutput unspecified = 8
+    UnspecifiedOutput unspecified = 9
         [ (google.api.field_behavior) = OUTPUT_ONLY ];
   }
 }
@@ -636,12 +651,10 @@ message TestModelInstanceBinaryFileUploadResponse {
 // GetModelOperationRequest represents a request to query a model operation
 message GetModelOperationRequest {
   // The name of the operation resource.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED
-  ];
+  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
   // View (default is VIEW_BASIC)
-  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`, `ModelInstance.configuration`
-  // VIEW_FULL: show full information
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`,
+  // `ModelInstance.configuration` VIEW_FULL: show full information
   optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
@@ -651,7 +664,8 @@ message GetModelOperationResponse {
   google.longrunning.Operation operation = 1;
 }
 
-// ListModelOperationRequest represents a request to list all model operations including deploy and undeploy
+// ListModelOperationRequest represents a request to list all model operations
+// including deploy and undeploy
 message ListModelOperationRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 operations will be
@@ -663,12 +677,13 @@ message ListModelOperationRequest {
   // Filter expression to list operations
   optional string filter = 3 [ (google.api.field_behavior) = OPTIONAL ];
   // View (default is VIEW_BASIC)
-  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`, `ModelInstance.configuration`
-  // VIEW_FULL: show full information
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`,
+  // `ModelInstance.configuration` VIEW_FULL: show full information
   optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelOperationResponse represents a response for a list of model operations including deploy and undeploy
+// ListModelOperationResponse represents a response for a list of model
+// operations including deploy and undeploy
 message ListModelOperationResponse {
   // a list of model operations
   repeated google.longrunning.Operation operations = 1;
@@ -681,10 +696,9 @@ message ListModelOperationResponse {
 // CancelModelOperationRequest represents a request to cancel a model operation
 message CancelModelOperationRequest {
   // The name of the operation resource.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED
-  ];
+  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// CancelModelOperationResponse represents a response for canceling a model operation
+// CancelModelOperationResponse represents a response for canceling a model
+// operation
 message CancelModelOperationResponse {}

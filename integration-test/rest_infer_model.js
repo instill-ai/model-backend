@@ -2501,4 +2501,150 @@ export function InferModel() {
 
     });
   }
+
+  // Model Backend API: Predict Model with text generation model
+  {
+    group("Model Backend API: Predict Model with text generation model", function () {
+      let fd = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd.append("id", model_id);
+      fd.append("description", model_description);
+      fd.append("model_definition", model_def_name);
+      fd.append("content", http.file(constant.text_generation_model, "dummy-text-generation-model.zip"));
+      let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      })
+      check(createModelRes, {
+        "POST /v1alpha/models/multipart task text generation response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models/multipart task text generation response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text generation response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text generation response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text generation response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text generation response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text generation response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // Inference with only required input
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "text_generation": {
+            "prompt": "hello this is a test"
+          }
+        }]
+      });
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs[0].text_generation.objects[0].text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Inference with optional inputs
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "text_generation": {
+            "prompt": "hello this is a test",
+            "output_len": "50",
+            "topk": "2",
+            "seed": "0"
+          }
+        }]
+      });
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation intput multiple params status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation multiple params task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Predict with multiple-part
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart instance status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart instance task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION",
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart instance task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart instance status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart instance task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart instance task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart instance task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
 }
