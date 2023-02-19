@@ -2502,6 +2502,174 @@ export function InferModel() {
     });
   }
 
+  // Model Backend API: Predict Model with text to image model
+  {
+    group("Model Backend API: Predict Model with text to image model", function () {
+      let fd = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd.append("id", model_id);
+      fd.append("description", model_description);
+      fd.append("model_definition", model_def_name);
+      fd.append("content", http.file(constant.text_to_image_model, "dummy-text-to-image-model.zip"));
+      let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      })
+      check(createModelRes, {
+        "POST /v1alpha/models/multipart task text to image response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models/multipart task text to image response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text to image response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text to image response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text to image response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text to image response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task text to image response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
+
+      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // Inference with only required input
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "text_to_image": {
+            "prompt": "hello this is a test"
+          }
+        }]
+      })
+
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task`]: (r) =>
+          r.json().task === "TASK_TEXT_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs[0].text_to_image.images.length`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+
+      // Inference with multiple samples, samples = 2
+      let num_samples = 2
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "text_to_image": {
+            "prompt": "hello this is a test",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
+          }
+        }]
+      });
+
+      let resp = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      })
+
+      check(resp, {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image status [with multiple samples]`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task  [with multiple samples]`]: (r) =>
+          r.json().task === "TASK_TEXT_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs.length  [with multiple samples]`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs[0].text_to_image.images.length [with multiple samples]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === num_samples,
+      });
+
+      for (let i = 0; i < num_samples; i = i + 1) {
+        let image = resp.json().task_outputs[0].text_to_image.images[i]
+        check(image, {
+          [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text to image task_outputs[0].text_to_image.images[${i}] [with multiple samples]`]: (r) =>
+            r !== undefined
+        });
+      }
+
+      // Predict with multiple-part
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image task`]: (r) =>
+          r.json().task === "TASK_TEXT_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image task_outputs[0].text_to_image.images`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart text to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart text to image task`]: (r) =>
+          r.json().task === "TASK_TEXT_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart text to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart text to image task_outputs[0].text_to_image.images`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger-multipart text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+
+
+      // clean up
+      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+
+    })
+  }
+
   // Model Backend API: Predict Model with text generation model
   {
     group("Model Backend API: Predict Model with text generation model", function () {
@@ -2582,11 +2750,11 @@ export function InferModel() {
           r.json().task === "TASK_TEXT_GENERATION",
         [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs[0].text_generation.objects[0].text`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task_outputs[0].text_generation.text`]: (r) =>
           r.json().task_outputs[0].text_generation.text !== undefined,
       });
 
-      // Inference with optional inputs
+      // Inference with multiple samples
       payload = JSON.stringify({
         "task_inputs": [{
           "text_generation": {
@@ -2600,7 +2768,7 @@ export function InferModel() {
       check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation intput multiple params status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation input multiple params status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text generation task`]: (r) =>
           r.json().task === "TASK_TEXT_GENERATION",

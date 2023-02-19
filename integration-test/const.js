@@ -34,6 +34,7 @@ export const semantic_segmentation_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/i
 export const semantic_segmentation_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-semantic-segmentation-model-bz9.zip`, "b");
 export const instance_segmentation_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-instance-segmentation-model.zip`, "b");
 export const instance_segmentation_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-instance-segmentation-model-bz9.zip`, "b");
+export const text_to_image_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-text-to-image-model.zip`, "b");
 export const text_generation_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-text-generation-model.zip`, "b");
 
 
