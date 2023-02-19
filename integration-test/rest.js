@@ -94,7 +94,7 @@ export function teardown(data) {
       })
       .json("models")) {
       check(model, {
-        "GET /clients response contents[*] id": (c) => c.id !== undefined,
+        "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
       check(
         http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model.id}`, null, {
