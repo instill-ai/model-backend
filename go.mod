@@ -26,7 +26,7 @@ require (
 	go.temporal.io/api v1.13.0
 	go.temporal.io/sdk v1.19.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/image v0.2.0
+	golang.org/x/image v0.5.0
 	golang.org/x/net v0.7.0
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
 	google.golang.org/grpc v1.51.0
