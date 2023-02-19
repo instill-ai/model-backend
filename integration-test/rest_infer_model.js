@@ -2659,6 +2659,89 @@ export function InferModel() {
       });
 
 
+      // Invalid cases: inference with multiple parameters
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "text_to_image": {
+              "prompt": "hello this is a test",
+              "steps": "1",
+              "cfg_scale": "5.5",
+              "seed": "1",
+              "samples": `${num_samples}`
+            }
+          },
+          {
+            "text_to_image": {
+              "prompt": "hello this is a test",
+              "steps": "1",
+              "cfg_scale": "5.5",
+              "seed": "1",
+              "samples": `${num_samples}`
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image status [with multiple prompt]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("prompt", "hello this is a test");
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status [with multiple prompts]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("steps", 1);
+      fd.append("steps", 1);
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status [with multiple steps]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("samples", 1);
+      fd.append("samples", 1);
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status [with multiple samples]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("seed", 1);
+      fd.append("seed", 1);
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status [with multiple seed]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("cfg_scale", 1.0);
+      fd.append("cfg_scale", 1.0);
+      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/latest/test-multipart text to image status [with multiple cfg_scale]`]: (r) =>
+          r.status === 400,
+      });      
+
       // clean up
       check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
@@ -2669,7 +2752,6 @@ export function InferModel() {
 
     })
   }
-
   // Model Backend API: Predict Model with text generation model
   {
     group("Model Backend API: Predict Model with text generation model", function () {

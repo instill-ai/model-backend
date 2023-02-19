@@ -750,8 +750,8 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 	if outputTensorImages == nil {
 		return nil, fmt.Errorf("unable to find output content for images")
 	}
-
 	var batchedOutputDataImages [][]string
+	batchedOutputDataImages = append(batchedOutputDataImages, []string{}) // single batch support
 	var lenSingleImage int = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
 	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
 		imgRaw := DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
@@ -775,7 +775,7 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 		}
 
 		base64EncodedStr := base64.StdEncoding.EncodeToString(buff.Bytes())
-		batchedOutputDataImages = append(batchedOutputDataImages, []string{base64EncodedStr})
+		batchedOutputDataImages[0] = append(batchedOutputDataImages[0], base64EncodedStr)
 	}
 	return TextToImageOutput{
 		Images: batchedOutputDataImages,

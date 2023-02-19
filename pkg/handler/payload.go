@@ -161,6 +161,9 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 
 func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textToImageInput []triton.TextToImageInput, err error) {
 	var textToImageInputs []triton.TextToImageInput
+	if len(req.TaskInputs) > 1 {
+		return nil, fmt.Errorf("text to image only support single batch")
+	}
 	for _, taskInput := range req.TaskInputs {
 		steps := int64(util.TEXT_TO_IMAGE_STEPS)
 		if taskInput.GetTextToImage().Steps != nil {
@@ -280,12 +283,28 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []triton.TextToImageInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) == 0 {
-		return nil, fmt.Errorf("invalid prompt input")
+		return nil, fmt.Errorf("missing prompt input")
+	}
+	if len(prompts) > 1 {
+		return nil, fmt.Errorf("invalid prompt input, only support a single prompt")
 	}
 	stepStr := req.MultipartForm.Value["steps"]
 	cfgScaleStr := req.MultipartForm.Value["cfg_scale"]
 	seedStr := req.MultipartForm.Value["seed"]
 	samplesStr := req.MultipartForm.Value["samples"]
+
+	if len(stepStr) > 1 {
+		return nil, fmt.Errorf("invalid steps input, only support a single steps")
+	}
+	if len(cfgScaleStr) > 1 {
+		return nil, fmt.Errorf("invalid cfg_scale input, only support a single cfg_scale")
+	}
+	if len(seedStr) > 1 {
+		return nil, fmt.Errorf("invalid seed input, only support a single seed")
+	}
+	if len(samplesStr) > 1 {
+		return nil, fmt.Errorf("invalid samples input, only support a single samples")
+	}
 
 	step := 10
 	if len(stepStr) > 0 {
