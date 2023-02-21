@@ -181,6 +181,9 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 		if taskInput.GetTextToImage().Samples != nil {
 			samples = int64(*taskInput.GetTextToImage().Samples)
 		}
+		if samples > 1 {
+			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
+		}
 		textToImageInputs = append(textToImageInputs, triton.TextToImageInput{
 			Prompt:   taskInput.GetTextToImage().Prompt,
 			Steps:    steps,
@@ -336,6 +339,10 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		if err != nil {
 			return nil, fmt.Errorf("invalid samples input %w", err)
 		}
+	}
+
+	if samples > 1 {
+		return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 	}
 
 	return []triton.TextToImageInput{{
