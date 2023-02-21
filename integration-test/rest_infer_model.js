@@ -2609,22 +2609,8 @@ export function InferModel() {
 
       check(resp, {
         [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image status [with multiple samples]`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task  [with multiple samples]`]: (r) =>
-          r.json().task === "TASK_TEXT_TO_IMAGE",
-        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs.length  [with multiple samples]`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/latest/trigger text to image task_outputs[0].text_to_image.images.length [with multiple samples]`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images.length === num_samples,
+          r.status === 400,
       });
-
-      for (let i = 0; i < num_samples; i = i + 1) {
-        let image = resp.json().task_outputs[0].text_to_image.images[i]
-        check(image, {
-          [`POST /v1alpha/models/${model_id}/instances/latest/trigger url text to image task_outputs[0].text_to_image.images[${i}] [with multiple samples]`]: (r) =>
-            r !== undefined
-        });
-      }
 
       // Predict with multiple-part
       fd = new FormData();
