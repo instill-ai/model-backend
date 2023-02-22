@@ -46,6 +46,8 @@ RUN go mod download
 COPY . .
 
 RUN chown -R nobody:nogroup /go
+RUN chown -R nobody:nogroup /tmp
+
 ENV GOCACHE /go/.cache/go-build
 ENV GOENV /go/.config/go/env
 

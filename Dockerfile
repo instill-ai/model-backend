@@ -43,7 +43,7 @@ RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
 
 # Need permission of /tmp folder for internal process such as store temporary files
-RUN chown nobody:nogroup /tmp
+RUN chown -R nobody:nogroup /tmp
 
 USER nobody:nogroup
 
