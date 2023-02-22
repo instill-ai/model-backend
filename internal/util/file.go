@@ -35,7 +35,7 @@ func isEnsembleConfig(configPath string) bool {
 func couldBeEnsembleConfig(configPath string) bool {
 	fileData, _ := os.ReadFile(configPath)
 	fileString := string(fileData)
-	return strings.Contains(fileString, "instance_group")
+	return strings.Contains(fileString, "instance_group") && strings.Contains(fileString, "backend: \"python\"")
 }
 
 // writeToFp takes in a file pointer and byte array and writes the byte array into the file
