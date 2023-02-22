@@ -42,6 +42,9 @@ RUN apt update && apt install -y \
 RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
 
+# Need permission of /tmp folder for internal process such as store temporary files
+RUN chown nobody:nogroup /tmp
+
 USER nobody:nogroup
 
 ARG SERVICE_NAME
@@ -64,5 +67,3 @@ COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
 COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
-
-RUN chown nobody:nogroup /tmp
