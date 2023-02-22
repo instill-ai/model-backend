@@ -64,3 +64,5 @@ COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
 COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
+
+RUN chown nobody:nogroup /tmp
