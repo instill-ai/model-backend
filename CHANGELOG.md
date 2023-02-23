@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.12.1-alpha...v0.13.0-alpha) (2023-02-23)
+
+
+### Features
+
+* add support for text generation tasks ([#252](https://github.com/instill-ai/model-backend/issues/252)) ([767ec45](https://github.com/instill-ai/model-backend/commit/767ec456c0ff3416343d8f2fb19e621b872806c6))
+
+
+### Bug Fixes
+
+* keep format for empty inference output ([#258](https://github.com/instill-ai/model-backend/issues/258)) ([e2a2e48](https://github.com/instill-ai/model-backend/commit/e2a2e48e6049026fb072436820863f14aa424b1c))
+
 ## [0.12.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.12.0-alpha...v0.12.1-alpha) (2023-02-12)
 
 
