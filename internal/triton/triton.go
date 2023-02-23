@@ -158,8 +158,8 @@ func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *in
 }
 
 func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
-	// Create context for our request with 5 minutes timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*60*time.Second)
+	// Create context for our request with 10 minutes timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*60*time.Second)
 	defer cancel()
 
 	// Create request input tensors
