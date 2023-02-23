@@ -205,8 +205,9 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 	var readmeFilePath string
 	files := []FileMeta{}
 	var configFiles []string
+	var fileRe = regexp.MustCompile(`.git|.dvc|.dvcignore`)
 	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
-		if !strings.Contains(path, ".git") {
+		if !fileRe.MatchString(path) {
 			files = append(files, FileMeta{
 				path:  path,
 				fInfo: f,
