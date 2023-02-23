@@ -120,7 +120,7 @@ func getInferModelConfigPath(modelRepository string, tritonModels []datamodel.Tr
 	return modelPath
 }
 
-func GitHubCloneWOLargeFile(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
+func GitHubClone(isWithLargeFile bool, dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
 	urlRepo := instanceConfig.Repository
 	if !strings.HasPrefix(urlRepo, "https://github.com") {
 		urlRepo = "https://github.com/" + urlRepo
@@ -129,33 +129,27 @@ func GitHubCloneWOLargeFile(dir string, instanceConfig datamodel.GitHubModelInst
 		urlRepo = urlRepo + ".git"
 	}
 
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("GIT_LFS_SKIP_SMUDGE=1 git clone -b %s %s %s", instanceConfig.Tag, urlRepo, dir))
-	return cmd.Run()
-}
-
-func GitHubCloneWLargeFile(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
-	urlRepo := instanceConfig.Repository
-	if !strings.HasPrefix(urlRepo, "https://github.com") {
-		urlRepo = "https://github.com/" + urlRepo
-	}
-	if !strings.HasSuffix(urlRepo, ".git") {
-		urlRepo = urlRepo + ".git"
+	extraFlag := ""
+	if !isWithLargeFile {
+		extraFlag = "GIT_LFS_SKIP_SMUDGE=1"
 	}
 
-	cmd := exec.Command("git", "clone", "-b", instanceConfig.Tag, urlRepo, dir)
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("%s git clone -b %s %s %s", extraFlag, instanceConfig.Tag, urlRepo, dir))
 	err := cmd.Run()
 	if err != nil {
 		return err
 	}
-	dvcPaths := findDVCPaths(dir)
-	for _, dvcPath := range dvcPaths {
-		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull %s", dir, dvcPath))
-		err = cmd.Run()
-		if err != nil {
-			return err
+
+	if isWithLargeFile {
+		dvcPaths := findDVCPaths(dir)
+		for _, dvcPath := range dvcPaths {
+			cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull %s", dir, dvcPath))
+			err = cmd.Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
-
 	return nil
 }
 

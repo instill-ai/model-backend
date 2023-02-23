@@ -652,7 +652,8 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 				return &modelPB.CreateModelResponse{}, err
 			}
 		} else {
-			err = util.GitHubCloneWOLargeFile(modelSrcDir, instanceConfig)
+			cloneLargeFile := false
+			err = util.GitHubClone(cloneLargeFile, modelSrcDir, instanceConfig)
 			if err != nil {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,

@@ -124,7 +124,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 			rdid, _ := uuid.NewV4()
 			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 
-			if err := util.GitHubCloneWLargeFile(modelSrcDir, instanceConfig); err != nil {
+			cloneLargeFile := true
+			if err := util.GitHubClone(cloneLargeFile, modelSrcDir, instanceConfig); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
