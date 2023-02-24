@@ -47,6 +47,8 @@ RUN chown -R nobody:nogroup /tmp
 # Need permission of /nonexistent folder for HuggingFace internal process.
 RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 
+RUN mkdir /model-repository > /dev/null && chown -R nobody:nogroup /model-repository
+
 USER nobody:nogroup
 
 ARG SERVICE_NAME
@@ -68,4 +70,3 @@ COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
-COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
