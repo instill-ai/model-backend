@@ -34,6 +34,7 @@ func GetOwner(ctx context.Context) (string, error) {
 
 func GetOwnerFromHeader(r *http.Request) (string, error) {
 	owner := r.Header.Get("owner")
+	owner = strings.TrimPrefix(owner, "users/") // use user uid for internal process
 	return owner, nil
 }
 
