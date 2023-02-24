@@ -138,8 +138,7 @@ func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		}
 		// ensure the parent folder existed
 		if _, err := os.Stat(filepath.Base(filePath)); os.IsNotExist(err) {
-			err = os.MkdirAll(filePath, os.ModePerm)
-			if err != nil {
+			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
 				return "", "", err
 			}
 		}
