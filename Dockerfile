@@ -47,7 +47,7 @@ RUN chown -R nobody:nogroup /tmp
 # Need permission of /nonexistent folder for HuggingFace internal process.
 RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 
-RUN mkdir /model-repository/users > /dev/null && chown -R nobody:nogroup /model-repository/users
+RUN mkdir -p /model-repository/users > /dev/null && chown -R nobody:nogroup /model-repository/users
 
 USER nobody:nogroup
 
