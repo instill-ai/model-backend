@@ -57,8 +57,8 @@ func WriteToFp(fp *os.File, data []byte) error {
 }
 
 // TODO: need to clean up this function
-func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
-	archive, err := zip.OpenReader(filePath)
+func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
+	archive, err := zip.OpenReader(fPath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
 		return "", "", err
@@ -75,10 +75,10 @@ func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
 			continue
 		}
-		filePath := filepath.Join(dstDir, f.Name)
-		fmt.Println("unzipping file ", filePath)
+		fPath := filepath.Join(dstDir, f.Name)
+		fmt.Println("unzipping file ", fPath)
 
-		if !strings.HasPrefix(filePath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(fPath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
 			return "", "", fmt.Errorf("invalid file path")
 		}
@@ -109,11 +109,11 @@ func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 					}
 				}
 			}
-			filePath := filepath.Join(dstDir, dirName)
-			if err := ValidateFilePath(filePath); err != nil {
+			fPath := filepath.Join(dstDir, dirName)
+			if err := ValidateFilePath(fPath); err != nil {
 				return "", "", err
 			}
-			err = os.MkdirAll(filePath, os.ModePerm)
+			err = os.MkdirAll(fPath, os.ModePerm)
 			if err != nil {
 				return "", "", err
 			}
@@ -129,21 +129,21 @@ func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		oldModelName := subStrs[0]
 		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], uploadedModel.Instances[0].ID)
 		newModelName := subStrs[0]
-		filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
+		fPath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 		if strings.Contains(f.Name, "README.md") {
-			readmeFilePath = filePath
+			readmeFilePath = fPath
 		}
-		if err := ValidateFilePath(filePath); err != nil {
+		if err := ValidateFilePath(fPath); err != nil {
 			return "", "", err
 		}
 		// ensure the parent folder existed
-		if _, err := os.Stat(filepath.Base(filePath)); os.IsNotExist(err) {
-			if err := os.MkdirAll(filepath.Base(filePath), os.ModePerm); err != nil {
+		if _, err := os.Stat(filepath.Base(fPath)); os.IsNotExist(err) {
+			if err := os.MkdirAll(filepath.Base(fPath), os.ModePerm); err != nil {
 				return "", "", err
 			}
 		}
 
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		dstFile, err := os.OpenFile(fPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return "", "", err
 		}
@@ -158,13 +158,13 @@ func Unzip(filePath string, dstDir string, owner string, uploadedModel *datamode
 		dstFile.Close()
 		fileInArchive.Close()
 		// Update ModelName in config.pbtxt
-		fileExtension := filepath.Ext(filePath)
+		fileExtension := filepath.Ext(fPath)
 		if fileExtension == ".pbtxt" {
-			configFiles = append(configFiles, filePath)
-			if isEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
+			configFiles = append(configFiles, fPath)
+			if isEnsembleConfig(fPath) {
+				ensembleFilePath = fPath
 			}
-			err = UpdateConfigModelName(filePath, oldModelName, newModelName)
+			err = UpdateConfigModelName(fPath, oldModelName, newModelName)
 			if err != nil {
 				return "", "", err
 			}
