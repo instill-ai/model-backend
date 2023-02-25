@@ -75,11 +75,13 @@ func findDVCPaths(dir string) []string {
 	return dvcPaths
 }
 
+// TODO: clean up this function.
 func findModelFiles(dir string) []string {
 	var modelPaths []string = []string{}
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") ||
-			strings.HasSuffix(f.Name(), ".weight") || strings.HasSuffix(f.Name(), ".ini") || strings.HasSuffix(f.Name(), ".bin") {
+			strings.HasSuffix(f.Name(), ".weight") || strings.HasSuffix(f.Name(), ".ini") || strings.HasSuffix(f.Name(), ".bin") ||
+			strings.HasPrefix(f.Name(), "onnx__") {
 			modelPaths = append(modelPaths, path)
 		}
 		return nil
