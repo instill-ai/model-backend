@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.13.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.13.0-alpha...v0.13.1-alpha) (2023-02-26)
+
+
+### Bug Fixes
+
+* create a subfolder in model-repository if needed ([#290](https://github.com/instill-ai/model-backend/issues/290)) ([7f8d78b](https://github.com/instill-ai/model-backend/commit/7f8d78b89dfa57ba0a065568b62b3bea3e0cae12))
+* fix creating subfolder ([105a11a](https://github.com/instill-ai/model-backend/commit/105a11a956fc6b0b5150587d5ec3bba08b54b1b9))
+* fix subfolder creation ([#292](https://github.com/instill-ai/model-backend/issues/292)) ([0b6ec3f](https://github.com/instill-ai/model-backend/commit/0b6ec3fae13f44e68fea7644880a3491eea4c708))
+* fix variable name ([#293](https://github.com/instill-ai/model-backend/issues/293)) ([a7995dd](https://github.com/instill-ai/model-backend/commit/a7995dd0d35181b96df7371027ab10609e45b6af))
+
 ## [0.13.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.12.1-alpha...v0.13.0-alpha) (2023-02-23)
 
 
