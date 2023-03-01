@@ -1754,11 +1754,6 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 
 func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
-
-	if !h.triton.IsTritonServerReady() {
-		return status.Error(codes.Unavailable, "Triton Server not ready yet")
-	}
-
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
@@ -1831,11 +1826,6 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 
 func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
-
-	if !h.triton.IsTritonServerReady() {
-		return status.Error(codes.Unavailable, "Triton Server not ready yet")
-	}
-
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
@@ -1872,6 +1862,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
+
 	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
