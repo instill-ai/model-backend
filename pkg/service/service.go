@@ -169,15 +169,15 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 		}
 	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 		if strings.HasPrefix(owner, "users/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([]triton.TextToImageInput))))
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
 		} else if strings.HasPrefix(owner, "orgs/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([]triton.TextToImageInput))))
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
 		}
 	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
 		if strings.HasPrefix(owner, "users/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([]triton.TextGenerationInput))))
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
 		} else if strings.HasPrefix(owner, "orgs/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([]triton.TextGenerationOutput))))
+			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
 		}
 	default:
 		return nil, fmt.Errorf("unknown task input type")
