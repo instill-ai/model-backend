@@ -159,11 +159,11 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 	return inputBytes, nil
 }
 
-func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textToImageInput []triton.TextToImageInput, err error) {
-	var textToImageInputs []triton.TextToImageInput
+func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textToImageInput *triton.TextToImageInput, err error) {
 	if len(req.TaskInputs) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
+
 	for _, taskInput := range req.TaskInputs {
 		steps := int64(util.TEXT_TO_IMAGE_STEPS)
 		if taskInput.GetTextToImage().Steps != nil {
@@ -184,19 +184,18 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 		if samples > 1 {
 			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 		}
-		textToImageInputs = append(textToImageInputs, triton.TextToImageInput{
+		textToImageInput = &triton.TextToImageInput{
 			Prompt:   taskInput.GetTextToImage().Prompt,
 			Steps:    steps,
 			CfgScale: cfgScale,
 			Seed:     seed,
 			Samples:  samples,
-		})
+		}
 	}
-	return textToImageInputs, nil
+	return textToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput []triton.TextGenerationInput, err error) {
-	var textGenerationInputs []triton.TextGenerationInput
+func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
 	for _, taskInput := range req.TaskInputs {
 		outputLen := int64(util.TEXT_GENERATION_OUTPUT_LEN)
 		if taskInput.GetTextGeneration().OutputLen != nil {
@@ -218,16 +217,16 @@ func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (
 		if taskInput.GetTextGeneration().Seed != nil {
 			seed = int64(*taskInput.GetTextGeneration().Seed)
 		}
-		textGenerationInputs = append(textGenerationInputs, triton.TextGenerationInput{
+		textGenerationInput = &triton.TextGenerationInput{
 			Prompt:        taskInput.GetTextGeneration().Prompt,
 			OutputLen:     outputLen,
 			BadWordsList:  badWordsList,
 			StopWordsList: stopWordsList,
 			TopK:          topK,
 			Seed:          seed,
-		})
+		}
 	}
-	return textGenerationInputs, nil
+	return textGenerationInput, nil
 }
 
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
@@ -283,7 +282,7 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 	return imgsBytes, nil
 }
 
-func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []triton.TextToImageInput, err error) {
+func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *triton.TextToImageInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) == 0 {
 		return nil, fmt.Errorf("missing prompt input")
@@ -345,16 +344,16 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput []
 		return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 	}
 
-	return []triton.TextToImageInput{{
+	return &triton.TextToImageInput{
 		Prompt:   prompts[0],
 		Steps:    int64(step),
 		CfgScale: float32(cfgScale),
 		Seed:     int64(seed),
 		Samples:  int64(samples),
-	}}, nil
+	}, nil
 }
 
-func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []triton.TextGenerationInput, err error) {
+func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *triton.TextGenerationInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
@@ -400,12 +399,12 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration []
 	}
 
 	// TODO: add support for bad/stop words
-	return []triton.TextGenerationInput{{
+	return &triton.TextGenerationInput{
 		Prompt:        prompts[0],
 		OutputLen:     int64(outputLen),
 		BadWordsList:  badWordsList,
 		StopWordsList: stopWordsList,
 		TopK:          int64(topK),
 		Seed:          int64(seed),
-	}}, nil
+	}, nil
 }
