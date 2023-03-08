@@ -137,7 +137,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
-			case *modelPB.TaskInputStream_Unspecified:
+			default:
 				return nil, "", "", fmt.Errorf("unsupported task input type")
 			}
 		} else {
@@ -154,7 +154,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
 			case *modelPB.TaskInputStream_SemanticSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
-			case *modelPB.TaskInputStream_Unspecified:
+			default:
 				return nil, "", "", fmt.Errorf("unsupported task input type")
 			}
 		}
@@ -176,11 +176,11 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return [][]byte{}, "", "", err
+				return nil, "", "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return [][]byte{}, "", "", err
+				return nil, "", "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
@@ -191,7 +191,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 	case *modelPB.TaskInputStream_TextGeneration:
 		return textGeneration, modelID, instanceID, nil
 	}
-	return [][]byte{}, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", "", fmt.Errorf("unsupported task input type")
 }
 
 func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
@@ -257,28 +257,26 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
-			case *modelPB.TaskInputStream_Unspecified:
+			default:
 				return nil, "", "", fmt.Errorf("unsupported task input type")
 			}
 		}
-		var content []byte
 		switch fileData.TaskInput.Input.(type) {
 		case *modelPB.TaskInputStream_Classification:
-			content = fileData.TaskInput.GetClassification().Content
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
 		case *modelPB.TaskInputStream_Detection:
-			content = fileData.TaskInput.GetDetection().Content
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
 		case *modelPB.TaskInputStream_Keypoint:
-			content = fileData.TaskInput.GetKeypoint().Content
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
 		case *modelPB.TaskInputStream_Ocr:
-			content = fileData.TaskInput.GetOcr().Content
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
 		case *modelPB.TaskInputStream_InstanceSegmentation:
-			content = fileData.TaskInput.GetInstanceSegmentation().Content
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
 		case *modelPB.TaskInputStream_SemanticSegmentation:
-			content = fileData.TaskInput.GetSemanticSegmentation().Content
-		case *modelPB.TaskInputStream_Unspecified:
+			allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
+		default:
 			return nil, "", "", fmt.Errorf("unsupported task input type")
 		}
-		allContentFiles = append(allContentFiles, content...)
 	}
 
 	switch fileData.TaskInput.Input.(type) {
@@ -297,11 +295,11 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return [][]byte{}, "", "", err
+				return nil, "", "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return [][]byte{}, "", "", err
+				return nil, "", "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
@@ -312,7 +310,7 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 	case *modelPB.TaskInputStream_TextGeneration:
 		return textGeneration, modelID, instanceID, nil
 	}
-	return [][]byte{}, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", "", fmt.Errorf("unsupported task input type")
 
 }
 
@@ -396,12 +394,12 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeJSONResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 			return
 		}
 		file, fileHeader, err := r.FormFile("content")
 		if err != nil {
-			makeJSONResponse(w, 500, "Internal Error", "Error while reading file from request")
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 			return
 		}
 		defer file.Close()
@@ -1901,7 +1899,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 
 	triggerInput, modelID, instanceID, err := savePredictInputsTestMode(stream)
 	if err != nil {
-		return status.Error(codes.Internal, "Could not save the file")
+		return status.Error(codes.Internal, err.Error())
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
@@ -1983,7 +1981,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 	triggerInput, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
-		return status.Error(codes.Internal, "Could not save the file")
+		return status.Error(codes.Internal, err.Error())
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
@@ -2329,7 +2327,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
-			makeJSONResponse(w, 400, "Internal Error", fmt.Sprintf("Error while reading file from request %v", err))
+			makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 			return
 		}
 
@@ -2353,7 +2351,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 			textToImage, err := parseImageFormDataTextToImageInputs(r)
 			if err != nil {
-				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				makeJSONResponse(w, 400, "Parser input error", err.Error())
 				return
 			}
 			lenInputs = 1
@@ -2361,7 +2359,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
 			textGeneration, err := parseTextFormDataTextGenerationInputs(r)
 			if err != nil {
-				makeJSONResponse(w, 400, "File Input Error", err.Error())
+				makeJSONResponse(w, 400, "Parser input error", err.Error())
 				return
 			}
 			lenInputs = 1
