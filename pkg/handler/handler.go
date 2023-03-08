@@ -71,12 +71,19 @@ func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
 	}
 }
 
-func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelID string, instanceID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+
 	var firstChunk = true
+
 	var fileData *modelPB.TriggerModelInstanceBinaryFileUploadRequest
 
 	var allContentFiles []byte
 	var fileLengths []uint64
+
+	var textToImageInput *triton.TextToImageInput
+	var textGeneration *triton.TextGenerationInput
+
+	var task *modelPB.TaskInputStream
 	for {
 		fileData, err = stream.Recv()
 		if err == io.EOF {
@@ -84,47 +91,115 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 		} else if err != nil {
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return [][]byte{}, "", "", err
+			return nil, "", "", err
 		}
 
 		if firstChunk { //first chunk contains model instance name
 			firstChunk = false
 			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
 			if err != nil {
+				return nil, "", "", err
+			}
+			task = fileData.TaskInput
+			switch fileData.TaskInput.Input.(type) {
+			case *modelPB.TaskInputStream_Classification:
+				fileLengths = fileData.TaskInput.GetClassification().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
+			case *modelPB.TaskInputStream_Detection:
+				fileLengths = fileData.TaskInput.GetDetection().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
+			case *modelPB.TaskInputStream_Keypoint:
+				fileLengths = fileData.TaskInput.GetKeypoint().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
+			case *modelPB.TaskInputStream_Ocr:
+				fileLengths = fileData.TaskInput.GetOcr().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
+			case *modelPB.TaskInputStream_InstanceSegmentation:
+				fileLengths = fileData.TaskInput.GetInstanceSegmentation().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
+			case *modelPB.TaskInputStream_SemanticSegmentation:
+				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
+			case *modelPB.TaskInputStream_TextToImage:
+				textToImageInput = &triton.TextToImageInput{
+					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
+					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
+					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
+					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+				}
+			case *modelPB.TaskInputStream_TextGeneration:
+				textGeneration = &triton.TextGenerationInput{
+					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
+					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
+					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
+					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
+					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+				}
+			case *modelPB.TaskInputStream_Unspecified:
+				return nil, "", "", fmt.Errorf("unsupported task input type")
+			}
+		} else {
+			switch fileData.TaskInput.Input.(type) {
+			case *modelPB.TaskInputStream_Classification:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
+			case *modelPB.TaskInputStream_Detection:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
+			case *modelPB.TaskInputStream_Keypoint:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
+			case *modelPB.TaskInputStream_Ocr:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
+			case *modelPB.TaskInputStream_InstanceSegmentation:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
+			case *modelPB.TaskInputStream_SemanticSegmentation:
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
+			case *modelPB.TaskInputStream_Unspecified:
+				return nil, "", "", fmt.Errorf("unsupported task input type")
+			}
+		}
+	}
+
+	switch task.Input.(type) {
+	case *modelPB.TaskInputStream_Classification,
+		*modelPB.TaskInputStream_Detection,
+		*modelPB.TaskInputStream_Keypoint,
+		*modelPB.TaskInputStream_Ocr,
+		*modelPB.TaskInputStream_InstanceSegmentation,
+		*modelPB.TaskInputStream_SemanticSegmentation:
+		if len(fileLengths) == 0 {
+			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+		}
+		imageBytes := make([][]byte, len(fileLengths))
+		start := uint64(0)
+		for i := 0; i < len(fileLengths); i++ {
+			buff := new(bytes.Buffer)
+			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
+			if err != nil {
 				return [][]byte{}, "", "", err
 			}
-			fileLengths = fileData.FileLengths
-			if len(fileLengths) == 0 {
-				return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
+			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
+			if err != nil {
+				return [][]byte{}, "", "", err
 			}
-			allContentFiles = append(allContentFiles, fileData.Content...)
-		} else {
-			allContentFiles = append(allContentFiles, fileData.Content...)
+			imageBytes[i] = buff.Bytes()
+			start += fileLengths[i]
 		}
+		return imageBytes, modelID, instanceID, nil
+	case *modelPB.TaskInputStream_TextToImage:
+		return textToImageInput, modelID, instanceID, nil
+	case *modelPB.TaskInputStream_TextGeneration:
+		return textGeneration, modelID, instanceID, nil
 	}
-
-	imageBytes = make([][]byte, len(fileLengths))
-	start := uint64(0)
-	for i := 0; i < len(fileLengths); i++ {
-		buff := new(bytes.Buffer)
-		img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
-		if err != nil {
-			return [][]byte{}, "", "", err
-		}
-		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
-		if err != nil {
-			return [][]byte{}, "", "", err
-		}
-		imageBytes[i] = buff.Bytes()
-		start += fileLengths[i]
-	}
-
-	return imageBytes, modelID, instanceID, nil
+	return [][]byte{}, "", "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (imageBytes [][]byte, modelID string, instanceID string, err error) {
+func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
 	var firstChunk = true
 	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
+
+	var textToImageInput *triton.TextToImageInput
+	var textGeneration *triton.TextGenerationInput
 
 	var allContentFiles []byte
 	var fileLengths []uint64
@@ -137,43 +212,108 @@ func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBina
 
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return [][]byte{}, "", "", err
+			return nil, "", "", err
 		}
 
 		if firstChunk { //first chunk contains file name
+			firstChunk = false
 			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			if err != nil {
+				return nil, "", "", err
+			}
+			switch fileData.TaskInput.Input.(type) {
+			case *modelPB.TaskInputStream_Classification:
+				fileLengths = fileData.TaskInput.GetClassification().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
+			case *modelPB.TaskInputStream_Detection:
+				fileLengths = fileData.TaskInput.GetDetection().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
+			case *modelPB.TaskInputStream_Keypoint:
+				fileLengths = fileData.TaskInput.GetKeypoint().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
+			case *modelPB.TaskInputStream_Ocr:
+				fileLengths = fileData.TaskInput.GetOcr().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
+			case *modelPB.TaskInputStream_InstanceSegmentation:
+				fileLengths = fileData.TaskInput.GetInstanceSegmentation().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
+			case *modelPB.TaskInputStream_SemanticSegmentation:
+				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
+				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
+			case *modelPB.TaskInputStream_TextToImage:
+				textToImageInput = &triton.TextToImageInput{
+					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
+					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
+					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
+					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+				}
+			case *modelPB.TaskInputStream_TextGeneration:
+				textGeneration = &triton.TextGenerationInput{
+					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
+					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
+					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
+					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
+					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+				}
+			case *modelPB.TaskInputStream_Unspecified:
+				return nil, "", "", fmt.Errorf("unsupported task input type")
+			}
+		}
+		var content []byte
+		switch fileData.TaskInput.Input.(type) {
+		case *modelPB.TaskInputStream_Classification:
+			content = fileData.TaskInput.GetClassification().Content
+		case *modelPB.TaskInputStream_Detection:
+			content = fileData.TaskInput.GetDetection().Content
+		case *modelPB.TaskInputStream_Keypoint:
+			content = fileData.TaskInput.GetKeypoint().Content
+		case *modelPB.TaskInputStream_Ocr:
+			content = fileData.TaskInput.GetOcr().Content
+		case *modelPB.TaskInputStream_InstanceSegmentation:
+			content = fileData.TaskInput.GetInstanceSegmentation().Content
+		case *modelPB.TaskInputStream_SemanticSegmentation:
+			content = fileData.TaskInput.GetSemanticSegmentation().Content
+		case *modelPB.TaskInputStream_Unspecified:
+			return nil, "", "", fmt.Errorf("unsupported task input type")
+		}
+		allContentFiles = append(allContentFiles, content...)
+	}
+
+	switch fileData.TaskInput.Input.(type) {
+	case *modelPB.TaskInputStream_Classification,
+		*modelPB.TaskInputStream_Detection,
+		*modelPB.TaskInputStream_Keypoint,
+		*modelPB.TaskInputStream_Ocr,
+		*modelPB.TaskInputStream_InstanceSegmentation,
+		*modelPB.TaskInputStream_SemanticSegmentation:
+		if len(fileLengths) == 0 {
+			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+		}
+		imageBytes := make([][]byte, len(fileLengths))
+		start := uint64(0)
+		for i := 0; i < len(fileLengths); i++ {
+			buff := new(bytes.Buffer)
+			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
 				return [][]byte{}, "", "", err
 			}
-
-			fileLengths = fileData.FileLengths
-			if len(fileLengths) == 0 {
-				return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
+			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
+			if err != nil {
+				return [][]byte{}, "", "", err
 			}
-			allContentFiles = append(allContentFiles, fileData.Content...)
-			firstChunk = false
+			imageBytes[i] = buff.Bytes()
+			start += fileLengths[i]
 		}
-		allContentFiles = append(allContentFiles, fileData.Content...)
+		return imageBytes, modelID, instanceID, nil
+	case *modelPB.TaskInputStream_TextToImage:
+		return textToImageInput, modelID, instanceID, nil
+	case *modelPB.TaskInputStream_TextGeneration:
+		return textGeneration, modelID, instanceID, nil
 	}
+	return [][]byte{}, "", "", fmt.Errorf("unsupported task input type")
 
-	if len(fileLengths) == 0 {
-		return [][]byte{}, "", "", fmt.Errorf("wrong parameter length of files")
-	}
-	start := uint64(0)
-	for i := 0; i < len(fileLengths); i++ {
-		buff := new(bytes.Buffer)
-		img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
-		if err != nil {
-			return [][]byte{}, "", "", err
-		}
-		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
-		if err != nil {
-			return [][]byte{}, "", "", err
-		}
-		imageBytes[i] = buff.Bytes()
-		start += fileLengths[i]
-	}
-	return imageBytes, modelID, instanceID, nil
 }
 
 func makeJSONResponse(w http.ResponseWriter, status int, title string, detail string) {
@@ -1759,7 +1899,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 		return err
 	}
 
-	imageBytes, modelID, instanceID, err := savePredictInputsTestMode(stream)
+	triggerInput, modelID, instanceID, err := savePredictInputsTestMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1773,8 +1913,19 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 		return err
 	}
 
+	numberOfInferences := 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT:
+		numberOfInferences = len(triggerInput.([][]byte))
+	}
+
 	// check whether model support batching or not. If not, raise an error
-	if len(imageBytes) > 1 {
+	if numberOfInferences > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return err
@@ -1790,7 +1941,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, imageBytes, task)
+	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1830,8 +1981,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	if err != nil {
 		return err
 	}
-
-	imgsBytes, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
+	triggerInput, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, "Could not save the file")
 	}
@@ -1844,9 +1994,18 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	if err != nil {
 		return err
 	}
-
 	// check whether model support batching or not. If not, raise an error
-	if len(imgsBytes) > 1 {
+	numberOfInferences := 1
+	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
+	case modelPB.ModelInstance_TASK_CLASSIFICATION,
+		modelPB.ModelInstance_TASK_DETECTION,
+		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
+		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.ModelInstance_TASK_OCR,
+		modelPB.ModelInstance_TASK_KEYPOINT:
+		numberOfInferences = len(triggerInput.([][]byte))
+	}
+	if numberOfInferences > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
 		if err != nil {
 			return err
@@ -1862,8 +2021,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelServi
 	}
 
 	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, imgsBytes, task)
+	response, err := h.service.ModelInfer(modelInstanceInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1939,14 +2097,14 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(textToImage)
+		lenInputs = 1
 		inputInfer = textToImage
 	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(req)
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(textGeneration)
+		lenInputs = 1
 		inputInfer = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
@@ -2048,7 +2206,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(textToImage)
+		lenInputs = 1
 		inputInfer = textToImage
 	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
@@ -2059,7 +2217,7 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(textGeneration)
+		lenInputs = 1
 		inputInfer = textGeneration
 	}
 
@@ -2198,7 +2356,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				makeJSONResponse(w, 400, "File Input Error", err.Error())
 				return
 			}
-			lenInputs = len(textToImage)
+			lenInputs = 1
 			inputInfer = textToImage
 		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
 			textGeneration, err := parseTextFormDataTextGenerationInputs(r)
@@ -2206,7 +2364,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				makeJSONResponse(w, 400, "File Input Error", err.Error())
 				return
 			}
-			lenInputs = len(textGeneration)
+			lenInputs = 1
 			inputInfer = textGeneration
 		}
 

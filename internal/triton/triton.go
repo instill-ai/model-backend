@@ -251,16 +251,16 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput 
 
 	switch task {
 	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
-		textToImageInputs := inferInput.([]TextToImageInput)
+		textToImageInput := inferInput.(*TextToImageInput)
 		samples := make([]byte, 4)
-		binary.LittleEndian.PutUint32(samples, uint32(textToImageInputs[0].Samples))
+		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
 		steps := make([]byte, 4)
-		binary.LittleEndian.PutUint32(steps, uint32(textToImageInputs[0].Steps))
+		binary.LittleEndian.PutUint32(steps, uint32(textToImageInput.Steps))
 		guidanceScale := make([]byte, 4)
-		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(textToImageInputs[0].CfgScale)) // Fixed value.
+		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(textToImageInput.CfgScale)) // Fixed value.
 		seed := make([]byte, 8)
-		binary.LittleEndian.PutUint64(seed, uint64(textToImageInputs[0].Seed))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInputs[0].Prompt)}))
+		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
@@ -268,17 +268,17 @@ func (ts *triton) ModelInferRequest(task modelPB.ModelInstance_Task, inferInput 
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
-		textGenerationInputs := inferInput.([]TextGenerationInput)
+		textGenerationInput := inferInput.(*TextGenerationInput)
 		outputLen := make([]byte, 4)
-		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInputs[0].OutputLen))
+		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInput.OutputLen))
 		topK := make([]byte, 4)
-		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInputs[0].TopK))
+		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInput.TopK))
 		seed := make([]byte, 8)
-		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInputs[0].Seed))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].Prompt)}))
+		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].BadWordsList)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInputs[0].StopWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.BadWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case modelPB.ModelInstance_TASK_CLASSIFICATION,
