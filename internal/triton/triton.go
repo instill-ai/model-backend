@@ -43,7 +43,7 @@ type TextGenerationInput struct {
 	Seed          int64
 }
 
-type VisionInput struct {
+type ImageInput struct {
 	ImgUrl    string
 	ImgBase64 string
 }

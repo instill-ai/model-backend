@@ -2084,12 +2084,12 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 		modelPB.ModelInstance_TASK_OCR,
 		modelPB.ModelInstance_TASK_KEYPOINT,
 		modelPB.ModelInstance_TASK_UNSPECIFIED:
-		visionInput, err := parseImageRequestInputsToBytes(req)
+		imageInput, err := parseImageRequestInputsToBytes(req)
 		if err != nil {
 			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(visionInput)
-		inputInfer = visionInput
+		lenInputs = len(imageInput)
+		inputInfer = imageInput
 	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(req)
 		if err != nil {
@@ -2187,15 +2187,15 @@ func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelI
 		modelPB.ModelInstance_TASK_OCR,
 		modelPB.ModelInstance_TASK_KEYPOINT,
 		modelPB.ModelInstance_TASK_UNSPECIFIED:
-		visionInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
+		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
 			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = len(visionInput)
-		inputInfer = visionInput
+		lenInputs = len(imageInput)
+		inputInfer = imageInput
 	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelInstanceRequest{
 			Name:       req.Name,
@@ -2341,13 +2341,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			modelPB.ModelInstance_TASK_OCR,
 			modelPB.ModelInstance_TASK_KEYPOINT,
 			modelPB.ModelInstance_TASK_UNSPECIFIED:
-			visionInput, err := parseImageFormDataInputsToBytes(r)
+			imageInput, err := parseImageFormDataInputsToBytes(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "File Input Error", err.Error())
 				return
 			}
-			lenInputs = len(visionInput)
-			inputInfer = visionInput
+			lenInputs = len(imageInput)
+			inputInfer = imageInput
 		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
 			textToImage, err := parseImageFormDataTextToImageInputs(r)
 			if err != nil {
