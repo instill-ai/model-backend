@@ -85,35 +85,35 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 	logger, _ := logger.GetZapLogger()
 
 	for idx, taskInput := range req.TaskInputs {
-		var visionInp triton.VisionInput
+		var imageInput triton.ImageInput
 		switch taskInput.Input.(type) {
 		case *modelPB.TaskInput_Classification:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetClassification().GetImageUrl(),
 				ImgBase64: taskInput.GetClassification().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Detection:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetDetection().GetImageUrl(),
 				ImgBase64: taskInput.GetDetection().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Ocr:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetOcr().GetImageUrl(),
 				ImgBase64: taskInput.GetOcr().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Keypoint:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetKeypoint().GetImageUrl(),
 				ImgBase64: taskInput.GetKeypoint().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_InstanceSegmentation:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetInstanceSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetInstanceSegmentation().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_SemanticSegmentation:
-			visionInp = triton.VisionInput{
+			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
@@ -125,15 +125,15 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 			err error
 		)
 
-		if visionInp.ImgUrl != "" || visionInp.ImgBase64 != "" {
-			if len(visionInp.ImgUrl) > 0 {
-				img, err = parseImageFromURL(visionInp.ImgUrl)
+		if imageInput.ImgUrl != "" || imageInput.ImgBase64 != "" {
+			if len(imageInput.ImgUrl) > 0 {
+				img, err = parseImageFromURL(imageInput.ImgUrl)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse image %v from url. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse image %v from url", idx)
 				}
-			} else if len(visionInp.ImgBase64) > 0 {
-				img, err = parseImageFromBase64(visionInp.ImgBase64)
+			} else if len(imageInput.ImgBase64) > 0 {
+				img, err = parseImageFromBase64(imageInput.ImgBase64)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse base64 image %v. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse base64 image %v", idx)
@@ -308,7 +308,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := 10
+	step := int(util.TEXT_TO_IMAGE_STEPS)
 	if len(stepStr) > 0 {
 		step, err = strconv.Atoi(stepStr[0])
 		if err != nil {
@@ -316,7 +316,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	cfgScale := 7.0
+	cfgScale := float64(util.IMAGE_TO_TEXT_CFG_SCALE)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -324,7 +324,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	seed := 1024
+	seed := int(util.IMAGE_TO_TEXT_SEED)
 	if len(seedStr) > 0 {
 		seed, err = strconv.Atoi(seedStr[0])
 		if err != nil {
@@ -332,7 +332,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	samples := 1
+	samples := int(util.IMAGE_TO_TEXT_SAMPLES)
 	if len(samplesStr) > 0 {
 		samples, err = strconv.Atoi(samplesStr[0])
 		if err != nil {
@@ -374,7 +374,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		stopWordsList = stopWordsListInput[0]
 	}
 
-	outputLen := 100
+	outputLen := int(util.TEXT_GENERATION_OUTPUT_LEN)
 	if len(outputLenInput) > 0 {
 		outputLen, err = strconv.Atoi(outputLenInput[0])
 		if err != nil {
@@ -382,7 +382,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		}
 	}
 
-	topK := 1
+	topK := int(util.TEXT_GENERATION_TOP_K)
 	if len(topKInput) > 0 {
 		topK, err = strconv.Atoi(topKInput[0])
 		if err != nil {
@@ -390,7 +390,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		}
 	}
 
-	seed := 0
+	seed := int(util.TEXT_GENERATION_SEED)
 	if len(seedInput) > 0 {
 		seed, err = strconv.Atoi(seedInput[0])
 		if err != nil {
