@@ -38,6 +38,14 @@ message KeypointInput {
   }
 }
 
+// KeypointInputStream represents the input of keypoint detection task when using stream method
+message KeypointInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // KeypointOutput represents the output of keypoint detection task
 message KeypointOutput {
   // A list of keypoint objects

@@ -21,7 +21,7 @@ import * as constant from "./const.js"
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -53,7 +53,7 @@ export function DeployUndeployModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -66,7 +66,7 @@ export function DeployUndeployModel() {
         let req = {
             name: `models/${model_id}/instances/latest`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
             'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -77,7 +77,7 @@ export function DeployUndeployModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelInstance', {
                 name: `models/${model_id}/instances/latest`
             }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
@@ -87,19 +87,19 @@ export function DeployUndeployModel() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', {
             name: `models/non-existed/instances/latest`
         }), {
             'DeployModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', {
             name: `models/${model_id}/instances/non-existed`
         }, {}), {
             'DeployModelInstance non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

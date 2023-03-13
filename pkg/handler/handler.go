@@ -58,12 +58,12 @@ var requiredFields = []string{"Id"}
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
 type handler struct {
-	modelPB.UnimplementedModelServiceServer
+	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
 	triton  triton.Triton
 }
 
-func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
+func NewHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema()
 	return &handler{
 		service: s,
@@ -71,7 +71,7 @@ func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
 	}
 }
 
-func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
 
 	var firstChunk = true
 
@@ -194,7 +194,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 	return nil, "", "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
 	var firstChunk = true
 	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
 
@@ -434,7 +434,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
-		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelinePublicServiceClient()
 		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
@@ -451,7 +451,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		defer temporalClient.Close()
 
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
 
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionID)
@@ -496,7 +496,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		_, err = modelService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
+		_, err = modelPublicService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 		if err == nil {
 			makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 			return
@@ -574,7 +574,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		wfId, err := modelService.CreateModelAsync(owner, &uploadedModel)
+		wfId, err := modelPublicService.CreateModelAsync(owner, &uploadedModel)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -605,7 +605,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 }
 
 // AddModel - upload a model to the model server
-func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(stream.Context())
@@ -1890,7 +1890,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	}}, nil
 }
 
-func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) error {
+func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -1973,7 +1973,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	return err
 }
 
-func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
+func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -2290,8 +2290,8 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
-		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
-		defer pipelineServiceClientConn.Close()
+		pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
+		defer pipelinePublicServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
 		temporalClient, err := client.Dial(client.Options{
@@ -2305,7 +2305,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			logger.Fatal(err.Error())
 		}
 		defer temporalClient.Close()
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient)
 
 		modelID, instanceID, err := resource.GetModelInstanceID(instanceName)
 		if err != nil {
@@ -2313,13 +2313,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		modelInDB, err := modelService.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+		modelInDB, err := modelPublicService.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 			return
 		}
 
-		modelInstanceInDB, err := modelService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
+		modelInstanceInDB, err := modelPublicService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJSONResponse(w, 404, "Model instance not found", "The model instance not found in server")
 			return
@@ -2368,7 +2368,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		// check whether model support batching or not. If not, raise an error
 		if lenInputs > 1 {
-			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInstanceInDB.UID)
 			if err != nil {
 				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
 				return
@@ -2387,9 +2387,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(

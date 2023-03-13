@@ -28,6 +28,14 @@ message DetectionInput {
   }
 }
 
+// DetectionInputStream represents the input of detection task when using stream method
+message DetectionInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // DetectionOutput represents the output of detection task
 message DetectionOutput {
   // A list of detection objects

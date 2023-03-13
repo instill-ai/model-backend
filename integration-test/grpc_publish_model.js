@@ -24,7 +24,7 @@ import * as constant from "./const.js"
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -56,7 +56,7 @@ export function PublishUnPublishModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -66,7 +66,7 @@ export function PublishUnPublishModel() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/PublishModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/PublishModel', {
             name: "models/" + model_id
         }), {
             "PublishModel response status": (r) => r.status === grpc.StatusOK,
@@ -82,7 +82,7 @@ export function PublishUnPublishModel() {
             "PublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/UnpublishModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/UnpublishModel', {
             name: "models/" + model_id
         }), {
             "UnpublishModel response status": (r) => r.status === grpc.StatusOK,
@@ -98,19 +98,19 @@ export function PublishUnPublishModel() {
             "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/PublishModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/PublishModel', {
             name: "models/" + randomString(10)
         }), {
             "PublishModel response not found status": (r) => r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/UnpublishModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/UnpublishModel', {
             name: "models/" + randomString(10)
         }), {
             "UnpublishModel response not found status": (r) => r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

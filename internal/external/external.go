@@ -19,8 +19,8 @@ import (
 	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
 )
 
-// InitMgmtAdminServiceClient initialises a MgmtAdminServiceClient instance
-func InitMgmtAdminServiceClient() (mgmtPB.MgmtAdminServiceClient, *grpc.ClientConn) {
+// InitMgmtPrivateServiceClient initialises a MgmtPrivateServiceClient instance
+func InitMgmtPrivateServiceClient() (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
 	logger, _ := logger.GetZapLogger()
 
 	var clientDialOpts grpc.DialOption
@@ -41,7 +41,7 @@ func InitMgmtAdminServiceClient() (mgmtPB.MgmtAdminServiceClient, *grpc.ClientCo
 		logger.Fatal(err.Error())
 	}
 
-	return mgmtPB.NewMgmtAdminServiceClient(clientConn), clientConn
+	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
 // InitUsageServiceClient initializes a UsageServiceClient instance
@@ -86,8 +86,8 @@ func InitUsageServiceClient() (usagePB.UsageServiceClient, *grpc.ClientConn) {
 	return usagePB.NewUsageServiceClient(clientConn), clientConn
 }
 
-// InitPipelineServiceClient initialises a PipelineServiceClient instance
-func InitPipelineServiceClient() (pipelinePB.PipelineServiceClient, *grpc.ClientConn) {
+// InitPipelinePublicServiceClient initialises a PipelinePublicServiceClient instance
+func InitPipelinePublicServiceClient() (pipelinePB.PipelinePublicServiceClient, *grpc.ClientConn) {
 	logger, _ := logger.GetZapLogger()
 
 	var clientDialOpts grpc.DialOption
@@ -108,5 +108,5 @@ func InitPipelineServiceClient() (pipelinePB.PipelineServiceClient, *grpc.Client
 		logger.Fatal(err.Error())
 	}
 
-	return pipelinePB.NewPipelineServiceClient(clientConn), clientConn
+	return pipelinePB.NewPipelinePublicServiceClient(clientConn), clientConn
 }

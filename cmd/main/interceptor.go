@@ -33,11 +33,11 @@ func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 	}
 
 	// TODO: Replace with decoded JWT header
-	mgmtAdminServiceClient, mgmtAdminServiceClientConn := external.InitMgmtAdminServiceClient()
-	defer mgmtAdminServiceClientConn.Close()
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	defer mgmtPrivateServiceClientConn.Close()
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
-	userResp, err := mgmtAdminServiceClient.ListUser(context.Background(), &mgmtPB.ListUserRequest{
+	userResp, err := mgmtPrivateServiceClient.ListUsersAdmin(context.Background(), &mgmtPB.ListUsersAdminRequest{
 		PageSize:  &userPageSizeMax,
 		PageToken: &userPageToken,
 	})
@@ -62,11 +62,11 @@ func streamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 	}
 
 	// TODO: Replace with decoded JWT header
-	mgmtAdminServiceClient, mgmtAdminServiceClientConn := external.InitMgmtAdminServiceClient()
-	defer mgmtAdminServiceClientConn.Close()
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	defer mgmtPrivateServiceClientConn.Close()
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
-	userResp, er := mgmtAdminServiceClient.ListUser(context.Background(), &mgmtPB.ListUserRequest{
+	userResp, er := mgmtPrivateServiceClient.ListUsersAdmin(context.Background(), &mgmtPB.ListUsersAdminRequest{
 		PageSize:  &userPageSizeMax,
 		PageToken: &userPageToken,
 	})

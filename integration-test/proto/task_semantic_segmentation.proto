@@ -24,6 +24,14 @@ message SemanticSegmentationInput {
   }
 }
 
+// SemanticSegmentationInputStream represents the input of semantic segmentation task when using stream method
+message SemanticSegmentationInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // SemanticSegmentationOutput represents the output of semantic segmentation
 // task
 message SemanticSegmentationOutput {

@@ -65,20 +65,20 @@ type Service interface {
 }
 
 type service struct {
-	repository            repository.Repository
-	triton                triton.Triton
-	redisClient           *redis.Client
-	pipelineServiceClient pipelinePB.PipelineServiceClient
-	temporalClient        client.Client
+	repository                  repository.Repository
+	triton                      triton.Triton
+	redisClient                 *redis.Client
+	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
+	temporalClient              client.Client
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineServiceClient, rc *redis.Client, tc client.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client) Service {
 	return &service{
-		repository:            r,
-		triton:                t,
-		pipelineServiceClient: p,
-		redisClient:           rc,
-		temporalClient:        tc,
+		repository:                  r,
+		triton:                      t,
+		pipelinePublicServiceClient: p,
+		redisClient:                 rc,
+		temporalClient:              tc,
 	}
 }
 
@@ -616,7 +616,7 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 
 	filter := fmt.Sprintf("recipe.model_instances:\"models/%s\"", modelInDB.UID)
 
-	pipeResp, err := s.pipelineServiceClient.ListPipeline(context.Background(), &pipelinePB.ListPipelineRequest{
+	pipeResp, err := s.pipelinePublicServiceClient.ListPipelines(context.Background(), &pipelinePB.ListPipelinesRequest{
 		Filter: &filter,
 	})
 	if err != nil {

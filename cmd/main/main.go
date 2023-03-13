@@ -91,7 +91,7 @@ func main() {
 		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
 			// will not log gRPC calls if it was a call to liveness or readiness and no error was raised
 			if err == nil {
-				if match, _ := regexp.MatchString("vdp.model.v1alpha.ModelService/.*ness$", fullMethodName); match {
+				if match, _ := regexp.MatchString("vdp.model.v1alpha.ModelPublicService/.*ness$", fullMethodName); match {
 					return false
 				}
 			}
@@ -123,10 +123,10 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	mgmtAdminServiceClient, mgmtAdminServiceClientConn := external.InitMgmtAdminServiceClient()
-	defer mgmtAdminServiceClientConn.Close()
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	defer mgmtPrivateServiceClientConn.Close()
 
-	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelinePublicServiceClient()
 	defer pipelineServiceClientConn.Close()
 
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
@@ -146,7 +146,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	modelPB.RegisterModelServiceServer(
+	modelPB.RegisterModelPublicServiceServer(
 		grpcS,
 		handler.NewHandler(
 			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
@@ -185,7 +185,7 @@ func main() {
 	if !config.Config.Server.DisableUsage {
 		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
 		defer usageServiceClientConn.Close()
-		usg = usage.NewUsage(ctx, repository, mgmtAdminServiceClient, redisClient, usageServiceClient)
+		usg = usage.NewUsage(ctx, repository, mgmtPrivateServiceClient, redisClient, usageServiceClient)
 		if usg != nil {
 			usg.StartReporter(ctx)
 		}
@@ -198,7 +198,7 @@ func main() {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	}
 
-	if err := modelPB.RegisterModelServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
+	if err := modelPB.RegisterModelPublicServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
 	httpServer := &http.Server{

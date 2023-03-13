@@ -324,7 +324,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 	return readmeFilePath, ensembleFilePath, nil
 }
 
-func SaveFile(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
+func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
 	firstChunk := true
 	var fp *os.File
 	var fileData *modelPB.CreateModelBinaryFileUploadRequest

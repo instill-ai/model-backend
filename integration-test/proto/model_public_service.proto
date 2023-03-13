@@ -10,8 +10,8 @@ import "./healthcheck.proto";
 import "./model_definition.proto";
 import "./model.proto";
 
-// Model service responds to incoming model requests
-service ModelService {
+// Model service responds to external incoming model requests
+service ModelPublicService {
   option (google.api.default_host) = "api.instill.tech";
 
   // Liveness method receives a LivenessRequest message and returns a

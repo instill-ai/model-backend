@@ -28,15 +28,15 @@ type Usage interface {
 }
 
 type usage struct {
-	repository        repository.Repository
-	mgmtAdminServiceClient mgmtPB.MgmtAdminServiceClient
-	redisClient       *redis.Client
-	reporter          usageReporter.Reporter
-	version           string
+	repository               repository.Repository
+	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
+	redisClient              *redis.Client
+	reporter                 usageReporter.Reporter
+	version                  string
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtAdminServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
+func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
 	logger, _ := logger.GetZapLogger()
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
@@ -52,11 +52,11 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtAdminSe
 	}
 
 	return &usage{
-		repository:        r,
-		mgmtAdminServiceClient: u,
-		redisClient:       rc,
-		reporter:          reporter,
-		version:           version,
+		repository:               r,
+		mgmtPrivateServiceClient: u,
+		redisClient:              rc,
+		reporter:                 reporter,
+		version:                  version,
 	}
 }
 
@@ -73,7 +73,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
 	for {
-		userResp, err := u.mgmtAdminServiceClient.ListUser(ctx, &mgmtPB.ListUserRequest{
+		userResp, err := u.mgmtPrivateServiceClient.ListUsersAdmin(ctx, &mgmtPB.ListUsersAdminRequest{
 			PageSize:  &userPageSizeMax,
 			PageToken: &userPageToken,
 		})

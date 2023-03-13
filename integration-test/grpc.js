@@ -26,7 +26,7 @@ export const options = {
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
 export function setup() { }
@@ -38,7 +38,7 @@ export default () => {
             client.connect(constant.gRPCHost, {
                 plaintext: true
             });
-            const response = client.invoke('vdp.model.v1alpha.ModelService/Liveness', {});
+            const response = client.invoke('vdp.model.v1alpha.ModelPublicService/Liveness', {});
             check(response, {
                 'Status is OK': (r) => r && r.status === grpc.StatusOK,
                 'Response status is SERVING_STATUS_SERVING': (r) => r && r.message.healthCheckResponse.status === "SERVING_STATUS_SERVING",
@@ -81,8 +81,8 @@ export function teardown() {
         plaintext: true
     });
     group("Model API: Delete all models created by this test", () => {
-        for (const model of client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}).message.models) {
-            check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        for (const model of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModel', {}, {}).message.models) {
+            check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
                 name: model.name
             }), {
                 'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
