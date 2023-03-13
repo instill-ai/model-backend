@@ -8,14 +8,15 @@ import "google/api/client.proto";
 
 import "../../../vdp/model/v1alpha/model.proto";
 
-// Model service responds to internal access
+// Model service responds to internal incoming model requests
 service ModelPrivateService {
+  option (google.api.default_host) = "api.instill.tech";
 
     // ========== Private API ==========
 
-  // ListModelsAdmin method receives a ListModelsAdminRequest message and returns a
-  // ListModelsAdminResponse
-  rpc ListModelsAdmin(ListModelsAdminRequest) returns (ListModelsAdminResponse) {
+  // ListModelAdmin method receives a ListModelAdminRequest message and returns a
+  // ListModelAdminResponse
+  rpc ListModelAdmin(ListModelAdminRequest) returns (ListModelAdminResponse) {
     option (google.api.http) = {
       get : "/v1alpha/admin/models"
     };
