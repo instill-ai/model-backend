@@ -108,57 +108,64 @@ func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelP
 }
 
 func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-	queryBuilder := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Order("create_time DESC, id DESC")
-	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(DefaultPageSize)
-	} else if pageSize > 0 && pageSize <= MaxPageSize {
-		queryBuilder = queryBuilder.Limit(pageSize)
-	} else {
-		queryBuilder = queryBuilder.Limit(MaxPageSize)
+	if result := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize); result.Error != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
+	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC").Where("owner = ?", owner)
+
+	if pageSize == 0 {
+		pageSize = DefaultPageSize
+	} else if pageSize > MaxPageSize {
+		pageSize = MaxPageSize
+	}
+
+	queryBuilder = queryBuilder.Limit(int(pageSize))
+
 	if pageToken != "" {
-		createTime, uuid, err := paginate.DecodeToken(pageToken)
+		createTime, uid, err := paginate.DecodeToken(pageToken)
 		if err != nil {
 			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
 		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
+		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createTime, uid)
 	}
 
 	if view != modelPB.View_VIEW_FULL {
 		queryBuilder.Omit("configuration")
 	}
 
-	var createTime time.Time // only using one for all loops, we only need the latest one in the end
+	var createTime time.Time
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		return nil, "", 0, err
+		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.Model
 		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", err.Error())
+			return nil, "", 0, status.Error(codes.Internal, err.Error())
 		}
 		createTime = item.CreateTime
 		models = append(models, item)
 	}
 
 	if len(models) > 0 {
-		r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize)
-		var lastModel datamodel.Model // to check the last model in return list or not. If so, return empty page_token
-		if res := r.db.Raw("SELECT uid FROM model WHERE owner = ? order by create_time ASC, id ASC limit 1", owner).Scan(&lastModel); res.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		lastUID := (models)[len(models)-1].UID
+		lastItem := &datamodel.Model{}
+		if result := r.db.Model(&datamodel.Model{}).
+			Where("owner = ?", owner).
+			Order("create_time ASC, uid ASC").
+			Limit(1).Find(lastItem); result.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 		}
-		nextPageToken := ""
-		if lastModel.UID != (models)[len(models)-1].UID {
-			nextPageToken = paginate.EncodeToken(createTime, (models)[len(models)-1].UID.String())
+		if lastItem.UID.String() == lastUID.String() {
+			nextPageToken = ""
+		} else {
+			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
 		}
-
-		return models, nextPageToken, totalSize, nil
 	}
 
-	return nil, "", 0, nil
+	return models, nextPageToken, totalSize, nil
 }
 
 func (r *repository) UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error {
@@ -224,57 +231,64 @@ func (r *repository) GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelIns
 
 func (r *repository) ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
 
-	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Order("create_time DESC, id DESC")
-
-	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(DefaultPageSize)
-	} else if pageSize > 0 && pageSize <= MaxPageSize {
-		queryBuilder = queryBuilder.Limit(pageSize)
-	} else {
-		queryBuilder = queryBuilder.Limit(MaxPageSize)
+	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Count(&totalSize); result.Error != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
+	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Order("create_time DESC, uid DESC").Where("model_uid = ?", modelUID)
+
+	if pageSize == 0 {
+		pageSize = DefaultPageSize
+	} else if pageSize > MaxPageSize {
+		pageSize = MaxPageSize
+	}
+
+	queryBuilder = queryBuilder.Limit(int(pageSize))
+
 	if pageToken != "" {
-		createTime, uuid, err := paginate.DecodeToken(pageToken)
+		createTime, uid, err := paginate.DecodeToken(pageToken)
 		if err != nil {
 			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
 		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
+		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createTime, uid)
 	}
 
 	if view != modelPB.View_VIEW_FULL {
 		queryBuilder.Omit("configuration")
 	}
 
-	var createTime time.Time // only using one for all loops, we only need the latest one in the end
+	var createTime time.Time
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		return nil, "", 0, err
+		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.ModelInstance
 		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", err.Error())
+			return nil, "", 0, status.Error(codes.Internal, err.Error())
 		}
 		createTime = item.CreateTime
 		instances = append(instances, item)
 	}
 
 	if len(instances) > 0 {
-		r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Count(&totalSize)
-		var lastModelInstance datamodel.ModelInstance // to check the last model in return list or not. If so, return empty page_token
-		if res := r.db.Raw("SELECT uid FROM model_instance WHERE model_uid = ? order by create_time ASC, id ASC limit 1", modelUID).Scan(&lastModelInstance); res.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		lastUID := (instances)[len(instances)-1].UID
+		lastItem := &datamodel.ModelInstance{}
+		if result := r.db.Model(&datamodel.ModelInstance{}).
+			Where("model_uid = ?", modelUID).
+			Order("create_time ASC, uid ASC").
+			Limit(1).Find(lastItem); result.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 		}
-		nextPageToken := ""
-		if lastModelInstance.UID != (instances)[len(instances)-1].UID {
-			nextPageToken = paginate.EncodeToken(createTime, (instances)[len(instances)-1].UID.String())
+		if lastItem.UID.String() == lastUID.String() {
+			nextPageToken = ""
+		} else {
+			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
 		}
-		return instances, nextPageToken, totalSize, nil
 	}
 
-	return nil, "", 0, nil
+	return instances, nextPageToken, totalSize, nil
 }
 
 func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
@@ -326,56 +340,60 @@ func (r *repository) GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefi
 }
 
 func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
-
-	queryBuilder := r.db.Model(&datamodel.ModelDefinition{}).Order("create_time DESC, id DESC")
-
-	if pageSize == 0 {
-		queryBuilder = queryBuilder.Limit(DefaultPageSize)
-	} else if pageSize > 0 && pageSize <= MaxPageSize {
-		queryBuilder = queryBuilder.Limit(pageSize)
-	} else {
-		queryBuilder = queryBuilder.Limit(MaxPageSize)
+	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
+	queryBuilder := r.db.Model(&datamodel.ModelDefinition{}).Order("create_time DESC, uid DESC")
+
+	if pageSize == 0 {
+		pageSize = DefaultPageSize
+	} else if pageSize > MaxPageSize {
+		pageSize = MaxPageSize
+	}
+	queryBuilder = queryBuilder.Limit(int(pageSize))
+
 	if pageToken != "" {
-		createTime, uuid, err := paginate.DecodeToken(pageToken)
+		createTime, uid, err := paginate.DecodeToken(pageToken)
 		if err != nil {
 			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
 		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, uuid)
+		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createTime, uid)
 	}
 
 	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("model_spec", "model_instance_spec")
+		queryBuilder.Omit("configuration")
 	}
 
-	var createTime time.Time // only using one for all loops, we only need the latest one in the end
+	var createTime time.Time
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		return nil, "", 0, err
+		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.ModelDefinition
 		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", err.Error())
+			return nil, "", 0, status.Error(codes.Internal, err.Error())
 		}
 		createTime = item.CreateTime
 		definitions = append(definitions, item)
 	}
 
 	if len(definitions) > 0 {
-		r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize)
-		var lastModelDefinition datamodel.ModelDefinition // to check the last model in return list or not. If so, return empty page_token
-		if res := r.db.Raw("SELECT uid FROM model_definition order by create_time ASC, id ASC limit 1").Scan(&lastModelDefinition); res.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, "Error %v", res.Error.Error())
+		lastUID := (definitions)[len(definitions)-1].UID
+		lastItem := &datamodel.ModelDefinition{}
+		if result := r.db.Model(&datamodel.ModelDefinition{}).
+			Order("create_time ASC, uid ASC").
+			Limit(1).Find(lastItem); result.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 		}
-		nextPageToken := ""
-		if lastModelDefinition.UID != (definitions)[len(definitions)-1].UID {
-			nextPageToken = paginate.EncodeToken(createTime, (definitions)[len(definitions)-1].UID.String())
+		if lastItem.UID.String() == lastUID.String() {
+			nextPageToken = ""
+		} else {
+			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
 		}
-		return definitions, nextPageToken, totalSize, nil
 	}
 
-	return nil, "", 0, nil
+	return definitions, nextPageToken, totalSize, nil
 }
