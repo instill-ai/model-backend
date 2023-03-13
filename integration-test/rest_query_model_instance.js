@@ -256,10 +256,10 @@ export function ListModelInstance() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-
-      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances`, {
+      let resp = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?page_size=1`, {
         headers: genHeader(`application/json`),
-      }), {
+      })
+      check(resp, {
         [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id}/instances task cls response next_page_token`]: (r) =>
@@ -267,7 +267,38 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response total_size`]: (r) =>
           r.json().total_size == 2,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances.length`]: (r) =>
-          r.json().instances.length == 2,
+          r.json().instances.length == 1,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].name`]: (r) =>
+          r.json().instances[0].name === `models/${model_id}/instances/v1.0-cpu`,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].uid`]: (r) =>
+          r.json().instances[0].uid !== undefined,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].id`]: (r) =>
+          r.json().instances[0].id === "v1.0-cpu",
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].state`]: (r) =>
+          r.json().instances[0].state === "STATE_OFFLINE",
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].task`]: (r) =>
+          r.json().instances[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].model_definition`]: (r) =>
+          r.json().instances[0].model_definition === "model-definitions/github",
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].create_time`]: (r) =>
+          r.json().instances[0].create_time !== undefined,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].update_time`]: (r) =>
+          r.json().instances[0].update_time !== undefined,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
+          r.json().instances[0].configuration === null,
+      });
+
+      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?page_size=1&page_token=${resp.json().next_page_token}`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models/${model_id}/instances task cls response status`]: (r) =>
+          r.status === 200,
+        [`GET /v1alpha/models/${model_id}/instances task cls response next_page_token`]: (r) =>
+          r.json().next_page_token === "",
+        [`GET /v1alpha/models/${model_id}/instances task cls response total_size`]: (r) =>
+          r.json().total_size == 2,
+        [`GET /v1alpha/models/${model_id}/instances task cls response instances.length`]: (r) =>
+          r.json().instances.length == 1,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].name`]: (r) =>
           r.json().instances[0].name === `models/${model_id}/instances/v1.1-cpu`,
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].uid`]: (r) =>
@@ -287,6 +318,7 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances task cls response instances[0].configuration`]: (r) =>
           r.json().instances[0].configuration === null,
       });
+
       check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
@@ -299,11 +331,11 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances.length`]: (r) =>
           r.json().instances.length === 2,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].name`]: (r) =>
-          r.json().instances[0].name === `models/${model_id}/instances/v1.1-cpu`,
+          r.json().instances[0].name === `models/${model_id}/instances/v1.0-cpu`,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].uid`]: (r) =>
           r.json().instances[0].uid !== undefined,
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].id`]: (r) =>
-          r.json().instances[0].id === "v1.1-cpu",
+          r.json().instances[0].id === "v1.0-cpu",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].state`]: (r) =>
           r.json().instances[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].task`]: (r) =>
@@ -317,9 +349,9 @@ export function ListModelInstance() {
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.repository`]: (r) =>
           r.json().instances[0].configuration.repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.html_url`]: (r) =>
-          r.json().instances[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.1-cpu",
+          r.json().instances[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls/tree/v1.0-cpu",
         [`GET /v1alpha/models/${model_id}/instances?view=VIEW_FULL task cls response instances[0].configuration.tag`]: (r) =>
-          r.json().instances[0].configuration.tag === "v1.1-cpu",
+          r.json().instances[0].configuration.tag === "v1.0-cpu",
       });
 
       // clean up
