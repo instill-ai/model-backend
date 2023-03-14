@@ -13,7 +13,6 @@ import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 import "google/longrunning/operations.proto";
 
-import "./controller.proto";
 import "./model_definition.proto";
 import "./task_classification.proto";
 import "./task_detection.proto";
