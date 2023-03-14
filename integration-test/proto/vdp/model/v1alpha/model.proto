@@ -401,6 +401,42 @@ message WatchModelResponse {
   int32 progress = 2;
 }
 
+// WatchModelInstanceRequest represents a public request to query
+// a model instance's current state and longrunning progress
+message WatchModelInstanceRequest {
+  // Resource name of the model instance.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/ModelInstance",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model_instance.name/watch"}
+    }
+  ];
+}
+
+// WatchModelInstanceResponse represents a public response to
+// fetch a model instance's current state and longrunning progress
+message WatchModelInstanceResponse {
+  // Retrieved model instance state
+  vdp.controller.v1alpha.Resource resource = 1;
+}
+
+// CheckModelInstanceRequest represents a private request to query
+// a model instance's current state and longrunning progress
+message CheckModelInstanceRequest {
+  // Resource name of the model instance.
+  // For example "models/{model}/instances/{instance}"
+  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// CheckModelInstanceResponse represents a response to fetch a model
+// instance's current state and longrunning progress
+message CheckModelInstanceResponse {
+  // Retrieved model instance state
+  vdp.controller.v1alpha.Resource resource = 1;
+}
+
 ////////////////////////////////////
 //  Trigger methods
 ////////////////////////////////////

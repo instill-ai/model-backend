@@ -438,6 +438,8 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
+		controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+		defer controllerClientConn.Close()
 
 		temporalClient, err := client.Dial(client.Options{
 			// ZapAdapter implements log.Logger interface and can be passed
@@ -451,7 +453,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		defer temporalClient.Close()
 
-		modelPublicService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient, controllerClient)
 
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionID)
@@ -1716,6 +1718,18 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}}, nil
 }
 
+func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelInstanceRequest) (*modelPB.WatchModelInstanceResponse, error) {
+	resp, err := h.service.WatchModel(req.Name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelPB.WatchModelInstanceResponse{
+		Resource: resp.Resource,
+	}, err
+}
+
 func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
@@ -2104,6 +2118,8 @@ func inferModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[s
 		defer pipelinePublicServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
+		controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+		defer controllerClientConn.Close()
 		temporalClient, err := client.Dial(client.Options{
 			// ZapAdapter implements log.Logger interface and can be passed
 			// to the client constructor using client using client.Options.
@@ -2115,7 +2131,7 @@ func inferModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[s
 			logger.Fatal(err.Error())
 		}
 		defer temporalClient.Close()
-		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
 
 		modelID, err := resource.GetModelID(modelName)
 		if err != nil {

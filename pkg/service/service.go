@@ -29,6 +29,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/sterr"
 
+	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
@@ -46,6 +47,7 @@ type Service interface {
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
+<<<<<<< HEAD
 
 	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -53,6 +55,18 @@ type Service interface {
 	DeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
 	UndeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
 
+=======
+	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
+	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
+	WatchModel(name string) (*controllerPB.GetResourceResponse, error)
+	CheckModel(modelInstanceUID uuid.UUID) (*bool, error)
+	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
+	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
+	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
+	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
+	DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
+	UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
+>>>>>>> 93ae0bf (feat: add implementation for state monitoring with controller client)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
@@ -77,15 +91,17 @@ type service struct {
 	redisClient                 *redis.Client
 	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
 	temporalClient              client.Client
+	controllerClient            controllerPB.ControllerPrivateServiceClient
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
 		repository:                  r,
 		triton:                      t,
 		pipelinePublicServiceClient: p,
 		redisClient:                 rc,
 		temporalClient:              tc,
+		controllerClient:            cs,
 	}
 }
 
@@ -199,6 +215,33 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 	}
 
 	return s.ModelInfer(modelUID, inferInput, task)
+}
+
+func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*bool, error) {
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
+	if err != nil {
+		return nil, fmt.Errorf("triton model not found")
+	}
+
+	ensembleModelName := ensembleModel.Name
+	ensembleModelVersion := ensembleModel.Version
+	modelReadyResponse := s.triton.ModelReadyRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	if modelReadyResponse == nil {
+		return nil, fmt.Errorf("model is not found")
+	}
+
+	return &modelReadyResponse.Ready, nil
+}
+
+func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, error) {
+	resp, err := s.controllerClient.GetResource(context.Background(), &controllerPB.GetResourceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("resource state not found in etcd")
+	}
+
+	return resp, nil
 }
 
 func (s *service) ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {

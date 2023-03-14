@@ -58,3 +58,10 @@ maxbatchsizelimitation:
 temporal:
   clientoptions:
     hostport: temporal:7233
+controller:
+  tlsenabled: true
+  host: controller
+  port: 8085
+  https:
+    cert:
+    key:

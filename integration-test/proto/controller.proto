@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package vdp.controller.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+
+// Resource represents a state of a resource
+message Resource {
+    // State enumerates a resource state
+    enum State {
+      // State: UNSPECIFIED
+      STATE_UNSPECIFIED = 0;
+      // State: OFFLINE
+      STATE_OFFLINE = 1;
+      // State: ONLINE
+      STATE_ONLINE = 2;
+      // State: ERROR
+      STATE_ERROR = 3;
+    }
+
+    // Resource name.
+    string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    // Resource state
+    State state = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    // Resource longrunning progress
+    int32 progress = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  }
+
+// GetResourceRequest represents a request to query a resource's state
+message GetResourceRequest {
+    // Resource name
+    string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// GetResourceResponse represents a response to fetch a resource's state
+message GetResourceResponse {
+    // Retrieved resource state
+    Resource resource = 1;
+}
+
+// UpdateResourceRequest represents a request to update a resource's state
+message UpdateResourceRequest {
+    // Resource state
+    Resource resource = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// UpdateResourceResponse represents a response to update a resource's state
+message UpdateResourceResponse {
+    // Updated resource state
+    Resource resource = 1;
+}
+
+// DeleteResourceRequest represents a request to delete a resource's state
+message DeleteResourceRequest {
+    // Resource name
+    string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// DeleteResourceResponse represents an empty response
+message DeleteResourceResponse {}

@@ -118,11 +118,19 @@ func main() {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
+<<<<<<< HEAD
 	privateGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(privateGrpcS)
 
 	publicGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(publicGrpcS)
+=======
+	publicGrpcS := grpc.NewServer(grpcServerOpts...)
+	reflection.Register(publicGrpcS)
+
+	privateGrpcS := grpc.NewServer(grpcServerOpts...)
+	reflection.Register(privateGrpcS)
+>>>>>>> 9174df5 (feat: add implementation for state monitoring with controller client)
 
 	triton := triton.NewTriton()
 	defer triton.Close()
@@ -135,6 +143,9 @@ func main() {
 
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
+
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	defer controllerClientConn.Close()
 
 	temporalClient, err := client.Dial(client.Options{
 		// ZapAdapter implements log.Logger interface and can be passed

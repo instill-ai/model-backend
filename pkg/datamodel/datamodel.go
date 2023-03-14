@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 )
 
 type ModelState modelPB.Model_State
