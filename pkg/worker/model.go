@@ -16,6 +16,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/util"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 )
 
 type ModelParams struct {
@@ -214,6 +215,20 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
+	resp, err := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+		Resource: &controllerPB.Resource{
+			Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+			State: controllerPB.Resource_STATE_ONLINE,
+			Progress: 0,
+		},
+	})
+
+	fmt.Println(resp)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -255,6 +270,16 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
+	dbModel, err := w.repository.GetModelByUid(param.Owner, param.ModelUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return err
+	}
+
+	dbModelInstance, err := w.repository.GetModelInstanceByUid(param.ModelUID, param.ModelInstanceUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return err
+	}
+
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
@@ -264,6 +289,15 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 			}); err1 != nil {
 				return err1
 			}
+			if _, err2 := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+				Resource: &controllerPB.Resource{
+					Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+					State: controllerPB.Resource_STATE_ERROR,
+					Progress: 0,
+				},
+			}); err2 != nil {
+				return err2
+			}
 			return err
 		}
 	}
@@ -271,6 +305,18 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 	if err := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 	}); err != nil {
+		return err
+	}
+
+	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+		Resource: &controllerPB.Resource{
+			Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+			State: controllerPB.Resource_STATE_OFFLINE,
+			Progress: 0,
+		},
+	})
+
+	if err != nil {
 		return err
 	}
 

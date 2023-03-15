@@ -238,7 +238,7 @@ func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, er
 		Name: name,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("resource state not found in etcd")
+		return nil, err
 	}
 
 	return resp, nil
