@@ -148,7 +148,13 @@ func main() {
 
 	modelPB.RegisterModelPublicServiceServer(
 		grpcS,
-		handler.NewHandler(
+		handler.NewPublicHandler(
+			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
+			triton))
+
+	modelPB.RegisterModelPrivateServiceServer(
+		grpcS,
+		handler.NewPrivateHandler(
 			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
 			triton))
 
@@ -199,6 +205,9 @@ func main() {
 	}
 
 	if err := modelPB.RegisterModelPublicServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
+		logger.Fatal(err.Error())
+	}
+	if err := modelPB.RegisterModelPrivateServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
 	httpServer := &http.Server{

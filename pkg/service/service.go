@@ -62,6 +62,10 @@ type Service interface {
 	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error)
 	CancelOperation(workflowId string) error
 	SearchAttributeReady() error
+
+	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 }
 
 type service struct {
@@ -143,8 +147,16 @@ func (s *service) GetModelById(owner string, modelID string, view modelPB.View) 
 	return s.repository.GetModelById(owner, modelID, view)
 }
 
+func (s *service) GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByIdAdmin(modelID, view)
+}
+
 func (s *service) GetModelByUid(owner string, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	return s.repository.GetModelByUid(owner, uid, view)
+}
+
+func (s *service) GetModelByUidAdmin(uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByUidAdmin(uid, view)
 }
 
 func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
@@ -604,6 +616,10 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 
 func (s *service) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {
 	return s.repository.ListModels(owner, view, pageSize, pageToken)
+}
+
+func (s *service) ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {
+	return s.repository.ListModelsAdmin(view, pageSize, pageToken)
 }
 
 func (s *service) DeleteModel(owner string, modelID string) error {

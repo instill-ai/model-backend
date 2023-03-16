@@ -32,6 +32,10 @@ type Repository interface {
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+
+	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -95,6 +99,18 @@ func (r *repository) GetModelById(owner string, modelID string, view modelPB.Vie
 	return model, nil
 }
 
+func (r *repository) GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error) {
+	var model datamodel.Model
+	selectedFields := GetModelSelectedFields
+	if view != modelPB.View_VIEW_FULL {
+		selectedFields = GetModelSelectedFieldsWOConfiguration
+	}
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{ID: modelID}).First(&model); result.Error != nil {
+		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found", modelID)
+	}
+	return model, nil
+}
+
 func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
@@ -103,6 +119,18 @@ func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelP
 	}
 	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUID, owner)
+	}
+	return model, nil
+}
+
+func (r *repository) GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+	var model datamodel.Model
+	selectedFields := GetModelSelectedFields
+	if view != modelPB.View_VIEW_FULL {
+		selectedFields = GetModelSelectedFieldsWOConfiguration
+	}
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
+		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found", modelUID)
 	}
 	return model, nil
 }
@@ -154,6 +182,66 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 		lastItem := &datamodel.Model{}
 		if result := r.db.Model(&datamodel.Model{}).
 			Where("owner = ?", owner).
+			Order("create_time ASC, uid ASC").
+			Limit(1).Find(lastItem); result.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+		}
+		if lastItem.UID.String() == lastUID.String() {
+			nextPageToken = ""
+		} else {
+			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
+		}
+	}
+
+	return models, nextPageToken, totalSize, nil
+}
+
+func (r *repository) ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
+	if result := r.db.Model(&datamodel.Model{}).Count(&totalSize); result.Error != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+	}
+
+	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC")
+
+	if pageSize == 0 {
+		pageSize = DefaultPageSize
+	} else if pageSize > MaxPageSize {
+		pageSize = MaxPageSize
+	}
+
+	queryBuilder = queryBuilder.Limit(int(pageSize))
+
+	if pageToken != "" {
+		createTime, uid, err := paginate.DecodeToken(pageToken)
+		if err != nil {
+			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
+		}
+		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createTime, uid)
+	}
+
+	if view != modelPB.View_VIEW_FULL {
+		queryBuilder.Omit("configuration")
+	}
+
+	var createTime time.Time
+	rows, err := queryBuilder.Rows()
+	if err != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item datamodel.Model
+		if err = r.db.ScanRows(rows, &item); err != nil {
+			return nil, "", 0, status.Error(codes.Internal, err.Error())
+		}
+		createTime = item.CreateTime
+		models = append(models, item)
+	}
+
+	if len(models) > 0 {
+		lastUID := (models)[len(models)-1].UID
+		lastItem := &datamodel.Model{}
+		if result := r.db.Model(&datamodel.Model{}).
 			Order("create_time ASC, uid ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
 			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
@@ -362,7 +450,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageT
 	}
 
 	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("configuration")
+		queryBuilder.Omit("model_spec", "model_instance_spec")
 	}
 
 	var createTime time.Time

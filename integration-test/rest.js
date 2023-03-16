@@ -6,6 +6,7 @@ import {
 
 import * as createModel from "./rest_create_model.js"
 import * as queryModel from "./rest_query_model.js"
+import * as queryModelAdmin from "./rest_query_model_admin.js"
 import * as inferModel from "./rest_infer_model.js"
 import * as deployModel from "./rest_deploy_model.js"
 import * as publishModel from "./rest_publish_model.js"
@@ -52,7 +53,7 @@ export default function (data) {
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 
-  // Query Model API
+  // // Query Model API
   queryModel.GetModel()
   queryModel.ListModels()
   queryModel.LookupModel()
@@ -82,6 +83,11 @@ export default function (data) {
   longrunningOperation.GetLongRunningOperation()
   longrunningOperation.ListLongRunningOperation()
   longrunningOperation.CancelLongRunningOperation()
+
+  // Query Model API by admin
+  queryModelAdmin.GetModelAdmin()
+  queryModelAdmin.ListModelsAdmin()
+  queryModelAdmin.LookupModelAdmin()  
 }
 
 export function teardown(data) {

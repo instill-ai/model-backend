@@ -7,6 +7,7 @@ import {
 import * as createModel from "./grpc_create_model.js"
 import * as updateModel from "./grpc_update_model.js"
 import * as queryModel from "./grpc_query_model.js"
+import * as queryModelAdmin from "./grpc_query_model_admin.js"
 import * as deployModel from "./grpc_deploy_model.js"
 import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
@@ -27,6 +28,7 @@ export const options = {
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
+client.load(['proto'], 'model_private_service.proto');
 client.load(['proto'], 'model_public_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
@@ -79,6 +81,11 @@ export default () => {
     // Operation API
     modelOperation.ListModelOperations()
     modelOperation.CancelModelOperation()
+
+    // Admin API
+    queryModelAdmin.GetModelAdmin()
+    queryModelAdmin.ListModelsAdmin()
+    queryModelAdmin.LookUpModelAdmin()
 };
 
 export function teardown() {
