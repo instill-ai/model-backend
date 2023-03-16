@@ -11,7 +11,7 @@ import {
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 
 import * as constant from "./const.js"
 
@@ -23,7 +23,7 @@ export function CreateModel() {
         client.connect(constant.gRPCHost, {
             plaintext: true
         });
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModelBinaryFileUpload', {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModelBinaryFileUpload', {}), {
             'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
@@ -37,7 +37,7 @@ export function CreateModel() {
             plaintext: true
         });
         let model_id = randomString(10)
-        let createOperationRes = client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        let createOperationRes = client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
             model: {
                 id: model_id,
                 model_definition: model_def_name,
@@ -55,7 +55,7 @@ export function CreateModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createOperationRes.message.operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -68,7 +68,7 @@ export function CreateModel() {
         let req = {
             name: `models/${model_id}/instances/v1.0-cpu`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
             'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -79,7 +79,7 @@ export function CreateModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelInstance', {
                 name: `models/${model_id}/instances/v1.0-cpu`
             }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
@@ -89,7 +89,7 @@ export function CreateModel() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/${model_id}/instances/v1.0-cpu`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -101,7 +101,7 @@ export function CreateModel() {
             'TriggerModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: randomString(10),
@@ -113,7 +113,7 @@ export function CreateModel() {
             'status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
             model: {
                 model_definition: model_def_name,
                 configuration: {
@@ -124,16 +124,17 @@ export function CreateModel() {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/CreateModel', {
+        let createModel = client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: model_def_name,
             }
-        }), {
+        })
+        check(createModel, {
             'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,

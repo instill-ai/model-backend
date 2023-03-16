@@ -12,6 +12,7 @@ import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
 import * as queryModelInstance from "./grpc_query_model_instance.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
+import * as modelOperation from "./grpc_model_operation.js"
 
 import * as constant from "./const.js"
 
@@ -26,7 +27,7 @@ export const options = {
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 client.load(['proto'], 'healthcheck.proto');
 
 export function setup() { }
@@ -38,7 +39,7 @@ export default () => {
             client.connect(constant.gRPCHost, {
                 plaintext: true
             });
-            const response = client.invoke('vdp.model.v1alpha.ModelService/Liveness', {});
+            const response = client.invoke('vdp.model.v1alpha.ModelPublicService/Liveness', {});
             check(response, {
                 'Status is OK': (r) => r && r.status === grpc.StatusOK,
                 'Response status is SERVING_STATUS_SERVING': (r) => r && r.message.healthCheckResponse.status === "SERVING_STATUS_SERVING",
@@ -57,7 +58,7 @@ export default () => {
 
     // Query Model API
     queryModel.GetModel()
-    queryModel.ListModel()
+    queryModel.ListModels()
     queryModel.LookupModel()
 
     // Publish Model API
@@ -68,12 +69,16 @@ export default () => {
 
     // Query Model Instance API
     queryModelInstance.GetModelInstance()
-    queryModelInstance.ListModelInstance()
+    queryModelInstance.ListModelInstances()
     queryModelInstance.LookupModelInstance()
 
     // Query Model Definition API
     queryModelDefinition.GetModelDefinition()
-    queryModelDefinition.ListModelDefinition()
+    queryModelDefinition.ListModelDefinitions()
+
+    // Operation API
+    modelOperation.ListModelOperations()
+    modelOperation.CancelModelOperation()
 };
 
 export function teardown() {
@@ -81,8 +86,8 @@ export function teardown() {
         plaintext: true
     });
     group("Model API: Delete all models created by this test", () => {
-        for (const model of client.invoke('vdp.model.v1alpha.ModelService/ListModel', {}, {}).message.models) {
-            check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        for (const model of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModels', {}, {}).message.models) {
+            check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
                 name: model.name
             }), {
                 'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,

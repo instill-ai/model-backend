@@ -28,6 +28,14 @@ message OcrInput {
   }
 }
 
+// OcrInputStream represents the input of ocr task when using stream method
+message OcrInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // OcrOutput represents the output of ocr task
 message OcrOutput {
   // A list of OCR objects

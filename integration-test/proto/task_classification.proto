@@ -16,6 +16,14 @@ message ClassificationInput {
   }
 }
 
+// ClassificationInputStream represents the input of classification task when using stream method
+message ClassificationInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // ClassificationOutput represents the output of classification task
 message ClassificationOutput {
   // Classification category

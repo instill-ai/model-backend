@@ -21,7 +21,7 @@ import * as constant from "./const.js"
 const client = new grpc.Client();
 client.load(['proto'], 'model_definition.proto');
 client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_service.proto');
+client.load(['proto'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -54,7 +54,7 @@ export function InferModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -67,7 +67,7 @@ export function InferModel() {
         let req = {
             name: `models/${model_id}/instances/latest`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
             'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -78,7 +78,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelInstance', {
                 name: `models/${model_id}/instances/latest`
             }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
@@ -87,7 +87,7 @@ export function InferModel() {
             sleep(1)
             currentTime = new Date().getTime();
         }
-        res = client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        res = client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -100,7 +100,7 @@ export function InferModel() {
             'TriggerModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
@@ -113,7 +113,7 @@ export function InferModel() {
         });
 
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/non-existed/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -122,7 +122,7 @@ export function InferModel() {
             'TriggerModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/${model_id}/instances/non-existed`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -131,7 +131,7 @@ export function InferModel() {
             'TriggerModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TriggerModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
@@ -140,7 +140,7 @@ export function InferModel() {
             'TriggerModelInstance non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -175,7 +175,7 @@ export function InferModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelService/GetModelOperation', {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -188,7 +188,7 @@ export function InferModel() {
         let req = {
             name: `models/${model_id}/instances/latest`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeployModelInstance', req, {}), {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', req, {}), {
             'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
             'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
             'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -199,7 +199,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelService/GetModelInstance', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelInstance', {
                 name: `models/${model_id}/instances/latest`
             }, {})
             if (res.message.instance.state === "STATE_ONLINE") {
@@ -209,7 +209,7 @@ export function InferModel() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -221,7 +221,7 @@ export function InferModel() {
             'TestModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
@@ -233,7 +233,7 @@ export function InferModel() {
             'TestModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TestModelInstance', {
             name: `models/non-existed/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -242,7 +242,7 @@ export function InferModel() {
             'TestModelInstance non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TestModelInstance', {
             name: `models/${model_id}/instances/non-existed`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
@@ -251,7 +251,7 @@ export function InferModel() {
             'TestModelInstance non-existed model version  status': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/TestModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TestModelInstance', {
             name: `models/${model_id}/instances/latest`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
@@ -260,7 +260,7 @@ export function InferModel() {
             'TestModelInstance non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelService/DeleteModel', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,

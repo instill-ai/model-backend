@@ -316,12 +316,12 @@ func TestListModell(t *testing.T) {
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			ListModel(OWNER, modelPB.View_VIEW_FULL, int(100), "").
+			ListModels(OWNER, modelPB.View_VIEW_FULL, int(100), "").
 			Return([]datamodel.Model{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModel(OWNER, modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModels(OWNER, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }
@@ -407,7 +407,7 @@ func TestGetModelInstanceByUid(t *testing.T) {
 	})
 }
 
-func TestListModelInstance(t *testing.T) {
+func TestListModelInstances(t *testing.T) {
 	t.Run("TestListModelInstance", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
@@ -415,12 +415,12 @@ func TestListModelInstance(t *testing.T) {
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			ListModelInstance(modelUID, modelPB.View_VIEW_FULL, 100, "").
+			ListModelInstances(modelUID, modelPB.View_VIEW_FULL, 100, "").
 			Return([]datamodel.ModelInstance{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModelInstance(modelUID, modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModelInstances(modelUID, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }
@@ -512,19 +512,19 @@ func TestGetModelDefinition(t *testing.T) {
 	})
 }
 
-func TestListModelDefinition(t *testing.T) {
+func TestListModelDefinitions(t *testing.T) {
 	t.Run("TestListModelDefinition", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			ListModelDefinition(modelPB.View_VIEW_FULL, int(100), "").
+			ListModelDefinitions(modelPB.View_VIEW_FULL, int(100), "").
 			Return([]datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModelDefinition(modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModelDefinitions(modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }

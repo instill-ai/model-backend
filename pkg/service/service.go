@@ -44,18 +44,18 @@ type Service interface {
 	PublishModel(owner string, modelID string) (datamodel.Model, error)
 	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
-	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
+	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
-	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
+	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
 	DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
 	UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
-	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
+	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error)
@@ -65,20 +65,20 @@ type Service interface {
 }
 
 type service struct {
-	repository            repository.Repository
-	triton                triton.Triton
-	redisClient           *redis.Client
-	pipelineServiceClient pipelinePB.PipelineServiceClient
-	temporalClient        client.Client
+	repository                  repository.Repository
+	triton                      triton.Triton
+	redisClient                 *redis.Client
+	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
+	temporalClient              client.Client
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineServiceClient, rc *redis.Client, tc client.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client) Service {
 	return &service{
-		repository:            r,
-		triton:                t,
-		pipelineServiceClient: p,
-		redisClient:           rc,
-		temporalClient:        tc,
+		repository:                  r,
+		triton:                      t,
+		pipelinePublicServiceClient: p,
+		redisClient:                 rc,
+		temporalClient:              tc,
 	}
 }
 
@@ -602,8 +602,8 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 	}
 }
 
-func (s *service) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {
-	return s.repository.ListModel(owner, view, pageSize, pageToken)
+func (s *service) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error) {
+	return s.repository.ListModels(owner, view, pageSize, pageToken)
 }
 
 func (s *service) DeleteModel(owner string, modelID string) error {
@@ -616,7 +616,7 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 
 	filter := fmt.Sprintf("recipe.model_instances:\"models/%s\"", modelInDB.UID)
 
-	pipeResp, err := s.pipelineServiceClient.ListPipeline(context.Background(), &pipelinePB.ListPipelineRequest{
+	pipeResp, err := s.pipelinePublicServiceClient.ListPipelines(context.Background(), &pipelinePB.ListPipelinesRequest{
 		Filter: &filter,
 	})
 	if err != nil {
@@ -750,8 +750,8 @@ func (s *service) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uui
 	return s.repository.GetModelInstanceByUid(modelUID, modelInstanceUid, view)
 }
 
-func (s *service) ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
-	return s.repository.ListModelInstance(modelUID, view, pageSize, pageToken)
+func (s *service) ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
+	return s.repository.ListModelInstances(modelUID, view, pageSize, pageToken)
 }
 
 func (s *service) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
@@ -762,8 +762,8 @@ func (s *service) GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinit
 	return s.repository.GetModelDefinitionByUid(uid)
 }
 
-func (s *service) ListModelDefinition(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error) {
-	return s.repository.ListModelDefinition(view, pageSize, pageToken)
+func (s *service) ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error) {
+	return s.repository.ListModelDefinitions(view, pageSize, pageToken)
 }
 
 func (s *service) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {

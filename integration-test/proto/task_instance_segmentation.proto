@@ -30,6 +30,14 @@ message InstanceSegmentationInput {
   }
 }
 
+// InstanceSegmentationInputStream represents the input of instance segmentation task when using stream method
+message InstanceSegmentationInputStream {
+  // The list of file length for each uploaded binary file
+  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Content of images in bytes
+  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+}
+
 // InstanceSegmentationOutput represents the output of instance segmentation
 // task
 message InstanceSegmentationOutput {

@@ -28,15 +28,15 @@ type Usage interface {
 }
 
 type usage struct {
-	repository        repository.Repository
-	mgmtAdminServiceClient mgmtPB.MgmtAdminServiceClient
-	redisClient       *redis.Client
-	reporter          usageReporter.Reporter
-	version           string
+	repository               repository.Repository
+	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
+	redisClient              *redis.Client
+	reporter                 usageReporter.Reporter
+	version                  string
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtAdminServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
+func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
 	logger, _ := logger.GetZapLogger()
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
@@ -52,11 +52,11 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtAdminSe
 	}
 
 	return &usage{
-		repository:        r,
-		mgmtAdminServiceClient: u,
-		redisClient:       rc,
-		reporter:          reporter,
-		version:           version,
+		repository:               r,
+		mgmtPrivateServiceClient: u,
+		redisClient:              rc,
+		reporter:                 reporter,
+		version:                  version,
 	}
 }
 
@@ -73,7 +73,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 	userPageToken := ""
 	userPageSizeMax := int64(repository.MaxPageSize)
 	for {
-		userResp, err := u.mgmtAdminServiceClient.ListUser(ctx, &mgmtPB.ListUserRequest{
+		userResp, err := u.mgmtPrivateServiceClient.ListUsersAdmin(ctx, &mgmtPB.ListUsersAdminRequest{
 			PageSize:  &userPageSizeMax,
 			PageToken: &userPageToken,
 		})
@@ -96,7 +96,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 			var mTask = make(map[datamodel.ModelInstanceTask]bool) // use for creating unique task list
 			var mDef = make(map[string]bool)                       // use for creating unique model definition list
 			for {
-				dbModels, modelNextPageToken, _, err := u.repository.ListModel(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
+				dbModels, modelNextPageToken, _, err := u.repository.ListModels(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
 				if err != nil {
 					logger.Error(fmt.Sprintf("%s", err))
 				}
@@ -115,7 +115,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 					}
 
 					for {
-						dbInstances, instanceNextPageToken, _, err := u.repository.ListModelInstance(model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
+						dbInstances, instanceNextPageToken, _, err := u.repository.ListModelInstances(model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
 						if err != nil {
 							logger.Error(fmt.Sprintf("%s", err))
 						}

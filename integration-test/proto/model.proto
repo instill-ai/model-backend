@@ -179,8 +179,8 @@ message ModelInstanceCard {
   string encoding = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// ListModelRequest represents a request to list all models
-message ListModelRequest {
+// ListModelsRequest represents a request to list all models
+message ListModelsRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
@@ -194,8 +194,8 @@ message ListModelRequest {
   optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelResponse represents a response for a list of models
-message ListModelResponse {
+// ListModelsResponse represents a response for a list of models
+message ListModelsResponse {
   // a list of Models
   repeated Model models = 1;
   // Next page token
@@ -296,7 +296,7 @@ message DeleteModelRequest {
 // DeleteModelResponse represents an empty response
 message DeleteModelResponse {}
 
-// LookUpModelRequest represents a request to query a model instance by
+// LookUpModelRequest represents a request to query a model instance via
 // permalink
 message LookUpModelRequest {
   // Permalink of a model. For example:
@@ -364,9 +364,9 @@ message UnpublishModelResponse {
   Model model = 1;
 }
 
-// ListModelInstanceRequest represents a request to list all instances of a
+// ListModelInstancesRequest represents a request to list all instances of a
 // model
-message ListModelInstanceRequest {
+message ListModelInstancesRequest {
   // The name of the model whose instances we'd like to list.
   // e.g., "models/yolov4"
   string parent = 1 [
@@ -387,8 +387,8 @@ message ListModelInstanceRequest {
   optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelInstanceResponse represents a response for a list of model instances
-message ListModelInstanceResponse {
+// ListModelInstancesResponse represents a response for a list of model instances
+message ListModelInstancesResponse {
   // a list of Model instances
   repeated ModelInstance instances = 1;
   // Next page token
@@ -420,7 +420,7 @@ message GetModelInstanceResponse {
   ModelInstance instance = 1;
 }
 
-// LookUpModelInstanceRequest represents a request to query a model instance by
+// LookUpModelInstanceRequest represents a request to query a model instance via
 // permalink
 message LookUpModelInstanceRequest {
   // Permalink of a model instance. For example:
@@ -524,6 +524,31 @@ message TaskInput {
   }
 }
 
+// TaskInputStream represents the input to trigger a model instance with stream method
+message TaskInputStream {
+  // Input type
+  oneof input {
+    // The classification input
+    ClassificationInputStream classification = 1;
+    // The detection input
+    DetectionInputStream detection = 2;
+    // The keypoint input
+    KeypointInputStream keypoint = 3;
+    // The ocr input
+    OcrInputStream ocr = 4;
+    // The instance segmentation input
+    InstanceSegmentationInputStream instance_segmentation = 5;
+    // The semantic segmentation input
+    SemanticSegmentationInputStream semantic_segmentation = 6;
+    // The text to image input
+    TextToImageInput text_to_image = 7;
+    // The text generation input
+    TextGenerationInput text_generation = 8;
+    // The unspecified task input
+    UnspecifiedInput unspecified = 9;
+  }
+}
+
 // TaskOutput represents the output of a CV Task result from a model instance
 message TaskOutput {
   // The inference task output
@@ -585,10 +610,8 @@ message TriggerModelInstanceBinaryFileUploadRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
   ];
-  // The list of file length for each uploaded binary file
-  repeated uint64 file_lengths = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes content = 3 [ (google.api.field_behavior) = REQUIRED ];
+  // Input to trigger the model instance
+  TaskInputStream task_input = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TriggerModelInstanceBinaryFileUploadResponse represents a response for the
@@ -632,10 +655,8 @@ message TestModelInstanceBinaryFileUploadRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/ModelInstance"
   ];
-  // The list of file length for each uploaded binary file
-  repeated uint64 file_lengths = 2 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes content = 3 [ (google.api.field_behavior) = REQUIRED ];
+  // Input to trigger the model instance
+  TaskInputStream task_input = 2 [ (google.api.field_behavior) = REQUIRED ];
 }
 
 // TestModelInstanceBinaryFileUploadResponse represents a response for the
@@ -664,9 +685,9 @@ message GetModelOperationResponse {
   google.longrunning.Operation operation = 1;
 }
 
-// ListModelOperationRequest represents a request to list all model operations
+// ListModelOperationsRequest represents a request to list all model operations
 // including deploy and undeploy
-message ListModelOperationRequest {
+message ListModelOperationsRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 operations will be
   // returned. The maximum value is 100; values above 100 will be coereced to
@@ -682,9 +703,9 @@ message ListModelOperationRequest {
   optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelOperationResponse represents a response for a list of model
+// ListModelOperationsResponse represents a response for a list of model
 // operations including deploy and undeploy
-message ListModelOperationResponse {
+message ListModelOperationsResponse {
   // a list of model operations
   repeated google.longrunning.Operation operations = 1;
   // Next page token
@@ -702,3 +723,71 @@ message CancelModelOperationRequest {
 // CancelModelOperationResponse represents a response for canceling a model
 // operation
 message CancelModelOperationResponse {}
+
+// ========== Admin endpoints
+
+// ListModelsAdminRequest represents a request to list all models from all users by admin
+message ListModelsAdminRequest {
+  // Page size: the maximum number of resources to return. The service may
+  // return fewer than this value. If unspecified, at most 10 models will be
+  // returned. The maximum value is 100; values above 100 will be coereced to
+  // 100.
+  optional int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  // Page token
+  optional string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// ListModelsAdminResponse represents a response for a list of models
+message ListModelsAdminResponse {
+  // a list of Models
+  repeated Model models = 1;
+  // Next page token
+  string next_page_token = 2;
+  // Total count of models
+  int64 total_size = 3;
+}
+
+// GetModelAdminRequest represents a request to query a model by admin
+message GetModelAdminRequest {
+  // Resource name of the model.
+  // For example "models/{model}"
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration : {path_param_name : "model.name"}
+    }
+  ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// GetModelAdminResponse represents a response for a model
+message GetModelAdminResponse {
+  // The retrieved model
+  Model model = 1;
+}
+
+// LookUpModelAdminRequest represents a request to query a model instance via
+// permalink by admin
+message LookUpModelAdminRequest {
+  // Permalink of a model. For example:
+  // "models/{uid}"
+  string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// LookUpModelResponse represents a response for a model instance
+message LookUpModelAdminResponse {
+  // A model resource
+  Model model = 1;
+}

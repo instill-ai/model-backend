@@ -12,7 +12,7 @@ import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/local"
 
-export function ListModelDefinition() {
+export function ListModelDefinitions() {
   // Model Backend API: get model definition list
   {
     group("Model Backend API: get model definition list", function () {

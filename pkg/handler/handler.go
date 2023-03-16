@@ -58,12 +58,12 @@ var requiredFields = []string{"Id"}
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
 type handler struct {
-	modelPB.UnimplementedModelServiceServer
+	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
 	triton  triton.Triton
 }
 
-func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
+func NewHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema()
 	return &handler{
 		service: s,
@@ -71,7 +71,7 @@ func NewHandler(s service.Service, t triton.Triton) modelPB.ModelServiceServer {
 	}
 }
 
-func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
 
 	var firstChunk = true
 
@@ -194,7 +194,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelService_TriggerModelInstan
 	return nil, "", "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
 	var firstChunk = true
 	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
 
@@ -434,7 +434,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
-		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
+		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelinePublicServiceClient()
 		defer pipelineServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
@@ -451,7 +451,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		defer temporalClient.Close()
 
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
 
 		// validate model configuration
 		localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionID)
@@ -496,7 +496,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		_, err = modelService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
+		_, err = modelPublicService.GetModelById(owner, uploadedModel.ID, modelPB.View_VIEW_FULL)
 		if err == nil {
 			makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 			return
@@ -574,7 +574,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		wfId, err := modelService.CreateModelAsync(owner, &uploadedModel)
+		wfId, err := modelPublicService.CreateModelAsync(owner, &uploadedModel)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -605,7 +605,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 }
 
 // AddModel - upload a model to the model server
-func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelService_CreateModelBinaryFileUploadServer) (err error) {
+func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(stream.Context())
@@ -1462,26 +1462,26 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 }
 
-func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
+func (h *handler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.ListModelResponse{}, err
+		return &modelPB.ListModelsResponse{}, err
 	}
-	dbModels, nextPageToken, totalSize, err := h.service.ListModel(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModels, nextPageToken, totalSize, err := h.service.ListModels(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelResponse{}, err
+		return &modelPB.ListModelsResponse{}, err
 	}
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
 		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 		if err != nil {
-			return &modelPB.ListModelResponse{}, err
+			return &modelPB.ListModelsResponse{}, err
 		}
 		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel))
 	}
 
-	resp := modelPB.ListModelResponse{
+	resp := modelPB.ListModelsResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,
@@ -1720,29 +1720,29 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelInstanceRequest) (*modelPB.ListModelInstanceResponse, error) {
+func (h *handler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	modelID, err := resource.GetID(req.Parent)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 	modelInDB, err := h.service.GetModelById(owner, modelID, req.GetView())
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
-	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstance(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstances(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	pbInstances := []*modelPB.ModelInstance{}
@@ -1750,7 +1750,7 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(&modelDef, &modelInDB, &dbModelInstance))
 	}
 
-	resp := modelPB.ListModelInstanceResponse{
+	resp := modelPB.ListModelInstancesResponse{
 		Instances:     pbInstances,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,
@@ -1890,7 +1890,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	}}, nil
 }
 
-func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_TestModelInstanceBinaryFileUploadServer) error {
+func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -1973,7 +1973,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelService_
 	return err
 }
 
-func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelService_TriggerModelInstanceBinaryFileUploadServer) error {
+func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -2290,8 +2290,8 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		modelRepository := repository.NewRepository(db)
 		tritonService := triton.NewTriton()
 		defer tritonService.Close()
-		pipelineServiceClient, pipelineServiceClientConn := external.InitPipelineServiceClient()
-		defer pipelineServiceClientConn.Close()
+		pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
+		defer pipelinePublicServiceClientConn.Close()
 		redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 		defer redisClient.Close()
 		temporalClient, err := client.Dial(client.Options{
@@ -2305,7 +2305,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			logger.Fatal(err.Error())
 		}
 		defer temporalClient.Close()
-		modelService := service.NewService(modelRepository, tritonService, pipelineServiceClient, redisClient, temporalClient)
+		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient)
 
 		modelID, instanceID, err := resource.GetModelInstanceID(instanceName)
 		if err != nil {
@@ -2313,13 +2313,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		modelInDB, err := modelService.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+		modelInDB, err := modelPublicService.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 			return
 		}
 
-		modelInstanceInDB, err := modelService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
+		modelInstanceInDB, err := modelPublicService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
 		if err != nil {
 			makeJSONResponse(w, 404, "Model instance not found", "The model instance not found in server")
 			return
@@ -2368,7 +2368,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		// check whether model support batching or not. If not, raise an error
 		if lenInputs > 1 {
-			tritonModelInDB, err := modelService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInstanceInDB.UID)
 			if err != nil {
 				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
 				return
@@ -2387,9 +2387,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
@@ -2505,11 +2505,11 @@ func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelD
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListModelDefinitionRequest) (*modelPB.ListModelDefinitionResponse, error) {
+func (h *handler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
 
-	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinition(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelDefinitionResponse{}, err
+		return &modelPB.ListModelDefinitionsResponse{}, err
 	}
 
 	pbDefinitions := []*modelPB.ModelDefinition{}
@@ -2517,7 +2517,7 @@ func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListMode
 		pbDefinitions = append(pbDefinitions, DBModelDefinitionToPBModelDefinition(&dbModelDefinition))
 	}
 
-	resp := modelPB.ListModelDefinitionResponse{
+	resp := modelPB.ListModelDefinitionsResponse{
 		ModelDefinitions: pbDefinitions,
 		NextPageToken:    nextPageToken,
 		TotalSize:        totalSize,
@@ -2590,17 +2590,17 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 	}
 }
 
-func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationRequest) (*modelPB.ListModelOperationResponse, error) {
+func (h *handler) ListModelOperations(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
 	pageSize := util.DefaultPageSize
 	if req.PageSize != nil {
 		pageSize = int(*req.PageSize)
 	}
 	operations, _, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
 	if err != nil {
-		return &modelPB.ListModelOperationResponse{}, err
+		return &modelPB.ListModelOperationsResponse{}, err
 	}
 
-	return &modelPB.ListModelOperationResponse{
+	return &modelPB.ListModelOperationsResponse{
 		Operations:    operations,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,

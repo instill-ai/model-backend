@@ -10,8 +10,8 @@ import "./healthcheck.proto";
 import "./model_definition.proto";
 import "./model.proto";
 
-// Model service responds to incoming model requests
-service ModelService {
+// Model service responds to external access
+service ModelPublicService {
   option (google.api.default_host) = "api.instill.tech";
 
   // Liveness method receives a LivenessRequest message and returns a
@@ -34,10 +34,10 @@ service ModelService {
     };
   }
 
-  // ListModelDefinition method receives a ListModelDefinitionRequest message
-  // and returns a ListModelDefinitionResponse
-  rpc ListModelDefinition(ListModelDefinitionRequest)
-      returns (ListModelDefinitionResponse) {
+  // ListModelDefinitions method receives a ListModelDefinitionsRequest message
+  // and returns a ListModelDefinitionsResponse
+  rpc ListModelDefinitions(ListModelDefinitionsRequest)
+      returns (ListModelDefinitionsResponse) {
     option (google.api.http) = {
       get : "/v1alpha/model-definitions"
     };
@@ -53,9 +53,9 @@ service ModelService {
     option (google.api.method_signature) = "name";
   }
 
-  // ListModel method receives a ListModelRequest message and returns a
-  // ListModelResponse
-  rpc ListModel(ListModelRequest) returns (ListModelResponse) {
+  // ListModels method receives a ListModelsRequest message and returns a
+  // ListModelsResponse
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
     option (google.api.http) = {
       get : "/v1alpha/models"
     };
@@ -147,10 +147,10 @@ service ModelService {
     option (google.api.method_signature) = "name";
   }
 
-  // ListModelInstance method receives a ListModelInstanceRequest message and
-  // returns a ListModelInstanceResponse
-  rpc ListModelInstance(ListModelInstanceRequest)
-      returns (ListModelInstanceResponse) {
+  // ListModelInstances method receives a ListModelInstancesRequest message and
+  // returns a ListModelInstancesResponse
+  rpc ListModelInstances(ListModelInstancesRequest)
+      returns (ListModelInstancesResponse) {
     option (google.api.http) = {
       get : "/v1alpha/{parent=models/*}/instances"
     };
@@ -257,27 +257,29 @@ service ModelService {
   // GetModelOperation method receives a
   // GetModelOperationRequest message and returns a
   // GetModelOperationResponse message.
-  rpc GetModelOperation(GetModelOperationRequest) returns (GetModelOperationResponse) {
+  rpc GetModelOperation(GetModelOperationRequest)
+      returns (GetModelOperationResponse) {
     option (google.api.http) = {
-      get: "/v1alpha/{name=operations/*}"
+      get : "/v1alpha/{name=operations/*}"
     };
     option (google.api.method_signature) = "name";
   }
 
-  // ListModelOperation method receives a ListModelOperationRequest message
-  // and returns a ListModelOperationResponse
-  rpc ListModelOperation(ListModelOperationRequest) returns (ListModelOperationResponse) {
+  // ListModelOperations method receives a ListModelOperationsRequest message
+  // and returns a ListModelOperationsResponse
+  rpc ListModelOperations(ListModelOperationsRequest) returns (ListModelOperationsResponse) {
     option (google.api.http) = {
-      get: "/v1alpha/operations"
+      get : "/v1alpha/operations"
     };
   }
 
   // CancelModelOperation method receives a CancelModelOperationRequest message
   // and returns a CancelModelOperationResponse
-  rpc CancelModelOperation(CancelModelOperationRequest) returns (CancelModelOperationResponse) {
+  rpc CancelModelOperation(CancelModelOperationRequest)
+      returns (CancelModelOperationResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=operations/*}/cancel"
-      body: "*"
+      post : "/v1alpha/{name=operations/*}/cancel"
+      body : "*"
     };
     option (google.api.method_signature) = "name";
   }
