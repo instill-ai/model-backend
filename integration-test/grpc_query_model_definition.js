@@ -35,7 +35,7 @@ export function GetModelDefinition() {
     });
 };
 
-export function ListModelDefinition() {
+export function ListModelDefinitions() {
     group("Model API: ListModelDefinition", () => {
         client.connect(constant.gRPCHost, {
             plaintext: true

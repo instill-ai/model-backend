@@ -179,8 +179,8 @@ message ModelInstanceCard {
   string encoding = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
-// ListModelRequest represents a request to list all models
-message ListModelRequest {
+// ListModelsRequest represents a request to list all models
+message ListModelsRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
@@ -194,8 +194,8 @@ message ListModelRequest {
   optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelResponse represents a response for a list of models
-message ListModelResponse {
+// ListModelsResponse represents a response for a list of models
+message ListModelsResponse {
   // a list of Models
   repeated Model models = 1;
   // Next page token
@@ -364,9 +364,9 @@ message UnpublishModelResponse {
   Model model = 1;
 }
 
-// ListModelInstanceRequest represents a request to list all instances of a
+// ListModelInstancesRequest represents a request to list all instances of a
 // model
-message ListModelInstanceRequest {
+message ListModelInstancesRequest {
   // The name of the model whose instances we'd like to list.
   // e.g., "models/yolov4"
   string parent = 1 [
@@ -387,8 +387,8 @@ message ListModelInstanceRequest {
   optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelInstanceResponse represents a response for a list of model instances
-message ListModelInstanceResponse {
+// ListModelInstancesResponse represents a response for a list of model instances
+message ListModelInstancesResponse {
   // a list of Model instances
   repeated ModelInstance instances = 1;
   // Next page token
@@ -685,9 +685,9 @@ message GetModelOperationResponse {
   google.longrunning.Operation operation = 1;
 }
 
-// ListModelOperationRequest represents a request to list all model operations
+// ListModelOperationsRequest represents a request to list all model operations
 // including deploy and undeploy
-message ListModelOperationRequest {
+message ListModelOperationsRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 operations will be
   // returned. The maximum value is 100; values above 100 will be coereced to
@@ -703,9 +703,9 @@ message ListModelOperationRequest {
   optional View view = 4 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelOperationResponse represents a response for a list of model
+// ListModelOperationsResponse represents a response for a list of model
 // operations including deploy and undeploy
-message ListModelOperationResponse {
+message ListModelOperationsResponse {
   // a list of model operations
   repeated google.longrunning.Operation operations = 1;
   // Next page token
@@ -726,8 +726,8 @@ message CancelModelOperationResponse {}
 
 // ========== Admin endpoints
 
-// ListModelAdminRequest represents a request to list all models from all users by admin
-message ListModelAdminRequest {
+// ListModelsAdminRequest represents a request to list all models from all users by admin
+message ListModelsAdminRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
@@ -741,8 +741,8 @@ message ListModelAdminRequest {
   optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelAdminResponse represents a response for a list of models
-message ListModelAdminResponse {
+// ListModelsAdminResponse represents a response for a list of models
+message ListModelsAdminResponse {
   // a list of Models
   repeated Model models = 1;
   // Next page token

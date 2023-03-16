@@ -1462,26 +1462,26 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 }
 
-func (h *handler) ListModel(ctx context.Context, req *modelPB.ListModelRequest) (*modelPB.ListModelResponse, error) {
+func (h *handler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.ListModelResponse{}, err
+		return &modelPB.ListModelsResponse{}, err
 	}
-	dbModels, nextPageToken, totalSize, err := h.service.ListModel(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModels, nextPageToken, totalSize, err := h.service.ListModels(owner, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelResponse{}, err
+		return &modelPB.ListModelsResponse{}, err
 	}
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
 		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 		if err != nil {
-			return &modelPB.ListModelResponse{}, err
+			return &modelPB.ListModelsResponse{}, err
 		}
 		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel))
 	}
 
-	resp := modelPB.ListModelResponse{
+	resp := modelPB.ListModelsResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,
@@ -1720,29 +1720,29 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelInstanceRequest) (*modelPB.ListModelInstanceResponse, error) {
+func (h *handler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	modelID, err := resource.GetID(req.Parent)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 	modelInDB, err := h.service.GetModelById(owner, modelID, req.GetView())
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid)
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
-	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstance(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstances(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelInstanceResponse{}, err
+		return &modelPB.ListModelInstancesResponse{}, err
 	}
 
 	pbInstances := []*modelPB.ModelInstance{}
@@ -1750,7 +1750,7 @@ func (h *handler) ListModelInstance(ctx context.Context, req *modelPB.ListModelI
 		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(&modelDef, &modelInDB, &dbModelInstance))
 	}
 
-	resp := modelPB.ListModelInstanceResponse{
+	resp := modelPB.ListModelInstancesResponse{
 		Instances:     pbInstances,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,
@@ -2505,11 +2505,11 @@ func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelD
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListModelDefinitionRequest) (*modelPB.ListModelDefinitionResponse, error) {
+func (h *handler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
 
-	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinition(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
-		return &modelPB.ListModelDefinitionResponse{}, err
+		return &modelPB.ListModelDefinitionsResponse{}, err
 	}
 
 	pbDefinitions := []*modelPB.ModelDefinition{}
@@ -2517,7 +2517,7 @@ func (h *handler) ListModelDefinition(ctx context.Context, req *modelPB.ListMode
 		pbDefinitions = append(pbDefinitions, DBModelDefinitionToPBModelDefinition(&dbModelDefinition))
 	}
 
-	resp := modelPB.ListModelDefinitionResponse{
+	resp := modelPB.ListModelDefinitionsResponse{
 		ModelDefinitions: pbDefinitions,
 		NextPageToken:    nextPageToken,
 		TotalSize:        totalSize,
@@ -2590,17 +2590,17 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 	}
 }
 
-func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationRequest) (*modelPB.ListModelOperationResponse, error) {
+func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
 	pageSize := util.DefaultPageSize
 	if req.PageSize != nil {
 		pageSize = int(*req.PageSize)
 	}
 	operations, _, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
 	if err != nil {
-		return &modelPB.ListModelOperationResponse{}, err
+		return &modelPB.ListModelOperationsResponse{}, err
 	}
 
-	return &modelPB.ListModelOperationResponse{
+	return &modelPB.ListModelOperationsResponse{
 		Operations:    operations,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,

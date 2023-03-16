@@ -115,7 +115,7 @@ export function GetModelInstance() {
   }
 }
 
-export function ListModelInstance() {
+export function ListModelInstances() {
   // Model Backend API: Get model instance list - local model
   {
     group("Model Backend API: Get model instance list local model", function () {

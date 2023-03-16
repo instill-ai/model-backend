@@ -183,7 +183,7 @@ export function GetModelInstance() {
     });
 };
 
-export function ListModelInstance() {
+export function ListModelInstances() {
     // ListModelInstance check
     group("Model API: ListModelInstance", () => {
         client.connect(constant.gRPCHost, {

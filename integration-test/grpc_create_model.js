@@ -124,12 +124,13 @@ export function CreateModel() {
             'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
+        let createModel = client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
             model: {
                 id: randomString(10),
                 model_definition: model_def_name,
             }
-        }), {
+        })
+        check(createModel, {
             'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
         });
 

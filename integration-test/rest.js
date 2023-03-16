@@ -54,7 +54,7 @@ export default function (data) {
 
   // Query Model API
   queryModel.GetModel()
-  queryModel.ListModel()
+  queryModel.ListModels()
   queryModel.LookupModel()
 
   // Deploy/Undeploy Model API
@@ -68,11 +68,11 @@ export default function (data) {
 
   // Query Model Definition API
   queryModelDefinition.GetModelDefinition()
-  queryModelDefinition.ListModelDefinition()
+  queryModelDefinition.ListModelDefinitions()
 
   // Query Model Instance API
   queryModelInstance.GetModelInstance()
-  queryModelInstance.ListModelInstance()
+  queryModelInstance.ListModelInstances()
   queryModelInstance.LookupModelInstance()
 
   // Get model card

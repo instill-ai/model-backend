@@ -19,19 +19,19 @@ type Repository interface {
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(modelUID uuid.UUID) error
 	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
-	ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
+	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 	CreateModelInstance(instance datamodel.ModelInstance) error
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelInstance, error)
-	ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
+	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
 	CreateTritonModel(model datamodel.TritonModel) error
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
-	ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -107,7 +107,7 @@ func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelP
 	return model, nil
 }
 
-func (r *repository) ListModel(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
@@ -229,7 +229,7 @@ func (r *repository) GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelIns
 	return instances, nil
 }
 
-func (r *repository) ListModelInstance(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
 
 	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
@@ -339,7 +339,7 @@ func (r *repository) GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefi
 	return definitionDB, nil
 }
 
-func (r *repository) ListModelDefinition(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}

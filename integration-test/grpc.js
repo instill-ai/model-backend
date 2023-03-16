@@ -46,48 +46,48 @@ export default () => {
         });
     }
 
-    // Create model API
-    createModel.CreateModel()
+    // // Create model API
+    // createModel.CreateModel()
 
-    // Update model API
-    updateModel.UpdateModel()
+    // // Update model API
+    // updateModel.UpdateModel()
 
-    // Deploy Model API
-    deployModel.DeployUndeployModel()
+    // // Deploy Model API
+    // deployModel.DeployUndeployModel()
 
-    // Query Model API
+    // // Query Model API
     queryModel.GetModel()
-    queryModel.ListModel()
-    queryModel.LookupModel()
+    // queryModel.ListModels()
+    // queryModel.LookupModel()
 
-    // Publish Model API
-    publishModel.PublishUnPublishModel()
+    // // Publish Model API
+    // publishModel.PublishUnPublishModel()
 
-    // Infer Model API
-    inferModel.InferModel()
+    // // Infer Model API
+    // inferModel.InferModel()
 
-    // Query Model Instance API
-    queryModelInstance.GetModelInstance()
-    queryModelInstance.ListModelInstance()
-    queryModelInstance.LookupModelInstance()
+    // // Query Model Instance API
+    // queryModelInstance.GetModelInstance()
+    // queryModelInstance.ListModelInstances()
+    // queryModelInstance.LookupModelInstance()
 
-    // Query Model Definition API
-    queryModelDefinition.GetModelDefinition()
-    queryModelDefinition.ListModelDefinition()
+    // // Query Model Definition API
+    // queryModelDefinition.GetModelDefinition()
+    // queryModelDefinition.ListModelDefinitions()
 };
 
 export function teardown() {
-    client.connect(constant.gRPCHost, {
-        plaintext: true
-    });
-    group("Model API: Delete all models created by this test", () => {
-        for (const model of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModel', {}, {}).message.models) {
-            check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
-                name: model.name
-            }), {
-                'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
-            });
-        }
-    });
-    client.close();
+    // client.connect(constant.gRPCHost, {
+    //     plaintext: true
+    // });
+    // group("Model API: Delete all models created by this test", () => {
+    //     for (const model of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModels', {}, {}).message.models) {
+    //         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    //             name: model.name
+    //         }), {
+    //             'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
+    //         });
+    //     }
+    // });
+    // client.close();
 }

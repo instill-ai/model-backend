@@ -119,7 +119,7 @@ export function GetModel() {
   }
 }
 
-export function ListModel() {
+export function ListModels() {
   // Model Backend API: Get model list
   {
     group("Model Backend API: Get model list", function () {

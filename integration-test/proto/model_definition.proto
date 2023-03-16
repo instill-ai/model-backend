@@ -87,9 +87,9 @@ enum View {
   VIEW_FULL = 2;
 }
 
-// ListModelDefinitionRequest represents a request to list all supported model
+// ListModelDefinitionsRequest represents a request to list all supported model
 // definitions
-message ListModelDefinitionRequest {
+message ListModelDefinitionsRequest {
   // Page size: the maximum number of resources to return. The service may
   // return fewer than this value. If unspecified, at most 10 ModelDefinitions
   // will be returned. The maximum value is 100; values above 100 will be
@@ -104,9 +104,9 @@ message ListModelDefinitionRequest {
   optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
 }
 
-// ListModelDefinitionResponse represents a response to list all supported model
+// ListModelDefinitionsResponse represents a response to list all supported model
 // definitions
-message ListModelDefinitionResponse {
+message ListModelDefinitionsResponse {
   // a list of ModelDefinition instances
   repeated ModelDefinition model_definitions = 1;
   // Next page token

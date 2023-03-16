@@ -85,7 +85,6 @@ export function GetModel() {
             'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
@@ -96,7 +95,7 @@ export function GetModel() {
 };
 
 
-export function ListModel() {
+export function ListModels() {
     // ListModel check
     group("Model API: ListModel", () => {
         client.connect(constant.gRPCHost, {
@@ -221,7 +220,6 @@ export function LookupModel() {
         }, {}), {
             'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
-
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
