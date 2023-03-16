@@ -2590,7 +2590,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 	}
 }
 
-func (h *handler) ListModelOperation(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
+func (h *handler) ListModelOperations(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
 	pageSize := util.DefaultPageSize
 	if req.PageSize != nil {
 		pageSize = int(*req.PageSize)

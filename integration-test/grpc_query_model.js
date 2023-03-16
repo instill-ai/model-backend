@@ -97,7 +97,7 @@ export function GetModel() {
 
 export function ListModels() {
     // ListModel check
-    group("Model API: ListModel", () => {
+    group("Model API: ListModels", () => {
         client.connect(constant.gRPCHost, {
             plaintext: true
         });
@@ -132,21 +132,21 @@ export function ListModels() {
             sleep(1)
             currentTime = new Date().getTime();
         }
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModel', {}, {}), {
-            "ListModel response status": (r) => r.status === grpc.StatusOK,
-            "ListModel response total_size": (r) => r.message.totalSize >= 1,
-            "ListModel response next_page_token": (r) => r.message.nextPageToken !== undefined,
-            "ListModel response models.length": (r) => r.message.models.length >= 1,
-            "ListModel response models[0].name": (r) => r.message.models[0].name === `models/${model_id}`,
-            "ListModel response models[0].uid": (r) => r.message.models[0].uid !== undefined,
-            "ListModel response models[0].id": (r) => r.message.models[0].id === model_id,
-            "ListModel response models[0].description": (r) => r.message.models[0].description !== undefined,
-            "ListModel response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
-            "ListModel response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
-            "ListModel response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-            "ListModel response models[0].owner": (r) => r.message.models[0].user === 'users/local-user',
-            "ListModel response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
-            "ListModel response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModels', {}, {}), {
+            "ListModels response status": (r) => r.status === grpc.StatusOK,
+            "ListModels response total_size": (r) => r.message.totalSize >= 1,
+            "ListModels response next_page_token": (r) => r.message.nextPageToken !== undefined,
+            "ListModels response models.length": (r) => r.message.models.length >= 1,
+            "ListModels response models[0].name": (r) => r.message.models[0].name === `models/${model_id}`,
+            "ListModels response models[0].uid": (r) => r.message.models[0].uid !== undefined,
+            "ListModels response models[0].id": (r) => r.message.models[0].id === model_id,
+            "ListModels response models[0].description": (r) => r.message.models[0].description !== undefined,
+            "ListModels response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
+            "ListModels response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
+            "ListModels response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
+            "ListModels response models[0].owner": (r) => r.message.models[0].user === 'users/local-user',
+            "ListModels response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
+            "ListModels response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {

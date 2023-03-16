@@ -185,7 +185,7 @@ export function GetModelInstance() {
 
 export function ListModelInstances() {
     // ListModelInstance check
-    group("Model API: ListModelInstance", () => {
+    group("Model API: ListModelInstances", () => {
         client.connect(constant.gRPCHost, {
             plaintext: true
         });
@@ -233,23 +233,23 @@ export function ListModelInstances() {
         let req = {
             parent: `models/${res_model.message.model.id}`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelInstance', req, {}), {
-            'ListModelInstance status': (r) => r && r.status === grpc.StatusOK,
-            'ListModelInstance instances[0] id': (r) => r && r.message.instances[0].id === `latest`,
-            'ListModelInstance instances[0] name': (r) => r && r.message.instances[0].name === `models/${model_id}/instances/latest`,
-            'ListModelInstance instances[0] uid': (r) => r && r.message.instances[0].uid === res_model_instance.message.instance.uid,
-            'ListModelInstance instances[0] state': (r) => r && r.message.instances[0].state === "STATE_OFFLINE",
-            'ListModelInstance instances[0] task': (r) => r && r.message.instances[0].task === "TASK_CLASSIFICATION",
-            'ListModelInstance instances[0] modelDefinition': (r) => r && r.message.instances[0].modelDefinition === model_def_name,
-            'ListModelInstance instances[0] configuration': (r) => r && r.message.instances[0].configuration !== undefined,
-            'ListModelInstance instances[0] createTime': (r) => r && r.message.instances[0].createTime !== undefined,
-            'ListModelInstance instances[0] updateTime': (r) => r && r.message.instances[0].updateTime !== undefined,
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelInstances', req, {}), {
+            'ListModelInstances status': (r) => r && r.status === grpc.StatusOK,
+            'ListModelInstances instances[0] id': (r) => r && r.message.instances[0].id === `latest`,
+            'ListModelInstances instances[0] name': (r) => r && r.message.instances[0].name === `models/${model_id}/instances/latest`,
+            'ListModelInstances instances[0] uid': (r) => r && r.message.instances[0].uid === res_model_instance.message.instance.uid,
+            'ListModelInstances instances[0] state': (r) => r && r.message.instances[0].state === "STATE_OFFLINE",
+            'ListModelInstances instances[0] task': (r) => r && r.message.instances[0].task === "TASK_CLASSIFICATION",
+            'ListModelInstances instances[0] modelDefinition': (r) => r && r.message.instances[0].modelDefinition === model_def_name,
+            'ListModelInstances instances[0] configuration': (r) => r && r.message.instances[0].configuration !== undefined,
+            'ListModelInstances instances[0] createTime': (r) => r && r.message.instances[0].createTime !== undefined,
+            'ListModelInstances instances[0] updateTime': (r) => r && r.message.instances[0].updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelInstance', {
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelInstances', {
             parent: `models/non-existed`
         }), {
-            'ListModelInstance non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
+            'ListModelInstances non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {

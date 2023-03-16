@@ -36,22 +36,22 @@ export function GetModelDefinition() {
 };
 
 export function ListModelDefinitions() {
-    group("Model API: ListModelDefinition", () => {
+    group("Model API: ListModelDefinitions", () => {
         client.connect(constant.gRPCHost, {
             plaintext: true
         });
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelDefinition', {}, {}), {
-            "ListModelDefinition response status": (r) => r.status === grpc.StatusOK,
-            "ListModelDefinition response modelDefinitions[2].name": (r) => r.message.modelDefinitions[2].name === "model-definitions/local",
-            "ListModelDefinition response modelDefinitions[2].uid": (r) => r.message.modelDefinitions[2].uid !== undefined,
-            "ListModelDefinition response modelDefinitions[2].id": (r) => r.message.modelDefinitions[2].id === "local",
-            "ListModelDefinition response modelDefinitions[2].title": (r) => r.message.modelDefinitions[2].title === "Local",
-            "ListModelDefinition response modelDefinitions[2].icon": (r) => r.message.modelDefinitions[2].icon !== undefined,
-            "ListModelDefinition response modelDefinitions[2].documentationUrl": (r) => r.message.modelDefinitions[2].documentationUrl !== undefined,
-            "ListModelDefinition response modelDefinitions[2].modelSpec": (r) => r.message.modelDefinitions[2].modelSpec !== undefined,
-            "ListModelDefinition response modelDefinitions[2].modelInstanceSpec": (r) => r.message.modelDefinitions[2].modelInstanceSpec !== undefined,
-            "ListModelDefinition response modelDefinitions[2].create_time": (r) => r.message.modelDefinitions[2].createTime !== undefined,
-            "ListModelDefinition response modelDefinitions[2].update_time": (r) => r.message.modelDefinitions[2].updateTime !== undefined,
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, {}), {
+            "ListModelDefinitions response status": (r) => r.status === grpc.StatusOK,
+            "ListModelDefinitions response modelDefinitions[2].name": (r) => r.message.modelDefinitions[2].name === "model-definitions/local",
+            "ListModelDefinitions response modelDefinitions[2].uid": (r) => r.message.modelDefinitions[2].uid !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].id": (r) => r.message.modelDefinitions[2].id === "local",
+            "ListModelDefinitions response modelDefinitions[2].title": (r) => r.message.modelDefinitions[2].title === "Local",
+            "ListModelDefinitions response modelDefinitions[2].icon": (r) => r.message.modelDefinitions[2].icon !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].documentationUrl": (r) => r.message.modelDefinitions[2].documentationUrl !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].modelSpec": (r) => r.message.modelDefinitions[2].modelSpec !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].modelInstanceSpec": (r) => r.message.modelDefinitions[2].modelInstanceSpec !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].create_time": (r) => r.message.modelDefinitions[2].createTime !== undefined,
+            "ListModelDefinitions response modelDefinitions[2].update_time": (r) => r.message.modelDefinitions[2].updateTime !== undefined,
         });
         client.close();
     });
