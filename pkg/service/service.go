@@ -59,7 +59,7 @@ type Service interface {
 	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
 	WatchModel(name string) (*controllerPB.GetResourceResponse, error)
-	CheckModel(modelInstanceUID uuid.UUID) (*bool, error)
+	CheckModel(modelInstanceUID uuid.UUID) (*controllerPB.Resource_State, error)
 	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
 	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
 	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
@@ -79,10 +79,12 @@ type Service interface {
 	CancelOperation(workflowId string) error
 
 	SearchAttributeReady() error
-
 	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
+	GetResourceState(name string) (*datamodel.ResourceState, error)
+	UpdateResourceState(state *datamodel.ResourceState) error
+	DeleteResourceState(name string) error
 }
 
 type service struct {
@@ -217,7 +219,7 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 	return s.ModelInfer(modelUID, inferInput, task)
 }
 
-func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*bool, error) {
+func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*controllerPB.Resource_State, error) {
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")
@@ -226,11 +228,17 @@ func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*bool, error) {
 	ensembleModelName := ensembleModel.Name
 	ensembleModelVersion := ensembleModel.Version
 	modelReadyResponse := s.triton.ModelReadyRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+
+	state := controllerPB.Resource_STATE_UNSPECIFIED
 	if modelReadyResponse == nil {
-		return nil, fmt.Errorf("model is not found")
+		state = controllerPB.Resource_STATE_ERROR
+	} else if modelReadyResponse.Ready {
+		state = controllerPB.Resource_STATE_ONLINE
+	} else {
+		state = controllerPB.Resource_STATE_OFFLINE
 	}
 
-	return &modelReadyResponse.Ready, nil
+	return &state, nil
 }
 
 func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, error) {
@@ -733,6 +741,10 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
 			_ = os.RemoveAll(modelDir)
 		}
+	}
+
+	for _, instance := range modelInstancesInDB {
+		s.DeleteResourceState(fmt.Sprintf("models/%s/instances/%s", modelID, instance.ID))
 	}
 
 	return s.repository.DeleteModel(modelInDB.UID)

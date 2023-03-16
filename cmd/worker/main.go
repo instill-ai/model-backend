@@ -38,8 +38,8 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	controllerCLient, controllerCLientConn := external.InitControllerPrivateServiceClient()
-	defer controllerCLientConn.Close()
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	defer controllerClientConn.Close()
 
 	clientNamespace, err := client.NewNamespaceClient(client.Options{
 		HostPort: config.Config.Temporal.ClientOptions.HostPort,
@@ -61,7 +61,7 @@ func main() {
 		}
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerCLient)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
 
 	c, err := client.Dial(client.Options{
 		// ZapAdapter implements log.Logger interface and can be passed

@@ -15,8 +15,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/util"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 type ModelParams struct {
@@ -197,6 +197,15 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}); e != nil {
 			return e
 		}
+		if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+			Resource: &controllerPB.Resource{
+				Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+				State:    controllerPB.Resource_STATE_ERROR,
+				Progress: 0,
+			},
+		}); e != nil {
+			return e
+		}
 	}
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
@@ -205,6 +214,15 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 			}); e != nil {
 				return e
+			}
+			if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+				Resource: &controllerPB.Resource{
+					Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+					State:    controllerPB.Resource_STATE_ERROR,
+					Progress: 0,
+				},
+			}); err == nil {
+				return err
 			}
 		}
 	}
@@ -215,15 +233,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	resp, err := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-			State: controllerPB.Resource_STATE_ONLINE,
+			Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+			State:    controllerPB.Resource_STATE_ONLINE,
 			Progress: 0,
 		},
 	})
-
-	fmt.Println(resp)
 
 	if err != nil {
 		return err
@@ -291,8 +307,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 			}
 			if _, err2 := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
-					Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-					State: controllerPB.Resource_STATE_ERROR,
+					Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+					State:    controllerPB.Resource_STATE_ERROR,
 					Progress: 0,
 				},
 			}); err2 != nil {
@@ -310,8 +326,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name: fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-			State: controllerPB.Resource_STATE_OFFLINE,
+			Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
+			State:    controllerPB.Resource_STATE_OFFLINE,
 			Progress: 0,
 		},
 	})

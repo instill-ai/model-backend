@@ -118,19 +118,11 @@ func main() {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
-<<<<<<< HEAD
 	privateGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(privateGrpcS)
 
 	publicGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(publicGrpcS)
-=======
-	publicGrpcS := grpc.NewServer(grpcServerOpts...)
-	reflection.Register(publicGrpcS)
-
-	privateGrpcS := grpc.NewServer(grpcServerOpts...)
-	reflection.Register(privateGrpcS)
->>>>>>> 9174df5 (feat: add implementation for state monitoring with controller client)
 
 	triton := triton.NewTriton()
 	defer triton.Close()

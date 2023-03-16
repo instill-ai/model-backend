@@ -9,8 +9,8 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
 type ModelState modelPB.Model_State
@@ -153,6 +153,12 @@ type LocalModelConfiguration struct {
 
 type ListModelQuery struct {
 	Owner string
+}
+
+type ResourceState struct {
+	Name     string
+	State    controllerPB.Resource_State
+	Progress int32
 }
 
 func (s *ModelState) Scan(value interface{}) error {

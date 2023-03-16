@@ -47,6 +47,7 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
+	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -59,15 +60,17 @@ var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTim
 
 type PublicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
-	service service.Service
-	triton  triton.Triton
+	service          service.Service
+	triton           triton.Triton
+	controllerClient controllerPB.ControllerPrivateServiceClient
 }
 
-func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
+func NewHandler(s service.Service, t triton.Triton, c controllerPB.ControllerPrivateServiceClient) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema()
-	return &PublicHandler{
-		service: s,
-		triton:  t,
+	return &handler{
+		service:          s,
+		triton:           t,
+		controllerClient: c,
 	}
 }
 
@@ -581,6 +584,17 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		err = modelPublicService.UpdateResourceState(&datamodel.ResourceState{
+			Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
+			State:    controllerPB.Resource_STATE_OFFLINE,
+			Progress: 0,
+		})
+		if err != nil {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			makeJSONResponse(w, 500, "Add Model Error", err.Error())
+			return
+		}
+
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(201)
 
@@ -700,6 +714,16 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	wfId, err := h.service.CreateModelAsync(owner, uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
+		return err
+	}
+
+	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
+		State:    controllerPB.Resource_STATE_OFFLINE,
+		Progress: 0,
+	})
+	if err != nil {
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
 	}
 
@@ -919,6 +943,18 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		}
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
+
+	for _, instance := range githubModel.Instances {
+		err := h.service.UpdateResourceState(&datamodel.ResourceState{
+			Name: fmt.Sprintf("models/%s/instances/%s", githubModel.ID, instance.ID),
+			State: controllerPB.Resource_STATE_OFFLINE,
+			Progress: 0,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+	}
+
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1134,6 +1170,17 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	for _, instance := range huggingfaceModel.Instances {
+		err := h.service.UpdateResourceState(&datamodel.ResourceState{
+			Name: fmt.Sprintf("models/%s/instances/%s", huggingfaceModel.ID, instance.ID),
+			State: controllerPB.Resource_STATE_OFFLINE,
+			Progress: 0,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
@@ -1619,6 +1666,12 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
+	resp, err := h.service.GetResourceState(req.Name)
+
+	if err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
+	}
+
 	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_OFFLINE) {
 		return &modelPB.DeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model instance state, current model state is %s",
@@ -1632,6 +1685,14 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	// temporary change state to STATE_UNSPECIFIED during deploying the model
 	// the state will be changed after deploying to STATE_ONLINE or STATE_ERROR
+	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name: req.Name,
+		State: controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0,
+	})
+	if err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
+	}
 	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
 		return &modelPB.DeployModelResponse{}, err
 	}
@@ -1689,6 +1750,12 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
+	resp, err := h.service.GetResourceState(req.Name)
+
+	if err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+	}
+
 	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
 		return &modelPB.UndeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
@@ -1697,6 +1764,14 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
 	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
+	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name: req.Name,
+		State: controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0,
+	})
+	if err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+	}
 	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
 		return &modelPB.UndeployModelResponse{}, err
 	}

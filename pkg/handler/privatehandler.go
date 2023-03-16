@@ -47,23 +47,15 @@ func (h *PrivateHandler) CheckModelInstance(ctx context.Context, req *modelPB.Ch
 		return &modelPB.CheckModelInstanceResponse{}, err
 	}
 
-	isTritonModelReady, err := h.service.CheckModel(dbModelInstance.UID)
+	state, err := h.service.CheckModel(dbModelInstance.UID)
 	if err != nil {
 		return &modelPB.CheckModelInstanceResponse{}, err
-	}
-
-	state := controllerPB.Resource_STATE_UNSPECIFIED
-
-	if *isTritonModelReady {
-		state = controllerPB.Resource_STATE_ONLINE
-	} else {
-		state = controllerPB.Resource_STATE_OFFLINE
 	}
 
 	return &modelPB.CheckModelInstanceResponse{
 		Resource: &controllerPB.Resource{
 			Name: req.Name,
-			State: state,
+			State: *state,
 			Progress: 0,
 		},
 	}, err
