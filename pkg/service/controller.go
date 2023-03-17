@@ -28,7 +28,7 @@ func (s *service) GetResourceState(name string) (*datamodel.ResourceState, error
 	return &state, nil
 }
 
-func (s *service) UpdateResourceState(state *datamodel.ResourceState) error {
+func (s *service) UpdateResourceState(state *datamodel.ResourceState, workflowId string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -38,6 +38,7 @@ func (s *service) UpdateResourceState(state *datamodel.ResourceState) error {
 			State: state.State,
 			Progress: state.Progress,
 		},
+		WorkflowId: &workflowId,
 	})
 
 	if err != nil {

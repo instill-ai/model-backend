@@ -586,9 +586,10 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		err = modelPublicService.UpdateResourceState(&datamodel.ResourceState{
 			Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
-			State:    controllerPB.Resource_STATE_OFFLINE,
-			Progress: 0,
-		})
+			State:    controllerPB.Resource_STATE_UNSPECIFIED,
+			Progress: 0},
+			wfId,
+		)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -719,9 +720,10 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 	err = h.service.UpdateResourceState(&datamodel.ResourceState{
 		Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
-		State:    controllerPB.Resource_STATE_OFFLINE,
-		Progress: 0,
-	})
+		State:    controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0},
+		wfId,
+	)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
 		return err
@@ -946,10 +948,11 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	for _, instance := range githubModel.Instances {
 		err := h.service.UpdateResourceState(&datamodel.ResourceState{
-			Name: fmt.Sprintf("models/%s/instances/%s", githubModel.ID, instance.ID),
-			State: controllerPB.Resource_STATE_OFFLINE,
-			Progress: 0,
-		})
+			Name:     fmt.Sprintf("models/%s/instances/%s", githubModel.ID, instance.ID),
+			State:    controllerPB.Resource_STATE_UNSPECIFIED,
+			Progress: 0},
+			wfId,
+		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
@@ -1374,6 +1377,16 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
+	err := h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name:     fmt.Sprintf("models/%s/instances/%s", artivcModel.ID),
+		State:    controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0},
+		wfId,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1685,17 +1698,16 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	// temporary change state to STATE_UNSPECIFIED during deploying the model
 	// the state will be changed after deploying to STATE_ONLINE or STATE_ERROR
-	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+	if err := h.service.UpdateResourceState(&datamodel.ResourceState{
 		Name: req.Name,
 		State: controllerPB.Resource_STATE_UNSPECIFIED,
 		Progress: 0,
-	})
-	if err != nil {
+	}); err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
+
 	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
 		return &modelPB.DeployModelResponse{}, err
-	}
 
 	wfId, err := h.service.DeployModelAsync(owner, dbModel.UID)
 	if err != nil {
@@ -1723,6 +1735,15 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		}
 
 		return &modelPB.DeployModelResponse{}, st.Err()
+	}
+
+	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name:     req.Name,
+		State:    controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0},
+		wfId)
+	if err != nil {
+		return &modelPB.DeployModelInstanceResponse{}, err
 	}
 
 	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
@@ -1764,6 +1785,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
 	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
+<<<<<<< HEAD
 	err = h.service.UpdateResourceState(&datamodel.ResourceState{
 		Name: req.Name,
 		State: controllerPB.Resource_STATE_UNSPECIFIED,
@@ -1774,6 +1796,12 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}
 	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
 		return &modelPB.UndeployModelResponse{}, err
+=======
+	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
+		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
+	}); err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+>>>>>>> 48156ac (chore: add optional workflowID when update resource state)
 	}
 	wfId, err := h.service.UndeployModelAsync(owner, dbModel.UID)
 	if err != nil {
@@ -1784,7 +1812,20 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
+<<<<<<< HEAD
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
+=======
+	err = h.service.UpdateResourceState(&datamodel.ResourceState{
+		Name:     req.Name,
+		State:    controllerPB.Resource_STATE_UNSPECIFIED,
+		Progress: 0},
+		wfId)
+	if err != nil {
+		return &modelPB.UndeployModelInstanceResponse{}, err
+	}
+
+	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunningpb.Operation{
+>>>>>>> 48156ac (chore: add optional workflowID when update resource state)
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{

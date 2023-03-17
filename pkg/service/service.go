@@ -83,7 +83,7 @@ type Service interface {
 	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	GetResourceState(name string) (*datamodel.ResourceState, error)
-	UpdateResourceState(state *datamodel.ResourceState) error
+	UpdateResourceState(state *datamodel.ResourceState, workflowId string) error
 	DeleteResourceState(name string) error
 }
 
@@ -242,6 +242,7 @@ func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*controllerPB.Resource
 }
 
 func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, error) {
+	name = strings.TrimSuffix(name, "/watch")
 	resp, err := s.controllerClient.GetResource(context.Background(), &controllerPB.GetResourceRequest{
 		Name: name,
 	})
