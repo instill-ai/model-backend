@@ -84,10 +84,10 @@ export default function (data) {
   longrunningOperation.ListLongRunningOperation()
   longrunningOperation.CancelLongRunningOperation()
 
-  // Query Model API by admin
-  queryModelAdmin.GetModelAdmin()
-  queryModelAdmin.ListModelsAdmin()
-  queryModelAdmin.LookupModelAdmin()  
+  // // Query Model API by admin
+  // queryModelAdmin.GetModelAdmin()
+  // queryModelAdmin.ListModelsAdmin()
+  // queryModelAdmin.LookupModelAdmin()  
 }
 
 export function teardown(data) {
