@@ -51,45 +51,45 @@ export default () => {
         });
     }
 
-    // // Private API
-    // if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
-    //     queryModelPrivate.GetModel()
-    //     queryModelPrivate.ListModels()
-    //     queryModelPrivate.LookUpModel()
-    // }    
+    // Private API
+    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+        queryModelPrivate.GetModel()
+        queryModelPrivate.ListModels()
+        queryModelPrivate.LookUpModel()
+    }    
 
-    // // Create model API
-    // createModel.CreateModel()
+    // Create model API
+    createModel.CreateModel()
 
-    // // Update model API
-    // updateModel.UpdateModel()
+    // Update model API
+    updateModel.UpdateModel()
 
-    // // Deploy Model API
-    // deployModel.DeployUndeployModel()
+    // Deploy Model API
+    deployModel.DeployUndeployModel()
 
-    // // Query Model API
-    // queryModel.GetModel()
-    // queryModel.ListModels()
-    // queryModel.LookupModel()
+    // Query Model API
+    queryModel.GetModel()
+    queryModel.ListModels()
+    queryModel.LookupModel()
 
-    // // Publish Model API
-    // publishModel.PublishUnPublishModel()
+    // Publish Model API
+    publishModel.PublishUnPublishModel()
 
-    // // Infer Model API
-    // inferModel.InferModel()
+    // Infer Model API
+    inferModel.InferModel()
 
-    // // Query Model Instance API
-    // queryModelInstance.GetModelInstance()
-    // queryModelInstance.ListModelInstances()
-    // queryModelInstance.LookupModelInstance()
+    // Query Model Instance API
+    queryModelInstance.GetModelInstance()
+    queryModelInstance.ListModelInstances()
+    queryModelInstance.LookupModelInstance()
 
-    // // Query Model Definition API
-    // queryModelDefinition.GetModelDefinition()
-    // queryModelDefinition.ListModelDefinitions()
+    // Query Model Definition API
+    queryModelDefinition.GetModelDefinition()
+    queryModelDefinition.ListModelDefinitions()
 
-    // // Operation API
-    // modelOperation.ListModelOperations()
-    // modelOperation.CancelModelOperation()
+    // Operation API
+    modelOperation.ListModelOperations()
+    modelOperation.CancelModelOperation()
 };
 
 export function teardown() {
