@@ -85,9 +85,11 @@ export default function (data) {
   longrunningOperation.CancelLongRunningOperation()
 
   // // Query Model API by admin
-  // queryModelAdmin.GetModelAdmin()
-  // queryModelAdmin.ListModelsAdmin()
-  // queryModelAdmin.LookupModelAdmin()  
+  if (__ENV.MODE == "private") {
+    queryModelAdmin.GetModelAdmin()
+    queryModelAdmin.ListModelsAdmin()
+    queryModelAdmin.LookupModelAdmin()  
+  }
 }
 
 export function teardown(data) {
