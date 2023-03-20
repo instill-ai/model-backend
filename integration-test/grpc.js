@@ -83,7 +83,7 @@ export default () => {
     modelOperation.CancelModelOperation()
 
     // Admin API
-    if (__ENV.MODE == "private") {
+    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
         queryModelAdmin.GetModelAdmin()
         queryModelAdmin.ListModelsAdmin()
         queryModelAdmin.LookUpModelAdmin()

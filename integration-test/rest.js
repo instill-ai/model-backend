@@ -85,7 +85,7 @@ export default function (data) {
   longrunningOperation.CancelLongRunningOperation()
 
   // // Query Model API by admin
-  if (__ENV.MODE == "private") {
+  if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
     queryModelAdmin.GetModelAdmin()
     queryModelAdmin.ListModelsAdmin()
     queryModelAdmin.LookupModelAdmin()  
