@@ -26,11 +26,11 @@ export const options = {
 };
 
 const client = new grpc.Client();
-client.load(['proto'], 'model_definition.proto');
-client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_private_service.proto');
-client.load(['proto'], 'model_public_service.proto');
-client.load(['proto'], 'healthcheck.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_private_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'healthcheck.proto');
 
 export function setup() { }
 
@@ -83,9 +83,11 @@ export default () => {
     modelOperation.CancelModelOperation()
 
     // Admin API
-    queryModelAdmin.GetModelAdmin()
-    queryModelAdmin.ListModelsAdmin()
-    queryModelAdmin.LookUpModelAdmin()
+    if (__ENV.MODE == "private") {
+        queryModelAdmin.GetModelAdmin()
+        queryModelAdmin.ListModelsAdmin()
+        queryModelAdmin.LookUpModelAdmin()
+    }
 };
 
 export function teardown() {

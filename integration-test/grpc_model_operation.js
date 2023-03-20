@@ -19,9 +19,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto'], 'model_definition.proto');
-client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_public_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -48,6 +48,8 @@ export function ListModelOperations() {
             "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
                 r.json().operation.name !== undefined,
         });
+
+        sleep(1)
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {}), {
             "ListModelOperations response status": (r) => r.status === grpc.StatusOK,
