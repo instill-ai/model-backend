@@ -32,7 +32,7 @@ export function GetLongRunningOperation() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -44,7 +44,7 @@ export function GetLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -54,7 +54,7 @@ export function GetLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let operationRes = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
@@ -71,7 +71,7 @@ export function GetLongRunningOperation() {
       });
 
       sleep(1) // take time to execute in Temporal
-      check(http.get(`${constant.apiHost}/v1alpha/${operationRes.json().operation.name}`, {}, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${operationRes.json().operation.name}`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`GET v1alpha/${operationRes.json().operation.name} response status`]: (r) =>
@@ -88,7 +88,7 @@ export function GetLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().instance.state !== "STATE_UNSPECIFIED") {
@@ -99,7 +99,7 @@ export function GetLongRunningOperation() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -121,7 +121,7 @@ export function ListLongRunningOperation() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -133,7 +133,7 @@ export function ListLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -143,7 +143,7 @@ export function ListLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let operationRes = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
@@ -159,13 +159,13 @@ export function ListLongRunningOperation() {
           r.json().operation.response !== undefined,
       });
 
-      let listRes = http.get(`${constant.apiHost}/v1alpha/operations`, {}, {
+      let listRes = http.get(`${constant.apiPublicHost}/v1alpha/operations`, {}, {
         headers: genHeader(`application/json`),
       })
       check(listRes, {
-        [`GET ${constant.apiHost}/v1alpha/operations response status`]: (r) =>
+        [`GET ${constant.apiPublicHost}/v1alpha/operations response status`]: (r) =>
           r.status === 200,
-        [`GET ${constant.apiHost}/v1alpha/operations response operations.length`]: (r) =>
+        [`GET ${constant.apiPublicHost}/v1alpha/operations response operations.length`]: (r) =>
           r.json().operations.length >= 1,
       });
 
@@ -173,7 +173,7 @@ export function ListLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().instance.state !== "STATE_UNSPECIFIED") {
@@ -184,7 +184,7 @@ export function ListLongRunningOperation() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -206,7 +206,7 @@ export function CancelLongRunningOperation() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -218,7 +218,7 @@ export function CancelLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -228,7 +228,7 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let deployOperationRes = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(deployOperationRes, {
@@ -245,14 +245,14 @@ export function CancelLongRunningOperation() {
       });
 
       sleep(0.1) // make sure the deploy operation is started
-      check(http.post(`${constant.apiHost}/v1alpha/${deployOperationRes.json().operation.name}/cancel`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${deployOperationRes.json().operation.name}/cancel`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/${deployOperationRes.json().operation.name}/cancel response status`]: (r) =>
           r.status === 200
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances/latest response status`]: (r) =>
@@ -262,7 +262,7 @@ export function CancelLongRunningOperation() {
       })
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -280,7 +280,7 @@ export function CancelLongRunningOperation() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -292,7 +292,7 @@ export function CancelLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -302,7 +302,7 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let deployOperationRes = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(deployOperationRes, {
@@ -322,7 +322,7 @@ export function CancelLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiHost}/v1alpha/${deployOperationRes.json().operation.name}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${deployOperationRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -332,7 +332,7 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let undeployOperationRes = http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
+      let undeployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(undeployOperationRes, {
@@ -340,7 +340,7 @@ export function CancelLongRunningOperation() {
           r.status === 200
       })
       sleep(0.1)
-      check(http.post(`${constant.apiHost}/v1alpha/${undeployOperationRes.json().operation.name}/cancel`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${undeployOperationRes.json().operation.name}/cancel`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/${undeployOperationRes.json().operation.name}/cancel response status`]: (r) =>
@@ -348,7 +348,7 @@ export function CancelLongRunningOperation() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

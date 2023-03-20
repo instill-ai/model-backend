@@ -20,7 +20,7 @@ const model_def_name = "model-definitions/github"
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModelBinaryFileUpload', {}), {
@@ -33,7 +33,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         let model_id = randomString(10)

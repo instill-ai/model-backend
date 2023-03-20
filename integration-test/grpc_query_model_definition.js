@@ -15,7 +15,7 @@ const model_def_name = "model-definitions/github"
 
 export function GetModelDefinition() {
     group("Model API: GetModelDefinition", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelDefinition', { name: model_def_name }, {}), {
@@ -37,7 +37,7 @@ export function GetModelDefinition() {
 
 export function ListModelDefinitions() {
     group("Model API: ListModelDefinitions", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, {}), {

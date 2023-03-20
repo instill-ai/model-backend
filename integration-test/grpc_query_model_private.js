@@ -18,18 +18,25 @@ import {
 
 import * as constant from "./const.js"
 
-const client = new grpc.Client();
-client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model_private_service.proto');
+const privateClient = new grpc.Client();
+privateClient.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+privateClient.load(['proto/vdp/model/v1alpha'], 'model.proto');
+privateClient.load(['proto/vdp/model/v1alpha'], 'model_private_service.proto');
+
+const publicClient = new grpc.Client();
+publicClient.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+publicClient.load(['proto/vdp/model/v1alpha'], 'model.proto');
+publicClient.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
-export function GetModelAdmin() {
+export function GetModel() {
     // GetModelAdmin check
-    group("Model API: GetModelAdmin", () => {
-        client.connect(constant.gRPCHost, {
+    group("Model API: GetModel by admin", () => {
+        privateClient.connect(constant.gRPCPrivateHost, {
+            plaintext: true
+        });
+        publicClient.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -40,7 +47,7 @@ export function GetModelAdmin() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {
@@ -54,7 +61,7 @@ export function GetModelAdmin() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -64,7 +71,7 @@ export function GetModelAdmin() {
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelPrivateService/GetModelAdmin', {
+        check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/GetModelAdmin', {
             name: "models/" + model_id
         }, {}), {
             "GetModelAdmin response status": (r) => r.status === grpc.StatusOK,
@@ -80,26 +87,31 @@ export function GetModelAdmin() {
             "GetModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPrivateService/GetModelAdmin', {
+        check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/GetModelAdmin', {
             name: "models/" + randomString(10)
         }, {}), {
             'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+        check(publicClient.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
-        client.close();
+
+        privateClient.close();
+        publicClient.close();
     });
 };
 
 
-export function ListModelsAdmin() {
+export function ListModels() {
     // ListModelsAdmin check
-    group("Model API: ListModelsAdmin", () => {
-        client.connect(constant.gRPCHost, {
+    group("Model API: ListModels by admin", () => {
+        privateClient.connect(constant.gRPCPrivateHost, {
+            plaintext: true
+        });
+        publicClient.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -110,7 +122,7 @@ export function ListModelsAdmin() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {
@@ -124,7 +136,7 @@ export function ListModelsAdmin() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -133,7 +145,7 @@ export function ListModelsAdmin() {
             sleep(1)
             currentTime = new Date().getTime();
         }
-        check(client.invoke('vdp.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
+        check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
             "ListModelsAdmin response status": (r) => r.status === grpc.StatusOK,
             "ListModelsAdmin response total_size": (r) => r.message.totalSize >= 1,
             "ListModelsAdmin response next_page_token": (r) => r.message.nextPageToken !== undefined,
@@ -150,19 +162,25 @@ export function ListModelsAdmin() {
             "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+        check(publicClient.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
-        client.close();
+
+        privateClient.close();
+        publicClient.close();
     });
 };
 
-export function LookUpModelAdmin() {
+export function LookUpModel() {
     // LookUpModelAdmin check
-    group("Model API: LookUpModelAdmin", () => {
-        client.connect(constant.gRPCHost, {
+    group("Model API: LookUpModel by admin", () => {
+        privateClient.connect(constant.gRPCPrivateHost, {
+            plaintext: true
+        });
+
+        publicClient.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -173,7 +191,7 @@ export function LookUpModelAdmin() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {
@@ -187,7 +205,7 @@ export function LookUpModelAdmin() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
                 name: createClsModelRes.json().operation.name
             }, {})
             if (res.message.operation.done === true) {
@@ -197,10 +215,10 @@ export function LookUpModelAdmin() {
             currentTime = new Date().getTime();
         }
 
-        let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+        let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
             name: createClsModelRes.json().operation.name
         }, {})
-        check(client.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+        check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
             permalink: "models/" + res.message.operation.response.uid
         }, {}), {
             "LookUpModelAdmin response status": (r) => r.status === grpc.StatusOK,
@@ -216,16 +234,18 @@ export function LookUpModelAdmin() {
             "LookUpModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
 
-        check(client.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+        check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
             permalink: "models/" + randomString(10)
         }, {}), {
             'LookUpModelAdmin non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
         });
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+        check(publicClient.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
             'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
         });
-        client.close();
+
+        publicClient.close();
+        privateClient.close();
     });
 };

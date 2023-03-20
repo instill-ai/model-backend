@@ -28,7 +28,7 @@ const model_def_name = "model-definitions/local"
 export function ListModelOperations() {
     // GetModel check
     group("Model API: ListModelOperations", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -39,7 +39,7 @@ export function ListModelOperations() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {
@@ -74,7 +74,7 @@ export function ListModelOperations() {
 export function CancelModelOperation() {
     // ListModel check
     group("Model API: CancelModelOperation", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -85,7 +85,7 @@ export function CancelModelOperation() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {

@@ -30,7 +30,7 @@ export function GetModelAdmin() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -44,7 +44,7 @@ export function GetModelAdmin() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -53,7 +53,7 @@ export function GetModelAdmin() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models/${model_id}`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models/${model_id} task cls response status`]: (r) =>
@@ -80,7 +80,7 @@ export function GetModelAdmin() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models/${model_id}?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${model_id}?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models/${model_id} task cls response status`]: (r) =>
@@ -108,7 +108,7 @@ export function GetModelAdmin() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -123,7 +123,7 @@ export function ListModelsAdmin() {
   {
     group("Model Backend API: Get model list by admin", function () {
       let model_id_1 = randomString(10)
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
         "id": model_id_1,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -143,7 +143,7 @@ export function ListModelsAdmin() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -154,7 +154,7 @@ export function ListModelsAdmin() {
       }
 
       let model_id_2 = randomString(10)
-      createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+      createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
         "id": model_id_2,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -174,7 +174,7 @@ export function ListModelsAdmin() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -183,7 +183,7 @@ export function ListModelsAdmin() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let resp = http.get(`${constant.apiHost}/v1alpha/admin/models?page_size=1`, {
+      let resp = http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?page_size=1`, {
         headers: genHeader(`application/json`),
       })
       check(resp, {
@@ -217,7 +217,7 @@ export function ListModelsAdmin() {
           r.json().models[0].update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models?page_size=1&page_token=${resp.json().next_page_token}`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?page_size=1&page_token=${resp.json().next_page_token}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models task cls response status`]: (r) =>
@@ -250,7 +250,7 @@ export function ListModelsAdmin() {
           r.json().models[0].update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response status`]: (r) =>
@@ -308,13 +308,13 @@ export function ListModelsAdmin() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_1}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_1}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id_2}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_2}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -335,7 +335,7 @@ export function LookupModelAdmin() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let res = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let res = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(res, {
@@ -349,7 +349,7 @@ export function LookupModelAdmin() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let r = http.get(`${constant.apiHost}/v1alpha/${res.json().operation.name}`, {
+        let r = http.get(`${constant.apiPublicHost}/v1alpha/${res.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (r.json().operation.done === true) {
@@ -358,10 +358,10 @@ export function LookupModelAdmin() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let modelOperation = http.get(`${constant.apiHost}/v1alpha/${res.json().operation.name}`, {
+      let modelOperation = http.get(`${constant.apiPublicHost}/v1alpha/${res.json().operation.name}`, {
         headers: genHeader(`application/json`),
       })
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
@@ -388,7 +388,7 @@ export function LookupModelAdmin() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
@@ -416,7 +416,7 @@ export function LookupModelAdmin() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

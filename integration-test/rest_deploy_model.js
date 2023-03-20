@@ -30,7 +30,7 @@ export function DeployUndeployModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -44,7 +44,7 @@ export function DeployUndeployModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -54,7 +54,7 @@ export function DeployUndeployModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
@@ -69,7 +69,7 @@ export function DeployUndeployModel() {
           r.json().operation.response !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances/latest online task cls response status`]: (r) =>
@@ -79,7 +79,7 @@ export function DeployUndeployModel() {
       })
 
       // Check delete model with 422 when model is in unspecifed state
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
         [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
@@ -90,7 +90,7 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().instance.state === "STATE_ONLINE") {
@@ -100,7 +100,7 @@ export function DeployUndeployModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/instances/latest/undeploy online task cls response status`]: (r) =>
@@ -115,7 +115,7 @@ export function DeployUndeployModel() {
           r.json().operation.response !== undefined,
       });
 
-      check(http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id}/instances/latest online task cls response status`]: (r) =>
@@ -125,7 +125,7 @@ export function DeployUndeployModel() {
       })
 
       // Check delete model with 422 when model is in unspecifed state
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
         [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
@@ -136,7 +136,7 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().instance.state === "STATE_OFFLINE") {
@@ -147,7 +147,7 @@ export function DeployUndeployModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

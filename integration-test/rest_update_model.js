@@ -30,7 +30,7 @@ export function UpdateModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -44,7 +44,7 @@ export function UpdateModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().operation.done === true) {
@@ -58,7 +58,7 @@ export function UpdateModel() {
       let payload = JSON.stringify({
         "description": new_description
       })
-      check(http.patch(`${constant.apiHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls response status`]: (r) =>
@@ -88,7 +88,7 @@ export function UpdateModel() {
       payload = JSON.stringify({
         "description": ""
       })
-      check(http.patch(`${constant.apiHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response status`]: (r) =>
@@ -115,7 +115,7 @@ export function UpdateModel() {
           r.json().model.update_time !== undefined,
       });
       // clean up
-      check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

@@ -23,1364 +23,1364 @@ const model_def_name = "model-definitions/local"
 
 
 export function InferGitHubModel() {
-  // // Model Backend API: Predict Model with MobilenetV2 model
-  // {
-  //   group("Model Backend API: Predict Model with MobilenetV2 model", function () {
-  //     let model_id = randomString(10)
-  //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
-  //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
-  //       "configuration": {
-  //         "repository": "instill-ai/model-mobilenetv2"
-  //       },
-  //     }), {
-  //       headers: genHeader("application/json"),
-  //     })
+  // Model Backend API: Predict Model with MobilenetV2 model
+  {
+    group("Model Backend API: Predict Model with MobilenetV2 model", function () {
+      let model_id = randomString(10)
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": "model-definitions/github",
+        "configuration": {
+          "repository": "instill-ai/model-mobilenetv2"
+        },
+      }), {
+        headers: genHeader("application/json"),
+      })
 
-  //     check(createModelRes, {
-  //       "POST /v1alpha/models task cls response status": (r) =>
-  //         r.status === 201,
-  //       "POST /v1alpha/models task cls response operation.name": (r) =>
-  //         r.json().operation.name !== undefined,
-  //     });
+      check(createModelRes, {
+        "POST /v1alpha/models task cls response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
 
-  //     // Check model creation finished
-  //     let currentTime = new Date().getTime();
-  //     let timeoutTime = new Date().getTime() + 1*60*60*1000;
-  //     while (timeoutTime > currentTime) {
-  //       let res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().operation.done === true) {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.name`]: (r) =>
-  //         r.json().operation.name !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.metadata`]: (r) =>
-  //         r.json().operation.metadata === null,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.done`]: (r) =>
-  //         r.json().operation.done === false,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.response`]: (r) =>
-  //         r.json().operation.response !== undefined,
-  //     });
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 1*60*60*1000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
 
-  //     // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
-  //     currentTime = new Date().getTime();
-  //     timeoutTime = new Date().getTime() + 1*60*60*1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().instance.state === "STATE_ONLINE") {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 1*60*60*1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     // Predict with url
-  //     let payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with url
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with url
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         },
-  //         {
-  //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //     });
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          },
+          {
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+      });
 
-  //     // Predict with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "classification": {
-  //           "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "classification": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         },
-  //         {
-  //           "classification": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //     });
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "classification": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          },
+          {
+            "classification": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+      });
 
-  //     // Predict with multiple-part
-  //     let fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with multiple-part
+      let fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with multiple-part
-  //     fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     fd.append("file", http.file(constant.cat_img));
-  //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-  //         r.json().task_outputs[2].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
-  //         r.json().task_outputs[2].classification.score > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-  //         r.json().task_outputs[2].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[2].classification.score`]: (r) =>
-  //         r.json().task_outputs[2].classification.score > 0,
-  //     });
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      fd.append("file", http.file(constant.cat_img));
+      fd.append("file", http.file(constant.bear_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+          r.json().task_outputs[2].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
+          r.json().task_outputs[2].classification.score > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+          r.json().task_outputs[2].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[2].classification.score`]: (r) =>
+          r.json().task_outputs[2].classification.score > 0,
+      });
 
-  //     // clean up
-  //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       "DELETE clean up response status": (r) =>
-  //         r.status === 204
-  //     });
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
 
-  //   });
-  // }
+    });
+  }
 
-  // // Model Backend API: Predict Model with MobilenetV2 model
-  // {
-  //   group("Model Backend API: Predict Model with MobilenetV2 DVC model", function () {
-  //     let model_id = randomString(10)
-  //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
-  //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
-  //       "configuration": {
-  //         "repository": "instill-ai/model-mobilenetv2-dvc"
-  //       },
-  //     }), {
-  //       headers: genHeader("application/json"),
-  //     })
+  // Model Backend API: Predict Model with MobilenetV2 model
+  {
+    group("Model Backend API: Predict Model with MobilenetV2 DVC model", function () {
+      let model_id = randomString(10)
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": "model-definitions/github",
+        "configuration": {
+          "repository": "instill-ai/model-mobilenetv2-dvc"
+        },
+      }), {
+        headers: genHeader("application/json"),
+      })
 
-  //     check(createModelRes, {
-  //       "POST /v1alpha/models task cls response status": (r) =>
-  //         r.status === 201,
-  //       "POST /v1alpha/models task cls response operation.name": (r) =>
-  //         r.json().operation.name !== undefined,
-  //     });
+      check(createModelRes, {
+        "POST /v1alpha/models task cls response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
 
-  //     // Check model creation finished
-  //     let currentTime = new Date().getTime();
-  //     let timeoutTime = new Date().getTime() + 1*60*60*1000;
-  //     while (timeoutTime > currentTime) {
-  //       let res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().operation.done === true) {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 1*60*60*1000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.name`]: (r) =>
-  //         r.json().operation.name !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.metadata`]: (r) =>
-  //         r.json().operation.metadata === null,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.done`]: (r) =>
-  //         r.json().operation.done === false,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.response`]: (r) =>
-  //         r.json().operation.response !== undefined,
-  //     });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
 
-  //     // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
-  //     currentTime = new Date().getTime();
-  //     timeoutTime = new Date().getTime() +1*60*60*1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().instance.state === "STATE_ONLINE") {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() +1*60*60*1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     // Predict with url
-  //     let payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with url
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "classification": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with url
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         },
-  //         {
-  //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //     });
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          },
+          {
+            "classification": {
+              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+      });
 
-  //     // Predict with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "classification": {
-  //           "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "classification": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         },
-  //         {
-  //           "classification": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //     });
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "classification": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          },
+          {
+            "classification": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+      });
 
-  //     // Predict with multiple-part
-  //     let fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //     });
+      // Predict with multiple-part
+      let fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+      });
 
-  //     // Predict multiple images with multiple-part
-  //     fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     fd.append("file", http.file(constant.cat_img));
-  //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-  //         r.json().task_outputs[2].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
-  //         r.json().task_outputs[2].classification.score > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
-  //         r.json().task === "TASK_CLASSIFICATION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-  //         r.json().task_outputs[0].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-  //         r.json().task_outputs[0].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-  //         r.json().task_outputs[1].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[1].classification.score`]: (r) =>
-  //         r.json().task_outputs[1].classification.score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-  //         r.json().task_outputs[2].classification.category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[2].classification.score`]: (r) =>
-  //         r.json().task_outputs[2].classification.score > 0,
-  //     });
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      fd.append("file", http.file(constant.cat_img));
+      fd.append("file", http.file(constant.bear_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+          r.json().task_outputs[2].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
+          r.json().task_outputs[2].classification.score > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task`]: (r) =>
+          r.json().task === "TASK_CLASSIFICATION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
+          r.json().task_outputs[0].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
+          r.json().task_outputs[0].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
+          r.json().task_outputs[1].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[1].classification.score`]: (r) =>
+          r.json().task_outputs[1].classification.score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
+          r.json().task_outputs[2].classification.category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls response task_outputs[2].classification.score`]: (r) =>
+          r.json().task_outputs[2].classification.score > 0,
+      });
 
-  //     // clean up
-  //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       "DELETE clean up response status": (r) =>
-  //         r.status === 204
-  //     });
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
 
-  //   });
-  // }
+    });
+  }
 
-  // // Model Backend API: Predict Model with YoloV4 model
-  // {
-  //   group("Model Backend API: Predict Model with YoloV4 model", function () {
-  //     let model_id = randomString(10)
-  //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
-  //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
-  //       "configuration": {
-  //         "repository": "instill-ai/model-yolov4"
-  //       },
-  //     }), {
-  //       headers: genHeader("application/json"),
-  //     })
+  // Model Backend API: Predict Model with YoloV4 model
+  {
+    group("Model Backend API: Predict Model with YoloV4 model", function () {
+      let model_id = randomString(10)
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": "model-definitions/github",
+        "configuration": {
+          "repository": "instill-ai/model-yolov4"
+        },
+      }), {
+        headers: genHeader("application/json"),
+      })
 
-  //     check(createModelRes, {
-  //       "POST /v1alpha/models task object detection response status": (r) =>
-  //         r.status === 201,
-  //       "POST /v1alpha/models task cls response operation.name": (r) =>
-  //         r.json().operation.name !== undefined,
-  //     });
+      check(createModelRes, {
+        "POST /v1alpha/models task object detection response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
 
-  //     // Check model creation finished
-  //     let currentTime = new Date().getTime();
-  //     let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().operation.done === true) {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.name`]: (r) =>
-  //         r.json().operation.name !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.metadata`]: (r) =>
-  //         r.json().operation.metadata === null,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.done`]: (r) =>
-  //         r.json().operation.done === false,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.response`]: (r) =>
-  //         r.json().operation.response !== undefined,
-  //     });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
 
-  //     // Check the model instance state being updated in 1 hour
-  //     currentTime = new Date().getTime();
-  //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().instance.state === "STATE_ONLINE") {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check the model instance state being updated in 1 hour
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     // Predict with url
-  //     let payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "detection": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //         }
-  //       }],
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with url
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "detection": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
+        }],
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with url
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "detection": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         },
-  //         {
-  //           "detection": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         }
-  //       ],
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "detection": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          },
+          {
+            "detection": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          }
+        ],
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "detection": {
-  //           "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "detection": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         },
-  //         {
-  //           "detection": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "detection": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          },
+          {
+            "detection": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict with multiple-part
-  //     let fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with multiple-part
+      let fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with multiple-part
-  //     fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     fd.append("file", http.file(constant.cat_img));
-  //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      fd.append("file", http.file(constant.cat_img));
+      fd.append("file", http.file(constant.bear_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // clean up
-  //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       "DELETE clean up response status": (r) =>
-  //         r.status === 204
-  //     });
-  //   });
-  // }
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
 
-  // // Model Backend API: Predict Model with YoloV4 DVC model
-  // {
-  //   group("Model Backend API: Predict Model with YoloV4 DVC model", function () {
-  //     let model_id = randomString(10)
-  //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
-  //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
-  //       "configuration": {
-  //         "repository": "instill-ai/model-yolov4-dvc"
-  //       },
-  //     }), {
-  //       headers: genHeader("application/json"),
-  //     })
+  // Model Backend API: Predict Model with YoloV4 DVC model
+  {
+    group("Model Backend API: Predict Model with YoloV4 DVC model", function () {
+      let model_id = randomString(10)
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+        "id": model_id,
+        "model_definition": "model-definitions/github",
+        "configuration": {
+          "repository": "instill-ai/model-yolov4-dvc"
+        },
+      }), {
+        headers: genHeader("application/json"),
+      })
 
-  //     check(createModelRes, {
-  //       "POST /v1alpha/models task object detection response status": (r) =>
-  //         r.status === 201,
-  //       "POST /v1alpha/models task cls response operation.name": (r) =>
-  //         r.json().operation.name !== undefined,
-  //     });
+      check(createModelRes, {
+        "POST /v1alpha/models task object detection response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models task cls response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
 
-  //     // Check model creation finished
-  //     let currentTime = new Date().getTime();
-  //     let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().operation.done === true) {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.name`]: (r) =>
-  //         r.json().operation.name !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.metadata`]: (r) =>
-  //         r.json().operation.metadata === null,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.done`]: (r) =>
-  //         r.json().operation.done === false,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.response`]: (r) =>
-  //         r.json().operation.response !== undefined,
-  //     });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task det response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
 
-  //     // Check the model instance state being updated in 1 hour
-  //     currentTime = new Date().getTime();
-  //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
-  //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
-  //         headers: genHeader(`application/json`),
-  //       })
-  //       if (res.json().instance.state === "STATE_ONLINE") {
-  //         break
-  //       }
-  //       sleep(1)
-  //       currentTime = new Date().getTime();
-  //     }
+      // Check the model instance state being updated in 1 hour
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().instance.state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
-  //     // Predict with url
-  //     let payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "detection": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //         }
-  //       }],
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with url
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "detection": {
+            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
+        }],
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with url
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "detection": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         },
-  //         {
-  //           "detection": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-  //           }
-  //         }
-  //       ],
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with url
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "detection": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          },
+          {
+            "detection": {
+              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            }
+          }
+        ],
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //         "detection": {
-  //           "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //         }
-  //       }]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with base64
-  //     payload = JSON.stringify({
-  //       "task_inputs": [{
-  //           "detection": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         },
-  //         {
-  //           "detection": {
-  //             "image_base64": encoding.b64encode(constant.dog_img, "b"),
-  //           }
-  //         }
-  //       ]
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 2,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with base64
+      payload = JSON.stringify({
+        "task_inputs": [{
+            "detection": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          },
+          {
+            "detection": {
+              "image_base64": encoding.b64encode(constant.dog_img, "b"),
+            }
+          }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 2,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict with multiple-part
-  //     let fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict with multiple-part
+      let fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // Predict multiple images with multiple-part
-  //     fd = new FormData();
-  //     fd.append("file", http.file(constant.dog_img));
-  //     fd.append("file", http.file(constant.cat_img));
-  //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-  //     });
-  //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task`]: (r) =>
-  //         r.json().task === "TASK_DETECTION",
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects.length >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].category !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].score > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-  //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-  //     });
+      // Predict multiple images with multiple-part
+      fd = new FormData();
+      fd.append("file", http.file(constant.dog_img));
+      fd.append("file", http.file(constant.cat_img));
+      fd.append("file", http.file(constant.bear_img));
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task`]: (r) =>
+          r.json().task === "TASK_DETECTION",
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 3,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
+          r.json().task_outputs[0].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
+          r.json().task_outputs[1].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
+          r.json().task_outputs[2].detection.objects.length >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].category !== undefined,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].score > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
+        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
+          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
+      });
 
-  //     // clean up
-  //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
-  //       headers: genHeader(`application/json`),
-  //     }), {
-  //       "DELETE clean up response status": (r) =>
-  //         r.status === 204
-  //     });
-  //   });
-  // }
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+        headers: genHeader(`application/json`),
+      }), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
 
     // Model Backend API: Predict Model with keypoint model
     {
       group("Model Backend API: Predict Model with keypoint model", function () {
         let model_id = randomString(10)
-        let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+        let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
           "id": model_id,
           "model_definition": "model-definitions/github",
           "configuration": {
@@ -1401,7 +1401,7 @@ export function InferGitHubModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
         while (timeoutTime > currentTime) {
-          var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
+          var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
             headers: genHeader(`application/json`),
           })
           if (res.json().operation.done === true) {
@@ -1411,7 +1411,7 @@ export function InferGitHubModel() {
           currentTime = new Date().getTime();
         }
 
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
           headers: genHeader(`application/json`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task keypoint response status`]: (r) =>
@@ -1430,7 +1430,7 @@ export function InferGitHubModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
         while (timeoutTime > currentTime) {
-          var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+          var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
             headers: genHeader(`application/json`),
           })
           if (res.json().instance.state === "STATE_ONLINE") {
@@ -1448,7 +1448,7 @@ export function InferGitHubModel() {
             }
           }]
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
           headers: genHeader(`application/json`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url keypoint status`]: (r) =>
@@ -1487,7 +1487,7 @@ export function InferGitHubModel() {
             }
           ]
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
           headers: genHeader(`application/json`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger multiple images url keypoint status`]: (r) =>
@@ -1534,7 +1534,7 @@ export function InferGitHubModel() {
             }
           }]
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
           headers: genHeader(`application/json`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 keypoint status`]: (r) =>
@@ -1573,7 +1573,7 @@ export function InferGitHubModel() {
             }
           ]
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
           headers: genHeader(`application/json`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger multiple images base64 keypoint status`]: (r) =>
@@ -1615,7 +1615,7 @@ export function InferGitHubModel() {
         // Predict with multiple-part
         let fd = new FormData();
         fd.append("file", http.file(constant.dog_img));
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
           headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart keypoint status`]: (r) =>
@@ -1639,7 +1639,7 @@ export function InferGitHubModel() {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.height`]: (r) =>
             r.json().task_outputs[0].keypoint.objects[0].bounding_box.height > 0,
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
           headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart keypoint status`]: (r) =>
@@ -1668,7 +1668,7 @@ export function InferGitHubModel() {
         fd = new FormData();
         fd.append("file", http.file(constant.dance_img));
         fd.append("file", http.file(constant.dance_img));
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
           headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images keypoint status`]: (r) =>
@@ -1706,7 +1706,7 @@ export function InferGitHubModel() {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.height`]: (r) =>
             r.json().task_outputs[1].keypoint.objects[0].bounding_box.height > 0,
         });
-        check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+        check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
           headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
         }), {
           [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart multiple images keypoint status`]: (r) =>
@@ -1746,7 +1746,7 @@ export function InferGitHubModel() {
         });
 
         // clean up
-        check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+        check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
           headers: genHeader(`application/json`),
         }), {
           "DELETE clean up response status": (r) =>
@@ -1759,7 +1759,7 @@ export function InferGitHubModel() {
     // // Model Backend API: Predict Model with semantic segmentation model
     // {
     //   group("Model Backend API: Predict Model with semantic segmentation model", function () {
-    //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+    //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
     //       "id": model_id,
     //       "model_definition": "model-definitions/github",
     //       "configuration": {
@@ -1780,7 +1780,7 @@ export function InferGitHubModel() {
     //     let currentTime = new Date().getTime();
     //     let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
     //     while (timeoutTime > currentTime) {
-    //       var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
+    //       var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
     //         headers: genHeader(`application/json`),
     //       })
     //       if (res.json().operation.done === true) {
@@ -1790,7 +1790,7 @@ export function InferGitHubModel() {
     //       currentTime = new Date().getTime();
     //     }
 
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task semantic response status`]: (r) =>
@@ -1809,7 +1809,7 @@ export function InferGitHubModel() {
     //     currentTime = new Date().getTime();
     //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
     //     while (timeoutTime > currentTime) {
-    //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+    //       var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
     //         headers: genHeader(`application/json`),
     //       })
     //       if (res.json().instance.state === "STATE_ONLINE") {
@@ -1827,7 +1827,7 @@ export function InferGitHubModel() {
     //         }
     //       }]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url semantic status`]: (r) =>
@@ -1858,7 +1858,7 @@ export function InferGitHubModel() {
     //         }
     //       ]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url semantic multiple images status`]: (r) =>
@@ -1889,7 +1889,7 @@ export function InferGitHubModel() {
     //         }
     //       }]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 semantic status`]: (r) =>
@@ -1920,7 +1920,7 @@ export function InferGitHubModel() {
     //         }
     //       ]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 semantic multiple images status`]: (r) =>
@@ -1946,7 +1946,7 @@ export function InferGitHubModel() {
     //     // Predict with multiple-part
     //     fd = new FormData();
     //     fd.append("file", http.file(constant.dog_img));
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart semantic status`]: (r) =>
@@ -1962,7 +1962,7 @@ export function InferGitHubModel() {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs[0].rle`]: (r) =>
     //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].rle !== undefined,
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart semantic status`]: (r) =>
@@ -1984,7 +1984,7 @@ export function InferGitHubModel() {
     //     fd.append("file", http.file(constant.dog_img));
     //     fd.append("file", http.file(constant.cat_img));
     //     fd.append("file", http.file(constant.bear_img));
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart semantic multiple images status`]: (r) =>
@@ -2012,7 +2012,7 @@ export function InferGitHubModel() {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs[0].rle`]: (r) =>
     //         r.json().task_outputs[2].semantic_segmentation.stuffs[0].rle !== undefined,
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart cls multiple images status`]: (r) =>
@@ -2042,7 +2042,7 @@ export function InferGitHubModel() {
     //     });
 
     //     // clean up
-    //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+    //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       "DELETE clean up response status": (r) =>
@@ -2055,7 +2055,7 @@ export function InferGitHubModel() {
     // // Model Backend API: Predict Model with instance segmentation model
     // {
     //   group("Model Backend API: Predict Model with instance segmentation model", function () {
-    //     let createModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models`, JSON.stringify({
+    //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
     //       "id": model_id,
     //       "model_definition": "model-definitions/github",
     //       "configuration": {
@@ -2076,7 +2076,7 @@ export function InferGitHubModel() {
     //     let currentTime = new Date().getTime();
     //     let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
     //     while (timeoutTime > currentTime) {
-    //       var res = http.get(`${constant.apiHost}/v1alpha/${createModelRes.json().operation.name}`, {
+    //       var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
     //         headers: genHeader(`application/json`),
     //       })
     //       if (res.json().operation.done === true) {
@@ -2086,7 +2086,7 @@ export function InferGitHubModel() {
     //       currentTime = new Date().getTime();
     //     }
 
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task instance response status`]: (r) =>
@@ -2105,7 +2105,7 @@ export function InferGitHubModel() {
     //     currentTime = new Date().getTime();
     //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
     //     while (timeoutTime > currentTime) {
-    //       var res = http.get(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
+    //       var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
     //         headers: genHeader(`application/json`),
     //       })
     //       if (res.json().instance.state === "STATE_ONLINE") {
@@ -2123,7 +2123,7 @@ export function InferGitHubModel() {
     //         }
     //       }]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url instance status`]: (r) =>
@@ -2164,7 +2164,7 @@ export function InferGitHubModel() {
     //         }
     //       ]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url instance multiple images status`]: (r) =>
@@ -2213,7 +2213,7 @@ export function InferGitHubModel() {
     //         }
     //       }]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 instance status`]: (r) =>
@@ -2254,7 +2254,7 @@ export function InferGitHubModel() {
     //         }
     //       ]
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger base64 instance multiple images status`]: (r) =>
@@ -2298,7 +2298,7 @@ export function InferGitHubModel() {
     //     // Predict with multiple-part
     //     fd = new FormData();
     //     fd.append("file", http.file(constant.dog_img));
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart instance status`]: (r) =>
@@ -2324,7 +2324,7 @@ export function InferGitHubModel() {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart instance task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
     //         r.json().task_outputs[0].instance_segmentation.objects[0].score > 0.0,
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart instance status`]: (r) =>
@@ -2356,7 +2356,7 @@ export function InferGitHubModel() {
     //     fd.append("file", http.file(constant.dog_img));
     //     fd.append("file", http.file(constant.cat_img));
     //     fd.append("file", http.file(constant.bear_img));
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart instance multiple images status`]: (r) =>
@@ -2414,7 +2414,7 @@ export function InferGitHubModel() {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].score`]: (r) =>
     //         r.json().task_outputs[2].instance_segmentation.objects[0].score > 0.0,
     //     });
-    //     check(http.post(`${constant.apiHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
+    //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart`, fd.body(), {
     //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
     //     }), {
     //       [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger-multipart instance multiple images status`]: (r) =>
@@ -2474,7 +2474,7 @@ export function InferGitHubModel() {
     //     });
 
     //     // clean up
-    //     check(http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model_id}`, null, {
+    //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
     //       headers: genHeader(`application/json`),
     //     }), {
     //       "DELETE clean up response status": (r) =>

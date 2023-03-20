@@ -117,8 +117,11 @@ func main() {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
-	grpcS := grpc.NewServer(grpcServerOpts...)
-	reflection.Register(grpcS)
+	privateGrpcS := grpc.NewServer(grpcServerOpts...)
+	reflection.Register(privateGrpcS)
+
+	publicGrpcS := grpc.NewServer(grpcServerOpts...)
+	reflection.Register(publicGrpcS)
 
 	triton := triton.NewTriton()
 	defer triton.Close()
@@ -126,8 +129,8 @@ func main() {
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
 	defer mgmtPrivateServiceClientConn.Close()
 
-	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelinePublicServiceClient()
-	defer pipelineServiceClientConn.Close()
+	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
+	defer pipelinePublicServiceClientConn.Close()
 
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
@@ -146,22 +149,30 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
+	service := service.NewService(repository, triton, pipelinePublicServiceClient, redisClient, temporalClient)
+
 	modelPB.RegisterModelPublicServiceServer(
-		grpcS,
-		handler.NewPublicHandler(
-			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
-			triton))
+		publicGrpcS,
+		handler.NewPublicHandler(service, triton))
 
 	modelPB.RegisterModelPrivateServiceServer(
-		grpcS,
-		handler.NewPrivateHandler(
-			service.NewService(repository, triton, pipelineServiceClient, redisClient, temporalClient),
-			triton))
+		privateGrpcS,
+		handler.NewPrivateHandler(service, triton))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	gwS := runtime.NewServeMux(
+	privateGwS := runtime.NewServeMux(
+		runtime.WithForwardResponseOption(httpResponseModifier),
+		runtime.WithErrorHandler(errorHandler),
+		runtime.WithIncomingHeaderMatcher(customMatcher),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions:   util.MarshalOptions,
+			UnmarshalOptions: util.UnmarshalOptions,
+		}),
+	)
+
+	publicGwS := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(httpResponseModifier),
 		runtime.WithErrorHandler(errorHandler),
 		runtime.WithIncomingHeaderMatcher(customMatcher),
@@ -172,17 +183,17 @@ func main() {
 	)
 
 	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}/test-multipart which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/test-multipart", appendCustomHeaderMiddleware(handler.HandleTestModelInstanceByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/test-multipart", appendCustomHeaderMiddleware(handler.HandleTestModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/trigger-multipart", appendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/trigger-multipart", appendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /models/multipart which uploads model for REST multiple-part form-data
-	if err := gwS.HandlePath("POST", "/v1alpha/models/multipart", appendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/models/multipart", appendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 
@@ -203,16 +214,21 @@ func main() {
 	} else {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	}
+	if err := modelPB.RegisterModelPrivateServiceHandlerFromEndpoint(ctx, privateGwS, fmt.Sprintf(":%v", config.Config.Server.PrivatePort), dialOpts); err != nil {
+		logger.Fatal(err.Error())
+	}
+	if err := modelPB.RegisterModelPublicServiceHandlerFromEndpoint(ctx, publicGwS, fmt.Sprintf(":%v", config.Config.Server.PublicPort), dialOpts); err != nil {
+		logger.Fatal(err.Error())
+	}
 
-	if err := modelPB.RegisterModelPublicServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
-		logger.Fatal(err.Error())
+	privateHttpServer := &http.Server{
+		Addr:    fmt.Sprintf(":%v", config.Config.Server.PrivatePort),
+		Handler: grpcHandlerFunc(privateGrpcS, privateGwS, config.Config.Server.CORSOrigins),
 	}
-	if err := modelPB.RegisterModelPrivateServiceHandlerFromEndpoint(ctx, gwS, fmt.Sprintf(":%v", config.Config.Server.Port), dialOpts); err != nil {
-		logger.Fatal(err.Error())
-	}
-	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%v", config.Config.Server.Port),
-		Handler: grpcHandlerFunc(grpcS, gwS, config.Config.Server.CORSOrigins),
+
+	publicHttpServer := &http.Server{
+		Addr:    fmt.Sprintf(":%v", config.Config.Server.PublicPort),
+		Handler: grpcHandlerFunc(publicGrpcS, publicGwS, config.Config.Server.CORSOrigins),
 	}
 
 	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
@@ -220,13 +236,26 @@ func main() {
 	errSig := make(chan error)
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		go func() {
-			if err := httpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
+			if err := privateHttpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
 				errSig <- err
 			}
 		}()
 	} else {
 		go func() {
-			if err := httpServer.ListenAndServe(); err != nil {
+			if err := privateHttpServer.ListenAndServe(); err != nil {
+				errSig <- err
+			}
+		}()
+	}
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
+		go func() {
+			if err := publicHttpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
+				errSig <- err
+			}
+		}()
+	} else {
+		go func() {
+			if err := publicHttpServer.ListenAndServe(); err != nil {
 				errSig <- err
 			}
 		}()
@@ -246,7 +275,8 @@ func main() {
 			usg.TriggerSingleReporter(ctx)
 		}
 		logger.Info("Shutting down server...")
-		grpcS.GracefulStop()
+		privateGrpcS.GracefulStop()
+		publicGrpcS.GracefulStop()
 	}
 
 }

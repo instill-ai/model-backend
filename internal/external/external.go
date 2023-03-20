@@ -36,7 +36,7 @@ func InitMgmtPrivateServiceClient() (mgmtPB.MgmtPrivateServiceClient, *grpc.Clie
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.AdminPort), clientDialOpts)
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PublicPort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -103,7 +103,7 @@ func InitPipelinePublicServiceClient() (pipelinePB.PipelinePublicServiceClient, 
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.PipelineBackend.Host, config.Config.PipelineBackend.Port), clientDialOpts)
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.PipelineBackend.Host, config.Config.PipelineBackend.PublicPort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
