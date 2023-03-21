@@ -7,6 +7,7 @@ import {
 import * as createModel from "./grpc_create_model.js"
 import * as updateModel from "./grpc_update_model.js"
 import * as queryModel from "./grpc_query_model.js"
+import * as queryModelPrivate from "./grpc_query_model_private.js"
 import * as deployModel from "./grpc_deploy_model.js"
 import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
@@ -25,10 +26,11 @@ export const options = {
 };
 
 const client = new grpc.Client();
-client.load(['proto'], 'model_definition.proto');
-client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_public_service.proto');
-client.load(['proto'], 'healthcheck.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_private_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'healthcheck.proto');
 
 export function setup() { }
 
@@ -36,16 +38,25 @@ export default () => {
     // Liveness check
     {
         group("Model API: Liveness", () => {
-            client.connect(constant.gRPCHost, {
+            client.connect(constant.gRPCPublicHost, {
                 plaintext: true
             });
             const response = client.invoke('vdp.model.v1alpha.ModelPublicService/Liveness', {});
+            console.log(response.message);
             check(response, {
                 'Status is OK': (r) => r && r.status === grpc.StatusOK,
                 'Response status is SERVING_STATUS_SERVING': (r) => r && r.message.healthCheckResponse.status === "SERVING_STATUS_SERVING",
             });
+            client.close()
         });
     }
+
+    // Private API
+    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+        queryModelPrivate.GetModel()
+        queryModelPrivate.ListModels()
+        queryModelPrivate.LookUpModel()
+    }    
 
     // Create model API
     createModel.CreateModel()
@@ -82,7 +93,7 @@ export default () => {
 };
 
 export function teardown() {
-    client.connect(constant.gRPCHost, {
+    client.connect(constant.gRPCPublicHost, {
         plaintext: true
     });
     group("Model API: Delete all models created by this test", () => {

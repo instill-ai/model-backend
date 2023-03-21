@@ -9,9 +9,9 @@ import {
 } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 const client = new grpc.Client();
-client.load(['proto'], 'model_definition.proto');
-client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_public_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
 
 import * as constant from "./const.js"
 
@@ -20,7 +20,7 @@ const model_def_name = "model-definitions/github"
 export function CreateModel() {
     // CreateModelBinaryFileUpload check
     group("Model API: CreateModelBinaryFileUpload", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModelBinaryFileUpload', {}), {
@@ -33,7 +33,7 @@ export function CreateModel() {
 
     // CreateModel check
     group("Model API: CreateModel with GitHub", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
         let model_id = randomString(10)

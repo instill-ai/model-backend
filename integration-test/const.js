@@ -1,24 +1,30 @@
-let proto, host, port
+let proto, host, publicPort, privatePort
 
 if (__ENV.MODE == "api-gateway") {
     // api-gateway mode
     proto = "http"
     host = "api-gateway"
-    port = 8080
+    publicPort = 8080
+    privatePort = 3083
 } else if (__ENV.MODE == "localhost") {
     // localhost mode for GitHub Actions
     proto = "http"
     host = "localhost"
-    port = 8080
+    publicPort = 8080
+    privatePort = 3083
 } else {
     // direct microservice mode
     proto = "http"
     host = "model-backend"
-    port = 8083
+    publicPort = 8083
+    privatePort = 3083
 }
 
-export const gRPCHost = `${host}:${port}`
-export const apiHost = `${proto}://${host}:${port}`
+export const gRPCPrivateHost = `${host}:${privatePort}`
+export const apiPrivateHost = `${proto}://${host}:${privatePort}`
+
+export const gRPCPublicHost = `${host}:${publicPort}`
+export const apiPublicHost = `${proto}://${host}:${publicPort}`
 
 export const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 export const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-det-model.zip`, "b");

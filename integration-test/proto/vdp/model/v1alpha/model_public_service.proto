@@ -6,9 +6,9 @@ package vdp.model.v1alpha;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 
-import "./healthcheck.proto";
-import "./model_definition.proto";
-import "./model.proto";
+import "../../../vdp/model/v1alpha/healthcheck.proto";
+import "../../../vdp/model/v1alpha/model_definition.proto";
+import "../../../vdp/model/v1alpha/model.proto";
 
 // Model service responds to external access
 service ModelPublicService {

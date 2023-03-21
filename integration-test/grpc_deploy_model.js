@@ -19,16 +19,16 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto'], 'model_definition.proto');
-client.load(['proto'], 'model.proto');
-client.load(['proto'], 'model_public_service.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model.proto');
+client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
 export function DeployUndeployModel() {
     // Deploy ModelInstance check
     group("Model API: Deploy ModelInstance", () => {
-        client.connect(constant.gRPCHost, {
+        client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
 
@@ -39,7 +39,7 @@ export function DeployUndeployModel() {
         fd_cls.append("description", model_description);
         fd_cls.append("model_definition", model_def_name);
         fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-        let createClsModelRes = http.request("POST", `${constant.apiHost}/v1alpha/models/multipart`, fd_cls.body(), {
+        let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
             headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
         })
         check(createClsModelRes, {

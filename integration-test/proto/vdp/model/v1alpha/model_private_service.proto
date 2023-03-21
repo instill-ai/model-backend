@@ -6,7 +6,7 @@ package vdp.model.v1alpha;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 
-import "./model.proto";
+import "../../../vdp/model/v1alpha/model.proto";
 
 // Model service responds to internal access
 service ModelPrivateService {

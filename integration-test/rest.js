@@ -6,6 +6,7 @@ import {
 
 import * as createModel from "./rest_create_model.js"
 import * as queryModel from "./rest_query_model.js"
+import * as queryModelPrivate from "./rest_query_model_private.js"
 import * as inferModel from "./rest_infer_model.js"
 import * as deployModel from "./rest_deploy_model.js"
 import * as publishModel from "./rest_publish_model.js"
@@ -29,7 +30,7 @@ export let options = {
   },
 };
 
-export function setup() { }
+export function setup() {}
 
 export default function (data) {
   /*
@@ -39,10 +40,17 @@ export default function (data) {
   // Health check
   {
     group("Model API: health check", () => {
-      check(http.request("GET", `${constant.apiHost}/v1alpha/health/model`), {
+      check(http.request("GET", `${constant.apiPublicHost}/v1alpha/health/model`), {
         "GET /v1alpha/health/model response status is 200": (r) => r.status === 200,
       });
     });
+  }
+
+  // // Query Model API by admin
+  if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+    queryModelPrivate.GetModelAdmin()
+    queryModelPrivate.ListModelsAdmin()
+    queryModelPrivate.LookupModelAdmin()
   }
 
   // Infer Model API
@@ -52,7 +60,7 @@ export default function (data) {
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 
-  // Query Model API
+  // // Query Model API
   queryModel.GetModel()
   queryModel.ListModels()
   queryModel.LookupModel()
@@ -87,22 +95,22 @@ export default function (data) {
 export function teardown(data) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-      .request("GET", `${constant.apiHost}/v1alpha/models`, null, {
-        headers: genHeader(
-          "application/json"
-        ),
-      })
-      .json("models")) {
+        .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
+          headers: genHeader(
+            "application/json"
+          ),
+        })
+        .json("models")) {
       check(model, {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
       check(
-        http.request("DELETE", `${constant.apiHost}/v1alpha/models/${model.id}`, null, {
+        http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model.id}`, null, {
           headers: genHeader("application/json"),
         }), {
-        [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
-          r.status === 204,
-      }
+          [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
+            r.status === 204,
+        }
       );
     }
   });

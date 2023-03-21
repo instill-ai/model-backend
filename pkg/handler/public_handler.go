@@ -57,15 +57,15 @@ var requiredFields = []string{"Id"}
 // outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
-type handler struct {
+type publicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
 	triton  triton.Triton
 }
 
-func NewHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
+func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema()
-	return &handler{
+	return &publicHandler{
 		service: s,
 		triton:  t,
 	}
@@ -325,7 +325,7 @@ func makeJSONResponse(w http.ResponseWriter, status int, title string, detail st
 	_, _ = w.Write(obj)
 }
 
-func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
+func (h *publicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
 		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
@@ -333,7 +333,7 @@ func (h *handler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*m
 	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
-func (h *handler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
+func (h *publicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
 		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
@@ -605,7 +605,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 }
 
 // AddModel - upload a model to the model server
-func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
+func (h *publicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(stream.Context())
@@ -717,7 +717,7 @@ func (h *handler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_
 	return
 }
 
-func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createGitHubModel(h *publicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	var modelConfig datamodel.GitHubModelConfiguration
@@ -941,7 +941,7 @@ func createGitHubModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	}}, nil
 }
 
-func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createArtiVCModel(h *publicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	var modelConfig datamodel.ArtiVCModelConfiguration
@@ -1169,7 +1169,7 @@ func createArtiVCModel(h *handler, ctx context.Context, req *modelPB.CreateModel
 	}}, nil
 }
 
-func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createHuggingFaceModel(h *publicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	var modelConfig datamodel.HuggingFaceModelConfiguration
@@ -1397,7 +1397,7 @@ func createHuggingFaceModel(h *handler, ctx context.Context, req *modelPB.Create
 	}}, nil
 }
 
-func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
+func (h *publicHandler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
 	resp := &modelPB.CreateModelResponse{}
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
@@ -1462,7 +1462,7 @@ func (h *handler) CreateModel(ctx context.Context, req *modelPB.CreateModelReque
 
 }
 
-func (h *handler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
+func (h *publicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.ListModelsResponse{}, err
@@ -1490,7 +1490,7 @@ func (h *handler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest
 	return &resp, nil
 }
 
-func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
+func (h *publicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
@@ -1515,7 +1515,7 @@ func (h *handler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelReque
 	return &modelPB.LookUpModelResponse{Model: pbModel}, nil
 }
 
-func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
+func (h *publicHandler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
@@ -1536,7 +1536,7 @@ func (h *handler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*
 	return &modelPB.GetModelResponse{Model: pbModel}, err
 }
 
-func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelRequest) (*modelPB.UpdateModelResponse, error) {
+func (h *publicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelRequest) (*modelPB.UpdateModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
@@ -1575,7 +1575,7 @@ func (h *handler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelReque
 	return &modelPB.UpdateModelResponse{Model: pbModel}, err
 }
 
-func (h *handler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
+func (h *publicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.DeleteModelResponse{}, err
@@ -1593,7 +1593,7 @@ func (h *handler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelReque
 	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(owner, id)
 }
 
-func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
+func (h *publicHandler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
@@ -1614,7 +1614,7 @@ func (h *handler) RenameModel(ctx context.Context, req *modelPB.RenameModelReque
 	return &modelPB.RenameModelResponse{Model: pbModel}, nil
 }
 
-func (h *handler) PublishModel(ctx context.Context, req *modelPB.PublishModelRequest) (*modelPB.PublishModelResponse, error) {
+func (h *publicHandler) PublishModel(ctx context.Context, req *modelPB.PublishModelRequest) (*modelPB.PublishModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
@@ -1635,7 +1635,7 @@ func (h *handler) PublishModel(ctx context.Context, req *modelPB.PublishModelReq
 	return &modelPB.PublishModelResponse{Model: pbModel}, nil
 }
 
-func (h *handler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishModelRequest) (*modelPB.UnpublishModelResponse, error) {
+func (h *publicHandler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishModelRequest) (*modelPB.UnpublishModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
@@ -1656,7 +1656,7 @@ func (h *handler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishMode
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
-func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
+func (h *publicHandler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelInstanceResponse{}, err
@@ -1686,7 +1686,7 @@ func (h *handler) GetModelInstance(ctx context.Context, req *modelPB.GetModelIns
 	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
+func (h *publicHandler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.LookUpModelInstanceResponse{}, err
@@ -1720,7 +1720,7 @@ func (h *handler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpMo
 	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
+func (h *publicHandler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.ListModelInstancesResponse{}, err
@@ -1759,7 +1759,7 @@ func (h *handler) ListModelInstances(ctx context.Context, req *modelPB.ListModel
 	return &resp, nil
 }
 
-func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
+func (h *publicHandler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
@@ -1838,7 +1838,7 @@ func (h *handler) DeployModelInstance(ctx context.Context, req *modelPB.DeployMo
 	}}, nil
 }
 
-func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
+func (h *publicHandler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
@@ -1890,7 +1890,7 @@ func (h *handler) UndeployModelInstance(ctx context.Context, req *modelPB.Undepl
 	}}, nil
 }
 
-func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
+func (h *publicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -1973,7 +1973,7 @@ func (h *handler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicSe
 	return err
 }
 
-func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
+func (h *publicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
@@ -2053,7 +2053,7 @@ func (h *handler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPubli
 	return err
 }
 
-func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
+func (h *publicHandler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
@@ -2154,7 +2154,7 @@ func (h *handler) TriggerModelInstance(ctx context.Context, req *modelPB.Trigger
 	}, nil
 }
 
-func (h *handler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
+func (h *publicHandler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
@@ -2444,7 +2444,7 @@ func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, 
 	inferModelInstanceByUpload(w, r, pathParams, "trigger")
 }
 
-func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
+func (h *publicHandler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.GetModelInstanceCardResponse{}, err
@@ -2490,7 +2490,7 @@ func (h *handler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetMode
 	}}, nil
 }
 
-func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
+func (h *publicHandler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
 	definitionID, err := resource.GetDefinitionID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
@@ -2505,8 +2505,7 @@ func (h *handler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelD
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
 }
 
-func (h *handler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
-
+func (h *publicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
 	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
@@ -2526,7 +2525,7 @@ func (h *handler) ListModelDefinitions(ctx context.Context, req *modelPB.ListMod
 	return &resp, nil
 }
 
-func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
+func (h *publicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
 	operationId, err := resource.GetOperationID(req.Name)
 	fmt.Println("operationId", operationId)
 	if err != nil {
@@ -2590,7 +2589,7 @@ func (h *handler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOp
 	}
 }
 
-func (h *handler) ListModelOperations(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
+func (h *publicHandler) ListModelOperations(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
 	pageSize := util.DefaultPageSize
 	if req.PageSize != nil {
 		pageSize = int(*req.PageSize)
@@ -2607,7 +2606,7 @@ func (h *handler) ListModelOperations(ctx context.Context, req *modelPB.ListMode
 	}, nil
 }
 
-func (h *handler) CancelModelOperation(ctx context.Context, req *modelPB.CancelModelOperationRequest) (*modelPB.CancelModelOperationResponse, error) {
+func (h *publicHandler) CancelModelOperation(ctx context.Context, req *modelPB.CancelModelOperationRequest) (*modelPB.CancelModelOperationResponse, error) {
 	operationId, err := resource.GetOperationID(req.Name)
 	if err != nil {
 		return &modelPB.CancelModelOperationResponse{}, err

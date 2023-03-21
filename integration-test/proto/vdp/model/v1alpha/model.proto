@@ -13,16 +13,16 @@ import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 import "google/longrunning/operations.proto";
 
-import "./model_definition.proto";
-import "./task_classification.proto";
-import "./task_detection.proto";
-import "./task_keypoint.proto";
-import "./task_ocr.proto";
-import "./task_instance_segmentation.proto";
-import "./task_semantic_segmentation.proto";
-import "./task_text_to_image.proto";
-import "./task_text_generation.proto";
-import "./task_unspecified.proto";
+import "../../../vdp/model/v1alpha/model_definition.proto";
+import "../../../vdp/model/v1alpha/task_classification.proto";
+import "../../../vdp/model/v1alpha/task_detection.proto";
+import "../../../vdp/model/v1alpha/task_keypoint.proto";
+import "../../../vdp/model/v1alpha/task_ocr.proto";
+import "../../../vdp/model/v1alpha/task_instance_segmentation.proto";
+import "../../../vdp/model/v1alpha/task_semantic_segmentation.proto";
+import "../../../vdp/model/v1alpha/task_text_to_image.proto";
+import "../../../vdp/model/v1alpha/task_text_generation.proto";
+import "../../../vdp/model/v1alpha/task_unspecified.proto";
 
 // Model represents a model
 message Model {

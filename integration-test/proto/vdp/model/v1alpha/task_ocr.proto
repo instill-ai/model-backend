@@ -5,7 +5,7 @@ package vdp.model.v1alpha;
 // Google api
 import "google/api/field_behavior.proto";
 
-import "./common.proto";
+import "../../../vdp/model/v1alpha/common.proto";
 
 // OcrObject represents a predicted ocr object
 message OcrObject {

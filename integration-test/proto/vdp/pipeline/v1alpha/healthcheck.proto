@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package vdp.model.v1alpha;
+package vdp.pipeline.v1alpha;
 
 // Google API
 import "google/api/field_behavior.proto";
 
-import "vdp/healthcheck.proto";
+import "../../../vdp/healthcheck/v1alpha/healthcheck.proto";
 
 // LivenessRequest represents a request to check a service liveness status
 message LivenessRequest {
