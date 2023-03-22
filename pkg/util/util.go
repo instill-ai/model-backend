@@ -23,8 +23,8 @@ import (
 	"gorm.io/datatypes"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/logger"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )

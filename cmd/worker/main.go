@@ -11,13 +11,13 @@ import (
 	"go.temporal.io/sdk/worker"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/internal/triton"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/x/zapadapter"
 
-	database "github.com/instill-ai/model-backend/internal/db"
-	modelWorker "github.com/instill-ai/model-backend/internal/worker"
+	database "github.com/instill-ai/model-backend/pkg/db"
+	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	worker "github.com/instill-ai/model-backend/internal/worker"
+	worker "github.com/instill-ai/model-backend/pkg/worker"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	service "github.com/instill-ai/model-backend/pkg/service"
 	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"

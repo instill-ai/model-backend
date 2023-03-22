@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/instill-ai/model-backend/internal/inferenceserver"
+	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
 )
 
 func SerializeBytesTensor(tensor [][]byte) []byte {

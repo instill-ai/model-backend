@@ -12,8 +12,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/util"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )

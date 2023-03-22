@@ -27,18 +27,18 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/external"
-	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/usage"
+	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/zapadapter"
 
-	database "github.com/instill-ai/model-backend/internal/db"
-	modelWorker "github.com/instill-ai/model-backend/internal/worker"
+	database "github.com/instill-ai/model-backend/pkg/db"
+	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 

@@ -13,9 +13,9 @@ import (
 	_ "golang.org/x/image/tiff"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/util"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )

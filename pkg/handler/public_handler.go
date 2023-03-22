@@ -31,22 +31,22 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/external"
-	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/external"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
 	"github.com/instill-ai/x/zapadapter"
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	database "github.com/instill-ai/model-backend/internal/db"
-	modelWorker "github.com/instill-ai/model-backend/internal/worker"
+	database "github.com/instill-ai/model-backend/pkg/db"
+	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )

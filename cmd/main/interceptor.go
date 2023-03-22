@@ -12,7 +12,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
-	"github.com/instill-ai/model-backend/internal/external"
+	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/repository"
 
 	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"

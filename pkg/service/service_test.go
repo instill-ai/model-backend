@@ -10,9 +10,9 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
+	inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 )

@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/triton"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )

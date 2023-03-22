@@ -7,10 +7,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/logger"
 
-	database "github.com/instill-ai/model-backend/internal/db"
+	database "github.com/instill-ai/model-backend/pkg/db"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 

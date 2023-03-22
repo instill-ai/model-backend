@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
-	"github.com/instill-ai/model-backend/internal/paginate"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	"github.com/instill-ai/x/paginate"
 )
 
 type Repository interface {
