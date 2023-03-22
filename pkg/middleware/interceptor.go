@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"context"
@@ -19,14 +19,14 @@ import (
 )
 
 // RecoveryInterceptor - panic handler
-func recoveryInterceptorOpt() grpc_recovery.Option {
+func RecoveryInterceptorOpt() grpc_recovery.Option {
 	return grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 		return status.Errorf(codes.Unknown, "panic triggered: %v", p)
 	})
 }
 
 // CustomInterceptor - append metadatas for unary
-func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func UnaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.Internal, "can not extract metadata")
@@ -55,7 +55,7 @@ func unaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 }
 
 // CustomInterceptor - append metadatas for stream
-func streamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func StreamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if !ok {
 		return status.Error(codes.Internal, "can not extract metadata")

@@ -1,4 +1,4 @@
-package main
+package init
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ const (
 	seedDir = "config/init/%s/seed/%s"
 )
 
-func loadDefinitions(modelDefs *[]*modelPB.ModelDefinition) error {
+func LoadDefinitions(modelDefs *[]*modelPB.ModelDefinition) error {
 
 	modelDefsFiles := []string{
 		fmt.Sprintf(seedDir, "instill", "model_definitions.yaml"),

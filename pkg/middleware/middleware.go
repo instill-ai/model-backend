@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 )
 
-func appendCustomHeaderMiddleware(next runtime.HandlerFunc) runtime.HandlerFunc {
+func AppendCustomHeaderMiddleware(next runtime.HandlerFunc) runtime.HandlerFunc {
 	return runtime.HandlerFunc(func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		// TODO: Replace with decoded JWT header
 		mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()

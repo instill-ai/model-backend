@@ -11,17 +11,14 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	databaseInit "github.com/instill-ai/model-backend/pkg/init"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
-
-var enumRegistry = map[string]map[string]int32{
-	"release_stage": modelPB.ReleaseStage_value,
-}
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
 	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
 	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelInstanceSpec())
-	if err := createModelDefinitionRecord(
+	if err := databaseInit.CreateModelDefinitionRecord(
 		db,
 		modelDef.GetId(),
 		modelDef.GetUid(),
@@ -58,7 +55,7 @@ func main() {
 
 	modelDefs := []*modelPB.ModelDefinition{}
 
-	if err := loadDefinitions(&modelDefs); err != nil {
+	if err := databaseInit.LoadDefinitions(&modelDefs); err != nil {
 		logger.Fatal(err.Error())
 	}
 

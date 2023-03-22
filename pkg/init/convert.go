@@ -1,4 +1,4 @@
-package main
+package init
 
 import (
 	"reflect"
@@ -7,8 +7,8 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case except for the JSON Schema object.
-func ConvertAllJSONKeySnakeCase(i interface{}) {
+// convertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case except for the JSON Schema object.
+func convertAllJSONKeySnakeCase(i interface{}) {
 	switch v := i.(type) {
 	case map[string]interface{}:
 		for k, vv := range v {
@@ -21,20 +21,20 @@ func ConvertAllJSONKeySnakeCase(i interface{}) {
 				delete(v, k)
 			}
 
-			ConvertAllJSONKeySnakeCase(vv)
+			convertAllJSONKeySnakeCase(vv)
 		}
 	case []map[string]interface{}:
 		for _, vv := range v {
-			ConvertAllJSONKeySnakeCase(vv)
+			convertAllJSONKeySnakeCase(vv)
 		}
 	}
 }
 
-// ConvertAllJSONEnumValueToProtoStyle converts lowercase enum value to the Protobuf naming convention where the enum type is always prefixed and is UPPERCASE snake_case.
+// convertAllJSONEnumValueToProtoStyle converts lowercase enum value to the Protobuf naming convention where the enum type is always prefixed and is UPPERCASE snake_case.
 // For examples:
 // - api in a Protobuf `Enum SourceType` type will be converted to SOURCE_TYPE_API
 // - oauth2.0  in a Protobuf `Enum AuthFlowType` type will be converted to AUTH_FLOW_TYPE_OAUTH2_0
-func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i interface{}) {
+func convertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i interface{}) {
 	switch v := i.(type) {
 	case map[string]interface{}:
 		for k, vv := range v {
@@ -53,11 +53,11 @@ func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int3
 					}
 				}
 			}
-			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
+			convertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
 	case []map[string]interface{}:
 		for _, vv := range v {
-			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
+			convertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
 	}
 }
