@@ -2,17 +2,22 @@ package service
 
 import (
 	"context"
+	"time"
 
+	"github.com/instill-ai/model-backend/internal/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-func (s *service) GetResourceState(name string) (*datamodel.ResourceState, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *service) GetResourceState(modelID string, modelInstanceID string) (*datamodel.ResourceState, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
-		Name: name,
+		Name: resourceName,
 	})
 
 	if err != nil {
@@ -20,25 +25,29 @@ func (s *service) GetResourceState(name string) (*datamodel.ResourceState, error
 	}
 
 	state := datamodel.ResourceState{
-		Name: resp.Resource.Name,
-		State: resp.Resource.State,
+		Name:     resp.Resource.Name,
+		State:    resp.Resource.GetModelInstanceState(),
 		Progress: resp.Resource.Progress,
 	}
 
 	return &state, nil
 }
 
-func (s *service) UpdateResourceState(state *datamodel.ResourceState, workflowId string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *service) UpdateResourceState(modelID string, modelInstanceID string, state modelPB.ModelInstance_State, progress *int32, workflowId *string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
 
 	_, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name: state.Name,
-			State: state.State,
-			Progress: state.Progress,
+			Name: resourceName,
+			State: &controllerPB.Resource_ModelInstanceState{
+				ModelInstanceState: state,
+			},
+			Progress: progress,
 		},
-		WorkflowId: &workflowId,
+		WorkflowId: workflowId,
 	})
 
 	if err != nil {
@@ -48,12 +57,14 @@ func (s *service) UpdateResourceState(state *datamodel.ResourceState, workflowId
 	return nil
 }
 
-func (s *service) DeleteResourceState(name string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *service) DeleteResourceState(modelID string, modelInstanceID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+
 	_, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
-		Name: name,
+		Name: resourceName,
 	})
 
 	if err != nil {

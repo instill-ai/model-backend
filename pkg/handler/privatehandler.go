@@ -9,7 +9,6 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 )
 
 type PrivateHandler struct {
@@ -53,10 +52,6 @@ func (h *PrivateHandler) CheckModelInstance(ctx context.Context, req *modelPB.Ch
 	}
 
 	return &modelPB.CheckModelInstanceResponse{
-		Resource: &controllerPB.Resource{
-			Name: req.Name,
-			State: *state,
-			Progress: 0,
-		},
+		State: *state,
 	}, err
 }

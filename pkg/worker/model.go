@@ -102,6 +102,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
+	resourceName := util.ConvertResourceName(dbModel.ID, dbModelInstance.ID)
+
 	// downloading model weight when making inference
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
@@ -199,9 +201,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}
 		if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 			Resource: &controllerPB.Resource{
-				Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-				State:    controllerPB.Resource_STATE_ERROR,
-				Progress: 0,
+				Name: resourceName,
+				State: &controllerPB.Resource_ModelInstanceState{
+					ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+				},
+				Progress: nil,
 			},
 		}); e != nil {
 			return e
@@ -217,11 +221,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			}
 			if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
-					Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-					State:    controllerPB.Resource_STATE_ERROR,
-					Progress: 0,
+					Name: resourceName,
+					State: &controllerPB.Resource_ModelInstanceState{
+						ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+					},
+					Progress: nil,
 				},
-			}); err == nil {
+			}); err != nil {
 				return err
 			}
 		}
@@ -235,9 +241,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-			State:    controllerPB.Resource_STATE_ONLINE,
-			Progress: 0,
+			Name: resourceName,
+			State: &controllerPB.Resource_ModelInstanceState{
+				ModelInstanceState: modelPB.ModelInstance_STATE_ONLINE,
+			},
+			Progress: nil,
 		},
 	})
 
@@ -296,6 +304,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
+	resourceName := util.ConvertResourceName(dbModel.ID, dbModelInstance.ID)
+
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
@@ -307,9 +317,11 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 			}
 			if _, err2 := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
-					Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-					State:    controllerPB.Resource_STATE_ERROR,
-					Progress: 0,
+					Name:     resourceName,
+					State:    &controllerPB.Resource_ModelInstanceState{
+						ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+					},
+					Progress: nil,
 				},
 			}); err2 != nil {
 				return err2
@@ -326,9 +338,11 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     fmt.Sprintf("models/%s/instances/%s", dbModel.ID, dbModelInstance.ID),
-			State:    controllerPB.Resource_STATE_OFFLINE,
-			Progress: 0,
+			Name:     resourceName,
+			State:    &controllerPB.Resource_ModelInstanceState{
+				ModelInstanceState: modelPB.ModelInstance_STATE_OFFLINE,
+			},
+			Progress: nil,
 		},
 	})
 

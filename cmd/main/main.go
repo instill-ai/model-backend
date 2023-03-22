@@ -153,7 +153,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, pipelinePublicServiceClient, redisClient, temporalClient)
+	service := service.NewService(repository, triton, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
