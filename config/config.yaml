@@ -27,7 +27,7 @@ tritonserver:
   modelstore: /model-repository
 mgmtbackend:
   host: mgmt-backend
-  publicport: 3084
+  privateport: 3084
   https:
     cert:
     key:

@@ -55,9 +55,9 @@ type TritonServerConfig struct {
 
 // MgmtBackendConfig related to mgmt-backend
 type MgmtBackendConfig struct {
-	Host       string `koanf:"host"`
-	PublicPort int    `koanf:"publicport"`
-	HTTPS      struct {
+	Host        string `koanf:"host"`
+	PrivatePort int    `koanf:"privateport"`
+	HTTPS       struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
 	}
