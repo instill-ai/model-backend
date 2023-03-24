@@ -66,6 +66,7 @@ $ make stop
 
 ### CI/CD
 
+<<<<<<< HEAD
 - **pull_request** to the `main` branch will trigger the **`Integration Test`** workflow running the integration test using the image built on the PR head branch.
 - **push** to the `main` branch will trigger
   - the **`Integration Test`** workflow building and pushing the `:latest` image on the `main` branch, following by running the integration test, and
@@ -74,6 +75,17 @@ $ make stop
 Once the release PR is merged to the `main` branch, the [release-please-action](https://github.com/google-github-actions/release-please-action) will tag and release a version correspondingly.
 
 The images are pushed to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend).
+=======
+- **push** to the `main` branch will trigger
+  - the **`Create Release Candidate PR`** workflow, which will create and keep a PR to the `rc` branch up-to-date with respect to the `main` branch using [create-pull-request](github.com/peter-evans/create-pull-request) (commit message contains `release` string will be skipped), and
+  - the **`Release Please`** workflow, which will create and update a PR with respect to the up-to-date `main` branch using [release-please-action](https://github.com/google-github-actions/release-please-action).
+- **pull_request** to the `rc` branch will trigger the **`Integration Test`** workflow, which will run the integration test using the `:latest` images of **all** components.
+- **push** to the `rc` branch will trigger
+  - the **`Integration Test`** workflow, which will build the `:rc` image and run the integration test using the `:rc` image of all components, and
+- Once the release PR is merged to the `main` branch, the [release-please-action](https://github.com/google-github-actions/release-please-action) will tag and release a version correspondingly.
+
+The latest images are published to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend) at each CI/CD step.
+>>>>>>> 740b429 (ci: add rc workflows (#309))
 
 ## License
 
