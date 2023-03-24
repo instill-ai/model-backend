@@ -64,7 +64,16 @@ $ make stop
 
 ### CI/CD
 
-The latest images will be published to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend) at release.
+- **push** to the `main` branch will trigger:
+    - the **`Integration Test (latest)`** workflow, which will build the `:latest` image and run the integration test on the **single** component, and
+    - the **`Create Release Candidate PR`** workflow, which will create and keep a PR to the `rc` branch up-to-date with respect to the `main` branch.
+- **pull_request** to the `rc` branch will trigger the **`Integration Test (rc)`** workflow, which will run the integration test using the `:latest` images of **all** components
+- **push** to the `rc` branch will trigger:
+  - the **`Integration Test (rc)`** workflow, which will build the `:rc` image and run the integration test using the `:rc` image of all components, and
+  - the **`Release Please`** workflow, which will create and update a PR with respect to the up-to-date `main` branch.
+- Once the release PR is merged to the `main` branch, the [release-please-action](https://github.com/google-github-actions/release-please-action) will tag and release a version correspondingly.
+
+The latest images are published to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend) at each CI/CD step.
 
 ## License
 
