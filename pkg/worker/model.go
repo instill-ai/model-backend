@@ -317,8 +317,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 			}
 			if _, err2 := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
-					Name:     resourceName,
-					State:    &controllerPB.Resource_ModelInstanceState{
+					Name: resourceName,
+					State: &controllerPB.Resource_ModelInstanceState{
 						ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
 					},
 					Progress: nil,
@@ -338,8 +338,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     resourceName,
-			State:    &controllerPB.Resource_ModelInstanceState{
+			Name: resourceName,
+			State: &controllerPB.Resource_ModelInstanceState{
 				ModelInstanceState: modelPB.ModelInstance_STATE_OFFLINE,
 			},
 			Progress: nil,

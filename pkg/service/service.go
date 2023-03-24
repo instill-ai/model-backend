@@ -245,7 +245,6 @@ func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, er
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	name = strings.TrimSuffix(name, "/watch")
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
 		Name: name,
 	})

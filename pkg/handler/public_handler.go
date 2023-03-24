@@ -1,3 +1,4 @@
+package handler
 
 import (
 	"bufio"
@@ -46,7 +47,6 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -59,17 +59,15 @@ var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTim
 
 type PublicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
-	service          service.Service
-	triton           triton.Triton
-	controllerClient controllerPB.ControllerPrivateServiceClient
+	service service.Service
+	triton  triton.Triton
 }
 
-func NewHandler(s service.Service, t triton.Triton, c controllerPB.ControllerPrivateServiceClient) modelPB.ModelPublicServiceServer {
+func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema()
-	return &handler{
-		service:          s,
-		triton:           t,
-		controllerClient: c,
+	return &PublicHandler{
+		service: s,
+		triton:  t,
 	}
 }
 
@@ -583,11 +581,12 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		err = modelPublicService.UpdateResourceState(&datamodel.ResourceState{
-			Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
-			State:    controllerPB.Resource_STATE_UNSPECIFIED,
-			Progress: 0},
-			wfId,
+		err = modelPublicService.UpdateResourceState(
+			uploadedModel.ID,
+			uploadedModel.Instances[0].ID,
+			modelPB.ModelInstance_STATE_UNSPECIFIED,
+			nil,
+			&wfId,
 		)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -717,11 +716,12 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		return err
 	}
 
-	err = h.service.UpdateResourceState(&datamodel.ResourceState{
-		Name:     fmt.Sprintf("models/%s/instances/%s", uploadedModel.ID, uploadedModel.Instances[0].ID),
-		State:    controllerPB.Resource_STATE_UNSPECIFIED,
-		Progress: 0},
-		wfId,
+	err = h.service.UpdateResourceState(
+		uploadedModel.ID,
+		uploadedModel.Instances[0].ID,
+		modelPB.ModelInstance_STATE_UNSPECIFIED,
+		nil,
+		&wfId,
 	)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
@@ -946,11 +946,12 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	}
 
 	for _, instance := range githubModel.Instances {
-		err := h.service.UpdateResourceState(&datamodel.ResourceState{
-			Name:     fmt.Sprintf("models/%s/instances/%s", githubModel.ID, instance.ID),
-			State:    controllerPB.Resource_STATE_UNSPECIFIED,
-			Progress: 0},
-			wfId,
+		err := h.service.UpdateResourceState(
+			githubModel.ID,
+			instance.ID,
+			modelPB.ModelInstance_STATE_UNSPECIFIED,
+			nil,
+			&wfId,
 		)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
@@ -1678,7 +1679,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	resp, err := h.service.GetResourceState(req.Name)
+	resp, err := h.service.GetResourceState(modelID, instanceID)
 
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
@@ -1736,11 +1737,13 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, st.Err()
 	}
 
-	err = h.service.UpdateResourceState(&datamodel.ResourceState{
-		Name:     req.Name,
-		State:    controllerPB.Resource_STATE_UNSPECIFIED,
-		Progress: 0},
-		wfId)
+	err = h.service.UpdateResourceState(
+		modelID,
+		instanceID,
+		modelPB.ModelInstance_STATE_UNSPECIFIED,
+		nil,
+		&wfId,
+	)
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
 	}
@@ -1770,7 +1773,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	resp, err := h.service.GetResourceState(req.Name)
+	resp, err := h.service.GetResourceState(modelID, instanceID)
 
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -1784,23 +1787,8 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
 	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
-<<<<<<< HEAD
-	err = h.service.UpdateResourceState(&datamodel.ResourceState{
-		Name: req.Name,
-		State: controllerPB.Resource_STATE_UNSPECIFIED,
-		Progress: 0,
-	})
-	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
-	}
 	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
 		return &modelPB.UndeployModelResponse{}, err
-=======
-	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
-	}); err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
->>>>>>> 48156ac (chore: add optional workflowID when update resource state)
 	}
 	wfId, err := h.service.UndeployModelAsync(owner, dbModel.UID)
 	if err != nil {
@@ -1812,6 +1800,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
 =======
 	err = h.service.UpdateResourceState(&datamodel.ResourceState{
@@ -1819,6 +1808,15 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		State:    controllerPB.Resource_STATE_UNSPECIFIED,
 		Progress: 0},
 		wfId)
+=======
+	err = h.service.UpdateResourceState(
+		modelID,
+		instanceID,
+		modelPB.ModelInstance_STATE_UNSPECIFIED,
+		nil,
+		&wfId,
+	)
+>>>>>>> f606348 (chore: cleanup rebase conflicts)
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
 	}
@@ -1833,15 +1831,21 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}}, nil
 }
 
-func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelInstanceRequest) (*modelPB.WatchModelInstanceResponse, error) {
-	resp, err := h.service.WatchModel(req.Name)
+func (h *PublicHandler) WatchModelInstance(ctx context.Context, req *modelPB.WatchModelInstanceRequest) (*modelPB.WatchModelInstanceResponse, error) {
+	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+	resp, err := h.service.WatchModel(resourceName)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &modelPB.WatchModelInstanceResponse{
-		Resource: resp.Resource,
+		State: resp.Resource.GetModelInstanceState(),
 	}, err
 }
 

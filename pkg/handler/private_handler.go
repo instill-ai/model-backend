@@ -92,3 +92,34 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	pbModel := DBModelToPBModel(&modelDef, &dbModel)
 	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
 }
+
+func (h *privateHandler) CheckModelInstance(ctx context.Context, req *modelPB.CheckModelInstanceRequest) (*modelPB.CheckModelInstanceResponse, error) {
+	owner, err := resource.GetOwner(ctx)
+	if err != nil {
+		return &modelPB.CheckModelInstanceResponse{}, err
+	}
+
+	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	if err != nil {
+		return &modelPB.CheckModelInstanceResponse{}, err
+	}
+
+	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.CheckModelInstanceResponse{}, err
+	}
+
+	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.CheckModelInstanceResponse{}, err
+	}
+
+	state, err := h.service.CheckModel(dbModelInstance.UID)
+	if err != nil {
+		return &modelPB.CheckModelInstanceResponse{}, err
+	}
+
+	return &modelPB.CheckModelInstanceResponse{
+		State: *state,
+	}, err
+}
