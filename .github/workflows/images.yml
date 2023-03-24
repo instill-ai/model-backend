@@ -1,9 +1,7 @@
 name: Build and Push Images
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
   release:
     types: [published]
 
@@ -31,6 +29,7 @@ jobs:
           password: ${{ secrets.botDockerHubPassword }}
 
       - name: Build and push (latest)
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
           platforms: linux/amd64,linux/arm64
@@ -42,6 +41,22 @@ jobs:
             UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
             ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
+          cache-from: type=registry,ref=instill/model-backend:buildcache
+          cache-to: type=registry,ref=instill/model-backend:buildcache,mode=max
+
+      - name: Build and push (rc)
+        if: github.ref == 'refs/heads/rc'
+        uses: docker/build-push-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: .
+          push: true
+          build-args: |
+            SERVICE_NAME=model-backend
+            GOLANG_VERSION=${{ env.GOLANG_VERSION }}
+            UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
+            ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
+          tags: instill/model-backend:rc
           cache-from: type=registry,ref=instill/model-backend:buildcache
           cache-to: type=registry,ref=instill/model-backend:buildcache,mode=max
 
