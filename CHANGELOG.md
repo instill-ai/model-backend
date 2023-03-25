@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.13.1-alpha...v0.14.0-alpha) (2023-03-25)
+
+
+### Features
+
+* add private endpoint and gRPC test cases ([#306](https://github.com/instill-ai/model-backend/issues/306)) ([bb3c193](https://github.com/instill-ai/model-backend/commit/bb3c19321305c83407e47a19929db2b3f71ac5b0))
+
+
+### Bug Fixes
+
+* **config:** use private port for mgmt-backend ([#307](https://github.com/instill-ai/model-backend/issues/307)) ([3264e2b](https://github.com/instill-ai/model-backend/commit/3264e2b5358a393d0027b21e2b56ad55c72dcb6c))
+* list models and model instances pagination ([#304](https://github.com/instill-ai/model-backend/issues/304)) ([1f19ed4](https://github.com/instill-ai/model-backend/commit/1f19ed4796dc04610a7496918c6e29bc6afb51e0))
+
 ## [0.13.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.13.0-alpha...v0.13.1-alpha) (2023-02-26)
 
 
