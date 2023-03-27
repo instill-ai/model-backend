@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
-func httpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+func HttpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
 	md, ok := runtime.ServerMetadataFromContext(ctx)
 	if !ok {
 		return nil
@@ -38,7 +38,7 @@ func httpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Me
 	return nil
 }
 
-func errorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+func ErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	logger, _ := logger.GetZapLogger()
 
 	// return Internal when Marshal failed
@@ -147,7 +147,7 @@ func errorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.
 
 }
 
-func customMatcher(key string) (string, bool) {
+func CustomMatcher(key string) (string, bool) {
 	if strings.HasPrefix(strings.ToLower(key), "jwt-") {
 		return key, true
 	}

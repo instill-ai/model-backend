@@ -1,4 +1,4 @@
-package main
+package init
 
 import (
 	"encoding/json"
@@ -9,6 +9,10 @@ import (
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
+
+var EnumRegistry = map[string]map[string]int32{
+	"release_stage": modelPB.ReleaseStage_value,
+}
 
 // unmarshalModelPB unmarshals a slice of JSON object into a Protobuf Message Go struct element by element
 // See: https://github.com/golang/protobuf/issues/675#issuecomment-411182202
@@ -57,8 +61,8 @@ func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	ConvertAllJSONKeySnakeCase(jsonSliceMap)
-	ConvertAllJSONEnumValueToProtoStyle(enumRegistry, jsonSliceMap)
+	convertAllJSONKeySnakeCase(jsonSliceMap)
+	convertAllJSONEnumValueToProtoStyle(EnumRegistry, jsonSliceMap)
 
 	return jsonSliceMap, nil
 }

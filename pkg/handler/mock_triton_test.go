@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	inferenceserver "github.com/instill-ai/model-backend/internal/inferenceserver"
-	triton "github.com/instill-ai/model-backend/internal/triton"
+	inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
+	triton "github.com/instill-ai/model-backend/pkg/triton"
 	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 

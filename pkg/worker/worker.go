@@ -7,8 +7,8 @@ import (
 	"github.com/allegro/bigcache"
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/triton"
 )
 
 // Namespace is the Temporal namespace for model-backend

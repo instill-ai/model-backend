@@ -27,18 +27,19 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/external"
-	"github.com/instill-ai/model-backend/internal/logger"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/usage"
+	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/zapadapter"
 
-	database "github.com/instill-ai/model-backend/internal/db"
-	modelWorker "github.com/instill-ai/model-backend/internal/worker"
+	database "github.com/instill-ai/model-backend/pkg/db"
+	"github.com/instill-ai/model-backend/pkg/middleware"
+	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -102,14 +103,14 @@ func main() {
 
 	grpcServerOpts := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			streamAppendMetadataInterceptor,
+			middleware.StreamAppendMetadataInterceptor,
 			grpc_zap.StreamServerInterceptor(logger, opts...),
-			grpc_recovery.StreamServerInterceptor(recoveryInterceptorOpt()),
+			grpc_recovery.StreamServerInterceptor(middleware.RecoveryInterceptorOpt()),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			unaryAppendMetadataInterceptor,
+			middleware.UnaryAppendMetadataInterceptor,
 			grpc_zap.UnaryServerInterceptor(logger, opts...),
-			grpc_recovery.UnaryServerInterceptor(recoveryInterceptorOpt()),
+			grpc_recovery.UnaryServerInterceptor(middleware.RecoveryInterceptorOpt()),
 		)),
 	}
 
@@ -163,9 +164,9 @@ func main() {
 	defer cancel()
 
 	privateGwS := runtime.NewServeMux(
-		runtime.WithForwardResponseOption(httpResponseModifier),
-		runtime.WithErrorHandler(errorHandler),
-		runtime.WithIncomingHeaderMatcher(customMatcher),
+		runtime.WithForwardResponseOption(middleware.HttpResponseModifier),
+		runtime.WithErrorHandler(middleware.ErrorHandler),
+		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions:   util.MarshalOptions,
 			UnmarshalOptions: util.UnmarshalOptions,
@@ -173,9 +174,9 @@ func main() {
 	)
 
 	publicGwS := runtime.NewServeMux(
-		runtime.WithForwardResponseOption(httpResponseModifier),
-		runtime.WithErrorHandler(errorHandler),
-		runtime.WithIncomingHeaderMatcher(customMatcher),
+		runtime.WithForwardResponseOption(middleware.HttpResponseModifier),
+		runtime.WithErrorHandler(middleware.ErrorHandler),
+		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions:   util.MarshalOptions,
 			UnmarshalOptions: util.UnmarshalOptions,
@@ -183,17 +184,17 @@ func main() {
 	)
 
 	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}/test-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/test-multipart", appendCustomHeaderMiddleware(handler.HandleTestModelInstanceByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/test-multipart", middleware.AppendCustomHeaderMiddleware(handler.HandleTestModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /v1alpha/models/{name=models/*/instances/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/trigger-multipart", appendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{name=models/*/instances/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(handler.HandleTriggerModelInstanceByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /models/multipart which uploads model for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/models/multipart", appendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/models/multipart", middleware.AppendCustomHeaderMiddleware(handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 

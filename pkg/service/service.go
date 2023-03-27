@@ -20,13 +20,13 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/logger"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/internal/triton"
-	"github.com/instill-ai/model-backend/internal/util"
-	"github.com/instill-ai/model-backend/internal/worker"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"

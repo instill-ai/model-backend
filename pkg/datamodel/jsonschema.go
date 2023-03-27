@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/instill-ai/model-backend/internal/logger"
+	"github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // ModelDefJSONSchema represents the ModelDefinition JSON Schema for validating the payload
@@ -117,7 +117,7 @@ func InitJSONSchema() {
 	}
 }
 
-//ValidateJSONSchema validates the Protobuf message data
+// ValidateJSONSchema validates the Protobuf message data
 func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopulated bool) error {
 	var v interface{}
 	var data []byte

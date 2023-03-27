@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"context"
@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/instill-ai/model-backend/internal/external"
+	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 )
 
-func appendCustomHeaderMiddleware(next runtime.HandlerFunc) runtime.HandlerFunc {
+func AppendCustomHeaderMiddleware(next runtime.HandlerFunc) runtime.HandlerFunc {
 	return runtime.HandlerFunc(func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		// TODO: Replace with decoded JWT header
 		mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()

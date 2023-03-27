@@ -1,4 +1,4 @@
-package main
+package init
 
 import (
 	"gorm.io/gorm"
@@ -7,7 +7,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 )
 
-func createModelDefinitionRecord(
+func CreateModelDefinitionRecord(
 	db *gorm.DB,
 	id string,
 	uid string,

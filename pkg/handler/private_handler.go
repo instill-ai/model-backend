@@ -8,14 +8,14 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/internal/triton"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/triton"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-type privateHandler struct {
+type PrivateHandler struct {
 	modelPB.UnimplementedModelPrivateServiceServer
 	service service.Service
 	triton  triton.Triton
@@ -23,13 +23,13 @@ type privateHandler struct {
 
 func NewPrivateHandler(s service.Service, t triton.Triton) modelPB.ModelPrivateServiceServer {
 	datamodel.InitJSONSchema()
-	return &privateHandler{
+	return &PrivateHandler{
 		service: s,
 		triton:  t,
 	}
 }
 
-func (h *privateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
+func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
 	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
@@ -53,7 +53,7 @@ func (h *privateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 	return &resp, nil
 }
 
-func (h *privateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.LookUpModelAdminRequest) (*modelPB.LookUpModelAdminResponse, error) {
+func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.LookUpModelAdminRequest) (*modelPB.LookUpModelAdminResponse, error) {
 	sUID, err := resource.GetID(req.Permalink)
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
@@ -74,7 +74,7 @@ func (h *privateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *privateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetModelAdminRequest) (*modelPB.GetModelAdminResponse, error) {
+func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetModelAdminRequest) (*modelPB.GetModelAdminResponse, error) {
 	id, err := resource.GetID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
