@@ -192,7 +192,7 @@ service ModelPublicService {
   rpc WatchModelInstance(WatchModelInstanceRequest)
       returns (WatchModelInstanceResponse) {
     option (google.api.http) = {
-      get : "/v1alpha/{name=models/*/instances/*/watch}"
+      get : "/v1alpha/{name=models/*/instances/*}/watch"
     };
     option (google.api.method_signature) = "name";
   }

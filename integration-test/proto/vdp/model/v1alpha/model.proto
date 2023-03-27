@@ -419,22 +419,9 @@ message WatchModelInstanceRequest {
 // fetch a model instance's current state and longrunning progress
 message WatchModelInstanceResponse {
   // Retrieved model instance state
-  vdp.controller.v1alpha.Resource resource = 1;
-}
-
-// CheckModelInstanceRequest represents a private request to query
-// a model instance's current state and longrunning progress
-message CheckModelInstanceRequest {
-  // Resource name of the model instance.
-  // For example "models/{model}/instances/{instance}"
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
-}
-
-// CheckModelInstanceResponse represents a response to fetch a model
-// instance's current state and longrunning progress
-message CheckModelInstanceResponse {
-  // Retrieved model instance state
-  vdp.controller.v1alpha.Resource resource = 1;
+  ModelInstance.State state = 1;
+  // Retrieved model instance logrunning progress
+  int32 progress = 2;
 }
 
 ////////////////////////////////////
