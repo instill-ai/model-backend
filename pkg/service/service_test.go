@@ -331,7 +331,7 @@ func TestModelInfer(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockRepository := NewMockRepository(ctrl)
 		triton := NewMockTriton(ctrl)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil)
+		s := service.NewService(mockRepository, triton, nil, nil, nil, nil)
 
 		uid := uuid.UUID{}
 
