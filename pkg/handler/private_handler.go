@@ -93,7 +93,7 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
 }
 
-func (h *privateHandler) CheckModelInstance(ctx context.Context, req *modelPB.CheckModelInstanceRequest) (*modelPB.CheckModelInstanceResponse, error) {
+func (h *PrivateHandler) CheckModelInstance(ctx context.Context, req *modelPB.CheckModelInstanceRequest) (*modelPB.CheckModelInstanceResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
 		return &modelPB.CheckModelInstanceResponse{}, err

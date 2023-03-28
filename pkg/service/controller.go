@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/instill-ai/model-backend/internal/util"
+	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"

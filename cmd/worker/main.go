@@ -20,7 +20,7 @@ import (
 	database "github.com/instill-ai/model-backend/pkg/db"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
-g
+
 func main() {
 	logger, _ := logger.GetZapLogger()
 	defer func() {
