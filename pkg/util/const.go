@@ -88,3 +88,6 @@ const (
 	TEXT_GENERATION_TOP_K      = int64(1)
 	TEXT_GENERATION_SEED       = int64(0)
 )
+
+const MODEL_CACHE_DIR = "/.cache/models"
+const MODEL_CACHE_FILE = "cached_models.json"

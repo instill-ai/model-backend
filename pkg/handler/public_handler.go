@@ -781,7 +781,10 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			Tag:        tag.Name,
 		}
 		rdid, _ := uuid.NewV4()
-		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
+		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
+		if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
+			modelSrcDir = util.MODEL_CACHE_DIR + "/" + instanceConfig.Repository + instanceConfig.Tag
+		}
 
 		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
 			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
@@ -790,8 +793,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				return &modelPB.CreateModelResponse{}, err
 			}
 		} else {
-			cloneLargeFile := false
-			err = util.GitHubClone(cloneLargeFile, modelSrcDir, instanceConfig)
+			err = util.GitHubClone(modelSrcDir, instanceConfig, false)
 			if err != nil {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
@@ -816,7 +818,9 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		}
 
 		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
-		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		if !config.Config.Cache.Model {
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		}
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,

@@ -122,39 +122,113 @@ func getInferModelConfigPath(modelRepository string, tritonModels []datamodel.Tr
 	return modelPath
 }
 
-func GitHubClone(isWithLargeFile bool, dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration) error {
+type CacheModel struct {
+	ModelRepo string `json:"model_repo"`
+	State     string `json:"state"`
+}
+
+// GitHubClone clones a repository from GitHub.
+func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration, isWithLargeFile bool) error {
 	urlRepo := instanceConfig.Repository
-	if !strings.HasPrefix(urlRepo, "https://github.com") {
-		urlRepo = "https://github.com/" + urlRepo
+
+	// Check in the cache first.
+	var cacheModels []CacheModel
+	if config.Config.Cache.Model {
+		_ = CreateFolder(MODEL_CACHE_DIR) // create model cache folder if not exist.
+		if _, err := os.Stat(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE); !os.IsNotExist(err) {
+			f, err := os.ReadFile(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE)
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal([]byte(f), &cacheModels); err != nil {
+				return err
+			}
+			for _, cacheModel := range cacheModels {
+				if cacheModel.ModelRepo != (instanceConfig.Repository + instanceConfig.Tag) {
+					continue
+				}
+				if cacheModel.State == "done" { // everything is cached.
+					return nil
+				} else if cacheModel.State == "without_large_file" && !isWithLargeFile { // the GitHub repo is being cached.
+					return nil
+				}
+			}
+		}
 	}
-	if !strings.HasSuffix(urlRepo, ".git") {
-		urlRepo = urlRepo + ".git"
+	if !isWithLargeFile || isWithLargeFile && !config.Config.Cache.Model {
+		if !strings.HasPrefix(urlRepo, "https://github.com") {
+			urlRepo = "https://github.com/" + urlRepo
+		}
+		if !strings.HasSuffix(urlRepo, ".git") {
+			urlRepo = urlRepo + ".git"
+		}
+
+		extraFlag := ""
+		if !isWithLargeFile {
+			extraFlag = "GIT_LFS_SKIP_SMUDGE=1"
+		}
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("%s git clone -b %s %s %s", extraFlag, instanceConfig.Tag, urlRepo, dir))
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
 	}
 
-	extraFlag := ""
-	if !isWithLargeFile {
-		extraFlag = "GIT_LFS_SKIP_SMUDGE=1"
-	}
-
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("%s git clone -b %s %s %s", extraFlag, instanceConfig.Tag, urlRepo, dir))
-	err := cmd.Run()
-	if err != nil {
-		return err
+	var f *os.File
+	var err error
+	if config.Config.Cache.Model {
+		f, err = os.Create(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
 	}
 
 	if isWithLargeFile {
 		dvcPaths := findDVCPaths(dir)
 		for _, dvcPath := range dvcPaths {
-			cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull %s", dir, dvcPath))
+			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cd %s; dvc pull %s", dir, dvcPath))
 			err = cmd.Run()
 			if err != nil {
 				return err
 			}
 		}
+		if config.Config.Cache.Model {
+			for i, cacheModel := range cacheModels {
+				if cacheModel.ModelRepo == (instanceConfig.Repository + instanceConfig.Tag) {
+					cacheModels[i].State = "done"
+					break
+				}
+			}
+			b, err := json.Marshal(cacheModels)
+			if err != nil {
+				return err
+			}
+			if _, err := f.Write(b); err != nil {
+				return err
+			}
+		}
+	} else {
+		if config.Config.Cache.Model {
+			cacheFile := CacheModel{
+				ModelRepo: instanceConfig.Repository + instanceConfig.Tag,
+				State:     "without_large_file",
+			}
+			cacheModels = append(cacheModels, cacheFile)
+			b, err := json.Marshal(cacheModels)
+			if err != nil {
+				return err
+			}
+			if _, err := f.Write(b); err != nil {
+				return err
+			}
+		}
 	}
+
 	return nil
 }
 
+// CopyModelFileToModelRepository copies model files to model repository.
 func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []datamodel.TritonModel) error {
 	modelPaths := findModelFiles(dir)
 	for _, modelPath := range modelPaths {
