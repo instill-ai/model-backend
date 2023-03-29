@@ -81,7 +81,7 @@ func parseImageFromBase64(encoded string) (*image.Image, error) {
 	return &img, nil
 }
 
-func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (inputBytes [][]byte, err error) {
+func parseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (inputBytes [][]byte, err error) {
 	logger, _ := logger.GetZapLogger()
 
 	for idx, taskInput := range req.TaskInputs {
@@ -159,7 +159,7 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelInstanceRequest) (i
 	return inputBytes, nil
 }
 
-func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textToImageInput *triton.TextToImageInput, err error) {
+func parseTexToImageRequestInputs(req *modelPB.TriggerModelRequest) (textToImageInput *triton.TextToImageInput, err error) {
 	if len(req.TaskInputs) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
@@ -195,7 +195,7 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelInstanceRequest) (tex
 	return textToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(req *modelPB.TriggerModelInstanceRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
+func parseTexGenerationRequestInputs(req *modelPB.TriggerModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
 	for _, taskInput := range req.TaskInputs {
 		outputLen := int64(util.TEXT_GENERATION_OUTPUT_LEN)
 		if taskInput.GetTextGeneration().OutputLen != nil {

@@ -128,7 +128,7 @@ type CacheModel struct {
 }
 
 // GitHubClone clones a repository from GitHub.
-func GitHubClone(dir string, instanceConfig datamodel.GitHubModelInstanceConfiguration, isWithLargeFile bool) error {
+func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, isWithLargeFile bool) error {
 	urlRepo := instanceConfig.Repository
 
 	// Check in the cache first.
@@ -540,7 +540,7 @@ func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]str
 	}
 }
 
-func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelInstanceConfiguration, withLargeFiles bool) error {
+func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelConfiguration, withLargeFiles bool) error {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
@@ -792,24 +792,24 @@ func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonMo
 	return nil
 }
 
-func GetSupportedBatchSize(task datamodel.ModelInstanceTask) int {
+func GetSupportedBatchSize(task datamodel.ModelTask) int {
 	allowedMaxBatchSize := 0
 	switch task {
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED):
+	case datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_CLASSIFICATION):
+	case datamodel.ModelTask(modelPB.Model_TASK_CLASSIFICATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_DETECTION):
+	case datamodel.ModelTask(modelPB.Model_TASK_DETECTION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_KEYPOINT):
+	case datamodel.ModelTask(modelPB.Model_TASK_KEYPOINT):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_OCR):
+	case datamodel.ModelTask(modelPB.Model_TASK_OCR):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION):
+	case datamodel.ModelTask(modelPB.Model_TASK_INSTANCE_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION):
+	case datamodel.ModelTask(modelPB.Model_TASK_SEMANTIC_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	case datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_TEXT_GENERATION):
+	case datamodel.ModelTask(modelPB.Model_TASK_TEXT_GENERATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.TextGeneration
 	}
 	return allowedMaxBatchSize

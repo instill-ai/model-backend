@@ -71,11 +71,11 @@ func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicSer
 	}
 }
 
-func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) (triggerInput interface{}, modelID string, err error) {
 
 	var firstChunk = true
 
-	var fileData *modelPB.TriggerModelInstanceBinaryFileUploadRequest
+	var fileData *modelPB.TriggerModelBinaryFileUploadRequest
 
 	var allContentFiles []byte
 	var fileLengths []uint64
@@ -91,14 +91,14 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 		} else if err != nil {
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return nil, "", "", err
+			return nil, "", err
 		}
 
 		if firstChunk { //first chunk contains model instance name
 			firstChunk = false
-			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			modelID, err = resource.GetModelID(fileData.Name) // format "models/{model}"
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			task = fileData.TaskInput
 			switch fileData.TaskInput.Input.(type) {
@@ -138,7 +138,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		} else {
 			switch fileData.TaskInput.Input.(type) {
@@ -155,7 +155,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 			case *modelPB.TaskInputStream_SemanticSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		}
 	}
@@ -168,7 +168,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 		*modelPB.TaskInputStream_InstanceSegmentation,
 		*modelPB.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
-			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
 		start := uint64(0)
@@ -176,27 +176,27 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, instanceID, nil
+		return imageBytes, modelID, nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, instanceID, nil
+		return textToImageInput, modelID, nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, instanceID, nil
+		return textGeneration, modelID, nil
 	}
-	return nil, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) (triggerInput interface{}, modelID string, err error) {
 	var firstChunk = true
-	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
+	var fileData *modelPB.TestModelBinaryFileUploadRequest
 
 	var textToImageInput *triton.TextToImageInput
 	var textGeneration *triton.TextGenerationInput
@@ -212,14 +212,14 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return nil, "", "", err
+			return nil, "", err
 		}
 
 		if firstChunk { //first chunk contains file name
 			firstChunk = false
-			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			modelID, err = resource.GetModelID(fileData.Name) // format "models/{model}"
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			switch fileData.TaskInput.Input.(type) {
 			case *modelPB.TaskInputStream_Classification:
@@ -258,7 +258,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		}
 		switch fileData.TaskInput.Input.(type) {
@@ -275,7 +275,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 		case *modelPB.TaskInputStream_SemanticSegmentation:
 			allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 		default:
-			return nil, "", "", fmt.Errorf("unsupported task input type")
+			return nil, "", fmt.Errorf("unsupported task input type")
 		}
 	}
 
@@ -287,7 +287,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 		*modelPB.TaskInputStream_InstanceSegmentation,
 		*modelPB.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
-			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
 		start := uint64(0)
@@ -295,22 +295,22 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, instanceID, nil
+		return imageBytes, modelID, nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, instanceID, nil
+		return textToImageInput, modelID, nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, instanceID, nil
+		return textGeneration, modelID, nil
 	}
-	return nil, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", fmt.Errorf("unsupported task input type")
 
 }
 
@@ -1660,152 +1660,44 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
-func (h *PublicHandler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	dbModel, err := h.service.GetModelById(owner, modelID, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
-}
-
-func (h *PublicHandler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, err
-	}
-	sModelUID, sInstanceUID, err := resource.GetModelInstanceID(req.Permalink)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	modelUID, err := uuid.FromString(sModelUID)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModel, err := h.service.GetModelByUid(owner, modelUID, req.GetView())
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
-	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, err
-	}
-	instanceUID, err := uuid.FromString(sInstanceUID)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModelInstance, err := h.service.GetModelInstanceByUid(dbModel.UID, instanceUID, req.GetView())
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
-	}
-
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
-}
-
-func (h *PublicHandler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	modelID, err := resource.GetID(req.Parent)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-	modelInDB, err := h.service.GetModelById(owner, modelID, req.GetView())
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstances(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	pbInstances := []*modelPB.ModelInstance{}
-	for _, dbModelInstance := range dbModelInstances {
-		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(&modelDef, &modelInDB, &dbModelInstance))
-	}
-
-	resp := modelPB.ListModelInstancesResponse{
-		Instances:     pbInstances,
-		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
-	}
-
-	return &resp, nil
-}
-
-func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
+func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployModelRequest) (*modelPB.DeployModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
-	}
-
-	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
-		return &modelPB.DeployModelInstanceResponse{},
+	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_OFFLINE) {
+		return &modelPB.DeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model instance state, current model state is %s",
-				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
+				modelPB.Model_State_name[int32(dbModel.State)]))
 	}
 
-	_, err = h.service.GetTritonModels(dbModelInstance.UID)
+	_, err = h.service.GetTritonModels(dbModel.UID)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
 	// temporary change state to STATE_UNSPECIFIED during deploying the model
 	// the state will be changed after deploying to STATE_ONLINE or STATE_ERROR
-	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
+	if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
+		State: datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED),
 	}); err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	wfId, err := h.service.DeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
+	wfId, err := h.service.DeployModelAsync(owner, dbModel.UID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1830,10 +1722,10 @@ func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.De
 			logger.Error(e.Error())
 		}
 
-		return &modelPB.DeployModelInstanceResponse{}, st.Err()
+		return &modelPB.DeployModelResponse{}, st.Err()
 	}
 
-	return &modelPB.DeployModelInstanceResponse{Operation: &longrunningpb.Operation{
+	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
@@ -1842,50 +1734,45 @@ func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.De
 	}}, nil
 }
 
-func (h *PublicHandler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
+func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.UndeployModelRequest) (*modelPB.UndeployModelResponse, error) {
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
-	}
-
-	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
-		return &modelPB.UndeployModelInstanceResponse{},
+	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
+		return &modelPB.UndeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
-				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
+				modelPB.Model_State_name[int32(dbModel.State)]))
 	}
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
 	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
-	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
+	if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
+		State: datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED),
 	}); err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
-	wfId, err := h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
+	wfId, err := h.service.UndeployModelAsync(owner, dbModel.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
-			return &modelPB.UndeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Internal, err.Error())
 		}
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunningpb.Operation{
+	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
@@ -1894,14 +1781,14 @@ func (h *PublicHandler) UndeployModelInstance(ctx context.Context, req *modelPB.
 	}}, nil
 }
 
-func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
+func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
 	}
 
-	triggerInput, modelID, instanceID, err := savePredictInputsTestMode(stream)
+	triggerInput, modelID, err := savePredictInputsTestMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -1910,25 +1797,21 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 	if err != nil {
 		return err
 	}
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
 
 	numberOfInferences := 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 
 	// check whether model support batching or not. If not, raise an error
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -1942,8 +1825,8 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, triggerInput, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInferTestMode(owner, modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1970,20 +1853,20 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 		return st.Err()
 	}
 
-	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{
+	err = stream.SendAndClose(&modelPB.TestModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
 	return err
 }
 
-func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
+func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
 	}
-	triggerInput, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
+	triggerInput, modelID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -1992,23 +1875,20 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 	if err != nil {
 		return err
 	}
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
+
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -2022,8 +1902,8 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, triggerInput, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInfer(modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2050,82 +1930,78 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 		return st.Err()
 	}
 
-	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{
+	err = stream.SendAndClose(&modelPB.TriggerModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
 	return err
 }
 
-func (h *PublicHandler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
+func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
-	}
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT,
-		modelPB.ModelInstance_TASK_UNSPECIFIED:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT,
+		modelPB.Model_TASK_UNSPECIFIED:
 		imageInput, err := parseImageRequestInputsToBytes(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, err
+			return &modelPB.TriggerModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInfer(modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2149,75 +2025,70 @@ func (h *PublicHandler) TriggerModelInstance(ctx context.Context, req *modelPB.T
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		return &modelPB.TriggerModelInstanceResponse{}, st.Err()
+		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
-	return &modelPB.TriggerModelInstanceResponse{
+	return &modelPB.TriggerModelResponse{
 		Task:        task,
 		TaskOutputs: response,
 	}, nil
 }
 
-func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
+func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelRequest) (*modelPB.TestModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
-	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
-	}
-
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT,
-		modelPB.ModelInstance_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT,
+		modelPB.Model_TASK_UNSPECIFIED:
+		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelInstanceRequest{
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
-			&modelPB.TriggerModelInstanceRequest{
+			&modelPB.TriggerModelRequest{
 				Name:       req.Name,
 				TaskInputs: req.TaskInputs,
 			})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textGeneration
@@ -2225,22 +2096,22 @@ func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.Test
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, err
+			return &modelPB.TestModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInferTestMode(owner, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2264,16 +2135,16 @@ func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.Test
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		return &modelPB.TestModelInstanceResponse{}, st.Err()
+		return &modelPB.TestModelResponse{}, st.Err()
 	}
 
-	return &modelPB.TestModelInstanceResponse{
+	return &modelPB.TestModelResponse{
 		Task:        task,
 		TaskOutputs: response,
 	}, nil
 }
 
-func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
+func inferModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
 	logger, _ := logger.GetZapLogger()
 
 	contentType := r.Header.Get("Content-Type")
@@ -2284,9 +2155,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		instanceName := pathParams["name"]
-		if instanceName == "" {
-			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
+		modelName := pathParams["name"]
+		if modelName == "" {
+			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter model name not found")
 			return
 		}
 
@@ -2311,7 +2182,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		defer temporalClient.Close()
 		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient)
 
-		modelID, instanceID, err := resource.GetModelInstanceID(instanceName)
+		modelID, err := resource.GetModelID(modelName)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
 			return
@@ -2323,12 +2194,6 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		modelInstanceInDB, err := modelPublicService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-		if err != nil {
-			makeJSONResponse(w, 404, "Model instance not found", "The model instance not found in server")
-			return
-		}
-
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
@@ -2337,14 +2202,14 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		var inputInfer interface{}
 		var lenInputs = 1
-		switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-		case modelPB.ModelInstance_TASK_CLASSIFICATION,
-			modelPB.ModelInstance_TASK_DETECTION,
-			modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-			modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-			modelPB.ModelInstance_TASK_OCR,
-			modelPB.ModelInstance_TASK_KEYPOINT,
-			modelPB.ModelInstance_TASK_UNSPECIFIED:
+		switch modelPB.Model_Task(modelInDB.Task) {
+		case modelPB.Model_TASK_CLASSIFICATION,
+			modelPB.Model_TASK_DETECTION,
+			modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+			modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+			modelPB.Model_TASK_OCR,
+			modelPB.Model_TASK_KEYPOINT,
+			modelPB.Model_TASK_UNSPECIFIED:
 			imageInput, err := parseImageFormDataInputsToBytes(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "File Input Error", err.Error())
@@ -2352,7 +2217,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 			lenInputs = len(imageInput)
 			inputInfer = imageInput
-		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		case modelPB.Model_TASK_TEXT_TO_IMAGE:
 			textToImage, err := parseImageFormDataTextToImageInputs(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "Parser input error", err.Error())
@@ -2360,7 +2225,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 			lenInputs = 1
 			inputInfer = textToImage
-		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		case modelPB.Model_TASK_TEXT_GENERATION:
 			textGeneration, err := parseTextFormDataTextGenerationInputs(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "Parser input error", err.Error())
@@ -2372,9 +2237,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		// check whether model support batching or not. If not, raise an error
 		if lenInputs > 1 {
-			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInDB.UID)
 			if err != nil {
-				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 				return
 			}
 			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
@@ -2388,12 +2253,12 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				return
 			}
 		}
-		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
+		task := modelPB.Model_Task(modelInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelPublicService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInferTestMode(owner, modelInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelPublicService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInfer(modelInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
@@ -2425,7 +2290,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{
+		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelBinaryFileUploadResponse{
 			Task:        task,
 			TaskOutputs: response,
 		})
@@ -2440,40 +2305,35 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	}
 }
 
-func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelInstanceByUpload(w, r, pathParams, "test")
+func HandleTestModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(w, r, pathParams, "test")
 }
 
-func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelInstanceByUpload(w, r, pathParams, "trigger")
+func HandleTriggerModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(w, r, pathParams, "trigger")
 }
 
-func (h *PublicHandler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
+func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelCardRequest) (*modelPB.GetModelCardResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	_, err = h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
-	}
-
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelID, instanceID)
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, owner, modelID)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil { // return empty content base64
-		return &modelPB.GetModelInstanceCardResponse{
-			Readme: &modelPB.ModelInstanceCard{
+		return &modelPB.GetModelCardResponse{
+			Readme: &modelPB.ModelCard{
 				Name:     req.Name,
 				Size:     0,
 				Type:     "file",
@@ -2485,7 +2345,7 @@ func (h *PublicHandler) GetModelInstanceCard(ctx context.Context, req *modelPB.G
 
 	content, _ := os.ReadFile(readmeFilePath)
 
-	return &modelPB.GetModelInstanceCardResponse{Readme: &modelPB.ModelInstanceCard{
+	return &modelPB.GetModelCardResponse{Readme: &modelPB.ModelCard{
 		Name:     req.Name,
 		Size:     int32(stat.Size()),
 		Type:     "file",   // currently only support file type

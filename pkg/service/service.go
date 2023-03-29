@@ -45,22 +45,24 @@ type Service interface {
 	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
-	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
-	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
-	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
-	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
-	DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
-	UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
+
+	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
+	ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
+
+	DeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
+	UndeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
+
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
-	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
-	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
+
+	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
+	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
+
 	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error)
 	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error)
 	CancelOperation(workflowId string) error
+
 	SearchAttributeReady() error
 
 	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
@@ -86,25 +88,25 @@ func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelineP
 	}
 }
 
-func (s *service) DeployModelInstance(modelInstanceID uuid.UUID) error {
+func (s *service) DeployModel(modelUID uuid.UUID) error {
 	var tEnsembleModel datamodel.TritonModel
 	var err error
 
-	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelInstanceID); err != nil {
+	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelUID); err != nil {
 		return err
 	}
 	// Load one ensemble model, which will also load all its dependent models
 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err1 := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
-			State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
+		if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
+			State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 		}); err1 != nil {
 			return err1
 		}
 		return err
 	}
 
-	if err = s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+	if err = s.repository.UpdateModel(modelUID, datamodel.Model{
+		State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
 	}); err != nil {
 		return err
 	}
@@ -112,12 +114,12 @@ func (s *service) DeployModelInstance(modelInstanceID uuid.UUID) error {
 	return nil
 }
 
-func (s *service) UndeployModelInstance(modelInstanceID uuid.UUID) error {
+func (s *service) UndeployModel(modelUID uuid.UUID) error {
 
 	var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = s.repository.GetTritonModels(modelInstanceID); err != nil {
+	if tritonModels, err = s.repository.GetTritonModels(modelUID); err != nil {
 		return err
 	}
 
@@ -125,8 +127,8 @@ func (s *service) UndeployModelInstance(modelInstanceID uuid.UUID) error {
 		// Unload all models composing the ensemble model
 		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err1 := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
-				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ERROR),
+			if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
+				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 			}); err1 != nil {
 				return err1
 			}
@@ -134,8 +136,8 @@ func (s *service) UndeployModelInstance(modelInstanceID uuid.UUID) error {
 		}
 	}
 
-	if err := s.repository.UpdateModelInstance(modelInstanceID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+	if err := s.repository.UpdateModel(modelUID, datamodel.Model{
+		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 	}); err != nil {
 		return err
 	}
@@ -159,33 +161,33 @@ func (s *service) GetModelByUidAdmin(uid uuid.UUID, view modelPB.View) (datamode
 	return s.repository.GetModelByUidAdmin(uid, view)
 }
 
-func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
 	// Increment trigger image numbers
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	uid, _ := resource.GetPermalinkUID(owner)
 	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_KEYPOINT,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_UNSPECIFIED:
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_KEYPOINT,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_UNSPECIFIED:
 
 		if strings.HasPrefix(owner, "users/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([][]byte))))
 		} else if strings.HasPrefix(owner, "orgs/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([][]byte))))
 		}
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		if strings.HasPrefix(owner, "users/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
 		} else if strings.HasPrefix(owner, "orgs/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
 		}
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		if strings.HasPrefix(owner, "users/") {
 			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
 		} else if strings.HasPrefix(owner, "orgs/") {
@@ -195,12 +197,12 @@ func (s *service) ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, i
 		return nil, fmt.Errorf("unknown task input type")
 	}
 
-	return s.ModelInfer(modelInstanceUID, inferInput, task)
+	return s.ModelInfer(modelUID, inferInput, task)
 }
 
-func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
 
-	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")
 	}
@@ -234,7 +236,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 	}
 
 	switch task {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION:
+	case modelPB.Model_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
 		var clsOutputs []*modelPB.TaskOutput
 		for _, clsRes := range clsResponses {
@@ -279,7 +281,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			})
 		}
 		return clsOutputs, nil
-	case modelPB.ModelInstance_TASK_DETECTION:
+	case modelPB.Model_TASK_DETECTION:
 		detResponses := postprocessResponse.(triton.DetectionOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataLabels := detResponses.Labels
@@ -323,7 +325,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			})
 		}
 		return detOutputs, nil
-	case modelPB.ModelInstance_TASK_KEYPOINT:
+	case modelPB.Model_TASK_KEYPOINT:
 		keypointResponse := postprocessResponse.(triton.KeypointOutput)
 		var keypointOutputs []*modelPB.TaskOutput
 		for i := range keypointResponse.Keypoints { // batch size
@@ -373,7 +375,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			})
 		}
 		return keypointOutputs, nil
-	case modelPB.ModelInstance_TASK_OCR:
+	case modelPB.Model_TASK_OCR:
 		ocrResponses := postprocessResponse.(triton.OcrOutput)
 		batchedOutputDataBboxes := ocrResponses.Boxes
 		batchedOutputDataTexts := ocrResponses.Texts
@@ -418,7 +420,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 		}
 		return ocrOutputs, nil
 
-	case modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION:
+	case modelPB.Model_TASK_INSTANCE_SEGMENTATION:
 		instanceSegmentationResponses := postprocessResponse.(triton.InstanceSegmentationOutput)
 		batchedOutputDataRles := instanceSegmentationResponses.Rles
 		batchedOutputDataBboxes := instanceSegmentationResponses.Boxes
@@ -466,7 +468,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 		}
 		return instanceSegmentationOutputs, nil
 
-	case modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION:
+	case modelPB.Model_TASK_SEMANTIC_SEGMENTATION:
 		semanticSegmentationResponses := postprocessResponse.(triton.SemanticSegmentationOutput)
 		batchedOutputDataRles := semanticSegmentationResponses.Rles
 		batchedOutputDataCategories := semanticSegmentationResponses.Categories
@@ -502,7 +504,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			})
 		}
 		return semanticSegmentationOutputs, nil
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		textToImageResponses := postprocessResponse.(triton.TextToImageOutput)
 		batchedOutputDataImages := textToImageResponses.Images
 		var textToImageOutputs []*modelPB.TaskOutput
@@ -527,7 +529,7 @@ func (s *service) ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, 
 			})
 		}
 		return textToImageOutputs, nil
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGenerationResponses := postprocessResponse.(triton.TextGenerationOutput)
 		batchedOutputDataTexts := textGenerationResponses.Text
 		var textGenerationOutputs []*modelPB.TaskOutput
@@ -658,37 +660,18 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		return st.Err()
 	}
 
-	modelInstancesInDB, err := s.repository.GetModelInstances(modelInDB.UID)
+	if err := s.UndeployModel(modelInDB.UID); err != nil {
+		return err
+	}
+
+	// remove README.md
+	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, owner, modelInDB.ID))
+	tritonModels, err := s.repository.GetTritonModels(modelInDB.UID)
 	if err == nil {
-		for i := 0; i < len(modelInstancesInDB); i++ {
-			if modelInstancesInDB[i].State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
-				st, err := sterr.CreateErrorPreconditionFailure(
-					"[service] delete model",
-					[]*errdetails.PreconditionFailure_Violation{
-						{
-							Type:        "DELETE",
-							Subject:     fmt.Sprintf("id %s", modelInDB.ID),
-							Description: "The model is still in operations, please wait the operation finish and try it again",
-						},
-					})
-				if err != nil {
-					logger.Error(err.Error())
-				}
-				return st.Err()
-			}
-			if err := s.UndeployModelInstance(modelInstancesInDB[i].UID); err != nil {
-				return err
-			}
-			// remove README.md
-			_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelInDB.ID, modelInstancesInDB[i].ID))
-			tritonModels, err := s.repository.GetTritonModels(modelInstancesInDB[i].UID)
-			if err == nil {
-				// remove model folders
-				for i := 0; i < len(tritonModels); i++ {
-					modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
-					_ = os.RemoveAll(modelDir)
-				}
-			}
+		// remove model folders
+		for i := 0; i < len(tritonModels); i++ {
+			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
+			_ = os.RemoveAll(modelDir)
 		}
 	}
 
@@ -754,22 +737,6 @@ func (s *service) UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datam
 	return s.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL)
 }
 
-func (s *service) GetModelInstance(modelUID uuid.UUID, modelInstanceID string, view modelPB.View) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstance(modelUID, modelInstanceID, view)
-}
-
-func (s *service) UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error {
-	return s.repository.UpdateModelInstance(modelInstanceUID, instanceInfo)
-}
-
-func (s *service) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
-	return s.repository.GetModelInstanceByUid(modelUID, modelInstanceUid, view)
-}
-
-func (s *service) ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error) {
-	return s.repository.ListModelInstances(modelUID, view, pageSize, pageToken)
-}
-
 func (s *service) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
 	return s.repository.GetModelDefinition(id)
 }
@@ -782,10 +749,10 @@ func (s *service) ListModelDefinitions(view modelPB.View, pageSize int, pageToke
 	return s.repository.ListModelDefinitions(view, pageSize, pageToken)
 }
 
-func (s *service) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {
-	return s.repository.GetTritonEnsembleModel(modelInstanceUID)
+func (s *service) GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error) {
+	return s.repository.GetTritonEnsembleModel(modelUID)
 }
 
-func (s *service) GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error) {
-	return s.repository.GetTritonModels(modelInstanceUID)
+func (s *service) GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error) {
+	return s.repository.GetTritonModels(modelUID)
 }

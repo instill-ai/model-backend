@@ -91,10 +91,10 @@ func (u *usage) RetrieveUsageData() interface{} {
 			instanceOnlineStateNum := int64(0)  // Number of model instances with 'online' state
 			instanceOfflineStateNum := int64(0) // Number of model instances with 'offline' state
 			modelDefinitionIds := []string{}    // Definition IDs of the model instances. Element in the list should not be duplicated.
-			tasks := []modelPB.ModelInstance_Task{}
-			testImageNum := int64(0)                               // Number of processed images via model instance testing operations
-			var mTask = make(map[datamodel.ModelInstanceTask]bool) // use for creating unique task list
-			var mDef = make(map[string]bool)                       // use for creating unique model definition list
+			tasks := []modelPB.Model_Task{}
+			testImageNum := int64(0)                       // Number of processed images via model instance testing operations
+			var mTask = make(map[datamodel.ModelTask]bool) // use for creating unique task list
+			var mDef = make(map[string]bool)               // use for creating unique model definition list
 			for {
 				dbModels, modelNextPageToken, _, err := u.repository.ListModels(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
 				if err != nil {
@@ -115,7 +115,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 					}
 
 					for {
-						dbInstances, instanceNextPageToken, _, err := u.repository.ListModelInstances(model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
+						dbInstances, instanceNextPageToken, _, err := u.repository.ListModels(model.Owner, model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
 						if err != nil {
 							logger.Error(fmt.Sprintf("%s", err))
 						}
