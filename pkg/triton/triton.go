@@ -933,11 +933,5 @@ func (ts *triton) IsTritonServerReady() bool {
 		return false
 	}
 	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
-	if !serverLiveResponse.Live {
-		return false
-	}
-
-	serverReadyResponse := ts.ServerReadyRequest()
-	fmt.Printf("Triton Health - Ready: %v\n", serverReadyResponse.Ready)
-	return serverReadyResponse.Ready
+	return serverLiveResponse.Live
 }

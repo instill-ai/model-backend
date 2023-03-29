@@ -26,6 +26,7 @@ RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /usr/l
 RUN mkdir /etc/vdp
 RUN mkdir /vdp
 RUN mkdir /model-repository
+RUN mkdir /.cache
 
 FROM --platform=$BUILDPLATFORM ubuntu:${UBUNTU_VERSION}
 
@@ -69,3 +70,4 @@ COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
 COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
+COPY --from=build --chown=nobody:nogroup /.cache /.cache

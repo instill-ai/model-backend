@@ -17,6 +17,7 @@ dev:							## Run dev container
 	@docker run -d --rm \
 		-v $(PWD):/${SERVICE_NAME} \
 		-v model-repository:/model-repository \
+		-v ~/.cache/instill:/.cache \
 		-p ${SERVICE_PORT}:${SERVICE_PORT} \
 		--network instill-network \
 		--name ${SERVICE_NAME} \

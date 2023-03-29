@@ -114,6 +114,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 	}
 
 	// downloading model weight when making inference
+	rdid, _ := uuid.NewV4()
+	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	switch modelDef.ID {
 	case "github":
 		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
@@ -121,11 +123,12 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 			if err := json.Unmarshal(dbModelInstance.Configuration, &instanceConfig); err != nil {
 				return err
 			}
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 
-			cloneLargeFile := true
-			if err := util.GitHubClone(cloneLargeFile, modelSrcDir, instanceConfig); err != nil {
+			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
+				modelSrcDir = util.MODEL_CACHE_DIR + "/" + instanceConfig.Repository + instanceConfig.Tag
+			}
+
+			if err := util.GitHubClone(modelSrcDir, instanceConfig, true); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
@@ -133,7 +136,6 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
-			_ = os.RemoveAll(modelSrcDir)
 		}
 	case "huggingface":
 		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
@@ -142,14 +144,16 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 				return err
 			}
 
+			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
+				modelSrcDir = util.MODEL_CACHE_DIR + "/" + instanceConfig.RepoId
+			}
+
 			var modelConfig datamodel.HuggingFaceModelConfiguration
 			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
 			if err != nil {
 				return err
 			}
 
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 			if config.Config.Server.ItMode { // use local model to remove internet connection issue while integration testing
 				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
 					RepoId: "assets/tiny-vit-random",
@@ -172,7 +176,6 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 			if err := util.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
 				return err
 			}
-			_ = os.RemoveAll(modelSrcDir)
 		}
 	case "artivc":
 		if !config.Config.Server.ItMode && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
@@ -187,8 +190,6 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 				return err
 			}
 
-			rdid, _ := uuid.NewV4()
-			modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 			err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, true)
 			if err != nil {
 				_ = os.RemoveAll(modelSrcDir)
@@ -199,6 +200,10 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelInstancePa
 				return err
 			}
 		}
+	}
+
+	if !config.Config.Cache.Model {
+		_ = os.RemoveAll(modelSrcDir)
 	}
 
 	tEnsembleModel, _ := w.repository.GetTritonEnsembleModel(param.ModelInstanceUID)

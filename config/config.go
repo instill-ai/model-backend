@@ -68,6 +68,7 @@ type CacheConfig struct {
 	Redis struct {
 		RedisOptions redis.Options `koanf:"redisoptions"`
 	}
+	Model bool `koanf:"model"`
 }
 
 // UsageServerConfig related to usage-server

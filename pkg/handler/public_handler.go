@@ -781,17 +781,19 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			Tag:        tag.Name,
 		}
 		rdid, _ := uuid.NewV4()
-		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
+		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
+		if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
+			modelSrcDir = util.MODEL_CACHE_DIR + "/" + instanceConfig.Repository + instanceConfig.Tag
+		}
 
 		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
-			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 			if err := cmd.Run(); err != nil {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 				return &modelPB.CreateModelResponse{}, err
 			}
 		} else {
-			cloneLargeFile := false
-			err = util.GitHubClone(cloneLargeFile, modelSrcDir, instanceConfig)
+			err = util.GitHubClone(modelSrcDir, instanceConfig, false)
 			if err != nil {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
@@ -816,7 +818,9 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		}
 
 		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
-		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		if !config.Config.Cache.Model {
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		}
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -1008,7 +1012,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		rdid, _ := uuid.NewV4()
 		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
 		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
-			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 			if err := cmd.Run(); err != nil {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
 				return &modelPB.CreateModelResponse{}, err
@@ -1209,7 +1213,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
-		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir %s; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
 		if err := cmd.Run(); err != nil {
 			_ = os.RemoveAll(configTmpDir)
 			return &modelPB.CreateModelResponse{}, err

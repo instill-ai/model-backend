@@ -212,7 +212,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 	var readmeFilePath string
 	files := []FileMeta{}
 	var configFiles []string
-	var fileRe = regexp.MustCompile(`.git|.dvc|.dvcignore`)
+	var fileRe = regexp.MustCompile(`/.git|/.dvc|/.dvcignore`)
 	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
 		if !fileRe.MatchString(path) {
 			files = append(files, FileMeta{
@@ -243,7 +243,6 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		oldModelName := subStrs[0]
 		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelID, oldModelName, modelInstance.ID)
 		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
-
 		if f.fInfo.IsDir() { // create new folder
 			err = os.MkdirAll(filePath, os.ModePerm)
 
@@ -388,4 +387,17 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 		}
 	}
 	return tmpFile, &uploadedModel, modelDefinitionID, nil
+}
+
+// CreateFolder creates a folder if it does not exist.
+func CreateFolder(dstDir string) error {
+	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
+		err := os.MkdirAll(dstDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("folder already exists")
+	}
+	return nil
 }
