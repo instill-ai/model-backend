@@ -11,7 +11,7 @@ On the local machine, clone `vdp` repository in your workspace, move to the repo
 $ cd <your-workspace>
 $ git clone https://github.com/instill-ai/vdp.git
 $ cd vdp
-$ make dev PROFILE=model
+$ make latest PROFILE=model
 ```
 
 Clone `model-backend` repository in your workspace and move to the repository folder:
