@@ -86,22 +86,18 @@ func (u *usage) RetrieveUsageData() interface{} {
 		for _, user := range userResp.Users {
 			modelPageToken := ""
 
-			modelOnlineStateNum := int64(0)     // Number of models that have at least one 'online' instance
-			modelOfflineStateNum := int64(0)    // Number of models that have no 'online' instances
-			instanceOnlineStateNum := int64(0)  // Number of model instances with 'online' state
-			instanceOfflineStateNum := int64(0) // Number of model instances with 'offline' state
-			modelDefinitionIds := []string{}    // Definition IDs of the model instances. Element in the list should not be duplicated.
+			modelOnlineStateNum := int64(0)  // Number of models that have at least one 'online' instance
+			modelOfflineStateNum := int64(0) // Number of models that have no 'online' instances
+			modelDefinitionIds := []string{} // Definition IDs of the model instances. Element in the list should not be duplicated.
 			tasks := []modelPB.Model_Task{}
-			testImageNum := int64(0)                       // Number of processed images via model instance testing operations
-			var mTask = make(map[datamodel.ModelTask]bool) // use for creating unique task list
-			var mDef = make(map[string]bool)               // use for creating unique model definition list
+			testImageNum := int64(0)         // Number of processed images via model instance testing operations
+			var mDef = make(map[string]bool) // use for creating unique model definition list
 			for {
 				dbModels, modelNextPageToken, _, err := u.repository.ListModels(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
 				if err != nil {
 					logger.Error(fmt.Sprintf("%s", err))
 				}
 
-				instancePageToken := ""
 				for _, model := range dbModels {
 					isModelOnline := false
 					modelDef, err := u.repository.GetModelDefinitionByUid(model.ModelDefinitionUid)
@@ -114,38 +110,17 @@ func (u *usage) RetrieveUsageData() interface{} {
 						}
 					}
 
-					for {
-						dbInstances, instanceNextPageToken, _, err := u.repository.ListModels(model.Owner, model.UID, modelPB.View_VIEW_BASIC, repository.MaxPageSize, instancePageToken)
-						if err != nil {
-							logger.Error(fmt.Sprintf("%s", err))
-						}
-
-						for _, instance := range dbInstances {
-							if instance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
-								instanceOnlineStateNum++
-								isModelOnline = true
-							}
-							if instance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
-								instanceOfflineStateNum++
-							}
-
-							if !mTask[instance.Task] {
-								mTask[instance.Task] = true
-								tasks = append(tasks, modelPB.ModelInstance_Task(instance.Task))
-							}
-						}
-
-						if instanceNextPageToken == "" {
-							break
-						} else {
-							instancePageToken = instanceNextPageToken
-						}
+					if model.State == datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
+						isModelOnline = true
 					}
+
 					if isModelOnline {
 						modelOnlineStateNum++
 					} else {
 						modelOfflineStateNum++
 					}
+
+					tasks = append(tasks, modelPB.Model_Task(model.Task))
 				}
 
 				if modelNextPageToken == "" {
@@ -163,14 +138,12 @@ func (u *usage) RetrieveUsageData() interface{} {
 			}
 
 			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
-				UserUid:                 user.GetUid(),
-				ModelOnlineStateNum:     modelOnlineStateNum,
-				ModelOfflineStateNum:    modelOfflineStateNum,
-				InstanceOnlineStateNum:  instanceOnlineStateNum,
-				InstanceOfflineStateNum: instanceOfflineStateNum,
-				ModelDefinitionIds:      modelDefinitionIds,
-				Tasks:                   tasks,
-				TestNum:                 testImageNum,
+				UserUid:              user.GetUid(),
+				ModelOnlineStateNum:  modelOnlineStateNum,
+				ModelOfflineStateNum: modelOfflineStateNum,
+				ModelDefinitionIds:   modelDefinitionIds,
+				Tasks:                tasks,
+				TestNum:              testImageNum,
 			})
 		}
 

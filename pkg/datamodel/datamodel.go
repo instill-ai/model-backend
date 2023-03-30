@@ -141,11 +141,13 @@ type ArtiVCModelConfiguration struct {
 
 type HuggingFaceModelConfiguration struct {
 	RepoId  string `json:"repo_id,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 	HtmlUrl string `json:"html_url,omitempty"`
 }
 
 type LocalModelConfiguration struct {
 	Content string `json:"content,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 }
 
 type ListModelQuery struct {

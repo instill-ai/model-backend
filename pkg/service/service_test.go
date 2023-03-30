@@ -1,6 +1,6 @@
 package service_test
 
-//go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/internal/triton Triton
+//go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/triton Triton
 //go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 
 import (
@@ -358,69 +358,14 @@ func TestModelInfer(t *testing.T) {
 			Return(modelConfigResponse)
 		triton.
 			EXPECT().
-			ModelInferRequest(modelPB.ModelInstance_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
+			ModelInferRequest(modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
 			Return(modelInferResponse, nil)
 		triton.
 			EXPECT().
-			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.ModelInstance_TASK_CLASSIFICATION).
+			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
 			Return(postResponse, nil)
 
-		_, err := s.ModelInfer(uid, [][]byte{}, modelPB.ModelInstance_TASK_CLASSIFICATION)
-		assert.NoError(t, err)
-	})
-}
-
-func TestGetModelInstance(t *testing.T) {
-	t.Run("TestGetModelInstance", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-
-		uid := uuid.UUID{}
-		mockRepository := NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			GetModelInstance(uid, "latest", modelPB.View_VIEW_FULL).
-			Return(datamodel.ModelInstance{}, nil).
-			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil)
-
-		_, err := s.GetModelInstance(uid, "latest", modelPB.View_VIEW_FULL)
-		assert.NoError(t, err)
-	})
-}
-
-func TestGetModelInstanceByUid(t *testing.T) {
-	t.Run("TestGetModelInstanceByUid", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-
-		modelUID := uuid.UUID{}
-		instanceUID := uuid.UUID{}
-		mockRepository := NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			GetModelInstanceByUid(modelUID, instanceUID, modelPB.View_VIEW_FULL).
-			Return(datamodel.ModelInstance{}, nil).
-			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil)
-
-		_, err := s.GetModelInstanceByUid(modelUID, instanceUID, modelPB.View_VIEW_FULL)
-		assert.NoError(t, err)
-	})
-}
-
-func TestListModelInstances(t *testing.T) {
-	t.Run("TestListModelInstance", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-
-		modelUID := uuid.UUID{}
-		mockRepository := NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			ListModelInstances(modelUID, modelPB.View_VIEW_FULL, 100, "").
-			Return([]datamodel.ModelInstance{}, "", int64(100), nil).
-			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil)
-
-		_, _, _, err := s.ListModelInstances(modelUID, modelPB.View_VIEW_FULL, 100, "")
+		_, err := s.ModelInfer(uid, [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
 		assert.NoError(t, err)
 	})
 }
@@ -451,7 +396,7 @@ func TestListModelInstances(t *testing.T) {
 // 		mockRepository.
 // 			EXPECT().
 // 			UpdateModelInstance(uid, datamodel.ModelInstance{
-// 				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+// 				State: datamodel.ModelInstanceState(modelPB.Model_STATE_ONLINE),
 // 			}).
 // 			Return(nil)
 
@@ -486,7 +431,7 @@ func TestListModelInstances(t *testing.T) {
 // 		mockRepository.
 // 			EXPECT().
 // 			UpdateModelInstance(uid, datamodel.ModelInstance{
-// 				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+// 				State: datamodel.ModelInstanceState(modelPB.Model_STATE_OFFLINE),
 // 			}).
 // 			Return(nil)
 

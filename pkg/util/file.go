@@ -89,7 +89,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			}
 			if !strings.Contains(dirName, "/") { // top directory model
 				currentOldModelName = dirName
-				dirName = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, dirName, uploadedModel.Instances[0].ID)
+				dirName = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, dirName, "latest")
 				currentNewModelName = dirName
 				newModelNameMap[currentOldModelName] = currentNewModelName
 			} else { // version folder
@@ -103,7 +103,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 					if err == nil {
 						createdTModels = append(createdTModels, datamodel.TritonModel{
 							Name:    currentNewModelName, // Triton model name
-							State:   datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+							State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 							Version: int(iVersion),
 						})
 					}
@@ -127,7 +127,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		}
 		// Triton modelname is folder name
 		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], uploadedModel.Instances[0].ID)
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], "latest")
 		newModelName := subStrs[0]
 		fPath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 		if strings.Contains(f.Name, "README.md") {
@@ -200,12 +200,12 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			}
 		}
 	}
-	uploadedModel.Instances[0].TritonModels = createdTModels
+	uploadedModel.TritonModels = createdTModels
 	return readmeFilePath, ensembleFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
-func UpdateModelPath(modelDir string, dstDir string, owner string, modelID string, modelInstance *datamodel.ModelInstance) (string, string, error) {
+func UpdateModelPath(modelDir string, dstDir string, owner string, modelID string, model *datamodel.Model) (string, string, error) {
 	var createdTModels []datamodel.TritonModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
@@ -241,7 +241,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		}
 		// Triton modelname is folder name
 		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelID, oldModelName, modelInstance.ID)
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelID, oldModelName, "latest")
 		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
 		if f.fInfo.IsDir() { // create new folder
@@ -254,7 +254,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
 				createdTModels = append(createdTModels, datamodel.TritonModel{
 					Name:    subStrs[0], // Triton model name
-					State:   datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+					State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 					Version: int(v),
 				})
 			}
@@ -320,7 +320,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 			}
 		}
 	}
-	modelInstance.TritonModels = createdTModels
+	model.TritonModels = createdTModels
 	return readmeFilePath, ensembleFilePath, nil
 }
 
@@ -369,11 +369,8 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 					String: description,
 					Valid:  true,
 				},
+				State:         datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 				Configuration: datatypes.JSON{},
-				Instances: []datamodel.ModelInstance{{
-					State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-					ID:    "latest",
-				}},
 			}
 			if err != nil {
 				return "", &datamodel.Model{}, "", err

@@ -59,8 +59,8 @@ type Service interface {
 	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
 
-	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error)
-	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error)
+	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelParams, string, error)
+	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelParams, string, int64, error)
 	CancelOperation(workflowId string) error
 
 	SearchAttributeReady() error

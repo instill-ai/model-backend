@@ -15,19 +15,17 @@ func CreateModelDefinitionRecord(
 	documentationURL string,
 	icon string,
 	modelSpec []byte,
-	modelInstanceSpec []byte,
 	releaseStage datamodel.ReleaseStage,
 ) error {
 	uid_, _ := uuid.FromString(uid)
 	modelDef := datamodel.ModelDefinition{
-		BaseStatic:        datamodel.BaseStatic{UID: uid_},
-		ID:                id,
-		DocumentationUrl:  documentationURL,
-		Icon:              icon,
-		ModelSpec:         modelSpec,
-		ModelInstanceSpec: modelInstanceSpec,
-		Title:             title,
-		ReleaseStage:      releaseStage,
+		BaseStatic:       datamodel.BaseStatic{UID: uid_},
+		ID:               id,
+		DocumentationUrl: documentationURL,
+		Icon:             icon,
+		ModelSpec:        modelSpec,
+		Title:            title,
+		ReleaseStage:     releaseStage,
 	}
 
 	if result := db.Model(&datamodel.ModelDefinition{}).FirstOrCreate(&modelDef); result.Error != nil {

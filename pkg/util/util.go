@@ -134,7 +134,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	// Check in the cache first.
 	var cacheModels []CacheModel
 	if config.Config.Cache.Model {
-		_ = CreateFolder(MODEL_CACHE_DIR) // create model cache folder if not exist.
+		_ = os.MkdirAll(MODEL_CACHE_DIR, os.ModePerm)
 		if _, err := os.Stat(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE); !os.IsNotExist(err) {
 			f, err := os.ReadFile(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE)
 			if err != nil {
