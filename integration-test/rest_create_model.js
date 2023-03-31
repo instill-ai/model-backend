@@ -62,6 +62,8 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.content`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.task`]: (r) => r.json().operation.response.task === "TASK_CLASSIFICATION",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
@@ -107,6 +109,8 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
+        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.task`]: (r) => r.json().operation.response.task === "TASK_DETECTION",
+        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
@@ -152,6 +156,8 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
+        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.task`]: (r) => r.json().operation.response.task === "TASK_KEYPOINT",
+        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
@@ -197,6 +203,8 @@ export function CreateModelFromLocal() {
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
+        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.task`]: (r) => r.json().operation.response.task === "TASK_UNSPECIFIED",
+        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
@@ -360,7 +368,8 @@ export function CreateModelFromGitHub() {
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "instill-ai/model-dummy-cls",
+          "tag": "v1.0-cpu"
         },
       }), {
         headers: genHeader("application/json"),
@@ -396,89 +405,11 @@ export function CreateModelFromGitHub() {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/github",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PUBLIC",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.task`]: (r) => r.json().operation.response.task === "TASK_CLASSIFICATION",
+        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
-      });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/deploy`, {}, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
-      });
-
-      // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
-      currentTime = new Date().getTime();
-      timeoutTime = new Date().getTime() + 120000;
-      while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu`, {
-          headers: genHeader(`application/json`),
-        })
-        if (res.json().instance.state === "STATE_ONLINE") {
-          break
-        }
-        sleep(1)
-        currentTime = new Date().getTime();
-      }
-
-      // Predict with url
-      let payload = JSON.stringify({
-        "task_inputs": [{
-          "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-          }
-        }]
-      });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score === 1,
-      });
-
-      // Predict multiple images with url
-      payload = JSON.stringify({
-        "task_inputs": [{
-          "classification": { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
-        },
-        {
-          "classification": { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
-        }
-        ]
-      });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/v1.0-cpu/trigger`, payload, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score === 1,
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[1].classification.category`]: (r) =>
-          r.json().task_outputs[1].classification.category === "match",
-        [`POST /v1alpha/models/${model_id}/instances/v1.0-cpu/trigger url cls task_outputs[1].classification.score`]: (r) =>
-          r.json().task_outputs[1].classification.score === 1,
       });
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
