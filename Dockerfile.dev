@@ -47,7 +47,7 @@ COPY . .
 
 RUN chown -R nobody:nogroup /go
 RUN chown -R nobody:nogroup /tmp
-RUN chown -R nobody:nogroup /.cache
+RUN mkdir /.cache && chown -R nobody:nogroup /.cache
 
 ENV GOCACHE /go/.cache/go-build
 ENV GOENV /go/.config/go/env
