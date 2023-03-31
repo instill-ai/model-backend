@@ -102,7 +102,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	resourceName := util.ConvertResourceName(dbModel.ID, dbModelInstance.ID)
+	resourceName := util.ConvertModelToResourceName(dbModel.ID, dbModelInstance.ID)
 
 	// downloading model weight when making inference
 	rdid, _ := uuid.NewV4()
@@ -304,7 +304,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	resourceName := util.ConvertResourceName(dbModel.ID, dbModelInstance.ID)
+	resourceName := util.ConvertModelToResourceName(dbModel.ID, dbModelInstance.ID)
 
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model

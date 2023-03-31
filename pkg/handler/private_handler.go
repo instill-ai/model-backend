@@ -121,5 +121,5 @@ func (h *PrivateHandler) CheckModelInstance(ctx context.Context, req *modelPB.Ch
 
 	return &modelPB.CheckModelInstanceResponse{
 		State: *state,
-	}, err
+	}, nil
 }

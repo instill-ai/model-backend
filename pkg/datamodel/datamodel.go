@@ -154,12 +154,6 @@ type ListModelQuery struct {
 	Owner string
 }
 
-type ResourceState struct {
-	Name     string
-	State    modelPB.ModelInstance_State
-	Progress *int32
-}
-
 func (s *ModelState) Scan(value interface{}) error {
 	*s = ModelState(modelPB.Model_State_value[value.(string)])
 	return nil

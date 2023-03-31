@@ -47,7 +47,6 @@ type Service interface {
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-<<<<<<< HEAD
 
 	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -55,18 +54,6 @@ type Service interface {
 	DeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
 	UndeployModelAsync(owner string, modelUID uuid.UUID) (string, error)
 
-=======
-	ModelInfer(modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
-	ModelInferTestMode(owner string, modelInstanceUID uuid.UUID, inferInput InferInput, task modelPB.ModelInstance_Task) ([]*modelPB.TaskOutput, error)
-	WatchModel(name string) (*controllerPB.GetResourceResponse, error)
-	CheckModel(modelInstanceUID uuid.UUID) (*modelPB.ModelInstance_State, error)
-	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUID uuid.UUID, instanceUID uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
-	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
-	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelInstance, string, int64, error)
-	DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
-	UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error)
->>>>>>> 93ae0bf (feat: add implementation for state monitoring with controller client)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
@@ -82,7 +69,7 @@ type Service interface {
 	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-	GetResourceState(modelID string, modelInstanceID string) (*datamodel.ResourceState, error)
+	GetResourceState(modelID string, modelInstanceID string) (*modelPB.ModelInstance_State, error)
 	UpdateResourceState(modelID string, modelInstanceID string, state modelPB.ModelInstance_State, progress *int32, workflowId *string) error
 	DeleteResourceState(modelID string, modelInstanceID string) error
 }

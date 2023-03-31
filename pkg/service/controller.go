@@ -5,16 +5,15 @@ import (
 	"time"
 
 	"github.com/instill-ai/model-backend/pkg/util"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-func (s *service) GetResourceState(modelID string, modelInstanceID string) (*datamodel.ResourceState, error) {
+func (s *service) GetResourceState(modelID string, modelInstanceID string) (*modelPB.ModelInstance_State, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+	resourceName := util.ConvertModelToResourceName(modelID, modelInstanceID)
 
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
 		Name: resourceName,
@@ -24,20 +23,14 @@ func (s *service) GetResourceState(modelID string, modelInstanceID string) (*dat
 		return nil, err
 	}
 
-	state := datamodel.ResourceState{
-		Name:     resp.Resource.Name,
-		State:    resp.Resource.GetModelInstanceState(),
-		Progress: resp.Resource.Progress,
-	}
-
-	return &state, nil
+	return resp.Resource.GetModelInstanceState().Enum(), nil
 }
 
 func (s *service) UpdateResourceState(modelID string, modelInstanceID string, state modelPB.ModelInstance_State, progress *int32, workflowId *string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+	resourceName := util.ConvertModelToResourceName(modelID, modelInstanceID)
 
 	_, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
@@ -61,7 +54,7 @@ func (s *service) DeleteResourceState(modelID string, modelInstanceID string) er
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
+	resourceName := util.ConvertModelToResourceName(modelID, modelInstanceID)
 
 	_, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
 		Name: resourceName,

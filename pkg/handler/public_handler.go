@@ -1679,7 +1679,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	resp, err := h.service.GetResourceState(modelID, instanceID)
+	state, err := h.service.GetResourceState(modelID, instanceID)
 
 	if err != nil {
 		return &modelPB.DeployModelInstanceResponse{}, err
@@ -1773,7 +1773,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	resp, err := h.service.GetResourceState(modelID, instanceID)
+	state, err := h.service.GetResourceState(modelID, instanceID)
 
 	if err != nil {
 		return &modelPB.UndeployModelInstanceResponse{}, err
@@ -1834,18 +1834,17 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 func (h *PublicHandler) WatchModelInstance(ctx context.Context, req *modelPB.WatchModelInstanceRequest) (*modelPB.WatchModelInstanceResponse, error) {
 	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
 	if err != nil {
-		return nil, err
+		return &modelPB.WatchModelInstanceResponse{}, err
 	}
 
-	resourceName := util.ConvertResourceName(modelID, modelInstanceID)
-	resp, err := h.service.WatchModel(resourceName)
+	state, err := h.service.GetResourceState(modelID, modelInstanceID)
 
 	if err != nil {
-		return nil, err
+		return &modelPB.WatchModelInstanceResponse{}, err
 	}
 
 	return &modelPB.WatchModelInstanceResponse{
-		State: resp.Resource.GetModelInstanceState(),
+		State: *state,
 	}, err
 }
 
