@@ -1394,6 +1394,8 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	switch modelDefinitionID {
 	case "github":
 		return createGitHubModel(h, ctx, req, owner, &modelDefinition)
+	case "artivc":
+		return createArtiVCModel(h, ctx, req, owner, &modelDefinition)
 	case "huggingface":
 		return createHuggingFaceModel(h, ctx, req, owner, &modelDefinition)
 	default:

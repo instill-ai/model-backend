@@ -50,12 +50,12 @@ export default () => {
         });
     }
 
-    // Private API
-    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+    // // Private API
+    // if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
         queryModelPrivate.GetModel()
         queryModelPrivate.ListModels()
         queryModelPrivate.LookUpModel()
-    }    
+    // }    
 
     // Create model API
     createModel.CreateModel()

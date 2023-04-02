@@ -65,6 +65,7 @@
     type: "object"
     required:
       - "content"
+      - "tag"
     additionalProperties: false
     minProperties: 1
     maxProperties: 1
@@ -141,6 +142,7 @@
     type: "object"
     required:
       - "repo_id"
+      - "tag"
     additionalProperties: false
     minProperties: 1
     maxProperties: 2
