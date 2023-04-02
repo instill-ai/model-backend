@@ -47,7 +47,6 @@ export default function (data) {
 
   // Query Model API by admin
   if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
-
     queryModelPrivate.GetModelAdmin()
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
