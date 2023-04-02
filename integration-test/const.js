@@ -10,7 +10,7 @@ if (__ENV.MODE == "api-gateway") {
     // localhost mode for GitHub Actions
     proto = "http"
     host = "localhost"
-    publicPort = 8083
+    publicPort = 8080
     privatePort = 3083
 } else {
     // direct microservice mode
