@@ -11,7 +11,6 @@ import * as queryModelPrivate from "./grpc_query_model_private.js"
 import * as deployModel from "./grpc_deploy_model.js"
 import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
-import * as queryModelInstance from "./grpc_query_model_instance.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
 import * as modelOperation from "./grpc_model_operation.js"
 
@@ -51,12 +50,12 @@ export default () => {
         });
     }
 
-    // Private API
-    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+    // // Private API
+    // if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
         queryModelPrivate.GetModel()
         queryModelPrivate.ListModels()
         queryModelPrivate.LookUpModel()
-    }    
+    // }    
 
     // Create model API
     createModel.CreateModel()
@@ -77,11 +76,6 @@ export default () => {
 
     // Infer Model API
     inferModel.InferModel()
-
-    // Query Model Instance API
-    queryModelInstance.GetModelInstance()
-    queryModelInstance.ListModelInstances()
-    queryModelInstance.LookupModelInstance()
 
     // Query Model Definition API
     queryModelDefinition.GetModelDefinition()

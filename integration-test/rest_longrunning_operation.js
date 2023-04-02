@@ -54,19 +54,19 @@ export function GetLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
           r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
           r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
           r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
           r.json().operation.response !== undefined,
       });
 
@@ -84,14 +84,14 @@ export function GetLongRunningOperation() {
           r.json().operation.done !== undefined,
       });
 
-      // Check the model instance state being updated in 120 secs
+      // Check the model state being updated in 120 secs
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state !== "STATE_UNSPECIFIED") {
+        if (res.json().model.state !== "STATE_UNSPECIFIED") {
           break
         }
         sleep(1)
@@ -143,19 +143,19 @@ export function ListLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
           r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
           r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
           r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
           r.json().operation.response !== undefined,
       });
 
@@ -169,14 +169,14 @@ export function ListLongRunningOperation() {
           r.json().operations.length >= 1,
       });
 
-      // Check the model instance state being updated in 120 secs
+      // Check the model state being updated in 120 secs
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state !== "STATE_UNSPECIFIED") {
+        if (res.json().model.state !== "STATE_UNSPECIFIED") {
           break
         }
         sleep(1)
@@ -228,19 +228,19 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(deployOperationRes, {
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
           r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
           r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
           r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
           r.json().operation.response !== undefined,
       });
 
@@ -252,13 +252,13 @@ export function CancelLongRunningOperation() {
           r.status === 200
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/models/${model_id}/instances/latest response status`]: (r) =>
+        [`GET /v1alpha/models/${model_id} response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${model_id}/instances/latest response instance.state`]: (r) =>
-          r.json().instance.state === "STATE_OFFLINE",
+        [`GET /v1alpha/models/${model_id} response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",
       })
 
       // clean up
@@ -302,19 +302,19 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/deploy`, {}, {
+      let deployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(deployOperationRes, {
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
           r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.metadata`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
           r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.done`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
           r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/instances/latest/deploy online task cls response operation.response`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
           r.json().operation.response !== undefined,
       });
 
@@ -332,11 +332,11 @@ export function CancelLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
-      let undeployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/undeploy`, {}, {
+      let undeployOperationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/undeploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(undeployOperationRes, {
-        [`POST /v1alpha/models/${model_id}/instances/latest/undeploy response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/undeploy response status`]: (r) =>
           r.status === 200
       })
       sleep(0.1)

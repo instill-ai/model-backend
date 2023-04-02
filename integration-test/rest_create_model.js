@@ -376,9 +376,9 @@ export function CreateModelFromGitHub() {
       })
 
       check(createClsModelRes, {
-        "POST /v1alpha/models/multipart task cls response status": (r) =>
+        "POST /v1alpha/models task cls response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+        "POST /v1alpha/models task cls response operation.name": (r) =>
           r.json().operation.name !== undefined,
       });
 

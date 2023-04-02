@@ -10,6 +10,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/worker"
+	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
@@ -17,7 +18,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	workflowpb "go.temporal.io/api/workflow/v1"
 )
 
@@ -29,13 +29,18 @@ func (s *service) DeployModelAsync(owner string, modelUID uuid.UUID) (string, er
 		TaskQueue: worker.TaskQueue,
 	}
 
+	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	if err != nil {
+		return "", err
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		context.Background(),
 		workflowOptions,
 		"DeployModelWorkflow",
 		&worker.ModelParams{
-			ModelUID: modelUID,
-			Owner:    owner,
+			Model: model,
+			Owner: owner,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -55,12 +60,18 @@ func (s *service) UndeployModelAsync(owner string, modelUID uuid.UUID) (string, 
 		TaskQueue: worker.TaskQueue,
 	}
 
+	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	if err != nil {
+		return "", err
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		context.Background(),
 		workflowOptions,
 		"UnDeployModelWorkflow",
 		&worker.ModelParams{
-			ModelUID: modelUID,
+			Model: model,
+			Owner: owner,
 		})
 
 	if err != nil {
@@ -130,7 +141,7 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 			return nil, nil, "", err
 		}
 		if k == "ModelUID" {
-			modelParams.ModelUID = uid
+			modelParams.Model.UID = uid
 		} else if k == "Owner" {
 			modelParams.Owner = fmt.Sprintf("users/%s", currentVal) // remove prefix users when storing in temporal
 		}
@@ -152,7 +163,7 @@ func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningp
 	var executions []*workflowpb.WorkflowExecutionInfo
 	// could support query such as by model uid
 	resp, err := s.temporalClient.ListWorkflow(context.Background(), &workflowservice.ListWorkflowExecutionsRequest{
-		Namespace:     modelWorker.Namespace,
+		Namespace:     worker.Namespace,
 		PageSize:      int32(pageSize),
 		NextPageToken: []byte(pageToken),
 	})
@@ -192,8 +203,8 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 		workflowOptions,
 		"CreateModelWorkflow",
 		&worker.ModelParams{
-			ModelUID: model.UID,
-			Owner:    owner,
+			Model: *model,
+			Owner: owner,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))

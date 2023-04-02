@@ -68,6 +68,10 @@ export function GetModelAdmin() {
           r.json().model.description === model_description,
         [`GET /v1alpha/admin/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
+        [`GET /v1alpha/admin/models/${model_id} task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models/${model_id} task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",          
         [`GET /v1alpha/admin/models/${model_id} task cls response model.configuration`]: (r) =>
           r.json().model.configuration === null,
         [`GET /v1alpha/admin/models/${model_id} task cls response model.visibility`]: (r) =>
@@ -93,6 +97,10 @@ export function GetModelAdmin() {
           r.json().model.id === model_id,
         [`GET /v1alpha/admin/models/${model_id} task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/admin/models/${model_id} task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models/${model_id} task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",          
         [`GET /v1alpha/admin/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/admin/models/${model_id} task cls response model.configuration.content`]: (r) =>
@@ -127,7 +135,8 @@ export function ListModelsAdmin() {
         "id": model_id_1,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "instill-ai/model-dummy-cls",
+          "tag": "v1.0-cpu"
         }
       }), {
         headers: genHeader("application/json"),
@@ -158,7 +167,8 @@ export function ListModelsAdmin() {
         "id": model_id_2,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "instill-ai/model-dummy-cls",
+          "tag": "v1.0-cpu"
         }
       }), {
         headers: genHeader("application/json"),
@@ -203,6 +213,10 @@ export function ListModelsAdmin() {
           r.json().models[0].id === model_id_2,
         [`GET /v1alpha/admin/models task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/admin/models task cls response models[0].configuration`]: (r) =>
@@ -236,6 +250,10 @@ export function ListModelsAdmin() {
           r.json().models[0].id === model_id_1,
         [`GET /v1alpha/admin/models task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/admin/models task cls response models[0].configuration`]: (r) =>
@@ -269,6 +287,10 @@ export function ListModelsAdmin() {
           r.json().models[0].id === model_id_2,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
@@ -291,6 +313,10 @@ export function ListModelsAdmin() {
           r.json().models[1].id === model_id_1,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].description`]: (r) =>
           r.json().models[1].description !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].task`]: (r) =>
+          r.json().models[1].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].state`]: (r) =>
+          r.json().models[1].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].model_definition`]: (r) =>
           r.json().models[1].model_definition === "model-definitions/github",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].configuration.repository`]: (r) =>
@@ -376,6 +402,10 @@ export function LookupModelAdmin() {
           r.json().model.description === model_description,
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
+        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration`]: (r) =>
           r.json().model.configuration === null,
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.visibility`]: (r) =>
@@ -401,6 +431,10 @@ export function LookupModelAdmin() {
           r.json().model.id === model_id,
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                    
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration.content`]: (r) =>

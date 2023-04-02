@@ -26,8 +26,8 @@ client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
 const model_def_name = "model-definitions/local"
 
 export function DeployUndeployModel() {
-    // Deploy ModelInstance check
-    group("Model API: Deploy ModelInstance", () => {
+    // Deploy Model check
+    group("Model API: Deploy Model", () => {
         client.connect(constant.gRPCPublicHost, {
             plaintext: true
         });
@@ -73,14 +73,14 @@ export function DeployUndeployModel() {
             'DeployModel operation done': (r) => r && r.message.operation.done === false,
         });
 
-        // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+        // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
             var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
-                name: `models/${model_id}/instances/latest`
+                name: `models/${model_id}`
             }, {})
-            if (res.message.instance.state === "STATE_ONLINE") {
+            if (res.message.model.state === "STATE_ONLINE") {
                 break
             }
             sleep(1)
@@ -88,15 +88,9 @@ export function DeployUndeployModel() {
         }
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModel', {
-            name: `models/non-existed/instances/latest`
+            name: `models/non-existed`
         }), {
             'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
-        });
-
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModel', {
-            name: `models/${model_id}/instances/non-existed`
-        }, {}), {
-            'DeployModel non-existed instance name status not found': (r) => r && r.status === grpc.StatusNotFound,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {

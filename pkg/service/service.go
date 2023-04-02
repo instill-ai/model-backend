@@ -44,6 +44,7 @@ type Service interface {
 	PublishModel(owner string, modelID string) (datamodel.Model, error)
 	UnpublishModel(owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
+	UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 
 	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -660,6 +661,22 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		return st.Err()
 	}
 
+	if modelInDB.State == datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED) {
+		st, err := sterr.CreateErrorPreconditionFailure(
+			"[service] delete model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "DELETE",
+					Subject:     fmt.Sprintf("id %s", modelInDB.ID),
+					Description: "The model is still in operations, please wait the operation finish and try it again",
+				},
+			})
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return st.Err()
+	}
+
 	if err := s.UndeployModel(modelInDB.UID); err != nil {
 		return err
 	}
@@ -730,6 +747,16 @@ func (s *service) UnpublishModel(owner string, modelID string) (datamodel.Model,
 
 func (s *service) UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
 	err := s.repository.UpdateModel(modelUID, *model)
+	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	return s.GetModelById(model.Owner, model.ID, modelPB.View_VIEW_FULL)
+}
+
+// TODO: gorm do not update the zero value with struct, so we need to update the state manually.
+func (s *service) UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error) {
+	err := s.repository.UpdateModelState(modelUID, state)
 	if err != nil {
 		return datamodel.Model{}, err
 	}

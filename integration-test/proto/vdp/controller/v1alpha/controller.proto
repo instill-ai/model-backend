@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package vdp.controller.v1alpha;
+
+// Protobuf standard
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// Google api
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+
+import "../../../vdp/model/v1alpha/model.proto";
+import "../../../vdp/pipeline/v1alpha/pipeline.proto";
+import "../../../vdp/connector/v1alpha/connector.proto";
+import "../../../vdp/healthcheck/v1alpha/healthcheck.proto";
+
+// Resource represents the current information of a resource
+message Resource {
+    option (google.api.resource) = {
+      type : "api.instill.tech/Resource"
+      pattern : "resources/{resource}/types/{type}"
+    };
+
+    // Resource name.
+    string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+    // Resource state
+    oneof state {
+        // Model state
+        vdp.model.v1alpha.Model.State model_state = 2;
+        // Pipeline state
+        vdp.pipeline.v1alpha.Pipeline.State pipeline_state = 3;
+        // Connector state
+        vdp.connector.v1alpha.Connector.State connector_state = 4;
+        // Backend service state
+        vdp.healthcheck.v1alpha.HealthCheckResponse.ServingStatus backend_state = 5;
+    };
+    // Resource longrunning progress
+    optional int32 progress = 6 [ (google.api.field_behavior) = OPTIONAL ];
+  }
+
+// GetResourceRequest represents a request to query a resource's state
+message GetResourceRequest {
+    // Resource name
+    string name = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (google.api.resource_reference) = {type : "api.instill.tech/Resource"},
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        field_configuration : {path_param_name : "resource.name"}
+      }
+    ];
+}
+
+// GetResourceResponse represents a response to fetch a resource's state
+message GetResourceResponse {
+    // Retrieved resource state
+    Resource resource = 1;
+}
+
+// UpdateResourceRequest represents a request to update a resource's state
+message UpdateResourceRequest {
+    // Resource state
+    Resource resource = 1 [ (google.api.field_behavior) = REQUIRED ];
+    // Resource longrunnning workflow id
+    optional string workflow_id = 2 [ (google.api.field_behavior) = OPTIONAL ];
+}
+
+// UpdateResourceResponse represents a response to update a resource's state
+message UpdateResourceResponse {
+    // Updated resource state
+    Resource resource = 1;
+}
+
+// DeleteResourceRequest represents a request to delete a resource's state
+message DeleteResourceRequest {
+    // Resource name
+    string name = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (google.api.resource_reference) = {type : "api.instill.tech/Resource"},
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        field_configuration : {path_param_name : "resource.name"}
+      }
+    ];
+}
+
+// DeleteResourceResponse represents an empty response
+message DeleteResourceResponse {}

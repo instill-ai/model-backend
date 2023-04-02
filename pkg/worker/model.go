@@ -19,8 +19,8 @@ import (
 )
 
 type ModelParams struct {
-	ModelUID uuid.UUID
-	Owner    string
+	Model datamodel.Model
+	Owner string
 }
 
 func (w *worker) AddSearchAttributeWorkflow(ctx workflow.Context) error {
@@ -60,7 +60,7 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
 		"Type":     util.OperationTypeDeploy,
-		"ModelUID": param.ModelUID.String(),
+		"ModelUID": param.Model.UID.String(),
 		"Owner":    strings.TrimPrefix(param.Owner, "users/"),
 	}
 
@@ -86,7 +86,7 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) e
 
 func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) error {
 
-	dbModel, err := w.repository.GetModelByUid(param.Owner, param.ModelUID, modelPB.View_VIEW_FULL)
+	dbModel, err := w.repository.GetModelByUid(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				return err
 			}
 
-			err = util.ArtiVCClone(modelSrcDir, modelConfig, modelConfig, true)
+			err = util.ArtiVCClone(modelSrcDir, modelConfig, true)
 			if err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
@@ -183,7 +183,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		_ = os.RemoveAll(modelSrcDir)
 	}
 
-	tEnsembleModel, _ := w.repository.GetTritonEnsembleModel(param.ModelUID)
+	tEnsembleModel, _ := w.repository.GetTritonEnsembleModel(param.Model.UID)
 	for _, tModel := range tritonModels {
 		if tEnsembleModel.Name != "" && tEnsembleModel.Name == tModel.Name { // load ensemble model last.
 			continue
@@ -191,7 +191,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		if _, err = w.triton.LoadModelRequest(tModel.Name); err == nil {
 			continue
 		}
-		if e := w.repository.UpdateModel(param.ModelUID, datamodel.Model{
+		if e := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 			State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 		}); e != nil {
 			return e
@@ -200,7 +200,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
 		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-			if e := w.repository.UpdateModel(param.ModelUID, datamodel.Model{
+			if e := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 			}); e != nil {
 				return e
@@ -208,7 +208,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}
 	}
 
-	if err = w.repository.UpdateModel(param.ModelUID, datamodel.Model{
+	if err = w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 		State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
 	}); err != nil {
 		return err
@@ -224,7 +224,7 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 	// Upsert search attributes.
 	attributes := map[string]interface{}{
 		"Type":     util.OperationTypeUnDeploy,
-		"ModelUID": param.ModelUID.String(),
+		"ModelUID": param.Model.UID.String(),
 		"Owner":    strings.TrimPrefix(param.Owner, "users/"),
 	}
 
@@ -251,7 +251,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 	var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = w.repository.GetTritonModels(param.ModelUID); err != nil {
+	if tritonModels, err = w.repository.GetTritonModels(param.Model.UID); err != nil {
 		return err
 	}
 
@@ -259,7 +259,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err1 := w.repository.UpdateModel(param.ModelUID, datamodel.Model{
+			if err1 := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
 			}); err1 != nil {
 				return err1
@@ -268,7 +268,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		}
 	}
 
-	if err := w.repository.UpdateModel(param.ModelUID, datamodel.Model{
+	if err := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
 		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 	}); err != nil {
 		return err
@@ -282,16 +282,11 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
-	model, err := w.repository.GetModelByUid(param.Owner, param.ModelUID, modelPB.View_VIEW_BASIC)
-	if err != nil {
+	if err := w.repository.CreateModel(param.Model); err != nil {
 		return err
 	}
 
-	if err := w.repository.CreateModel(model); err != nil {
-		return err
-	}
-
-	dbModel, err := w.repository.GetModelById(param.Owner, model.ID, modelPB.View_VIEW_BASIC)
+	dbModel, err := w.repository.GetModelById(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return err
 	}

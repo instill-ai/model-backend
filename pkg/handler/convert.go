@@ -68,6 +68,8 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
+		State:           modelPB.Model_State(dbModel.State),
+		Task:            modelPB.Model_Task(dbModel.Task),
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
 				str := structpb.Struct{}

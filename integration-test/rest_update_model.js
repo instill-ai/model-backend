@@ -73,6 +73,10 @@ export function UpdateModel() {
           r.json().model.description === new_description,
         [`PATCH /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
+        [`PATCH /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`PATCH /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                    
         [`PATCH /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
           r.json().model.configuration !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
@@ -101,6 +105,10 @@ export function UpdateModel() {
           r.json().model.id === model_id,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.description`]: (r) =>
           r.json().model.description === "",
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",   
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                   
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.configuration`]: (r) =>

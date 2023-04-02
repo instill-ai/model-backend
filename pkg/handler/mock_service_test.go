@@ -421,3 +421,18 @@ func (mr *MockServiceMockRecorder) UpdateModel(arg0, arg1 interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModel", reflect.TypeOf((*MockService)(nil).UpdateModel), arg0, arg1)
 }
+
+// UpdateModelState mocks base method.
+func (m *MockService) UpdateModelState(arg0 uuid.UUID, arg1 *datamodel.Model, arg2 datamodel.ModelState) (datamodel.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateModelState", arg0, arg1, arg2)
+	ret0, _ := ret[0].(datamodel.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateModelState indicates an expected call of UpdateModelState.
+func (mr *MockServiceMockRecorder) UpdateModelState(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelState", reflect.TypeOf((*MockService)(nil).UpdateModelState), arg0, arg1, arg2)
+}

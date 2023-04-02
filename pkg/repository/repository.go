@@ -19,6 +19,7 @@ type Repository interface {
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(modelUID uuid.UUID) error
 	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
+	UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 
 	CreateTritonModel(model datamodel.TritonModel) error
@@ -58,6 +59,8 @@ var GetModelSelectedFields = []string{
 	`"model"."configuration"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
+	`"model"."state"`,
+	`"model"."task"`,
 	`"model"."create_time"`,
 	`"model"."update_time"`,
 }
@@ -70,6 +73,8 @@ var GetModelSelectedFieldsWOConfiguration = []string{
 	`"model"."model_definition_uid"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
+	`"model"."state"`,
+	`"model"."task"`,
 	`"model"."create_time"`,
 	`"model"."update_time"`,
 }
@@ -252,9 +257,20 @@ func (r *repository) ListModelsAdmin(view modelPB.View, pageSize int, pageToken 
 }
 
 func (r *repository) UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel); result.Error != nil {
+	result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel)
+	if result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
+
+	return nil
+}
+
+// TODO: gorm do not update the zero value with struct, so we need to update the state manually.
+func (r *repository) UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error {
+	if result := r.db.Model(&datamodel.Model{}).Where(map[string]interface{}{"uid": modelUID}).Updates(map[string]interface{}{"state": state}); result.Error != nil {
+		return status.Errorf(codes.Internal, "Error %v", result.Error)
+	}
+
 	return nil
 }
 
@@ -266,25 +282,25 @@ func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
 	return nil
 }
 
-func (r *repository) GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error) {
+func (r *repository) GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error) {
 	var tmodels []datamodel.TritonModel
-	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_instance_uid", modelInstanceUID).Find(&tmodels); result.Error != nil {
-		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model instance id %v not found", modelInstanceUID)
+	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
+		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
 	}
 	return tmodels, nil
 }
 
-func (r *repository) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {
+func (r *repository) GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error) {
 	var ensembleModel datamodel.TritonModel
-	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_instance_uid": modelInstanceUID, "platform": "ensemble"}).First(&ensembleModel)
+	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_uid": modelUID, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
-		return datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelInstanceUID)
+		return datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}
 	return ensembleModel, nil
 }
 
 func (r *repository) DeleteModel(modelUID uuid.UUID) error {
-	if result := r.db.Select("Instances").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
+	if result := r.db.Select("TritonModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUID)
 	}
 	return nil
@@ -329,7 +345,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageT
 	}
 
 	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("model_spec", "model_instance_spec")
+		queryBuilder.Omit("model_spec")
 	}
 
 	var createTime time.Time

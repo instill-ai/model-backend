@@ -27,7 +27,6 @@ export function GetModelDefinition() {
             "GetModelDefinition response modelDefinition.icon": (r) => r.message.modelDefinition.icon !== undefined,
             "GetModelDefinition response modelDefinition.documentationUrl": (r) => r.message.modelDefinition.documentationUrl !== undefined,
             "GetModelDefinition response modelDefinition.modelSpec": (r) => r.message.modelDefinition.modelSpec !== undefined,
-            "GetModelDefinition response modelDefinition.modelInstanceSpec": (r) => r.message.modelDefinition.modelInstanceSpec !== undefined,
             "GetModelDefinition response modelDefinition.create_time": (r) => r.message.modelDefinition.createTime !== undefined,
             "GetModelDefinition response modelDefinition.update_time": (r) => r.message.modelDefinition.updateTime !== undefined,
         });
@@ -49,7 +48,6 @@ export function ListModelDefinitions() {
             "ListModelDefinitions response modelDefinitions[2].icon": (r) => r.message.modelDefinitions[2].icon !== undefined,
             "ListModelDefinitions response modelDefinitions[2].documentationUrl": (r) => r.message.modelDefinitions[2].documentationUrl !== undefined,
             "ListModelDefinitions response modelDefinitions[2].modelSpec": (r) => r.message.modelDefinitions[2].modelSpec !== undefined,
-            "ListModelDefinitions response modelDefinitions[2].modelInstanceSpec": (r) => r.message.modelDefinitions[2].modelInstanceSpec !== undefined,
             "ListModelDefinitions response modelDefinitions[2].create_time": (r) => r.message.modelDefinitions[2].createTime !== undefined,
             "ListModelDefinitions response modelDefinitions[2].update_time": (r) => r.message.modelDefinitions[2].updateTime !== undefined,
         });

@@ -106,6 +106,37 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
+    "state": {
+      "type": "string",
+      "title": "State",
+      "description": "The model state",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "STATE_OFFLINE",
+        "STATE_ONLINE",
+        "STATE_ERROR"
+      ],
+      "default": "STATE_UNSPECIFIED",
+      "readOnly": true,
+      "ui_order": 3,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "select",
+      "ui_enum": ["", "Offline", "Online", "Error"]
+    },
+    "task": {
+      "type": "string",
+      "title": "Task",
+      "description": "The model task",
+      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION"],
+      "default": "TASK_UNSPECIFIED",
+      "readOnly": true,
+      "ui_order": 4,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "select",
+      "ui_enum": ["", "Image classification", "Object detection"]
+    },    
     "create_time": {
       "type": "string",
       "format": "date-time",

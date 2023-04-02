@@ -3,6 +3,7 @@ package util
 import (
 	"archive/zip"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -205,14 +206,14 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 }
 
 // modelDir and dstDir are absolute path
-func UpdateModelPath(modelDir string, dstDir string, owner string, modelID string, model *datamodel.Model) (string, string, error) {
+func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
 	var createdTModels []datamodel.TritonModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
 	var readmeFilePath string
 	files := []FileMeta{}
 	var configFiles []string
-	var fileRe = regexp.MustCompile(`.git|.dvc|.dvcignore`)
+	var fileRe = regexp.MustCompile(`/.git|/.dvc|/.dvcignore`)
 	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
 		if !fileRe.MatchString(path) {
 			files = append(files, FileMeta{
@@ -230,6 +231,8 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 	if err != nil {
 		return "", "", err
 	}
+	var modelConfiguration datamodel.GitHubModelConfiguration
+	_ = json.Unmarshal(model.Configuration, &modelConfiguration)
 	for _, f := range files {
 		if f.path == modelDir {
 			continue
@@ -241,7 +244,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, modelID strin
 		}
 		// Triton modelname is folder name
 		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, modelID, oldModelName, "latest")
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, model.ID, oldModelName, modelConfiguration.Tag)
 		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
 		if f.fInfo.IsDir() { // create new folder

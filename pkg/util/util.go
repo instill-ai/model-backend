@@ -540,7 +540,7 @@ func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]str
 	}
 }
 
-func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, instanceConfig datamodel.ArtiVCModelConfiguration, withLargeFiles bool) error {
+func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, withLargeFiles bool) error {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
@@ -561,7 +561,7 @@ func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, ins
 		}
 
 		// download other source file such as .py, config.pbtxt
-		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc get -o %s %s@%s", credentialFile, dir, url, instanceConfig.Tag))
+		cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s avc get -o %s %s@%s", credentialFile, dir, url, modelConfig.Tag))
 		err = cmd.Run()
 		if err != nil {
 			return err

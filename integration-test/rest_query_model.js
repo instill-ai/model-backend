@@ -67,6 +67,10 @@ export function GetModel() {
           r.json().model.id === model_id,
         [`GET /v1alpha/models/${model_id} task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",          
+        [`GET /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",          
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
@@ -94,6 +98,10 @@ export function GetModel() {
           r.json().model.id === model_id,
         [`GET /v1alpha/models/${model_id} task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",          
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration.content`]: (r) =>
@@ -128,7 +136,8 @@ export function ListModels() {
         "id": model_id_1,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "instill-ai/model-dummy-cls",
+          "tag": "v1.0-cpu"
         }
       }), {
         headers: genHeader("application/json"),
@@ -159,7 +168,8 @@ export function ListModels() {
         "id": model_id_2,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "instill-ai/model-dummy-cls",
+          "tag": "v1.0-cpu"
         }
       }), {
         headers: genHeader("application/json"),
@@ -204,6 +214,10 @@ export function ListModels() {
           r.json().models[0].id === model_id_2,
         [`GET /v1alpha/models task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/models task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
@@ -237,6 +251,10 @@ export function ListModels() {
           r.json().models[0].id === model_id_1,
         [`GET /v1alpha/models task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/models task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
@@ -270,10 +288,16 @@ export function ListModels() {
           r.json().models[0].id === model_id_2,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].description`]: (r) =>
           r.json().models[0].description !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].task`]: (r) =>
+          r.json().models[0].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].state`]: (r) =>
+          r.json().models[0].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
           r.json().models[0].configuration.repository === "instill-ai/model-dummy-cls",
+          [`GET /v1alpha/models?view=VIEW_FULL tag cls response models[0].configuration.tag`]: (r) =>
+          r.json().models[0].configuration.tag === "v1.0-cpu",          
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
           r.json().models[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
@@ -292,10 +316,16 @@ export function ListModels() {
           r.json().models[1].id === model_id_1,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].description`]: (r) =>
           r.json().models[1].description !== undefined,
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].task`]: (r) =>
+          r.json().models[1].task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].state`]: (r) =>
+          r.json().models[1].state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].model_definition`]: (r) =>
           r.json().models[1].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.repository`]: (r) =>
           r.json().models[1].configuration.repository === "instill-ai/model-dummy-cls",
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.tag`]: (r) =>
+          r.json().models[1].configuration.tag === "v1.0-cpu",          
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.html_url`]: (r) =>
           r.json().models[1].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
@@ -375,6 +405,10 @@ export function LookupModel() {
           r.json().model.id === model_id,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration`]: (r) =>
@@ -402,6 +436,10 @@ export function LookupModel() {
           r.json().model.id === model_id,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+          r.json().model.task === "TASK_CLASSIFICATION",
+        [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+          r.json().model.state === "STATE_OFFLINE",                    
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration.content`]: (r) =>

@@ -55,18 +55,18 @@ export function GetModelCard() {
         currentTime = new Date().getTime();
       }
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/readme`), {
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response status`]: (r) =>
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`), {
+        [`GET /v1alpha/models/${model_id}/readme response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.name`]: (r) =>
-          r.json().readme.name === `models/${model_id}/instances/latest/readme`,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.size`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme response readme.name`]: (r) =>
+          r.json().readme.name === `models/${model_id}/readme`,
+        [`GET /v1alpha/models/${model_id}/readme response readme.size`]: (r) =>
           r.json().readme.size !== undefined,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.type`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme response readme.type`]: (r) =>
           r.json().readme.type === "file",
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.encoding`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme response readme.encoding`]: (r) =>
           r.json().readme.encoding === "base64",
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response readme.content`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme response readme.content`]: (r) =>
           r.json().readme.content !== undefined,
       });
 
@@ -113,18 +113,18 @@ export function GetModelCard() {
         currentTime = new Date().getTime();
       }
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/instances/latest/readme`), {
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme response status`]: (r) =>
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`), {
+        [`GET /v1alpha/models/${model_id}/readme response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.name`]: (r) =>
-          r.json().readme.name === `models/${model_id}/instances/latest/readme`,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.size`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme no readme response readme.name`]: (r) =>
+          r.json().readme.name === `models/${model_id}/readme`,
+        [`GET /v1alpha/models/${model_id}/readme no readme response readme.size`]: (r) =>
           r.json().readme.size === 0,
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.type`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme no readme response readme.type`]: (r) =>
           r.json().readme.type === "file",
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.encoding`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme no readme response readme.encoding`]: (r) =>
           r.json().readme.encoding === "base64",
-        [`GET /v1alpha/models/${model_id}/instances/latest/readme no readme response readme.content`]: (r) =>
+        [`GET /v1alpha/models/${model_id}/readme no readme response readme.content`]: (r) =>
           r.json().readme.content === "",
       });
 

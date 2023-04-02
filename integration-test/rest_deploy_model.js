@@ -75,7 +75,7 @@ export function DeployUndeployModel() {
         [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
-          r.json().state === "STATE_UNSPECIFIED",
+          r.json().model.state === "STATE_UNSPECIFIED",
       })
 
       // Check delete model with 422 when model is in unspecified state
@@ -93,7 +93,7 @@ export function DeployUndeployModel() {
         var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_ONLINE") {
+        if (res.json().model.state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -121,10 +121,10 @@ export function DeployUndeployModel() {
         [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
-          r.json().state === "STATE_UNSPECIFIED",
+          r.json().model.state === "STATE_UNSPECIFIED",
       })
 
-      // Check delete model with 422 when model is in unspecifed state
+      // Check delete model with 422 when model is in unspecified state
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
@@ -139,7 +139,7 @@ export function DeployUndeployModel() {
         var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().model.state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
