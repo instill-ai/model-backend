@@ -633,7 +633,7 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		return err
 	}
 
-	filter := fmt.Sprintf("recipe.model_instances:\"models/%s\"", modelInDB.UID)
+	filter := fmt.Sprintf("recipe.models:\"models/%s\"", modelInDB.UID)
 
 	pipeResp, err := s.pipelinePublicServiceClient.ListPipelines(context.Background(), &pipelinePB.ListPipelinesRequest{
 		Filter: &filter,
