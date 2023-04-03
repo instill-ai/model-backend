@@ -35,7 +35,7 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-  model: true
+  model: false
 usageserver:
   tlsenabled: true
   host: usage.instill.tech
