@@ -18,9 +18,6 @@ var ModelDefJSONSchema *jsonschema.Schema
 // ModelJSONSchema represents the Model JSON Schema for validating the payload
 var ModelJSONSchema *jsonschema.Schema
 
-// ModelInstanceJSONSchema represents the Model Instance JSON Schema for validating the payload
-var ModelInstanceJSONSchema *jsonschema.Schema
-
 // ModelInstanceCardJSONSchema represents the Model Instance Card JSON Schema for validating the payload
 var ModelInstanceCardJSONSchema *jsonschema.Schema
 
@@ -53,18 +50,18 @@ func InitJSONSchema() {
 		}
 	}
 
-	if r, err := os.Open("config/model/model_instance.json"); err != nil {
+	if r, err := os.Open("config/model/model_spec.json"); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_instance.json", r); err != nil {
+		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_spec.json", r); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
 	}
 
-	if r, err := os.Open("config/model/model_instance_card.json"); err != nil {
+	if r, err := os.Open("config/model/model_card.json"); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_instance_card.json", r); err != nil {
+		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_card.json", r); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
 	}
@@ -96,12 +93,7 @@ func InitJSONSchema() {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	ModelInstanceJSONSchema, err = compiler.Compile("config/model/model_instance.json")
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	}
-
-	ModelInstanceCardJSONSchema, err = compiler.Compile("config/model/model_instance_card.json")
+	ModelInstanceCardJSONSchema, err = compiler.Compile("config/model/model_card.json")
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}

@@ -10,7 +10,6 @@
     "documentation_url",
     "icon",
     "model_spec",
-    "model_instance_spec",
     "release_stage"
   ],
   "properties": {
@@ -75,21 +74,43 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
+    "state": {
+      "type": "string",
+      "title": "State",
+      "description": "The model state",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "STATE_OFFLINE",
+        "STATE_ONLINE",
+        "STATE_ERROR"
+      ],
+      "default": "STATE_UNSPECIFIED",
+      "readOnly": true,
+      "ui_order": 3,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "select",
+      "ui_enum": ["", "Offline", "Online", "Error"]
+    },
+    "task": {
+      "type": "string",
+      "title": "Task",
+      "description": "The model task",
+      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION"],
+      "default": "TASK_UNSPECIFIED",
+      "readOnly": true,
+      "ui_order": 4,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "select",
+      "ui_enum": ["", "Image classification", "Object detection"]
+    },    
     "model_spec": {
       "type": "object",
       "title": "Specification",
       "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model",
       "additionalProperties": true,
       "ui_order": 6,
-      "ui_hidden": true,
-      "ui_disabled": true
-    },
-    "model_instance_spec": {
-      "type": "object",
-      "title": "Instance specification",
-      "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model instance",
-      "additionalProperties": true,
-      "ui_order": 7,
       "ui_hidden": true,
       "ui_disabled": true
     },

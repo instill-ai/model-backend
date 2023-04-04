@@ -48,6 +48,8 @@ COPY . .
 RUN chown -R nobody:nogroup /go
 RUN chown -R nobody:nogroup /tmp
 RUN mkdir /.cache && chown -R nobody:nogroup /.cache
+# Need permission of /nonexistent folder for HuggingFace internal process.
+RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 
 ENV GOCACHE /go/.cache/go-build
 ENV GOENV /go/.config/go/env

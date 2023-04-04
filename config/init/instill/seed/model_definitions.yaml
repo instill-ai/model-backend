@@ -10,41 +10,6 @@
     type: "object"
     required:
       - "repository"
-    additionalProperties: false
-    minProperties: 1
-    maxProperties: 2
-    properties:
-      repository:
-        type: "string"
-        title: "GitHub repository"
-        description: "The name of a public GitHub repository, e.g. `instill-ai/model-yolov7`."
-        examples:
-          - "instill-ai/model-yolov7"
-          - "instill-ai/model-mobilenetv2"
-        ui_order: 0
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-      html_url:
-        type: "string"
-        title: "Github repository URL"
-        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/model-yolov7`."
-        examples:
-          - "https://github.com/instill-ai/model-yolov7"
-          - "https://github.com/instill-ai/model-mobilenetv2"
-        readOnly: true
-        ui_order: 1
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-  modelInstanceSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "GitHub spec for model instance"
-    type: "object"
-    required:
-      - "repository"
       - "tag"
     additionalProperties: false
     minProperties: 2
@@ -57,9 +22,7 @@
         examples:
           - "instill-ai/model-yolov7"
           - "instill-ai/model-mobilenetv2"
-        readOnly: true
         ui_order: 0
-        ui_disabled: true
         ui_component: "text"
         minLength: 0
         maxLength: 1023
@@ -75,16 +38,17 @@
         ui_disabled: true
         ui_component: "text"
         minLength: 0
-        maxLength: 200
+        maxLength: 200        
       html_url:
         type: "string"
-        title: "Github repository tag URL"
-        description: "The tag URL of the GitHub repository, e.g., `https://github.com/instill-ai/model-yolov7/tree/v1.0-cpu`."
+        title: "Github repository URL"
+        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/model-yolov7`."
         examples:
-          - "https://github.com/instill-ai/model-yolov7/tree/v1.0-cpu"
-          - "https://github.com/instill-ai/model-mobilenetv2/tree/v1.0-cpu"
+          - "https://github.com/instill-ai/model-yolov7"
+          - "https://github.com/instill-ai/model-mobilenetv2"
         readOnly: true
         ui_order: 2
+        ui_hidden: true
         ui_disabled: true
         ui_component: "text"
         minLength: 0
@@ -103,41 +67,27 @@
       - "content"
     additionalProperties: false
     minProperties: 1
-    maxProperties: 1
+    maxProperties: 2
     properties:
       content:
         type: "string"
         contentMediaType: "application/zip"
         title: "Upload a .zip file"
         description: "Create and upload a zip file that contains all the model files from your computer. We recommend you add a README.md file in the root directory to describe the model in details."
-        ui_order: 1
+        ui_order: 0
         ui_disabled: true
         ui_hidden: true
         ui_component: "file"
         minLength: 0
         maxLength: 1023
-  modelInstanceSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "Local spec for model instance"
-    type: "object"
-    required:
-      - "content"
-    additionalProperties: false
-    minProperties: 1
-    maxProperties: 1
-    properties:
-      content:
+      tag:
         type: "string"
-        contentMediaType: "application/zip"
-        title: "Upload a .zip file"
-        description: "Create and upload a zip file that contains all the model files from your computer. We recommend you add a README.md file in the root directory to describe the model in details."
-        readOnly: true
+        title: "Model tag"
+        description: "The tag of the model"     
         ui_order: 1
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "file"
+        ui_component: "text"
         minLength: 0
-        maxLength: 1023
+        maxLength: 200           
 - id: artivc
   uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
   title: ArtiVC
@@ -150,39 +100,10 @@
     type: "object"
     required:
       - "url"
-    additionalProperties: false
-    minProperties: 1
-    maxProperties: 2
-    properties:
-      url:
-        type: "string"
-        title: "GCS bucket path"
-        description: "The bucket path of Google Cloud Storage (GCS), e.g. `gs://mybucket/path/to/mymodel/`."
-        examples:
-          - "gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4"
-        readOnly: true
-        ui_order: 1
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-      credential:
-        type: "object"
-        title: "Credentials JSON"
-        description: "If the GCS bucket path is private, please provide the Google Cloud Application Default credential or service account credential in its JSON format to get access to the model. See [ArtiVC Google Cloud Storage setup guide](https://artivc.io/backends/gcs/)."
-        readOnly: true
-        ui_order: 2
-        minProperties: 0
-        maxProperties: 10     
-  modelInstanceSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "ArtiVC spec for model instance"
-    type: "object"
-    required:
-      - "url"
       - "tag"
     additionalProperties: false
     minProperties: 2
-    maxProperties: 2
+    maxProperties: 3
     properties:
       url:
         type: "string"
@@ -207,7 +128,15 @@
         ui_disabled: true
         ui_component: "text"
         minLength: 0
-        maxLength: 200
+        maxLength: 200        
+      credential:
+        type: "object"
+        title: "Credentials JSON"
+        description: "If the GCS bucket path is private, please provide the Google Cloud Application Default credential or service account credential in its JSON format to get access to the model. See [ArtiVC Google Cloud Storage setup guide](https://artivc.io/backends/gcs/)."
+        readOnly: true
+        ui_order: 2
+        minProperties: 0
+        maxProperties: 10
 - id: "huggingface"
   uid: "5b2e1d10-1fab-462d-9d6a-ba41f4b4d816"
   title: "Hugging Face"
@@ -236,6 +165,14 @@
         ui_component: "text"
         minLength: 0
         maxLength: 1023
+      tag:
+        type: "string"
+        title: "Model tag"
+        description: "The tag of the model"  
+        ui_order: 1    
+        ui_component: "text"
+        minLength: 0
+        maxLength: 200                  
       html_url:
         type: "string"
         title: "Hugging Face repository URL"
@@ -251,40 +188,4 @@
         ui_component: "text"
         minLength: 0
         maxLength: 1023
-  modelInstanceSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "Hugging Face spec for model instance"
-    type: "object"
-    required:
-      - "repo_id"
-    additionalProperties: false
-    minProperties: 1
-    maxProperties: 2
-    properties:
-      repo_id:
-        type: "string"
-        title: "Hugging Face repository"
-        description: "The name of a public Hugging Face repository, e.g. `google/vit-base-patch16-224`. Currently, we only support importing repositories tagged with `Image Classification`."
-        examples:
-          - "google/vit-base-patch16-224"
-          - "microsoft/resnet-50"
-          - "facebook/convnext-tiny-224"
-        ui_order: 0
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-      html_url:
-        type: "string"
-        title: "Hugging Face repository main branch URL"
-        description: "The main branch URL of the Hugging Face repository, e.g. `https://huggingface.co/google/vit-base-patch16-224/tree/main`."
-        examples:
-          - "https://huggingface.co/google/vit-base-patch16-224/tree/main"
-          - "https://huggingface.co/microsoft/resnet-50/tree/main"
-          - "https://huggingface.co/facebook/convnext-tiny-224/tree/main"
-        readOnly: true
-        ui_order: 1
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
+

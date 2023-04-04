@@ -68,6 +68,8 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
+		State:           modelPB.Model_State(dbModel.State),
+		Task:            modelPB.Model_Task(dbModel.Task),
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
 				str := structpb.Struct{}
@@ -107,32 +109,6 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 	return &pbModel
 }
 
-func DBModelInstanceToPBModelInstance(modelDef *datamodel.ModelDefinition, model *datamodel.Model, dbModelInstance *datamodel.ModelInstance) *modelPB.ModelInstance {
-	logger, _ := logger.GetZapLogger()
-
-	pbModelInstance := modelPB.ModelInstance{
-		Name:            fmt.Sprintf("models/%s/instances/%s", model.ID, dbModelInstance.ID),
-		Uid:             dbModelInstance.BaseDynamic.UID.String(),
-		Id:              dbModelInstance.ID,
-		CreateTime:      timestamppb.New(dbModelInstance.CreateTime),
-		UpdateTime:      timestamppb.New(dbModelInstance.UpdateTime),
-		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
-		State:           modelPB.ModelInstance_State(dbModelInstance.State),
-		Task:            modelPB.ModelInstance_Task(dbModelInstance.Task),
-		Configuration: func() *structpb.Struct {
-			if dbModelInstance.Configuration != nil {
-				str := structpb.Struct{}
-				if err := str.UnmarshalJSON(dbModelInstance.Configuration); err != nil {
-					logger.Fatal(err.Error())
-				}
-				return &str
-			}
-			return nil
-		}(),
-	}
-	return &pbModelInstance
-}
-
 func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
 	logger, _ := logger.GetZapLogger()
 
@@ -150,17 +126,6 @@ func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefi
 			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
 				if err := protojson.Unmarshal([]byte(dbModelDefinition.ModelSpec.String()), specification); err != nil {
-					logger.Fatal(err.Error())
-				}
-				return specification
-			} else {
-				return nil
-			}
-		}(),
-		ModelInstanceSpec: func() *structpb.Struct {
-			if dbModelDefinition.ModelInstanceSpec != nil {
-				var specification = &structpb.Struct{}
-				if err := protojson.Unmarshal([]byte(dbModelDefinition.ModelInstanceSpec.String()), specification); err != nil {
 					logger.Fatal(err.Error())
 				}
 				return specification

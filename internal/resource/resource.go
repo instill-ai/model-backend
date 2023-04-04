@@ -45,12 +45,12 @@ func GetID(name string) (string, error) {
 	return id, nil
 }
 
-func GetModelInstanceID(name string) (string, string, error) {
-	if match, _ := regexp.MatchString(`^models/.+/instances/.+$`, name); !match {
-		return "", "", status.Error(codes.InvalidArgument, "Error when extract models instance resource id")
+func GetModelID(name string) (string, error) {
+	if match, _ := regexp.MatchString(`^models/.+$`, name); !match {
+		return "", status.Error(codes.InvalidArgument, "Error when extract models resource id")
 	}
 	subs := strings.Split(name, "/")
-	return subs[1], subs[3], nil
+	return subs[1], nil
 }
 
 func GetUserNameByUid(uid string) string {

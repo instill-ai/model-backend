@@ -109,11 +109,11 @@ export function CancelModelOperation() {
             currentTime = new Date().getTime();
         }
 
-        let deployResp = client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', {
+        let deployResp = client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModel', {
             name: `models/${model_id}/instances/latest`
         }, {})
         check(deployResp, {
-            'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
+            'DeployModel status': (r) => r && r.status === grpc.StatusOK,
         });
 
         sleep(0.1) // make sure the deploy operation is started

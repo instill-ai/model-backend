@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model_instance.json",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model_spec.json",
   "type": "object",
-  "title": "Model instance",
-  "description": "The model instance data structure",
+  "title": "Model specification",
+  "description": "The model data structure",
   "additionalProperties": false,
-  "required": ["id", "state", "model_definition", "configuration"],
+  "required": ["id", "model_definition", "configuration"],
   "properties": {
     "name": {
       "type": "string",
@@ -31,44 +31,13 @@
     "id": {
       "type": "string",
       "title": "Name",
-      "description": "The model instance name",
+      "description": "The model name",
       "minLength": 1,
       "readOnly": true,
       "ui_order": 2,
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "text"
-    },
-    "state": {
-      "type": "string",
-      "title": "State",
-      "description": "The model instance state",
-      "enum": [
-        "STATE_UNSPECIFIED",
-        "STATE_OFFLINE",
-        "STATE_ONLINE",
-        "STATE_ERROR"
-      ],
-      "default": "STATE_UNSPECIFIED",
-      "readOnly": true,
-      "ui_order": 3,
-      "ui_hidden": true,
-      "ui_disabled": true,
-      "ui_component": "select",
-      "ui_enum": ["", "Offline", "Online", "Error"]
-    },
-    "task": {
-      "type": "string",
-      "title": "Task",
-      "description": "The model instance task",
-      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION"],
-      "default": "TASK_UNSPECIFIED",
-      "readOnly": true,
-      "ui_order": 4,
-      "ui_hidden": true,
-      "ui_disabled": true,
-      "ui_component": "select",
-      "ui_enum": ["", "Image classification", "Object detection"]
     },
     "model_definition": {
       "type": "string",
@@ -83,7 +52,7 @@
     "configuration": {
       "type": "object",
       "title": "Configuration",
-      "description": "Model instance configuration JSON that has been validated using the `model_spec` JSON schema of a ModelDefinition",
+      "description": "model configuration JSON that has been validated using the `model_spec` JSON schema of a ModelDefinition",
       "readOnly": true,
       "ui_order": 6,
       "ui_disabled": true

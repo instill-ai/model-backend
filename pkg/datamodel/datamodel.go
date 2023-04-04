@@ -3,9 +3,6 @@ package datamodel
 import (
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -15,9 +12,9 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-type ModelInstanceState modelPB.ModelInstance_State
+type ModelState modelPB.Model_State
 type ModelVisibility modelPB.Model_Visibility
-type ModelInstanceTask modelPB.ModelInstance_Task
+type ModelTask modelPB.Model_Task
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -62,9 +59,6 @@ type ModelDefinition struct {
 	// ModelDefinition model spec
 	ModelSpec datatypes.JSON `json:"model_spec,omitempty"`
 
-	// ModelDefinition model instance spec
-	ModelInstanceSpec datatypes.JSON `json:"model_instance_spec,omitempty"`
-
 	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
 }
 
@@ -90,8 +84,14 @@ type Model struct {
 	// Model owner
 	Owner string `json:"owner,omitempty"`
 
+	// Model task
+	Task ModelTask `json:"task,omitempty"`
+
+	// Model state
+	State ModelState `json:"state,omitempty"`
+
 	// Not stored in DB, only used for processing
-	Instances []ModelInstance `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+	TritonModels []TritonModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
 // Triton model
@@ -105,111 +105,71 @@ type TritonModel struct {
 	Version int `json:"version,omitempty"`
 
 	// Triton Model status
-	State ModelInstanceState `json:"state,omitempty"`
+	State ModelState `json:"state,omitempty"`
 
 	// Model triton platform, only store ensemble model to make inferencing
 	Platform string `json:"platform,omitempty"`
 
-	// Model Instance uid
-	ModelInstanceUID uuid.UUID `json:"model_instance_uid,omitempty"`
-}
-
-type ModelInstance struct {
-	BaseDynamic
-
-	// Model Instance id
-	ID string `json:"id,omitempty"`
-
-	// Model instance status
-	State ModelInstanceState `sql:"type:valid_state"`
-
-	// Model instance task
-	Task ModelInstanceTask `json:"task,omitempty"`
-
-	// Model instance configuration
-	Configuration datatypes.JSON `json:"configuration,omitempty"`
-
-	// Model id
+	// Model uid
 	ModelUID uuid.UUID `json:"model_uid,omitempty"`
-
-	// Not stored in DB, only used for processing
-	TritonModels []TritonModel `gorm:"foreignKey:ModelInstanceUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
-type ModelInstanceInferResult struct {
+type ModelInferResult struct {
 	BaseDynamic
 
-	// Inference id: `instance model id.{datetime}.infer` created by temporal
+	// Inference id: `model id.{datetime}.infer` created by temporal
 	ID string `json:"id,omitempty"`
 
 	// Inference result
 	Result datatypes.JSON `json:"result,omitempty"`
 
-	// Model Instance uid
-	ModelInstanceUID uuid.UUID `json:"model_instance_uid,omitempty"`
+	// Model uid
+	ModelUID uuid.UUID `json:"model_uid,omitempty"`
 }
 
 // Model configuration
 type GitHubModelConfiguration struct {
 	Repository string `json:"repository,omitempty"`
+	Tag        string `json:"tag,omitempty"`
 	HtmlUrl    string `json:"html_url,omitempty"`
 }
 
 type ArtiVCModelConfiguration struct {
 	Url        string         `json:"url,omitempty"`
+	Tag        string         `json:"tag,omitempty"`
 	Credential datatypes.JSON `json:"credential,omitempty"`
 }
 
 type HuggingFaceModelConfiguration struct {
 	RepoId  string `json:"repo_id,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 	HtmlUrl string `json:"html_url,omitempty"`
-}
-
-// Model Instance configuration
-type GitHubModelInstanceConfiguration struct {
-	Repository string `json:"repository,omitempty"`
-	Tag        string `json:"tag,omitempty"`
-	HtmlUrl    string `json:"html_url,omitempty"`
-}
-
-type ArtiVCModelInstanceConfiguration struct {
-	Tag string `json:"tag,omitempty"`
-	Url string `json:"url,omitempty"`
 }
 
 type LocalModelConfiguration struct {
 	Content string `json:"content,omitempty"`
-}
-
-type LocalModelInstanceConfiguration struct {
-	ID      string `json:"id,omitempty"`
-	Content string `json:"content,omitempty"`
-}
-
-type HuggingFaceModelInstanceConfiguration struct {
-	RepoId  string `json:"repo_id,omitempty"`
-	HtmlUrl string `json:"html_url,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 }
 
 type ListModelQuery struct {
 	Owner string
 }
 
-func (s *ModelInstanceState) Scan(value interface{}) error {
-	*s = ModelInstanceState(modelPB.ModelInstance_State_value[value.(string)])
+func (s *ModelState) Scan(value interface{}) error {
+	*s = ModelState(modelPB.Model_State_value[value.(string)])
 	return nil
 }
 
-func (s ModelInstanceTask) Value() (driver.Value, error) {
-	return modelPB.ModelInstance_Task(s).String(), nil
+func (s ModelTask) Value() (driver.Value, error) {
+	return modelPB.Model_Task(s).String(), nil
 }
 
-func (s *ModelInstanceTask) Scan(value interface{}) error {
-	*s = ModelInstanceTask(modelPB.ModelInstance_Task_value[value.(string)])
+func (s *ModelTask) Scan(value interface{}) error {
+	*s = ModelTask(modelPB.Model_Task_value[value.(string)])
 	return nil
 }
 
-func (s ModelInstanceState) Value() (driver.Value, error) {
-	return modelPB.ModelInstance_State(s).String(), nil
+func (s ModelState) Value() (driver.Value, error) {
+	return modelPB.Model_State(s).String(), nil
 }
 
 func (v *ModelVisibility) Scan(value interface{}) error {
@@ -219,23 +179,6 @@ func (v *ModelVisibility) Scan(value interface{}) error {
 
 func (v ModelVisibility) Value() (driver.Value, error) {
 	return modelPB.Model_Visibility(v).String(), nil
-}
-
-func (r *ModelInstance) Scan(value interface{}) error {
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal ModelInstance value:", value))
-	}
-
-	if err := json.Unmarshal(bytes, &r); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *ModelInstance) Value() (driver.Value, error) {
-	valueString, err := json.Marshal(r)
-	return string(valueString), err
 }
 
 // ReleaseStage is an alias type for Protobuf enum ReleaseStage

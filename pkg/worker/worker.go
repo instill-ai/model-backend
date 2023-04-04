@@ -19,10 +19,10 @@ const TaskQueue = "model-backend"
 
 // Worker interface
 type Worker interface {
-	DeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error
-	DeployModelActivity(ctx context.Context, param *ModelInstanceParams) error
-	UnDeployModelWorkflow(ctx workflow.Context, param *ModelInstanceParams) error
-	UnDeployModelActivity(ctx context.Context, param *ModelInstanceParams) error
+	DeployModelWorkflow(ctx workflow.Context, param *ModelParams) error
+	DeployModelActivity(ctx context.Context, param *ModelParams) error
+	UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams) error
+	UnDeployModelActivity(ctx context.Context, param *ModelParams) error
 	CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error
 	AddSearchAttributeWorkflow(ctx workflow.Context) error
 }

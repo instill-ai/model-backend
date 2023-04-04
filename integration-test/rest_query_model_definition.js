@@ -41,8 +41,6 @@ export function ListModelDefinitions() {
           r.json().model_definitions[2].icon === "local.svg",
         [`GET /v1alpha/model-definitions response model_definitions[2].model_spec`]: (r) =>
           r.json().model_definitions[2].model_spec === null,
-        [`GET /v1alpha/model-definitions response model_definitions[2].model_instance_spec`]: (r) =>
-          r.json().model_definitions[2].model_instance_spec === null,
       });
     });
 
@@ -71,8 +69,6 @@ export function ListModelDefinitions() {
         r.json().model_definitions[2].icon === "local.svg",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[2].model_spec`]: (r) =>
         r.json().model_definitions[2].model_spec !== null,
-      [`GET /v1alpha/model-definitions response model_definitions[2].model_instance_spec`]: (r) =>
-        r.json().model_definitions[2].model_instance_spec !== null,
     });
   }
 }
@@ -98,8 +94,6 @@ export function GetModelDefinition() {
           r.json().model_definition.documentation_url !== undefined,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.model_spec`]: (r) =>
           r.json().model_definition.model_spec !== undefined,
-        [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.model_instance_spec`]: (r) =>
-          r.json().model_definition.model_instance_spec !== undefined,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.create_time`]: (r) =>
           r.json().model_definition.create_time !== undefined,
         [`GET /v1alpha/model-definitions/${model_def_name} response model_definition.update_time`]: (r) =>

@@ -71,11 +71,11 @@ func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicSer
 	}
 }
 
-func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) (triggerInput interface{}, modelID string, err error) {
 
 	var firstChunk = true
 
-	var fileData *modelPB.TriggerModelInstanceBinaryFileUploadRequest
+	var fileData *modelPB.TriggerModelBinaryFileUploadRequest
 
 	var allContentFiles []byte
 	var fileLengths []uint64
@@ -91,14 +91,14 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 		} else if err != nil {
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return nil, "", "", err
+			return nil, "", err
 		}
 
 		if firstChunk { //first chunk contains model instance name
 			firstChunk = false
-			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			modelID, err = resource.GetModelID(fileData.Name) // format "models/{model}"
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			task = fileData.TaskInput
 			switch fileData.TaskInput.Input.(type) {
@@ -138,7 +138,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		} else {
 			switch fileData.TaskInput.Input.(type) {
@@ -155,7 +155,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 			case *modelPB.TaskInputStream_SemanticSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		}
 	}
@@ -168,7 +168,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 		*modelPB.TaskInputStream_InstanceSegmentation,
 		*modelPB.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
-			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
 		start := uint64(0)
@@ -176,27 +176,27 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerModel
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, instanceID, nil
+		return imageBytes, modelID, nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, instanceID, nil
+		return textToImageInput, modelID, nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, instanceID, nil
+		return textGeneration, modelID, nil
 	}
-	return nil, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) (triggerInput interface{}, modelID string, instanceID string, err error) {
+func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) (triggerInput interface{}, modelID string, err error) {
 	var firstChunk = true
-	var fileData *modelPB.TestModelInstanceBinaryFileUploadRequest
+	var fileData *modelPB.TestModelBinaryFileUploadRequest
 
 	var textToImageInput *triton.TextToImageInput
 	var textGeneration *triton.TextGenerationInput
@@ -212,14 +212,14 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return nil, "", "", err
+			return nil, "", err
 		}
 
 		if firstChunk { //first chunk contains file name
 			firstChunk = false
-			modelID, instanceID, err = resource.GetModelInstanceID(fileData.Name) // format "models/{model}/instances/{instance}"
+			modelID, err = resource.GetModelID(fileData.Name) // format "models/{model}"
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			switch fileData.TaskInput.Input.(type) {
 			case *modelPB.TaskInputStream_Classification:
@@ -258,7 +258,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
-				return nil, "", "", fmt.Errorf("unsupported task input type")
+				return nil, "", fmt.Errorf("unsupported task input type")
 			}
 		}
 		switch fileData.TaskInput.Input.(type) {
@@ -275,7 +275,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 		case *modelPB.TaskInputStream_SemanticSegmentation:
 			allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 		default:
-			return nil, "", "", fmt.Errorf("unsupported task input type")
+			return nil, "", fmt.Errorf("unsupported task input type")
 		}
 	}
 
@@ -287,7 +287,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 		*modelPB.TaskInputStream_InstanceSegmentation,
 		*modelPB.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
-			return nil, "", "", fmt.Errorf("wrong parameter length of files")
+			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
 		start := uint64(0)
@@ -295,22 +295,22 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestModelInstan
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return nil, "", "", err
+				return nil, "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, instanceID, nil
+		return imageBytes, modelID, nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, instanceID, nil
+		return textToImageInput, modelID, nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, instanceID, nil
+		return textGeneration, modelID, nil
 	}
-	return nil, "", "", fmt.Errorf("unsupported task input type")
+	return nil, "", fmt.Errorf("unsupported task input type")
 
 }
 
@@ -466,6 +466,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		modelConfiguration := datamodel.LocalModelConfiguration{
 			Content: fileHeader.Filename,
+			Tag:     "latest",
 		}
 
 		if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
@@ -474,15 +475,11 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
-			Instances: []datamodel.ModelInstance{{
-				State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-				ID:            "latest",
-				Configuration: bModelConfig,
-			}},
 			ID:                 modelID,
 			ModelDefinitionUid: localModelDefinition.UID,
 			Owner:              owner,
 			Visibility:         datamodel.ModelVisibility(visibility),
+			State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 			Description: sql.NullString{
 				String: r.FormValue("description"),
 				Valid:  true,
@@ -492,7 +489,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		// Validate ModelDefinition JSON Schema
 		if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&localModelDefinition, &uploadedModel), true); err != nil {
-			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model definition is invalid %v", err.Error()))
 			return
 		}
 
@@ -505,30 +502,30 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, &uploadedModel)
 		_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 			makeJSONResponse(w, 400, "Add Model Error", err.Error())
 			return
 		}
 		if _, err := os.Stat(readmeFilePath); err == nil {
 			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 			if err != nil {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 				makeJSONResponse(w, 400, "Add Model Error", err.Error())
 				return
 			}
 			if modelMeta.Task == "" {
-				uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+				uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 			} else {
 				if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-					uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
+					uploadedModel.Task = datamodel.ModelTask(val)
 				} else {
-					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 					makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 					return
 				}
 			}
 		} else {
-			uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+			uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 		}
 
 		maxBatchSize := 0
@@ -548,12 +545,12 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 				}
 				obj, _ := json.Marshal(st.Details())
 				makeJSONResponse(w, 400, st.Message(), string(obj))
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 				return
 			}
 		}
 
-		allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Instances[0].Task)
+		allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Task)
 
 		if maxBatchSize > allowedMaxBatchSize {
 			st, e := sterr.CreateErrorPreconditionFailure(
@@ -568,7 +565,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 			obj, _ := json.Marshal(st.Details())
 			makeJSONResponse(w, 400, st.Message(), string(obj))
 			return
@@ -576,7 +573,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 
 		wfId, err := modelPublicService.CreateModelAsync(owner, &uploadedModel)
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -593,7 +590,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 			},
 		}})
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, modelConfiguration.Tag)
 			makeJSONResponse(w, 500, "Add Model Error", err.Error())
 			return
 		}
@@ -638,27 +635,27 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, owner, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 		return status.Errorf(codes.Internal, err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		if modelMeta.Task == "" {
-			uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+			uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 		} else {
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(val)
+				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 				return status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
 		}
 	} else {
-		uploadedModel.Instances[0].Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 	}
 
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
@@ -674,11 +671,11 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 		return st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Instances[0].Task)
+	allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -693,13 +690,13 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 		return st.Err()
 	}
 
 	wfId, err := h.service.CreateModelAsync(owner, uploadedModel)
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, uploadedModel.Instances[0].ID)
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, uploadedModel.ID, "latest")
 		return err
 	}
 
@@ -756,163 +753,151 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
 		HtmlUrl:    "https://github.com/" + modelConfig.Repository,
+		Tag:        modelConfig.Tag,
 	})
 	description := ""
 	if req.Model.Description != nil {
 		description = *req.Model.Description
 	}
+
 	githubModel := datamodel.Model{
 		ID:                 req.Model.Id,
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
+		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 		Description: sql.NullString{
 			String: description,
 			Valid:  true,
 		},
 		Configuration: bModelConfig,
-		Instances:     []datamodel.ModelInstance{},
 	}
 
-	for _, tag := range githubInfo.Tags {
-		instanceConfig := datamodel.GitHubModelInstanceConfiguration{
-			Repository: modelConfig.Repository,
-			HtmlUrl:    "https://github.com/" + modelConfig.Repository + "/tree/" + tag.Name,
-			Tag:        tag.Name,
-		}
-		rdid, _ := uuid.NewV4()
-		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
-		if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-			modelSrcDir = util.MODEL_CACHE_DIR + "/" + instanceConfig.Repository + instanceConfig.Tag
-		}
+	rdid, _ := uuid.NewV4()
+	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
+	if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
+		modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
+	}
 
-		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
-			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
-			if err := cmd.Run(); err != nil {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-				return &modelPB.CreateModelResponse{}, err
-			}
-		} else {
-			err = util.GitHubClone(modelSrcDir, instanceConfig, false)
-			if err != nil {
-				st, err := sterr.CreateErrorResourceInfo(
-					codes.FailedPrecondition,
-					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-					"GitHub",
-					"Clone repository",
-					"",
-					err.Error(),
-				)
-				if err != nil {
-					logger.Error(err.Error())
-				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-				return &modelPB.CreateModelResponse{}, st.Err()
-			}
+	if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+		if err := cmd.Run(); err != nil {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			return &modelPB.CreateModelResponse{}, err
 		}
-		bInstanceConfig, _ := json.Marshal(instanceConfig)
-		instance := datamodel.ModelInstance{
-			ID:            tag.Name,
-			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-			Configuration: bInstanceConfig,
-		}
-
-		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, githubModel.ID, &instance)
-		if !config.Config.Cache.Model {
-			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-		}
+	} else {
+		err = util.GitHubClone(modelSrcDir, modelConfig, false)
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
 				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"Model folder structure",
-				"",
+				"GitHub",
+				"Clone repository",
 				"",
 				err.Error(),
 			)
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		if _, err := os.Stat(readmeFilePath); err == nil {
-			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-			if err != nil || modelMeta.Task == "" {
+	}
+	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &githubModel)
+	if !config.Config.Cache.Model {
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+	}
+
+	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"Model folder structure",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+	if _, err := os.Stat(readmeFilePath); err == nil {
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil || modelMeta.Task == "" {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"README.md file",
+				"Could not get meta data from README.md file",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			githubModel.Task = datamodel.ModelTask(val)
+		} else {
+			if modelMeta.Task != "" {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
 					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 					"README.md file",
-					"Could not get meta data from README.md file",
+					"README.md contains unsupported task",
 					"",
 					err.Error(),
 				)
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 				return &modelPB.CreateModelResponse{}, st.Err()
-			}
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				instance.Task = datamodel.ModelInstanceTask(val)
 			} else {
-				if modelMeta.Task != "" {
-					st, err := sterr.CreateErrorResourceInfo(
-						codes.FailedPrecondition,
-						fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-						"README.md file",
-						"README.md contains unsupported task",
-						"",
-						err.Error(),
-					)
-					if err != nil {
-						logger.Error(err.Error())
-					}
-					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, instance.ID)
-					return &modelPB.CreateModelResponse{}, st.Err()
-				} else {
-					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
-				}
+				githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 			}
-		} else {
-			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
 		}
-		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"GitHub model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-
-		allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
-
-		if maxBatchSize > allowedMaxBatchSize {
-			st, e := sterr.CreateErrorPreconditionFailure(
-				"[handler] create a model",
-				[]*errdetails.PreconditionFailure_Violation{
-					{
-						Type:        "MAX BATCH SIZE LIMITATION",
-						Subject:     "Create a model error",
-						Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
-					},
-				})
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-
-		githubModel.Instances = append(githubModel.Instances, instance)
+	} else {
+		githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 	}
+	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"GitHub model",
+			"Missing ensemble model",
+			"",
+			err.Error(),
+		)
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	allowedMaxBatchSize := util.GetSupportedBatchSize(githubModel.Task)
+
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
 	wfId, err := h.service.CreateModelAsync(owner, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -945,234 +930,6 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	}}, nil
 }
 
-func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
-
-	var modelConfig datamodel.ArtiVCModelConfiguration
-	b, err := req.Model.GetConfiguration().MarshalJSON()
-	if err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	if err := json.Unmarshal(b, &modelConfig); err != nil {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	if modelConfig.Url == "" {
-		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
-	}
-
-	visibility := modelPB.Model_VISIBILITY_PRIVATE
-	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		visibility = modelPB.Model_VISIBILITY_PUBLIC
-	}
-	bModelConfig, _ := json.Marshal(modelConfig)
-	description := ""
-	if req.Model.Description != nil {
-		description = *req.Model.Description
-	}
-	artivcModel := datamodel.Model{
-		ID:                 req.Model.Id,
-		ModelDefinitionUid: modelDefinition.UID,
-		Owner:              owner,
-		Visibility:         datamodel.ModelVisibility(visibility),
-		Description: sql.NullString{
-			String: description,
-			Valid:  true,
-		},
-		Configuration: bModelConfig,
-		Instances:     []datamodel.ModelInstance{},
-	}
-	var tags []string
-	if !config.Config.Server.ItMode {
-		rdid, _ := uuid.NewV4()
-		tmpDir := fmt.Sprintf("./%s", rdid.String())
-		tags, err = util.ArtiVCGetTags(tmpDir, modelConfig)
-		if err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"ArtiVC",
-				"Get tags",
-				"",
-				err.Error(),
-			)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-		_ = os.RemoveAll(tmpDir)
-	} else {
-		tags = append(tags, "v1.0-cpu") // use local model for integration test mode
-	}
-	for _, tag := range tags {
-		instanceConfig := datamodel.ArtiVCModelInstanceConfiguration{
-			Url: modelConfig.Url,
-			Tag: tag,
-		}
-		rdid, _ := uuid.NewV4()
-		modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-		if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
-			cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
-			if err := cmd.Run(); err != nil {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-				return &modelPB.CreateModelResponse{}, err
-			}
-		} else {
-			err = util.ArtiVCClone(modelSrcDir, modelConfig, instanceConfig, false)
-			if err != nil {
-				st, e := sterr.CreateErrorResourceInfo(
-					codes.FailedPrecondition,
-					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-					"ArtiVC",
-					"Clone repository",
-					"",
-					err.Error(),
-				)
-				if e != nil {
-					logger.Error(e.Error())
-				}
-				_ = os.RemoveAll(modelSrcDir)
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-				return &modelPB.CreateModelResponse{}, st.Err()
-			}
-			util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
-		}
-		bInstanceConfig, _ := json.Marshal(instanceConfig)
-		instance := datamodel.ModelInstance{
-			ID:            tag,
-			State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-			Configuration: bInstanceConfig,
-		}
-
-		readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, artivcModel.ID, &instance)
-		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-		if err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"Model folder structure",
-				"",
-				"",
-				err.Error(),
-			)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-		if _, err := os.Stat(readmeFilePath); err == nil {
-			modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
-			if err != nil || modelMeta.Task == "" {
-				st, e := sterr.CreateErrorResourceInfo(
-					codes.FailedPrecondition,
-					fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-					"README.md file",
-					"Could not get meta data from README.md file",
-					"",
-					err.Error(),
-				)
-				if e != nil {
-					logger.Error(e.Error())
-				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-				return &modelPB.CreateModelResponse{}, st.Err()
-			}
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				instance.Task = datamodel.ModelInstanceTask(val)
-			} else {
-				if modelMeta.Task != "" {
-					st, err := sterr.CreateErrorResourceInfo(
-						codes.FailedPrecondition,
-						"[handler] create a model error",
-						"README.md file",
-						"README.md contains unsupported task",
-						"",
-						err.Error(),
-					)
-					if err != nil {
-						logger.Error(err.Error())
-					}
-					util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, instance.ID)
-					return &modelPB.CreateModelResponse{}, st.Err()
-				} else {
-					instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
-				}
-			}
-		} else {
-			instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
-		}
-
-		maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"ArtiVC model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-
-		allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
-
-		if maxBatchSize > allowedMaxBatchSize {
-			st, e := sterr.CreateErrorPreconditionFailure(
-				"[handler] create a model",
-				[]*errdetails.PreconditionFailure_Violation{
-					{
-						Type:        "MAX BATCH SIZE LIMITATION",
-						Subject:     "Create a model error",
-						Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
-					},
-				})
-
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			return &modelPB.CreateModelResponse{}, st.Err()
-		}
-
-		artivcModel.Instances = append(artivcModel.Instances, instance)
-	}
-	wfId, err := h.service.CreateModelAsync(owner, &artivcModel)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"Model service",
-			"",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		for _, tag := range tags {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, tag)
-		}
-		return &modelPB.CreateModelResponse{}, st.Err()
-	}
-
-	// Manually set the custom header to have a StatusCreated http response for REST endpoint
-	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}}, nil
-}
-
 func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
@@ -1188,6 +945,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
 	modelConfig.HtmlUrl = "https://huggingface.co/" + modelConfig.RepoId
+	modelConfig.Tag = "latest"
 
 	visibility := modelPB.Model_VISIBILITY_PRIVATE
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
@@ -1203,12 +961,12 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		ModelDefinitionUid: modelDefinition.UID,
 		Owner:              owner,
 		Visibility:         datamodel.ModelVisibility(visibility),
+		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 		Description: sql.NullString{
 			String: description,
 			Valid:  true,
 		},
 		Configuration: bModelConfig,
-		Instances:     []datamodel.ModelInstance{},
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
@@ -1253,18 +1011,9 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	_ = os.RemoveAll(configTmpDir)
-	instanceConfig := datamodel.HuggingFaceModelInstanceConfiguration{
-		RepoId:  modelConfig.RepoId,
-		HtmlUrl: modelConfig.HtmlUrl + "/tree/main",
-	}
-	bInstanceConfig, _ := json.Marshal(instanceConfig)
 
-	instance := datamodel.ModelInstance{
-		ID:            "latest",
-		State:         datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
-		Configuration: bInstanceConfig,
-	}
-	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, &instance)
+	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, &huggingfaceModel)
+
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -1301,7 +1050,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		if modelMeta.Task != "" {
 
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				instance.Task = datamodel.ModelInstanceTask(val)
+				huggingfaceModel.Task = datamodel.ModelTask(val)
 			} else {
 				st, err := sterr.CreateErrorResourceInfo(
 					codes.FailedPrecondition,
@@ -1314,25 +1063,24 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, instance.ID)
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, modelConfig.Tag)
 				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 		} else {
 			if len(modelMeta.Tags) == 0 {
-				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+				huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 			} else { // check in tags also for HuggingFace model card README.md
-				instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+				huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 				for _, tag := range modelMeta.Tags {
 					if val, ok := util.Tags[strings.ToUpper(tag)]; ok {
-						instance.Task = datamodel.ModelInstanceTask(val)
+						huggingfaceModel.Task = datamodel.ModelTask(val)
 						break
 					}
 				}
 			}
 		}
-
 	} else {
-		instance.Task = datamodel.ModelInstanceTask(modelPB.ModelInstance_TASK_UNSPECIFIED)
+		huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
 	}
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
@@ -1350,7 +1098,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(instance.Task)
+	allowedMaxBatchSize := util.GetSupportedBatchSize(huggingfaceModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -1368,8 +1116,6 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	huggingfaceModel.Instances = append(huggingfaceModel.Instances, instance)
-
 	wfId, err := h.service.CreateModelAsync(owner, &huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -1384,6 +1130,197 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	// Manually set the custom header to have a StatusCreated http response for REST endpoint
+	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunningpb.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
+}
+
+func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+	logger, _ := logger.GetZapLogger()
+
+	var modelConfig datamodel.ArtiVCModelConfiguration
+	b, err := req.Model.GetConfiguration().MarshalJSON()
+	if err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if modelConfig.Url == "" {
+		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
+	}
+
+	visibility := modelPB.Model_VISIBILITY_PRIVATE
+	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		visibility = modelPB.Model_VISIBILITY_PUBLIC
+	}
+	bModelConfig, _ := json.Marshal(modelConfig)
+	description := ""
+	if req.Model.Description != nil {
+		description = *req.Model.Description
+	}
+	artivcModel := datamodel.Model{
+		ID:                 req.Model.Id,
+		ModelDefinitionUid: modelDefinition.UID,
+		Owner:              owner,
+		Visibility:         datamodel.ModelVisibility(visibility),
+		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
+		Description: sql.NullString{
+			String: description,
+			Valid:  true,
+		},
+		Configuration: bModelConfig,
+	}
+
+	rdid, _ := uuid.NewV4()
+	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
+	if config.Config.Server.ItMode { // use local model for testing to remove internet connection issue while testing
+		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
+		if err := cmd.Run(); err != nil {
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			return &modelPB.CreateModelResponse{}, err
+		}
+	} else {
+		err = util.ArtiVCClone(modelSrcDir, modelConfig, false)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"ArtiVC",
+				"Clone repository",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			_ = os.RemoveAll(modelSrcDir)
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+		util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
+	}
+
+	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &artivcModel)
+	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"Model folder structure",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+	if _, err := os.Stat(readmeFilePath); err == nil {
+		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		if err != nil || modelMeta.Task == "" {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"README.md file",
+				"Could not get meta data from README.md file",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			return &modelPB.CreateModelResponse{}, st.Err()
+		}
+		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			artivcModel.Task = datamodel.ModelTask(val)
+		} else {
+			if modelMeta.Task != "" {
+				st, err := sterr.CreateErrorResourceInfo(
+					codes.FailedPrecondition,
+					"[handler] create a model error",
+					"README.md file",
+					"README.md contains unsupported task",
+					"",
+					err.Error(),
+				)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+				return &modelPB.CreateModelResponse{}, st.Err()
+			} else {
+				artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+			}
+		}
+	} else {
+		artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+	}
+
+	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"ArtiVC model",
+			"Missing ensemble model",
+			"",
+			err.Error(),
+		)
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	allowedMaxBatchSize := util.GetSupportedBatchSize(artivcModel.Task)
+
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		return &modelPB.CreateModelResponse{}, st.Err()
+	}
+
+	wfId, err := h.service.CreateModelAsync(owner, &artivcModel)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"Model service",
+			"",
+			"",
+			err.Error(),
+		)
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1554,7 +1491,8 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	updateModel := datamodel.Model{
-		ID: id,
+		ID:    id,
+		State: dbModel.State,
 	}
 	if req.UpdateMask != nil && len(req.UpdateMask.Paths) > 0 {
 		for _, field := range req.UpdateMask.Paths {
@@ -1660,152 +1598,42 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
-func (h *PublicHandler) GetModelInstance(ctx context.Context, req *modelPB.GetModelInstanceRequest) (*modelPB.GetModelInstanceResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	dbModel, err := h.service.GetModelById(owner, modelID, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelInstanceResponse{}, err
-	}
-
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-	return &modelPB.GetModelInstanceResponse{Instance: pbModelInstance}, nil
-}
-
-func (h *PublicHandler) LookUpModelInstance(ctx context.Context, req *modelPB.LookUpModelInstanceRequest) (*modelPB.LookUpModelInstanceResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, err
-	}
-	sModelUID, sInstanceUID, err := resource.GetModelInstanceID(req.Permalink)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	modelUID, err := uuid.FromString(sModelUID)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModel, err := h.service.GetModelByUid(owner, modelUID, req.GetView())
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
-	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, err
-	}
-	instanceUID, err := uuid.FromString(sInstanceUID)
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModelInstance, err := h.service.GetModelInstanceByUid(dbModel.UID, instanceUID, req.GetView())
-	if err != nil {
-		return &modelPB.LookUpModelInstanceResponse{}, status.Error(codes.NotFound, err.Error())
-	}
-
-	pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
-	return &modelPB.LookUpModelInstanceResponse{Instance: pbModelInstance}, nil
-}
-
-func (h *PublicHandler) ListModelInstances(ctx context.Context, req *modelPB.ListModelInstancesRequest) (*modelPB.ListModelInstancesResponse, error) {
-	owner, err := resource.GetOwner(ctx)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	modelID, err := resource.GetID(req.Parent)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-	modelInDB, err := h.service.GetModelById(owner, modelID, req.GetView())
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(modelInDB.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	dbModelInstances, nextPageToken, totalSize, err := h.service.ListModelInstances(modelInDB.UID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
-	if err != nil {
-		return &modelPB.ListModelInstancesResponse{}, err
-	}
-
-	pbInstances := []*modelPB.ModelInstance{}
-	for _, dbModelInstance := range dbModelInstances {
-		pbInstances = append(pbInstances, DBModelInstanceToPBModelInstance(&modelDef, &modelInDB, &dbModelInstance))
-	}
-
-	resp := modelPB.ListModelInstancesResponse{
-		Instances:     pbInstances,
-		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
-	}
-
-	return &resp, nil
-}
-
-func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.DeployModelInstanceRequest) (*modelPB.DeployModelInstanceResponse, error) {
+func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployModelRequest) (*modelPB.DeployModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
-	}
-
-	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE) {
-		return &modelPB.DeployModelInstanceResponse{},
+	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_OFFLINE) {
+		return &modelPB.DeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model instance state, current model state is %s",
-				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
+				modelPB.Model_State_name[int32(dbModel.State)]))
 	}
 
-	_, err = h.service.GetTritonModels(dbModelInstance.UID)
+	_, err = h.service.GetTritonModels(dbModel.UID)
 	if err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+		return &modelPB.DeployModelResponse{}, err
 	}
 
 	// temporary change state to STATE_UNSPECIFIED during deploying the model
 	// the state will be changed after deploying to STATE_ONLINE or STATE_ERROR
-	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
-	}); err != nil {
-		return &modelPB.DeployModelInstanceResponse{}, err
+	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
+		return &modelPB.DeployModelResponse{}, err
 	}
 
-	wfId, err := h.service.DeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
+	wfId, err := h.service.DeployModelAsync(owner, dbModel.UID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1830,10 +1658,10 @@ func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.De
 			logger.Error(e.Error())
 		}
 
-		return &modelPB.DeployModelInstanceResponse{}, st.Err()
+		return &modelPB.DeployModelResponse{}, st.Err()
 	}
 
-	return &modelPB.DeployModelInstanceResponse{Operation: &longrunningpb.Operation{
+	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
@@ -1842,50 +1670,43 @@ func (h *PublicHandler) DeployModelInstance(ctx context.Context, req *modelPB.De
 	}}, nil
 }
 
-func (h *PublicHandler) UndeployModelInstance(ctx context.Context, req *modelPB.UndeployModelInstanceRequest) (*modelPB.UndeployModelInstanceResponse, error) {
+func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.UndeployModelRequest) (*modelPB.UndeployModelResponse, error) {
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
-	}
-
-	if dbModelInstance.State != datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE) {
-		return &modelPB.UndeployModelInstanceResponse{},
+	if dbModel.State != datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
+		return &modelPB.UndeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
-				modelPB.ModelInstance_State_name[int32(dbModelInstance.State)]))
+				modelPB.Model_State_name[int32(dbModel.State)]))
 	}
 
 	// temporary change state to STATE_UNSPECIFIED during undeploying the model
 	// the state will be changed after undeploying to STATE_OFFLINE or STATE_ERROR
-	if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-		State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED),
-	}); err != nil {
-		return &modelPB.UndeployModelInstanceResponse{}, err
+	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED)); err != nil {
+		return &modelPB.UndeployModelResponse{}, err
 	}
-	wfId, err := h.service.UndeployModelInstanceAsync(owner, dbModel.UID, dbModelInstance.UID)
+	wfId, err := h.service.UndeployModelAsync(owner, dbModel.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
-			return &modelPB.UndeployModelInstanceResponse{}, status.Errorf(codes.Internal, err.Error())
+			return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Internal, err.Error())
 		}
-		return &modelPB.UndeployModelInstanceResponse{}, err
+		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	return &modelPB.UndeployModelInstanceResponse{Operation: &longrunningpb.Operation{
+	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
@@ -1894,14 +1715,14 @@ func (h *PublicHandler) UndeployModelInstance(ctx context.Context, req *modelPB.
 	}}, nil
 }
 
-func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TestModelInstanceBinaryFileUploadServer) error {
+func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
 	}
 
-	triggerInput, modelID, instanceID, err := savePredictInputsTestMode(stream)
+	triggerInput, modelID, err := savePredictInputsTestMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -1910,25 +1731,21 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 	if err != nil {
 		return err
 	}
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
 
 	numberOfInferences := 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 
 	// check whether model support batching or not. If not, raise an error
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -1942,8 +1759,8 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, triggerInput, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInferTestMode(owner, modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1970,20 +1787,20 @@ func (h *PublicHandler) TestModelInstanceBinaryFileUpload(stream modelPB.ModelPu
 		return st.Err()
 	}
 
-	err = stream.SendAndClose(&modelPB.TestModelInstanceBinaryFileUploadResponse{
+	err = stream.SendAndClose(&modelPB.TestModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
 	return err
 }
 
-func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelInstanceBinaryFileUploadServer) error {
+func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(stream.Context())
 	if err != nil {
 		return err
 	}
-	triggerInput, modelID, instanceID, err := savePredictInputsTriggerMode(stream)
+	triggerInput, modelID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -1992,23 +1809,20 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 	if err != nil {
 		return err
 	}
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
+
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -2022,8 +1836,8 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, triggerInput, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInfer(modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2050,82 +1864,78 @@ func (h *PublicHandler) TriggerModelInstanceBinaryFileUpload(stream modelPB.Mode
 		return st.Err()
 	}
 
-	err = stream.SendAndClose(&modelPB.TriggerModelInstanceBinaryFileUploadResponse{
+	err = stream.SendAndClose(&modelPB.TriggerModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
 	return err
 }
 
-func (h *PublicHandler) TriggerModelInstance(ctx context.Context, req *modelPB.TriggerModelInstanceRequest) (*modelPB.TriggerModelInstanceResponse, error) {
+func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
+		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.TriggerModelInstanceResponse{}, err
-	}
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT,
-		modelPB.ModelInstance_TASK_UNSPECIFIED:
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT,
+		modelPB.Model_TASK_UNSPECIFIED:
 		imageInput, err := parseImageRequestInputsToBytes(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(req)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, err
+			return &modelPB.TriggerModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			return &modelPB.TriggerModelInstanceResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInfer(modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2149,75 +1959,70 @@ func (h *PublicHandler) TriggerModelInstance(ctx context.Context, req *modelPB.T
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		return &modelPB.TriggerModelInstanceResponse{}, st.Err()
+		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
-	return &modelPB.TriggerModelInstanceResponse{
+	return &modelPB.TriggerModelResponse{
 		Task:        task,
 		TaskOutputs: response,
 	}, nil
 }
 
-func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.TestModelInstanceRequest) (*modelPB.TestModelInstanceResponse, error) {
+func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelRequest) (*modelPB.TestModelResponse, error) {
 	logger, _ := logger.GetZapLogger()
 
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
-	modelID, modelInstanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
-	}
-
-	modelInstanceInDB, err := h.service.GetModelInstance(modelInDB.UID, modelInstanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.TestModelInstanceResponse{}, err
+		return &modelPB.TestModelResponse{}, err
 	}
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-	case modelPB.ModelInstance_TASK_CLASSIFICATION,
-		modelPB.ModelInstance_TASK_DETECTION,
-		modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-		modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.ModelInstance_TASK_OCR,
-		modelPB.ModelInstance_TASK_KEYPOINT,
-		modelPB.ModelInstance_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelInstanceRequest{
+	switch modelPB.Model_Task(modelInDB.Task) {
+	case modelPB.Model_TASK_CLASSIFICATION,
+		modelPB.Model_TASK_DETECTION,
+		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+		modelPB.Model_TASK_OCR,
+		modelPB.Model_TASK_KEYPOINT,
+		modelPB.Model_TASK_UNSPECIFIED:
+		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelInstanceRequest{
+	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
-			&modelPB.TriggerModelInstanceRequest{
+			&modelPB.TriggerModelRequest{
 				Name:       req.Name,
 				TaskInputs: req.TaskInputs,
 			})
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textGeneration
@@ -2225,22 +2030,22 @@ func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.Test
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInstanceInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, err
+			return &modelPB.TestModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			return &modelPB.TestModelInstanceResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
 
-	task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
-	response, err := h.service.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+	task := modelPB.Model_Task(modelInDB.Task)
+	response, err := h.service.ModelInferTestMode(owner, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2264,16 +2069,16 @@ func (h *PublicHandler) TestModelInstance(ctx context.Context, req *modelPB.Test
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		return &modelPB.TestModelInstanceResponse{}, st.Err()
+		return &modelPB.TestModelResponse{}, st.Err()
 	}
 
-	return &modelPB.TestModelInstanceResponse{
+	return &modelPB.TestModelResponse{
 		Task:        task,
 		TaskOutputs: response,
 	}, nil
 }
 
-func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
+func inferModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string, mode string) {
 	logger, _ := logger.GetZapLogger()
 
 	contentType := r.Header.Get("Content-Type")
@@ -2284,9 +2089,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		instanceName := pathParams["name"]
-		if instanceName == "" {
-			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter mode name not found")
+		modelName := pathParams["name"]
+		if modelName == "" {
+			makeJSONResponse(w, 422, "Required parameter missing", "Required parameter model name not found")
 			return
 		}
 
@@ -2311,7 +2116,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 		defer temporalClient.Close()
 		modelPublicService := service.NewService(modelRepository, tritonService, pipelinePublicServiceClient, redisClient, temporalClient)
 
-		modelID, instanceID, err := resource.GetModelInstanceID(instanceName)
+		modelID, err := resource.GetModelID(modelName)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
 			return
@@ -2323,12 +2128,6 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			return
 		}
 
-		modelInstanceInDB, err := modelPublicService.GetModelInstance(modelInDB.UID, instanceID, modelPB.View_VIEW_FULL)
-		if err != nil {
-			makeJSONResponse(w, 404, "Model instance not found", "The model instance not found in server")
-			return
-		}
-
 		err = r.ParseMultipartForm(4 << 20)
 		if err != nil {
 			makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
@@ -2337,14 +2136,14 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		var inputInfer interface{}
 		var lenInputs = 1
-		switch modelPB.ModelInstance_Task(modelInstanceInDB.Task) {
-		case modelPB.ModelInstance_TASK_CLASSIFICATION,
-			modelPB.ModelInstance_TASK_DETECTION,
-			modelPB.ModelInstance_TASK_INSTANCE_SEGMENTATION,
-			modelPB.ModelInstance_TASK_SEMANTIC_SEGMENTATION,
-			modelPB.ModelInstance_TASK_OCR,
-			modelPB.ModelInstance_TASK_KEYPOINT,
-			modelPB.ModelInstance_TASK_UNSPECIFIED:
+		switch modelPB.Model_Task(modelInDB.Task) {
+		case modelPB.Model_TASK_CLASSIFICATION,
+			modelPB.Model_TASK_DETECTION,
+			modelPB.Model_TASK_INSTANCE_SEGMENTATION,
+			modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
+			modelPB.Model_TASK_OCR,
+			modelPB.Model_TASK_KEYPOINT,
+			modelPB.Model_TASK_UNSPECIFIED:
 			imageInput, err := parseImageFormDataInputsToBytes(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "File Input Error", err.Error())
@@ -2352,7 +2151,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 			lenInputs = len(imageInput)
 			inputInfer = imageInput
-		case modelPB.ModelInstance_TASK_TEXT_TO_IMAGE:
+		case modelPB.Model_TASK_TEXT_TO_IMAGE:
 			textToImage, err := parseImageFormDataTextToImageInputs(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "Parser input error", err.Error())
@@ -2360,7 +2159,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 			}
 			lenInputs = 1
 			inputInfer = textToImage
-		case modelPB.ModelInstance_TASK_TEXT_GENERATION:
+		case modelPB.Model_TASK_TEXT_GENERATION:
 			textGeneration, err := parseTextFormDataTextGenerationInputs(r)
 			if err != nil {
 				makeJSONResponse(w, 400, "Parser input error", err.Error())
@@ -2372,9 +2171,9 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		// check whether model support batching or not. If not, raise an error
 		if lenInputs > 1 {
-			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInstanceInDB.UID)
+			tritonModelInDB, err := modelPublicService.GetTritonEnsembleModel(modelInDB.UID)
 			if err != nil {
-				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to instance %v do not exist", modelInstanceInDB.ID))
+				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 				return
 			}
 			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
@@ -2388,12 +2187,13 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 				return
 			}
 		}
-		task := modelPB.ModelInstance_Task(modelInstanceInDB.Task)
+
+		task := modelPB.Model_Task(modelInDB.Task)
 		var response []*modelPB.TaskOutput
 		if mode == "test" {
-			response, err = modelPublicService.ModelInferTestMode(owner, modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInferTestMode(owner, modelInDB.UID, inputInfer, task)
 		} else {
-			response, err = modelPublicService.ModelInfer(modelInstanceInDB.UID, inputInfer, task)
+			response, err = modelPublicService.ModelInfer(modelInDB.UID, inputInfer, task)
 		}
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
@@ -2425,7 +2225,7 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(200)
-		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelInstanceBinaryFileUploadResponse{
+		res, err := util.MarshalOptions.Marshal(&modelPB.TestModelBinaryFileUploadResponse{
 			Task:        task,
 			TaskOutputs: response,
 		})
@@ -2440,40 +2240,35 @@ func inferModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathPara
 	}
 }
 
-func HandleTestModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelInstanceByUpload(w, r, pathParams, "test")
+func HandleTestModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(w, r, pathParams, "test")
 }
 
-func HandleTriggerModelInstanceByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelInstanceByUpload(w, r, pathParams, "trigger")
+func HandleTriggerModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(w, r, pathParams, "trigger")
 }
 
-func (h *PublicHandler) GetModelInstanceCard(ctx context.Context, req *modelPB.GetModelInstanceCardRequest) (*modelPB.GetModelInstanceCardResponse, error) {
+func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelCardRequest) (*modelPB.GetModelCardResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
+		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	_, err = h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.GetModelInstanceCardResponse{}, err
-	}
-
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", config.Config.TritonServer.ModelStore, owner, modelID, instanceID)
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, owner, modelID)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil { // return empty content base64
-		return &modelPB.GetModelInstanceCardResponse{
-			Readme: &modelPB.ModelInstanceCard{
+		return &modelPB.GetModelCardResponse{
+			Readme: &modelPB.ModelCard{
 				Name:     req.Name,
 				Size:     0,
 				Type:     "file",
@@ -2485,7 +2280,7 @@ func (h *PublicHandler) GetModelInstanceCard(ctx context.Context, req *modelPB.G
 
 	content, _ := os.ReadFile(readmeFilePath)
 
-	return &modelPB.GetModelInstanceCardResponse{Readme: &modelPB.ModelInstanceCard{
+	return &modelPB.GetModelCardResponse{Readme: &modelPB.ModelCard{
 		Name:     req.Name,
 		Size:     int32(stat.Size()),
 		Type:     "file",   // currently only support file type
@@ -2535,8 +2330,8 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	operation, modelInstanceParam, operationType, err := h.service.GetOperation(operationId)
-	fmt.Println("operation, modelInstanceParam, operationType, err", operation, modelInstanceParam, operationType, err)
+	operation, modelParam, operationType, err := h.service.GetOperation(operationId)
+	fmt.Println("operation, modelParam, operationType, err", operation, modelParam, operationType, err)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
@@ -2547,7 +2342,7 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 		}, nil
 	}
 
-	dbModel, err := h.service.GetModelByUid(modelInstanceParam.Owner, modelInstanceParam.ModelUID, req.GetView())
+	dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
@@ -2571,13 +2366,13 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 			Operation: operation,
 		}, nil
 	case string(util.OperationTypeDeploy), string(util.OperationTypeUnDeploy):
-		dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, req.GetView())
+		dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, req.GetView())
 		if err != nil {
 			return &modelPB.GetModelOperationResponse{}, err
 		}
-		pbModelInstance := DBModelInstanceToPBModelInstance(&modelDef, &dbModel, &dbModelInstance)
+		pbModel := DBModelToPBModel(&modelDef, &dbModel)
 
-		res, err := anypb.New(pbModelInstance)
+		res, err := anypb.New(pbModel)
 		if err != nil {
 			return &modelPB.GetModelOperationResponse{}, err
 		}
@@ -2616,13 +2411,13 @@ func (h *PublicHandler) CancelModelOperation(ctx context.Context, req *modelPB.C
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
 
-	_, modelInstanceParam, operationType, err := h.service.GetOperation(operationId)
+	_, modelParam, operationType, err := h.service.GetOperation(operationId)
 	if err != nil {
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
 
-	// get model instance state before cancel operation to set in case of operation in progess and state is UNSPECIFIED
-	dbModelInstance, err := h.service.GetModelInstanceByUid(modelInstanceParam.ModelUID, modelInstanceParam.ModelInstanceUID, modelPB.View_VIEW_BASIC)
+	// get model state before cancel operation to set in case of operation in progess and state is UNSPECIFIED
+	dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return &modelPB.CancelModelOperationResponse{}, err
 	}
@@ -2634,17 +2429,17 @@ func (h *PublicHandler) CancelModelOperation(ctx context.Context, req *modelPB.C
 	// Fix for corner case: maybe when cancel operation in Temporal, the Temporal workflow already trigger Triton server to deploy/undeploy model instance
 	switch operationType {
 	case string(util.OperationTypeDeploy):
-		if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
-			if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_OFFLINE),
+		if dbModel.State == datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED) {
+			if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
+				State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 			}); err != nil {
 				return &modelPB.CancelModelOperationResponse{}, err
 			}
 		}
 	case string(util.OperationTypeUnDeploy):
-		if dbModelInstance.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
-			if err := h.service.UpdateModelInstance(dbModelInstance.UID, datamodel.ModelInstance{
-				State: datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_ONLINE),
+		if dbModel.State == datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED) {
+			if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
+				State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
 			}); err != nil {
 				return &modelPB.CancelModelOperationResponse{}, err
 			}

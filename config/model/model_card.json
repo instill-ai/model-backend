@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model_instance_card.json",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model_card.json",
   "type": "object",
-  "title": "Model instance card",
-  "description": "The model instance README card",
+  "title": "Model card",
+  "description": "The model README card",
   "additionalProperties": false,
   "required": ["type", "content", "encoding"],
   "properties": {
@@ -41,7 +41,7 @@
     "content": {
       "type": "string",
       "title": "README",
-      "description": "README to describe a model instance",
+      "description": "README to describe a model",
       "readOnly": true,
       "ui_order": 3,
       "ui_disabled": true,

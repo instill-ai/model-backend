@@ -17,7 +17,6 @@ import (
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
 	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
-	modelInstanceSpecBytes, _ := json.Marshal(modelDef.GetModelInstanceSpec())
 	if err := databaseInit.CreateModelDefinitionRecord(
 		db,
 		modelDef.GetId(),
@@ -26,7 +25,6 @@ func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error
 		modelDef.GetDocumentationUrl(),
 		modelDef.GetIcon(),
 		modelSpecBytes,
-		modelInstanceSpecBytes,
 		datamodel.ReleaseStage(modelDef.GetReleaseStage()),
 	); err != nil {
 		return err

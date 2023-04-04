@@ -19,13 +19,9 @@ type Repository interface {
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(modelUID uuid.UUID) error
 	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
+	UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
-	CreateModelInstance(instance datamodel.ModelInstance) error
-	UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error
-	GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error)
-	GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelInstance, error)
-	ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error)
+
 	CreateTritonModel(model datamodel.TritonModel) error
 	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
@@ -63,6 +59,8 @@ var GetModelSelectedFields = []string{
 	`"model"."configuration"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
+	`"model"."state"`,
+	`"model"."task"`,
 	`"model"."create_time"`,
 	`"model"."update_time"`,
 }
@@ -75,6 +73,8 @@ var GetModelSelectedFieldsWOConfiguration = []string{
 	`"model"."model_definition_uid"`,
 	`"model"."visibility"`,
 	`"model"."owner"`,
+	`"model"."state"`,
+	`"model"."task"`,
 	`"model"."create_time"`,
 	`"model"."update_time"`,
 }
@@ -257,126 +257,21 @@ func (r *repository) ListModelsAdmin(view modelPB.View, pageSize int, pageToken 
 }
 
 func (r *repository) UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel); result.Error != nil {
-		return status.Errorf(codes.Internal, "Error %v", result.Error)
-	}
-	return nil
-}
-
-func (r *repository) CreateModelInstance(instance datamodel.ModelInstance) error {
-	if result := r.db.Model(&datamodel.ModelInstance{}).Create(&instance); result.Error != nil {
+	result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel)
+	if result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 
 	return nil
 }
 
-func (r *repository) UpdateModelInstance(modelInstanceUID uuid.UUID, instanceInfo datamodel.ModelInstance) error {
-	if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"uid": modelInstanceUID}).Updates(&instanceInfo); result.Error != nil {
+// TODO: gorm do not update the zero value with struct, so we need to update the state manually.
+func (r *repository) UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error {
+	if result := r.db.Model(&datamodel.Model{}).Where(map[string]interface{}{"uid": modelUID}).Updates(map[string]interface{}{"state": state}); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
-	}
-	//TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-	if instanceInfo.State == datamodel.ModelInstanceState(modelPB.ModelInstance_STATE_UNSPECIFIED) {
-		if result := r.db.Model(&datamodel.ModelInstance{}).Where(map[string]interface{}{"uid": modelInstanceUID}).Updates(map[string]interface{}{"state": instanceInfo.State}); result.Error != nil {
-			return status.Errorf(codes.Internal, "Error %v", result.Error)
-		}
 	}
 
 	return nil
-}
-
-func (r *repository) GetModelInstance(modelUID uuid.UUID, instanceID string, view modelPB.View) (datamodel.ModelInstance, error) {
-	var instanceDB datamodel.ModelInstance
-	omit := ""
-	if view != modelPB.View_VIEW_FULL {
-		omit = "configuration"
-	}
-	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUID, "id": instanceID}).First(&instanceDB); result.Error != nil {
-		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance %v for model %v not found", instanceID, modelUID)
-	}
-	return instanceDB, nil
-}
-
-func (r *repository) GetModelInstanceByUid(modelUID uuid.UUID, modelInstanceUid uuid.UUID, view modelPB.View) (datamodel.ModelInstance, error) {
-	var instanceDB datamodel.ModelInstance
-	omit := ""
-	if view != modelPB.View_VIEW_FULL {
-		omit = "configuration"
-	}
-	if result := r.db.Model(&datamodel.ModelInstance{}).Omit(omit).Where(map[string]interface{}{"model_uid": modelUID, "uid": modelInstanceUid}).First(&instanceDB); result.Error != nil {
-		return datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance uid %v for model uid %v not found", modelInstanceUid, modelUID)
-	}
-	return instanceDB, nil
-}
-
-func (r *repository) GetModelInstances(modelUID uuid.UUID) ([]datamodel.ModelInstance, error) {
-	var instances []datamodel.ModelInstance
-	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid", modelUID).Order("id asc").Find(&instances); result.Error != nil {
-		return []datamodel.ModelInstance{}, status.Errorf(codes.NotFound, "The instance for model %v not found", modelUID)
-	}
-	return instances, nil
-}
-
-func (r *repository) ListModelInstances(modelUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) (instances []datamodel.ModelInstance, nextPageToken string, totalSize int64, err error) {
-
-	if result := r.db.Model(&datamodel.ModelInstance{}).Where("model_uid = ?", modelUID).Count(&totalSize); result.Error != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
-	}
-
-	queryBuilder := r.db.Model(&datamodel.ModelInstance{}).Order("create_time DESC, id DESC").Where("model_uid = ?", modelUID)
-
-	if pageSize == 0 {
-		pageSize = DefaultPageSize
-	} else if pageSize > MaxPageSize {
-		pageSize = MaxPageSize
-	}
-
-	queryBuilder = queryBuilder.Limit(int(pageSize))
-
-	if pageToken != "" {
-		createTime, id, err := paginate.DecodeToken(pageToken)
-		if err != nil {
-			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
-		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, id)
-	}
-
-	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("configuration")
-	}
-
-	var createTime time.Time
-	rows, err := queryBuilder.Rows()
-	if err != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var item datamodel.ModelInstance
-		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Error(codes.Internal, err.Error())
-		}
-		createTime = item.CreateTime
-		instances = append(instances, item)
-	}
-
-	if len(instances) > 0 {
-		lastID := (instances)[len(instances)-1].ID
-		lastItem := &datamodel.ModelInstance{}
-		if result := r.db.Model(&datamodel.ModelInstance{}).
-			Where("model_uid = ?", modelUID).
-			Order("create_time ASC, id ASC").
-			Limit(1).Find(lastItem); result.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
-		}
-		if lastItem.ID == lastID {
-			nextPageToken = ""
-		} else {
-			nextPageToken = paginate.EncodeToken(createTime, lastID)
-		}
-	}
-
-	return instances, nextPageToken, totalSize, nil
 }
 
 func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
@@ -387,25 +282,25 @@ func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
 	return nil
 }
 
-func (r *repository) GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error) {
+func (r *repository) GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error) {
 	var tmodels []datamodel.TritonModel
-	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_instance_uid", modelInstanceUID).Find(&tmodels); result.Error != nil {
-		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model instance id %v not found", modelInstanceUID)
+	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
+		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
 	}
 	return tmodels, nil
 }
 
-func (r *repository) GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error) {
+func (r *repository) GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error) {
 	var ensembleModel datamodel.TritonModel
-	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_instance_uid": modelInstanceUID, "platform": "ensemble"}).First(&ensembleModel)
+	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_uid": modelUID, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
-		return datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelInstanceUID)
+		return datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}
 	return ensembleModel, nil
 }
 
 func (r *repository) DeleteModel(modelUID uuid.UUID) error {
-	if result := r.db.Select("Instances").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
+	if result := r.db.Select("TritonModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUID)
 	}
 	return nil
@@ -450,7 +345,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageT
 	}
 
 	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("model_spec", "model_instance_spec")
+		queryBuilder.Omit("model_spec")
 	}
 
 	var createTime time.Time

@@ -12,7 +12,6 @@ import * as deployModel from "./rest_deploy_model.js"
 import * as publishModel from "./rest_publish_model.js"
 import * as updateModel from "./rest_update_model.js"
 import * as queryModelDefinition from "./rest_query_model_definition.js"
-import * as queryModelInstance from "./rest_query_model_instance.js"
 import * as getModelCard from "./rest_model_card.js"
 import * as longrunningOperation from "./rest_longrunning_operation.js"
 
@@ -46,7 +45,7 @@ export default function (data) {
     });
   }
 
-  // // Query Model API by admin
+  // Query Model API by admin
   if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
     queryModelPrivate.GetModelAdmin()
     queryModelPrivate.ListModelsAdmin()
@@ -60,7 +59,7 @@ export default function (data) {
   createModel.CreateModelFromLocal()
   createModel.CreateModelFromGitHub()
 
-  // // Query Model API
+  // Query Model API
   queryModel.GetModel()
   queryModel.ListModels()
   queryModel.LookupModel()
@@ -77,11 +76,6 @@ export default function (data) {
   // Query Model Definition API
   queryModelDefinition.GetModelDefinition()
   queryModelDefinition.ListModelDefinitions()
-
-  // Query Model Instance API
-  queryModelInstance.GetModelInstance()
-  queryModelInstance.ListModelInstances()
-  queryModelInstance.LookupModelInstance()
 
   // Get model card
   getModelCard.GetModelCard()

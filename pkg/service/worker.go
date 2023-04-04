@@ -10,6 +10,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/worker"
+	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
@@ -17,26 +18,29 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	workflowpb "go.temporal.io/api/workflow/v1"
 )
 
-func (s *service) DeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error) {
+func (s *service) DeployModelAsync(owner string, modelUID uuid.UUID) (string, error) {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        id.String(),
 		TaskQueue: worker.TaskQueue,
+	}
+
+	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	if err != nil {
+		return "", err
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
 		context.Background(),
 		workflowOptions,
 		"DeployModelWorkflow",
-		&worker.ModelInstanceParams{
-			ModelUID:         modelUID,
-			ModelInstanceUID: modelInstanceUID,
-			Owner:            owner,
+		&worker.ModelParams{
+			Model: model,
+			Owner: owner,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -48,7 +52,7 @@ func (s *service) DeployModelInstanceAsync(owner string, modelUID uuid.UUID, mod
 	return id.String(), nil
 }
 
-func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, modelInstanceUID uuid.UUID) (string, error) {
+func (s *service) UndeployModelAsync(owner string, modelUID uuid.UUID) (string, error) {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
@@ -56,13 +60,18 @@ func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, m
 		TaskQueue: worker.TaskQueue,
 	}
 
+	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	if err != nil {
+		return "", err
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		context.Background(),
 		workflowOptions,
 		"UnDeployModelWorkflow",
-		&worker.ModelInstanceParams{
-			ModelUID:         modelUID,
-			ModelInstanceUID: modelInstanceUID,
+		&worker.ModelParams{
+			Model: model,
+			Owner: owner,
 		})
 
 	if err != nil {
@@ -75,7 +84,7 @@ func (s *service) UndeployModelInstanceAsync(owner string, modelUID uuid.UUID, m
 	return id.String(), nil
 }
 
-func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error) {
+func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, *worker.ModelParams, string, error) {
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -108,10 +117,10 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 	}
 
 	// Get search attributes that were provided when workflow was started.
-	modelInstanceParams := worker.ModelInstanceParams{}
+	modelParams := worker.ModelParams{}
 	operationType := ""
 	for k, v := range workflowExecutionInfo.GetSearchAttributes().GetIndexedFields() {
-		if k != "ModelUID" && k != "ModelInstanceUID" && k != "Owner" && k != "Type" {
+		if k != "ModelUID" && k != "Owner" && k != "Type" {
 			continue
 		}
 		var currentVal string
@@ -132,18 +141,16 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 			return nil, nil, "", err
 		}
 		if k == "ModelUID" {
-			modelInstanceParams.ModelUID = uid
-		} else if k == "ModelInstanceUID" {
-			modelInstanceParams.ModelInstanceUID = uid
+			modelParams.Model.UID = uid
 		} else if k == "Owner" {
-			modelInstanceParams.Owner = fmt.Sprintf("users/%s", currentVal) // remove prefix users when storing in temporal
+			modelParams.Owner = fmt.Sprintf("users/%s", currentVal) // remove prefix users when storing in temporal
 		}
 	}
 	operation.Name = fmt.Sprintf("operations/%s", workflowExecutionInfo.Execution.WorkflowId)
-	return &operation, &modelInstanceParams, operationType, nil
+	return &operation, &modelParams, operationType, nil
 }
 
-func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelInstanceParams, string, error) {
+func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelParams, string, error) {
 	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(context.Background(), workflowId, "")
 
 	if err != nil {
@@ -152,11 +159,11 @@ func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, *wo
 	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
 }
 
-func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelInstanceParams, string, int64, error) {
+func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelParams, string, int64, error) {
 	var executions []*workflowpb.WorkflowExecutionInfo
-	// could support query such as by model or model instance
+	// could support query such as by model uid
 	resp, err := s.temporalClient.ListWorkflow(context.Background(), &workflowservice.ListWorkflowExecutionsRequest{
-		Namespace:     modelWorker.Namespace,
+		Namespace:     worker.Namespace,
 		PageSize:      int32(pageSize),
 		NextPageToken: []byte(pageToken),
 	})
@@ -166,17 +173,17 @@ func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningp
 
 	executions = append(executions, resp.Executions...)
 	var operations []*longrunningpb.Operation
-	var modelInstanceParams []*worker.ModelInstanceParams
+	var modelParams []*worker.ModelParams
 	for _, wf := range executions {
-		operation, modelInstanceParam, _, err := getOperationFromWorkflowInfo(wf)
+		operation, modelParam, _, err := getOperationFromWorkflowInfo(wf)
 
 		if err != nil {
 			return nil, nil, "", 0, err
 		}
 		operations = append(operations, operation)
-		modelInstanceParams = append(modelInstanceParams, modelInstanceParam)
+		modelParams = append(modelParams, modelParam)
 	}
-	return operations, modelInstanceParams, string(resp.NextPageToken), int64(len(operations)), nil
+	return operations, modelParams, string(resp.NextPageToken), int64(len(operations)), nil
 }
 
 func (s *service) CancelOperation(workflowId string) error {
@@ -196,7 +203,7 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 		workflowOptions,
 		"CreateModelWorkflow",
 		&worker.ModelParams{
-			Model: model,
+			Model: *model,
 			Owner: owner,
 		})
 	if err != nil {

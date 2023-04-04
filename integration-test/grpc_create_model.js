@@ -42,7 +42,8 @@ export function CreateModel() {
                 id: model_id,
                 model_definition: model_def_name,
                 configuration: {
-                    repository: "instill-ai/model-dummy-cls"
+                    repository: "instill-ai/model-dummy-cls",
+                    tag: "v1.0-cpu"
                 }
             }
         })
@@ -66,39 +67,39 @@ export function CreateModel() {
         }
 
         let req = {
-            name: `models/${model_id}/instances/v1.0-cpu`
+            name: `models/${model_id}`
         }
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModelInstance', req, {}), {
-            'DeployModelInstance status': (r) => r && r.status === grpc.StatusOK,
-            'DeployModelInstance operation name': (r) => r && r.message.operation.name !== undefined,
-            'DeployModelInstance operation metadata': (r) => r && r.message.operation.metadata === null,
-            'DeployModelInstance operation done': (r) => r && r.message.operation.done === false,
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeployModel', req, {}), {
+            'DeployModel status': (r) => r && r.status === grpc.StatusOK,
+            'DeployModel operation name': (r) => r && r.message.operation.name !== undefined,
+            'DeployModel operation metadata': (r) => r && r.message.operation.metadata === null,
+            'DeployModel operation done': (r) => r && r.message.operation.done === false,
         });
 
-        // Check the model instance state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+        // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelInstance', {
-                name: `models/${model_id}/instances/v1.0-cpu`
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.instance.state === "STATE_ONLINE") {
+            if (res.message.model.state === "STATE_ONLINE") {
                 break
             }
             sleep(1)
             currentTime = new Date().getTime();
         }
 
-        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModelInstance', {
-            name: `models/${model_id}/instances/v1.0-cpu`,
+        check(client.invoke('vdp.model.v1alpha.ModelPublicService/TriggerModel', {
+            name: `models/${model_id}`,
             task_inputs: [{
                 classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
             }]
         }, {}), {
-            'TriggerModelInstance status': (r) => r && r.status === grpc.StatusOK,
-            'TriggerModelInstance output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
-            'TriggerModelInstance output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
-            'TriggerModelInstance output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
+            'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
+            'TriggerModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
+            'TriggerModel output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
+            'TriggerModel output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
         });
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/CreateModel', {
@@ -106,7 +107,8 @@ export function CreateModel() {
                 id: randomString(10),
                 model_definition: randomString(10),
                 configuration: {
-                    repository: "instill-ai/model-dummy-cls"
+                    repository: "instill-ai/model-dummy-cls",
+                    tag: "v1.0-cpu"
                 }
             }
         }), {
@@ -117,7 +119,8 @@ export function CreateModel() {
             model: {
                 model_definition: model_def_name,
                 configuration: {
-                    repository: "instill-ai/model-dummy-cls"
+                    repository: "instill-ai/model-dummy-cls",
+                    tag: "v1.0-cpu"
                 }
             }
         }), {
