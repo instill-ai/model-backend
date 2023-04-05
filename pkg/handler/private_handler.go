@@ -93,33 +93,28 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
 }
 
-func (h *PrivateHandler) CheckModelInstance(ctx context.Context, req *modelPB.CheckModelInstanceRequest) (*modelPB.CheckModelInstanceResponse, error) {
+func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModelRequest) (*modelPB.CheckModelResponse, error) {
 	owner, err := resource.GetOwner(ctx)
 	if err != nil {
-		return &modelPB.CheckModelInstanceResponse{}, err
+		return &modelPB.CheckModelResponse{}, err
 	}
 
-	modelID, instanceID, err := resource.GetModelInstanceID(req.Name)
+	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
-		return &modelPB.CheckModelInstanceResponse{}, err
+		return &modelPB.CheckModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.CheckModelInstanceResponse{}, err
+		return &modelPB.CheckModelResponse{}, err
 	}
 
-	dbModelInstance, err := h.service.GetModelInstance(dbModel.UID, instanceID, modelPB.View_VIEW_FULL)
+	state, err := h.service.CheckModel(dbModel.UID)
 	if err != nil {
-		return &modelPB.CheckModelInstanceResponse{}, err
+		return &modelPB.CheckModelResponse{}, err
 	}
 
-	state, err := h.service.CheckModel(dbModelInstance.UID)
-	if err != nil {
-		return &modelPB.CheckModelInstanceResponse{}, err
-	}
-
-	return &modelPB.CheckModelInstanceResponse{
+	return &modelPB.CheckModelResponse{
 		State: *state,
 	}, nil
 }

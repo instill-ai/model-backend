@@ -102,7 +102,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	resourceName := util.ConvertModelToResourceName(dbModel.ID, dbModelInstance.ID)
+	resourceName := util.ConvertModelToResourceName(dbModel.ID)
 
 	// downloading model weight when making inference
 	rdid, _ := uuid.NewV4()
@@ -194,16 +194,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		if _, err = w.triton.LoadModelRequest(tModel.Name); err == nil {
 			continue
 		}
-		if e := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
-			State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
-		}); e != nil {
-			return e
-		}
-		if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+		if _, e := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 			Resource: &controllerPB.Resource{
 				Name: resourceName,
-				State: &controllerPB.Resource_ModelInstanceState{
-					ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+				State: &controllerPB.Resource_ModelState{
+					ModelState: modelPB.Model_STATE_ERROR,
 				},
 				Progress: nil,
 			},
@@ -214,16 +209,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
 		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-			if e := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
-				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
-			}); e != nil {
-				return e
-			}
 			if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
 					Name: resourceName,
-					State: &controllerPB.Resource_ModelInstanceState{
-						ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+					State: &controllerPB.Resource_ModelState{
+						ModelState: modelPB.Model_STATE_ERROR,
 					},
 					Progress: nil,
 				},
@@ -233,17 +223,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}
 	}
 
-	if err = w.repository.UpdateModel(param.Model.UID, datamodel.Model{
-		State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
-	}); err != nil {
-		return err
-	}
-
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
 			Name: resourceName,
-			State: &controllerPB.Resource_ModelInstanceState{
-				ModelInstanceState: modelPB.ModelInstance_STATE_ONLINE,
+			State: &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ONLINE,
 			},
 			Progress: nil,
 		},
@@ -294,53 +278,36 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	dbModel, err := w.repository.GetModelByUid(param.Owner, param.ModelUID, modelPB.View_VIEW_FULL)
+	dbModel, err := w.repository.GetModelByUid(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
 
-	dbModelInstance, err := w.repository.GetModelInstanceByUid(param.ModelUID, param.ModelInstanceUID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
-
-	resourceName := util.ConvertModelToResourceName(dbModel.ID, dbModelInstance.ID)
+	resourceName := util.ConvertModelToResourceName(dbModel.ID)
 
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
-			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err1 := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
-				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
-			}); err1 != nil {
-				return err1
-			}
-			if _, err2 := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+			if _, err := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 				Resource: &controllerPB.Resource{
 					Name: resourceName,
-					State: &controllerPB.Resource_ModelInstanceState{
-						ModelInstanceState: modelPB.ModelInstance_STATE_ERROR,
+					State: &controllerPB.Resource_ModelState{
+						ModelState: modelPB.Model_STATE_ERROR,
 					},
 					Progress: nil,
 				},
-			}); err2 != nil {
-				return err2
+			}); err != nil {
+				return err
 			}
 			return err
 		}
 	}
 
-	if err := w.repository.UpdateModel(param.Model.UID, datamodel.Model{
-		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-	}); err != nil {
-		return err
-	}
-
 	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
 			Name: resourceName,
-			State: &controllerPB.Resource_ModelInstanceState{
-				ModelInstanceState: modelPB.ModelInstance_STATE_OFFLINE,
+			State: &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ONLINE,
 			},
 			Progress: nil,
 		},

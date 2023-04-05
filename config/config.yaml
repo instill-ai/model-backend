@@ -60,7 +60,7 @@ temporal:
     hostport: temporal:7233
 controller:
   host: controller
-  port: 8085
+  privateport: 3085
   https:
     cert:
     key:
