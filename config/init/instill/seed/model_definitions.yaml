@@ -67,7 +67,7 @@
       - "content"
     additionalProperties: false
     minProperties: 1
-    maxProperties: 2
+    maxProperties: 1
     properties:
       content:
         type: "string"
@@ -80,14 +80,6 @@
         ui_component: "file"
         minLength: 0
         maxLength: 1023
-      tag:
-        type: "string"
-        title: "Model tag"
-        description: "The tag of the model"     
-        ui_order: 1
-        ui_component: "text"
-        minLength: 0
-        maxLength: 200           
 - id: artivc
   uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
   title: ArtiVC
@@ -151,7 +143,7 @@
       - "repo_id"
     additionalProperties: false
     minProperties: 1
-    maxProperties: 3
+    maxProperties: 2
     properties:
       repo_id:
         type: "string"
@@ -165,14 +157,6 @@
         ui_component: "text"
         minLength: 0
         maxLength: 1023
-      tag:
-        type: "string"
-        title: "Model tag"
-        description: "The tag of the model"  
-        ui_order: 1    
-        ui_component: "text"
-        minLength: 0
-        maxLength: 200                  
       html_url:
         type: "string"
         title: "Hugging Face repository URL"

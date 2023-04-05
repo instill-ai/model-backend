@@ -466,13 +466,14 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, r *http.Request
 		}
 		modelConfiguration := datamodel.LocalModelConfiguration{
 			Content: fileHeader.Filename,
-			Tag:     "latest",
 		}
 
 		if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
 			makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 			return
 		}
+		modelConfiguration.Tag = "latest" // Set after validation. Because the model definition do not contain tag.
+
 		bModelConfig, _ := json.Marshal(modelConfiguration)
 		var uploadedModel = datamodel.Model{
 			ID:                 modelID,
