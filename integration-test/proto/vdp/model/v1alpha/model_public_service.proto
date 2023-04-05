@@ -187,16 +187,6 @@ service ModelPublicService {
     option (google.api.method_signature) = "name";
   }
 
-  // WatchModelInstance method receives a WatchModelInstanceRequest message
-  // and returns a WatchModelInstanceResponse
-  rpc WatchModelInstance(WatchModelInstanceRequest)
-      returns (WatchModelInstanceResponse) {
-    option (google.api.http) = {
-      get : "/v1alpha/{name=models/*/instances/*}/watch"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
   ///////////////////////////////////////////////////////
   //
   // TriggerModel method receives a TriggerModelRequest message

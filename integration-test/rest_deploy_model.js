@@ -44,10 +44,10 @@ export function DeployUndeployModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -75,7 +75,16 @@ export function DeployUndeployModel() {
         [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
-          r.json().model.state === "STATE_UNSPECIFIED",
+          r.json().model.state === "STATE_ONLINE",
+      })
+
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
+          r.status === 200,
+        [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
+          r.json().state === "STATE_UNSPECIFIED",
       })
 
       // Check delete model with 422 when model is in unspecified state
@@ -90,10 +99,10 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -121,7 +130,16 @@ export function DeployUndeployModel() {
         [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
-          r.json().model.state === "STATE_UNSPECIFIED",
+          r.json().model.state === "STATE_OFFLINE",
+      })
+
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
+          r.status === 200,
+        [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
+          r.json().state === "STATE_UNSPECIFIED",
       })
 
       // Check delete model with 422 when model is in unspecified state
@@ -136,10 +154,10 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_OFFLINE") {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)

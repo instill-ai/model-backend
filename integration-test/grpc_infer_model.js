@@ -54,10 +54,10 @@ export function InferModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)
@@ -78,10 +78,10 @@ export function InferModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
                 name: `models/${model_id}`
             }, {})
-            if (res.message.model.state === "STATE_ONLINE") {
+            if (res.message.state === "STATE_ONLINE") {
                 break
             }
             sleep(1)
@@ -166,10 +166,10 @@ export function InferModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)
@@ -190,10 +190,10 @@ export function InferModel() {
         currentTime = new Date().getTime();
         timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+            var res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
                 name: `models/${model_id}`
             }, {})
-            if (res.message.model.state === "STATE_ONLINE") {
+            if (res.message.state === "STATE_ONLINE") {
                 break
             }
             sleep(1)

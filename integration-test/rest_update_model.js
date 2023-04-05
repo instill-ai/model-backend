@@ -44,10 +44,10 @@ export function UpdateModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -76,7 +76,7 @@ export function UpdateModel() {
         [`PATCH /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`PATCH /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",                    
+          r.json().model.state === "STATE_OFFLINE",
         [`PATCH /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
           r.json().model.configuration !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
@@ -106,9 +106,9 @@ export function UpdateModel() {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.description`]: (r) =>
           r.json().model.description === "",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.task`]: (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",   
+          r.json().model.task === "TASK_CLASSIFICATION",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",                   
+          r.json().model.state === "STATE_OFFLINE",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.configuration`]: (r) =>

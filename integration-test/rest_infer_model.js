@@ -46,10 +46,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -75,10 +75,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -313,12 +313,12 @@ export function InferModel() {
 
       // Check model creation finished
       let currentTime = new Date().getTime();
-      let timeoutTime = new Date().getTime() + 120000;
+      let timeoutTime = new Date().getTime() + 20000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -344,10 +344,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -724,10 +724,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -753,10 +753,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -1050,10 +1050,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -1079,10 +1079,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -1426,10 +1426,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -1455,10 +1455,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -1798,10 +1798,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -1827,10 +1827,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -2094,10 +2094,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -2123,10 +2123,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -2526,10 +2526,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -2555,10 +2555,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -2648,23 +2648,23 @@ export function InferModel() {
       // Invalid cases: inference with multiple parameters
       payload = JSON.stringify({
         "task_inputs": [{
-            "text_to_image": {
-              "prompt": "hello this is a test",
-              "steps": "1",
-              "cfg_scale": "5.5",
-              "seed": "1",
-              "samples": `${num_samples}`
-            }
-          },
-          {
-            "text_to_image": {
-              "prompt": "hello this is a test",
-              "steps": "1",
-              "cfg_scale": "5.5",
-              "seed": "1",
-              "samples": `${num_samples}`
-            }
+          "text_to_image": {
+            "prompt": "hello this is a test",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
           }
+        },
+        {
+          "text_to_image": {
+            "prompt": "hello this is a test",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
@@ -2726,7 +2726,7 @@ export function InferModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple cfg_scale]`]: (r) =>
           r.status === 400,
-      });      
+      });
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
@@ -2762,10 +2762,10 @@ export function InferModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -2791,10 +2791,10 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)

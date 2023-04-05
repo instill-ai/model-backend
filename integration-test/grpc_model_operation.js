@@ -61,6 +61,20 @@ export function ListModelOperations() {
             "ListModelOperations response operations[0].metadata": (r) => r.message.operations[0].metadata === null,
         });
 
+        // Check model creation finished
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
+        while (timeoutTime > currentTime) {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
+            }, {})
+            if (res.message.state === "STATE_OFFLINE") {
+                break
+            }
+            sleep(1)
+            currentTime = new Date().getTime();
+        }
+
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id
         }), {
@@ -99,10 +113,10 @@ export function CancelModelOperation() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)
@@ -122,6 +136,17 @@ export function CancelModelOperation() {
         }), {
             'CancelModelOperation status is OK': (r) => r && r.status === grpc.StatusOK,
         });
+
+        while (timeoutTime > currentTime) {
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
+            }, {})
+            if (res.message.state !== "STATE_UNSPECIFIED") {
+                break
+            }
+            sleep(1)
+            currentTime = new Date().getTime();
+        }
 
         check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
             name: "models/" + model_id

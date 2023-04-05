@@ -705,7 +705,12 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		return st.Err()
 	}
 
-	if modelInDB.State == datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED) {
+	state, err := s.GetResourceState(modelID)
+	if err != nil {
+		return err
+	}
+
+	if *state == modelPB.Model_STATE_UNSPECIFIED {
 		st, err := sterr.CreateErrorPreconditionFailure(
 			"[service] delete model",
 			[]*errdetails.PreconditionFailure_Violation{

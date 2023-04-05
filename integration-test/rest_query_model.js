@@ -44,10 +44,10 @@ export function GetModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -68,9 +68,9 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
         [`GET /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",          
+          r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",          
+          r.json().model.state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration`]: (r) =>
@@ -101,7 +101,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",          
+          r.json().model.state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${model_id} task cls response model.configuration.content`]: (r) =>
@@ -153,10 +153,10 @@ export function ListModels() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_1}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -185,10 +185,10 @@ export function ListModels() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_2}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -217,7 +217,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models[0].task`]: (r) =>
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models task cls response models[0].state`]: (r) =>
-          r.json().models[0].state === "STATE_OFFLINE",                    
+          r.json().models[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
@@ -254,7 +254,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models[0].task`]: (r) =>
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models task cls response models[0].state`]: (r) =>
-          r.json().models[0].state === "STATE_OFFLINE",                    
+          r.json().models[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
@@ -291,13 +291,13 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].task`]: (r) =>
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].state`]: (r) =>
-          r.json().models[0].state === "STATE_OFFLINE",                    
+          r.json().models[0].state === "STATE_OFFLINE",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
           r.json().models[0].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
           r.json().models[0].configuration.repository === "instill-ai/model-dummy-cls",
-          [`GET /v1alpha/models?view=VIEW_FULL tag cls response models[0].configuration.tag`]: (r) =>
-          r.json().models[0].configuration.tag === "v1.0-cpu",          
+        [`GET /v1alpha/models?view=VIEW_FULL tag cls response models[0].configuration.tag`]: (r) =>
+          r.json().models[0].configuration.tag === "v1.0-cpu",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
           r.json().models[0].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
@@ -319,13 +319,13 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].task`]: (r) =>
           r.json().models[1].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].state`]: (r) =>
-          r.json().models[1].state === "STATE_OFFLINE",                    
+          r.json().models[1].state === "STATE_OFFLINE",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].model_definition`]: (r) =>
           r.json().models[1].model_definition === "model-definitions/github",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.repository`]: (r) =>
           r.json().models[1].configuration.repository === "instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.tag`]: (r) =>
-          r.json().models[1].configuration.tag === "v1.0-cpu",          
+          r.json().models[1].configuration.tag === "v1.0-cpu",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.html_url`]: (r) =>
           r.json().models[1].configuration.html_url === "https://github.com/instill-ai/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
@@ -335,7 +335,7 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>
           r.json().models[1].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].update_time`]: (r) =>
-          r.json().models[1].update_time !== undefined,          
+          r.json().models[1].update_time !== undefined,
       });
 
       // clean up
@@ -380,10 +380,10 @@ export function LookupModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let r = http.get(`${constant.apiPublicHost}/v1alpha/${res.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (r.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -408,7 +408,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",                    
+          r.json().model.state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration`]: (r) =>
@@ -439,7 +439,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",                    
+          r.json().model.state === "STATE_OFFLINE",
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
         [`GET /v1alpha/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration.content`]: (r) =>

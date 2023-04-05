@@ -61,10 +61,10 @@ export function GetModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)
@@ -136,10 +136,10 @@ export function ListModels() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)
@@ -205,10 +205,10 @@ export function LookUpModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-                name: createClsModelRes.json().operation.name
+            let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
+                name: `models/${model_id}`
             }, {})
-            if (res.message.operation.done === true) {
+            if (res.message.state === "STATE_OFFLINE") {
                 break
             }
             sleep(1)

@@ -2578,12 +2578,18 @@ func (h *PublicHandler) CancelModelOperation(ctx context.Context, req *modelPB.C
 			}); err != nil {
 				return &modelPB.CancelModelOperationResponse{}, err
 			}
+			if err := h.service.UpdateResourceState(dbModel.ID, modelPB.Model_STATE_OFFLINE, nil, nil); err != nil {
+				return &modelPB.CancelModelOperationResponse{}, err
+			}
 		}
 	case string(util.OperationTypeUnDeploy):
 		if *state == modelPB.Model_STATE_UNSPECIFIED {
 			if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
 				State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
 			}); err != nil {
+				return &modelPB.CancelModelOperationResponse{}, err
+			}
+			if err := h.service.UpdateResourceState(dbModel.ID, modelPB.Model_STATE_ONLINE, nil, nil); err != nil {
 				return &modelPB.CancelModelOperationResponse{}, err
 			}
 		}

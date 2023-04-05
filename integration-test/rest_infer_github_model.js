@@ -49,10 +49,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -77,10 +77,10 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -317,10 +317,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -346,10 +346,10 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -586,10 +586,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -615,10 +615,10 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -994,10 +994,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -1023,10 +1023,10 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -1402,10 +1402,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -1431,10 +1431,10 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().instance.state === "STATE_ONLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
