@@ -160,6 +160,18 @@ func TestRenameModel(t *testing.T) {
 			ModelDefinitionUid: MODEL_DEFINITION,
 			Owner:              OWNER,
 		}
+		MockControllerPrivateServiceClient := NewMockControllerPrivateServiceClient(ctrl)
+		MockControllerPrivateServiceClient.
+			EXPECT().
+			DeleteResource(gomock.Any(), gomock.Any()).
+			Return(nil, nil).
+			Times(1)
+		MockControllerPrivateServiceClient.
+			EXPECT().
+			UpdateResource(gomock.Any(), gomock.Any()).
+			Return(nil, nil).
+			Times(1)
+
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
@@ -187,7 +199,7 @@ func TestRenameModel(t *testing.T) {
 				Owner:              OWNER,
 			}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil)
+		s := service.NewService(mockRepository, nil, nil, nil, nil, MockControllerPrivateServiceClient)
 
 		_, err := s.RenameModel(OWNER, ID, "new ID")
 		assert.NoError(t, err)
