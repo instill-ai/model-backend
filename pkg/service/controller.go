@@ -32,7 +32,7 @@ func (s *service) UpdateResourceState(modelID string, state modelPB.Model_State,
 
 	resourceName := util.ConvertModelToResourceName(modelID)
 
-	_, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
+	if _, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
 			Name: resourceName,
 			State: &controllerPB.Resource_ModelState{
@@ -41,9 +41,7 @@ func (s *service) UpdateResourceState(modelID string, state modelPB.Model_State,
 			Progress: progress,
 		},
 		WorkflowId: workflowId,
-	})
-
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -56,11 +54,9 @@ func (s *service) DeleteResourceState(modelID string) error {
 
 	resourceName := util.ConvertModelToResourceName(modelID)
 
-	_, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
+	if _, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
 		Name: resourceName,
-	})
-
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 

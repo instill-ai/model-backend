@@ -760,6 +760,14 @@ func (s *service) RenameModel(owner string, modelID string, newModelId string) (
 		return datamodel.Model{}, err
 	}
 
+	if err := s.DeleteResourceState(modelID); err != nil {
+		return datamodel.Model{}, err
+	}
+
+	if err := s.UpdateResourceState(newModelId, modelPB.Model_State(modelInDB.State), nil, nil); err != nil {
+		return datamodel.Model{}, err
+	}
+
 	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
 		ID: newModelId,
 	})
