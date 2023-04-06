@@ -81,6 +81,7 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 					}
 					b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
 						Url: modelConfig.Url,
+						Tag: modelConfig.Tag,
 					})
 					if err != nil {
 						logger.Fatal(err.Error())
