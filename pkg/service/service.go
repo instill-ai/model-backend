@@ -167,6 +167,8 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
+	fmt.Println("---->>> test-trigger ", s.redisClient.Ping(ctx))
+
 	uid, _ := resource.GetPermalinkUID(owner)
 	switch task {
 	case modelPB.Model_TASK_CLASSIFICATION,
@@ -178,21 +180,27 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 		modelPB.Model_TASK_UNSPECIFIED:
 
 		if strings.HasPrefix(owner, "users/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([][]byte))))
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([][]byte)))).Result()
+			fmt.Println("------>>>> user vision task ", n, err)
 		} else if strings.HasPrefix(owner, "orgs/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([][]byte))))
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([][]byte)))).Result()
+			fmt.Println("------>>>> org vision task ", n, err)
 		}
 	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		if strings.HasPrefix(owner, "users/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1).Result()
+			fmt.Println("------>>>> user text to image task ", n, err)
 		} else if strings.HasPrefix(owner, "orgs/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1).Result()
+			fmt.Println("------>>>> org text to image task ", n, err)
 		}
 	case modelPB.Model_TASK_TEXT_GENERATION:
 		if strings.HasPrefix(owner, "users/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1).Result()
+			fmt.Println("------>>>> user text to text task ", n, err)
 		} else if strings.HasPrefix(owner, "orgs/") {
-			s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
+			n, err := s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1).Result()
+			fmt.Println("------>>>> org text to text task ", n, err)
 		}
 	default:
 		return nil, fmt.Errorf("unknown task input type")

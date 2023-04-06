@@ -136,6 +136,8 @@ func main() {
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
+	fmt.Println("-------->>>>> redisClient.Ping(context.Background())", redisClient.Ping(context.Background()))
+
 	temporalClient, err := client.Dial(client.Options{
 		// ZapAdapter implements log.Logger interface and can be passed
 		// to the client constructor using client using client.Options.
