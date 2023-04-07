@@ -136,6 +136,9 @@ func main() {
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	defer controllerClientConn.Close()
+
 	temporalClient, err := client.Dial(client.Options{
 		// ZapAdapter implements log.Logger interface and can be passed
 		// to the client constructor using client using client.Options.
@@ -150,7 +153,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, pipelinePublicServiceClient, redisClient, temporalClient)
+	service := service.NewService(repository, triton, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,

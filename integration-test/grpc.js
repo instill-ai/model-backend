@@ -55,7 +55,7 @@ export default () => {
         queryModelPrivate.GetModel()
         queryModelPrivate.ListModels()
         queryModelPrivate.LookUpModel()
-    }    
+    }
 
     // Create model API
     createModel.CreateModel()

@@ -88,6 +88,16 @@ type PipelineBackendConfig struct {
 	}
 }
 
+// ControllerConfig related to controller
+type ControllerConfig struct {
+	Host  string `koanf:"host"`
+	PrivatePort  int    `koanf:"privateport"`
+	HTTPS struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
+}
+
 // MaxBatchSizeConfig defines the maximum size of the batch of a AI task
 type MaxBatchSizeConfig struct {
 	Unspecified          int `koanf:"unspecified"`
@@ -116,6 +126,7 @@ type AppConfig struct {
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`
+	Controller             ControllerConfig      `koanf:"controller"`
 }
 
 // Config - Global variable to export

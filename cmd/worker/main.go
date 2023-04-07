@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/sdk/worker"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -37,6 +38,9 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	defer controllerClientConn.Close()
+
 	clientNamespace, err := client.NewNamespaceClient(client.Options{
 		HostPort: config.Config.Temporal.ClientOptions.HostPort,
 	})
@@ -57,7 +61,7 @@ func main() {
 		}
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), triton)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
 
 	c, err := client.Dial(client.Options{
 		// ZapAdapter implements log.Logger interface and can be passed

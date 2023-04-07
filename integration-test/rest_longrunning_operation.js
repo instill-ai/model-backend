@@ -44,10 +44,10 @@ export function GetLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -88,10 +88,22 @@ export function GetLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state !== "STATE_UNSPECIFIED") {
+        if (res.json().state === "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // model can only be deleted after operation done
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -133,10 +145,10 @@ export function ListLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -173,10 +185,22 @@ export function ListLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().model.state !== "STATE_UNSPECIFIED") {
+        if (res.json().state === "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // model can only be deleted after operation done
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -218,10 +242,10 @@ export function CancelLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -252,14 +276,17 @@ export function CancelLongRunningOperation() {
           r.status === 200
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`GET /v1alpha/models/${model_id} response status`]: (r) =>
-          r.status === 200,
-        [`GET /v1alpha/models/${model_id} response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",
-      })
+      // model can only be deleted after operation done
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_OFFLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
@@ -292,10 +319,10 @@ export function CancelLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_OFFLINE") {
           break
         }
         sleep(1)
@@ -322,10 +349,10 @@ export function CancelLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${deployOperationRes.json().operation.name}`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().operation.done === true) {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
@@ -346,6 +373,18 @@ export function CancelLongRunningOperation() {
         [`POST /v1alpha/${undeployOperationRes.json().operation.name}/cancel response status`]: (r) =>
           r.status === 200
       });
+
+      // check state updated
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {

@@ -29,6 +29,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/sterr"
 
+	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
@@ -46,6 +47,8 @@ type Service interface {
 	UpdateModel(modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
+	WatchModel(name string) (*controllerPB.GetResourceResponse, error)
+	CheckModel(modelInstanceUID uuid.UUID) (*modelPB.Model_State, error)
 
 	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -65,10 +68,13 @@ type Service interface {
 	CancelOperation(workflowId string) error
 
 	SearchAttributeReady() error
-
 	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
+
+	GetResourceState(modelID string) (*modelPB.Model_State, error)
+	UpdateResourceState(modelID string, state modelPB.Model_State, progress *int32, workflowId *string) error
+	DeleteResourceState(modelID string) error
 }
 
 type service struct {
@@ -77,15 +83,17 @@ type service struct {
 	redisClient                 *redis.Client
 	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
 	temporalClient              client.Client
+	controllerClient            controllerPB.ControllerPrivateServiceClient
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client) Service {
+func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
 		repository:                  r,
 		triton:                      t,
 		pipelinePublicServiceClient: p,
 		redisClient:                 rc,
 		temporalClient:              tc,
+		controllerClient:            cs,
 	}
 }
 
@@ -199,6 +207,42 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 	}
 
 	return s.ModelInfer(modelUID, inferInput, task)
+}
+
+func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*modelPB.Model_State, error) {
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
+	if err != nil {
+		return nil, fmt.Errorf("triton model not found")
+	}
+
+	ensembleModelName := ensembleModel.Name
+	ensembleModelVersion := ensembleModel.Version
+	modelReadyResponse := s.triton.ModelReadyRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+
+	state := modelPB.Model_STATE_UNSPECIFIED
+	if modelReadyResponse == nil {
+		state = modelPB.Model_STATE_ERROR
+	} else if modelReadyResponse.Ready {
+		state = modelPB.Model_STATE_ONLINE
+	} else {
+		state = modelPB.Model_STATE_OFFLINE
+	}
+
+	return &state, nil
+}
+
+func (s *service) WatchModel(name string) (*controllerPB.GetResourceResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (s *service) ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
@@ -661,7 +705,12 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		return st.Err()
 	}
 
-	if modelInDB.State == datamodel.ModelState(modelPB.Model_STATE_UNSPECIFIED) {
+	state, err := s.GetResourceState(modelID)
+	if err != nil {
+		return err
+	}
+
+	if *state == modelPB.Model_STATE_UNSPECIFIED {
 		st, err := sterr.CreateErrorPreconditionFailure(
 			"[service] delete model",
 			[]*errdetails.PreconditionFailure_Violation{
@@ -678,6 +727,12 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 	}
 
 	if err := s.UndeployModel(modelInDB.UID); err != nil {
+		s.UpdateResourceState(
+			modelID,
+			modelPB.Model_STATE_ERROR,
+			nil,
+			nil,
+		)
 		return err
 	}
 
@@ -692,12 +747,24 @@ func (s *service) DeleteModel(owner string, modelID string) error {
 		}
 	}
 
+	if err := s.DeleteResourceState(modelID); err != nil {
+		return err
+	}
+
 	return s.repository.DeleteModel(modelInDB.UID)
 }
 
 func (s *service) RenameModel(owner string, modelID string, newModelId string) (datamodel.Model, error) {
 	modelInDB, err := s.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		return datamodel.Model{}, err
+	}
+
+	if err := s.DeleteResourceState(modelID); err != nil {
+		return datamodel.Model{}, err
+	}
+
+	if err := s.UpdateResourceState(newModelId, modelPB.Model_State(modelInDB.State), nil, nil); err != nil {
 		return datamodel.Model{}, err
 	}
 
