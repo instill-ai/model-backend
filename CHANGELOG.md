@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.14.0-alpha...v0.15.0-alpha) (2023-04-07)
+
+
+### Features
+
+* **controller:** add model state monitoring with controller ([#323](https://github.com/instill-ai/model-backend/issues/323)) ([4397826](https://github.com/instill-ai/model-backend/commit/43978264209011031d3622b1336e7bbdf237d985))
+* remove model instance ([#320](https://github.com/instill-ai/model-backend/issues/320)) ([15e1b62](https://github.com/instill-ai/model-backend/commit/15e1b625e5c2d876c580c9a6906c18b600cd7c7b))
+* support model caching ([#317](https://github.com/instill-ai/model-backend/issues/317)) ([d15ffba](https://github.com/instill-ai/model-backend/commit/d15ffba489ad985ecfafdd3038c6a97630da94fc))
+
 ## [0.14.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.13.1-alpha...v0.14.0-alpha) (2023-03-26)
 
 
