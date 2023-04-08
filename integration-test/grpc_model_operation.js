@@ -64,7 +64,7 @@ export function ListModelOperations() {
         for (const op of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {}).message.operations) {
             if (op.done === true) {
             check(op, {
-                "ListModelOperations operation has error or response fields": (r) => op.response != undefined || op.error != undefined,
+                "ListModelOperations operation has error or response fields": (r) => op.response !== undefined || op.error !== undefined,
                 })
             }
         }
