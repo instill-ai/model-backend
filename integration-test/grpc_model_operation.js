@@ -57,9 +57,17 @@ export function ListModelOperations() {
             "ListModelOperations response operations.length": (r) => r.message.operations.length > 0,
             "ListModelOperations response operations[0].name": (r) => r.message.operations[0].name != undefined,
             "ListModelOperations response operations[0].done": (r) => r.message.operations[0].done != undefined,
-            "ListModelOperations response operations[0].response": (r) => r.message.operations[0].response != undefined,
             "ListModelOperations response operations[0].metadata": (r) => r.message.operations[0].metadata === null,
         });
+
+        // Check the operation response by waiting for the operation is done
+        for (const op of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {}).message.operations) {
+            if (op.done === true) {
+            check(op, {
+                "ListModelOperations operation has error or response fields": (r) => op.response !== undefined || op.error !== undefined,
+                })
+            }
+        }
 
         // Check model creation finished
         let currentTime = new Date().getTime();
