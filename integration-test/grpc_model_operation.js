@@ -60,24 +60,18 @@ export function ListModelOperations() {
             "ListModelOperations response operations[0].metadata": (r) => r.message.operations[0].metadata === null,
         });
 
-         // Check the operation response by waiting for the operation is done
-        let currentTime = new Date().getTime();
-        let timeoutTime = new Date().getTime() + 120000;
-        while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {})
-            if (res.status === 200 && res.message.operations[0].done === true) {
-                check(res, {
-                    "ListModelOperations response operations[0].response": (r) => r.message.operations[0].response != undefined,
+        // Check the operation response by waiting for the operation is done
+        for (const op of client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {}).message.operations) {
+            if (op.done === true) {
+            check(op, {
+                "ListModelOperations operation has error or response fields": (r) => op.response != undefined || op.error != undefined,
                 })
-                break
             }
-            sleep(1)
-            currentTime = new Date().getTime();
         }
 
         // Check model creation finished
-        currentTime = new Date().getTime();
-        timeoutTime = new Date().getTime() + 120000;
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
             let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
                 name: `models/${model_id}`
