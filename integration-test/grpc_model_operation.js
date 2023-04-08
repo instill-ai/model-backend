@@ -61,8 +61,8 @@ export function ListModelOperations() {
         });
 
          // Check the operation response by waiting for the operation is done
-        currentTime = new Date().getTime();
-        timeoutTime = new Date().getTime() + 120000;
+        let currentTime = new Date().getTime();
+        let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
             let res = client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelOperations', {}, {})
             if (res.status === 200 && res.message.operations[0].done === true) {
@@ -76,8 +76,8 @@ export function ListModelOperations() {
         }
 
         // Check model creation finished
-        let currentTime = new Date().getTime();
-        let timeoutTime = new Date().getTime() + 120000;
+        currentTime = new Date().getTime();
+        timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
             let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
                 name: `models/${model_id}`
