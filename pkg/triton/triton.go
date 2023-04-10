@@ -13,6 +13,7 @@ import (
 	"image/jpeg"
 	"log"
 	"math"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -64,14 +65,30 @@ type Triton interface {
 	Close()
 }
 
+var lock = &sync.Mutex{}
+
 type triton struct {
 	tritonClient inferenceserver.GRPCInferenceServiceClient
 	connection   *grpc.ClientConn
 }
 
+var tritonService *triton
+
 func NewTriton() Triton {
-	tritonService := &triton{}
-	tritonService.Init()
+	if tritonService == nil {
+		lock.Lock()
+		defer lock.Unlock()
+		if tritonService == nil {
+			fmt.Println("Creating single instance now.")
+			tritonService = &triton{}
+			tritonService.Init()
+		} else {
+			fmt.Println("Single instance already created.")
+		}
+	} else {
+		fmt.Println("Single instance already created.")
+	}
+
 	return tritonService
 }
 
@@ -82,6 +99,11 @@ func (ts *triton) Init() {
 	if err != nil {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
 	}
+	defer func() {
+		if e := conn.Close(); e != nil {
+			log.Printf("failed to close connection: %s", e)
+		}
+	}()
 
 	// Create client from gRPC server connection
 	ts.connection = conn
@@ -142,7 +164,7 @@ func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inf
 
 func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -951,6 +973,5 @@ func (ts *triton) IsTritonServerReady() bool {
 	if serverLiveResponse == nil {
 		return false
 	}
-	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
 	return serverLiveResponse.Live
 }
