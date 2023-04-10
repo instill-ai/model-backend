@@ -99,11 +99,6 @@ func (ts *triton) Init() {
 	if err != nil {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
 	}
-	defer func() {
-		if e := conn.Close(); e != nil {
-			log.Printf("failed to close connection: %s", e)
-		}
-	}()
 
 	// Create client from gRPC server connection
 	ts.connection = conn
