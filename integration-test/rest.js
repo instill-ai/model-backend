@@ -29,7 +29,7 @@ export let options = {
   },
 };
 
-export function setup() { }
+export function setup() {}
 
 export default function (data) {
   /*
@@ -50,52 +50,51 @@ export default function (data) {
     queryModelPrivate.GetModelAdmin()
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
-    // }
-
-    // Infer Model API
-    inferModel.InferModel()
-
-    // Create Model API
-    createModel.CreateModelFromLocal()
-    createModel.CreateModelFromGitHub()
-
-    // Query Model API
-    queryModel.GetModel()
-    queryModel.ListModels()
-    queryModel.LookupModel()
-
-    // Deploy/Undeploy Model API
-    deployModel.DeployUndeployModel()
-
-    // Publish/Unpublish Model API
-    publishModel.PublishUnpublishModel()
-
-    // Update Model API
-    updateModel.UpdateModel()
-
-    // Query Model Definition API
-    queryModelDefinition.GetModelDefinition()
-    queryModelDefinition.ListModelDefinitions()
-
-    // Get model card
-    getModelCard.GetModelCard()
-
-    // Long-running Operation
-    longrunningOperation.GetLongRunningOperation()
-    longrunningOperation.ListLongRunningOperation()
-    longrunningOperation.CancelLongRunningOperation()
   }
+
+  // Infer Model API
+  inferModel.InferModel()
+
+  // Create Model API
+  createModel.CreateModelFromLocal()
+  createModel.CreateModelFromGitHub()
+
+  // Query Model API
+  queryModel.GetModel()
+  queryModel.ListModels()
+  queryModel.LookupModel()
+
+  // Deploy/Undeploy Model API
+  deployModel.DeployUndeployModel()
+
+  // Publish/Unpublish Model API
+  publishModel.PublishUnpublishModel()
+
+  // Update Model API
+  updateModel.UpdateModel()
+
+  // Query Model Definition API
+  queryModelDefinition.GetModelDefinition()
+  queryModelDefinition.ListModelDefinitions()
+
+  // Get model card
+  getModelCard.GetModelCard()
+
+  // Long-running Operation
+  longrunningOperation.GetLongRunningOperation()
+  longrunningOperation.ListLongRunningOperation()
+  longrunningOperation.CancelLongRunningOperation()
 }
 
 export function teardown(data) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-      .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
-        headers: genHeader(
-          "application/json"
-        ),
-      })
-      .json("models")) {
+        .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
+          headers: genHeader(
+            "application/json"
+          ),
+        })
+        .json("models")) {
       check(model, {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
@@ -103,9 +102,9 @@ export function teardown(data) {
         http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model.id}`, null, {
           headers: genHeader("application/json"),
         }), {
-        [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
-          r.status === 204,
-      }
+          [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
+            r.status === 204,
+        }
       );
     }
   });
