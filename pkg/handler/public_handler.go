@@ -2437,8 +2437,8 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	pbModelInstance := DBModelDefinitionToPBModelDefinition(&dbModelDefinition)
-	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
+	pbModelDefinition := DBModelDefinitionToPBModelDefinition(&dbModelDefinition)
+	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelDefinition}, nil
 }
 
 func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {

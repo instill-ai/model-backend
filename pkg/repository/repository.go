@@ -23,8 +23,8 @@ type Repository interface {
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 
 	CreateTritonModel(model datamodel.TritonModel) error
-	GetTritonModels(modelInstanceUID uuid.UUID) ([]datamodel.TritonModel, error)
-	GetTritonEnsembleModel(modelInstanceUID uuid.UUID) (datamodel.TritonModel, error)
+	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
+	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)

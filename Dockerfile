@@ -16,6 +16,7 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
 
 # ArtiVC to work with cloud storage
 ARG TARGETOS TARGETARCH ARTIVC_VERSION
@@ -65,6 +66,7 @@ COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-migrate ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init-model ./
 COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
 
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp

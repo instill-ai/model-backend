@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -388,4 +390,28 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 		}
 	}
 	return tmpFile, &uploadedModel, modelDefinitionID, nil
+}
+
+// GetJSON fetches the contents of the given URL
+// and decodes it as JSON into the given result,
+// which should be a pointer to the expected data.
+func GetJSON(url string, result interface{}) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("http.Get %q: %w", url, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("http.Get status: %s", resp.Status)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("ioutil.ReadAll: %w", err)
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	return nil
 }

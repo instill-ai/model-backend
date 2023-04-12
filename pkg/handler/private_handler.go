@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
@@ -31,7 +30,6 @@ func NewPrivateHandler(s service.Service, t triton.Triton) modelPB.ModelPrivateS
 }
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
-	fmt.Println("-------------->>>>>>> ListModelsAdmin")
 	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
