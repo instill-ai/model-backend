@@ -96,14 +96,14 @@
       "type": "string",
       "title": "Task",
       "description": "The model task",
-      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR"],
+      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR", "TASK_TEXT_TO_IMAGE", "TASK_TEXT_GENERATION"], 
       "default": "TASK_UNSPECIFIED",
       "readOnly": true,
       "ui_order": 4,
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Image classification", "Object detection", "Keypoint detection", "Instance segmentation", "Semantic segmentation", "OCR"]
+      "ui_enum": ["", "Image classification", "Object detection", "Keypoint detection", "Instance segmentation", "Semantic segmentation", "OCR", "Text to image", "Text generation"]
     },    
     "model_spec": {
       "type": "object",
