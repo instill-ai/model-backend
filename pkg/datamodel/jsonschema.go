@@ -18,8 +18,8 @@ var ModelDefJSONSchema *jsonschema.Schema
 // ModelJSONSchema represents the Model JSON Schema for validating the payload
 var ModelJSONSchema *jsonschema.Schema
 
-// ModelInstanceCardJSONSchema represents the Model Instance Card JSON Schema for validating the payload
-var ModelInstanceCardJSONSchema *jsonschema.Schema
+// ModelCardJSONSchema represents the Model Instance Card JSON Schema for validating the payload
+var ModelCardJSONSchema *jsonschema.Schema
 
 // GCSUserAccountJSONSchema represents the GCS User Account JSON Schema for validating the payload
 var GCSUserAccountJSONSchema *jsonschema.Schema
@@ -93,7 +93,7 @@ func InitJSONSchema() {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	ModelInstanceCardJSONSchema, err = compiler.Compile("config/model/model_card.json")
+	ModelCardJSONSchema, err = compiler.Compile("config/model/model_card.json")
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}

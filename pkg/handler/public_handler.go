@@ -2437,8 +2437,8 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	pbModelInstance := DBModelDefinitionToPBModelDefinition(&dbModelDefinition)
-	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelInstance}, nil
+	pbModelDefinition := DBModelDefinitionToPBModelDefinition(&dbModelDefinition)
+	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelDefinition}, nil
 }
 
 func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
@@ -2463,12 +2463,10 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 
 func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
 	operationId, err := resource.GetOperationID(req.Name)
-	fmt.Println("operationId", operationId)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
 	operation, modelParam, operationType, err := h.service.GetOperation(operationId)
-	fmt.Println("operation, modelParam, operationType, err", operation, modelParam, operationType, err)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}

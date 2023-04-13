@@ -2,12 +2,10 @@ package resource
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -73,26 +71,6 @@ func GetPermalinkUID(permalink string) (string, error) {
 		return "", status.Errorf(codes.InvalidArgument, "Error when extract resource id from resource permalink `%s`", permalink)
 	}
 	return uid, nil
-}
-
-func GetModelInstanceIDFromOperationID(operationID string) (string, uuid.UUID, uuid.UUID, error) {
-	// format operationID: {model owner}.{model UID}.{model instance UID}.{timestamp}.{action: deploy/undeploy}
-	ids := strings.Split(operationID, ".")
-	if len(ids) != 5 {
-		return "", uuid.Nil, uuid.Nil, status.Error(codes.InvalidArgument, "Error when extract model instance id from operation id")
-	}
-
-	modelUID, err := uuid.FromString(ids[1])
-	if err != nil {
-		return "", uuid.Nil, uuid.Nil, status.Error(codes.InvalidArgument, "Error when extract model instance id from operation id")
-	}
-
-	modelInstanceUID, err := uuid.FromString(ids[2])
-	if err != nil {
-		return "", uuid.Nil, uuid.Nil, status.Error(codes.InvalidArgument, "Error when extract model instance id from operation id")
-	}
-	// owner in format users/{uid}, operation id only contain owner uid
-	return fmt.Sprintf("users/%s", ids[0]), modelUID, modelInstanceUID, nil
 }
 
 func GetOperationID(name string) (string, error) {

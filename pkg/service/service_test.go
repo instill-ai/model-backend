@@ -130,8 +130,8 @@ func TestGetModelByUid(t *testing.T) {
 // 			Times(1)
 // 		mockRepository.
 // 			EXPECT().
-// 			GetModelInstances(gomock.Eq(newModel.UID)).
-// 			Return([]datamodel.ModelInstance{}, nil).
+// 			Getmodels(gomock.Eq(newModel.UID)).
+// 			Return([]datamodel.model{}, nil).
 // 			Times(1)
 // 		mockRepository.
 // 			EXPECT().
@@ -382,8 +382,8 @@ func TestModelInfer(t *testing.T) {
 	})
 }
 
-// func TestDeployModelInstance(t *testing.T) {
-// 	t.Run("TestDeployModelInstance", func(t *testing.T) {
+// func TestDeploymodel(t *testing.T) {
+// 	t.Run("TestDeploymodel", func(t *testing.T) {
 // 		ctrl := gomock.NewController(t)
 // 		mockRepository := NewMockRepository(ctrl)
 // 		triton := NewMockTriton(ctrl)
@@ -407,18 +407,18 @@ func TestModelInfer(t *testing.T) {
 
 // 		mockRepository.
 // 			EXPECT().
-// 			UpdateModelInstance(uid, datamodel.ModelInstance{
-// 				State: datamodel.ModelInstanceState(modelPB.Model_STATE_ONLINE),
+// 			Updatemodel(uid, datamodel.model{
+// 				State: datamodel.modelState(modelPB.Model_STATE_ONLINE),
 // 			}).
 // 			Return(nil)
 
-// 		err := s.DeployModelInstanceAsync(uid)
+// 		err := s.DeploymodelAsync(uid)
 // 		assert.NoError(t, err)
 // 	})
 // }
 
-// func TestUndeployModelInstance(t *testing.T) {
-// 	t.Run("TestUndeployModelInstance", func(t *testing.T) {
+// func TestUndeploymodel(t *testing.T) {
+// 	t.Run("TestUndeploymodel", func(t *testing.T) {
 // 		ctrl := gomock.NewController(t)
 // 		mockRepository := NewMockRepository(ctrl)
 // 		triton := NewMockTriton(ctrl)
@@ -442,12 +442,12 @@ func TestModelInfer(t *testing.T) {
 
 // 		mockRepository.
 // 			EXPECT().
-// 			UpdateModelInstance(uid, datamodel.ModelInstance{
-// 				State: datamodel.ModelInstanceState(modelPB.Model_STATE_OFFLINE),
+// 			Updatemodel(uid, datamodel.model{
+// 				State: datamodel.modelState(modelPB.Model_STATE_OFFLINE),
 // 			}).
 // 			Return(nil)
 
-// 		err := s.UndeployModelInstanceAsync(uid)
+// 		err := s.UndeploymodelAsync(uid)
 // 		assert.NoError(t, err)
 // 	})
 // }

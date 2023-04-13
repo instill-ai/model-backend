@@ -48,7 +48,7 @@ type Service interface {
 	UpdateModelState(modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 	WatchModel(name string) (*controllerPB.GetResourceResponse, error)
-	CheckModel(modelInstanceUID uuid.UUID) (*modelPB.Model_State, error)
+	CheckModel(modelUID uuid.UUID) (*modelPB.Model_State, error)
 
 	ModelInfer(modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
 	ModelInferTestMode(owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -209,8 +209,8 @@ func (s *service) ModelInferTestMode(owner string, modelUID uuid.UUID, inferInpu
 	return s.ModelInfer(modelUID, inferInput, task)
 }
 
-func (s *service) CheckModel(modelInstanceUID uuid.UUID) (*modelPB.Model_State, error) {
-	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelInstanceUID)
+func (s *service) CheckModel(modelUID uuid.UUID) (*modelPB.Model_State, error) {
+	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")
 	}
