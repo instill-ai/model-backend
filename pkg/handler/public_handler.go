@@ -338,10 +338,6 @@ func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequ
 		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
 	}
 
-	if h.service.SearchAttributeReady() != nil {
-		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
-	}
-
 	return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
@@ -2466,132 +2462,12 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	operation, modelParam, operationType, err := h.service.GetOperation(operationId)
+	operation, err := h.service.GetOperation(operationId)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
 
-	if !operation.Done {
-		return &modelPB.GetModelOperationResponse{
-			Operation: operation,
-		}, nil
-	}
-
-	dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
-	}
-	switch operationType {
-	case string(util.OperationTypeCreate):
-		pbModel := DBModelToPBModel(&modelDef, &dbModel)
-		res, err := anypb.New(pbModel)
-		if err != nil {
-			return &modelPB.GetModelOperationResponse{}, err
-		}
-
-		operation.Result = &longrunningpb.Operation_Response{
-			Response: res,
-		}
-		return &modelPB.GetModelOperationResponse{
-			Operation: operation,
-		}, nil
-	case string(util.OperationTypeDeploy), string(util.OperationTypeUnDeploy):
-		dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, req.GetView())
-		if err != nil {
-			return &modelPB.GetModelOperationResponse{}, err
-		}
-		pbModel := DBModelToPBModel(&modelDef, &dbModel)
-
-		res, err := anypb.New(pbModel)
-		if err != nil {
-			return &modelPB.GetModelOperationResponse{}, err
-		}
-
-		operation.Result = &longrunningpb.Operation_Response{
-			Response: res,
-		}
-		return &modelPB.GetModelOperationResponse{
-			Operation: operation,
-		}, nil
-	default:
-		return &modelPB.GetModelOperationResponse{}, fmt.Errorf("operation type not supported")
-	}
-}
-
-func (h *PublicHandler) ListModelOperations(ctx context.Context, req *modelPB.ListModelOperationsRequest) (*modelPB.ListModelOperationsResponse, error) {
-	pageSize := util.DefaultPageSize
-	if req.PageSize != nil {
-		pageSize = int(*req.PageSize)
-	}
-	operations, _, nextPageToken, totalSize, err := h.service.ListOperation(pageSize, req.PageToken)
-	if err != nil {
-		return &modelPB.ListModelOperationsResponse{}, err
-	}
-
-	return &modelPB.ListModelOperationsResponse{
-		Operations:    operations,
-		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
+	return &modelPB.GetModelOperationResponse{
+		Operation: operation,
 	}, nil
-}
-
-func (h *PublicHandler) CancelModelOperation(ctx context.Context, req *modelPB.CancelModelOperationRequest) (*modelPB.CancelModelOperationResponse, error) {
-	operationId, err := resource.GetOperationID(req.Name)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	_, modelParam, operationType, err := h.service.GetOperation(operationId)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	// get model state before cancel operation to set in case of operation in progess and state is UNSPECIFIED
-	dbModel, err := h.service.GetModelByUid(modelParam.Owner, modelParam.Model.UID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	state, err := h.service.GetResourceState(dbModel.ID)
-
-	if err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	if err = h.service.CancelOperation(operationId); err != nil {
-		return &modelPB.CancelModelOperationResponse{}, err
-	}
-
-	// Fix for corner case: maybe when cancel operation in Temporal, the Temporal workflow already trigger Triton server to deploy/undeploy model instance
-	switch operationType {
-	case string(util.OperationTypeDeploy):
-		if *state == modelPB.Model_STATE_UNSPECIFIED {
-			if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
-				State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-			}); err != nil {
-				return &modelPB.CancelModelOperationResponse{}, err
-			}
-			if err := h.service.UpdateResourceState(dbModel.ID, modelPB.Model_STATE_OFFLINE, nil, nil); err != nil {
-				return &modelPB.CancelModelOperationResponse{}, err
-			}
-		}
-	case string(util.OperationTypeUnDeploy):
-		if *state == modelPB.Model_STATE_UNSPECIFIED {
-			if _, err := h.service.UpdateModel(dbModel.UID, &datamodel.Model{
-				State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
-			}); err != nil {
-				return &modelPB.CancelModelOperationResponse{}, err
-			}
-			if err := h.service.UpdateResourceState(dbModel.ID, modelPB.Model_STATE_ONLINE, nil, nil); err != nil {
-				return &modelPB.CancelModelOperationResponse{}, err
-			}
-		}
-	}
-
-	return &modelPB.CancelModelOperationResponse{}, nil
 }

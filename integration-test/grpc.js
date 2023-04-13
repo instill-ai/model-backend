@@ -12,7 +12,6 @@ import * as deployModel from "./grpc_deploy_model.js"
 import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
-import * as modelOperation from "./grpc_model_operation.js"
 
 import * as constant from "./const.js"
 
@@ -80,10 +79,6 @@ export default () => {
     // Query Model Definition API
     queryModelDefinition.GetModelDefinition()
     queryModelDefinition.ListModelDefinitions()
-
-    // Operation API
-    modelOperation.ListModelOperations()
-    modelOperation.CancelModelOperation()
 };
 
 export function teardown() {
