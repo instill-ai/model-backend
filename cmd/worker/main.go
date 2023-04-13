@@ -87,7 +87,6 @@ func main() {
 	w.RegisterWorkflow(cw.UnDeployModelWorkflow)
 	w.RegisterActivity(cw.UnDeployModelActivity)
 	w.RegisterWorkflow(cw.CreateModelWorkflow)
-	w.RegisterWorkflow(cw.AddSearchAttributeWorkflow)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))

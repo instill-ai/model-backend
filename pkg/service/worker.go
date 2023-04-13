@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
@@ -12,9 +11,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/converter"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -84,7 +81,7 @@ func (s *service) UndeployModelAsync(owner string, modelUID uuid.UUID) (string, 
 	return id.String(), nil
 }
 
-func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, *worker.ModelParams, string, error) {
+func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, error) {
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -116,78 +113,17 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 		}
 	}
 
-	// Get search attributes that were provided when workflow was started.
-	modelParams := worker.ModelParams{}
-	operationType := ""
-	for k, v := range workflowExecutionInfo.GetSearchAttributes().GetIndexedFields() {
-		if k != "ModelUID" && k != "Owner" && k != "Type" {
-			continue
-		}
-		var currentVal string
-		if err := converter.GetDefaultDataConverter().FromPayload(v, &currentVal); err != nil {
-			return nil, nil, "", err
-		}
-		if currentVal == "" {
-			continue
-		}
-
-		if k == "Type" {
-			operationType = currentVal
-			continue
-		}
-
-		uid, err := uuid.FromString(currentVal)
-		if err != nil {
-			return nil, nil, "", err
-		}
-		if k == "ModelUID" {
-			modelParams.Model.UID = uid
-		} else if k == "Owner" {
-			modelParams.Owner = fmt.Sprintf("users/%s", currentVal) // remove prefix users when storing in temporal
-		}
-	}
 	operation.Name = fmt.Sprintf("operations/%s", workflowExecutionInfo.Execution.WorkflowId)
-	return &operation, &modelParams, operationType, nil
+	return &operation, nil
 }
 
-func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelParams, string, error) {
+func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, error) {
 	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(context.Background(), workflowId, "")
 
 	if err != nil {
-		return nil, nil, "", err
+		return nil, err
 	}
 	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
-}
-
-func (s *service) ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelParams, string, int64, error) {
-	var executions []*workflowpb.WorkflowExecutionInfo
-	// could support query such as by model uid
-	resp, err := s.temporalClient.ListWorkflow(context.Background(), &workflowservice.ListWorkflowExecutionsRequest{
-		Namespace:     worker.Namespace,
-		PageSize:      int32(pageSize),
-		NextPageToken: []byte(pageToken),
-	})
-	if err != nil {
-		return nil, nil, "", 0, err
-	}
-
-	executions = append(executions, resp.Executions...)
-	var operations []*longrunningpb.Operation
-	var modelParams []*worker.ModelParams
-	for _, wf := range executions {
-		operation, modelParam, _, err := getOperationFromWorkflowInfo(wf)
-
-		if err != nil {
-			return nil, nil, "", 0, err
-		}
-		operations = append(operations, operation)
-		modelParams = append(modelParams, modelParam)
-	}
-	return operations, modelParams, string(resp.NextPageToken), int64(len(operations)), nil
-}
-
-func (s *service) CancelOperation(workflowId string) error {
-	return s.temporalClient.CancelWorkflow(context.Background(), workflowId, "")
 }
 
 func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string, error) {
@@ -214,43 +150,4 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 	logger.Info(fmt.Sprintf("started workflow with WorkflowID %s and RunID %s", we.GetID(), we.GetRunID()))
 
 	return id.String(), nil
-}
-
-func (s *service) SearchAttributeReady() error {
-	logger, _ := logger.GetZapLogger()
-	id, _ := uuid.NewV4()
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        id.String(),
-		TaskQueue: worker.TaskQueue,
-	}
-
-	ctx := context.Background()
-	we, err := s.temporalClient.ExecuteWorkflow(
-		ctx,
-		workflowOptions,
-		"AddSearchAttributeWorkflow",
-	)
-	if err != nil {
-		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
-		return err
-	}
-
-	logger.Info(fmt.Sprintf("started workflow with WorkflowID %s and RunID %s", we.GetID(), we.GetRunID()))
-
-	start := time.Now()
-	for {
-		if time.Since(start) > 10*time.Second {
-			return fmt.Errorf("health workflow timed out")
-		}
-		workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, we.GetID(), we.GetRunID())
-		if err != nil {
-			continue
-		}
-		if workflowExecutionRes.WorkflowExecutionInfo.Status == enums.WORKFLOW_EXECUTION_STATUS_COMPLETED {
-			return nil
-		} else if workflowExecutionRes.WorkflowExecutionInfo.Status == enums.WORKFLOW_EXECUTION_STATUS_FAILED {
-			return fmt.Errorf("health workflow failed")
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
 }

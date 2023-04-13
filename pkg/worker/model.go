@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -24,46 +23,9 @@ type ModelParams struct {
 	Owner string
 }
 
-func (w *worker) AddSearchAttributeWorkflow(ctx workflow.Context) error {
-	logger := workflow.GetLogger(ctx)
-	logger.Info("AddSearchAttributeWorkflow started")
-
-	// Upsert search attributes.
-	modelUID, err := uuid.NewV4()
-	if err != nil {
-		return err
-	}
-	attributes := map[string]interface{}{
-		"Type":     util.OperationTypeHealthCheck,
-		"ModelUID": modelUID.String(),
-		"Owner":    "",
-	}
-
-	err = workflow.UpsertSearchAttributes(ctx, attributes)
-	if err != nil {
-		return err
-	}
-
-	logger.Info("AddSearchAttributeWorkflow completed")
-
-	return nil
-}
-
 func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("DeployModelWorkflow started")
-
-	// Upsert search attributes.
-	attributes := map[string]interface{}{
-		"Type":     util.OperationTypeDeploy,
-		"ModelUID": param.Model.UID.String(),
-		"Owner":    strings.TrimPrefix(param.Owner, "users/"),
-	}
-
-	err := workflow.UpsertSearchAttributes(ctx, attributes)
-	if err != nil {
-		return err
-	}
 
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
@@ -239,18 +201,6 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 	logger := workflow.GetLogger(ctx)
 	logger.Info("UnDeployModelWorkflow started")
 
-	// Upsert search attributes.
-	attributes := map[string]interface{}{
-		"Type":     util.OperationTypeUnDeploy,
-		"ModelUID": param.Model.UID.String(),
-		"Owner":    strings.TrimPrefix(param.Owner, "users/"),
-	}
-
-	err := workflow.UpsertSearchAttributes(ctx, attributes)
-	if err != nil {
-		return err
-	}
-
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 2 * time.Minute,
 	}
@@ -321,23 +271,6 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger.Info("CreateModelWorkflow started")
 
 	if err := w.repository.CreateModel(param.Model); err != nil {
-		return err
-	}
-
-	dbModel, err := w.repository.GetModelById(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return err
-	}
-
-	// Upsert search attributes.
-	attributes := map[string]interface{}{
-		"Type":     util.OperationTypeCreate,
-		"ModelUID": dbModel.UID,
-		"Owner":    strings.TrimPrefix(param.Owner, "users/"),
-	}
-
-	err = workflow.UpsertSearchAttributes(ctx, attributes)
-	if err != nil {
 		return err
 	}
 
