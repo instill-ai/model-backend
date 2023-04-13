@@ -55,18 +55,6 @@ export function CreateModelFromLocal() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`), {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls status`]: (r) => r.status === 200,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.done`]: (r) => r.json().operation.done === true,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id_cls}`,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.id`]: (r) => r.json().operation.response.id === model_id_cls,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.description`]: (r) => r.json().operation.response.description === model_description,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration.content`]: (r) => r.json().operation.response.configuration === null,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.task`]: (r) => r.json().operation.response.task === "TASK_CLASSIFICATION",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
 
       let fd_det = new FormData();
@@ -102,18 +90,6 @@ export function CreateModelFromLocal() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${createDetModelRes.json().operation.name}`), {
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det status`]: (r) => r.status === 200,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.done`]: (r) => r.json().operation.done === true,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id_det}`,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.id`]: (r) => r.json().operation.response.id === model_id_det,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.description`]: (r) => r.json().operation.response.description === model_description,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.task`]: (r) => r.json().operation.response.task === "TASK_DETECTION",
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
-        [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
 
       let fd_keypoint = new FormData();
@@ -149,18 +125,6 @@ export function CreateModelFromLocal() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${createKpModelRes.json().operation.name}`), {
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint status`]: (r) => r.status === 200,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.done`]: (r) => r.json().operation.done === true,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id_keypoint}`,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.id`]: (r) => r.json().operation.response.id === model_id_keypoint,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.description`]: (r) => r.json().operation.response.description === model_description,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.task`]: (r) => r.json().operation.response.task === "TASK_KEYPOINT",
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
-        [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
 
       let fd_unspecified = new FormData();
@@ -196,18 +160,6 @@ export function CreateModelFromLocal() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`), {
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified status`]: (r) => r.status === 200,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.done`]: (r) => r.json().operation.done === true,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id_unspecified}`,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.id`]: (r) => r.json().operation.response.id === model_id_unspecified,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.description`]: (r) => r.json().operation.response.description === model_description,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/local",
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PRIVATE",
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.task`]: (r) => r.json().operation.response.task === "TASK_UNSPECIFIED",
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_unspecified.body(), {
@@ -398,18 +350,6 @@ export function CreateModelFromGitHub() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`), {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls status`]: (r) => r.status === 200,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.done`]: (r) => r.json().operation.done === true,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.name`]: (r) => r.json().operation.response.name === `models/${model_id}`,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.id`]: (r) => r.json().operation.response.id === model_id,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.uid`]: (r) => r.json().operation.response.uid !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.description`]: (r) => r.json().operation.response.description !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.model_definition`]: (r) => r.json().operation.response.model_definition === "model-definitions/github",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.configuration`]: (r) => r.json().operation.response.configuration === null,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.visibility`]: (r) => r.json().operation.response.visibility === "VISIBILITY_PUBLIC",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.task`]: (r) => r.json().operation.response.task === "TASK_CLASSIFICATION",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.state`]: (r) => r.json().operation.response.state === "STATE_OFFLINE",
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.user`]: (r) => r.json().operation.response.user !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.create_time`]: (r) => r.json().operation.response.create_time !== undefined,
-        [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.response.update_time`]: (r) => r.json().operation.response.update_time !== undefined,
       });
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
