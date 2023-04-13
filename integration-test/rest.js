@@ -82,8 +82,6 @@ export default function (data) {
 
   // Long-running Operation
   longrunningOperation.GetLongRunningOperation()
-  longrunningOperation.ListLongRunningOperation()
-  longrunningOperation.CancelLongRunningOperation()
 }
 
 export function teardown(data) {

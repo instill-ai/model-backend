@@ -26,7 +26,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/util"
-	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/sterr"
 
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
@@ -63,11 +62,8 @@ type Service interface {
 	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
 
-	GetOperation(workflowId string) (*longrunningpb.Operation, *worker.ModelParams, string, error)
-	ListOperation(pageSize int, pageToken string) ([]*longrunningpb.Operation, []*worker.ModelParams, string, int64, error)
-	CancelOperation(workflowId string) error
+	GetOperation(workflowId string) (*longrunningpb.Operation, error)
 
-	SearchAttributeReady() error
 	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
