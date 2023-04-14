@@ -90,11 +90,22 @@ type PipelineBackendConfig struct {
 
 // ControllerConfig related to controller
 type ControllerConfig struct {
-	Host  string `koanf:"host"`
-	PrivatePort  int    `koanf:"privateport"`
-	HTTPS struct {
+	Host        string `koanf:"host"`
+	PrivatePort int    `koanf:"privateport"`
+	HTTPS       struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
+	}
+}
+
+type ModelHubConfig struct {
+	Cpu struct {
+		Path   string `koanf:"path"`
+		Enable bool   `koanf:"enable"`
+	}
+	Gpu struct {
+		Path   string `koanf:"path"`
+		Enable bool   `koanf:"enable"`
 	}
 }
 
@@ -127,6 +138,7 @@ type AppConfig struct {
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`
 	Controller             ControllerConfig      `koanf:"controller"`
+	ModelHub               ModelHubConfig        `koanf:"modelhub"`
 }
 
 // Config - Global variable to export

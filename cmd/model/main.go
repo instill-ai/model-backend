@@ -76,7 +76,11 @@ func main() {
 	}
 
 	var modelConfigs []ModelConfig
-	err := util.GetJSON("https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json", &modelConfigs)
+	modelHubPath := config.Config.ModelHub.Cpu.Path
+	if config.Config.ModelHub.Gpu.Enable {
+		modelHubPath = config.Config.ModelHub.Gpu.Path
+	}
+	err := util.GetJSON(modelHubPath, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
