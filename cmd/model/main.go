@@ -113,6 +113,7 @@ func main() {
 				log.Fatal("handler.GetModelOperation: " + err.Error())
 			}
 			isCreated = operation.Operation.Done
+			time.Sleep(1 * time.Second)
 		}
 		if !isCreated {
 			log.Fatal("handler.CreateModel: " + err.Error())
@@ -129,7 +130,7 @@ func main() {
 		isDeployed := false
 		startTime = time.Now()
 		for {
-			if isDeployed || time.Since(startTime) > 100*time.Minute {
+			if isDeployed || time.Since(startTime) > 150*time.Minute {
 				break
 			}
 			operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
@@ -139,6 +140,7 @@ func main() {
 				log.Fatal("handler.GetModelOperation: " + err.Error())
 			}
 			isDeployed = operation.Operation.Done
+			time.Sleep(5 * time.Second)
 		}
 	}
 }
