@@ -3,7 +3,7 @@ package handler_test
 //go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/triton Triton
 //go:generate mockgen -destination mock_service_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/service Service
 
-const NAMESPACE = "local-user"
+const NAMESPACE = "instill-ai"
 
 // func TestReadiness(t *testing.T) {
 // 	t.Run("Readiness", func(t *testing.T) {

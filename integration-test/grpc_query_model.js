@@ -74,7 +74,7 @@ export function GetModel() {
             "GetModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "GetModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "GetModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "GetModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "GetModel response model.owner": (r) => r.message.model.user === 'users/instill-ai',
             "GetModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
@@ -144,7 +144,7 @@ export function ListModels() {
             "ListModels response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
             "ListModels response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
             "ListModels response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-            "ListModels response models[0].owner": (r) => r.message.models[0].user === 'users/local-user',
+            "ListModels response models[0].owner": (r) => r.message.models[0].user === 'users/instill-ai',
             "ListModels response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
             "ListModels response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
@@ -210,7 +210,7 @@ export function LookupModel() {
             "LookUpModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "LookUpModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "LookUpModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "LookUpModel response model.owner": (r) => r.message.model.user === 'users/local-user',
+            "LookUpModel response model.owner": (r) => r.message.model.user === 'users/instill-ai',
             "LookUpModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
