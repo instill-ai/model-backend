@@ -82,7 +82,7 @@ export function UpdateModel() {
         [`PATCH /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`PATCH /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`PATCH /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -116,7 +116,7 @@ export function UpdateModel() {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.update_time`]: (r) =>

@@ -78,7 +78,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -109,7 +109,7 @@ export function GetModel() {
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -225,7 +225,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
-          r.json().models[0].user === 'users/local-user',
+          r.json().models[0].user === 'users/instill-ai',
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
@@ -262,7 +262,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
-          r.json().models[0].user === 'users/local-user',
+          r.json().models[0].user === 'users/instill-ai',
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
@@ -303,7 +303,7 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
-          r.json().models[0].user === 'users/local-user',
+          r.json().models[0].user === 'users/instill-ai',
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
@@ -331,7 +331,7 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
           r.json().models[1].visibility === "VISIBILITY_PUBLIC",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].owner`]: (r) =>
-          r.json().models[1].user === 'users/local-user',
+          r.json().models[1].user === 'users/instill-ai',
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>
           r.json().models[1].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].update_time`]: (r) =>
@@ -416,7 +416,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>
@@ -447,7 +447,7 @@ export function LookupModel() {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/local-user',
+          r.json().model.user === 'users/instill-ai',
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>

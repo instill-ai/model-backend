@@ -53,7 +53,7 @@ func GetModelID(name string) (string, error) {
 
 func GetUserNameByUid(uid string) string {
 	// TODO request to mgmt-backend
-	return "local-user"
+	return "instill-ai"
 }
 
 func GetDefinitionID(name string) (string, error) {
