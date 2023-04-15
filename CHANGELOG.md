@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.15.0-alpha...v0.16.0-alpha) (2023-04-15)
+
+
+### Features
+
+* add model initialization module ([#332](https://github.com/instill-ai/model-backend/issues/332)) ([aa753a5](https://github.com/instill-ai/model-backend/commit/aa753a5eb1b40c0cdee23142328bd9bfc56d85de))
+
 ## [0.15.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.14.0-alpha...v0.15.0-alpha) (2023-04-07)
 
 
