@@ -34,10 +34,6 @@ type ModelConfig struct {
 func InitModelPublicServiceClient() (modelPB.ModelPublicServiceClient, *grpc.ClientConn) {
 	logger, _ := logger.GetZapLogger()
 
-	if err := config.Init(); err != nil {
-		log.Fatal(err.Error())
-	}
-
 	var clientDialOpts grpc.DialOption
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		creds, err := credentials.NewServerTLSFromFile(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key)
@@ -70,13 +66,21 @@ func main() {
 	}()
 	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
+	if err := config.Init(); err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	if !config.Config.InitModel.Enabled {
+		return
+	}
+
 	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient()
 	if modelPublicServiceClientConn != nil {
 		defer modelPublicServiceClientConn.Close()
 	}
 
 	var modelConfigs []ModelConfig
-	err := util.GetJSON("https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json", &modelConfigs)
+	err := util.GetJSON(config.Config.InitModel.Path, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -97,7 +101,7 @@ func main() {
 			},
 		})
 		if err != nil {
-			log.Fatal("handler.CreateModel: " + err.Error())
+			logger.Fatal("handler.CreateModel: " + err.Error())
 		}
 
 		isCreated := false
@@ -110,13 +114,13 @@ func main() {
 				Name: createOperation.Operation.Name,
 			})
 			if err != nil {
-				log.Fatal("handler.GetModelOperation: " + err.Error())
+				logger.Fatal("handler.GetModelOperation: " + err.Error())
 			}
 			isCreated = operation.Operation.Done
 			time.Sleep(1 * time.Second)
 		}
 		if !isCreated {
-			log.Fatal("handler.CreateModel: " + err.Error())
+			logger.Fatal("handler.CreateModel: " + err.Error())
 		}
 		time.Sleep(5 * time.Second) // make sure controller updated the state.
 		ctx, cancel = context.WithTimeout(context.Background(), 6000*time.Second)
@@ -125,7 +129,7 @@ func main() {
 			Name: fmt.Sprintf("models/%s", modelConfig.ID),
 		})
 		if err != nil {
-			log.Fatal("handler.DeployModel: " + err.Error())
+			logger.Fatal("handler.DeployModel: " + err.Error())
 		}
 		isDeployed := false
 		startTime = time.Now()
@@ -137,7 +141,7 @@ func main() {
 				Name: deployOperation.Operation.Name,
 			})
 			if err != nil {
-				log.Fatal("handler.GetModelOperation: " + err.Error())
+				logger.Fatal("handler.GetModelOperation: " + err.Error())
 			}
 			isDeployed = operation.Operation.Done
 			time.Sleep(5 * time.Second)
