@@ -384,68 +384,71 @@ export function LookupModelAdmin() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let modelOperation = http.get(`${constant.apiPublicHost}/v1alpha/${res.json().operation.name}`, {
+
+      res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       })
-      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp`, {
+      let modelUid = res.json().model.uid
+
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelUid}/lookUp`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.name`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.name`]: (r) =>
           r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.uid`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.id`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.id`]: (r) =>
           r.json().model.id === model_id,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.state`]: (r) =>
           r.json().model.state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.configuration`]: (r) =>
           r.json().model.configuration === null,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.visibility`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.owner`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner`]: (r) =>
           r.json().model.user === 'users/instill-ai',
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.create_time`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.update_time`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelUid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response status`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.name`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.name`]: (r) =>
           r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.uid`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.id`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.id`]: (r) =>
           r.json().model.id === model_id,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.description`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.task`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.state`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.state`]: (r) =>
           r.json().model.state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.model_definition`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.model_definition`]: (r) =>
           r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.configuration.content`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.configuration.content`]: (r) =>
           r.json().model.configuration.content === "dummy-cls-model.zip",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.visibility`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.owner`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner`]: (r) =>
           r.json().model.user === 'users/instill-ai',
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.create_time`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${modelOperation.json().operation.response.uid}/lookUp task cls response model.update_time`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
 

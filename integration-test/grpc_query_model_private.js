@@ -215,11 +215,12 @@ export function LookUpModel() {
             currentTime = new Date().getTime();
         }
 
-        let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
-            name: createClsModelRes.json().operation.name
+        let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+            name: "models/" + model_id
         }, {})
+
         check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
-            permalink: "models/" + res.message.operation.response.uid
+            permalink: "models/" + res.message.model.uid
         }, {}), {
             "LookUpModelAdmin response status": (r) => r.status === grpc.StatusOK,
             "LookUpModelAdmin response model.name": (r) => r.message.model.name === `models/${model_id}`,
