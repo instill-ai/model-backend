@@ -98,15 +98,9 @@ type ControllerConfig struct {
 	}
 }
 
-type ModelHubConfig struct {
-	Cpu struct {
-		Path   string `koanf:"path"`
-		Enable bool   `koanf:"enable"`
-	}
-	Gpu struct {
-		Path   string `koanf:"path"`
-		Enable bool   `koanf:"enable"`
-	}
+type InitModelConfig struct {
+	Path    string `koanf:"path"`
+	Enabled bool   `koanf:"enabled"`
 }
 
 // MaxBatchSizeConfig defines the maximum size of the batch of a AI task
@@ -138,7 +132,7 @@ type AppConfig struct {
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`
 	Controller             ControllerConfig      `koanf:"controller"`
-	ModelHub               ModelHubConfig        `koanf:"modelhub"`
+	InitModel              InitModelConfig       `koanf:"initmodel"`
 }
 
 // Config - Global variable to export

@@ -64,10 +64,7 @@ controller:
   https:
     cert:
     key:
-modelhub: 
-  cpu:
-    path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json
-    enable: true
-  gpu:
-    path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_gpu.json
-    enable: false
+initmodel: 
+  enabled: true
+  path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json
+    
