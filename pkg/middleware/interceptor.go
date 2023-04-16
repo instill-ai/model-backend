@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -12,10 +11,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
-	"github.com/instill-ai/model-backend/pkg/external"
-	"github.com/instill-ai/model-backend/pkg/repository"
-
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
+	"github.com/instill-ai/model-backend/pkg/constant"
 )
 
 // RecoveryInterceptor - panic handler
@@ -32,23 +28,9 @@ func UnaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 		return nil, status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	// TODO: Replace with decoded JWT header
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
-	defer mgmtPrivateServiceClientConn.Close()
-	userPageToken := ""
-	userPageSizeMax := int64(repository.MaxPageSize)
-	userResp, err := mgmtPrivateServiceClient.ListUsersAdmin(context.Background(), &mgmtPB.ListUsersAdminRequest{
-		PageSize:  &userPageSizeMax,
-		PageToken: &userPageToken,
-	})
-	if err == nil && len(userResp.Users) > 0 && userResp.Users[0].GetUid() != "" {
-		md.Append("owner", fmt.Sprintf("users/%s", userResp.Users[0].GetUid()))
-	} else {
-		md.Append("owner", "users/45d19b6d-5073-4bc7-b3c6-b668ea98b3c4")
-	}
+	md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
 
 	newCtx := metadata.NewIncomingContext(ctx, md)
-
 	h, err := handler(newCtx, req)
 
 	return h, err
@@ -61,20 +43,7 @@ func StreamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 		return status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	// TODO: Replace with decoded JWT header
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
-	defer mgmtPrivateServiceClientConn.Close()
-	userPageToken := ""
-	userPageSizeMax := int64(repository.MaxPageSize)
-	userResp, er := mgmtPrivateServiceClient.ListUsersAdmin(context.Background(), &mgmtPB.ListUsersAdminRequest{
-		PageSize:  &userPageSizeMax,
-		PageToken: &userPageToken,
-	})
-	if er == nil && len(userResp.Users) > 0 && userResp.Users[0].GetUid() != "" {
-		md.Append("owner", fmt.Sprintf("users/%s", userResp.Users[0].GetUid()))
-	} else {
-		md.Append("owner", "users/45d19b6d-5073-4bc7-b3c6-b668ea98b3c4")
-	}
+	md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
 
 	newCtx := metadata.NewIncomingContext(stream.Context(), md)
 	wrapped := grpc_middleware.WrapServerStream(stream)

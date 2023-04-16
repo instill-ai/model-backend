@@ -2,37 +2,124 @@ package resource
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/gofrs/uuid"
+	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 )
 
+// ExtractFromMetadata extracts context metadata given a key
 func ExtractFromMetadata(ctx context.Context, key string) ([]string, bool) {
-	if data, ok := metadata.FromIncomingContext(ctx); !ok {
+	data, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
 		return []string{}, false
-	} else {
-		return data[strings.ToLower(key)], true
 	}
+	return data[strings.ToLower(key)], true
 }
 
-func GetOwner(ctx context.Context) (string, error) {
-	if metadatas, ok := ExtractFromMetadata(ctx, "owner"); ok {
-		if len(metadatas) == 0 {
-			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
+// GetRequestSingleHeader get a request header, the header has to be single-value HTTP header
+func GetRequestSingleHeader(ctx context.Context, header string) string {
+	metaHeader := metadata.ValueFromIncomingContext(ctx, strings.ToLower(header))
+	if len(metaHeader) != 1 {
+		return ""
+	}
+	return metaHeader[0]
+}
+
+// func GetOwner(ctx context.Context) (string, error) {
+// 	if metadatas, ok := ExtractFromMetadata(ctx, constant.HeaderOwnerIDKey); ok {
+// 		if len(metadatas) == 0 {
+// 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
+// 		}
+// 		return metadatas[0], nil
+// 	} else {
+// 		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
+// 	}
+// }
+
+// GetOwnerCustom returns the resource owner from a request
+func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
+	logger, _ := logger.GetZapLogger()
+	// Verify if "jwt-sub" is in the header
+	headerOwnerUId := req.Header.Get(constant.HeaderOwnerUIDKey)
+	if headerOwnerUId != "" {
+		_, err := uuid.FromString(headerOwnerUId)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated request")
 		}
-		return metadatas[0], nil
+
+		ownerPermalink := "users/" + headerOwnerUId
+		resp, err := client.LookUpUserAdmin(req.Context(), &mgmtPB.LookUpUserAdminRequest{Permalink: ownerPermalink})
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, fmt.Errorf("[mgmt-backend] %s", err)
+		}
+		return resp.GetUser(), nil
+
 	} else {
-		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
+		// Verify "owner-id" in the header if there is no "jwt-sub"
+		headerOwnerId := req.Header.Get(constant.HeaderOwnerIDKey)
+		if headerOwnerId == "" {
+			logger.Error("'owner-id' not found in the header")
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated request")
+		}
+
+		ownerName := "users/" + headerOwnerId
+		resp, err := client.GetUserAdmin(req.Context(), &mgmtPB.GetUserAdminRequest{Name: ownerName})
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, fmt.Errorf("[mgmt-backend] %s", err)
+		}
+		return resp.GetUser(), nil
 	}
 }
 
-func GetOwnerFromHeader(r *http.Request) (string, error) {
-	owner := r.Header.Get("owner")
-	return owner, nil
+// GetOwner returns the resource owner
+func GetOwner(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
+	// Verify if "jwt-sub" is in the header
+	headerOwnerUId := GetRequestSingleHeader(ctx, constant.HeaderOwnerUIDKey)
+	if headerOwnerUId != "" {
+		_, err := uuid.FromString(headerOwnerUId)
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated request")
+		}
+		ownerPermalink := "users/" + headerOwnerUId
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := client.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: ownerPermalink})
+		if err != nil {
+			return nil, fmt.Errorf("[mgmt-backend] %s", err)
+		}
+
+		return resp.User, nil
+	}
+
+	// Verify "owner-id" in the header if there is no "jwt-sub"
+	headerOwnerId := GetRequestSingleHeader(ctx, constant.HeaderOwnerIDKey)
+	if headerOwnerId != constant.DefaultOwnerID {
+		return nil, status.Error(codes.Unauthenticated, "Unauthenticated request")
+	} else {
+		// Get the permalink from management backend from resource name
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		resp, err := client.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: "users/" + headerOwnerId})
+		if err != nil {
+			return nil, fmt.Errorf("[mgmt-backend] %s", err)
+		}
+		return resp.User, nil
+	}
 }
 
 func GetID(name string) (string, error) {
@@ -51,10 +138,10 @@ func GetModelID(name string) (string, error) {
 	return subs[1], nil
 }
 
-func GetUserNameByUid(uid string) string {
-	// TODO request to mgmt-backend
-	return "instill-ai"
-}
+// func GetUserNameByUid(uid string) string {
+// 	// TODO request to mgmt-backend
+// 	return "instill-ai"
+// }
 
 func GetDefinitionID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
