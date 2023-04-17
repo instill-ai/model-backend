@@ -36,17 +36,6 @@ func GetRequestSingleHeader(ctx context.Context, header string) string {
 	return metaHeader[0]
 }
 
-// func GetOwner(ctx context.Context) (string, error) {
-// 	if metadatas, ok := ExtractFromMetadata(ctx, constant.HeaderOwnerIDKey); ok {
-// 		if len(metadatas) == 0 {
-// 			return "", status.Error(codes.FailedPrecondition, "owner not found in your request")
-// 		}
-// 		return metadatas[0], nil
-// 	} else {
-// 		return "", status.Error(codes.FailedPrecondition, "Error when extract metadata")
-// 	}
-// }
-
 // GetOwnerCustom returns the resource owner from a request
 func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
 	logger, _ := logger.GetZapLogger()
@@ -142,11 +131,6 @@ func GetModelID(name string) (string, error) {
 	subs := strings.Split(name, "/")
 	return subs[1], nil
 }
-
-// func GetUserNameByUid(uid string) string {
-// 	// TODO request to mgmt-backend
-// 	return "instill-ai"
-// }
 
 func GetDefinitionID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
