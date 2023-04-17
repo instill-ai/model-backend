@@ -1866,7 +1866,19 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 }
 
 func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelRequest) (*modelPB.WatchModelResponse, error) {
-	modelID, err := resource.GetModelID(req.Name)
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		return &modelPB.WatchModelResponse{}, err
+	}
+	ownerPermalink := "users/" + owner.GetUid()
+
+	modelID, err := resource.GetModelID(req.GetName())
+	if err != nil {
+		return &modelPB.WatchModelResponse{}, err
+	}
+
+	// check permission
+	_, err = h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return &modelPB.WatchModelResponse{}, err
 	}

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
@@ -153,9 +154,9 @@ func CustomMatcher(key string) (string, bool) {
 	}
 
 	switch key {
-	case "Request-Id":
+	case "request-id":
 		return key, true
-	case "Username":
+	case constant.HeaderOwnerIDKey:
 		return key, true
 	default:
 		return runtime.DefaultHeaderMatcher(key)
