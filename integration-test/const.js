@@ -6,6 +6,7 @@ if (__ENV.MODE == "api-gateway") {
     host = "api-gateway"
     publicPort = 8080
     privatePort = 3083
+    mgmtHost = "api-gateway"
     mgmtPrivatePort = 3084
 } else if (__ENV.MODE == "localhost") {
     // localhost mode for GitHub Actions
@@ -13,6 +14,7 @@ if (__ENV.MODE == "api-gateway") {
     host = "localhost"
     publicPort = 8080
     privatePort = 3083
+    mgmtHost = "localhost"
     mgmtPrivatePort = 3084
 } else {
     // direct microservice mode
