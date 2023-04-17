@@ -29,6 +29,7 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
@@ -36,6 +37,8 @@ import (
 type InferInput interface{}
 
 type Service interface {
+	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
+
 	CreateModelAsync(owner string, model *datamodel.Model) (string, error)
 	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
@@ -77,20 +80,27 @@ type service struct {
 	repository                  repository.Repository
 	triton                      triton.Triton
 	redisClient                 *redis.Client
+	mgmtPrivateServiceClient    mgmtPB.MgmtPrivateServiceClient
 	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
 	temporalClient              client.Client
 	controllerClient            controllerPB.ControllerPrivateServiceClient
 }
 
-func NewService(r repository.Repository, t triton.Triton, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
+func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
 		repository:                  r,
 		triton:                      t,
+		mgmtPrivateServiceClient:    m,
 		pipelinePublicServiceClient: p,
 		redisClient:                 rc,
 		temporalClient:              tc,
 		controllerClient:            cs,
 	}
+}
+
+// GetMgmtPrivateServiceClient returns the management private service client
+func (h *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient {
+	return h.mgmtPrivateServiceClient
 }
 
 func (s *service) DeployModel(modelUID uuid.UUID) error {

@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
@@ -56,7 +55,7 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 	}
 }
 
-func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) *modelPB.Model {
+func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, ownerName string) *modelPB.Model {
 	logger, _ := logger.GetZapLogger()
 
 	pbModel := modelPB.Model{
@@ -100,12 +99,11 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 			return nil
 		}(),
 	}
-	if strings.HasPrefix(dbModel.Owner, "users/") {
-		userName := resource.GetUserNameByUid(strings.TrimPrefix(dbModel.Owner, "users/"))
-		pbModel.Owner = &modelPB.Model_User{User: "users/" + userName}
-	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
-		userName := resource.GetUserNameByUid(strings.TrimPrefix(dbModel.Owner, "organizations/"))
-		pbModel.Owner = &modelPB.Model_Org{Org: "organizations/" + userName}
+
+	if strings.HasPrefix(ownerName, "users/") {
+		pbModel.Owner = &modelPB.Model_User{User: ownerName}
+	} else if strings.HasPrefix(ownerName, "organizations/") {
+		pbModel.Owner = &modelPB.Model_Org{Org: ownerName}
 	}
 	return &pbModel
 }

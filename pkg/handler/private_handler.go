@@ -41,7 +41,13 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
-		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel))
+
+		owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+		if err != nil {
+			return &modelPB.ListModelsAdminResponse{}, err
+		}
+
+		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, owner.GetName()))
 	}
 
 	resp := modelPB.ListModelsAdminResponse{
@@ -66,11 +72,17 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
+
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		return &modelPB.LookUpModelAdminResponse{}, err
+	}
+
 	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, owner.GetName())
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
@@ -83,26 +95,32 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		return &modelPB.GetModelAdminResponse{}, err
+	}
+
 	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, owner.GetName())
 	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
 }
 
 func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModelRequest) (*modelPB.CheckModelResponse, error) {
-	owner, err := resource.GetOwner(ctx)
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}
+	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(owner, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}

@@ -1,4 +1,4 @@
-let proto, host, publicPort, privatePort
+let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
 
 if (__ENV.MODE == "api-gateway") {
     // api-gateway mode
@@ -6,25 +6,36 @@ if (__ENV.MODE == "api-gateway") {
     host = "api-gateway"
     publicPort = 8080
     privatePort = 3083
+    mgmtHost = "api-gateway"
+    mgmtPrivatePort = 3084
 } else if (__ENV.MODE == "localhost") {
     // localhost mode for GitHub Actions
     proto = "http"
     host = "localhost"
     publicPort = 8080
     privatePort = 3083
+    mgmtHost = "localhost"
+    mgmtPrivatePort = 3084
 } else {
     // direct microservice mode
     proto = "http"
     host = "model-backend"
     publicPort = 8083
     privatePort = 3083
+    mgmtHost = "mgmt-backend"
+    mgmtPrivatePort = 3084
 }
+
+export const defaultUserId = "instill-ai"
 
 export const gRPCPrivateHost = `${host}:${privatePort}`
 export const apiPrivateHost = `${proto}://${host}:${privatePort}`
 
 export const gRPCPublicHost = `${host}:${publicPort}`
 export const apiPublicHost = `${proto}://${host}:${publicPort}`
+
+export const mgmtGRPCPrivateHost = `${mgmtHost}:${mgmtPrivatePort}`
+export const mgmtApiPrivateHost = `${proto}://${mgmtHost}:${mgmtPrivatePort}`
 
 export const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 export const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-det-model.zip`, "b");

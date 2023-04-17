@@ -40,7 +40,6 @@ export default () => {
                 plaintext: true
             });
             const response = client.invoke('vdp.model.v1alpha.ModelPublicService/Liveness', {});
-            console.log(response.message);
             check(response, {
                 'Status is OK': (r) => r && r.status === grpc.StatusOK,
                 'Response status is SERVING_STATUS_SERVING': (r) => r && r.message.healthCheckResponse.status === "SERVING_STATUS_SERVING",
