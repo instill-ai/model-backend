@@ -65,6 +65,6 @@ controller:
     cert:
     key:
 initmodel: 
-  enabled: true
+  enabled: false
   path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json
     
