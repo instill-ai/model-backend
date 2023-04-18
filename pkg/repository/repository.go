@@ -138,11 +138,11 @@ func (r *repository) GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (
 }
 
 func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-	if result := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Or("visibility = ?", datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).Count(&totalSize); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where("owner = ?", owner).Or("visibility = ?", datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC))
+	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC))
 
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
@@ -183,7 +183,7 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 		lastID := (models)[len(models)-1].ID
 		lastItem := &datamodel.Model{}
 		if result := r.db.Model(&datamodel.Model{}).
-			Where("owner = ?", owner).
+			Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).
 			Order("create_time ASC, id ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
 			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
