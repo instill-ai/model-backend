@@ -4,6 +4,7 @@ package service_test
 //go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -77,7 +78,7 @@ func TestGetModelById(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.GetModelById(OWNER, newModel.ID, modelPB.View_VIEW_FULL)
+		_, err := s.GetModelById(context.Background(), OWNER, newModel.ID, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
 	})
 }
@@ -105,7 +106,7 @@ func TestGetModelByUid(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.GetModelByUid(OWNER, uid, modelPB.View_VIEW_FULL)
+		_, err := s.GetModelByUid(context.Background(), OWNER, uid, modelPB.View_VIEW_FULL)
 		assert.NoError(t, err)
 	})
 }
@@ -201,7 +202,7 @@ func TestRenameModel(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, MockControllerPrivateServiceClient)
 
-		_, err := s.RenameModel(OWNER, ID, "new ID")
+		_, err := s.RenameModel(context.Background(), OWNER, ID, "new ID")
 		assert.NoError(t, err)
 	})
 }
@@ -242,7 +243,7 @@ func TestPublishModel(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.PublishModel(OWNER, ID)
+		_, err := s.PublishModel(context.Background(), OWNER, ID)
 		assert.NoError(t, err)
 	})
 }
@@ -283,7 +284,7 @@ func TestUnpublishModel(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.UnpublishModel(OWNER, ID)
+		_, err := s.UnpublishModel(context.Background(), OWNER, ID)
 		assert.NoError(t, err)
 	})
 }
@@ -316,7 +317,7 @@ func TestUpdateModel(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.UpdateModel(newModel.UID, &newModel)
+		_, err := s.UpdateModel(context.Background(), newModel.UID, &newModel)
 		assert.NoError(t, err)
 	})
 }
@@ -333,7 +334,7 @@ func TestListModell(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModels(OWNER, modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModels(context.Background(), OWNER, modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }
@@ -377,7 +378,7 @@ func TestModelInfer(t *testing.T) {
 			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
 			Return(postResponse, nil)
 
-		_, err := s.ModelInfer(uid, [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
+		_, err := s.ModelInfer(context.Background(), uid, [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
 		assert.NoError(t, err)
 	})
 }
@@ -464,7 +465,7 @@ func TestGetModelDefinition(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, err := s.GetModelDefinition("github")
+		_, err := s.GetModelDefinition(context.Background(), "github")
 		assert.NoError(t, err)
 	})
 }
@@ -481,7 +482,7 @@ func TestListModelDefinitions(t *testing.T) {
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModelDefinitions(modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, 100, "")
 		assert.NoError(t, err)
 	})
 }

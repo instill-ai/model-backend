@@ -501,7 +501,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_, err = service.GetModelById(ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = service.GetModelById(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		return
@@ -579,7 +579,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	wfId, err := service.CreateModelAsync(ownerPermalink, &uploadedModel)
+	wfId, err := service.CreateModelAsync(req.Context(), ownerPermalink, &uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -587,6 +587,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 	}
 
 	if err := service.UpdateResourceState(
+		req.Context(),
 		uploadedModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -632,12 +633,12 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_, err = h.service.GetModelById(ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelById(stream.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return status.Errorf(codes.AlreadyExists, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 	}
 
-	modelDef, err := h.service.GetModelDefinition(modelDefID)
+	modelDef, err := h.service.GetModelDefinition(stream.Context(), modelDefID)
 	if err != nil {
 		return err
 	}
@@ -713,13 +714,14 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		return st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(ownerPermalink, uploadedModel)
+	wfId, err := h.service.CreateModelAsync(stream.Context(), ownerPermalink, uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		return err
 	}
 
 	if err := h.service.UpdateResourceState(
+		stream.Context(),
 		uploadedModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -927,7 +929,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(owner, &githubModel)
+	wfId, err := h.service.CreateModelAsync(ctx, owner, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -947,6 +949,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	}
 
 	if err := h.service.UpdateResourceState(
+		ctx,
 		githubModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -1169,7 +1172,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(owner, &huggingfaceModel)
+	wfId, err := h.service.CreateModelAsync(ctx, owner, &huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1187,6 +1190,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 	}
 
 	if err := h.service.UpdateResourceState(
+		ctx,
 		huggingfaceModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -1381,7 +1385,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(owner, &artivcModel)
+	wfId, err := h.service.CreateModelAsync(ctx, owner, &artivcModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1399,6 +1403,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	}
 
 	if err := h.service.UpdateResourceState(
+		ctx,
 		artivcModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -1459,7 +1464,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, req.Model, false); err != nil {
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_, err = h.service.GetModelById(ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelById(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
 		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
@@ -1473,7 +1478,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 		return resp, err
 	}
 
-	modelDefinition, err := h.service.GetModelDefinition(modelDefinitionID)
+	modelDefinition, err := h.service.GetModelDefinition(ctx, modelDefinitionID)
 	if err != nil {
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1508,14 +1513,14 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	ownerPermalink := "users/" + owner.GetUid()
 	ownerRscName := owner.GetName()
 
-	dbModels, nextPageToken, totalSize, err := h.service.ListModels(ownerPermalink, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, ownerPermalink, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsResponse{}, err
 	}
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+		modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 		if err != nil {
 			return &modelPB.ListModelsResponse{}, err
 		}
@@ -1547,11 +1552,11 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUid(ownerPermalink, uid, req.GetView())
+	dbModel, err := h.service.GetModelByUid(ctx, ownerPermalink, uid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
@@ -1571,11 +1576,11 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(ownerPermalink, id, req.GetView())
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
@@ -1595,7 +1600,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(ownerPermalink, id, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
@@ -1614,11 +1619,11 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 			}
 		}
 	}
-	dbModel, err = h.service.UpdateModel(dbModel.UID, &updateModel)
+	dbModel, err = h.service.UpdateModel(ctx, dbModel.UID, &updateModel)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
@@ -1643,7 +1648,7 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 		return nil, err
 	}
 
-	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(ownerPermalink, id)
+	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(ctx, ownerPermalink, id)
 }
 
 func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
@@ -1658,11 +1663,11 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	dbModel, err := h.service.RenameModel(ownerPermalink, id, req.NewModelId)
+	dbModel, err := h.service.RenameModel(ctx, ownerPermalink, id, req.NewModelId)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
@@ -1682,11 +1687,11 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	dbModel, err := h.service.PublishModel(ownerPermalink, id)
+	dbModel, err := h.service.PublishModel(ctx, ownerPermalink, id)
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
@@ -1706,11 +1711,11 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	dbModel, err := h.service.UnpublishModel(ownerPermalink, id)
+	dbModel, err := h.service.UnpublishModel(ctx, ownerPermalink, id)
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
@@ -1732,12 +1737,12 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(modelID)
+	state, err := h.service.GetResourceState(ctx, modelID)
 
 	if err != nil {
 		return &modelPB.DeployModelResponse{}, err
@@ -1748,17 +1753,17 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model state, current model state is %s", state))
 	}
 
-	_, err = h.service.GetTritonModels(dbModel.UID)
+	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
 	if err != nil {
 		return &modelPB.DeployModelResponse{}, err
 	}
 
 	// set user desired state to STATE_ONLINE
-	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_ONLINE)); err != nil {
+	if _, err := h.service.UpdateModelState(ctx, dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_ONLINE)); err != nil {
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	wfId, err := h.service.DeployModelAsync(ownerPermalink, dbModel.UID)
+	wfId, err := h.service.DeployModelAsync(ctx, ownerPermalink, dbModel.UID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1787,6 +1792,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	}
 
 	if err := h.service.UpdateResourceState(
+		ctx,
 		modelID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -1816,12 +1822,12 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(modelID)
+	state, err := h.service.GetResourceState(ctx, modelID)
 
 	if err != nil {
 		return &modelPB.UndeployModelResponse{}, err
@@ -1834,11 +1840,11 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}
 
 	// set user desired state to STATE_OFFLINE
-	if _, err := h.service.UpdateModelState(dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_OFFLINE)); err != nil {
+	if _, err := h.service.UpdateModelState(ctx, dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_OFFLINE)); err != nil {
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	wfId, err := h.service.UndeployModelAsync(ownerPermalink, dbModel.UID)
+	wfId, err := h.service.UndeployModelAsync(ctx, ownerPermalink, dbModel.UID)
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
@@ -1848,6 +1854,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}
 
 	if err := h.service.UpdateResourceState(
+		ctx,
 		modelID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
@@ -1878,12 +1885,12 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 	}
 
 	// check permission
-	_, err = h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
+	_, err = h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return &modelPB.WatchModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(modelID)
+	state, err := h.service.GetResourceState(ctx, modelID)
 
 	if err != nil {
 		return &modelPB.WatchModelResponse{}, err
@@ -1907,7 +1914,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	modelInDB, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -1925,7 +1932,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 
 	// check whether model support batching or not. If not, raise an error
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -1940,7 +1947,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 	}
 
 	task := modelPB.Model_Task(modelInDB.Task)
-	response, err := h.service.ModelInferTestMode(ownerPermalink, modelInDB.UID, triggerInput, task)
+	response, err := h.service.ModelInferTestMode(stream.Context(), ownerPermalink, modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1987,7 +1994,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	modelInDB, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -2004,7 +2011,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
 		if err != nil {
 			return err
 		}
@@ -2019,7 +2026,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 	}
 
 	task := modelPB.Model_Task(modelInDB.Task)
-	response, err := h.service.ModelInfer(modelInDB.UID, triggerInput, task)
+	response, err := h.service.ModelInfer(stream.Context(), modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2066,7 +2073,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.TriggerModelResponse{}, err
 	}
@@ -2104,7 +2111,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
 		if err != nil {
 			return &modelPB.TriggerModelResponse{}, err
 		}
@@ -2118,7 +2125,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		}
 	}
 	task := modelPB.Model_Task(modelInDB.Task)
-	response, err := h.service.ModelInfer(modelInDB.UID, inputInfer, task)
+	response, err := h.service.ModelInfer(ctx, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2165,7 +2172,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		return &modelPB.TestModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.TestModelResponse{}, err
 	}
@@ -2214,7 +2221,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
 		if err != nil {
 			return &modelPB.TestModelResponse{}, err
 		}
@@ -2229,7 +2236,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 	}
 
 	task := modelPB.Model_Task(modelInDB.Task)
-	response, err := h.service.ModelInferTestMode(ownerPermalink, modelInDB.UID, inputInfer, task)
+	response, err := h.service.ModelInferTestMode(ctx, ownerPermalink, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2321,7 +2328,7 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 		return
 	}
 
-	modelInDB, err := service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := service.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		return
@@ -2370,7 +2377,7 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := service.GetTritonEnsembleModel(modelInDB.UID)
+		tritonModelInDB, err := service.GetTritonEnsembleModel(req.Context(), modelInDB.UID)
 		if err != nil {
 			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			return
@@ -2390,9 +2397,9 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 	task := modelPB.Model_Task(modelInDB.Task)
 	var response []*modelPB.TaskOutput
 	if mode == "test" {
-		response, err = service.ModelInferTestMode(ownerPermalink, modelInDB.UID, inputInfer, task)
+		response, err = service.ModelInferTestMode(req.Context(), ownerPermalink, modelInDB.UID, inputInfer, task)
 	} else {
-		response, err = service.ModelInfer(modelInDB.UID, inputInfer, task)
+		response, err = service.ModelInfer(req.Context(), modelInDB.UID, inputInfer, task)
 	}
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2456,7 +2463,7 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	_, err = h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.GetModelCardResponse{}, err
 	}
@@ -2492,7 +2499,7 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	dbModelDefinition, err := h.service.GetModelDefinition(definitionID)
+	dbModelDefinition, err := h.service.GetModelDefinition(ctx, definitionID)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
@@ -2502,7 +2509,7 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 }
 
 func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
-	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
 	}
@@ -2526,7 +2533,7 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	operation, err := h.service.GetOperation(operationId)
+	operation, err := h.service.GetOperation(ctx, operationId)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
