@@ -18,7 +18,7 @@ import (
 	workflowpb "go.temporal.io/api/workflow/v1"
 )
 
-func (s *service) DeployModelAsync(owner string, modelUID uuid.UUID) (string, error) {
+func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error) {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
@@ -32,7 +32,7 @@ func (s *service) DeployModelAsync(owner string, modelUID uuid.UUID) (string, er
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
-		context.Background(),
+		ctx,
 		workflowOptions,
 		"DeployModelWorkflow",
 		&worker.ModelParams{
@@ -49,7 +49,7 @@ func (s *service) DeployModelAsync(owner string, modelUID uuid.UUID) (string, er
 	return id.String(), nil
 }
 
-func (s *service) UndeployModelAsync(owner string, modelUID uuid.UUID) (string, error) {
+func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error) {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
@@ -63,7 +63,7 @@ func (s *service) UndeployModelAsync(owner string, modelUID uuid.UUID) (string, 
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
-		context.Background(),
+		ctx,
 		workflowOptions,
 		"UnDeployModelWorkflow",
 		&worker.ModelParams{
@@ -117,8 +117,8 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 	return &operation, nil
 }
 
-func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, error) {
-	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(context.Background(), workflowId, "")
+func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrunningpb.Operation, error) {
+	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowId, "")
 
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (s *service) GetOperation(workflowId string) (*longrunningpb.Operation, err
 	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
 }
 
-func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string, error) {
+func (s *service) CreateModelAsync(ctx context.Context, owner string, model *datamodel.Model) (string, error) {
 	logger, _ := logger.GetZapLogger()
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
@@ -135,7 +135,7 @@ func (s *service) CreateModelAsync(owner string, model *datamodel.Model) (string
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
-		context.Background(),
+		ctx,
 		workflowOptions,
 		"CreateModelWorkflow",
 		&worker.ModelParams{

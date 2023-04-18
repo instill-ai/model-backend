@@ -30,14 +30,14 @@ func NewPrivateHandler(s service.Service, t triton.Triton) modelPB.ModelPrivateS
 }
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
-	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
 	}
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+		modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
@@ -68,7 +68,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUidAdmin(uid, req.GetView())
+	dbModel, err := h.service.GetModelByUidAdmin(ctx, uid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
@@ -78,7 +78,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
@@ -91,7 +91,7 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
-	dbModel, err := h.service.GetModelByIdAdmin(id, req.GetView())
+	dbModel, err := h.service.GetModelByIdAdmin(ctx, id, req.GetView())
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
@@ -100,7 +100,7 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 		return &modelPB.GetModelAdminResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
@@ -120,12 +120,12 @@ func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModel
 		return &modelPB.CheckModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}
 
-	state, err := h.service.CheckModel(dbModel.UID)
+	state, err := h.service.CheckModel(ctx, dbModel.UID)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}
