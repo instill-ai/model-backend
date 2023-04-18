@@ -93,7 +93,8 @@ func (r *repository) GetModelById(owner string, modelID string, view modelPB.Vie
 	if view != modelPB.View_VIEW_FULL {
 		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelID}).First(&model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelID}).
+		Or(&datamodel.Model{Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC), ID: modelID}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelID, owner)
 	}
 	return model, nil
@@ -117,7 +118,8 @@ func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelP
 	if view != modelPB.View_VIEW_FULL {
 		selectedFields = GetModelSelectedFieldsWOConfiguration
 	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).
+		Or(&datamodel.Model{Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC), BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
 		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUID, owner)
 	}
 	return model, nil
@@ -136,11 +138,11 @@ func (r *repository) GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (
 }
 
 func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-	if result := r.db.Model(&datamodel.Model{}).Where("owner = ?", owner).Count(&totalSize); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where("owner = ?", owner)
+	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC))
 
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
@@ -181,7 +183,7 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 		lastID := (models)[len(models)-1].ID
 		lastItem := &datamodel.Model{}
 		if result := r.db.Model(&datamodel.Model{}).
-			Where("owner = ?", owner).
+			Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).
 			Order("create_time ASC, id ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
 			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())

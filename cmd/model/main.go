@@ -98,6 +98,7 @@ func main() {
 				Task:            modelPB.Model_Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
 				ModelDefinition: modelConfig.ModelDefinition,
 				Configuration:   configuration,
+				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 			},
 		})
 		if err != nil {
