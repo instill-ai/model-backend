@@ -61,6 +61,14 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	resourceName := util.ConvertModelToResourceName(dbModel.ID)
 
+	updateResourceReq := controllerPB.UpdateResourceRequest{
+		Resource: &controllerPB.Resource{
+			Name:     resourceName,
+			State:    &controllerPB.Resource_ModelState{},
+			Progress: nil,
+		},
+	}
+
 	// downloading model weight when making inference
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
@@ -151,46 +159,27 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		if _, err = w.triton.LoadModelRequest(tModel.Name); err == nil {
 			continue
 		}
-		if _, e := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
-			Resource: &controllerPB.Resource{
-				Name: resourceName,
-				State: &controllerPB.Resource_ModelState{
-					ModelState: modelPB.Model_STATE_ERROR,
-				},
-				Progress: nil,
-			},
-		}); e != nil {
-			return e
+		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+			ModelState: modelPB.Model_STATE_ERROR,
 		}
+		w.controllerClient.UpdateResource(ctx, &updateResourceReq)
+		return err
 	}
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
 		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-			if _, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
-				Resource: &controllerPB.Resource{
-					Name: resourceName,
-					State: &controllerPB.Resource_ModelState{
-						ModelState: modelPB.Model_STATE_ERROR,
-					},
-					Progress: nil,
-				},
-			}); err != nil {
-				return err
+			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ERROR,
 			}
+			w.controllerClient.UpdateResource(ctx, &updateResourceReq)
+			return err
 		}
 	}
 
-	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
-		Resource: &controllerPB.Resource{
-			Name: resourceName,
-			State: &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ONLINE,
-			},
-			Progress: nil,
-		},
-	})
-
-	if err != nil {
+	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+		ModelState: modelPB.Model_STATE_ONLINE,
+	}
+	if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
 		return err
 	}
 
@@ -230,35 +219,29 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	resourceName := util.ConvertModelToResourceName(dbModel.ID)
 
+	updateResourceReq := controllerPB.UpdateResourceRequest{
+		Resource: &controllerPB.Resource{
+			Name:     resourceName,
+			State:    &controllerPB.Resource_ModelState{},
+			Progress: nil,
+		},
+	}
+
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
-			if _, err := w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
-				Resource: &controllerPB.Resource{
-					Name: resourceName,
-					State: &controllerPB.Resource_ModelState{
-						ModelState: modelPB.Model_STATE_ERROR,
-					},
-					Progress: nil,
-				},
-			}); err != nil {
-				return err
+			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ERROR,
 			}
+			w.controllerClient.UpdateResource(ctx, &updateResourceReq)
 			return err
 		}
 	}
 
-	_, err = w.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
-		Resource: &controllerPB.Resource{
-			Name: resourceName,
-			State: &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ONLINE,
-			},
-			Progress: nil,
-		},
-	})
-
-	if err != nil {
+	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+		ModelState: modelPB.Model_STATE_OFFLINE,
+	}
+	if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
 		return err
 	}
 
@@ -270,7 +253,31 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
+	resourceName := util.ConvertModelToResourceName(param.Model.ID)
+
+	updateResourceReq := controllerPB.UpdateResourceRequest{
+		Resource: &controllerPB.Resource{
+			Name:     resourceName,
+			State:    &controllerPB.Resource_ModelState{},
+			Progress: nil,
+		},
+	}
+
+	controllerCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if err := w.repository.CreateModel(param.Model); err != nil {
+		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+			ModelState: modelPB.Model_STATE_ERROR,
+		}
+		w.controllerClient.UpdateResource(controllerCtx, &updateResourceReq)
+		return err
+	}
+
+	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+		ModelState: modelPB.Model_STATE_OFFLINE,
+	}
+	if _, err := w.controllerClient.UpdateResource(controllerCtx, &updateResourceReq); err != nil {
 		return err
 	}
 
