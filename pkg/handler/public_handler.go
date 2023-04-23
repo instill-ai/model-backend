@@ -385,8 +385,15 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 
 	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient)
 	if err != nil {
-		makeJSONResponse(w, 401, "unauthenticated request", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
-		return
+		sta := status.Convert(err)
+		switch sta.Code() {
+		case codes.NotFound:
+			makeJSONResponse(w, 404, "Not found", "User not found")
+			return
+		default:
+			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			return
+		}
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 	ownerRscName := owner.GetName()
@@ -2279,6 +2286,24 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 		return
 	}
 
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	if mgmtPrivateServiceClientConn != nil {
+		defer mgmtPrivateServiceClientConn.Close()
+	}
+	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient)
+	if err != nil {
+		sta := status.Convert(err)
+		switch sta.Code() {
+		case codes.NotFound:
+			makeJSONResponse(w, 404, "Not found", "User not found")
+			return
+		default:
+			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			return
+		}
+	}
+	ownerPermalink := "users/" + owner.GetUid()
+
 	modelName := pathParams["name"]
 	if modelName == "" {
 		makeJSONResponse(w, 422, "Required parameter missing", "Required parameter model name not found")
@@ -2289,10 +2314,6 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 	modelRepository := repository.NewRepository(db)
 	tritonService := triton.NewTriton()
 	defer tritonService.Close()
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
-	if mgmtPrivateServiceClientConn != nil {
-		defer mgmtPrivateServiceClientConn.Close()
-	}
 	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
 	if pipelinePublicServiceClientConn != nil {
 		defer pipelinePublicServiceClientConn.Close()
@@ -2314,13 +2335,6 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 	defer temporalClient.Close()
 
 	service := service.NewService(modelRepository, tritonService, mgmtPrivateServiceClient, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
-
-	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient)
-	if err != nil {
-		makeJSONResponse(w, 401, "unauthenticated request", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
-		return
-	}
-	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(modelName)
 	if err != nil {

@@ -58,8 +58,8 @@ export function GetModelCard() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`, {
