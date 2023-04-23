@@ -57,15 +57,15 @@ export function PublishUnpublishModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/publish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/unpublish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/publish`, null, {

@@ -42,8 +42,8 @@ export function CreateModelFromLocal() {
       })
 
       check(createClsModelRes, {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/multipart task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/multipart task cls response status 404`]: (r) =>
+          r.status === 404,
       });
     });
 
@@ -74,8 +74,8 @@ export function CreateModelFromLocal() {
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status not 204`]: (r) =>
-          r.status !== 204
+        [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 404`]: (r) =>
+          r.status === 404
       });
 
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
@@ -112,8 +112,8 @@ export function CreateModelFromGitHub() {
       })
 
       check(createClsModelRes, {
-        [`[with random "jwt-sub" header] POST /v1alpha/models task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models task cls response status 404`]: (r) =>
+          r.status === 404,
       });
     });
 
@@ -130,8 +130,8 @@ export function CreateModelFromGitHub() {
       check(http.request("GET", `${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/watch status 401`]: (r) =>
-          r.status === 401
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/watch status 404`]: (r) =>
+          r.status === 404
       });
 
       let currentTime = new Date().getTime();

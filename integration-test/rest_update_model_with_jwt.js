@@ -63,8 +63,8 @@ export function UpdateModel() {
       check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4())
       }), {
-        [`[with random "jwt-sub" header] PATCH /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] PATCH /v1alpha/models/${model_id} task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {

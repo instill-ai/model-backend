@@ -55,15 +55,15 @@ export function GetModel() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}?view=VIEW_FULL`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
@@ -104,22 +104,22 @@ export function ListModels() {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       })
       check(resp, {
-        [`[with random "jwt-sub" header] GET /v1alpha/models task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models?page_size=1&page_token=${resp.json().next_page_token}`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models?view=VIEW_FULL`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       resp = http.get(`${constant.apiPublicHost}/v1alpha/models?page_size=1`, {
@@ -190,15 +190,15 @@ export function LookupModel() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, {

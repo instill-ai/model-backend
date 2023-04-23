@@ -59,8 +59,8 @@ export function DeployUndeployModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
@@ -86,8 +86,8 @@ export function DeployUndeployModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/undeploy`, {}, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 401`]: (r) =>
-          r.status === 401,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 404`]: (r) =>
+          r.status === 404,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/undeploy`, {}, {
