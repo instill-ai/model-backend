@@ -35,11 +35,11 @@ import (
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	"github.com/instill-ai/model-backend/pkg/middleware"
-	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -139,15 +139,32 @@ func main() {
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
 	defer controllerClientConn.Close()
 
-	temporalClient, err := client.Dial(client.Options{
-		// ZapAdapter implements log.Logger interface and can be passed
-		// to the client constructor using client using client.Options.
-		Namespace: modelWorker.Namespace,
-		Logger:    zapadapter.NewZapAdapter(logger),
-		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
-	})
+	var temporalClientOptions client.Options
+	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
+		if temporalClientOptions, err = temporal.GetTLSClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger),
+			config.Config.Temporal.Ca,
+			config.Config.Temporal.Cert,
+			config.Config.Temporal.Key,
+			config.Config.Temporal.ServerName,
+			true,
+		); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	} else {
+		if temporalClientOptions, err = temporal.GetClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger)); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	}
+
+	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
 	defer temporalClient.Close()
 

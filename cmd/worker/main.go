@@ -1,12 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"time"
 
-	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
@@ -15,6 +11,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
@@ -41,46 +38,39 @@ func main() {
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
 	defer controllerClientConn.Close()
 
-	clientNamespace, err := client.NewNamespaceClient(client.Options{
-		HostPort: config.Config.Temporal.ClientOptions.HostPort,
-	})
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to create namespace client: %s", err))
-	}
-	defer clientNamespace.Close()
+	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
 
-	retention := time.Duration(72 * time.Hour)
-	if err = clientNamespace.Register(context.Background(), &workflowservice.RegisterNamespaceRequest{
-		Namespace:                        modelWorker.Namespace,
-		Description:                      "For workflows triggered in the model-backend",
-		OwnerEmail:                       "infra@instill.tech",
-		WorkflowExecutionRetentionPeriod: &retention,
-	}); err != nil {
-		if _, ok := err.(*serviceerror.NamespaceAlreadyExists); !ok {
-			logger.Error(fmt.Sprintf("Unable to register namespace: %s", err))
+	var temporalClientOptions client.Options
+	var err error
+	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
+		if temporalClientOptions, err = temporal.GetTLSClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger),
+			config.Config.Temporal.Ca,
+			config.Config.Temporal.Cert,
+			config.Config.Temporal.Key,
+			config.Config.Temporal.ServerName,
+			true,
+		); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	} else {
+		if temporalClientOptions, err = temporal.GetClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger)); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
 		}
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
-
-	c, err := client.Dial(client.Options{
-		// ZapAdapter implements log.Logger interface and can be passed
-		// to the client constructor using client using client.Options.
-		Logger:    zapadapter.NewZapAdapter(logger),
-		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
-		Namespace: modelWorker.Namespace,
-	})
-
-	// Note that Namespace registration using this API takes up to 10 seconds to complete.
-	// Ensure to wait for this registration to complete before starting the Workflow Execution against the Namespace.
-	time.Sleep(time.Second * 10)
-
+	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
-	defer c.Close()
+	defer temporalClient.Close()
 
-	w := worker.New(c, modelWorker.TaskQueue, worker.Options{})
+	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(cw.DeployModelWorkflow)
 	w.RegisterActivity(cw.DeployModelActivity)

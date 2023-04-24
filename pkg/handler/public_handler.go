@@ -41,12 +41,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
+	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
 	"google.golang.org/protobuf/types/known/anypb"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
-	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -369,15 +369,33 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
 	defer controllerClientConn.Close()
 
-	temporalClient, err := client.Dial(client.Options{
-		// ZapAdapter implements log.Logger interface and can be passed
-		// to the client constructor using client using client.Options.
-		Logger:    zapadapter.NewZapAdapter(logger),
-		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
-		Namespace: modelWorker.Namespace,
-	})
+	var temporalClientOptions client.Options
+	var err error
+	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
+		if temporalClientOptions, err = temporal.GetTLSClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger),
+			config.Config.Temporal.Ca,
+			config.Config.Temporal.Cert,
+			config.Config.Temporal.Key,
+			config.Config.Temporal.ServerName,
+			true,
+		); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	} else {
+		if temporalClientOptions, err = temporal.GetClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger)); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	}
+
+	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
 	defer temporalClient.Close()
 
@@ -2322,15 +2340,33 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 	defer redisClient.Close()
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
 	defer controllerClientConn.Close()
-	temporalClient, err := client.Dial(client.Options{
-		// ZapAdapter implements log.Logger interface and can be passed
-		// to the client constructor using client using client.Options.
-		Logger:    zapadapter.NewZapAdapter(logger),
-		HostPort:  config.Config.Temporal.ClientOptions.HostPort,
-		Namespace: modelWorker.Namespace,
-	})
+
+	var temporalClientOptions client.Options
+	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
+		if temporalClientOptions, err = temporal.GetTLSClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger),
+			config.Config.Temporal.Ca,
+			config.Config.Temporal.Cert,
+			config.Config.Temporal.Key,
+			config.Config.Temporal.ServerName,
+			true,
+		); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	} else {
+		if temporalClientOptions, err = temporal.GetClientOption(
+			config.Config.Temporal.HostPort,
+			config.Config.Temporal.Namespace,
+			zapadapter.NewZapAdapter(logger)); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
+		}
+	}
+
+	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
 	defer temporalClient.Close()
 
