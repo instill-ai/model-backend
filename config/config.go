@@ -12,7 +12,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
-	"go.temporal.io/sdk/client"
 )
 
 // ServerConfig defines HTTP server configurations
@@ -117,7 +116,12 @@ type MaxBatchSizeConfig struct {
 
 // TemporalConfig related to Temporal
 type TemporalConfig struct {
-	ClientOptions client.Options `koanf:"clientoptions"`
+	HostPort   string
+	Namespace  string
+	Ca         string
+	Cert       string
+	Key        string
+	ServerName string
 }
 
 // AppConfig defines

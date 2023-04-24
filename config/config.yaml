@@ -56,15 +56,18 @@ maxbatchsizelimitation:
   semanticsegmentation: 8
   textgeneration: 1
 temporal:
-  clientoptions:
-    hostport: temporal:7233
+  hostport: temporal:7233
+  namespace: model-backend
+  ca:
+  cert:
+  key:
+  servername:
 controller:
   host: controller
   privateport: 3085
   https:
     cert:
     key:
-initmodel: 
+initmodel:
   enabled: false
   path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json
-    
