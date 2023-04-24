@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.16.0-alpha...v0.16.1-alpha) (2023-04-24)
+
+
+### Bug Fixes
+
+* pass the context between package layers ([#345](https://github.com/instill-ai/model-backend/issues/345)) ([e6e7f2f](https://github.com/instill-ai/model-backend/commit/e6e7f2fa256390337593b1a039c93c01a1779a98))
+
+
+### Miscellaneous Chores
+
+* release 0.16.1-alpha ([1d497e0](https://github.com/instill-ai/model-backend/commit/1d497e01dec349cfc6b711ee05ed53fd7406765a))
+
 ## [0.16.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.15.0-alpha...v0.16.0-alpha) (2023-04-15)
 
 
