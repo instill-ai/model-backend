@@ -17,6 +17,7 @@ import {
 
 import {
     genHeader,
+    isValidOwner
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -77,7 +78,7 @@ export function PublishUnPublishModel() {
             "PublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "PublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "PublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PUBLIC",
-            "PublishModel response model.owner": (r) => r.message.model.user === 'users/instill-ai',
+            "PublishModel response model.owner": (r) => isValidOwner(r.message.model.user),
             "PublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "PublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
@@ -93,7 +94,7 @@ export function PublishUnPublishModel() {
             "UnpublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "UnpublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
             "UnpublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "UnpublishModel response model.owner": (r) => r.message.model.user === 'users/instill-ai',
+            "UnpublishModel response model.owner": (r) => isValidOwner(r.message.model.user),
             "UnpublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
             "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });

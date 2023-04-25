@@ -47,7 +47,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
 
-		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, owner.GetName()))
+		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner)))
 	}
 
 	resp := modelPB.ListModelsAdminResponse{
@@ -82,7 +82,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, owner.GetName())
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner))
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
@@ -104,7 +104,7 @@ func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetMode
 	if err != nil {
 		return &modelPB.GetModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, owner.GetName())
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner))
 	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
 }
 
