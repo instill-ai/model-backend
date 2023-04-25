@@ -13,6 +13,7 @@ import {
 
 import {
   genHeader,
+  isValidOwner,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -74,7 +75,7 @@ export function PublishUnpublishModel() {
         [`POST /v1alpha/models/${model_id}/publish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         [`POST /v1alpha/models/${model_id}/publish task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/instill-ai',
+          isValidOwner(r.json().model.user),
         [`POST /v1alpha/models/${model_id}/publish task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.update_time`]: (r) =>
@@ -101,7 +102,7 @@ export function PublishUnpublishModel() {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.owner`]: (r) =>
-          r.json().model.user === 'users/instill-ai',
+          isValidOwner(r.json().model.user),
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.update_time`]: (r) =>

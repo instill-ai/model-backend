@@ -14,6 +14,7 @@ import {
 
 import {
     genHeader,
+    isValidOwner,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -82,7 +83,7 @@ export function GetModel() {
             "GetModelAdmin response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "GetModelAdmin response model.configuration": (r) => r.message.model.configuration !== undefined,
             "GetModelAdmin response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "GetModelAdmin response model.owner": (r) => r.message.model.user === 'users/instill-ai',
+            "GetModelAdmin response model.owner": (r) => isValidOwner(r.message.model.user),
             "GetModelAdmin response model.create_time": (r) => r.message.model.createTime !== undefined,
             "GetModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });
@@ -157,7 +158,7 @@ export function ListModels() {
             "ListModelsAdmin response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
             "ListModelsAdmin response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
             "ListModelsAdmin response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-            "ListModelsAdmin response models[0].owner": (r) => r.message.models[0].user === 'users/instill-ai',
+            "ListModelsAdmin response models[0].owner": (r) => isValidOwner(r.message.models[0].user),
             "ListModelsAdmin response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
             "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
         });
@@ -230,7 +231,7 @@ export function LookUpModel() {
             "LookUpModelAdmin response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
             "LookUpModelAdmin response model.configuration": (r) => r.message.model.configuration !== undefined,
             "LookUpModelAdmin response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-            "LookUpModelAdmin response model.owner": (r) => r.message.model.user === 'users/instill-ai',
+            "LookUpModelAdmin response model.owner": (r) => isValidOwner(r.message.model.user),
             "LookUpModelAdmin response model.create_time": (r) => r.message.model.createTime !== undefined,
             "LookUpModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
         });

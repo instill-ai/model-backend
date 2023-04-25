@@ -413,8 +413,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 			return
 		}
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	modelID := req.FormValue("id")
 	if modelID == "" {
@@ -521,7 +520,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 	}
 
 	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&localModelDefinition, &uploadedModel, ownerRscName), true); err != nil {
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&localModelDefinition, &uploadedModel, ownerPermalink), true); err != nil {
 		makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model definition is invalid %v", err.Error()))
 		return
 	}
@@ -651,8 +650,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	if err != nil {
 		return err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	tmpFile, uploadedModel, modelDefID, err := util.SaveFile(stream)
 	if err != nil {
@@ -670,7 +668,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	uploadedModel.ModelDefinitionUid = modelDef.UID
 
 	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&modelDef, uploadedModel, ownerRscName), true); err != nil {
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&modelDef, uploadedModel, ownerPermalink), true); err != nil {
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
@@ -1535,8 +1533,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	if err != nil {
 		return &modelPB.ListModelsResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	dbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, ownerPermalink, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
@@ -1549,7 +1546,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		if err != nil {
 			return &modelPB.ListModelsResponse{}, err
 		}
-		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, ownerRscName))
+		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, ownerPermalink))
 	}
 
 	resp := modelPB.ListModelsResponse{
@@ -1566,8 +1563,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	sUID, err := resource.GetID(req.Permalink)
 	if err != nil {
@@ -1585,7 +1581,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 	if err != nil {
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.LookUpModelResponse{Model: pbModel}, nil
 }
 
@@ -1594,8 +1590,7 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
@@ -1609,7 +1604,7 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 	if err != nil {
 		return &modelPB.GetModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.GetModelResponse{Model: pbModel}, err
 }
 
@@ -1618,8 +1613,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Model.Name)
 	if err != nil {
@@ -1652,7 +1646,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 	if err != nil {
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.UpdateModelResponse{Model: pbModel}, err
 }
 
@@ -1681,8 +1675,7 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
@@ -1696,7 +1689,7 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 	if err != nil {
 		return &modelPB.RenameModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.RenameModelResponse{Model: pbModel}, nil
 }
 
@@ -1705,8 +1698,7 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
@@ -1720,7 +1712,7 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 	if err != nil {
 		return &modelPB.PublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.PublishModelResponse{Model: pbModel}, nil
 }
 
@@ -1729,8 +1721,7 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-	ownerRscName := owner.GetName()
+	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
@@ -1744,7 +1735,7 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	if err != nil {
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerRscName)
+	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
