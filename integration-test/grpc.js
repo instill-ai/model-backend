@@ -49,7 +49,7 @@ export default () => {
     }
 
     // Private API
-    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+    if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost" && __ENV.MODE != "internal") {
         queryModelPrivate.GetModel()
         queryModelPrivate.ListModels()
         queryModelPrivate.LookUpModel()

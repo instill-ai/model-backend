@@ -29,7 +29,7 @@ export let options = {
   },
 };
 
-export function setup() {}
+export function setup() { }
 
 export default function (data) {
   /*
@@ -46,7 +46,7 @@ export default function (data) {
   }
 
   // Query Model API by admin
-  if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+  if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost" && __ENV.MODE != "internal") {
     queryModelPrivate.GetModelAdmin()
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
@@ -87,12 +87,12 @@ export default function (data) {
 export function teardown(data) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-        .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
-          headers: genHeader(
-            "application/json"
-          ),
-        })
-        .json("models")) {
+      .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
+        headers: genHeader(
+          "application/json"
+        ),
+      })
+      .json("models")) {
       check(model, {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
@@ -100,9 +100,9 @@ export function teardown(data) {
         http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model.id}`, null, {
           headers: genHeader("application/json"),
         }), {
-          [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
-            r.status === 204,
-        }
+        [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
+          r.status === 204,
+      }
       );
     }
   });

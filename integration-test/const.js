@@ -1,7 +1,7 @@
 let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
 
 if (__ENV.MODE == "api-gateway") {
-    // api-gateway mode
+    // api-gateway mode for accessing api-gateway directly
     proto = "http"
     host = "api-gateway"
     publicPort = 8080
@@ -9,12 +9,20 @@ if (__ENV.MODE == "api-gateway") {
     mgmtHost = "api-gateway"
     mgmtPrivatePort = 3084
 } else if (__ENV.MODE == "localhost") {
-    // localhost mode for GitHub Actions
+    // localhost mode for accessing api-gateway from localhost
     proto = "http"
     host = "localhost"
     publicPort = 8080
     privatePort = 3083
     mgmtHost = "localhost"
+    mgmtPrivatePort = 3084
+} else if (__ENV.MODE == "internal") {
+    // internal mode for accessing api-gateway from container
+    proto = "http"
+    host = "host.docker.internal"
+    publicPort = 8080
+    privatePort = 3083
+    mgmtHost = "host.docker.internal"
     mgmtPrivatePort = 3084
 } else {
     // direct microservice mode
