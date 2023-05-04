@@ -105,31 +105,31 @@ func main() {
 		})
 		if err != nil {
 			if e, ok := status.FromError(err); ok {
-				if e.Code() == codes.AlreadyExists {
-					continue
+				if e.Code() != codes.AlreadyExists {
+					logger.Fatal("handler.CreateModel: " + err.Error())
 				}
 			}
-			logger.Fatal("handler.CreateModel: " + err.Error())
+		} else {
+			isCreated := false
+			startTime := time.Now()
+			for {
+				if isCreated || time.Since(startTime) > 5*time.Minute {
+					break
+				}
+				operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
+					Name: createOperation.Operation.Name,
+				})
+				if err != nil {
+					logger.Fatal("handler.GetModelOperation: " + err.Error())
+				}
+				isCreated = operation.Operation.Done
+				time.Sleep(1 * time.Second)
+			}
+			if !isCreated {
+				logger.Fatal("handler.CreateModel: " + err.Error())
+			}
 		}
 
-		isCreated := false
-		startTime := time.Now()
-		for {
-			if isCreated || time.Since(startTime) > 5*time.Minute {
-				break
-			}
-			operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
-				Name: createOperation.Operation.Name,
-			})
-			if err != nil {
-				logger.Fatal("handler.GetModelOperation: " + err.Error())
-			}
-			isCreated = operation.Operation.Done
-			time.Sleep(1 * time.Second)
-		}
-		if !isCreated {
-			logger.Fatal("handler.CreateModel: " + err.Error())
-		}
 		time.Sleep(5 * time.Second) // make sure controller updated the state.
 		ctx, cancel = context.WithTimeout(context.Background(), 6000*time.Second)
 		defer cancel()
@@ -137,10 +137,16 @@ func main() {
 			Name: fmt.Sprintf("models/%s", modelConfig.ID),
 		})
 		if err != nil {
+			if e, ok := status.FromError(err); ok {
+				if e.Code() == codes.FailedPrecondition {
+					continue
+				}
+			}
 			logger.Fatal("handler.DeployModel: " + err.Error())
 		}
+
 		isDeployed := false
-		startTime = time.Now()
+		startTime := time.Now()
 		for {
 			if isDeployed || time.Since(startTime) > 150*time.Minute {
 				break
