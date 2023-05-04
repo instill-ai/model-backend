@@ -11,7 +11,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/gogo/status"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -102,6 +104,11 @@ func main() {
 			},
 		})
 		if err != nil {
+			if e, ok := status.FromError(err); ok {
+				if e.Code() == codes.AlreadyExists {
+					continue
+				}
+			}
 			logger.Fatal("handler.CreateModel: " + err.Error())
 		}
 
