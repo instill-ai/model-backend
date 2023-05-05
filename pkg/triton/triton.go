@@ -124,7 +124,7 @@ func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 
 func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inferenceserver.ModelReadyResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create ready request for a given model
@@ -142,7 +142,7 @@ func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inf
 
 func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -160,7 +160,7 @@ func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *
 
 func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -917,7 +917,7 @@ func (ts *triton) LoadModelRequest(modelName string) (*inferenceserver.Repositor
 
 func (ts *triton) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -931,7 +931,7 @@ func (ts *triton) UnloadModelRequest(modelName string) (*inferenceserver.Reposit
 
 func (ts *triton) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
 	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Create status request for a given model
@@ -951,6 +951,6 @@ func (ts *triton) IsTritonServerReady() bool {
 	if serverLiveResponse == nil {
 		return false
 	}
-	fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
+	// fmt.Printf("Triton Health - Live: %v\n", serverLiveResponse.Live)
 	return serverLiveResponse.Live
 }

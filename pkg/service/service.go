@@ -38,6 +38,8 @@ type InferInput interface{}
 
 type Service interface {
 	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
+	GetRepository() repository.Repository
+	GetRedisClient() *redis.Client
 
 	CreateModelAsync(ctx context.Context, owner string, model *datamodel.Model) (string, error)
 	GetModelById(ctx context.Context, owner string, modelID string, view modelPB.View) (datamodel.Model, error)
@@ -96,6 +98,15 @@ func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateSe
 		temporalClient:              tc,
 		controllerClient:            cs,
 	}
+}
+
+func (s *service) GetRepository() repository.Repository {
+	return s.repository
+}
+
+// GetRedisClient returns the redis client
+func (s *service) GetRedisClient() *redis.Client {
+	return s.redisClient
 }
 
 // GetMgmtPrivateServiceClient returns the management private service client
@@ -252,7 +263,6 @@ func (s *service) WatchModel(ctx context.Context, name string) (*controllerPB.Ge
 }
 
 func (s *service) ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
-
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")

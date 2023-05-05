@@ -18,11 +18,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	"go.temporal.io/sdk/client"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -35,18 +33,14 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/logger"
-	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
 
 	"google.golang.org/protobuf/types/known/anypb"
 
-	database "github.com/instill-ai/model-backend/pkg/db"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -342,7 +336,7 @@ func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequ
 }
 
 // HandleCreateModelByMultiPartFormData is a custom handler
-func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 	logger, _ := logger.GetZapLogger()
 
 	contentType := req.Header.Get("Content-Type")
@@ -352,56 +346,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	db := database.GetConnection()
-	modelRepository := repository.NewRepository(db)
-	tritonService := triton.NewTriton()
-	defer tritonService.Close()
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
-	if mgmtPrivateServiceClientConn != nil {
-		defer mgmtPrivateServiceClientConn.Close()
-	}
-	pipelineServiceClient, pipelineServiceClientConn := external.InitPipelinePublicServiceClient()
-	if pipelineServiceClientConn != nil {
-		defer pipelineServiceClientConn.Close()
-	}
-	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
-	defer redisClient.Close()
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
-	defer controllerClientConn.Close()
-
-	var temporalClientOptions client.Options
-	var err error
-	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
-		if temporalClientOptions, err = temporal.GetTLSClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger),
-			config.Config.Temporal.Ca,
-			config.Config.Temporal.Cert,
-			config.Config.Temporal.Key,
-			config.Config.Temporal.ServerName,
-			true,
-		); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	} else {
-		if temporalClientOptions, err = temporal.GetClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger)); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	}
-
-	temporalClient, err := client.Dial(temporalClientOptions)
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
-	}
-	defer temporalClient.Close()
-
-	service := service.NewService(modelRepository, tritonService, mgmtPrivateServiceClient, pipelineServiceClient, redisClient, temporalClient, controllerClient)
-
-	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient)
+	owner, err := resource.GetOwnerCustom(req, s.GetMgmtPrivateServiceClient())
 	if err != nil {
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -485,7 +430,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 	}
 
 	// validate model configuration
-	localModelDefinition, err := modelRepository.GetModelDefinition(modelDefinitionID)
+	localModelDefinition, err := s.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
 		return
@@ -525,7 +470,7 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	_, err = service.GetModelById(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = s.GetModelById(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		return
@@ -603,14 +548,14 @@ func HandleCreateModelByMultiPartFormData(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	wfId, err := service.CreateModelAsync(req.Context(), ownerPermalink, &uploadedModel)
+	wfId, err := s.CreateModelAsync(req.Context(), ownerPermalink, &uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		return
 	}
 
-	if err := service.UpdateResourceState(
+	if err := s.UpdateResourceState(
 		req.Context(),
 		uploadedModel.ID,
 		modelPB.Model_STATE_UNSPECIFIED,
@@ -2285,7 +2230,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 	}, nil
 }
 
-func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
+func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
 	logger, _ := logger.GetZapLogger()
 	contentType := req.Header.Get("Content-Type")
 
@@ -2319,57 +2264,13 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 		return
 	}
 
-	db := database.GetConnection()
-	modelRepository := repository.NewRepository(db)
-	tritonService := triton.NewTriton()
-	defer tritonService.Close()
-	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
-	if pipelinePublicServiceClientConn != nil {
-		defer pipelinePublicServiceClientConn.Close()
-	}
-	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
-	defer redisClient.Close()
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
-	defer controllerClientConn.Close()
-
-	var temporalClientOptions client.Options
-	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
-		if temporalClientOptions, err = temporal.GetTLSClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger),
-			config.Config.Temporal.Ca,
-			config.Config.Temporal.Cert,
-			config.Config.Temporal.Key,
-			config.Config.Temporal.ServerName,
-			true,
-		); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	} else {
-		if temporalClientOptions, err = temporal.GetClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger)); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	}
-
-	temporalClient, err := client.Dial(temporalClientOptions)
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
-	}
-	defer temporalClient.Close()
-
-	service := service.NewService(modelRepository, tritonService, mgmtPrivateServiceClient, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
-
 	modelID, err := resource.GetModelID(modelName)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
 		return
 	}
 
-	modelInDB, err := service.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		return
@@ -2418,7 +2319,7 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := service.GetTritonEnsembleModel(req.Context(), modelInDB.UID)
+		tritonModelInDB, err := s.GetTritonEnsembleModel(req.Context(), modelInDB.UID)
 		if err != nil {
 			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			return
@@ -2438,9 +2339,9 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 	task := modelPB.Model_Task(modelInDB.Task)
 	var response []*modelPB.TaskOutput
 	if mode == "test" {
-		response, err = service.ModelInferTestMode(req.Context(), ownerPermalink, modelInDB.UID, inputInfer, task)
+		response, err = s.ModelInferTestMode(req.Context(), ownerPermalink, modelInDB.UID, inputInfer, task)
 	} else {
-		response, err = service.ModelInfer(req.Context(), modelInDB.UID, inputInfer, task)
+		response, err = s.ModelInfer(req.Context(), modelInDB.UID, inputInfer, task)
 	}
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2484,12 +2385,12 @@ func inferModelByUpload(w http.ResponseWriter, req *http.Request, pathParams map
 
 }
 
-func HandleTestModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(w, r, pathParams, "test")
+func HandleTestModelByUpload(s service.Service, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(s, w, r, pathParams, "test")
 }
 
-func HandleTriggerModelByUpload(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(w, r, pathParams, "trigger")
+func HandleTriggerModelByUpload(s service.Service, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(s, w, r, pathParams, "trigger")
 }
 
 func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelCardRequest) (*modelPB.GetModelCardResponse, error) {
