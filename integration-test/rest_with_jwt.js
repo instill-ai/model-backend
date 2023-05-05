@@ -38,7 +38,7 @@ export default function (data) {
     });
   }
 
-  if (__ENV.MODE != "api-gateway" && __ENV.MODE != "localhost") {
+  if (!constant.apiGatewayMode) {
     // Test Model API
     testModel.TestModel()
 
