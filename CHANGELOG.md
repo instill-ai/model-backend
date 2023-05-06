@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.16.2-alpha...v0.16.3-alpha) (2023-05-06)
+
+
+### Bug Fixes
+
+* create single triton client ([#357](https://github.com/instill-ai/model-backend/issues/357)) ([8dedf5d](https://github.com/instill-ai/model-backend/commit/8dedf5d2c77279a15f906df580a93c46b21cc046))
+
 ## [0.16.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.16.1-alpha...v0.16.2-alpha) (2023-04-25)
 
 
