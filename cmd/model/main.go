@@ -107,7 +107,7 @@ func main() {
 		})
 		logger.Info("Created model err: " + err.Error())
 		if err != nil {
-			logger.Info("Created model err: " + err.Error())
+			logger.Info(fmt.Sprintf("Created model err: %v", err))
 			if e, ok := status.FromError(err); ok {
 				if e.Code() != codes.AlreadyExists {
 					logger.Fatal("handler.CreateModel: " + err.Error())
@@ -143,7 +143,7 @@ func main() {
 		})
 		logger.Info("Deployed model err: " + err.Error())
 		if err != nil {
-			logger.Info("Deployed model err: " + err.Error())
+			logger.Info(fmt.Sprintf("Deployed model err: %v", err))
 			if e, ok := status.FromError(err); ok {
 				if e.Code() == codes.FailedPrecondition {
 					continue
