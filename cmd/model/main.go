@@ -105,8 +105,8 @@ func main() {
 				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 			},
 		})
-		logger.Info("Created model err: " + err.Error())
 		if err != nil {
+			logger.Info("Created model err: " + err.Error())
 			if e, ok := status.FromError(err); ok {
 				if e.Code() != codes.AlreadyExists {
 					logger.Fatal("handler.CreateModel: " + err.Error())
@@ -140,8 +140,8 @@ func main() {
 		deployOperation, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
 			Name: fmt.Sprintf("models/%s", modelConfig.ID),
 		})
-		logger.Info("Deployed model err: " + err.Error())
 		if err != nil {
+			logger.Info("Deployed model err: " + err.Error())
 			if e, ok := status.FromError(err); ok {
 				if e.Code() == codes.FailedPrecondition {
 					continue
