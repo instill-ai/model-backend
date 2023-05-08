@@ -105,7 +105,6 @@ func main() {
 				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 			},
 		})
-		logger.Info("Created model err: " + err.Error())
 		if err != nil {
 			logger.Info(fmt.Sprintf("Created model err: %v", err))
 			if e, ok := status.FromError(err); ok {
