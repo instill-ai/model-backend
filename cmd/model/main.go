@@ -86,6 +86,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+	logger.Info("Creating models ...")
 	for _, modelConfig := range modelConfigs {
 		configuration, err := structpb.NewStruct(modelConfig.Configuration)
 		if err != nil {
@@ -93,6 +94,7 @@ func main() {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 		defer cancel()
+		logger.Info("Creating model: " + modelConfig.ID)
 		createOperation, err := modelPublicServiceClient.CreateModel(ctx, &modelPB.CreateModelRequest{
 			Model: &modelPB.Model{
 				Id:              modelConfig.ID,
@@ -103,6 +105,7 @@ func main() {
 				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 			},
 		})
+		logger.Info("Created model err: " + err.Error())
 		if err != nil {
 			if e, ok := status.FromError(err); ok {
 				if e.Code() != codes.AlreadyExists {
@@ -133,9 +136,11 @@ func main() {
 		time.Sleep(5 * time.Second) // make sure controller updated the state.
 		ctx, cancel = context.WithTimeout(context.Background(), 6000*time.Second)
 		defer cancel()
+		logger.Info("Deploying model: " + modelConfig.ID)
 		deployOperation, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
 			Name: fmt.Sprintf("models/%s", modelConfig.ID),
 		})
+		logger.Info("Deployed model err: " + err.Error())
 		if err != nil {
 			if e, ok := status.FromError(err); ok {
 				if e.Code() == codes.FailedPrecondition {
@@ -161,4 +166,5 @@ func main() {
 			time.Sleep(5 * time.Second)
 		}
 	}
+	logger.Info("Creating models done!")
 }
