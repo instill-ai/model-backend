@@ -141,7 +141,6 @@ func main() {
 		deployOperation, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
 			Name: fmt.Sprintf("models/%s", modelConfig.ID),
 		})
-		logger.Info("Deployed model err: " + err.Error())
 		if err != nil {
 			logger.Info(fmt.Sprintf("Deployed model err: %v", err))
 			if e, ok := status.FromError(err); ok {
