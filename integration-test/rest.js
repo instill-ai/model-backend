@@ -47,7 +47,6 @@ export default function (data) {
 
   // Query Model API by admin
   if (!constant.apiGatewayMode) {
-    queryModelPrivate.GetModelAdmin()
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
   }

@@ -54,10 +54,10 @@ export function GetModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
-                name: `models/${model_id}`
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+                name: createClsModelRes.json().operation.name
             }, {})
-            if (res.message.state === "STATE_OFFLINE") {
+            if (res.message.operation.done === true) {
                 break
             }
             sleep(1)
@@ -124,10 +124,10 @@ export function ListModels() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
-                name: `models/${model_id}`
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+                name: createClsModelRes.json().operation.name
             }, {})
-            if (res.message.state === "STATE_OFFLINE") {
+            if (res.message.operation.done === true) {
                 break
             }
             sleep(1)
@@ -187,10 +187,10 @@ export function LookupModel() {
         let currentTime = new Date().getTime();
         let timeoutTime = new Date().getTime() + 120000;
         while (timeoutTime > currentTime) {
-            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/WatchModel', {
-                name: `models/${model_id}`
+            let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+                name: createClsModelRes.json().operation.name
             }, {})
-            if (res.message.state === "STATE_OFFLINE") {
+            if (res.message.operation.done === true) {
                 break
             }
             sleep(1)

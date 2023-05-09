@@ -60,10 +60,10 @@ export function CreateModelFromLocal() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -137,10 +137,10 @@ export function CreateModelFromGitHub() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)

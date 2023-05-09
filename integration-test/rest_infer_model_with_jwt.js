@@ -41,7 +41,7 @@ export function TestModel() {
 
   {
     group(`Model Backend API: Predict Model with classification model [with random "jwt-sub" header]`, function () {
-      http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
       })
 
@@ -49,10 +49,10 @@ export function TestModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
+          headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)

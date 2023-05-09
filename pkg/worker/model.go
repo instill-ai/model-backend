@@ -59,13 +59,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	resourceName := util.ConvertModelToResourceName(dbModel.ID)
+	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
 
 	updateResourceReq := controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     resourceName,
-			State:    &controllerPB.Resource_ModelState{},
-			Progress: nil,
+			ResourcePermalink: resourcePermalink,
+			State:             &controllerPB.Resource_ModelState{},
+			Progress:          nil,
 		},
 	}
 
@@ -217,13 +217,13 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	resourceName := util.ConvertModelToResourceName(dbModel.ID)
+	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
 
 	updateResourceReq := controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     resourceName,
-			State:    &controllerPB.Resource_ModelState{},
-			Progress: nil,
+			ResourcePermalink: resourcePermalink,
+			State:             &controllerPB.Resource_ModelState{},
+			Progress:          nil,
 		},
 	}
 
@@ -253,13 +253,11 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
-	resourceName := util.ConvertModelToResourceName(param.Model.ID)
-
 	updateResourceReq := controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name:     resourceName,
-			State:    &controllerPB.Resource_ModelState{},
-			Progress: nil,
+			ResourcePermalink: "",
+			State:             &controllerPB.Resource_ModelState{},
+			Progress:          nil,
 		},
 	}
 
@@ -270,10 +268,16 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 			ModelState: modelPB.Model_STATE_ERROR,
 		}
-		w.controllerClient.UpdateResource(controllerCtx, &updateResourceReq)
+	}
+
+	dbModel, err := w.repository.GetModelById(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
+	if err != nil {
 		return err
 	}
 
+	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
+
+	updateResourceReq.Resource.ResourcePermalink = resourcePermalink
 	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 		ModelState: modelPB.Model_STATE_OFFLINE,
 	}

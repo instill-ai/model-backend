@@ -51,7 +51,6 @@ type Service interface {
 	UpdateModel(ctx context.Context, modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
 	UpdateModelState(ctx context.Context, modelUID uuid.UUID, model *datamodel.Model, state datamodel.ModelState) (datamodel.Model, error)
 	ListModels(ctx context.Context, owner string, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
-	WatchModel(ctx context.Context, name string) (*controllerPB.GetResourceResponse, error)
 	CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
 
 	ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error)
@@ -73,9 +72,9 @@ type Service interface {
 	GetModelByUidAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 
-	GetResourceState(ctx context.Context, modelID string) (*modelPB.Model_State, error)
-	UpdateResourceState(ctx context.Context, modelID string, state modelPB.Model_State, progress *int32, workflowId *string) error
-	DeleteResourceState(ctx context.Context, modelID string) error
+	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
+	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowId *string) error
+	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
 }
 
 type service struct {
@@ -246,20 +245,6 @@ func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.
 	}
 
 	return &state, nil
-}
-
-func (s *service) WatchModel(ctx context.Context, name string) (*controllerPB.GetResourceResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
 
 func (s *service) ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
@@ -721,7 +706,7 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 		return st.Err()
 	}
 
-	state, err := s.GetResourceState(ctx, modelID)
+	state, err := s.GetResourceState(ctx, modelInDB.UID)
 	if err != nil {
 		return err
 	}
@@ -745,7 +730,7 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 	if err := s.UndeployModel(ctx, modelInDB.UID); err != nil {
 		s.UpdateResourceState(
 			ctx,
-			modelID,
+			modelInDB.UID,
 			modelPB.Model_STATE_ERROR,
 			nil,
 			nil,
@@ -764,7 +749,7 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 		}
 	}
 
-	if err := s.DeleteResourceState(ctx, modelID); err != nil {
+	if err := s.DeleteResourceState(ctx, modelInDB.UID); err != nil {
 		return err
 	}
 
@@ -774,14 +759,6 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 func (s *service) RenameModel(ctx context.Context, owner string, modelID string, newModelId string) (datamodel.Model, error) {
 	modelInDB, err := s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return datamodel.Model{}, err
-	}
-
-	if err := s.DeleteResourceState(ctx, modelID); err != nil {
-		return datamodel.Model{}, err
-	}
-
-	if err := s.UpdateResourceState(ctx, newModelId, modelPB.Model_State(modelInDB.State), nil, nil); err != nil {
 		return datamodel.Model{}, err
 	}
 

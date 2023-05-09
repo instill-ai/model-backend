@@ -555,18 +555,6 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	if err := s.UpdateResourceState(
-		req.Context(),
-		uploadedModel.ID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
-		makeJSONResponse(w, 500, "Add Model Error", err.Error())
-		return
-	}
-
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(201)
 
@@ -684,17 +672,6 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 	wfId, err := h.service.CreateModelAsync(stream.Context(), ownerPermalink, uploadedModel)
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
-		return err
-	}
-
-	if err := h.service.UpdateResourceState(
-		stream.Context(),
-		uploadedModel.ID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		return err
 	}
@@ -903,30 +880,6 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			codes.Internal,
 			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model service",
-			"",
-			"",
-			err.Error(),
-		)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		for _, tag := range githubInfo.Tags {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
-		}
-		return &modelPB.CreateModelResponse{}, st.Err()
-	}
-
-	if err := h.service.UpdateResourceState(
-		ctx,
-		githubModel.ID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"Controller",
 			"",
 			"",
 			err.Error(),
@@ -1157,28 +1110,6 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	if err := h.service.UpdateResourceState(
-		ctx,
-		huggingfaceModel.ID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"Controller",
-			"",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-		return &modelPB.CreateModelResponse{}, st.Err()
-	}
-
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1359,28 +1290,6 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			codes.Internal,
 			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
 			"Model service",
-			"",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-		return &modelPB.CreateModelResponse{}, st.Err()
-	}
-
-	if err := h.service.UpdateResourceState(
-		ctx,
-		artivcModel.ID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"Controller",
 			"",
 			"",
 			err.Error(),
@@ -1703,7 +1612,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(ctx, modelID)
+	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
 		return &modelPB.DeployModelResponse{}, err
@@ -1754,7 +1663,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	if err := h.service.UpdateResourceState(
 		ctx,
-		modelID,
+		dbModel.UID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
 		&wfId,
@@ -1788,7 +1697,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(ctx, modelID)
+	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
 		return &modelPB.UndeployModelResponse{}, err
@@ -1816,7 +1725,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	if err := h.service.UpdateResourceState(
 		ctx,
-		modelID,
+		dbModel.UID,
 		modelPB.Model_STATE_UNSPECIFIED,
 		nil,
 		&wfId,
@@ -1846,12 +1755,12 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 	}
 
 	// check permission
-	_, err = h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return &modelPB.WatchModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(ctx, modelID)
+	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
 		return &modelPB.WatchModelResponse{}, err

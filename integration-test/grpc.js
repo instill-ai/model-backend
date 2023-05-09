@@ -50,7 +50,6 @@ export default () => {
 
     // Private API
     if (!constant.apiGatewayMode) {
-        queryModelPrivate.GetModel()
         queryModelPrivate.ListModels()
         queryModelPrivate.LookUpModel()
     }

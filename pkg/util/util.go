@@ -815,8 +815,8 @@ func GetSupportedBatchSize(task datamodel.ModelTask) int {
 	return allowedMaxBatchSize
 }
 
-func ConvertModelToResourceName(modelName string) string {
-	resourceName := fmt.Sprintf("resources/%s/types/models", modelName)
+func ConvertModelToResourcePermalink(modelUID string) string {
+	resourcePermalink := fmt.Sprintf("resources/%s/types/models", modelUID)
 
-	return resourceName
+	return resourcePermalink
 }

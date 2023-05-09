@@ -49,10 +49,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -317,10 +317,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -586,10 +586,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -994,10 +994,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -1402,10 +1402,10 @@ export function InferGitHubModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)

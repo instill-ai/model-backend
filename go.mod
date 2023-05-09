@@ -9,12 +9,13 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/gofrs/uuid v4.3.1+incompatible
+	github.com/gogo/status v1.1.1
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.14.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20230413171411-babae2994c35
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20230509000136-ebf3c80b7cd4
 	github.com/instill-ai/usage-client v0.2.3-alpha
 	github.com/instill-ai/x v0.3.0-alpha
 	github.com/knadh/koanf v1.4.4
@@ -48,7 +49,6 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/gogo/status v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
