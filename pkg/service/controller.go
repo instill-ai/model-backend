@@ -3,16 +3,17 @@ package service
 import (
 	"context"
 
+	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/util"
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-func (s *service) GetResourceState(ctx context.Context, modelID string) (*modelPB.Model_State, error) {
-	resourceName := util.ConvertModelToResourceName(modelID)
+func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
+	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
 
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
-		Name: resourceName,
+		ResourcePermalink: resourcePermalink,
 	})
 
 	if err != nil {
@@ -22,12 +23,12 @@ func (s *service) GetResourceState(ctx context.Context, modelID string) (*modelP
 	return resp.Resource.GetModelState().Enum(), nil
 }
 
-func (s *service) UpdateResourceState(ctx context.Context, modelID string, state modelPB.Model_State, progress *int32, workflowId *string) error {
-	resourceName := util.ConvertModelToResourceName(modelID)
+func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowId *string) error {
+	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
 
 	if _, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
-			Name: resourceName,
+			ResourcePermalink: resourcePermalink,
 			State: &controllerPB.Resource_ModelState{
 				ModelState: state,
 			},
@@ -41,11 +42,11 @@ func (s *service) UpdateResourceState(ctx context.Context, modelID string, state
 	return nil
 }
 
-func (s *service) DeleteResourceState(ctx context.Context, modelID string) error {
-	resourceName := util.ConvertModelToResourceName(modelID)
+func (s *service) DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error {
+	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
 
 	if _, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
-		Name: resourceName,
+		ResourcePermalink: resourcePermalink,
 	}); err != nil {
 		return err
 	}

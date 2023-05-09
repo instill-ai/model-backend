@@ -86,41 +86,17 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *PrivateHandler) GetModelAdmin(ctx context.Context, req *modelPB.GetModelAdminRequest) (*modelPB.GetModelAdminResponse, error) {
-	id, err := resource.GetID(req.Name)
-	if err != nil {
-		return &modelPB.GetModelAdminResponse{}, err
-	}
-	dbModel, err := h.service.GetModelByIdAdmin(ctx, id, req.GetView())
-	if err != nil {
-		return &modelPB.GetModelAdminResponse{}, err
-	}
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
-	if err != nil {
-		return &modelPB.GetModelAdminResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.GetModelAdminResponse{}, err
-	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner))
-	return &modelPB.GetModelAdminResponse{Model: pbModel}, err
-}
-
 func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModelRequest) (*modelPB.CheckModelResponse, error) {
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	view := modelPB.View_VIEW_BASIC
+	sUID, err := resource.GetID(req.ModelPermalink)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}
-	ownerPermalink := "users/" + owner.GetUid()
-
-	modelID, err := resource.GetModelID(req.Name)
+	uid, err := uuid.FromString(sUID)
 	if err != nil {
-		return &modelPB.CheckModelResponse{}, err
+		return &modelPB.CheckModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByUidAdmin(ctx, uid, view)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}

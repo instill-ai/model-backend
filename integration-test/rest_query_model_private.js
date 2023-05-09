@@ -20,112 +20,6 @@ import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/local"
 
-export function GetModelAdmin() {
-  // Model Backend API: Get model info by admin
-  {
-    group("Model Backend API: Get model info by admin", function () {
-      let fd_cls = new FormData();
-      let model_id = randomString(10)
-      let model_description = randomString(20)
-      fd_cls.append("id", model_id);
-      fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", model_def_name);
-      fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
-      })
-      check(createClsModelRes, {
-        "POST /v1alpha/models/multipart task cls response status": (r) =>
-          r.status === 201,
-        "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
-          r.json().operation.name !== undefined,
-      });
-
-      // Check model creation finished
-      let currentTime = new Date().getTime();
-      let timeoutTime = new Date().getTime() + 120000;
-      while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        if (res.json().state === "STATE_OFFLINE") {
-          break
-        }
-        sleep(1)
-        currentTime = new Date().getTime();
-      }
-      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${model_id}`, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`GET /v1alpha/admin/models/${model_id} task cls response status`]: (r) =>
-          r.status === 200,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.uid`]: (r) =>
-          r.json().model.uid !== undefined,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.id`]: (r) =>
-          r.json().model.id === model_id,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.description`]: (r) =>
-          r.json().model.description === model_description,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.task`]: (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.configuration`]: (r) =>
-          r.json().model.configuration === null,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.visibility`]: (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
-      });
-
-      check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${model_id}?view=VIEW_FULL`, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`GET /v1alpha/admin/models/${model_id} task cls response status`]: (r) =>
-          r.status === 200,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.uid`]: (r) =>
-          r.json().model.uid !== undefined,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.id`]: (r) =>
-          r.json().model.id === model_id,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.description`]: (r) =>
-          r.json().model.description === model_description,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.task`]: (r) =>
-          r.json().model.task === "TASK_CLASSIFICATION",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.state`]: (r) =>
-          r.json().model.state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.configuration.content`]: (r) =>
-          r.json().model.configuration.content === "dummy-cls-model.zip",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.visibility`]: (r) =>
-          r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${model_id} task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
-      });
-
-      // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
-        "DELETE clean up response status": (r) =>
-          r.status === 204
-      });
-    });
-  }
-}
 
 export function ListModelsAdmin() {
   // Model Backend API: Get model list by admin
@@ -153,10 +47,10 @@ export function ListModelsAdmin() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_1}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -185,10 +79,10 @@ export function ListModelsAdmin() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_2}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().operation.done === true) {
           break
         }
         sleep(1)
@@ -362,10 +256,10 @@ export function LookupModelAdmin() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let res = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
-      check(res, {
+      check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 201,
         "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
@@ -376,17 +270,17 @@ export function LookupModelAdmin() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let r = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (r.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
 
-      res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+      let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
         headers: genHeader(`application/json`),
       })
       let modelUid = res.json().model.uid
