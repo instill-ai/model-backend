@@ -226,6 +226,7 @@ func (s *service) ModelInferTestMode(ctx context.Context, owner string, modelUID
 }
 
 func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
+	logger, _ := logger.GetZapLogger()
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
 		return nil, fmt.Errorf("triton model not found")
@@ -234,6 +235,7 @@ func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.
 	ensembleModelName := ensembleModel.Name
 	ensembleModelVersion := ensembleModel.Version
 	modelReadyResponse := s.triton.ModelReadyRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	logger.Debug(fmt.Sprintf("modelReadyResponse: %v", modelReadyResponse))
 
 	state := modelPB.Model_STATE_UNSPECIFIED
 	if modelReadyResponse == nil {
