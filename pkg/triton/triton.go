@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
 
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
@@ -123,6 +124,7 @@ func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 }
 
 func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inferenceserver.ModelReadyResponse {
+	logger, _ := logger.GetZapLogger()
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -134,8 +136,9 @@ func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inf
 	}
 	// Submit modelReady request to server
 	modelReadyResponse, err := ts.tritonClient.ModelReady(ctx, &modelReadyRequest)
+	logger.Debug(fmt.Sprintf("ModelReadyResponse: %v %v", modelReadyResponse, err))
 	if err != nil {
-		log.Printf("Couldn't get server model status: %v", err)
+		logger.Error(err.Error())
 	}
 	return modelReadyResponse
 }
