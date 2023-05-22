@@ -680,7 +680,7 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 		return err
 	}
 
-	filter := fmt.Sprintf("recipe.models:\"models/%s\"", modelInDB.UID)
+	filter := fmt.Sprintf("recipe.components.resource_name:\"models/%s\"", modelInDB.UID)
 
 	pipeResp, err := s.pipelinePublicServiceClient.ListPipelines(ctx, &pipelinePB.ListPipelinesRequest{
 		Filter: &filter,
