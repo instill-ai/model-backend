@@ -681,7 +681,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
-				span.SetStatus(1, err.Error())
+				span.SetStatus(1, "README.md contains unsupported task")
 				return status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
 		}
@@ -777,7 +777,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.Repository == "" {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Invalid GitHub URL")
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 	var githubInfo *util.GitHubInfo
@@ -790,11 +790,11 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	} else {
 		githubInfo, err = util.GetGitHubRepoInfo(modelConfig.Repository)
 		if err != nil {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "Invalid GitHub Info")
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
 		}
 		if len(githubInfo.Tags) == 0 {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "There is no tag in GitHub repository")
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 		}
 	}
@@ -877,7 +877,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(err.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -895,7 +895,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				logger.Error(err.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
@@ -914,7 +914,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
-				span.SetStatus(1, err.Error())
+				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
 				githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
@@ -936,7 +936,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -955,7 +955,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -975,7 +975,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		for _, tag := range githubInfo.Tags {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1028,7 +1028,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.RepoId == "" {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Invalid model ID")
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
 	modelConfig.HtmlUrl = "https://huggingface.co/" + modelConfig.RepoId
@@ -1097,7 +1097,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		_ = os.RemoveAll(modelDir)
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	_ = os.RemoveAll(configTmpDir)
@@ -1118,7 +1118,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -1136,7 +1136,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 				logger.Error(e.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if modelMeta.Task != "" {
@@ -1156,7 +1156,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, modelConfig.Tag)
-				span.SetStatus(1, err.Error())
+				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 		} else {
@@ -1188,7 +1188,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1207,7 +1207,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1225,7 +1225,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1278,7 +1278,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.Url == "" {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Invalid GitHub URL")
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 
@@ -1329,7 +1329,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			}
 			_ = os.RemoveAll(modelSrcDir)
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		util.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
@@ -1350,7 +1350,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(err.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -1368,7 +1368,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				logger.Error(e.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
@@ -1387,7 +1387,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-				span.SetStatus(1, err.Error())
+				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
 				artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
@@ -1410,7 +1410,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1430,7 +1430,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1448,7 +1448,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1520,12 +1520,12 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	}
 	_, err = h.service.GetModelById(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Model already existed")
 		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
 
 	if req.Model.Configuration == nil {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Missing Configuration")
 		return resp, status.Errorf(codes.InvalidArgument, "Missing Configuration")
 	}
 
@@ -1544,11 +1544,11 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	// validate model configuration
 	rs := &jsonschema.Schema{}
 	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, "Could not get model definition")
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
 	}
 	if err := datamodel.ValidateJSONSchema(rs, req.Model.GetConfiguration(), true); err != nil {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 	}
 
@@ -1560,7 +1560,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	case "huggingface":
 		return createHuggingFaceModel(h, ctx, req, ownerPermalink, &modelDefinition)
 	default:
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 	}
 
@@ -2022,7 +2022,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.DeployModelResponse{}, st.Err()
 	}
 
@@ -2033,7 +2033,6 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		nil,
 		&wfId,
 	); err != nil {
-		
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
@@ -2091,7 +2090,8 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	}
 
 	if *state != modelPB.Model_STATE_ONLINE {
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
+			state))
 		return &modelPB.UndeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
 				state))
@@ -2244,7 +2244,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2274,7 +2274,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return st.Err()
 	}
 
@@ -2346,7 +2346,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2376,7 +2376,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return st.Err()
 	}
 
@@ -2472,7 +2472,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2501,7 +2501,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
@@ -2606,7 +2606,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, err.Error())
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2636,7 +2636,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Err().Error())
 		return &modelPB.TestModelResponse{}, st.Err()
 	}
 
@@ -2668,7 +2668,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	if !strings.Contains(contentType, "multipart/form-data") {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
-		span.SetStatus(1,"")
+		span.SetStatus(1, "")
 		return
 	}
 
@@ -2709,7 +2709,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	modelInDB, err := s.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
-		span.SetStatus(1,"The model not found in server")
+		span.SetStatus(1, "The model not found in server")
 		return
 	}
 
@@ -2812,7 +2812,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		}
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 500, st.Message(), string(obj))
-		span.SetStatus(1, err.Error())
+		span.SetStatus(1, st.Message())
 		return
 	}
 
