@@ -1798,7 +1798,7 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 		return nil, err
 	}
 
-	deleteModel, err := h.service.GetModelById(ctx, owner.Id, id, modelPB.View_VIEW_BASIC)
+	deleteModel, err := h.service.GetModelById(ctx, ownerPermalink, id, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteModelResponse{}, err
