@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -37,6 +38,10 @@ func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error
 
 func main() {
 
+	if err := config.Init(); err != nil {
+		log.Fatal(err.Error())
+	}
+
 	// setup tracing and metrics
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -59,10 +64,6 @@ func main() {
 	defer span.End()
 
 	logger, _ := logger.GetZapLogger(ctx)
-
-	if err := config.Init(); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	db := database.GetConnection()
 	defer database.Close(db)

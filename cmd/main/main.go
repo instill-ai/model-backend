@@ -85,6 +85,10 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 
 func main() {
 
+	if err := config.Init(); err != nil {
+		log.Fatal(err.Error())
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -103,10 +107,6 @@ func main() {
 	ctx, span := otel.Tracer("main-tracer").Start(ctx,
 		"main",
 	)
-
-	if err := config.Init(); err != nil {
-		log.Fatal(err.Error())
-	}
 
 	logger, _ := logger.GetZapLogger(ctx)
 	defer func() {

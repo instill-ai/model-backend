@@ -1491,8 +1491,8 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	resp := &modelPB.CreateModelResponse{}
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
-		return resp, err
 		span.SetStatus(1, err.Error())
+		return resp, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 

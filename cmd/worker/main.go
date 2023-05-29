@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/sdk/client"
@@ -23,6 +24,10 @@ import (
 
 func main() {
 
+	if err := config.Init(); err != nil {
+		log.Fatal(err.Error())
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -41,17 +46,12 @@ func main() {
 	ctx, span := otel.Tracer("worker-tracer").Start(ctx,
 		"main",
 	)
-	defer span.End()
 
 	logger, _ := logger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
 	}()
-
-	if err := config.Init(); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	db := database.GetConnection()
 	defer database.Close(db)
@@ -102,6 +102,7 @@ func main() {
 	w.RegisterActivity(cw.UnDeployModelActivity)
 	w.RegisterWorkflow(cw.CreateModelWorkflow)
 
+	span.End()
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
 	}
