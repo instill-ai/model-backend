@@ -126,6 +126,7 @@ type TemporalConfig struct {
 
 // LogConfig related to logging
 type LogConfig struct {
+	External      bool `koanf:"external"`
 	OtelCollector struct {
 		Host string `koanf:"host"`
 		Port string `koanf:"port"`

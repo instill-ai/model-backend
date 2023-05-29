@@ -72,6 +72,7 @@ initmodel:
   enabled: false
   path: https://raw.githubusercontent.com/instill-ai/vdp/main/model-hub/model_hub_cpu.json
 log:
+  external: false
   otelcollector:
     host: otel-collector
     port: 8095

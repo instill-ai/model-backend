@@ -27,7 +27,8 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.39.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.16.0
-	go.opentelemetry.io/otel/metric v1.16.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.39.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.16.0
 	go.opentelemetry.io/otel/sdk v1.16.0
 	go.opentelemetry.io/otel/sdk/metric v0.39.0
 	go.temporal.io/api v1.18.2-0.20230324225508-f2c7ab685b44
@@ -44,6 +45,7 @@ require (
 )
 
 require (
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e // indirect
 )
