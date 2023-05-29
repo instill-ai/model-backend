@@ -21,8 +21,8 @@ type PrivateHandler struct {
 	triton  triton.Triton
 }
 
-func NewPrivateHandler(s service.Service, t triton.Triton) modelPB.ModelPrivateServiceServer {
-	datamodel.InitJSONSchema()
+func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) modelPB.ModelPrivateServiceServer {
+	datamodel.InitJSONSchema(ctx)
 	return &PrivateHandler{
 		service: s,
 		triton:  t,
@@ -47,7 +47,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
 
-		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner)))
+		pbModels = append(pbModels, DBModelToPBModel(ctx, &modelDef, &dbModel, GenOwnerPermalink(owner)))
 	}
 
 	resp := modelPB.ListModelsAdminResponse{
@@ -82,7 +82,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, GenOwnerPermalink(owner))
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, GenOwnerPermalink(owner))
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 

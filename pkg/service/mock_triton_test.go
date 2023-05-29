@@ -5,6 +5,7 @@
 package service_test
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -147,17 +148,17 @@ func (mr *MockTritonMockRecorder) ModelMetadataRequest(arg0, arg1 interface{}) *
 }
 
 // ModelReadyRequest mocks base method.
-func (m *MockTriton) ModelReadyRequest(arg0, arg1 string) *inferenceserver.ModelReadyResponse {
+func (m *MockTriton) ModelReadyRequest(arg0 context.Context, arg1, arg2 string) *inferenceserver.ModelReadyResponse {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ModelReadyRequest", arg0, arg1)
+	ret := m.ctrl.Call(m, "ModelReadyRequest", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*inferenceserver.ModelReadyResponse)
 	return ret0
 }
 
 // ModelReadyRequest indicates an expected call of ModelReadyRequest.
-func (mr *MockTritonMockRecorder) ModelReadyRequest(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockTritonMockRecorder) ModelReadyRequest(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelReadyRequest", reflect.TypeOf((*MockTriton)(nil).ModelReadyRequest), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelReadyRequest", reflect.TypeOf((*MockTriton)(nil).ModelReadyRequest), arg0, arg1, arg2)
 }
 
 // PostProcess mocks base method.

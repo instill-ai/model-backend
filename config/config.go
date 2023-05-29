@@ -124,6 +124,14 @@ type TemporalConfig struct {
 	ServerName string `koanf:"servername"`
 }
 
+// LogConfig related to logging
+type LogConfig struct {
+	OtelCollector struct {
+		Host string `koanf:"host"`
+		Port string `koanf:"port"`
+	}
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig          `koanf:"server"`
@@ -137,6 +145,7 @@ type AppConfig struct {
 	Temporal               TemporalConfig        `koanf:"temporal"`
 	Controller             ControllerConfig      `koanf:"controller"`
 	InitModel              InitModelConfig       `koanf:"initmodel"`
+	Log                    LogConfig             `koanf:"log"`
 }
 
 // Config - Global variable to export

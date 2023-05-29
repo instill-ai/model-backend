@@ -15,6 +15,8 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/client"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -40,6 +42,7 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -53,6 +56,23 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 			AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "HEAD"},
 		}).Handler(
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if len(r.Header["X-B3-Traceid"]) > 0 {
+					traceID, _ := trace.TraceIDFromHex(r.Header["X-B3-Traceid"][0])
+					spanID, _ := trace.SpanIDFromHex(r.Header["X-B3-Spanid"][0])
+					var traceFlags trace.TraceFlags
+					if r.Header["X-B3-Sampled"][0] == "1" {
+						traceFlags = trace.FlagsSampled
+					}
+
+					spanContext := trace.NewSpanContext(trace.SpanContextConfig{
+						TraceID:    traceID,
+						SpanID:     spanID,
+						TraceFlags: traceFlags,
+					})
+
+					ctx := trace.ContextWithSpanContext(r.Context(), spanContext)
+					r = r.WithContext(ctx)
+				}
 				if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
 					grpcServer.ServeHTTP(w, r)
 				} else {
@@ -64,11 +84,31 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 }
 
 func main() {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
+		panic(err)
+	} else {
+		defer tp.Shutdown(ctx)
+	}
+
+	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend"); err != nil {
+		panic(err)
+	} else {
+		defer mp.Shutdown(ctx)
+	}
+
+	ctx, span := otel.Tracer("main-tracer").Start(ctx,
+		"main",
+	)
+
 	if err := config.Init(); err != nil {
 		log.Fatal(err.Error())
 	}
 
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
@@ -128,16 +168,16 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
-	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient()
+	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient(ctx)
 	defer pipelinePublicServiceClientConn.Close()
 
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
 
 	var temporalClientOptions client.Options
@@ -175,14 +215,11 @@ func main() {
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
-		handler.NewPublicHandler(service, triton))
+		handler.NewPublicHandler(ctx, service, triton))
 
 	modelPB.RegisterModelPrivateServiceServer(
 		privateGrpcS,
-		handler.NewPrivateHandler(service, triton))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+		handler.NewPrivateHandler(ctx, service, triton))
 
 	privateGwS := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(middleware.HttpResponseModifier),
@@ -222,7 +259,7 @@ func main() {
 	// Start usage reporter
 	var usg usage.Usage
 	if !config.Config.Server.DisableUsage {
-		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient()
+		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient(ctx)
 		defer usageServiceClientConn.Close()
 		logger.Info("try to start usage reporter")
 		go func() {
@@ -291,6 +328,7 @@ func main() {
 			}
 		}()
 	}
+	span.End()
 	logger.Info("gRPC server is running.")
 
 	// kill (no param) default send syscall.SIGTERM

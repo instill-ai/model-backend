@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"image"
@@ -20,9 +21,9 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-func parseImageFromURL(url string) (*image.Image, error) {
+func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {
 
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 
 	response, err := http.Get(url)
 	if err != nil {
@@ -55,9 +56,9 @@ func parseImageFromURL(url string) (*image.Image, error) {
 	return &img, nil
 }
 
-func parseImageFromBase64(encoded string) (*image.Image, error) {
+func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, error) {
 
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -81,8 +82,8 @@ func parseImageFromBase64(encoded string) (*image.Image, error) {
 	return &img, nil
 }
 
-func parseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (inputBytes [][]byte, err error) {
-	logger, _ := logger.GetZapLogger()
+func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerModelRequest) (inputBytes [][]byte, err error) {
+	logger, _ := logger.GetZapLogger(ctx)
 
 	for idx, taskInput := range req.TaskInputs {
 		var imageInput triton.ImageInput
@@ -127,13 +128,13 @@ func parseImageRequestInputsToBytes(req *modelPB.TriggerModelRequest) (inputByte
 
 		if imageInput.ImgUrl != "" || imageInput.ImgBase64 != "" {
 			if len(imageInput.ImgUrl) > 0 {
-				img, err = parseImageFromURL(imageInput.ImgUrl)
+				img, err = parseImageFromURL(ctx, imageInput.ImgUrl)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse image %v from url. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse image %v from url", idx)
 				}
 			} else if len(imageInput.ImgBase64) > 0 {
-				img, err = parseImageFromBase64(imageInput.ImgBase64)
+				img, err = parseImageFromBase64(ctx, imageInput.ImgBase64)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse base64 image %v. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse base64 image %v", idx)
@@ -231,7 +232,7 @@ func parseTexGenerationRequestInputs(req *modelPB.TriggerModelRequest) (textGene
 
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
 
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(req.Context())
 
 	inputs := req.MultipartForm.File["file"]
 	for _, content := range inputs {

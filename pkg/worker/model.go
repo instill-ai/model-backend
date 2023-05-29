@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/config"
@@ -22,6 +25,8 @@ type ModelParams struct {
 	Model datamodel.Model
 	Owner string
 }
+
+var tracer = otel.Tracer("model-backend.temporal.tracer")
 
 func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) error {
 	logger := workflow.GetLogger(ctx)
@@ -43,6 +48,14 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) e
 }
 
 func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) error {
+
+	ctx, span := tracer.Start(ctx, "DeployModelActivity",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger := activity.GetLogger(ctx)
+
+	logger.Info("DeployModelActivity started")
 
 	dbModel, err := w.repository.GetModelByUid(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -183,6 +196,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
+	logger.Info("DeployModelActivity completed")
+
 	return nil
 }
 
@@ -205,6 +220,15 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 }
 
 func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) error {
+
+	ctx, span := tracer.Start(ctx, "UnDeployModelActivity",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger := activity.GetLogger(ctx)
+
+	logger.Info("UnDeployModelActivity started")
+
 	var tritonModels []datamodel.TritonModel
 	var err error
 
@@ -244,6 +268,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 	if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
 		return err
 	}
+
+	logger.Info("UnDeployModelActivity completed")
 
 	return nil
 }

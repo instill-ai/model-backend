@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -18,8 +19,8 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
-func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
-	logger, _ := logger.GetZapLogger()
+func PBModelToDBModel(ctx context.Context, owner string, pbModel *modelPB.Model) *datamodel.Model {
+	logger, _ := logger.GetZapLogger(ctx)
 
 	return &datamodel.Model{
 		BaseDynamic: datamodel.BaseDynamic{
@@ -55,8 +56,8 @@ func PBModelToDBModel(owner string, pbModel *modelPB.Model) *datamodel.Model {
 	}
 }
 
-func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, ownerName string) *modelPB.Model {
-	logger, _ := logger.GetZapLogger()
+func DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, ownerName string) *modelPB.Model {
+	logger, _ := logger.GetZapLogger(ctx)
 
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
@@ -108,8 +109,8 @@ func DBModelToPBModel(modelDef *datamodel.ModelDefinition, dbModel *datamodel.Mo
 	return &pbModel
 }
 
-func DBModelDefinitionToPBModelDefinition(dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
-	logger, _ := logger.GetZapLogger()
+func DBModelDefinitionToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
+	logger, _ := logger.GetZapLogger(ctx)
 
 	pbModelDefinition := modelPB.ModelDefinition{
 		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),

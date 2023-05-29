@@ -21,6 +21,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,14 +53,16 @@ var requiredFields = []string{"Id"}
 // outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
 var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
+var tracer = otel.Tracer("model-backend.public-handler.tracer")
+
 type PublicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
 	triton  triton.Triton
 }
 
-func NewPublicHandler(s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
-	datamodel.InitJSONSchema()
+func NewPublicHandler(ctx context.Context, s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
+	datamodel.InitJSONSchema(ctx)
 	return &PublicHandler{
 		service: s,
 		triton:  t,
@@ -337,12 +341,18 @@ func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequ
 
 // HandleCreateModelByMultiPartFormData is a custom handler
 func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(req.Context(), "HandleCreateModelByMultiPartFormData",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	contentType := req.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "multipart/form-data") {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
+		span.SetStatus(1, "")
 		return
 	}
 
@@ -352,9 +362,11 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		switch sta.Code() {
 		case codes.NotFound:
 			makeJSONResponse(w, 404, "Not found", "User not found")
+			span.SetStatus(1, "User not found")
 			return
 		default:
 			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			span.SetStatus(1, "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
 			return
 		}
 	}
@@ -363,17 +375,20 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	modelID := req.FormValue("id")
 	if modelID == "" {
 		makeJSONResponse(w, 400, "Missing parameter", "Model Id need to be specified")
+		span.SetStatus(1, "Model Id need to be specified")
 		return
 	}
 
 	modelDefinitionName := req.FormValue("model_definition")
 	if modelDefinitionName == "" {
 		makeJSONResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
+		span.SetStatus(1, "modelDefinitionName need to be specified")
 		return
 	}
 	modelDefinitionID, err := resource.GetDefinitionID(modelDefinitionName)
 	if err != nil {
 		makeJSONResponse(w, 400, "Invalid parameter", err.Error())
+		span.SetStatus(1, err.Error())
 		return
 	}
 
@@ -382,6 +397,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if viz != "" {
 		if util.Visibility[viz] == modelPB.Model_VISIBILITY_UNSPECIFIED {
 			makeJSONResponse(w, 400, "Invalid parameter", "Visibility is invalid")
+			span.SetStatus(1, "Visibility is invalid")
 			return
 		} else {
 			visibility = util.Visibility[viz]
@@ -393,11 +409,13 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
 		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		return
 	}
 	file, fileHeader, err := req.FormFile("content")
 	if err != nil {
 		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		return
 	}
 	defer file.Close()
@@ -414,6 +432,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	}
 	if err != io.EOF {
 		makeJSONResponse(w, 400, "File Error", "Error reading input file")
+		span.SetStatus(1, "Error reading input file")
 		return
 	}
 	rdid, _ := uuid.NewV4()
@@ -421,11 +440,13 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	fp, err := os.Create(tmpFile)
 	if err != nil {
 		makeJSONResponse(w, 400, "File Error", "Error reading input file")
+		span.SetStatus(1, "Error reading input file")
 		return
 	}
 	err = util.WriteToFp(fp, buf.Bytes())
 	if err != nil {
 		makeJSONResponse(w, 400, "File Error", "Error reading input file")
+		span.SetStatus(1, "Error reading input file")
 		return
 	}
 
@@ -433,11 +454,13 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	localModelDefinition, err := s.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
+		span.SetStatus(1, "ModelDefinitionId not found")
 		return
 	}
 	rs := &jsonschema.Schema{}
 	if err := json.Unmarshal([]byte(localModelDefinition.ModelSpec.String()), rs); err != nil {
 		makeJSONResponse(w, 500, "Add Model Error", "Could not get model definition")
+		span.SetStatus(1, "Could not get model definition")
 		return
 	}
 	modelConfiguration := datamodel.LocalModelConfiguration{
@@ -446,6 +469,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
 		makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 		return
 	}
 	modelConfiguration.Tag = "latest" // Set after validation. Because the model definition do not contain tag.
@@ -465,14 +489,16 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	}
 
 	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&localModelDefinition, &uploadedModel, ownerPermalink), true); err != nil {
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(ctx, &localModelDefinition, &uploadedModel, ownerPermalink), true); err != nil {
 		makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model definition is invalid %v", err.Error()))
+		span.SetStatus(1, fmt.Sprintf("Model definition is invalid %v", err.Error()))
 		return
 	}
 
 	_, err = s.GetModelById(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
+		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		return
 	}
 
@@ -481,6 +507,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 400, "Add Model Error", err.Error())
+		span.SetStatus(1, err.Error())
 		return
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -488,6 +515,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 			makeJSONResponse(w, 400, "Add Model Error", err.Error())
+			span.SetStatus(1, err.Error())
 			return
 		}
 		if modelMeta.Task == "" {
@@ -498,6 +526,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			} else {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 				makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
+				span.SetStatus(1, "README.md contains unsupported task")
 				return
 			}
 		}
@@ -523,6 +552,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			obj, _ := json.Marshal(st.Details())
 			makeJSONResponse(w, 400, st.Message(), string(obj))
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+			span.SetStatus(1, err.Error())
 			return
 		}
 	}
@@ -545,6 +575,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 400, st.Message(), string(obj))
+		span.SetStatus(1, string(obj))
 		return
 	}
 
@@ -552,6 +583,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
+		span.SetStatus(1, err.Error())
 		return
 	}
 
@@ -569,39 +601,59 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
+		span.SetStatus(1, err.Error())
 		return
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		uploadedModel,
+		"HandleCreateModelByMultiPartFormData",
+		false,
+		"",
+	)))
+
 	_, _ = w.Write(b)
 
 }
 
 // AddModel - upload a model to the model server
 func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
-	logger, _ := logger.GetZapLogger()
+	ctx, span := tracer.Start(stream.Context(), "CreateModelBinaryFileUpload",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	tmpFile, uploadedModel, modelDefID, err := util.SaveFile(stream)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	_, err = h.service.GetModelById(stream.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
+		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		return status.Errorf(codes.AlreadyExists, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 	}
 
 	modelDef, err := h.service.GetModelDefinition(stream.Context(), modelDefID)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 	uploadedModel.ModelDefinitionUid = modelDef.UID
 
 	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(&modelDef, uploadedModel, ownerPermalink), true); err != nil {
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, DBModelToPBModel(ctx, &modelDef, uploadedModel, ownerPermalink), true); err != nil {
+		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
@@ -612,12 +664,14 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.Internal, err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+			span.SetStatus(1, err.Error())
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		if modelMeta.Task == "" {
@@ -627,6 +681,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+				span.SetStatus(1, err.Error())
 				return status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
 		}
@@ -648,6 +703,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		span.SetStatus(1, err.Error())
 		return st.Err()
 	}
 
@@ -667,12 +723,14 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		span.SetStatus(1, st.String())
 		return st.Err()
 	}
 
 	wfId, err := h.service.CreateModelAsync(stream.Context(), ownerPermalink, uploadedModel)
 	if err != nil {
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		span.SetStatus(1, err.Error())
 		return err
 	}
 
@@ -684,24 +742,42 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		},
 	}})
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.Internal, err.Error())
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		*uploadedModel,
+		"CreateModelBinaryFileUpload",
+		false,
+		"",
+	)))
 
 	return
 }
 
 func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "createGitHubModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	var modelConfig datamodel.GitHubModelConfiguration
 	b, err := req.Model.Configuration.MarshalJSON()
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.Repository == "" {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 	var githubInfo *util.GitHubInfo
@@ -714,9 +790,11 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	} else {
 		githubInfo, err = util.GetGitHubRepoInfo(modelConfig.Repository)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
 		}
 		if len(githubInfo.Tags) == 0 {
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 		}
 	}
@@ -759,6 +837,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
@@ -776,6 +855,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				logger.Error(err.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 	}
@@ -797,6 +877,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(err.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -814,6 +895,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				logger.Error(err.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
@@ -832,6 +914,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+				span.SetStatus(1, err.Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
 				githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
@@ -853,6 +936,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -871,6 +955,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -890,13 +975,30 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		for _, tag := range githubInfo.Tags {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*user,
+		githubModel,
+		"createGitHubModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
@@ -908,17 +1010,25 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 }
 
 func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "createHuggingFaceModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	var modelConfig datamodel.HuggingFaceModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.RepoId == "" {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
 	modelConfig.HtmlUrl = "https://huggingface.co/" + modelConfig.RepoId
@@ -951,6 +1061,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
 		if err := cmd.Run(); err != nil {
 			_ = os.RemoveAll(configTmpDir)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
@@ -967,6 +1078,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 				logger.Error(e.Error())
 			}
 			_ = os.RemoveAll(configTmpDir)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 	}
@@ -985,6 +1097,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		_ = os.RemoveAll(modelDir)
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	_ = os.RemoveAll(configTmpDir)
@@ -1005,6 +1118,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -1022,6 +1136,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 				logger.Error(e.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if modelMeta.Task != "" {
@@ -1041,6 +1156,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, modelConfig.Tag)
+				span.SetStatus(1, err.Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			}
 		} else {
@@ -1072,6 +1188,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1090,6 +1207,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1107,13 +1225,30 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*user,
+		huggingfaceModel,
+		"createHuggingFaceModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
@@ -1125,17 +1260,25 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 }
 
 func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "createArtiVCModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	var modelConfig datamodel.ArtiVCModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if modelConfig.Url == "" {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 
@@ -1167,6 +1310,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
@@ -1185,9 +1329,10 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			}
 			_ = os.RemoveAll(modelSrcDir)
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		util.AddMissingTritonModelFolder(modelSrcDir) // large files not pull then need to create triton model folder
+		util.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
 	}
 
 	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &artivcModel)
@@ -1205,6 +1350,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(err.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
@@ -1222,6 +1368,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 				logger.Error(e.Error())
 			}
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
@@ -1240,6 +1387,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 					logger.Error(err.Error())
 				}
 				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+				span.SetStatus(1, err.Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
 				artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
@@ -1262,6 +1410,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1281,6 +1430,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
@@ -1298,13 +1448,30 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 			logger.Error(e.Error())
 		}
 		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*user,
+		artivcModel,
+		"createArtiVCModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
@@ -1316,56 +1483,72 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 }
 
 func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateModelRequest) (*modelPB.CreateModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "CreateModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	resp := &modelPB.CreateModelResponse{}
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
 		return resp, err
+		span.SetStatus(1, err.Error())
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
 	if err := checkfield.CheckCreateOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	// Return error if REQUIRED fields are not provided in the requested payload model resource
 	if err := checkfield.CheckRequiredFields(req.Model, requiredFields); err != nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	// Return error if resource ID does not follow RFC-1034
 	if err := checkfield.CheckResourceID(req.Model.GetId()); err != nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	// Validate ModelDefinition JSON Schema
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, req.Model, false); err != nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	_, err = h.service.GetModelById(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
 
 	if req.Model.Configuration == nil {
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, "Missing Configuration")
 	}
 
 	modelDefinitionID, err := resource.GetDefinitionID(req.Model.ModelDefinition)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return resp, err
 	}
 
 	modelDefinition, err := h.service.GetModelDefinition(ctx, modelDefinitionID)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model configuration
 	rs := &jsonschema.Schema{}
 	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Could not get model definition")
 	}
 	if err := datamodel.ValidateJSONSchema(rs, req.Model.GetConfiguration(), true); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 	}
 
@@ -1377,20 +1560,30 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	case "huggingface":
 		return createHuggingFaceModel(h, ctx, req, ownerPermalink, &modelDefinition)
 	default:
+		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 	}
 
 }
 
 func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "ListModels",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	dbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, ownerPermalink, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
 	}
 
@@ -1398,9 +1591,18 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	for _, dbModel := range dbModels {
 		modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.ListModelsResponse{}, err
 		}
-		pbModels = append(pbModels, DBModelToPBModel(&modelDef, &dbModel, ownerPermalink))
+		pbModels = append(pbModels, DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink))
+		logger.Info(string(util.ConstructAuditLog(
+			span,
+			*owner,
+			dbModel,
+			"ListModels",
+			false,
+			"",
+		)))
 	}
 
 	resp := modelPB.ListModelsResponse{
@@ -1413,68 +1615,121 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 }
 
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "LookUpModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	sUID, err := resource.GetID(req.Permalink)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
 	uid, err := uuid.FromString(sUID)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 	dbModel, err := h.service.GetModelByUid(ctx, ownerPermalink, uid, req.GetView())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"LookUpModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.LookUpModelResponse{Model: pbModel}, nil
 }
 
 func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "GetModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, req.GetView())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"GetModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.GetModelResponse{Model: pbModel}, err
 }
 
 func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelRequest) (*modelPB.UpdateModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "UpdateModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Model.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	updateModel := datamodel.Model{
@@ -1494,127 +1749,236 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 	}
 	dbModel, err = h.service.UpdateModel(ctx, dbModel.UID, &updateModel)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"UpdateModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.UpdateModelResponse{Model: pbModel}, err
 }
 
 func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "DeleteModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteModelResponse{}, err
 	}
 
 	// Manually set the custom header to have a StatusNoContent http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusNoContent))); err != nil {
+		span.SetStatus(1, err.Error())
 		return nil, err
 	}
+
+	deleteModel, err := h.service.GetModelById(ctx, owner.Id, id, modelPB.View_VIEW_BASIC)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.DeleteModelResponse{}, err
+	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		deleteModel,
+		"UpdateModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(ctx, ownerPermalink, id)
 }
 
 func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "RenameModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
 	}
 	dbModel, err := h.service.RenameModel(ctx, ownerPermalink, id, req.NewModelId)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"RenameModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.RenameModelResponse{Model: pbModel}, nil
 }
 
 func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishModelRequest) (*modelPB.PublishModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "PublishModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
 	}
 	dbModel, err := h.service.PublishModel(ctx, ownerPermalink, id)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"PublishModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.PublishModelResponse{Model: pbModel}, nil
 }
 
 func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishModelRequest) (*modelPB.UnpublishModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "UnpublishModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
 	id, err := resource.GetID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
 	}
 	dbModel, err := h.service.UnpublishModel(ctx, ownerPermalink, id)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
 	}
 	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	pbModel := DBModelToPBModel(&modelDef, &dbModel, ownerPermalink)
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"UnpublishModel",
+		false,
+		"",
+	)))
+
+	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
 	return &modelPB.UnpublishModelResponse{Model: pbModel}, nil
 }
 
 func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployModelRequest) (*modelPB.DeployModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "DeployModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
 
@@ -1625,6 +1989,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
 
@@ -1657,7 +2022,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		if e != nil {
 			logger.Error(e.Error())
 		}
-
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, st.Err()
 	}
 
@@ -1668,8 +2033,19 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		nil,
 		&wfId,
 	); err != nil {
+		
+		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"DeployModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
@@ -1681,29 +2057,41 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 }
 
 func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.UndeployModelRequest) (*modelPB.UndeployModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "UndeployModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
 	if *state != modelPB.Model_STATE_ONLINE {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{},
 			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
 				state))
@@ -1711,6 +2099,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	// set user desired state to STATE_OFFLINE
 	if _, err := h.service.UpdateModelState(ctx, dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_OFFLINE)); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
@@ -1718,8 +2107,10 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	if err != nil {
 		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
 		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Internal, err.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
@@ -1730,8 +2121,18 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		nil,
 		&wfId,
 	); err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"UndeployModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfId),
@@ -1743,28 +2144,48 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 }
 
 func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelRequest) (*modelPB.WatchModelResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "WatchModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.WatchModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.GetName())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.WatchModelResponse{}, err
 	}
 
 	// check permission
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.WatchModelResponse{}, err
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
 
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.WatchModelResponse{}, err
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"WatchModel",
+		false,
+		state.String(),
+	)))
 
 	return &modelPB.WatchModelResponse{
 		State: *state,
@@ -1772,20 +2193,29 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 }
 
 func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) error {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(stream.Context(), "TestModelBinaryFileUpload",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	triggerInput, modelID, err := savePredictInputsTestMode(stream)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return status.Error(codes.Internal, err.Error())
 	}
 
 	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 
@@ -1804,14 +2234,17 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 	if numberOfInferences > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
+			span.SetStatus(1, err.Error())
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -1841,6 +2274,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return st.Err()
 	}
 
@@ -1848,24 +2282,43 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		Task:        task,
 		TaskOutputs: response,
 	})
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		modelInDB,
+		"TestModelBinaryFileUpload",
+		false,
+		"",
+	)))
+
 	return err
 }
 
 func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(stream.Context(), "TriggerModelBinaryFileUpload",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	triggerInput, modelID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return status.Error(codes.Internal, err.Error())
 	}
 
 	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return err
 	}
 
@@ -1883,14 +2336,17 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 	if numberOfInferences > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
+			span.SetStatus(1, err.Error())
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -1920,6 +2376,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return st.Err()
 	}
 
@@ -1927,24 +2384,43 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		Task:        task,
 		TaskOutputs: response,
 	})
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		modelInDB,
+		"TriggerModelBinaryFileUpload",
+		false,
+		"",
+	)))
+
 	return err
 }
 
 func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "TriggerModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
@@ -1958,8 +2434,9 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		modelPB.Model_TASK_OCR,
 		modelPB.Model_TASK_KEYPOINT,
 		modelPB.Model_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(req)
+		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
@@ -1967,6 +2444,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 	case modelPB.Model_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(req)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -1974,6 +2452,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 	case modelPB.Model_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(req)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -1983,14 +2462,17 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2019,8 +2501,18 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		modelInDB,
+		"TriggerModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.TriggerModelResponse{
 		Task:        task,
@@ -2029,21 +2521,29 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 }
 
 func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelRequest) (*modelPB.TestModelResponse, error) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(ctx, "TestModel",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
 
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, err
 	}
 
 	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, err
 	}
 
@@ -2057,11 +2557,12 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		modelPB.Model_TASK_OCR,
 		modelPB.Model_TASK_KEYPOINT,
 		modelPB.Model_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(&modelPB.TriggerModelRequest{
+		imageInput, err := parseImageRequestInputsToBytes(ctx, &modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
@@ -2072,6 +2573,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 			TaskInputs: req.TaskInputs,
 		})
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -2083,6 +2585,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 				TaskInputs: req.TaskInputs,
 			})
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -2093,14 +2596,17 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 	if lenInputs > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
+			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -2130,8 +2636,18 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, st.Err()
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		modelInDB,
+		"TestModel",
+		false,
+		"",
+	)))
 
 	return &modelPB.TestModelResponse{
 		Task:        task,
@@ -2140,16 +2656,23 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 }
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
-	logger, _ := logger.GetZapLogger()
+
+	ctx, span := tracer.Start(req.Context(), "inferModelByUpload",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	contentType := req.Header.Get("Content-Type")
 
 	if !strings.Contains(contentType, "multipart/form-data") {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
+		span.SetStatus(1,"")
 		return
 	}
 
-	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient()
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	if mgmtPrivateServiceClientConn != nil {
 		defer mgmtPrivateServiceClientConn.Close()
 	}
@@ -2159,9 +2682,11 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		switch sta.Code() {
 		case codes.NotFound:
 			makeJSONResponse(w, 404, "Not found", "User not found")
+			span.SetStatus(1, "User not found")
 			return
 		default:
 			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			span.SetStatus(1, "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
 			return
 		}
 	}
@@ -2170,24 +2695,28 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	modelName := pathParams["name"]
 	if modelName == "" {
 		makeJSONResponse(w, 422, "Required parameter missing", "Required parameter model name not found")
+		span.SetStatus(1, "Required parameter model name not found")
 		return
 	}
 
 	modelID, err := resource.GetModelID(modelName)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parameter invalid", "Required parameter instance_name is invalid")
+		span.SetStatus(1, "Required parameter instance_name is invalid")
 		return
 	}
 
 	modelInDB, err := s.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
+		span.SetStatus(1,"The model not found in server")
 		return
 	}
 
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
 		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		return
 	}
 
@@ -2204,6 +2733,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		imageInput, err := parseImageFormDataInputsToBytes(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "File Input Error", err.Error())
+			span.SetStatus(1, err.Error())
 			return
 		}
 		lenInputs = len(imageInput)
@@ -2212,6 +2742,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		textToImage, err := parseImageFormDataTextToImageInputs(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+			span.SetStatus(1, err.Error())
 			return
 		}
 		lenInputs = 1
@@ -2220,6 +2751,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+			span.SetStatus(1, err.Error())
 			return
 		}
 		lenInputs = 1
@@ -2231,16 +2763,19 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		tritonModelInDB, err := s.GetTritonEnsembleModel(req.Context(), modelInDB.UID)
 		if err != nil {
 			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
+			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			return
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
+			span.SetStatus(1, err.Error())
 			return
 		}
 		if !doSupportBatch {
 			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			return
 		}
 	}
@@ -2277,6 +2812,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		}
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 500, st.Message(), string(obj))
+		span.SetStatus(1, err.Error())
 		return
 	}
 
@@ -2288,8 +2824,19 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	})
 	if err != nil {
 		makeJSONResponse(w, 500, "Error Predict Model", err.Error())
+		span.SetStatus(1, err.Error())
 		return
 	}
+
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		modelInDB,
+		"inferModelByUpload",
+		false,
+		"",
+	)))
+
 	_, _ = w.Write(res)
 
 }
@@ -2303,25 +2850,36 @@ func HandleTriggerModelByUpload(s service.Service, w http.ResponseWriter, r *htt
 }
 
 func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelCardRequest) (*modelPB.GetModelCardResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "GetModelCard",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{}, err
 	}
 	ownerPermalink := "users/" + owner.GetUid()
 
 	modelID, err := resource.GetModelID(req.Name)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	_, err = h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{}, err
 	}
 
 	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, owner, modelID)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil { // return empty content base64
+		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{
 			Readme: &modelPB.ModelCard{
 				Name:     req.Name,
@@ -2335,6 +2893,15 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 
 	content, _ := os.ReadFile(readmeFilePath)
 
+	logger.Info(string(util.ConstructAuditLog(
+		span,
+		*owner,
+		dbModel,
+		"inferModelByUpload",
+		false,
+		"",
+	)))
+
 	return &modelPB.GetModelCardResponse{Readme: &modelPB.ModelCard{
 		Name:     req.Name,
 		Size:     int32(stat.Size()),
@@ -2345,6 +2912,11 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 }
 
 func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.GetModelDefinitionRequest) (*modelPB.GetModelDefinitionResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "GetModelDefinition",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	definitionID, err := resource.GetDefinitionID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
@@ -2355,11 +2927,16 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	pbModelDefinition := DBModelDefinitionToPBModelDefinition(&dbModelDefinition)
+	pbModelDefinition := DBModelDefinitionToPBModelDefinition(ctx, &dbModelDefinition)
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelDefinition}, nil
 }
 
 func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.ListModelDefinitionsRequest) (*modelPB.ListModelDefinitionsResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "ListModelDefinitions",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
@@ -2367,7 +2944,7 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 
 	pbDefinitions := []*modelPB.ModelDefinition{}
 	for _, dbModelDefinition := range dbModelDefinitions {
-		pbDefinitions = append(pbDefinitions, DBModelDefinitionToPBModelDefinition(&dbModelDefinition))
+		pbDefinitions = append(pbDefinitions, DBModelDefinitionToPBModelDefinition(ctx, &dbModelDefinition))
 	}
 
 	resp := modelPB.ListModelDefinitionsResponse{
@@ -2380,6 +2957,11 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 }
 
 func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
+
+	ctx, span := tracer.Start(ctx, "GetModelOperation",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	operationId, err := resource.GetOperationID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
