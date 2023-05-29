@@ -44,7 +44,6 @@ func main() {
 
 	// setup tracing and metrics
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-init"); err != nil {
 		panic(err)
@@ -62,6 +61,7 @@ func main() {
 		"main",
 	)
 	defer span.End()
+	defer cancel()
 
 	logger, _ := logger.GetZapLogger(ctx)
 

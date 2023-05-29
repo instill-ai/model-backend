@@ -3,13 +3,11 @@ package otel
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/instill-ai/model-backend/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
@@ -42,18 +40,4 @@ func SetupMetrics(ctx context.Context, serviceName string) (*sdkmetric.MeterProv
 	otel.SetMeterProvider(mp)
 
 	return mp, nil
-}
-
-var once sync.Once
-var pipelineTriggerCounter metric.Int64Counter
-func SetupTriggerCounterObserver() metric.Int64Counter {
-	once.Do(func() {
-		pipelineTriggerCounter, _ = otel.Meter("pipeline.backend").Int64Counter(
-			"pipeline.trigger.counter",
-			metric.WithUnit("1"),
-			metric.WithDescription("user billable action"),
-		)
-	})
-
-	return pipelineTriggerCounter
 }

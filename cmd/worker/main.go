@@ -29,7 +29,6 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-worker"); err != nil {
 		panic(err)
@@ -46,6 +45,7 @@ func main() {
 	ctx, span := otel.Tracer("worker-tracer").Start(ctx,
 		"main",
 	)
+	defer cancel()
 
 	logger, _ := logger.GetZapLogger(ctx)
 	defer func() {
