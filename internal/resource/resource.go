@@ -38,7 +38,7 @@ func GetRequestSingleHeader(ctx context.Context, header string) string {
 
 // GetOwnerCustom returns the resource owner from a request
 func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(req.Context())
 	// Verify if "jwt-sub" is in the header
 	headerOwnerUId := req.Header.Get(constant.HeaderOwnerUIDKey)
 	if headerOwnerUId != "" {
@@ -76,7 +76,7 @@ func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (
 
 // GetOwner returns the resource owner
 func GetOwner(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 
 	// Verify if "jwt-sub" is in the header
 	headerOwnerUId := GetRequestSingleHeader(ctx, constant.HeaderOwnerUIDKey)

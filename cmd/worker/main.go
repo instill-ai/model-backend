@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 
+	"go.opentelemetry.io/otel"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
@@ -15,19 +18,40 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 
 func main() {
-	logger, _ := logger.GetZapLogger()
+
+	if err := config.Init(); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-worker"); err != nil {
+		panic(err)
+	} else {
+		defer tp.Shutdown(ctx)
+	}
+
+	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend-worker"); err != nil {
+		panic(err)
+	} else {
+		defer mp.Shutdown(ctx)
+	}
+
+	ctx, span := otel.Tracer("worker-tracer").Start(ctx,
+		"main",
+	)
+	defer cancel()
+
+	logger, _ := logger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
 	}()
-
-	if err := config.Init(); err != nil {
-		logger.Fatal(err.Error())
-	}
 
 	db := database.GetConnection()
 	defer database.Close(db)
@@ -35,7 +59,7 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient()
+	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
 
 	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
@@ -78,6 +102,7 @@ func main() {
 	w.RegisterActivity(cw.UnDeployModelActivity)
 	w.RegisterWorkflow(cw.CreateModelWorkflow)
 
+	span.End()
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
 	}

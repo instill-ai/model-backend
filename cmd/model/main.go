@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/gogo/status"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -33,8 +35,8 @@ type ModelConfig struct {
 }
 
 // InitModelPublicServiceClient initialises a ModelServiceClient instance
-func InitModelPublicServiceClient() (modelPB.ModelPublicServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger()
+func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServiceClient, *grpc.ClientConn) {
+	logger, _ := logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
@@ -61,7 +63,29 @@ func InitModelPublicServiceClient() (modelPB.ModelPublicServiceClient, *grpc.Cli
 }
 
 func main() {
-	logger, _ := logger.GetZapLogger()
+
+	// setup tracing and metrics
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if tp, err := custom_otel.SetupTracing(ctx, "PipelineBackend"); err != nil {
+		panic(err)
+	} else {
+		defer tp.Shutdown(ctx)
+	}
+
+	if mp, err := custom_otel.SetupMetrics(ctx, "PipelineBackend"); err != nil {
+		panic(err)
+	} else {
+		defer mp.Shutdown(ctx)
+	}
+
+	ctx, span := otel.Tracer("MainTracer").Start(ctx,
+		"InitModel",
+	)
+
+	logger, _ := logger.GetZapLogger(ctx)
+
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
@@ -76,7 +100,7 @@ func main() {
 		return
 	}
 
-	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient()
+	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient(ctx)
 	if modelPublicServiceClientConn != nil {
 		defer modelPublicServiceClientConn.Close()
 	}
@@ -167,4 +191,5 @@ func main() {
 		}
 	}
 	logger.Info("Creating models done!")
+	span.End()
 }

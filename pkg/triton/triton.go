@@ -52,7 +52,7 @@ type ImageInput struct {
 type Triton interface {
 	ServerLiveRequest() *inferenceserver.ServerLiveResponse
 	ServerReadyRequest() *inferenceserver.ServerReadyResponse
-	ModelReadyRequest(modelName string, modelInstance string) *inferenceserver.ModelReadyResponse
+	ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelReadyResponse
 	ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
 	ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
 	ModelInferRequest(task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
@@ -123,8 +123,8 @@ func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 	return serverReadyResponse
 }
 
-func (ts *triton) ModelReadyRequest(modelName string, modelInstance string) *inferenceserver.ModelReadyResponse {
-	logger, _ := logger.GetZapLogger()
+func (ts *triton) ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelReadyResponse {
+	logger, _ := logger.GetZapLogger(ctx)
 	// Create context for our request with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

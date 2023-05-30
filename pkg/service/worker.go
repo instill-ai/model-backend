@@ -19,7 +19,7 @@ import (
 )
 
 func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error) {
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        id.String(),
@@ -50,7 +50,7 @@ func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID u
 }
 
 func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error) {
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        id.String(),
@@ -127,7 +127,7 @@ func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrun
 }
 
 func (s *service) CreateModelAsync(ctx context.Context, owner string, model *datamodel.Model) (string, error) {
-	logger, _ := logger.GetZapLogger()
+	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        id.String(),

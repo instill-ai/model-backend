@@ -81,9 +81,9 @@ export function DeployUndeployModel() {
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
+        [`GET /v1alpha/models/${model_id} online task cls watch status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
+        [`GET /v1alpha/models/${model_id} online task cls watch state`]: (r) =>
           r.json().state === "STATE_UNSPECIFIED",
       })
 
@@ -133,12 +133,41 @@ export function DeployUndeployModel() {
           r.json().model.state === "STATE_OFFLINE",
       })
 
+      // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_OFFLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+        headers: genHeader(`application/json`),
+      }), {
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
+          r.json().operation.name !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
+          r.json().operation.metadata === null,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
+          r.json().operation.done === false,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
+          r.json().operation.response !== undefined,
+      });
+
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
         headers: genHeader(`application/json`),
       }), {
-        [`GET /v1alpha/models/${model_id} online task cls response status`]: (r) =>
+        [`GET /v1alpha/models/${model_id} online task cls watch status`]: (r) =>
           r.status === 200,
-        [`GET /v1alpha/models/${model_id} online task cls response state`]: (r) =>
+        [`GET /v1alpha/models/${model_id} online task cls watch state`]: (r) =>
           r.json().state === "STATE_UNSPECIFIED",
       })
 
@@ -157,7 +186,7 @@ export function DeployUndeployModel() {
         var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
-        if (res.json().state === "STATE_OFFLINE") {
+        if (res.json().state === "STATE_ONLINE") {
           break
         }
         sleep(1)
