@@ -14,7 +14,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 )
 
-var logger *zap.Logger
 var once sync.Once
 var core zapcore.Core
 
@@ -69,26 +68,26 @@ func GetZapLogger(ctx context.Context) (*zap.Logger, error) {
 				),
 			)
 		}
-
-		// finally construct the logger with the tee core
-		logger = zap.New(core)
 	})
-
-	// hooks to inject logs to traces
-	logger = logger.WithOptions(
+	// finally construct the logger with the tee core
+	// and add hooks to inject logs to traces
+	logger := zap.New(core).WithOptions(
 		zap.Hooks(func(entry zapcore.Entry) error {
 			span := trace.SpanFromContext(ctx)
 			if !span.IsRecording() {
 				return nil
 			}
 
-			attrs := make([]attribute.KeyValue, 0)
-			logSeverityKey := attribute.Key("log.severity")
-			logMessageKey := attribute.Key("log.message")
-			attrs = append(attrs, logSeverityKey.String(entry.Level.String()))
-			attrs = append(attrs, logMessageKey.String(entry.Message))
-
-			span.AddEvent("log", trace.WithAttributes(attrs...))
+			span.AddEvent("log", trace.WithAttributes(
+				attribute.KeyValue{
+					Key: "log.severity",
+					Value: attribute.StringValue(entry.Level.String()),
+				},
+				attribute.KeyValue{
+					Key: "log.message",
+					Value: attribute.StringValue(entry.Message),
+				},
+			))
 			if entry.Level >= zap.ErrorLevel {
 				span.SetStatus(codes.Error, string(entry.Message))
 			} else {
