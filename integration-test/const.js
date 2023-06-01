@@ -3,9 +3,9 @@ let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
 if (__ENV.API_GATEWAY_HOST && !__ENV.API_GATEWAY_PORT || !__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT) {
     fail("both API_GATEWAY_HOST and API_GATEWAY_PORT should be properly configured.")
   }
-  
+
   export const apiGatewayMode = (__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT);
-  
+
   if (__ENV.API_GATEWAY_PROTOCOL) {
     if (__ENV.API_GATEWAY_PROTOCOL !== "http" && __ENV.API_GATEWAY_PROTOCOL != "https") {
       fail("only allow `http` or `https` for API_GATEWAY_PROTOCOL")
@@ -14,7 +14,7 @@ if (__ENV.API_GATEWAY_HOST && !__ENV.API_GATEWAY_PORT || !__ENV.API_GATEWAY_HOST
   } else {
     proto = "http"
   }
-  
+
   if (apiGatewayMode) {
     // api gateway mode
     host = __ENV.API_GATEWAY_HOST

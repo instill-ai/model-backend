@@ -47,4 +47,4 @@ class TritonPythonModel(object):
             response = InferenceResponse(output_tensors)
             responses.append(response)
 
-        return responses        
+        return responses

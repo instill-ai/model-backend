@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -353,7 +352,7 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 
 			rdid, _ := uuid.NewV4()
 			tmpFile = path.Join("/tmp", rdid.String()+".zip")
-			fp, err = os.Create(tmpFile)
+			fp, _ = os.Create(tmpFile)
 			visibility := modelPB.Model_VISIBILITY_PRIVATE
 			if fileData.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
 				visibility = modelPB.Model_VISIBILITY_PUBLIC
@@ -405,7 +404,7 @@ func GetJSON(url string, result interface{}) error {
 		return fmt.Errorf("http.Get status: %s", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("ioutil.ReadAll: %w", err)
 	}
