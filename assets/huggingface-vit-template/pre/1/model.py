@@ -15,7 +15,7 @@ class TritonPythonModel(object):
 
     def initialize(self, args):
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.feature_extractor = AutoFeatureExtractor.from_pretrained(dir_path + '/config.json')  
+        self.feature_extractor = AutoFeatureExtractor.from_pretrained(dir_path + '/config.json')
 
     def execute(self, inference_requests: List[InferenceRequest]) -> List[InferenceResponse]:
         input_name = 'input'
@@ -42,7 +42,7 @@ class TritonPythonModel(object):
             if batch_in.dtype.type is not np.object_:
                 raise ValueError(f'Input datatype must be np.object_, '
                                  f'got {batch_in.dtype.type}')
-            
+
             batch_out = []
             for img in batch_in:  # img is shape (1,)
                 pil_img = Image.open(io.BytesIO(img.astype(bytes)))

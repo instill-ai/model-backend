@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -71,13 +72,17 @@ func main() {
 	if tp, err := custom_otel.SetupTracing(ctx, "PipelineBackend"); err != nil {
 		panic(err)
 	} else {
-		defer tp.Shutdown(ctx)
+		defer func() {
+			err = errors.Join(err, tp.Shutdown(ctx))
+		}()
 	}
 
 	if mp, err := custom_otel.SetupMetrics(ctx, "PipelineBackend"); err != nil {
 		panic(err)
 	} else {
-		defer mp.Shutdown(ctx)
+		defer func() {
+			err = errors.Join(err, mp.Shutdown(ctx))
+		}()
 	}
 
 	ctx, span := otel.Tracer("MainTracer").Start(ctx,

@@ -175,7 +175,9 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 			ModelState: modelPB.Model_STATE_ERROR,
 		}
-		w.controllerClient.UpdateResource(ctx, &updateResourceReq)
+		if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -184,7 +186,9 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
 			}
-			w.controllerClient.UpdateResource(ctx, &updateResourceReq)
+			if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
+				return err
+			}
 			return err
 		}
 	}
@@ -257,7 +261,9 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
 			}
-			w.controllerClient.UpdateResource(ctx, &updateResourceReq)
+			if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
+				return err
+			}
 			return err
 		}
 	}

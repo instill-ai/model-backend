@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-redis/redis/v9"
 	"go.temporal.io/sdk/client"
@@ -187,10 +186,6 @@ func (s *service) GetModelByUidAdmin(ctx context.Context, uid uuid.UUID, view mo
 }
 
 func (s *service) ModelInferTestMode(ctx context.Context, owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
-	// Increment trigger image numbers
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
 	uid, _ := resource.GetPermalinkUID(owner)
 	switch task {
 	case modelPB.Model_TASK_CLASSIFICATION,
@@ -728,13 +723,15 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 	}
 
 	if err := s.UndeployModel(ctx, modelInDB.UID); err != nil {
-		s.UpdateResourceState(
+		if err := s.UpdateResourceState(
 			ctx,
 			modelInDB.UID,
 			modelPB.Model_STATE_ERROR,
 			nil,
 			nil,
-		)
+		); err != nil {
+			return err
+		}
 		return err
 	}
 

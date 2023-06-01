@@ -38,7 +38,7 @@
         ui_disabled: true
         ui_component: "text"
         minLength: 0
-        maxLength: 200        
+        maxLength: 200
       html_url:
         type: "string"
         title: "Github repository URL"
@@ -120,7 +120,7 @@
         ui_disabled: true
         ui_component: "text"
         minLength: 0
-        maxLength: 200        
+        maxLength: 200
       credential:
         type: "object"
         title: "Credentials JSON"
@@ -172,4 +172,3 @@
         ui_component: "text"
         minLength: 0
         maxLength: 1023
-

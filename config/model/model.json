@@ -125,10 +125,10 @@
       "ui_enum": ["", "Offline", "Online", "Error"]
     },
     "task": {
-      "type": "string", 
+      "type": "string",
       "title": "Task",
       "description": "The model task",
-      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR", "TASK_TEXT_TO_IMAGE", "TASK_TEXT_GENERATION"], 
+      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR", "TASK_TEXT_TO_IMAGE", "TASK_TEXT_GENERATION"],
       "default": "TASK_UNSPECIFIED",
       "readOnly": true,
       "ui_order": 4,
@@ -136,7 +136,7 @@
       "ui_disabled": true,
       "ui_component": "select",
       "ui_enum": ["", "Image classification", "Object detection", "Keypoint detection", "Instance segmentation", "Semantic segmentation", "OCR", "Text to image", "Text generation"]
-    },    
+    },
     "create_time": {
       "type": "string",
       "format": "date-time",
