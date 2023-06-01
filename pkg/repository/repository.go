@@ -15,6 +15,7 @@ import (
 
 type Repository interface {
 	CreateModel(model datamodel.Model) error
+	CreatePreDeployModel(model datamodel.PreDeployModel) error
 	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
 	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(modelUID uuid.UUID) error
@@ -82,6 +83,14 @@ var GetModelSelectedFieldsWOConfiguration = []string{
 func (r *repository) CreateModel(model datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
+	}
+
+	return nil
+}
+
+func (r *repository) CreatePreDeployModel(model datamodel.PreDeployModel) error {
+	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
+		return result.Error
 	}
 
 	return nil

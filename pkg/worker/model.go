@@ -296,9 +296,26 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	controllerCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := w.repository.CreateModel(param.Model); err != nil {
-		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-			ModelState: modelPB.Model_STATE_ERROR,
+	isPreDeployModel, err := GetPreDeployGitHubModelUUID(param.Model)
+	if err != nil {
+		return err
+	}
+
+	// fmt.Println("======================================================================================================")
+	// fmt.Println(isPreDeployModel)
+	// fmt.Println("======================================================================================================")
+
+	if isPreDeployModel != nil {
+		if err := w.repository.CreatePreDeployModel(*isPreDeployModel); err != nil {
+			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ERROR,
+			}
+		}
+	} else {
+		if err := w.repository.CreateModel(param.Model); err != nil {
+			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
+				ModelState: modelPB.Model_STATE_ERROR,
+			}
 		}
 	}
 
