@@ -301,10 +301,6 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		return err
 	}
 
-	// fmt.Println("======================================================================================================")
-	// fmt.Println(isPreDeployModel)
-	// fmt.Println("======================================================================================================")
-
 	if isPreDeployModel != nil {
 		if err := w.repository.CreatePreDeployModel(*isPreDeployModel); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{

@@ -2,7 +2,6 @@ package worker
 
 import (
 	"encoding/json"
-	// "fmt"
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
