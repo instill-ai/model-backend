@@ -296,13 +296,13 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	controllerCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	isPreDeployModel, err := GetPreDeployGitHubModelUUID(param.Model)
+	preDeployModel, err := GetPreDeployGitHubModelUUID(param.Model)
 	if err != nil {
 		return err
 	}
 
-	if isPreDeployModel != nil {
-		if err := w.repository.CreatePreDeployModel(*isPreDeployModel); err != nil {
+	if preDeployModel != nil {
+		if err := w.repository.CreatePreDeployModel(*preDeployModel); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
 			}
