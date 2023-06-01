@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log"
 
 	"go.opentelemetry.io/otel"
@@ -50,7 +49,7 @@ func main() {
 		panic(err)
 	} else {
 		defer func() {
-			err = errors.Join(err, tp.Shutdown(ctx))
+			err = tp.Shutdown(ctx)
 		}()
 	}
 
@@ -58,7 +57,7 @@ func main() {
 		panic(err)
 	} else {
 		defer func() {
-			err = errors.Join(err, mp.Shutdown(ctx))
+			err = mp.Shutdown(ctx)
 		}()
 	}
 
