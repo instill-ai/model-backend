@@ -87,7 +87,6 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 }
 
 func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModelRequest) (*modelPB.CheckModelResponse, error) {
-	view := modelPB.View_VIEW_BASIC
 	sUID, err := resource.GetID(req.ModelPermalink)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
@@ -96,12 +95,8 @@ func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModel
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUidAdmin(ctx, uid, view)
-	if err != nil {
-		return &modelPB.CheckModelResponse{}, err
-	}
 
-	state, err := h.service.CheckModel(ctx, dbModel.UID)
+	state, err := h.service.CheckModel(ctx, uid)
 	if err != nil {
 		return &modelPB.CheckModelResponse{}, err
 	}

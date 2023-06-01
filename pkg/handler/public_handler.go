@@ -607,7 +607,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		uploadedModel,
 		"HandleCreateModelByMultiPartFormData",
 		false,
@@ -748,7 +748,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		*uploadedModel,
 		"CreateModelBinaryFileUpload",
 		false,
@@ -993,7 +993,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*user,
+		user,
 		githubModel,
 		"createGitHubModel",
 		false,
@@ -1243,7 +1243,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*user,
+		user,
 		huggingfaceModel,
 		"createHuggingFaceModel",
 		false,
@@ -1466,7 +1466,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*user,
+		user,
 		artivcModel,
 		"createArtiVCModel",
 		false,
@@ -1597,7 +1597,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		pbModels = append(pbModels, DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink))
 		logger.Info(string(util.ConstructAuditLog(
 			span,
-			*owner,
+			owner,
 			dbModel,
 			"ListModels",
 			false,
@@ -1652,7 +1652,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"LookUpModel",
 		false,
@@ -1696,7 +1696,7 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"GetModel",
 		false,
@@ -1760,7 +1760,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"UpdateModel",
 		false,
@@ -1806,7 +1806,7 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		deleteModel,
 		"UpdateModel",
 		false,
@@ -1849,7 +1849,7 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"RenameModel",
 		false,
@@ -1893,7 +1893,7 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"PublishModel",
 		false,
@@ -1937,7 +1937,7 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"UnpublishModel",
 		false,
@@ -2039,7 +2039,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"DeployModel",
 		false,
@@ -2127,7 +2127,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"UndeployModel",
 		false,
@@ -2180,7 +2180,7 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"WatchModel",
 		false,
@@ -2285,7 +2285,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		modelInDB,
 		"TestModelBinaryFileUpload",
 		false,
@@ -2387,7 +2387,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		modelInDB,
 		"TriggerModelBinaryFileUpload",
 		false,
@@ -2507,7 +2507,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		modelInDB,
 		"TriggerModel",
 		false,
@@ -2642,7 +2642,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		modelInDB,
 		"TestModel",
 		false,
@@ -2830,7 +2830,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		modelInDB,
 		"inferModelByUpload",
 		false,
@@ -2895,7 +2895,7 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 
 	logger.Info(string(util.ConstructAuditLog(
 		span,
-		*owner,
+		owner,
 		dbModel,
 		"inferModelByUpload",
 		false,

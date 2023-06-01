@@ -125,9 +125,6 @@ func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
 
 func (ts *triton) ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelReadyResponse {
 	logger, _ := logger.GetZapLogger(ctx)
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	// Create ready request for a given model
 	modelReadyRequest := inferenceserver.ModelReadyRequest{
