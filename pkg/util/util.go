@@ -827,7 +827,7 @@ func ConvertModelToResourcePermalink(modelUID string) string {
 
 func ConstructAuditLog(
 	span trace.Span,
-	user mgmtPB.User,
+	user *mgmtPB.User,
 	model datamodel.Model,
 	eventName string,
 	billable bool,
@@ -891,4 +891,3 @@ func ConstructErrorLog(
 
 	return logMessage
 }
-
