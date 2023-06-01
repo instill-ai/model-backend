@@ -50,6 +50,20 @@ func (mr *MockRepositoryMockRecorder) CreateModel(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockRepository)(nil).CreateModel), arg0)
 }
 
+// CreatePreDeployModel mocks base method.
+func (m *MockRepository) CreatePreDeployModel(arg0 datamodel.PreDeployModel) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePreDeployModel", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePreDeployModel indicates an expected call of CreatePreDeployModel.
+func (mr *MockRepositoryMockRecorder) CreatePreDeployModel(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePreDeployModel", reflect.TypeOf((*MockRepository)(nil).CreatePreDeployModel), arg0)
+}
+
 // CreateTritonModel mocks base method.
 func (m *MockRepository) CreateTritonModel(arg0 datamodel.TritonModel) error {
 	m.ctrl.T.Helper()

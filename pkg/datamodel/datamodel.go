@@ -94,6 +94,38 @@ type Model struct {
 	TritonModels []TritonModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
+// Temporary model type for migration
+type PreDeployModel struct {
+	BaseStatic
+
+	// Model id
+	ID string `json:"id,omitempty"`
+
+	// Model description
+	Description sql.NullString
+
+	// Model definition
+	ModelDefinitionUid uuid.UUID `gorm:"model_definition_uid,omitempty"`
+
+	// Model definition configuration
+	Configuration datatypes.JSON `json:"configuration,omitempty"`
+
+	// Model visibility
+	Visibility ModelVisibility `json:"visibility,omitempty"`
+
+	// Model owner
+	Owner string `json:"owner,omitempty"`
+
+	// Model task
+	Task ModelTask `json:"task,omitempty"`
+
+	// Model state
+	State ModelState `json:"state,omitempty"`
+
+	// Not stored in DB, only used for processing
+	TritonModels []TritonModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+}
+
 // Triton model
 type TritonModel struct {
 	BaseDynamic
