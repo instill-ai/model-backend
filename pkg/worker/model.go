@@ -301,7 +301,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		return err
 	}
 
-	if preDeployModel != nil {
+	if preDeployModel != nil && !config.Config.Server.ItMode {
 		if err := w.repository.CreatePreDeployModel(*preDeployModel); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
