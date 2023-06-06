@@ -6,9 +6,11 @@ server:
     key:
   corsorigins:
   edition: local-ce:dev
-  usageenabled: true
+  usage:
+    enabled: true
   debug: true
-  itmodeenabled: false
+  itmode:
+    enabled: false
   maxdatasize: 12 # MB in unit
 database:
   username: postgres

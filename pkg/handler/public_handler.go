@@ -781,7 +781,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
 	var githubInfo *util.GitHubInfo
-	if config.Config.Server.ItModeEnabled {
+	if config.Config.Server.ItMode.Enabled {
 		githubInfo = &util.GitHubInfo{
 			Description: "This is a test model",
 			Visibility:  "public",
@@ -833,7 +833,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
 	}
 
-	if config.Config.Server.ItModeEnabled { // use local model for testing to remove internet connection issue while testing
+	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
@@ -1057,7 +1057,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 	}
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if config.Config.Server.ItModeEnabled { // use local model for testing to remove internet connection issue while testing
+	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/tiny-vit-random/* %s", configTmpDir, configTmpDir))
 		if err := cmd.Run(); err != nil {
 			_ = os.RemoveAll(configTmpDir)
@@ -1306,7 +1306,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
-	if config.Config.Server.ItModeEnabled { // use local model for testing to remove internet connection issue while testing
+	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
 			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)

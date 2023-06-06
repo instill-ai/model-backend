@@ -87,7 +87,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	switch modelDef.ID {
 	case "github":
-		if !config.Config.Server.ItModeEnabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var modelConfig datamodel.GitHubModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err
@@ -117,7 +117,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.RepoId
 			}
 
-			if config.Config.Server.ItModeEnabled { // use local model to remove internet connection issue while integration testing
+			if config.Config.Server.ItMode.Enabled { // use local model to remove internet connection issue while integration testing
 				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
 					RepoId: "assets/tiny-vit-random",
 				}, dbModel.ID); err != nil {
@@ -141,7 +141,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			}
 		}
 	case "artivc":
-		if !config.Config.Server.ItModeEnabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var modelConfig datamodel.ArtiVCModelConfiguration
 			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
 			if err != nil {
@@ -301,7 +301,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		return err
 	}
 
-	if preDeployModel != nil && !config.Config.Server.ItModeEnabled {
+	if preDeployModel != nil && !config.Config.Server.ItMode.Enabled {
 		if err := w.repository.CreatePreDeployModel(*preDeployModel); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,

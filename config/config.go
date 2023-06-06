@@ -22,12 +22,16 @@ type ServerConfig struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
 	}
-	CORSOrigins   []string `koanf:"corsorigins"`
-	Edition       string   `koanf:"edition"`
-	UsageEnabled  bool     `koanf:"usageenabled"`
-	Debug         bool     `koanf:"debug"`
-	ItModeEnabled bool     `koanf:"itmodeenabled"`
-	MaxDataSize   int      `koanf:"maxdatasize"`
+	CORSOrigins []string `koanf:"corsorigins"`
+	Edition     string   `koanf:"edition"`
+	Usage       struct {
+		Enabled bool `koanf:"enabled"`
+	}
+	Debug  bool `koanf:"debug"`
+	ItMode struct {
+		Enabled bool `koanf:"enabled"`
+	}
+	MaxDataSize int `koanf:"maxdatasize"`
 }
 
 // DatabaseConfig related to database
