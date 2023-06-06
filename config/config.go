@@ -24,7 +24,7 @@ type ServerConfig struct {
 	}
 	CORSOrigins   []string `koanf:"corsorigins"`
 	Edition       string   `koanf:"edition"`
-	DisableUsage  bool     `koanf:"disableusage"`
+	UsageEnabled  bool     `koanf:"usageenabled"`
 	Debug         bool     `koanf:"debug"`
 	ItModeEnabled bool     `koanf:"itmodeenabled"`
 	MaxDataSize   int      `koanf:"maxdatasize"`
