@@ -22,12 +22,19 @@ type ServerConfig struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
 	}
-	CORSOrigins  []string `koanf:"corsorigins"`
-	Edition      string   `koanf:"edition"`
-	DisableUsage bool     `koanf:"disableusage"`
-	Debug        bool     `koanf:"debug"`
-	ItMode       bool     `koanf:"itmode"`
-	MaxDataSize  int      `koanf:"maxdatasize"`
+	CORSOrigins []string `koanf:"corsorigins"`
+	Edition     string   `koanf:"edition"`
+	Usage       struct {
+		Enabled    bool   `koanf:"enabled"`
+		TLSEnabled bool   `koanf:"tlsenabled"`
+		Host       string `koanf:"host"`
+		Port       int    `koanf:"port"`
+	}
+	Debug  bool `koanf:"debug"`
+	ItMode struct {
+		Enabled bool `koanf:"enabled"`
+	}
+	MaxDataSize int `koanf:"maxdatasize"`
 }
 
 // DatabaseConfig related to database
@@ -68,13 +75,6 @@ type CacheConfig struct {
 		RedisOptions redis.Options `koanf:"redisoptions"`
 	}
 	Model bool `koanf:"model"`
-}
-
-// UsageServerConfig related to usage-server
-type UsageServerConfig struct {
-	TLSEnabled bool   `koanf:"tlsenabled"`
-	Host       string `koanf:"host"`
-	Port       int    `koanf:"port"`
 }
 
 // PipelineBackendConfig related to pipeline-backend
@@ -140,7 +140,6 @@ type AppConfig struct {
 	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
 	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
 	Cache                  CacheConfig           `koanf:"cache"`
-	UsageServer            UsageServerConfig     `koanf:"usageserver"`
 	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`

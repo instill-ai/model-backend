@@ -6,9 +6,14 @@ server:
     key:
   corsorigins:
   edition: local-ce:dev
-  disableusage: false
+  usage:
+    enabled: true
+    tlsenabled: true
+    host: usage.instill.tech
+    port: 443
   debug: true
-  itmode: false
+  itmode:
+    enabled: false
   maxdatasize: 12 # MB in unit
 database:
   username: postgres
@@ -36,10 +41,6 @@ cache:
     redisoptions:
       addr: redis:6379
   model: false
-usageserver:
-  tlsenabled: true
-  host: usage.instill.tech
-  port: 443
 pipelinebackend:
   host: pipeline-backend
   publicport: 8081
