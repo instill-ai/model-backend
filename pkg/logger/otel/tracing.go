@@ -3,15 +3,18 @@ package otel
 import (
 	"context"
 	"fmt"
+	"io"
 
-	"github.com/instill-ai/model-backend/config"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+
+	"github.com/instill-ai/model-backend/config"
 )
 
 func SetupTracing(ctx context.Context, serviceName string) (*trace.TracerProvider, error) {
@@ -28,7 +31,7 @@ func SetupTracing(ctx context.Context, serviceName string) (*trace.TracerProvide
 		}
 	} else {
 		exporter, err = stdouttrace.New(
-			stdouttrace.WithPrettyPrint(),
+			stdouttrace.WithWriter(io.Discard),
 		)
 		if err != nil {
 			return nil, err

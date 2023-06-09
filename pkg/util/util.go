@@ -21,15 +21,12 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
-	"go.opentelemetry.io/otel/trace"
 	"gorm.io/datatypes"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
-	"github.com/instill-ai/model-backend/pkg/logger/otel"
 
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
@@ -823,71 +820,4 @@ func ConvertModelToResourcePermalink(modelUID string) string {
 	resourcePermalink := fmt.Sprintf("resources/%s/types/models", modelUID)
 
 	return resourcePermalink
-}
-
-func ConstructAuditLog(
-	span trace.Span,
-	user *mgmtPB.User,
-	model datamodel.Model,
-	eventName string,
-	billable bool,
-	metadata string,
-) []byte {
-	logMessage, _ := json.Marshal(otel.AuditLogMessage{
-		ServiceName: "model-backend",
-		TraceInfo: struct {
-			TraceId string
-			SpanId  string
-		}{
-			TraceId: span.SpanContext().TraceID().String(),
-			SpanId:  span.SpanContext().SpanID().String(),
-		},
-		UserInfo: struct {
-			UserID   string
-			UserUUID string
-			Token    string
-		}{
-			UserID:   user.Id,
-			UserUUID: *user.Uid,
-			Token:    *user.CookieToken,
-		},
-		EventInfo: struct{ Name string }{
-			Name: eventName,
-		},
-		ResourceInfo: struct {
-			ResourceName  string
-			ResourceUUID  string
-			ResourceState string
-			Billable      bool
-		}{
-			ResourceName:  model.ID,
-			ResourceUUID:  model.UID.String(),
-			ResourceState: modelPB.Model_State(model.State).String(),
-			Billable:      billable,
-		},
-		Metadata: metadata,
-	})
-
-	return logMessage
-}
-
-func ConstructErrorLog(
-	span trace.Span,
-	statusCode int,
-	errorMessage string,
-) []byte {
-	logMessage, _ := json.Marshal(otel.ErrorLogMessage{
-		ServiceName: "model-backend",
-		TraceInfo: struct {
-			TraceId string
-			SpanId  string
-		}{
-			TraceId: span.SpanContext().TraceID().String(),
-			SpanId:  span.SpanContext().SpanID().String(),
-		},
-		StatusCode:   statusCode,
-		ErrorMessage: errorMessage,
-	})
-
-	return logMessage
 }
