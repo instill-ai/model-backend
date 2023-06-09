@@ -15,8 +15,9 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/propagation"
 	"go.temporal.io/sdk/client"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -47,6 +48,8 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
+var propagator propagation.TextMapPropagator
+
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigins []string) http.Handler {
 	return h2c.NewHandler(
 		cors.New(cors.Options{
@@ -56,23 +59,11 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler, CORSOrigin
 			AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "HEAD"},
 		}).Handler(
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if len(r.Header["X-B3-Traceid"]) > 0 {
-					traceID, _ := trace.TraceIDFromHex(r.Header["X-B3-Traceid"][0])
-					spanID, _ := trace.SpanIDFromHex(r.Header["X-B3-Spanid"][0])
-					var traceFlags trace.TraceFlags
-					if r.Header["X-B3-Sampled"][0] == "1" {
-						traceFlags = trace.FlagsSampled
-					}
 
-					spanContext := trace.NewSpanContext(trace.SpanContextConfig{
-						TraceID:    traceID,
-						SpanID:     spanID,
-						TraceFlags: traceFlags,
-					})
+				propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
+				ctx := propagator.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+				r = r.WithContext(ctx)
 
-					ctx := trace.ContextWithSpanContext(r.Context(), spanContext)
-					r = r.WithContext(ctx)
-				}
 				if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
 					grpcServer.ServeHTTP(w, r)
 				} else {
