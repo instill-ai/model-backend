@@ -23,8 +23,8 @@ type LogMessage struct {
 		UserUUID string `json:"userUUID"`
 	}
 	Event struct {
-		EventType string `json:"eventType"`
-		EventInfo struct {
+		IsAuditEvent bool `json:"isAuditEvent"`
+		EventInfo    struct {
 			EventName        string `json:"eventName"`
 			EventTriggerType string `json:"eventTriggerType"`
 			Billable         bool   `json:"billable"`
@@ -68,7 +68,7 @@ func SetMetadata(m string) Option {
 func NewLogMessage(
 	span trace.Span,
 	user *mgmtPB.User,
-	eventType string,
+	isAuditEvent bool,
 	eventName string,
 	eventTriggerType string,
 	eventMessage string,
@@ -93,8 +93,8 @@ func NewLogMessage(
 		UserUUID: *user.Uid,
 	}
 	logMessage.Event = struct {
-		EventType string "json:\"eventType\""
-		EventInfo struct {
+		IsAuditEvent bool "json:\"isAuditEvent\""
+		EventInfo    struct {
 			EventName        string "json:\"eventName\""
 			EventTriggerType string "json:\"eventTriggerType\""
 			Billable         bool   "json:\"billable\""
@@ -103,7 +103,7 @@ func NewLogMessage(
 		EventResult   interface{} "json:\"eventResult\""
 		EventMessage  string      "json:\"eventMessage\""
 	}{
-		EventType: eventType,
+		IsAuditEvent: isAuditEvent,
 		EventInfo: struct {
 			EventName        string "json:\"eventName\""
 			EventTriggerType string "json:\"eventTriggerType\""
@@ -111,7 +111,7 @@ func NewLogMessage(
 		}{
 			EventName:        eventName,
 			EventTriggerType: eventTriggerType,
-			Billable: billable,
+			Billable:         billable,
 		},
 		EventMessage: eventMessage,
 	}

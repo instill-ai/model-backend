@@ -608,7 +608,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"HandleCreateModelByMultiPartFormData",
 		"request",
 		"HandleCreateModelByMultiPartFormData done",
@@ -751,7 +751,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"CreateModelBinaryFileUpload",
 		"request",
 		"CreateModelBinaryFileUpload done",
@@ -998,7 +998,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		"audit-event",
+		true,
 		"createGitHubModel",
 		"request",
 		"createGitHubModel done",
@@ -1255,7 +1255,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		"audit-event",
+		true,
 		"createHuggingFaceModel",
 		"request",
 		"createHuggingFaceModel done",
@@ -1485,7 +1485,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		"audit-event",
+		true,
 		"createArtiVCModel",
 		"request",
 		"createArtiVCModel done",
@@ -1625,7 +1625,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"ListModels",
 		"request",
 		"ListModels done",
@@ -1680,7 +1680,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"LookUpModel",
 		"request",
 		"LookUpModel done",
@@ -1725,7 +1725,7 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"GetModel",
 		"request",
 		"GetModel done",
@@ -1790,7 +1790,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"UpdateModel",
 		"request",
 		"UpdateModel done",
@@ -1838,7 +1838,7 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"DeleteModel",
 		"request",
 		"DeleteModel done",
@@ -1883,7 +1883,7 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"RenameModel",
 		"request",
 		"RenameModel done",
@@ -1929,7 +1929,7 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"PublishModel",
 		"request",
 		"PublishModel done",
@@ -1975,7 +1975,7 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"UnpublishModel",
 		"request",
 		"UnpublishModel done",
@@ -2079,7 +2079,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"DeployModel",
 		"request",
 		"DeployModel done",
@@ -2169,7 +2169,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"UndeployModel",
 		"request",
 		"UndeployModel done",
@@ -2207,7 +2207,7 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
 			owner,
-			"system-event",
+			false,
 			"WatchModel",
 			"request",
 			"WatchModel error",
@@ -2225,7 +2225,7 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
 			owner,
-			"system-event",
+			false,
 			"WatchModel",
 			"request",
 			"WatchModel error",
@@ -2243,7 +2243,7 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
 			owner,
-			"system-event",
+			false,
 			"WatchModel",
 			"request",
 			"WatchModel error",
@@ -2353,7 +2353,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"TestModelBinaryFileUpload",
 		"request",
 		"TestModelBinaryFileUpload done",
@@ -2457,7 +2457,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"TriggerModelBinaryFileUpload",
 		"request",
 		"TriggerModelBinaryFileUpload done",
@@ -2579,7 +2579,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"TriggerModel",
 		"request",
 		"TriggerModel done",
@@ -2716,7 +2716,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"TestModel",
 		"request",
 		"TestModel done",
@@ -2906,7 +2906,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"audit-event",
+		true,
 		"inferModelByUpload",
 		"request",
 		"inferModelByUpload done",
@@ -2973,7 +2973,7 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		"system-event",
+		false,
 		"GetModelCard",
 		"request",
 		"GetModelCard done",
