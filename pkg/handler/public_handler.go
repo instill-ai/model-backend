@@ -764,7 +764,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "createGitHubModel",
+	ctx, span := tracer.Start(ctx, "CreateGitHubModel",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -1022,7 +1022,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "createHuggingFaceModel",
+	ctx, span := tracer.Start(ctx, "CreateHuggingFaceModel",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -1279,7 +1279,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 
 func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "createArtiVCModel",
+	ctx, span := tracer.Start(ctx, "CreateArtiVCModel",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 

@@ -34,6 +34,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -44,7 +45,6 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	"github.com/instill-ai/model-backend/pkg/middleware"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
 
