@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
@@ -41,8 +42,7 @@ import (
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
 
-	"google.golang.org/protobuf/types/known/anypb"
-
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 )
@@ -605,13 +605,15 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		uploadedModel,
+		"audit-event",
 		"HandleCreateModelByMultiPartFormData",
+		"request",
+		"HandleCreateModelByMultiPartFormData done",
 		false,
-		"",
+		custom_otel.SetEventResource(&uploadedModel),
 	)))
 
 	_, _ = w.Write(b)
@@ -746,13 +748,15 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		return status.Errorf(codes.Internal, err.Error())
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		*uploadedModel,
+		"audit-event",
 		"CreateModelBinaryFileUpload",
+		"request",
+		"CreateModelBinaryFileUpload done",
 		false,
-		"",
+		custom_otel.SetEventResource(uploadedModel),
 	)))
 
 	return
@@ -991,13 +995,20 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		githubModel,
+		"audit-event",
 		"createGitHubModel",
+		"request",
+		"createGitHubModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(githubModel),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfId),
+			},
+		}),
 	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
@@ -1241,13 +1252,20 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		huggingfaceModel,
+		"audit-event",
 		"createHuggingFaceModel",
+		"request",
+		"createHuggingFaceModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(huggingfaceModel),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfId),
+			},
+		}),
 	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
@@ -1464,13 +1482,20 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		user,
-		artivcModel,
+		"audit-event",
 		"createArtiVCModel",
+		"request",
+		"createArtiVCModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(artivcModel),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfId),
+			},
+		}),
 	)))
 
 	return &modelPB.CreateModelResponse{Operation: &longrunningpb.Operation{
@@ -1595,15 +1620,17 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 			return &modelPB.ListModelsResponse{}, err
 		}
 		pbModels = append(pbModels, DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink))
-		logger.Info(string(util.ConstructAuditLog(
-			span,
-			owner,
-			dbModel,
-			"ListModels",
-			false,
-			"",
-		)))
 	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		span,
+		owner,
+		"system-event",
+		"ListModels",
+		"request",
+		"ListModels done",
+		false,
+	)))
 
 	resp := modelPB.ListModelsResponse{
 		Models:        pbModels,
@@ -1650,13 +1677,14 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 		return &modelPB.LookUpModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"system-event",
 		"LookUpModel",
+		"request",
+		"LookUpModel done",
 		false,
-		"",
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1694,13 +1722,14 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 		return &modelPB.GetModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"system-event",
 		"GetModel",
+		"request",
+		"GetModel done",
 		false,
-		"",
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1758,13 +1787,15 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		return &modelPB.UpdateModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"UpdateModel",
+		"request",
+		"UpdateModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1804,13 +1835,15 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 		return &modelPB.DeleteModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		deleteModel,
-		"UpdateModel",
+		"audit-event",
+		"DeleteModel",
+		"request",
+		"DeleteModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(deleteModel),
 	)))
 
 	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(ctx, ownerPermalink, id)
@@ -1847,13 +1880,15 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 		return &modelPB.RenameModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"RenameModel",
+		"request",
+		"RenameModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1891,13 +1926,15 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 		return &modelPB.PublishModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"PublishModel",
+		"request",
+		"PublishModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1935,13 +1972,15 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 		return &modelPB.UnpublishModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"UnpublishModel",
+		"request",
+		"UnpublishModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -2037,13 +2076,15 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"DeployModel",
+		"request",
+		"DeployModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
@@ -2125,13 +2166,15 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
+		"audit-event",
 		"UndeployModel",
+		"request",
+		"UndeployModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
@@ -2161,6 +2204,17 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 	modelID, err := resource.GetModelID(req.GetName())
 	if err != nil {
 		span.SetStatus(1, err.Error())
+		logger.Info(string(custom_otel.NewLogMessage(
+			span,
+			owner,
+			"system-event",
+			"WatchModel",
+			"request",
+			"WatchModel error",
+			false,
+			custom_otel.SetEventResource(req.GetName()),
+			custom_otel.SetErrorMessage(err.Error()),
+		)))
 		return &modelPB.WatchModelResponse{}, err
 	}
 
@@ -2168,6 +2222,17 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
+		logger.Info(string(custom_otel.NewLogMessage(
+			span,
+			owner,
+			"system-event",
+			"WatchModel",
+			"request",
+			"WatchModel error",
+			false,
+			custom_otel.SetEventResource(modelID),
+			custom_otel.SetErrorMessage(err.Error()),
+		)))
 		return &modelPB.WatchModelResponse{}, err
 	}
 
@@ -2175,17 +2240,19 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 
 	if err != nil {
 		span.SetStatus(1, err.Error())
+		logger.Info(string(custom_otel.NewLogMessage(
+			span,
+			owner,
+			"system-event",
+			"WatchModel",
+			"request",
+			"WatchModel error",
+			false,
+			custom_otel.SetEventResource(dbModel),
+			custom_otel.SetErrorMessage(err.Error()),
+		)))
 		return &modelPB.WatchModelResponse{}, err
 	}
-
-	logger.Info(string(util.ConstructAuditLog(
-		span,
-		owner,
-		dbModel,
-		"WatchModel",
-		false,
-		state.String(),
-	)))
 
 	return &modelPB.WatchModelResponse{
 		State: *state,
@@ -2283,13 +2350,15 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		TaskOutputs: response,
 	})
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		modelInDB,
+		"system-event",
 		"TestModelBinaryFileUpload",
+		"request",
+		"TestModelBinaryFileUpload done",
 		false,
-		"",
+		custom_otel.SetEventResource(modelInDB),
 	)))
 
 	return err
@@ -2385,13 +2454,15 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		TaskOutputs: response,
 	})
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		modelInDB,
+		"audit-event",
 		"TriggerModelBinaryFileUpload",
+		"request",
+		"TriggerModelBinaryFileUpload done",
 		false,
-		"",
+		custom_otel.SetEventResource(modelInDB),
 	)))
 
 	return err
@@ -2505,13 +2576,15 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		modelInDB,
+		"audit-event",
 		"TriggerModel",
+		"request",
+		"TriggerModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(modelInDB),
 	)))
 
 	return &modelPB.TriggerModelResponse{
@@ -2640,13 +2713,15 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		return &modelPB.TestModelResponse{}, st.Err()
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		modelInDB,
+		"system-event",
 		"TestModel",
+		"request",
+		"TestModel done",
 		false,
-		"",
+		custom_otel.SetEventResource(modelInDB),
 	)))
 
 	return &modelPB.TestModelResponse{
@@ -2828,13 +2903,15 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		modelInDB,
+		"audit-event",
 		"inferModelByUpload",
+		"request",
+		"inferModelByUpload done",
 		false,
-		"",
+		custom_otel.SetEventResource(modelInDB),
 	)))
 
 	_, _ = w.Write(res)
@@ -2893,13 +2970,15 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 
 	content, _ := os.ReadFile(readmeFilePath)
 
-	logger.Info(string(util.ConstructAuditLog(
+	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		owner,
-		dbModel,
-		"inferModelByUpload",
+		"system-event",
+		"GetModelCard",
+		"request",
+		"GetModelCard done",
 		false,
-		"",
+		custom_otel.SetEventResource(dbModel),
 	)))
 
 	return &modelPB.GetModelCardResponse{Readme: &modelPB.ModelCard{
