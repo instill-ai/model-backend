@@ -100,7 +100,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 				for _, model := range dbModels {
 					isModelOnline := false
-					modelDef, err := u.repository.GetModelDefinitionByUid(model.ModelDefinitionUid)
+					modelDef, err := u.repository.GetModelDefinitionByUID(model.ModelDefinitionUid)
 					if err != nil {
 						logger.Error(fmt.Sprintf("%s", err))
 					} else {

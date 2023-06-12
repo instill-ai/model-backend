@@ -41,12 +41,6 @@ cache:
     redisoptions:
       addr: redis:6379
   model: false
-pipelinebackend:
-  host: pipeline-backend
-  publicport: 8081
-  https:
-    cert:
-    key:
 maxbatchsizelimitation:
   unspecified: 2
   classification: 16

@@ -112,64 +112,64 @@ func (mr *MockServiceMockRecorder) DeployModelAsync(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployModelAsync", reflect.TypeOf((*MockService)(nil).DeployModelAsync), arg0, arg1)
 }
 
-// GetModelById mocks base method.
-func (m *MockService) GetModelById(arg0, arg1 string, arg2 modelv1alpha.View) (datamodel.Model, error) {
+// GetModelByID mocks base method.
+func (m *MockService) GetModelByID(arg0, arg1 string, arg2 modelv1alpha.View) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelById", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetModelByID", arg0, arg1, arg2)
 	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelById indicates an expected call of GetModelById.
-func (mr *MockServiceMockRecorder) GetModelById(arg0, arg1, arg2 interface{}) *gomock.Call {
+// GetModelByID indicates an expected call of GetModelByID.
+func (mr *MockServiceMockRecorder) GetModelByID(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelById", reflect.TypeOf((*MockService)(nil).GetModelById), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByID", reflect.TypeOf((*MockService)(nil).GetModelByID), arg0, arg1, arg2)
 }
 
-// GetModelByIdAdmin mocks base method.
-func (m *MockService) GetModelByIdAdmin(arg0 string, arg1 modelv1alpha.View) (datamodel.Model, error) {
+// GetModelByIDAdmin mocks base method.
+func (m *MockService) GetModelByIDAdmin(arg0 string, arg1 modelv1alpha.View) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByIdAdmin", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetModelByIDAdmin", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelByIdAdmin indicates an expected call of GetModelByIdAdmin.
-func (mr *MockServiceMockRecorder) GetModelByIdAdmin(arg0, arg1 interface{}) *gomock.Call {
+// GetModelByIDAdmin indicates an expected call of GetModelByIDAdmin.
+func (mr *MockServiceMockRecorder) GetModelByIDAdmin(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByIdAdmin", reflect.TypeOf((*MockService)(nil).GetModelByIdAdmin), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByIDAdmin", reflect.TypeOf((*MockService)(nil).GetModelByIDAdmin), arg0, arg1)
 }
 
-// GetModelByUid mocks base method.
-func (m *MockService) GetModelByUid(arg0 string, arg1 uuid.UUID, arg2 modelv1alpha.View) (datamodel.Model, error) {
+// GetModelByUID mocks base method.
+func (m *MockService) GetModelByUID(arg0 string, arg1 uuid.UUID, arg2 modelv1alpha.View) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByUid", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetModelByUID", arg0, arg1, arg2)
 	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelByUid indicates an expected call of GetModelByUid.
-func (mr *MockServiceMockRecorder) GetModelByUid(arg0, arg1, arg2 interface{}) *gomock.Call {
+// GetModelByUID indicates an expected call of GetModelByUID.
+func (mr *MockServiceMockRecorder) GetModelByUID(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUid", reflect.TypeOf((*MockService)(nil).GetModelByUid), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUID", reflect.TypeOf((*MockService)(nil).GetModelByUID), arg0, arg1, arg2)
 }
 
-// GetModelByUidAdmin mocks base method.
-func (m *MockService) GetModelByUidAdmin(arg0 uuid.UUID, arg1 modelv1alpha.View) (datamodel.Model, error) {
+// GetModelByUIDAdmin mocks base method.
+func (m *MockService) GetModelByUIDAdmin(arg0 uuid.UUID, arg1 modelv1alpha.View) (datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByUidAdmin", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetModelByUIDAdmin", arg0, arg1)
 	ret0, _ := ret[0].(datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelByUidAdmin indicates an expected call of GetModelByUidAdmin.
-func (mr *MockServiceMockRecorder) GetModelByUidAdmin(arg0, arg1 interface{}) *gomock.Call {
+// GetModelByUIDAdmin indicates an expected call of GetModelByUIDAdmin.
+func (mr *MockServiceMockRecorder) GetModelByUIDAdmin(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUidAdmin", reflect.TypeOf((*MockService)(nil).GetModelByUidAdmin), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUIDAdmin", reflect.TypeOf((*MockService)(nil).GetModelByUIDAdmin), arg0, arg1)
 }
 
 // GetModelDefinition mocks base method.
@@ -187,19 +187,19 @@ func (mr *MockServiceMockRecorder) GetModelDefinition(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinition", reflect.TypeOf((*MockService)(nil).GetModelDefinition), arg0)
 }
 
-// GetModelDefinitionByUid mocks base method.
-func (m *MockService) GetModelDefinitionByUid(arg0 uuid.UUID) (datamodel.ModelDefinition, error) {
+// GetModelDefinitionByUID mocks base method.
+func (m *MockService) GetModelDefinitionByUID(arg0 uuid.UUID) (datamodel.ModelDefinition, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelDefinitionByUid", arg0)
+	ret := m.ctrl.Call(m, "GetModelDefinitionByUID", arg0)
 	ret0, _ := ret[0].(datamodel.ModelDefinition)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetModelDefinitionByUid indicates an expected call of GetModelDefinitionByUid.
-func (mr *MockServiceMockRecorder) GetModelDefinitionByUid(arg0 interface{}) *gomock.Call {
+// GetModelDefinitionByUID indicates an expected call of GetModelDefinitionByUID.
+func (mr *MockServiceMockRecorder) GetModelDefinitionByUID(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinitionByUid", reflect.TypeOf((*MockService)(nil).GetModelDefinitionByUid), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinitionByUID", reflect.TypeOf((*MockService)(nil).GetModelDefinitionByUID), arg0)
 }
 
 // GetOperation mocks base method.

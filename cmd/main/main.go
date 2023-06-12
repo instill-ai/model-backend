@@ -166,9 +166,6 @@ func main() {
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
-	pipelinePublicServiceClient, pipelinePublicServiceClientConn := external.InitPipelinePublicServiceClient(ctx)
-	defer pipelinePublicServiceClientConn.Close()
-
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
@@ -206,7 +203,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, mgmtPrivateServiceClient, pipelinePublicServiceClient, redisClient, temporalClient, controllerClient)
+	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,

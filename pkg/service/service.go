@@ -9,11 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-redis/redis/v9"
-	"go.temporal.io/sdk/client"
-
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"go.temporal.io/sdk/client"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -30,21 +29,22 @@ import (
 	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
 )
 
+// InferInput is the interface for the input to the model
 type InferInput interface{}
 
+// Service is the interface for the service layer
 type Service interface {
 	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
 
 	CreateModelAsync(ctx context.Context, owner string, model *datamodel.Model) (string, error)
-	GetModelById(ctx context.Context, owner string, modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUid(ctx context.Context, owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	GetModelByID(ctx context.Context, owner string, modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUID(ctx context.Context, owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(ctx context.Context, owner string, modelID string) error
-	RenameModel(ctx context.Context, owner string, modelID string, newModelId string) (datamodel.Model, error)
+	RenameModel(ctx context.Context, owner string, modelID string, newModelID string) (datamodel.Model, error)
 	PublishModel(ctx context.Context, owner string, modelID string) (datamodel.Model, error)
 	UnpublishModel(ctx context.Context, owner string, modelID string) (datamodel.Model, error)
 	UpdateModel(ctx context.Context, modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error)
@@ -59,20 +59,20 @@ type Service interface {
 	UndeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error)
 
 	GetModelDefinition(ctx context.Context, id string) (datamodel.ModelDefinition, error)
-	GetModelDefinitionByUid(ctx context.Context, uid uuid.UUID) (datamodel.ModelDefinition, error)
+	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error)
 
 	GetTritonEnsembleModel(ctx context.Context, modelUID uuid.UUID) (datamodel.TritonModel, error)
 	GetTritonModels(ctx context.Context, modelUID uuid.UUID) ([]datamodel.TritonModel, error)
 
-	GetOperation(ctx context.Context, workflowId string) (*longrunningpb.Operation, error)
+	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
-	GetModelByIdAdmin(ctx context.Context, modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUidAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]datamodel.Model, string, int64, error)
 
 	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
-	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowId *string) error
+	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error
 	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
 }
 
@@ -81,17 +81,16 @@ type service struct {
 	triton                      triton.Triton
 	redisClient                 *redis.Client
 	mgmtPrivateServiceClient    mgmtPB.MgmtPrivateServiceClient
-	pipelinePublicServiceClient pipelinePB.PipelinePublicServiceClient
 	temporalClient              client.Client
 	controllerClient            controllerPB.ControllerPrivateServiceClient
 }
 
-func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, p pipelinePB.PipelinePublicServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
+// NewService returns a new service instance
+func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
 		repository:                  r,
 		triton:                      t,
 		mgmtPrivateServiceClient:    m,
-		pipelinePublicServiceClient: p,
 		redisClient:                 rc,
 		temporalClient:              tc,
 		controllerClient:            cs,
@@ -108,8 +107,8 @@ func (s *service) GetRedisClient() *redis.Client {
 }
 
 // GetMgmtPrivateServiceClient returns the management private service client
-func (h *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient {
-	return h.mgmtPrivateServiceClient
+func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient {
+	return s.mgmtPrivateServiceClient
 }
 
 func (s *service) DeployModel(modelUID uuid.UUID) error {
@@ -169,20 +168,20 @@ func (s *service) UndeployModel(ctx context.Context, modelUID uuid.UUID) error {
 	return nil
 }
 
-func (s *service) GetModelById(ctx context.Context, owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
-	return s.repository.GetModelById(owner, modelID, view)
+func (s *service) GetModelByID(ctx context.Context, owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByID(owner, modelID, view)
 }
 
-func (s *service) GetModelByIdAdmin(ctx context.Context, modelID string, view modelPB.View) (datamodel.Model, error) {
-	return s.repository.GetModelByIdAdmin(modelID, view)
+func (s *service) GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByIDAdmin(modelID, view)
 }
 
-func (s *service) GetModelByUid(ctx context.Context, owner string, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
-	return s.repository.GetModelByUid(owner, uid, view)
+func (s *service) GetModelByUID(ctx context.Context, owner string, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByUID(owner, uid, view)
 }
 
-func (s *service) GetModelByUidAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
-	return s.repository.GetModelByUidAdmin(uid, view)
+func (s *service) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+	return s.repository.GetModelByUIDAdmin(uid, view)
 }
 
 func (s *service) ModelInferTestMode(ctx context.Context, owner string, modelUID uuid.UUID, inferInput InferInput, task modelPB.Model_Task) ([]*modelPB.TaskOutput, error) {
@@ -668,37 +667,9 @@ func (s *service) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSi
 func (s *service) DeleteModel(ctx context.Context, owner string, modelID string) error {
 	logger, _ := logger.GetZapLogger(ctx)
 
-	modelInDB, err := s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
-	}
-
-	filter := fmt.Sprintf("recipe.components.resource_name:\"models/%s\"", modelInDB.UID)
-
-	pipeResp, err := s.pipelinePublicServiceClient.ListPipelines(ctx, &pipelinePB.ListPipelinesRequest{
-		Filter: &filter,
-	})
-	if err != nil {
-		return err
-	}
-	if len(pipeResp.Pipelines) > 0 {
-		var pipeIDs []string
-		for _, pipe := range pipeResp.Pipelines {
-			pipeIDs = append(pipeIDs, pipe.GetId())
-		}
-		st, err := sterr.CreateErrorPreconditionFailure(
-			"[service] delete model",
-			[]*errdetails.PreconditionFailure_Violation{
-				{
-					Type:        "DELETE",
-					Subject:     fmt.Sprintf("id %s", modelInDB.ID),
-					Description: fmt.Sprintf("The model is still in use by pipeline: %s ", strings.Join(pipeIDs, " ")),
-				},
-			})
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		return st.Err()
 	}
 
 	state, err := s.GetResourceState(ctx, modelInDB.UID)
@@ -753,24 +724,24 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 	return s.repository.DeleteModel(modelInDB.UID)
 }
 
-func (s *service) RenameModel(ctx context.Context, owner string, modelID string, newModelId string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+func (s *service) RenameModel(ctx context.Context, owner string, modelID string, newModelID string) (datamodel.Model, error) {
+	modelInDB, err := s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
 
 	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
-		ID: newModelId,
+		ID: newModelID,
 	})
 	if err != nil {
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(ctx, owner, newModelId, modelPB.View_VIEW_FULL)
+	return s.GetModelByID(ctx, owner, newModelID, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) PublishModel(ctx context.Context, owner string, modelID string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -783,11 +754,11 @@ func (s *service) PublishModel(ctx context.Context, owner string, modelID string
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+	return s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) UnpublishModel(ctx context.Context, owner string, modelID string) (datamodel.Model, error) {
-	modelInDB, err := s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
 	}
@@ -800,7 +771,7 @@ func (s *service) UnpublishModel(ctx context.Context, owner string, modelID stri
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(ctx, owner, modelID, modelPB.View_VIEW_FULL)
+	return s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) UpdateModel(ctx context.Context, modelUID uuid.UUID, model *datamodel.Model) (datamodel.Model, error) {
@@ -809,7 +780,7 @@ func (s *service) UpdateModel(ctx context.Context, modelUID uuid.UUID, model *da
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(ctx, model.Owner, model.ID, modelPB.View_VIEW_FULL)
+	return s.GetModelByID(ctx, model.Owner, model.ID, modelPB.View_VIEW_FULL)
 }
 
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
@@ -819,15 +790,15 @@ func (s *service) UpdateModelState(ctx context.Context, modelUID uuid.UUID, mode
 		return datamodel.Model{}, err
 	}
 
-	return s.GetModelById(ctx, model.Owner, model.ID, modelPB.View_VIEW_FULL)
+	return s.GetModelByID(ctx, model.Owner, model.ID, modelPB.View_VIEW_FULL)
 }
 
 func (s *service) GetModelDefinition(ctx context.Context, id string) (datamodel.ModelDefinition, error) {
 	return s.repository.GetModelDefinition(id)
 }
 
-func (s *service) GetModelDefinitionByUid(ctx context.Context, uid uuid.UUID) (datamodel.ModelDefinition, error) {
-	return s.repository.GetModelDefinitionByUid(uid)
+func (s *service) GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (datamodel.ModelDefinition, error) {
+	return s.repository.GetModelDefinitionByUID(uid)
 }
 
 func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]datamodel.ModelDefinition, string, int64, error) {

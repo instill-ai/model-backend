@@ -26,7 +26,7 @@ func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID u
 		TaskQueue: worker.TaskQueue,
 	}
 
-	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	model, err := s.repository.GetModelByUID(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +57,7 @@ func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID
 		TaskQueue: worker.TaskQueue,
 	}
 
-	model, err := s.repository.GetModelByUid(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
+	model, err := s.repository.GetModelByUID(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
 	if err != nil {
 		return "", err
 	}
