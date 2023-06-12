@@ -55,9 +55,6 @@ ENV GOCACHE /go/.cache/go-build
 ENV GOENV /go/.config/go/env
 
 # -- set up mounting points
-
-RUN mkdir /etc/vdp && chown -R nobody:nogroup /etc/vdp
-RUN mkdir /vdp && chown -R nobody:nogroup /vdp
 RUN mkdir /model-repository && chown -R nobody:nogroup /model-repository
 
 USER nobody:nogroup
