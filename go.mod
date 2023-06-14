@@ -21,7 +21,6 @@ require (
 	github.com/knadh/koanf v1.4.4
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/cors v1.8.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0
