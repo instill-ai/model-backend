@@ -18,7 +18,7 @@ if (__ENV.API_GATEWAY_HOST && !__ENV.API_GATEWAY_PORT || !__ENV.API_GATEWAY_HOST
   if (apiGatewayMode) {
     // api gateway mode
     host = __ENV.API_GATEWAY_HOST
-    publicPort = 8080
+    publicPort = __ENV.API_GATEWAY_PORT
     privatePort = 3083
     mgmtHost = __ENV.API_GATEWAY_PORT
     mgmtPrivatePort = 3084
