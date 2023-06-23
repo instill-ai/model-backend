@@ -18,7 +18,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/util"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {

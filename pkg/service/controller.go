@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/util"
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {

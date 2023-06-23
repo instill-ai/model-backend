@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/instill-ai/x/paginate"
 )
 

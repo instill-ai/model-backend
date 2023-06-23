@@ -6,16 +6,18 @@ import (
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
-	"github.com/instill-ai/model-backend/pkg/worker"
-	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	workflowpb "go.temporal.io/api/workflow/v1"
+
+	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/worker"
+
+	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID uuid.UUID) (string, error) {

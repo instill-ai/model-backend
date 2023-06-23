@@ -12,8 +12,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	service "github.com/instill-ai/model-backend/pkg/service"
-	controllerv1alpha "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
-	modelv1alpha "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	controllerv1alpha "github.com/instill-ai/protogen-go/model/controller/v1alpha"
+	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // MockService is a mock of Service interface.

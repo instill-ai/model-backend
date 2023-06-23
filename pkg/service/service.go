@@ -26,9 +26,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/sterr"
 
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // InferInput is the interface for the input to the model

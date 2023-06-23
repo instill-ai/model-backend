@@ -9,13 +9,16 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
+
 	"github.com/instill-ai/model-backend/pkg/service"
+
+	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	"github.com/stretchr/testify/assert"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 const ID = "modelID"

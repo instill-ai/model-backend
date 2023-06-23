@@ -43,8 +43,8 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
@@ -325,7 +325,11 @@ func makeJSONResponse(w http.ResponseWriter, status int, title string, detail st
 
 func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.LivenessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
 	}
 
 	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
@@ -333,7 +337,11 @@ func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessReques
 
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.ReadinessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
 	}
 
 	return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil

@@ -15,7 +15,7 @@ import (
 	database "github.com/instill-ai/model-backend/pkg/db"
 	databaseInit "github.com/instill-ai/model-backend/pkg/init"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {

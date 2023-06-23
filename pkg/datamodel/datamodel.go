@@ -9,7 +9,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelState modelPB.Model_State

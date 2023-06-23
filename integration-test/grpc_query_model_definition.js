@@ -7,9 +7,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/model/model/v1alpha'], 'model.proto');
+client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/github"
 
@@ -18,7 +18,7 @@ export function GetModelDefinition() {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelDefinition', { name: model_def_name }, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModelDefinition', { name: model_def_name }, {}), {
       "GetModelDefinition response status": (r) => r.status === grpc.StatusOK,
       "GetModelDefinition response modelDefinition.name": (r) => r.message.modelDefinition.name === model_def_name,
       "GetModelDefinition response modelDefinition.uid": (r) => r.message.modelDefinition.uid !== undefined,
@@ -39,7 +39,7 @@ export function ListModelDefinitions() {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, {}), {
       "ListModelDefinitions response status": (r) => r.status === grpc.StatusOK,
       "ListModelDefinitions response modelDefinitions[2].name": (r) => r.message.modelDefinitions[2].name === "model-definitions/local",
       "ListModelDefinitions response modelDefinitions[2].uid": (r) => r.message.modelDefinitions[2].uid !== undefined,

@@ -20,14 +20,14 @@ import {
 import * as constant from "./const.js"
 
 const privateClient = new grpc.Client();
-privateClient.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
-privateClient.load(['proto/vdp/model/v1alpha'], 'model.proto');
-privateClient.load(['proto/vdp/model/v1alpha'], 'model_private_service.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
 
 const publicClient = new grpc.Client();
-publicClient.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
-publicClient.load(['proto/vdp/model/v1alpha'], 'model.proto');
-publicClient.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
+publicClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+publicClient.load(['proto/model/model/v1alpha'], 'model.proto');
+publicClient.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -63,7 +63,7 @@ export function ListModels() {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, {})
       if (res.message.operation.done === true) {
@@ -72,7 +72,7 @@ export function ListModels() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
+    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
       "ListModelsAdmin response status": (r) => r.status === grpc.StatusOK,
       "ListModelsAdmin response total_size": (r) => r.message.totalSize >= 1,
       "ListModelsAdmin response next_page_token": (r) => r.message.nextPageToken !== undefined,
@@ -89,7 +89,7 @@ export function ListModels() {
       "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
     });
 
-    check(publicClient.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -132,7 +132,7 @@ export function LookUpModel() {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, {})
       if (res.message.operation.done === true) {
@@ -142,11 +142,11 @@ export function LookUpModel() {
       currentTime = new Date().getTime();
     }
 
-    let res = publicClient.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+    let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
       name: "models/" + model_id
     }, {})
 
-    check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
       permalink: "models/" + res.message.model.uid
     }, {}), {
       "LookUpModelAdmin response status": (r) => r.status === grpc.StatusOK,
@@ -162,12 +162,12 @@ export function LookUpModel() {
       "LookUpModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(privateClient.invoke('vdp.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
       permalink: "models/" + randomString(10)
     }, {}), {
       'LookUpModelAdmin non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
-    check(publicClient.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

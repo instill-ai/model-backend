@@ -20,9 +20,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto/vdp/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model.proto');
-client.load(['proto/vdp/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/model/model/v1alpha'], 'model.proto');
+client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -54,7 +54,7 @@ export function GetModel() {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, {})
       if (res.message.operation.done === true) {
@@ -64,7 +64,7 @@ export function GetModel() {
       currentTime = new Date().getTime();
     }
 
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
       name: "models/" + model_id
     }, {}), {
       "GetModel response status": (r) => r.status === grpc.StatusOK,
@@ -80,13 +80,13 @@ export function GetModel() {
       "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
       name: "models/" + randomString(10)
     }, {}), {
       'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -124,7 +124,7 @@ export function ListModels() {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, {})
       if (res.message.operation.done === true) {
@@ -133,7 +133,7 @@ export function ListModels() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/ListModels', {}, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, {}), {
       "ListModels response status": (r) => r.status === grpc.StatusOK,
       "ListModels response total_size": (r) => r.message.totalSize >= 1,
       "ListModels response next_page_token": (r) => r.message.nextPageToken !== undefined,
@@ -150,7 +150,7 @@ export function ListModels() {
       "ListModels response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
     });
 
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -187,7 +187,7 @@ export function LookupModel() {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, {})
       if (res.message.operation.done === true) {
@@ -197,10 +197,10 @@ export function LookupModel() {
       currentTime = new Date().getTime();
     }
 
-    let res = client.invoke('vdp.model.v1alpha.ModelPublicService/GetModel', {
+    let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
       name: `models/${model_id}`
     }, {})
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/LookUpModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
       permalink: "models/" + res.message.model.uid
     }, {}), {
       "LookUpModel response status": (r) => r.status === grpc.StatusOK,
@@ -216,12 +216,12 @@ export function LookupModel() {
       "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/LookUpModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
       permalink: "models/" + randomString(10)
     }, {}), {
       'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
-    check(client.invoke('vdp.model.v1alpha.ModelPublicService/DeleteModel', {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

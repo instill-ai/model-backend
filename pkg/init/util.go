@@ -7,7 +7,7 @@ import (
 	"github.com/ghodss/yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var EnumRegistry = map[string]map[string]int32{
