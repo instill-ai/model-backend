@@ -59,7 +59,7 @@ temporal:
   servername:
 controller:
   host: controller-model
-  privateport: 3085
+  privateport: 3086
   https:
     cert:
     key:

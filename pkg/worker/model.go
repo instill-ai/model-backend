@@ -281,7 +281,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 }
 
 func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error {
-	fmt.Println("CreateModelWorkflow started")
+
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 

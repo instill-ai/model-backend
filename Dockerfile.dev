@@ -18,7 +18,7 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 
 # k6
 ARG K6_VERSION
-ADD https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz
+ADD https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-${TARGETARCH}.tar.gz k6-v${K6_VERSION}-linux-${TARGETARCH}.tar.gz
 RUN tar -xf k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz --strip-components 1 -C /usr/bin
 
 # ArtiVC to work with cloud storage
@@ -40,7 +40,6 @@ RUN pip install --upgrade pip setuptools wheel
 RUN pip3 install --no-cache-dir transformers==4.21.0 pillow torch==1.12.1 torchvision==0.13.1 onnxruntime==1.11.1 dvc[gs]==2.34.2
 
 # -- set up Go
-
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .

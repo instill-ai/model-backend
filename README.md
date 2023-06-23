@@ -41,14 +41,14 @@ Now, you have the Go project set up in the container, in which you can compile a
 $ docker exec -it model-backend /bin/bash
 $ go run ./cmd/migration
 $ go run ./cmd/init
-$ go run ./cmd/main
+$ CFG_SERVER_ITMODE_ENABLED=true go run ./cmd/main
 ```
 
 ### Run the Temporal worker
 
 ```bash
 $ docker exec -it model-backend /bin/bash
-$ go run ./cmd/worker
+$ CFG_SERVER_ITMODE_ENABLED=true go run ./cmd/worker
 ```
 
 ### Run the integration test
