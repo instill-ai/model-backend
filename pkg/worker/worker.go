@@ -10,7 +10,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 )
 
 // Namespace is the Temporal namespace for model-backend

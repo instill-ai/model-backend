@@ -1,34 +1,34 @@
 let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
 
 if (__ENV.API_GATEWAY_HOST && !__ENV.API_GATEWAY_PORT || !__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT) {
-    fail("both API_GATEWAY_HOST and API_GATEWAY_PORT should be properly configured.")
+  fail("both API_GATEWAY_HOST and API_GATEWAY_PORT should be properly configured.")
+}
+
+export const apiGatewayMode = (__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT);
+
+if (__ENV.API_GATEWAY_PROTOCOL) {
+  if (__ENV.API_GATEWAY_PROTOCOL !== "http" && __ENV.API_GATEWAY_PROTOCOL != "https") {
+    fail("only allow `http` or `https` for API_GATEWAY_PROTOCOL")
   }
-
-  export const apiGatewayMode = (__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT);
-
-  if (__ENV.API_GATEWAY_PROTOCOL) {
-    if (__ENV.API_GATEWAY_PROTOCOL !== "http" && __ENV.API_GATEWAY_PROTOCOL != "https") {
-      fail("only allow `http` or `https` for API_GATEWAY_PROTOCOL")
-    }
-    proto = __ENV.API_GATEWAY_PROTOCOL
-  } else {
-    proto = "http"
-  }
-
-  if (apiGatewayMode) {
-    // api gateway mode
-    host = __ENV.API_GATEWAY_HOST
-    publicPort = 8080
-    privatePort = 3083
-    mgmtHost = __ENV.API_GATEWAY_PORT
-    mgmtPrivatePort = 3084
+  proto = __ENV.API_GATEWAY_PROTOCOL
 } else {
-    // direct microservice mode
-    host = "model-backend"
-    publicPort = 8083
-    privatePort = 3083
-    mgmtHost = "mgmt-backend"
-    mgmtPrivatePort = 3084
+  proto = "http"
+}
+
+if (apiGatewayMode) {
+  // api gateway mode
+  host = __ENV.API_GATEWAY_HOST
+  publicPort = __ENV.API_GATEWAY_PORT
+  privatePort = 3083
+  mgmtHost = __ENV.API_GATEWAY_PORT
+  mgmtPrivatePort = 3084
+} else {
+  // direct microservice mode
+  host = "model-backend"
+  publicPort = 8083
+  privatePort = 3083
+  mgmtHost = "mgmt-backend"
+  mgmtPrivatePort = 3084
 }
 
 export const defaultUserId = "instill-ai"

@@ -3,7 +3,7 @@ package util
 import (
 	"google.golang.org/protobuf/encoding/protojson"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var Tasks = map[string]modelPB.Model_Task{

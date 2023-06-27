@@ -13,9 +13,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/repo"
 
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
-	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
+	usagePB "github.com/instill-ai/protogen-go/base/usage/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	usageClient "github.com/instill-ai/usage-client/client"
 	usageReporter "github.com/instill-ai/usage-client/reporter"
 )
@@ -100,7 +100,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 				for _, model := range dbModels {
 					isModelOnline := false
-					modelDef, err := u.repository.GetModelDefinitionByUid(model.ModelDefinitionUid)
+					modelDef, err := u.repository.GetModelDefinitionByUID(model.ModelDefinitionUid)
 					if err != nil {
 						logger.Error(fmt.Sprintf("%s", err))
 					} else {

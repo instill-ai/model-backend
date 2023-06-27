@@ -43,8 +43,8 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	healthcheckPB "github.com/instill-ai/protogen-go/vdp/healthcheck/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
@@ -325,7 +325,11 @@ func makeJSONResponse(w http.ResponseWriter, status int, title string, detail st
 
 func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.LivenessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
 	}
 
 	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
@@ -333,7 +337,11 @@ func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessReques
 
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !h.triton.IsTritonServerReady() {
-		return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING}}, nil
+		return &modelPB.ReadinessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
 	}
 
 	return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
@@ -495,7 +503,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	_, err = s.GetModelById(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = s.GetModelByID(req.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
@@ -640,7 +648,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_, err = h.service.GetModelById(stream.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelByID(stream.Context(), ownerPermalink, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		return status.Errorf(codes.AlreadyExists, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
@@ -1543,7 +1551,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_, err = h.service.GetModelById(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
+	_, err = h.service.GetModelByID(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
 	if err == nil {
 		span.SetStatus(1, "Model already existed")
 		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
@@ -1614,7 +1622,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return &modelPB.ListModelsResponse{}, err
@@ -1666,12 +1674,12 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUid(ctx, ownerPermalink, uid, req.GetView())
+	dbModel, err := h.service.GetModelByUID(ctx, ownerPermalink, uid, req.GetView())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
@@ -1711,12 +1719,12 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, req.GetView())
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, id, req.GetView())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
@@ -1756,7 +1764,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, id, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, id, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
@@ -1781,7 +1789,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
@@ -1829,7 +1837,7 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 		return nil, err
 	}
 
-	deleteModel, err := h.service.GetModelById(ctx, ownerPermalink, id, modelPB.View_VIEW_BASIC)
+	deleteModel, err := h.service.GetModelByID(ctx, ownerPermalink, id, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteModelResponse{}, err
@@ -1874,7 +1882,7 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
@@ -1920,7 +1928,7 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
@@ -1966,7 +1974,7 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
@@ -2008,7 +2016,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
@@ -2117,7 +2125,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
@@ -2219,7 +2227,7 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 	}
 
 	// check permission
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -2280,7 +2288,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelByID(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -2385,7 +2393,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	modelInDB, err := h.service.GetModelById(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelByID(stream.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -2489,7 +2497,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, err
@@ -2614,7 +2622,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		return &modelPB.TestModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, err
@@ -2781,7 +2789,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	modelInDB, err := s.GetModelById(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	modelInDB, err := s.GetModelByID(req.Context(), ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		span.SetStatus(1, "The model not found in server")
@@ -2947,7 +2955,7 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 		return &modelPB.GetModelCardResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelById(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByID(ctx, ownerPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{}, err

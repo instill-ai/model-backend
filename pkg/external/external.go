@@ -15,10 +15,9 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/vdp/mgmt/v1alpha"
-	pipelinePB "github.com/instill-ai/protogen-go/vdp/pipeline/v1alpha"
-	usagePB "github.com/instill-ai/protogen-go/vdp/usage/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
+	usagePB "github.com/instill-ai/protogen-go/base/usage/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 )
 
 // InitMgmtPrivateServiceClient initialises a MgmtPrivateServiceClient instance
@@ -86,31 +85,6 @@ func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *g
 	}
 
 	return usagePB.NewUsageServiceClient(clientConn), clientConn
-}
-
-// InitPipelinePublicServiceClient initialises a PipelinePublicServiceClient instance
-func InitPipelinePublicServiceClient(ctx context.Context) (pipelinePB.PipelinePublicServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
-
-	var clientDialOpts grpc.DialOption
-	var creds credentials.TransportCredentials
-	var err error
-	if config.Config.PipelineBackend.HTTPS.Cert != "" && config.Config.PipelineBackend.HTTPS.Key != "" {
-		creds, err = credentials.NewServerTLSFromFile(config.Config.PipelineBackend.HTTPS.Cert, config.Config.PipelineBackend.HTTPS.Key)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		clientDialOpts = grpc.WithTransportCredentials(creds)
-	} else {
-		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.PipelineBackend.Host, config.Config.PipelineBackend.PublicPort), clientDialOpts)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	return pipelinePB.NewPipelinePublicServiceClient(clientConn), clientConn
 }
 
 // InitControllerPrivateServiceClient initialises a ControllerPrivateServiceClient instance

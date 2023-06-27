@@ -76,16 +76,6 @@ type CacheConfig struct {
 	Model bool `koanf:"model"`
 }
 
-// PipelineBackendConfig related to pipeline-backend
-type PipelineBackendConfig struct {
-	Host       string `koanf:"host"`
-	PublicPort int    `koanf:"publicport"`
-	HTTPS      struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
-}
-
 // ControllerConfig related to controller
 type ControllerConfig struct {
 	Host        string `koanf:"host"`
@@ -139,7 +129,6 @@ type AppConfig struct {
 	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
 	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
 	Cache                  CacheConfig           `koanf:"cache"`
-	PipelineBackend        PipelineBackendConfig `koanf:"pipelinebackend"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig        `koanf:"temporal"`
 	Controller             ControllerConfig      `koanf:"controller"`

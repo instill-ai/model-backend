@@ -10,8 +10,8 @@ export
 
 .PHONY: dev
 dev:							## Run dev container
-	@docker compose ls -q | grep -q "instill-vdp" && true || \
-		(echo "Error: Run \"make latest PROFILE=model ITMODE_ENABLED=true\" in vdp repository (https://github.com/instill-ai/vdp) in your local machine first." && exit 1)
+	@docker compose ls -q | grep -q "instill-model" && true || \
+		(echo "Error: Run \"make latest PROFILE=model\" in model repository (https://github.com/instill-ai/model) in your local machine first." && exit 1)
 	@docker inspect --type container ${SERVICE_NAME} >/dev/null 2>&1 && echo "A container named ${SERVICE_NAME} is already running." || \
 		echo "Run dev container ${SERVICE_NAME}. To stop it, run \"make stop\"."
 	@docker run -d --rm \
@@ -42,7 +42,7 @@ build:							## Build dev docker image
 		--build-arg GOLANG_VERSION=${GOLANG_VERSION} \
 		--build-arg ARTIVC_VERSION=${ARTIVC_VERSION} \
 		--build-arg K6_VERSION=${K6_VERSION} \
-		-f Dockerfile.dev  -t instill/${SERVICE_NAME}:dev .
+		-f Dockerfile.dev -t instill/${SERVICE_NAME}:dev .
 
 .PHONY: go-gen
 go-gen:       					## Generate codes
@@ -69,5 +69,5 @@ integration-test:				## Run integration test
 
 .PHONY: help
 help:       	 				## Show this help
-	@echo "\nMakefile for locel development"
+	@echo "\nMakefile for local development"
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)

@@ -9,15 +9,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/instill-ai/x/paginate"
 )
 
 type Repository interface {
 	CreateModel(model datamodel.Model) error
 	CreatePreDeployModel(model datamodel.PreDeployModel) error
-	GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	GetModelByID(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUID(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	DeleteModel(modelUID uuid.UUID) error
 	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
 	UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error
@@ -27,11 +27,11 @@ type Repository interface {
 	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
 	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
-	GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error)
+	GetModelDefinitionByUID(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
-	GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
+	GetModelByIDAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
+	GetModelByUIDAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
 	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
 }
 
@@ -96,7 +96,7 @@ func (r *repository) CreatePreDeployModel(model datamodel.PreDeployModel) error 
 	return nil
 }
 
-func (r *repository) GetModelById(owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelByID(owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
@@ -109,7 +109,7 @@ func (r *repository) GetModelById(owner string, modelID string, view modelPB.Vie
 	return model, nil
 }
 
-func (r *repository) GetModelByIdAdmin(modelID string, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelByIDAdmin(modelID string, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
@@ -121,7 +121,7 @@ func (r *repository) GetModelByIdAdmin(modelID string, view modelPB.View) (datam
 	return model, nil
 }
 
-func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelByUID(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
@@ -134,7 +134,7 @@ func (r *repository) GetModelByUid(owner string, modelUID uuid.UUID, view modelP
 	return model, nil
 }
 
-func (r *repository) GetModelByUidAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
+func (r *repository) GetModelByUIDAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
 	var model datamodel.Model
 	selectedFields := GetModelSelectedFields
 	if view != modelPB.View_VIEW_FULL {
@@ -325,7 +325,7 @@ func (r *repository) GetModelDefinition(id string) (datamodel.ModelDefinition, e
 	return definitionDB, nil
 }
 
-func (r *repository) GetModelDefinitionByUid(uid uuid.UUID) (datamodel.ModelDefinition, error) {
+func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (datamodel.ModelDefinition, error) {
 	var definitionDB datamodel.ModelDefinition
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("uid", uid).First(&definitionDB); result.Error != nil {
 		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")

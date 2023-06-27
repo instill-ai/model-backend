@@ -21,17 +21,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [pipeline-backend, connector-backend, model-backend, mgmt-backend, controller]
+        component: [model-backend]
     uses: instill-ai/vdp/.github/workflows/integration-test-backend.yml@main
     with:
       component: ${{ matrix.component }}
-      target: latest
-  console:
-    needs: build-push-image
-    if: github.ref == 'refs/heads/main'
-    name: Console
-    uses: instill-ai/vdp/.github/workflows/integration-test-console.yml@main
-    with:
       target: latest
 
   pr-head:
@@ -104,52 +97,10 @@ jobs:
         run: |
           curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
 
-      - name: Checkout (pipeline)
-        uses: actions/checkout@v3
-        with:
-          repository: instill-ai/pipeline-backend
-
-      - name: Load .env file
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
-      - name: Run integration-test
-        run: |
-          make integration-test API_GATEWAY_HOST=localhost API_GATEWAY_PORT=8080
-
-      - name: Checkout (connector)
-        uses: actions/checkout@v3
-        with:
-          repository: instill-ai/connector-backend
-
-      - name: Load .env file
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
-      - name: Run integration-test
-        run: |
-          make integration-test API_GATEWAY_HOST=localhost API_GATEWAY_PORT=8080
-
       - name: Checkout (model)
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Load .env file
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
-      - name: Run integration-test
-        run: |
-          make integration-test API_GATEWAY_HOST=localhost API_GATEWAY_PORT=8080
-
-      - name: Checkout (mgmt)
-        uses: actions/checkout@v3
-        with:
-          repository: instill-ai/mgmt-backend
 
       - name: Load .env file
         uses: cardinalby/export-env-action@v2

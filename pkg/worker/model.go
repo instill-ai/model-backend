@@ -17,8 +17,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/util"
 
-	controllerPB "github.com/instill-ai/protogen-go/vdp/controller/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelParams struct {
@@ -57,12 +57,12 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	logger.Info("DeployModelActivity started")
 
-	dbModel, err := w.repository.GetModelByUid(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
+	dbModel, err := w.repository.GetModelByUID(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
 
-	modelDef, err := w.repository.GetModelDefinitionByUid(dbModel.ModelDefinitionUid)
+	modelDef, err := w.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	dbModel, err := w.repository.GetModelByUid(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
+	dbModel, err := w.repository.GetModelByUID(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -281,7 +281,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 }
 
 func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) error {
-	fmt.Println("CreateModelWorkflow started")
+
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
@@ -315,7 +315,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		}
 	}
 
-	dbModel, err := w.repository.GetModelById(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
+	dbModel, err := w.repository.GetModelByID(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return err
 	}

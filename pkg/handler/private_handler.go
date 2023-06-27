@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
 
-	modelPB "github.com/instill-ai/protogen-go/vdp/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type PrivateHandler struct {
@@ -37,7 +37,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
@@ -68,7 +68,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	dbModel, err := h.service.GetModelByUidAdmin(ctx, uid, req.GetView())
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
@@ -78,7 +78,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	modelDef, err := h.service.GetModelDefinitionByUid(ctx, dbModel.ModelDefinitionUid)
+	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
