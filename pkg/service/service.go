@@ -14,6 +14,8 @@ import (
 	"github.com/gofrs/uuid"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -672,6 +674,10 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 		return err
 	}
 
+	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+		return status.Errorf(codes.Unauthenticated, "Unauthorized")
+	}
+
 	state, err := s.GetResourceState(ctx, modelInDB.UID)
 	if err != nil {
 		return err
@@ -730,6 +736,10 @@ func (s *service) RenameModel(ctx context.Context, owner string, modelID string,
 		return datamodel.Model{}, err
 	}
 
+	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+		return datamodel.Model{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
+	}
+
 	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
 		ID: newModelID,
 	})
@@ -761,6 +771,10 @@ func (s *service) UnpublishModel(ctx context.Context, owner string, modelID stri
 	modelInDB, err := s.GetModelByID(ctx, owner, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return datamodel.Model{}, err
+	}
+
+	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+		return datamodel.Model{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
 	err = s.repository.UpdateModel(modelInDB.UID, datamodel.Model{
