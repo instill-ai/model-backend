@@ -674,7 +674,7 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 		return err
 	}
 
-	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if owner != modelInDB.Owner {
 		return status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
@@ -736,7 +736,7 @@ func (s *service) RenameModel(ctx context.Context, owner string, modelID string,
 		return datamodel.Model{}, err
 	}
 
-	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if owner != modelInDB.Owner {
 		return datamodel.Model{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
@@ -773,7 +773,7 @@ func (s *service) UnpublishModel(ctx context.Context, owner string, modelID stri
 		return datamodel.Model{}, err
 	}
 
-	if owner != modelInDB.Owner && modelInDB.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if owner != modelInDB.Owner {
 		return datamodel.Model{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 

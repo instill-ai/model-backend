@@ -1771,7 +1771,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		return &modelPB.UpdateModelResponse{}, err
 	}
 
-	if ownerPermalink != dbModel.Owner && dbModel.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if ownerPermalink != dbModel.Owner {
 		return &modelPB.UpdateModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
@@ -2028,7 +2028,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	if ownerPermalink != dbModel.Owner && dbModel.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if ownerPermalink != dbModel.Owner {
 		return &modelPB.DeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
@@ -2141,7 +2141,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	if ownerPermalink != dbModel.Owner && dbModel.Visibility != datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if ownerPermalink != dbModel.Owner {
 		return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
