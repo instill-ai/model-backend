@@ -42,7 +42,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
 
-		owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+		owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
@@ -73,7 +73,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}

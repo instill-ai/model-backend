@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -37,11 +38,32 @@ func GetRequestSingleHeader(ctx context.Context, header string) string {
 }
 
 // GetOwnerCustom returns the resource owner from a request
-func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
+func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient, redisClient *redis.Client) (*mgmtPB.User, error) {
 	logger, _ := logger.GetZapLogger(req.Context())
+
+	// Verify if "authorization" is in the header
+	authorization := req.Header.Get(constant.HeaderAuthorization)
 	// Verify if "jwt-sub" is in the header
 	headerOwnerUId := req.Header.Get(constant.HeaderOwnerUIDKey)
-	if headerOwnerUId != "" {
+
+	apiToken := strings.Replace(authorization, "Bearer ", "", 1)
+	if apiToken != "" {
+		ownerPermalink, err := redisClient.Get(context.Background(), fmt.Sprintf(constant.AccessTokenKeyFormat, apiToken)).Result()
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		resp, err := client.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: ownerPermalink})
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+		}
+
+		return resp.User, nil
+
+	} else if headerOwnerUId != "" {
 		_, err := uuid.FromString(headerOwnerUId)
 		if err != nil {
 			logger.Error(err.Error())
@@ -75,12 +97,31 @@ func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient) (
 }
 
 // GetOwner returns the resource owner
-func GetOwner(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient) (*mgmtPB.User, error) {
+func GetOwner(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient, redisClient *redis.Client) (*mgmtPB.User, error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
+	// Verify if "authorization" is in the header
+	authorization := GetRequestSingleHeader(ctx, constant.HeaderAuthorization)
 	// Verify if "jwt-sub" is in the header
 	headerOwnerUId := GetRequestSingleHeader(ctx, constant.HeaderOwnerUIDKey)
-	if headerOwnerUId != "" {
+	apiToken := strings.Replace(authorization, "Bearer ", "", 1)
+	if apiToken != "" {
+		ownerPermalink, err := redisClient.Get(context.Background(), fmt.Sprintf(constant.AccessTokenKeyFormat, apiToken)).Result()
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		resp, err := client.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: ownerPermalink})
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+		}
+
+		return resp.User, nil
+
+	} else if headerOwnerUId != "" {
 		_, err := uuid.FromString(headerOwnerUId)
 		if err != nil {
 			logger.Error(fmt.Sprintf("[mgmt-backend] %s", err.Error()))

@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -350,9 +351,13 @@ func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequ
 // HandleCreateModelByMultiPartFormData is a custom handler
 func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
-	ctx, span := tracer.Start(req.Context(), "HandleCreateModelByMultiPartFormData",
+	eventName := "HandleCreateModelByMultiPartFormData"
+
+	ctx, span := tracer.Start(req.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -364,7 +369,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	owner, err := resource.GetOwnerCustom(req, s.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwnerCustom(req, s.GetMgmtPrivateServiceClient(), s.GetRedisClient())
 	if err != nil {
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -615,13 +620,10 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"HandleCreateModelByMultiPartFormData",
-		"request",
-		"HandleCreateModelByMultiPartFormData done",
-		false,
-		custom_otel.SetEventResource(&uploadedModel),
+		eventName,
+		custom_otel.SetEventResource(uploadedModel),
 	)))
 
 	_, _ = w.Write(b)
@@ -630,13 +632,18 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 // AddModel - upload a model to the model server
 func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (err error) {
-	ctx, span := tracer.Start(stream.Context(), "CreateModelBinaryFileUpload",
+
+	eventName := "CreateModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(stream.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -758,12 +765,9 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"CreateModelBinaryFileUpload",
-		"request",
-		"CreateModelBinaryFileUpload done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(uploadedModel),
 	)))
 
@@ -772,9 +776,13 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 
 func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "CreateGitHubModel",
+	eventName := "CreateGitHubModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -997,7 +1005,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1005,12 +1013,9 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		user,
-		true,
-		"createGitHubModel",
-		"request",
-		"createGitHubModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(githubModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
@@ -1030,9 +1035,13 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "CreateHuggingFaceModel",
+	eventName := "CreateHuggingFaceModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -1254,7 +1263,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1262,12 +1271,9 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		user,
-		true,
-		"createHuggingFaceModel",
-		"request",
-		"createHuggingFaceModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(huggingfaceModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
@@ -1287,9 +1293,13 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 
 func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "CreateArtiVCModel",
+	eventName := "CreateArtiVCModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -1484,7 +1494,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1492,12 +1502,9 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		user,
-		true,
-		"createArtiVCModel",
-		"request",
-		"createArtiVCModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(artivcModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
@@ -1522,7 +1529,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 	defer span.End()
 
 	resp := &modelPB.CreateModelResponse{}
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return resp, err
@@ -1601,13 +1608,17 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 
 func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "ListModels",
+	eventName := "ListModels"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -1632,12 +1643,11 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"ListModels",
-		"request",
-		"ListModels done",
-		false,
+		eventName,
+		custom_otel.SetEventResource(dbModels),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	resp := modelPB.ListModelsResponse{
@@ -1651,13 +1661,17 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "LookUpModel",
+	eventName := "LookUpModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
@@ -1687,12 +1701,11 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"LookUpModel",
-		"request",
-		"LookUpModel done",
-		false,
+		eventName,
+		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1701,13 +1714,17 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 
 func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelRequest) (*modelPB.GetModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "GetModel",
+	eventName := "GetModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelResponse{}, err
@@ -1732,12 +1749,11 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"GetModel",
-		"request",
-		"GetModel done",
-		false,
+		eventName,
+		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1746,13 +1762,17 @@ func (h *PublicHandler) GetModel(ctx context.Context, req *modelPB.GetModelReque
 
 func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateModelRequest) (*modelPB.UpdateModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "UpdateModel",
+	eventName := "UpdateModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
@@ -1769,6 +1789,11 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateModelResponse{}, err
 	}
+
+	if ownerPermalink != dbModel.Owner {
+		return &modelPB.UpdateModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
+	}
+
 	updateModel := datamodel.Model{
 		ID:    id,
 		State: dbModel.State,
@@ -1797,13 +1822,11 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"UpdateModel",
-		"request",
-		"UpdateModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1812,13 +1835,17 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 
 func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "DeleteModel",
+	eventName := "UpdateModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteModelResponse{}, err
@@ -1845,13 +1872,11 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"DeleteModel",
-		"request",
-		"DeleteModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(deleteModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return &modelPB.DeleteModelResponse{}, h.service.DeleteModel(ctx, ownerPermalink, id)
@@ -1859,13 +1884,17 @@ func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteMode
 
 func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameModelRequest) (*modelPB.RenameModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "RenameModel",
+	eventName := "RenameModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameModelResponse{}, err
@@ -1890,13 +1919,11 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"RenameModel",
-		"request",
-		"RenameModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1905,13 +1932,17 @@ func (h *PublicHandler) RenameModel(ctx context.Context, req *modelPB.RenameMode
 
 func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishModelRequest) (*modelPB.PublishModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "PublishModel",
+	eventName := "PublishModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishModelResponse{}, err
@@ -1936,13 +1967,11 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"PublishModel",
-		"request",
-		"PublishModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1951,13 +1980,17 @@ func (h *PublicHandler) PublishModel(ctx context.Context, req *modelPB.PublishMo
 
 func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.UnpublishModelRequest) (*modelPB.UnpublishModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "UnpublishModel",
+	eventName := "PublishModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishModelResponse{}, err
@@ -1982,13 +2015,11 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"UnpublishModel",
-		"request",
-		"UnpublishModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, ownerPermalink)
@@ -1997,13 +2028,17 @@ func (h *PublicHandler) UnpublishModel(ctx context.Context, req *modelPB.Unpubli
 
 func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployModelRequest) (*modelPB.DeployModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "DeployModel",
+	eventName := "DeployModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
@@ -2020,6 +2055,10 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err
+	}
+
+	if ownerPermalink != dbModel.Owner {
+		return &modelPB.DeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
@@ -2086,13 +2125,16 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"DeployModel",
-		"request",
-		"DeployModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfId),
+			},
+		}),
 	)))
 
 	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
@@ -2106,13 +2148,17 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.UndeployModelRequest) (*modelPB.UndeployModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "UndeployModel",
+	eventName := "UndeployModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
@@ -2129,6 +2175,10 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
+	}
+
+	if ownerPermalink != dbModel.Owner {
+		return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
@@ -2176,13 +2226,16 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"UndeployModel",
-		"request",
-		"UndeployModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfId),
+			},
+		}),
 	)))
 
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
@@ -2196,13 +2249,17 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 
 func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelRequest) (*modelPB.WatchModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "WatchModel",
+	eventName := "WatchModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.WatchModelResponse{}, err
@@ -2214,12 +2271,9 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
+			logUUID.String(),
 			owner,
-			false,
-			"WatchModel",
-			"request",
-			"WatchModel error",
-			false,
+			eventName,
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
@@ -2232,13 +2286,10 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
+			logUUID.String(),
 			owner,
-			false,
-			"WatchModel",
-			"request",
-			"WatchModel error",
-			false,
-			custom_otel.SetEventResource(modelID),
+			eventName,
+			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
 		return &modelPB.WatchModelResponse{}, err
@@ -2250,13 +2301,10 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
+			logUUID.String(),
 			owner,
-			false,
-			"WatchModel",
-			"request",
-			"WatchModel error",
-			false,
-			custom_otel.SetEventResource(dbModel),
+			eventName,
+			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
 		return &modelPB.WatchModelResponse{}, err
@@ -2269,13 +2317,17 @@ func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelR
 
 func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicService_TestModelBinaryFileUploadServer) error {
 
-	ctx, span := tracer.Start(stream.Context(), "TestModelBinaryFileUpload",
+	eventName := "TestModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(stream.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -2360,13 +2412,11 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"TestModelBinaryFileUpload",
-		"request",
-		"TestModelBinaryFileUpload done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return err
@@ -2374,13 +2424,17 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 
 func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
 
-	ctx, span := tracer.Start(stream.Context(), "TriggerModelBinaryFileUpload",
+	eventName := "TriggerModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(stream.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(stream.Context(), h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -2464,13 +2518,11 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"TriggerModelBinaryFileUpload",
-		"request",
-		"TriggerModelBinaryFileUpload done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return err
@@ -2478,13 +2530,17 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 
 func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "TriggerModel",
+	eventName := "TriggerModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerModelResponse{}, err
@@ -2586,13 +2642,11 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"TriggerModel",
-		"request",
-		"TriggerModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return &modelPB.TriggerModelResponse{
@@ -2603,13 +2657,17 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 
 func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelRequest) (*modelPB.TestModelResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "TestModel",
+	eventName := "TriggerModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TestModelResponse{}, err
@@ -2723,13 +2781,11 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"TestModel",
-		"request",
-		"TestModel done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return &modelPB.TestModelResponse{
@@ -2740,9 +2796,13 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
 
-	ctx, span := tracer.Start(req.Context(), "inferModelByUpload",
+	eventName := "TriggerModelBinaryFileUpload"
+
+	ctx, span := tracer.Start(req.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -2759,7 +2819,11 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	if mgmtPrivateServiceClientConn != nil {
 		defer mgmtPrivateServiceClientConn.Close()
 	}
-	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient)
+
+	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
+	defer redisClient.Close()
+
+	owner, err := resource.GetOwnerCustom(req, mgmtPrivateServiceClient, redisClient)
 	if err != nil {
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -2913,13 +2977,11 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		true,
-		"inferModelByUpload",
-		"request",
-		"inferModelByUpload done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	_, _ = w.Write(res)
@@ -2936,13 +2998,17 @@ func HandleTriggerModelByUpload(s service.Service, w http.ResponseWriter, r *htt
 
 func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelCardRequest) (*modelPB.GetModelCardResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "GetModelCard",
+	eventName := "GetModelCard"
+
+	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	logUUID, _ := uuid.NewV4()
+
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient())
+	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetModelCardResponse{}, err
@@ -2980,13 +3046,11 @@ func (h *PublicHandler) GetModelCard(ctx context.Context, req *modelPB.GetModelC
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
+		logUUID.String(),
 		owner,
-		false,
-		"GetModelCard",
-		"request",
-		"GetModelCard done",
-		false,
+		eventName,
 		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
 	return &modelPB.GetModelCardResponse{Readme: &modelPB.ModelCard{

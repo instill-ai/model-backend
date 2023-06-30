@@ -821,3 +821,32 @@ func ConvertModelToResourcePermalink(modelUID string) string {
 
 	return resourcePermalink
 }
+
+const (
+	CreateEvent    string = "Create"
+	UpdateEvent    string = "Update"
+	DeleteEvent    string = "Delete"
+	DeployEvent    string = "Deploy"
+	UndeployEvent  string = "Undeploy"
+	PublishEvent   string = "Publish"
+	UnpublishEvent string = "Unpublish"
+	TriggerEvent   string = "Trigger"
+	TestEvent      string = "Test"
+)
+
+func IsAuditEvent(eventName string) bool {
+	return strings.HasPrefix(eventName, CreateEvent) ||
+		strings.HasPrefix(eventName, UpdateEvent) ||
+		strings.HasPrefix(eventName, DeleteEvent) ||
+		strings.HasPrefix(eventName, DeployEvent) ||
+		strings.HasPrefix(eventName, UndeployEvent) ||
+		strings.HasPrefix(eventName, PublishEvent) ||
+		strings.HasPrefix(eventName, UnpublishEvent) ||
+		strings.HasPrefix(eventName, TriggerEvent) ||
+		strings.HasPrefix(eventName, TestEvent)
+}
+
+// TODO: billable event TBD
+func IsBillableEvent(eventName string) bool {
+	return false
+}
