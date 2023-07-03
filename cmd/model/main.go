@@ -76,14 +76,6 @@ func main() {
 		}()
 	}
 
-	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend"); err != nil {
-		panic(err)
-	} else {
-		defer func() {
-			err = mp.Shutdown(ctx)
-		}()
-	}
-
 	ctx, span := otel.Tracer("main-tracer").Start(ctx,
 		"main",
 	)

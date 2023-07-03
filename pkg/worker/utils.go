@@ -84,6 +84,10 @@ func GetPreDeployGitHubModelUUID(model datamodel.Model) (*datamodel.PreDeployMod
 
 	var githubModel *datamodel.PreDeployModel
 
+	if _, found := preDeployModelMap[model.ID]; !found {
+		return githubModel, nil
+	}
+
 	for _, preDeployModelConfigs := range preDeployModelConfigs {
 		if modelConfig.Repository == preDeployModelConfigs.Configuration["repository"] &&
 			modelConfig.Tag == preDeployModelConfigs.Configuration["tag"] {
@@ -100,7 +104,7 @@ func GetPreDeployGitHubModelUUID(model datamodel.Model) (*datamodel.PreDeployMod
 				},
 				ID:                 model.ID,
 				ModelDefinitionUid: modelDefinitionUID,
-				Owner:              preDeployModelMap[preDeployModelConfigs.ID]["owner"],
+				Owner:              model.Owner,
 				Visibility:         datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC),
 				State:              model.State,
 				Task:               model.Task,
