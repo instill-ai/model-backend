@@ -1,10 +1,10 @@
 let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
 
-if (__ENV.API_GATEWAY_HOST && !__ENV.API_GATEWAY_PORT || !__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT) {
-  fail("both API_GATEWAY_HOST and API_GATEWAY_PORT should be properly configured.")
+if (__ENV.API_GATEWAY_MODEL_HOST && !__ENV.API_GATEWAY_MODEL_PORT || !__ENV.API_GATEWAY_MODEL_HOST && __ENV.API_GATEWAY_MODEL_PORT) {
+  fail("both API_GATEWAY_MODEL_HOST and API_GATEWAY_MODEL_PORT should be properly configured.")
 }
 
-export const apiGatewayMode = (__ENV.API_GATEWAY_HOST && __ENV.API_GATEWAY_PORT);
+export const apiGatewayMode = (__ENV.API_GATEWAY_MODEL_HOST && __ENV.API_GATEWAY_MODEL_PORT);
 
 if (__ENV.API_GATEWAY_PROTOCOL) {
   if (__ENV.API_GATEWAY_PROTOCOL !== "http" && __ENV.API_GATEWAY_PROTOCOL != "https") {
@@ -17,10 +17,10 @@ if (__ENV.API_GATEWAY_PROTOCOL) {
 
 if (apiGatewayMode) {
   // api gateway mode
-  host = __ENV.API_GATEWAY_HOST
-  publicPort = __ENV.API_GATEWAY_PORT
+  host = __ENV.API_GATEWAY_MODEL_HOST
+  publicPort = __ENV.API_GATEWAY_MODEL_PORT
   privatePort = 3083
-  mgmtHost = __ENV.API_GATEWAY_PORT
+  mgmtHost = __ENV.API_GATEWAY_MODEL_PORT
   mgmtPrivatePort = 3084
 } else {
   // direct microservice mode
