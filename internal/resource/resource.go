@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"google.golang.org/grpc/codes"
@@ -45,7 +46,6 @@ func GetOwnerCustom(req *http.Request, client mgmtPB.MgmtPrivateServiceClient, r
 	authorization := req.Header.Get(constant.HeaderAuthorization)
 	// Verify if "jwt-sub" is in the header
 	headerOwnerUId := req.Header.Get(constant.HeaderOwnerUIDKey)
-
 	apiToken := strings.Replace(authorization, "Bearer ", "", 1)
 	if apiToken != "" {
 		ownerPermalink, err := redisClient.Get(context.Background(), fmt.Sprintf(constant.AccessTokenKeyFormat, apiToken)).Result()
@@ -155,6 +155,19 @@ func GetOwner(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient, redis
 		return nil, status.Errorf(codes.NotFound, "Not found")
 	}
 	return resp.User, nil
+}
+
+// GetOwnerWithAPIToken returns the resource owner that strictly required api token
+func GetOwnerWithAPIToken(ctx context.Context, client mgmtPB.MgmtPrivateServiceClient, redisClient *redis.Client) (*mgmtPB.User, error) {
+	// Verify if "authorization" is in the header
+	authorization := GetRequestSingleHeader(ctx, constant.HeaderAuthorization)
+	// temporary solution to restrict cloud version from calling APIs without header
+	// need further concrete design of authentication
+	if strings.HasPrefix(config.Config.Server.Edition, "cloud") && authorization == "" {
+		return nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+	} else {
+		return GetOwner(ctx, client, redisClient)
+	}
 }
 
 func GetID(name string) (string, error) {
