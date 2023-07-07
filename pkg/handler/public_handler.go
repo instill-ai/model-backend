@@ -2530,7 +2530,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 
 func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 
-	eventName := "TriggerModelBinaryFileUpload"
+	eventName := "TriggerModel"
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -2657,7 +2657,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 
 func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelRequest) (*modelPB.TestModelResponse, error) {
 
-	eventName := "TriggerModelBinaryFileUpload"
+	eventName := "TestModel"
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -2796,7 +2796,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
 
-	eventName := "TriggerModelBinaryFileUpload"
+	eventName := "InferModelByUpload"
 
 	ctx, span := tracer.Start(req.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))

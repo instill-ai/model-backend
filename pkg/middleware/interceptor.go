@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -11,6 +12,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 )
 
@@ -28,7 +30,11 @@ func UnaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 		return nil, status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
+	// temporary solution to restrict cloud version from calling APIs without header
+	// need further concrete design of authentication
+	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") {
+		md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
+	}
 
 	newCtx := metadata.NewIncomingContext(ctx, md)
 	h, err := handler(newCtx, req)
