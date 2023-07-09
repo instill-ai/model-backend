@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [model-backend]
-    uses: instill-ai/vdp/.github/workflows/integration-test-backend.yml@main
+        component: [model-backend, controller-model]
+    uses: instill-ai/model/.github/workflows/integration-test-backend.yml@main
     with:
       component: ${{ matrix.component }}
       target: latest
@@ -77,19 +77,42 @@ jobs:
             ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
-      - name: Checkout (vdp)
+      - name: Checkout repo (base)
         uses: actions/checkout@v3
         with:
-          repository: instill-ai/vdp
+          repository: instill-ai/base
 
-      - name: Launch VDP
+      - name: Load .env file (base)
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: .env
+
+      - name: Launch Instill Base (latest)
         run: |
           COMPOSE_PROFILES=all \
           EDITION=local-ce:test \
-          ITMODE_ENABLED=true \
-          TRITON_CONDA_ENV_PLATFORM=cpu \
           docker compose -f docker-compose.yml -f docker-compose.latest.yml up -d --quiet-pull
           COMPOSE_PROFILES=all \
+          EDITION=local-ce:test \
+          docker compose -f docker-compose.yml -f docker-compose.latest.yml rm -f
+
+      - name: Checkout repo (model)
+        uses: actions/checkout@v3
+        with:
+          repository: instill-ai/model
+
+      - name: Load .env file (model)
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: .env
+
+      - name: Launch Instill Model (latest)
+        run: |
+          EDITION=local-ce:test \
+          ITMODE_ENABLED=true \
+          TRITON_CONDA_ENV_PLATFORM=cpu \
+          COMPOSE_PROFILES=all \
+          docker compose -f docker-compose.yml -f docker-compose.latest.yml up -d --quiet-pull
           EDITION=local-ce:test \
           docker compose -f docker-compose.yml -f docker-compose.latest.yml rm -f
 
@@ -109,4 +132,18 @@ jobs:
 
       - name: Run integration-test
         run: |
-          make integration-test API_GATEWAY_MODEL_HOST=localhost API_GATEWAY_MODEL_PORT=8080
+          make integration-test API_GATEWAY_MODEL_HOST=localhost API_GATEWAY_MODEL_PORT=9080
+
+      - name: Checkout (controller)
+        uses: actions/checkout@v3
+        with:
+          repository: instill-ai/controller-model
+
+      - name: Load .env file
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: .env
+
+      - name: Run integration-test
+        run: |
+          make integration-test API_GATEWAY_MODEL_HOST=localhost API_GATEWAY_MODEL_PORT=9080
