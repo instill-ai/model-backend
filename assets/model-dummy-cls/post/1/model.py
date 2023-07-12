@@ -1,11 +1,7 @@
 import numpy as np
 import json
-import sys
-import os
 
-from pathlib import Path
 from typing import List
-from PIL import Image
 
 from triton_python_backend_utils import get_output_config_by_name, triton_string_to_numpy
 from c_python_backend_utils import Tensor, InferenceResponse, InferenceRequest
