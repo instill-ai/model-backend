@@ -2,15 +2,20 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -86,22 +91,129 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *PrivateHandler) CheckModel(ctx context.Context, req *modelPB.CheckModelRequest) (*modelPB.CheckModelResponse, error) {
+func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.CheckModelAdminRequest) (*modelPB.CheckModelAdminResponse, error) {
 	sUID, err := resource.GetID(req.ModelPermalink)
 	if err != nil {
-		return &modelPB.CheckModelResponse{}, err
+		return &modelPB.CheckModelAdminResponse{}, err
 	}
 	uid, err := uuid.FromString(sUID)
 	if err != nil {
-		return &modelPB.CheckModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		return &modelPB.CheckModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	state, err := h.service.CheckModel(ctx, uid)
 	if err != nil {
-		return &modelPB.CheckModelResponse{}, err
+		return &modelPB.CheckModelAdminResponse{}, err
 	}
 
-	return &modelPB.CheckModelResponse{
+	return &modelPB.CheckModelAdminResponse{
 		State: *state,
 	}, nil
+}
+
+func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.DeployModelAdminRequest) (*modelPB.DeployModelAdminResponse, error) {
+
+	sUID, err := resource.GetID(req.ModelPermalink)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+	uid, err := uuid.FromString(sUID)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	wfID, err := h.service.DeployModelAsync(ctx, dbModel.Owner, dbModel.UID)
+	if err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
+			"triton-inference-server",
+			"deploy model",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, e = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] deploy model error",
+				"triton-inference-server",
+				"Out of memory for deploying the model to triton server, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+
+		if e != nil {
+			return &modelPB.DeployModelAdminResponse{}, fmt.Errorf(e.Error())
+		}
+		return &modelPB.DeployModelAdminResponse{}, st.Err()
+	}
+
+	if err := h.service.UpdateResourceState(
+		ctx,
+		dbModel.UID,
+		modelPB.Model_STATE_UNSPECIFIED,
+		nil,
+		&wfID,
+	); err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	return &modelPB.DeployModelAdminResponse{Operation: &longrunningpb.Operation{
+		Name: fmt.Sprintf("operations/%s", wfID),
+		Done: false,
+		Result: &longrunningpb.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
+}
+
+func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.UndeployModelAdminRequest) (*modelPB.UndeployModelAdminResponse, error) {
+
+	sUID, err := resource.GetID(req.ModelPermalink)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+	uid, err := uuid.FromString(sUID)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	wfId, err := h.service.UndeployModelAsync(ctx, dbModel.Owner, dbModel.UID)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	if err := h.service.UpdateResourceState(
+		ctx,
+		dbModel.UID,
+		modelPB.Model_STATE_UNSPECIFIED,
+		nil,
+		&wfId,
+	); err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	return &modelPB.UndeployModelAdminResponse{Operation: &longrunningpb.Operation{
+		Name: fmt.Sprintf("operations/%s", wfId),
+		Done: false,
+		Result: &longrunningpb.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}}, nil
 }
