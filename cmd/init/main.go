@@ -42,7 +42,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	// setup tracing and metrics
+	// setup tracing
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-init"); err != nil {
@@ -50,14 +50,6 @@ func main() {
 	} else {
 		defer func() {
 			err = tp.Shutdown(ctx)
-		}()
-	}
-
-	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend-init"); err != nil {
-		panic(err)
-	} else {
-		defer func() {
-			err = mp.Shutdown(ctx)
 		}()
 	}
 
