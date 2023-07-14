@@ -9,21 +9,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/status"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/gogo/status"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/util"
 
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -165,6 +165,23 @@ func main() {
 				if !isCreated {
 					logger.Fatal("handler.CreateModel: " + err.Error())
 					return
+				} else {
+					_, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
+						Name: fmt.Sprintf("models/%s", modelConfig.ID),
+					})
+					if err != nil {
+						logger.Error(fmt.Sprintf("deploy model err: %v", err))
+						if e, ok := status.FromError(err); ok {
+							if e.Code() == codes.FailedPrecondition {
+								logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+								return
+							}
+							logger.Error(fmt.Sprintf("deploy model err: %v", e))
+							return
+						}
+						logger.Error("handler.DeployModel: " + err.Error())
+						return
+					}
 				}
 				return
 			}
@@ -173,6 +190,6 @@ func main() {
 
 	wg.Wait()
 
-	logger.Info("Creating models done!")
+	logger.Info("creating and deploying models done!")
 	span.End()
 }
