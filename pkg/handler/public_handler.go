@@ -2062,7 +2062,6 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	}
 
 	state, err := h.service.GetResourceState(ctx, dbModel.UID)
-
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployModelResponse{}, err

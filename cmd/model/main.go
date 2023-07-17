@@ -6,23 +6,24 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/gogo/status"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/gogo/status"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/util"
 
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -64,7 +65,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 
 func main() {
 
-	// setup tracing and metrics
+	// setup tracing
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -107,85 +108,88 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 	logger.Info("Creating models ...")
+	var wg sync.WaitGroup
+
+	wg.Add(len(modelConfigs))
 	for _, modelConfig := range modelConfigs {
-		configuration, err := structpb.NewStruct(modelConfig.Configuration)
-		if err != nil {
-			log.Fatal("structpb.NewValue: ", err)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
-		defer cancel()
-		logger.Info("Creating model: " + modelConfig.ID)
-		createOperation, err := modelPublicServiceClient.CreateModel(ctx, &modelPB.CreateModelRequest{
-			Model: &modelPB.Model{
-				Id:              modelConfig.ID,
-				Description:     &modelConfig.Description,
-				Task:            modelPB.Model_Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
-				ModelDefinition: modelConfig.ModelDefinition,
-				Configuration:   configuration,
-				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
-			},
-		})
-		if err != nil {
-			logger.Info(fmt.Sprintf("Created model err: %v", err))
-			if e, ok := status.FromError(err); ok {
-				if e.Code() != codes.AlreadyExists {
-					logger.Fatal("handler.CreateModel: " + err.Error())
-				}
-			}
-		} else {
-			isCreated := false
-			startTime := time.Now()
-			for {
-				if isCreated || time.Since(startTime) > 5*time.Minute {
-					break
-				}
-				operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
-					Name: createOperation.Operation.Name,
-				})
-				if err != nil {
-					logger.Fatal("handler.GetModelOperation: " + err.Error())
-				}
-				isCreated = operation.Operation.Done
-				time.Sleep(1 * time.Second)
-			}
-			if !isCreated {
-				logger.Fatal("handler.CreateModel: " + err.Error())
-			}
-		}
 
-		time.Sleep(5 * time.Second) // make sure controller updated the state.
-		ctx, cancel = context.WithTimeout(context.Background(), 6000*time.Second)
-		defer cancel()
-		logger.Info("Deploying model: " + modelConfig.ID)
-		deployOperation, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
-			Name: fmt.Sprintf("models/%s", modelConfig.ID),
-		})
-		if err != nil {
-			logger.Info(fmt.Sprintf("Deployed model err: %v", err))
-			if e, ok := status.FromError(err); ok {
-				if e.Code() == codes.FailedPrecondition {
-					continue
-				}
-			}
-			logger.Fatal("handler.DeployModel: " + err.Error())
-		}
+		go func(modelConfig ModelConfig) {
 
-		isDeployed := false
-		startTime := time.Now()
-		for {
-			if isDeployed || time.Since(startTime) > 150*time.Minute {
-				break
+			defer wg.Done()
+			configuration, err := structpb.NewStruct(modelConfig.Configuration)
+			if err != nil {
+				log.Fatal("structpb.NewValue: ", err)
+				return
 			}
-			operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
-				Name: deployOperation.Operation.Name,
+			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+			defer cancel()
+
+			logger.Info("Creating model: " + modelConfig.ID)
+			createOperation, err := modelPublicServiceClient.CreateModel(ctx, &modelPB.CreateModelRequest{
+				Model: &modelPB.Model{
+					Id:              modelConfig.ID,
+					Description:     &modelConfig.Description,
+					Task:            modelPB.Model_Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
+					ModelDefinition: modelConfig.ModelDefinition,
+					Configuration:   configuration,
+					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+				},
 			})
 			if err != nil {
-				logger.Fatal("handler.GetModelOperation: " + err.Error())
+				logger.Info(fmt.Sprintf("Created model err: %v", err))
+				if e, ok := status.FromError(err); ok {
+					if e.Code() != codes.AlreadyExists {
+						logger.Fatal("handler.CreateModel: " + err.Error())
+						return
+					}
+					return
+				}
+				return
+			} else {
+				isCreated := false
+				startTime := time.Now()
+				for {
+					if isCreated || time.Since(startTime) > 5*time.Minute {
+						break
+					}
+					operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
+						Name: createOperation.Operation.Name,
+					})
+					if err != nil {
+						logger.Fatal("handler.GetModelOperation: " + err.Error())
+						return
+					}
+					isCreated = operation.Operation.Done
+					time.Sleep(1 * time.Second)
+				}
+				if !isCreated {
+					logger.Fatal("handler.CreateModel: " + err.Error())
+					return
+				} else {
+					_, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
+						Name: fmt.Sprintf("models/%s", modelConfig.ID),
+					})
+					if err != nil {
+						logger.Error(fmt.Sprintf("deploy model err: %v", err))
+						if e, ok := status.FromError(err); ok {
+							if e.Code() == codes.FailedPrecondition {
+								logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+								return
+							}
+							logger.Error(fmt.Sprintf("deploy model err: %v", e))
+							return
+						}
+						logger.Error("handler.DeployModel: " + err.Error())
+						return
+					}
+				}
+				return
 			}
-			isDeployed = operation.Operation.Done
-			time.Sleep(5 * time.Second)
-		}
+		}(modelConfig)
 	}
-	logger.Info("Creating models done!")
+
+	wg.Wait()
+
+	logger.Info("creating and deploying models done!")
 	span.End()
 }
