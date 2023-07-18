@@ -13,7 +13,6 @@ import (
 	"image/jpeg"
 	"log"
 	"math"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -50,17 +49,17 @@ type ImageInput struct {
 }
 
 type Triton interface {
-	ServerLiveRequest() *inferenceserver.ServerLiveResponse
-	ServerReadyRequest() *inferenceserver.ServerReadyResponse
+	ServerLiveRequest(ctx context.Context) *inferenceserver.ServerLiveResponse
+	ServerReadyRequest(ctx context.Context) *inferenceserver.ServerReadyResponse
 	ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelReadyResponse
-	ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
-	ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
-	ModelInferRequest(task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
+	ModelConfigRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
+	ModelInferRequest(ctx context.Context, task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
 	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error)
-	LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
-	UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
-	ListModelsRequest() *inferenceserver.RepositoryIndexResponse
-	IsTritonServerReady() bool
+	LoadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
+	UnloadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
+	ListModelsRequest(ctx context.Context) *inferenceserver.RepositoryIndexResponse
+	IsTritonServerReady(ctx context.Context) bool
 	Init()
 	Close()
 }
@@ -95,10 +94,7 @@ func (ts *triton) Close() {
 	}
 }
 
-func (ts *triton) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+func (ts *triton) ServerLiveRequest(ctx context.Context) *inferenceserver.ServerLiveResponse {
 
 	serverLiveRequest := inferenceserver.ServerLiveRequest{}
 	// Submit ServerLive request to server
@@ -109,10 +105,7 @@ func (ts *triton) ServerLiveRequest() *inferenceserver.ServerLiveResponse {
 	return serverLiveResponse
 }
 
-func (ts *triton) ServerReadyRequest() *inferenceserver.ServerReadyResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+func (ts *triton) ServerReadyRequest(ctx context.Context) *inferenceserver.ServerReadyResponse {
 
 	serverReadyRequest := inferenceserver.ServerReadyRequest{}
 	// Submit ServerReady request to server
@@ -140,10 +133,7 @@ func (ts *triton) ModelReadyRequest(ctx context.Context, modelName string, model
 	return modelReadyResponse
 }
 
-func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func (ts *triton) ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse {
 
 	// Create status request for a given model
 	modelMetadataRequest := inferenceserver.ModelMetadataRequest{
@@ -158,10 +148,7 @@ func (ts *triton) ModelMetadataRequest(modelName string, modelInstance string) *
 	return modelMetadataResponse
 }
 
-func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *inferenceserver.ModelConfigResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func (ts *triton) ModelConfigRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelConfigResponse {
 
 	// Create status request for a given model
 	modelConfigRequest := inferenceserver.ModelConfigRequest{
@@ -176,10 +163,7 @@ func (ts *triton) ModelConfigRequest(modelName string, modelInstance string) *in
 	return modelConfigResponse
 }
 
-func (ts *triton) ModelInferRequest(task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
-	// Create context for our request with 10 minutes timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*60*time.Second)
-	defer cancel()
+func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 
 	// Create request input tensors
 	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
@@ -901,10 +885,7 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 	return outputs, nil
 }
 
-func (ts *triton) LoadModelRequest(modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
-	// Create context for our request with 600 second timeout. The time for warmup model inference
-	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
-	defer cancel()
+func (ts *triton) LoadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelLoadResponse, error) {
 
 	// Create status request for a given model
 	loadModelRequest := inferenceserver.RepositoryModelLoadRequest{
@@ -915,10 +896,7 @@ func (ts *triton) LoadModelRequest(modelName string) (*inferenceserver.Repositor
 	return ts.tritonClient.RepositoryModelLoad(ctx, &loadModelRequest)
 }
 
-func (ts *triton) UnloadModelRequest(modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func (ts *triton) UnloadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error) {
 
 	// Create status request for a given model
 	unloadModelRequest := inferenceserver.RepositoryModelUnloadRequest{
@@ -929,10 +907,7 @@ func (ts *triton) UnloadModelRequest(modelName string) (*inferenceserver.Reposit
 	return ts.tritonClient.RepositoryModelUnload(ctx, &unloadModelRequest)
 }
 
-func (ts *triton) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
-	// Create context for our request with 10 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func (ts *triton) ListModelsRequest(ctx context.Context) *inferenceserver.RepositoryIndexResponse {
 
 	// Create status request for a given model
 	listModelsRequest := inferenceserver.RepositoryIndexRequest{
@@ -946,8 +921,8 @@ func (ts *triton) ListModelsRequest() *inferenceserver.RepositoryIndexResponse {
 	return listModelsResponse
 }
 
-func (ts *triton) IsTritonServerReady() bool {
-	serverLiveResponse := ts.ServerLiveRequest()
+func (ts *triton) IsTritonServerReady(ctx context.Context) bool {
+	serverLiveResponse := ts.ServerLiveRequest(ctx)
 	if serverLiveResponse == nil {
 		return false
 	}

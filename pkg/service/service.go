@@ -113,31 +113,31 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 	return s.mgmtPrivateServiceClient
 }
 
-func (s *service) DeployModel(modelUID uuid.UUID) error {
-	var tEnsembleModel datamodel.TritonModel
-	var err error
+// func (s *service) DeployModel(modelUID uuid.UUID) error {
+// 	var tEnsembleModel datamodel.TritonModel
+// 	var err error
 
-	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelUID); err != nil {
-		return err
-	}
-	// Load one ensemble model, which will also load all its dependent models
-	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
-		if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
-			State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
-		}); err1 != nil {
-			return err1
-		}
-		return err
-	}
+// 	if tEnsembleModel, err = s.repository.GetTritonEnsembleModel(modelUID); err != nil {
+// 		return err
+// 	}
+// 	// Load one ensemble model, which will also load all its dependent models
+// 	if _, err = s.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
+// 		if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
+// 			State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
+// 		}); err1 != nil {
+// 			return err1
+// 		}
+// 		return err
+// 	}
 
-	if err = s.repository.UpdateModel(modelUID, datamodel.Model{
-		State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
-	}); err != nil {
-		return err
-	}
+// 	if err = s.repository.UpdateModel(modelUID, datamodel.Model{
+// 		State: datamodel.ModelState(modelPB.Model_STATE_ONLINE),
+// 	}); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (s *service) UndeployModel(ctx context.Context, modelUID uuid.UUID) error {
 
@@ -150,7 +150,7 @@ func (s *service) UndeployModel(ctx context.Context, modelUID uuid.UUID) error {
 
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
-		if _, err = s.triton.UnloadModelRequest(tm.Name); err != nil {
+		if _, err = s.triton.UnloadModelRequest(ctx, tm.Name); err != nil {
 			// If any models unloaded with error, we set the ensemble model status with ERROR and return
 			if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
 				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
@@ -251,11 +251,11 @@ func (s *service) ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput
 
 	ensembleModelName := ensembleModel.Name
 	ensembleModelVersion := ensembleModel.Version
-	modelMetadataResponse := s.triton.ModelMetadataRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	modelMetadataResponse := s.triton.ModelMetadataRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("model is offline")
 	}
-	modelConfigResponse := s.triton.ModelConfigRequest(ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	modelConfigResponse := s.triton.ModelConfigRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
 	if modelMetadataResponse == nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s *service) ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference.
-	inferResponse, err := s.triton.ModelInferRequest(task, inferInput, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := s.triton.ModelInferRequest(ctx, task, inferInput, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
 	if err != nil {
 		return nil, err
 	}

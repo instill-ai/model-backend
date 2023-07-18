@@ -169,7 +169,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		if tEnsembleModel.Name != "" && tEnsembleModel.Name == tModel.Name { // load ensemble model last.
 			continue
 		}
-		if _, err = w.triton.LoadModelRequest(tModel.Name); err == nil {
+		if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
 			continue
 		}
 		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
@@ -182,7 +182,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	}
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
-		if _, err = w.triton.LoadModelRequest(tEnsembleModel.Name); err != nil {
+		if _, err = w.triton.LoadModelRequest(ctx, tEnsembleModel.Name); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
 			}
@@ -257,7 +257,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
-		if _, err = w.triton.UnloadModelRequest(tm.Name); err != nil {
+		if _, err = w.triton.UnloadModelRequest(ctx, tm.Name); err != nil {
 			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
 				ModelState: modelPB.Model_STATE_ERROR,
 			}
