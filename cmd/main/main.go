@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -47,14 +49,13 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-var propagator propagation.TextMapPropagator
+var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
 	return h2c.NewHandler(
 
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 			ctx := propagator.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
 			r = r.WithContext(ctx)
 
@@ -81,14 +82,6 @@ func main() {
 	} else {
 		defer func() {
 			err = tp.Shutdown(ctx)
-		}()
-	}
-
-	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend"); err != nil {
-		panic(err)
-	} else {
-		defer func() {
-			err = mp.Shutdown(ctx)
 		}()
 	}
 
@@ -166,6 +159,13 @@ func main() {
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
 
+	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
+		Tracer: otel.Tracer("temporal-tracer"),
+		TextMapPropagator: propagator,
+	})
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
+	}
 	var temporalClientOptions client.Options
 	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
 		if temporalClientOptions, err = temporal.GetTLSClientOption(
@@ -189,6 +189,7 @@ func main() {
 		}
 	}
 
+	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
 	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
