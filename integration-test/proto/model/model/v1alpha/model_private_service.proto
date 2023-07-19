@@ -32,12 +32,30 @@ service ModelPrivateService {
     option (google.api.method_signature) = "permalink";
   }
 
-  // CheckModel method receives a CheckModelRequest message and returns a
-  // CheckModelResponse
-  rpc CheckModel(CheckModelRequest) returns (CheckModelResponse) {
+  // CheckModelAdmin method receives a CheckModelAdminRequest message and returns a
+  // CheckModelAdminResponse
+  rpc CheckModelAdmin(CheckModelAdminRequest) returns (CheckModelAdminResponse) {
     option (google.api.http) = {
       get : "/v1alpha/admin/{model_permalink=models/*}/check"
     };
     option (google.api.method_signature) = "model_permalink";
   };
+
+  // DeployModelAdmin deploy a model to online state
+  rpc DeployModelAdmin(DeployModelAdminRequest) returns (DeployModelAdminResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/admin/{model_permalink=models/*}/deploy"
+      body : "*"
+    };
+    option (google.api.method_signature) = "model_permalink";
+  }
+
+  // UndeployModelAdmin undeploy a model to offline state
+  rpc UndeployModelAdmin(UndeployModelAdminRequest) returns (UndeployModelAdminResponse) {
+    option (google.api.http) = {
+      post : "/v1alpha/admin/{model_permalink=models/*}/undeploy"
+      body : "*"
+    };
+    option (google.api.method_signature) = "model_permalink";
+  }
 }

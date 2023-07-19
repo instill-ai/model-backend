@@ -8,6 +8,7 @@ import * as createModel from "./grpc_create_model.js"
 import * as updateModel from "./grpc_update_model.js"
 import * as queryModel from "./grpc_query_model.js"
 import * as queryModelPrivate from "./grpc_query_model_private.js"
+import * as deployModelPrivate from "./grpc_deploy_model_private.js"
 import * as deployModel from "./grpc_deploy_model.js"
 import * as inferModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
@@ -52,6 +53,8 @@ export default () => {
   if (!constant.apiGatewayMode) {
     queryModelPrivate.ListModels()
     queryModelPrivate.LookUpModel()
+    deployModelPrivate.CheckModel()
+    deployModelPrivate.DeployUndeployModel()
   }
 
   // Create model API
