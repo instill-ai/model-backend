@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
 	"github.com/instill-ai/model-backend/config"
@@ -38,14 +41,6 @@ func main() {
 		}()
 	}
 
-	if mp, err := custom_otel.SetupMetrics(ctx, "model-backend-worker"); err != nil {
-		panic(err)
-	} else {
-		defer func() {
-			err = mp.Shutdown(ctx)
-		}()
-	}
-
 	ctx, span := otel.Tracer("worker-tracer").Start(ctx,
 		"main",
 	)
@@ -68,8 +63,14 @@ func main() {
 
 	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
 
+	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
+		Tracer:            otel.Tracer("temporal-tracer"),
+		TextMapPropagator: b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader)),
+	})
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
+	}
 	var temporalClientOptions client.Options
-	var err error
 	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
 		if temporalClientOptions, err = temporal.GetTLSClientOption(
 			config.Config.Temporal.HostPort,
@@ -92,6 +93,7 @@ func main() {
 		}
 	}
 
+	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
 	temporalClient, err := client.Dial(temporalClientOptions)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))

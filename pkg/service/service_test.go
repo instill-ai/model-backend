@@ -355,15 +355,15 @@ func TestModelInfer(t *testing.T) {
 		postResponse := []string{"1.0:dog:1"}
 		triton.
 			EXPECT().
-			ModelMetadataRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
+			ModelMetadataRequest(context.Background(), ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
 			Return(modelMetadataResponse)
 		triton.
 			EXPECT().
-			ModelConfigRequest(ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
+			ModelConfigRequest(context.Background(), ensembleModel.Name, fmt.Sprint(ensembleModel.Version)).
 			Return(modelConfigResponse)
 		triton.
 			EXPECT().
-			ModelInferRequest(modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
+			ModelInferRequest(context.Background(), modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
 			Return(modelInferResponse, nil)
 		triton.
 			EXPECT().
