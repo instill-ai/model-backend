@@ -639,17 +639,44 @@ message LookUpModelAdminResponse {
   Model model = 1;
 }
 
-// CheckModelRequest represents a private request to query
+// CheckModelAdminRequest represents a private request to query
 // a model current state and longrunning progress
-message CheckModelRequest {
+message CheckModelAdminRequest {
   // Permalink of a model. For example:
   // "models/{uid}"
   string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
 }
 
-// CheckModelResponse represents a response to fetch a model's
+// CheckModelAdminResponse represents a response to fetch a model's
 // current state and longrunning progress
-message CheckModelResponse {
+message CheckModelAdminResponse {
   // Retrieved model state
   Model.State state = 1;
+}
+
+// DeployModelAdminRequest represents a request to deploy a model to online state
+message DeployModelAdminRequest {
+  // Permalink for the model to be deployed.
+  // Format: "models/{uid}"
+  string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// DeployModelAdminResponse represents a response for a deployed model
+message DeployModelAdminResponse {
+  // Deploy operation message
+  google.longrunning.Operation operation = 1;
+}
+
+// UndeployModelAdminRequest represents a request to undeploy a model to offline
+// state
+message UndeployModelAdminRequest {
+  // Permalink for the model to be undeployed.
+  // Format: "models/{uid}"
+  string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+}
+
+// UndeployModelAdminResponse represents a response for a undeployed model
+message UndeployModelAdminResponse {
+  // Undeploy operation message
+  google.longrunning.Operation operation = 1;
 }

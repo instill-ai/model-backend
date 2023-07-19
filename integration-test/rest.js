@@ -7,6 +7,7 @@ import {
 import * as createModel from "./rest_create_model.js"
 import * as queryModel from "./rest_query_model.js"
 import * as queryModelPrivate from "./rest_query_model_private.js"
+import * as deployModelPrivate from "./rest_deploy_model_private.js"
 import * as inferModel from "./rest_infer_model.js"
 import * as deployModel from "./rest_deploy_model.js"
 import * as publishModel from "./rest_publish_model.js"
@@ -49,6 +50,7 @@ export default function (data) {
   if (!constant.apiGatewayMode) {
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
+    deployModelPrivate.DeployUndeployModel()
   }
 
   // Infer Model API
