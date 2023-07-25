@@ -312,6 +312,17 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	return &githubRepoInfo, nil
 }
 
+func HasModelInModelRepository(modelRepositoryRoot string, namespace string, modelName string) bool {
+
+	path := fmt.Sprintf("%v/%v#%v#*", modelRepositoryRoot, namespace, modelName)
+
+	if matches, _ := filepath.Glob(path); matches == nil {
+		return false
+	}
+
+	return true
+}
+
 func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
 	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, instanceName)
 	if err := ValidateFilePath(path); err != nil {

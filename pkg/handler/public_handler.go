@@ -774,7 +774,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	return
 }
 
-func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createGitHubModel(service service.Service, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
 	eventName := "CreateGitHubModel"
 
@@ -979,7 +979,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(ctx, owner, &githubModel)
+	wfId, err := service.CreateModelAsync(ctx, owner, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1005,7 +1005,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
+	user, err := resource.GetOwner(ctx, service.GetMgmtPrivateServiceClient(), service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1033,7 +1033,7 @@ func createGitHubModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 	}}, nil
 }
 
-func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createHuggingFaceModel(service service.Service, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
 	eventName := "CreateHuggingFaceModel"
 
@@ -1239,7 +1239,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(ctx, owner, &huggingfaceModel)
+	wfId, err := service.CreateModelAsync(ctx, owner, &huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1263,7 +1263,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
+	user, err := resource.GetOwner(ctx, service.GetMgmtPrivateServiceClient(), service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1291,7 +1291,7 @@ func createHuggingFaceModel(h *PublicHandler, ctx context.Context, req *modelPB.
 	}}, nil
 }
 
-func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
+func createArtiVCModel(service service.Service, ctx context.Context, req *modelPB.CreateModelRequest, owner string, modelDefinition *datamodel.ModelDefinition) (*modelPB.CreateModelResponse, error) {
 
 	eventName := "CreateArtiVCModel"
 
@@ -1470,7 +1470,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	wfId, err := h.service.CreateModelAsync(ctx, owner, &artivcModel)
+	wfId, err := service.CreateModelAsync(ctx, owner, &artivcModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1494,7 +1494,7 @@ func createArtiVCModel(h *PublicHandler, ctx context.Context, req *modelPB.Creat
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	user, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
+	user, err := resource.GetOwner(ctx, service.GetMgmtPrivateServiceClient(), service.GetRedisClient())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1558,10 +1558,11 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	_, err = h.service.GetModelByID(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL)
-	if err == nil {
-		span.SetStatus(1, "Model already existed")
-		return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
+	if model, err := h.service.GetModelByID(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL); err == nil {
+		if util.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, model.ID) {
+			span.SetStatus(1, "Model already existed")
+			return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
+		}
 	}
 
 	if req.Model.Configuration == nil {
@@ -1594,11 +1595,11 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 
 	switch modelDefinitionID {
 	case "github":
-		return createGitHubModel(h, ctx, req, ownerPermalink, &modelDefinition)
+		return createGitHubModel(h.service, ctx, req, ownerPermalink, &modelDefinition)
 	case "artivc":
-		return createArtiVCModel(h, ctx, req, ownerPermalink, &modelDefinition)
+		return createArtiVCModel(h.service, ctx, req, ownerPermalink, &modelDefinition)
 	case "huggingface":
-		return createHuggingFaceModel(h, ctx, req, ownerPermalink, &modelDefinition)
+		return createHuggingFaceModel(h.service, ctx, req, ownerPermalink, &modelDefinition)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))

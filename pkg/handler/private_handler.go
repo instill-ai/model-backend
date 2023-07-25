@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
@@ -11,10 +12,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/util"
 	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -125,6 +128,56 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	if !util.HasModelInModelRepository(config.Config.TritonServer.ModelStore, dbModel.Owner, dbModel.ID) {
+
+		modelDefinition, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+		if err != nil {
+			return &modelPB.DeployModelAdminResponse{}, err
+		}
+
+		pbModel := DBModelToPBModel(ctx, &modelDefinition, &dbModel, dbModel.Owner)
+
+		createReq := &modelPB.CreateModelRequest{
+			Model: pbModel,
+		}
+
+		var resp *modelPB.CreateModelResponse
+
+		switch modelDefinition.ID {
+		case "github":
+			resp, err = createGitHubModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+		case "artivc":
+			resp, err = createArtiVCModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+		case "huggingface":
+			resp, err = createHuggingFaceModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+		default:
+			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
+		}
+		if err != nil {
+			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model creation error")
+		}
+
+		wfID := strings.Split(resp.Operation.Name, "/")[1]
+
+		if err := h.service.UpdateResourceState(
+			ctx,
+			dbModel.UID,
+			modelPB.Model_STATE_UNSPECIFIED,
+			nil,
+			&wfID,
+		); err != nil {
+			return &modelPB.DeployModelAdminResponse{}, err
+		}
+
+		done := false
+		for !done {
+			operation, _ := h.service.GetOperation(ctx, wfID)
+			done = operation.Done
+			time.Sleep(time.Second)
+		}
+
 	}
 
 	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
