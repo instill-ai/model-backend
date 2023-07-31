@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -88,10 +89,7 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 			modelOnlineStateNum := int64(0)  // Number of models that have at least one 'online' instance
 			modelOfflineStateNum := int64(0) // Number of models that have no 'online' instances
-			modelDefinitionIds := []string{} // Definition IDs of the model instances. Element in the list should not be duplicated.
-			tasks := []modelPB.Model_Task{}
-			testImageNum := int64(0)         // Number of processed images via model instance testing operations
-			var mDef = make(map[string]bool) // use for creating unique model definition list
+
 			for {
 				dbModels, modelNextPageToken, _, err := u.repository.ListModels(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
 				if err != nil {
@@ -100,14 +98,8 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 				for _, model := range dbModels {
 					isModelOnline := false
-					modelDef, err := u.repository.GetModelDefinitionByUID(model.ModelDefinitionUid)
 					if err != nil {
 						logger.Error(fmt.Sprintf("%s", err))
-					} else {
-						if !mDef[modelDef.ID] {
-							mDef[modelDef.ID] = true
-							modelDefinitionIds = append(modelDefinitionIds, modelDef.ID)
-						}
 					}
 
 					if model.State == datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
@@ -119,8 +111,6 @@ func (u *usage) RetrieveUsageData() interface{} {
 					} else {
 						modelOfflineStateNum++
 					}
-
-					tasks = append(tasks, modelPB.Model_Task(model.Task))
 				}
 
 				if modelNextPageToken == "" {
@@ -130,20 +120,28 @@ func (u *usage) RetrieveUsageData() interface{} {
 				}
 			}
 
-			testImageNum, err := u.redisClient.Get(ctx, fmt.Sprintf("user:%s:test.num", user.GetUid())).Int64()
-			if err == redis.Nil {
-				testImageNum = 0
-			} else if err != nil {
-				logger.Error(fmt.Sprintf("%s", err))
+			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
+
+			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid())).Val()
+
+			if triggerCount != 0 {
+				for i := int64(0); i < triggerCount; i++ {
+					timeStr, _ := time.Parse(time.RFC3339Nano, u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.trigger_time", user.GetUid())).Val())
+					triggerData := &usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
+					triggerData.ModelUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_uid", user.GetUid())).Val()
+					triggerData.TriggerUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid())).Val()
+					triggerData.TriggerTime = timestamppb.New(timeStr)
+					triggerData.ModelDefinitionId = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_definition_id", user.GetUid())).Val()
+					triggerData.ModelTask = modelPB.Model_Task(modelPB.Model_Task_value[u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_task", user.GetUid())).Val()])
+					triggerDataList = append(triggerDataList, triggerData)
+				}
 			}
 
 			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
 				UserUid:              user.GetUid(),
 				ModelOnlineStateNum:  modelOnlineStateNum,
 				ModelOfflineStateNum: modelOfflineStateNum,
-				ModelDefinitionIds:   modelDefinitionIds,
-				Tasks:                tasks,
-				TestNum:              testImageNum,
+				ModelTriggerData:     triggerDataList,
 			})
 		}
 

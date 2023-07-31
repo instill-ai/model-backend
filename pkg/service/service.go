@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
@@ -76,26 +77,29 @@ type Service interface {
 	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
 	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error
 	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
+
+	// Usage collection
+	WriteNewDataPoint(ctx context.Context, ownerUID string, modelUID string, triggerUID string, triggerTime time.Time, modelDefinitionID string, task modelPB.Model_Task)
 }
 
 type service struct {
-	repository                  repository.Repository
-	triton                      triton.Triton
-	redisClient                 *redis.Client
-	mgmtPrivateServiceClient    mgmtPB.MgmtPrivateServiceClient
-	temporalClient              client.Client
-	controllerClient            controllerPB.ControllerPrivateServiceClient
+	repository               repository.Repository
+	triton                   triton.Triton
+	redisClient              *redis.Client
+	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
+	temporalClient           client.Client
+	controllerClient         controllerPB.ControllerPrivateServiceClient
 }
 
 // NewService returns a new service instance
 func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
-		repository:                  r,
-		triton:                      t,
-		mgmtPrivateServiceClient:    m,
-		redisClient:                 rc,
-		temporalClient:              tc,
-		controllerClient:            cs,
+		repository:               r,
+		triton:                   t,
+		mgmtPrivateServiceClient: m,
+		redisClient:              rc,
+		temporalClient:           tc,
+		controllerClient:         cs,
 	}
 }
 

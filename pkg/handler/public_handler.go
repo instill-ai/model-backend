@@ -16,6 +16,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
@@ -2424,6 +2425,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 
 func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
 
+	startTime := time.Now()
 	eventName := "TriggerModelBinaryFileUpload"
 
 	ctx, span := tracer.Start(stream.Context(), eventName,
@@ -2516,6 +2518,21 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		TaskOutputs: response,
 	})
 
+	mDef, err := h.service.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return err
+	}
+	h.service.WriteNewDataPoint(
+		ctx,
+		owner.GetUid(),
+		modelInDB.UID.String(),
+		logUUID.String(),
+		startTime,
+		mDef.ID,
+		task,
+	)
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -2530,6 +2547,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 
 func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerModelRequest) (*modelPB.TriggerModelResponse, error) {
 
+	startTime := time.Now()
 	eventName := "TriggerModel"
 
 	ctx, span := tracer.Start(ctx, eventName,
@@ -2639,6 +2657,21 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
+
+	mDef, err := h.service.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.TriggerModelResponse{}, err
+	}
+	h.service.WriteNewDataPoint(
+		ctx,
+		owner.GetUid(),
+		modelInDB.UID.String(),
+		logUUID.String(),
+		startTime,
+		mDef.ID,
+		task,
+	)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
@@ -2796,6 +2829,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
 
+	startTime := time.Now()
 	eventName := "InferModelByUpload"
 
 	ctx, span := tracer.Start(req.Context(), eventName,
@@ -2974,6 +3008,21 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		span.SetStatus(1, err.Error())
 		return
 	}
+
+	mDef, err := s.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return
+	}
+	s.WriteNewDataPoint(
+		ctx,
+		owner.GetUid(),
+		modelInDB.UID.String(),
+		logUUID.String(),
+		startTime,
+		mDef.ID,
+		task,
+	)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
