@@ -3,16 +3,19 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	workflowpb "go.temporal.io/api/workflow/v1"
 
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/worker"
@@ -24,8 +27,12 @@ func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID u
 	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
-		ID:        id.String(),
-		TaskQueue: worker.TaskQueue,
+		ID:                       id.String(),
+		TaskQueue:                worker.TaskQueue,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+		},
 	}
 
 	model, err := s.repository.GetModelByUID(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
@@ -55,8 +62,12 @@ func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID
 	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
-		ID:        id.String(),
-		TaskQueue: worker.TaskQueue,
+		ID:                       id.String(),
+		TaskQueue:                worker.TaskQueue,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+		},
 	}
 
 	model, err := s.repository.GetModelByUID(owner, modelUID, modelv1alpha.View_VIEW_BASIC)
@@ -132,8 +143,12 @@ func (s *service) CreateModelAsync(ctx context.Context, owner string, model *dat
 	logger, _ := logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
-		ID:        id.String(),
-		TaskQueue: worker.TaskQueue,
+		ID:                       id.String(),
+		TaskQueue:                worker.TaskQueue,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+		},
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
