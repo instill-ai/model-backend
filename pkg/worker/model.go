@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/config"
@@ -35,6 +36,9 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
 		StartToCloseTimeout: 300 * time.Minute,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
+		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
@@ -211,6 +215,9 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 2 * time.Minute,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
+		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 

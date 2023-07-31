@@ -22,8 +22,8 @@ type ServerConfig struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
 	}
-	Edition     string   `koanf:"edition"`
-	Usage       struct {
+	Edition string `koanf:"edition"`
+	Usage   struct {
 		Enabled    bool   `koanf:"enabled"`
 		TLSEnabled bool   `koanf:"tlsenabled"`
 		Host       string `koanf:"host"`
@@ -34,6 +34,11 @@ type ServerConfig struct {
 		Enabled bool `koanf:"enabled"`
 	}
 	MaxDataSize int `koanf:"maxdatasize"`
+	Workflow    struct {
+		MaxWorkflowTimeout int32 `koanf:"maxworkflowtimeout"`
+		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
+		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
+	}
 }
 
 // DatabaseConfig related to database
@@ -124,16 +129,16 @@ type LogConfig struct {
 
 // AppConfig defines
 type AppConfig struct {
-	Server                 ServerConfig          `koanf:"server"`
-	Database               DatabaseConfig        `koanf:"database"`
-	TritonServer           TritonServerConfig    `koanf:"tritonserver"`
-	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
-	Cache                  CacheConfig           `koanf:"cache"`
-	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
-	Temporal               TemporalConfig        `koanf:"temporal"`
-	Controller             ControllerConfig      `koanf:"controller"`
-	InitModel              InitModelConfig       `koanf:"initmodel"`
-	Log                    LogConfig             `koanf:"log"`
+	Server                 ServerConfig       `koanf:"server"`
+	Database               DatabaseConfig     `koanf:"database"`
+	TritonServer           TritonServerConfig `koanf:"tritonserver"`
+	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`
+	Cache                  CacheConfig        `koanf:"cache"`
+	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`
+	Temporal               TemporalConfig     `koanf:"temporal"`
+	Controller             ControllerConfig   `koanf:"controller"`
+	InitModel              InitModelConfig    `koanf:"initmodel"`
+	Log                    LogConfig          `koanf:"log"`
 }
 
 // Config - Global variable to export
