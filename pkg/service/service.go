@@ -25,7 +25,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
 	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
@@ -79,7 +79,7 @@ type Service interface {
 	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
 
 	// Usage collection
-	WriteNewDataPoint(ctx context.Context, data util.UsageMetricData)
+	WriteNewDataPoint(ctx context.Context, data utils.UsageMetricData) error
 }
 
 type service struct {
@@ -626,7 +626,7 @@ func (s *service) ModelInfer(ctx context.Context, modelUID uuid.UUID, inferInput
 				if err := json.Unmarshal(b, &mapOutput); err != nil {
 					return nil, err
 				}
-				util.ConvertAllJSONKeySnakeCase(mapOutput)
+				utils.ConvertAllJSONKeySnakeCase(mapOutput)
 
 				b, err = json.Marshal(mapOutput)
 				if err != nil {

@@ -21,7 +21,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -104,7 +104,7 @@ func main() {
 	}
 
 	var modelConfigs []ModelConfig
-	err := util.GetJSON(config.Config.InitModel.Path, &modelConfigs)
+	err := utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -130,7 +130,7 @@ func main() {
 				Model: &modelPB.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
-					Task:            commonPB.Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
+					Task:            commonPB.Task(utils.Tasks[strings.ToUpper(modelConfig.Task)]),
 					ModelDefinition: modelConfig.ModelDefinition,
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
