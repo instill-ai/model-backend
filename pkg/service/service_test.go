@@ -18,6 +18,7 @@ import (
 
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -363,14 +364,14 @@ func TestModelInfer(t *testing.T) {
 			Return(modelConfigResponse)
 		triton.
 			EXPECT().
-			ModelInferRequest(context.Background(), modelPB.Model_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
+			ModelInferRequest(context.Background(), commonPB.Task_TASK_CLASSIFICATION, [][]byte{}, ensembleModel.Name, fmt.Sprint(ensembleModel.Version), modelMetadataResponse, modelConfigResponse).
 			Return(modelInferResponse, nil)
 		triton.
 			EXPECT().
-			PostProcess(modelInferResponse, modelMetadataResponse, modelPB.Model_TASK_CLASSIFICATION).
+			PostProcess(modelInferResponse, modelMetadataResponse, commonPB.Task_TASK_CLASSIFICATION).
 			Return(postResponse, nil)
 
-		_, err := s.ModelInfer(context.Background(), uid, [][]byte{}, modelPB.Model_TASK_CLASSIFICATION)
+		_, err := s.ModelInfer(context.Background(), uid, [][]byte{}, commonPB.Task_TASK_CLASSIFICATION)
 		assert.NoError(t, err)
 	})
 }

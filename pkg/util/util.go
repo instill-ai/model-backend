@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gernest/front"
 	"github.com/gofrs/uuid"
@@ -27,7 +28,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
 type ModelMeta struct {
@@ -807,21 +809,21 @@ func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonMo
 func GetSupportedBatchSize(task datamodel.ModelTask) int {
 	allowedMaxBatchSize := 0
 	switch task {
-	case datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED):
+	case datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelTask(modelPB.Model_TASK_CLASSIFICATION):
+	case datamodel.ModelTask(commonPB.Task_TASK_CLASSIFICATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelTask(modelPB.Model_TASK_DETECTION):
+	case datamodel.ModelTask(commonPB.Task_TASK_DETECTION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelTask(modelPB.Model_TASK_KEYPOINT):
+	case datamodel.ModelTask(commonPB.Task_TASK_KEYPOINT):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelTask(modelPB.Model_TASK_OCR):
+	case datamodel.ModelTask(commonPB.Task_TASK_OCR):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelTask(modelPB.Model_TASK_INSTANCE_SEGMENTATION):
+	case datamodel.ModelTask(commonPB.Task_TASK_INSTANCE_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelTask(modelPB.Model_TASK_SEMANTIC_SEGMENTATION):
+	case datamodel.ModelTask(commonPB.Task_TASK_SEMANTIC_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	case datamodel.ModelTask(modelPB.Model_TASK_TEXT_GENERATION):
+	case datamodel.ModelTask(commonPB.Task_TASK_TEXT_GENERATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.TextGeneration
 	}
 	return allowedMaxBatchSize
@@ -860,4 +862,14 @@ func IsAuditEvent(eventName string) bool {
 // TODO: billable event TBD
 func IsBillableEvent(eventName string) bool {
 	return false
+}
+
+type UsageMetricData struct {
+	OwnerUID           string
+	ModelUID           string
+	Status             mgmtPB.Status
+	TriggerUID         string
+	ModelDefinitionUID string
+	TriggerTime        time.Time
+	ModelTask          commonPB.Task
 }
