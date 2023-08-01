@@ -24,6 +24,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/util"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -129,7 +130,7 @@ func main() {
 				Model: &modelPB.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
-					Task:            modelPB.Model_Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
+					Task:            commonPB.Task(util.Tasks[strings.ToUpper(modelConfig.Task)]),
 					ModelDefinition: modelConfig.ModelDefinition,
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,

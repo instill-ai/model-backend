@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	triton "github.com/instill-ai/model-backend/pkg/triton"
 	inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
-	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
 // MockTriton is a mock of Triton interface.
@@ -119,7 +119,7 @@ func (mr *MockTritonMockRecorder) ModelConfigRequest(arg0, arg1, arg2 interface{
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockTriton) ModelInferRequest(arg0 context.Context, arg1 modelv1alpha.Model_Task, arg2 triton.InferInput, arg3, arg4 string, arg5 *inferenceserver.ModelMetadataResponse, arg6 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (m *MockTriton) ModelInferRequest(arg0 context.Context, arg1 taskv1alpha.Task, arg2 triton.InferInput, arg3, arg4 string, arg5 *inferenceserver.ModelMetadataResponse, arg6 *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].(*inferenceserver.ModelInferResponse)
@@ -162,7 +162,7 @@ func (mr *MockTritonMockRecorder) ModelReadyRequest(arg0, arg1, arg2 interface{}
 }
 
 // PostProcess mocks base method.
-func (m *MockTriton) PostProcess(arg0 *inferenceserver.ModelInferResponse, arg1 *inferenceserver.ModelMetadataResponse, arg2 modelv1alpha.Model_Task) (interface{}, error) {
+func (m *MockTriton) PostProcess(arg0 *inferenceserver.ModelInferResponse, arg1 *inferenceserver.ModelMetadataResponse, arg2 taskv1alpha.Task) (interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PostProcess", arg0, arg1, arg2)
 	ret0, _ := ret[0].(interface{})

@@ -16,6 +16,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -69,7 +70,7 @@ func DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, 
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
 		State:           modelPB.Model_State(dbModel.State),
-		Task:            modelPB.Model_Task(dbModel.Task),
+		Task:            commonPB.Task(dbModel.Task),
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
 				str := structpb.Struct{}

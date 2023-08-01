@@ -21,7 +21,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
 type InferInput interface{}
@@ -54,8 +54,8 @@ type Triton interface {
 	ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelReadyResponse
 	ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelMetadataResponse
 	ModelConfigRequest(ctx context.Context, modelName string, modelInstance string) *inferenceserver.ModelConfigResponse
-	ModelInferRequest(ctx context.Context, task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
-	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error)
+	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error)
+	PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error)
 	LoadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelLoadResponse, error)
 	UnloadModelRequest(ctx context.Context, modelName string) (*inferenceserver.RepositoryModelUnloadResponse, error)
 	ListModelsRequest(ctx context.Context) *inferenceserver.RepositoryIndexResponse
@@ -163,30 +163,30 @@ func (ts *triton) ModelConfigRequest(ctx context.Context, modelName string, mode
 	return modelConfigResponse
 }
 
-func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
+func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (*inferenceserver.ModelInferResponse, error) {
 
 	// Create request input tensors
 	var inferInputs []*inferenceserver.ModelInferRequest_InferInputTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
 		switch task {
-		case modelPB.Model_TASK_TEXT_TO_IMAGE:
+		case commonPB.Task_TASK_TEXT_TO_IMAGE:
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
-		case modelPB.Model_TASK_TEXT_GENERATION:
+		case commonPB.Task_TASK_TEXT_GENERATION:
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1, 1},
 			})
-		case modelPB.Model_TASK_CLASSIFICATION,
-			modelPB.Model_TASK_DETECTION,
-			modelPB.Model_TASK_KEYPOINT,
-			modelPB.Model_TASK_OCR,
-			modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-			modelPB.Model_TASK_SEMANTIC_SEGMENTATION:
+		case commonPB.Task_TASK_CLASSIFICATION,
+			commonPB.Task_TASK_DETECTION,
+			commonPB.Task_TASK_KEYPOINT,
+			commonPB.Task_TASK_OCR,
+			commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+			commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
 			batchSize := int64(len(inferInput.([][]byte)))
 			if modelConfig.Config.Platform == "ensemble" {
 				inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
@@ -222,7 +222,7 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task
 	var inferOutputs []*inferenceserver.ModelInferRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch task {
-		case modelPB.Model_TASK_CLASSIFICATION:
+		case commonPB.Task_TASK_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 				Parameters: map[string]*inferenceserver.InferParameter{
@@ -233,7 +233,7 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task
 					},
 				},
 			})
-		case modelPB.Model_TASK_DETECTION:
+		case commonPB.Task_TASK_DETECTION:
 			inferOutputs = append(inferOutputs, &inferenceserver.ModelInferRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
@@ -253,7 +253,7 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task
 	}
 
 	switch task {
-	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImageInput := inferInput.(*TextToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
@@ -270,7 +270,7 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
-	case modelPB.Model_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*TextGenerationInput)
 		outputLen := make([]byte, 4)
 		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInput.OutputLen))
@@ -284,12 +284,12 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task modelPB.Model_Task
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_KEYPOINT,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION:
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_KEYPOINT,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
 	default:
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
@@ -800,19 +800,19 @@ func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferRes
 	}, nil
 }
 
-func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task modelPB.Model_Task) (interface{}, error) {
+func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
 	)
 
 	switch task {
-	case modelPB.Model_TASK_CLASSIFICATION:
+	case commonPB.Task_TASK_CLASSIFICATION:
 		outputs, err = postProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process classification output: %w", err)
 		}
-	case modelPB.Model_TASK_DETECTION:
+	case commonPB.Task_TASK_DETECTION:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of detection task")
 		}
@@ -820,7 +820,7 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process detection output: %w", err)
 		}
-	case modelPB.Model_TASK_KEYPOINT:
+	case commonPB.Task_TASK_KEYPOINT:
 		if len(modelMetadata.Outputs) < 3 {
 			return nil, fmt.Errorf("wrong output format of keypoint detection task")
 		}
@@ -828,7 +828,7 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process keypoint output: %w", err)
 		}
-	case modelPB.Model_TASK_OCR:
+	case commonPB.Task_TASK_OCR:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of OCR task")
 		}
@@ -845,7 +845,7 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			}
 		}
 
-	case modelPB.Model_TASK_INSTANCE_SEGMENTATION:
+	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
 		if len(modelMetadata.Outputs) < 4 {
 			return nil, fmt.Errorf("wrong output format of instance segmentation task")
 		}
@@ -854,7 +854,7 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			return nil, fmt.Errorf("unable to post-process instance segmentation output: %w", err)
 		}
 
-	case modelPB.Model_TASK_SEMANTIC_SEGMENTATION:
+	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of semantic segmentation task")
 		}
@@ -863,13 +863,13 @@ func (ts *triton) PostProcess(inferResponse *inferenceserver.ModelInferResponse,
 			return nil, fmt.Errorf("unable to post-process semantic segmentation output: %w", err)
 		}
 
-	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}
 
-	case modelPB.Model_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)

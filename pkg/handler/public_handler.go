@@ -45,7 +45,9 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1alpha"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -533,7 +535,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			return
 		}
 		if modelMeta.Task == "" {
-			uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+			uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 		} else {
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
@@ -545,7 +547,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			}
 		}
 	} else {
-		uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
 	maxBatchSize := 0
@@ -693,7 +695,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		if modelMeta.Task == "" {
-			uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+			uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 		} else {
 			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
@@ -704,7 +706,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 			}
 		}
 	} else {
-		uploadedModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
@@ -938,11 +940,11 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
-				githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+				githubModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 			}
 		}
 	} else {
-		githubModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+		githubModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
@@ -1190,9 +1192,9 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 			}
 		} else {
 			if len(modelMeta.Tags) == 0 {
-				huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+				huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 			} else { // check in tags also for HuggingFace model card README.md
-				huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+				huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 				for _, tag := range modelMeta.Tags {
 					if val, ok := util.Tags[strings.ToUpper(tag)]; ok {
 						huggingfaceModel.Task = datamodel.ModelTask(val)
@@ -1202,7 +1204,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 			}
 		}
 	} else {
-		huggingfaceModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+		huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
@@ -1427,11 +1429,11 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
-				artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+				artivcModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 			}
 		}
 	} else {
-		artivcModel.Task = datamodel.ModelTask(modelPB.Model_TASK_UNSPECIFIED)
+		artivcModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
 	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
@@ -2348,13 +2350,13 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 	}
 
 	numberOfInferences := 1
-	switch modelPB.Model_Task(modelInDB.Task) {
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_KEYPOINT:
+	switch commonPB.Task(modelInDB.Task) {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 
@@ -2377,7 +2379,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 		}
 	}
 
-	task := modelPB.Model_Task(modelInDB.Task)
+	task := commonPB.Task(modelInDB.Task)
 	response, err := h.service.ModelInferTestMode(stream.Context(), ownerPermalink, modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2455,27 +2457,40 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		return err
 	}
 
+	usageData := util.UsageMetricData{
+		OwnerUID:           owner.GetUid(),
+		ModelUID:           modelInDB.UID.String(),
+		TriggerUID:         logUUID.String(),
+		TriggerTime:        startTime,
+		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
+		ModelTask:          commonPB.Task(modelInDB.Task),
+	}
+
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
-	switch modelPB.Model_Task(modelInDB.Task) {
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_KEYPOINT:
+	switch commonPB.Task(modelInDB.Task) {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
@@ -2484,7 +2499,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		}
 	}
 
-	task := modelPB.Model_Task(modelInDB.Task)
+	task := commonPB.Task(modelInDB.Task)
 	response, err := h.service.ModelInfer(stream.Context(), modelInDB.UID, triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2510,6 +2525,8 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 			logger.Error(e.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		h.service.WriteNewDataPoint(ctx, usageData)
 		return st.Err()
 	}
 
@@ -2518,20 +2535,8 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		TaskOutputs: response,
 	})
 
-	mDef, err := h.service.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return err
-	}
-	h.service.WriteNewDataPoint(
-		ctx,
-		owner.GetUid(),
-		modelInDB.UID.String(),
-		logUUID.String(),
-		startTime,
-		mDef.ID,
-		task,
-	)
+	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+	h.service.WriteNewDataPoint(ctx, usageData)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
@@ -2577,35 +2582,50 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
+	usageData := util.UsageMetricData{
+		OwnerUID:           owner.GetUid(),
+		ModelUID:           modelInDB.UID.String(),
+		TriggerUID:         logUUID.String(),
+		TriggerTime:        startTime,
+		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
+		ModelTask:          commonPB.Task(modelInDB.Task),
+	}
+
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.Model_Task(modelInDB.Task) {
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_KEYPOINT,
-		modelPB.Model_TASK_UNSPECIFIED:
+	switch commonPB.Task(modelInDB.Task) {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT,
+		commonPB.Task_TASK_UNSPECIFIED:
 		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.Model_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -2616,12 +2636,16 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
 		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
@@ -2629,7 +2653,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	task := modelPB.Model_Task(modelInDB.Task)
+	task := commonPB.Task(modelInDB.Task)
 	response, err := h.service.ModelInfer(ctx, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2655,23 +2679,13 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 			logger.Error(e.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		h.service.WriteNewDataPoint(ctx, usageData)
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
-	mDef, err := h.service.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.TriggerModelResponse{}, err
-	}
-	h.service.WriteNewDataPoint(
-		ctx,
-		owner.GetUid(),
-		modelInDB.UID.String(),
-		logUUID.String(),
-		startTime,
-		mDef.ID,
-		task,
-	)
+	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+	h.service.WriteNewDataPoint(ctx, usageData)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
@@ -2721,14 +2735,14 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.Model_Task(modelInDB.Task) {
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_KEYPOINT,
-		modelPB.Model_TASK_UNSPECIFIED:
+	switch commonPB.Task(modelInDB.Task) {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT,
+		commonPB.Task_TASK_UNSPECIFIED:
 		imageInput, err := parseImageRequestInputsToBytes(ctx, &modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
@@ -2739,7 +2753,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
@@ -2750,7 +2764,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.Model_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
 			&modelPB.TriggerModelRequest{
 				Name:       req.Name,
@@ -2783,7 +2797,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 		}
 	}
 
-	task := modelPB.Model_Task(modelInDB.Task)
+	task := commonPB.Task(modelInDB.Task)
 	response, err := h.service.ModelInferTestMode(ctx, ownerPermalink, modelInDB.UID, inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -2894,45 +2908,62 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	usageData := util.UsageMetricData{
+		OwnerUID:           owner.GetUid(),
+		ModelUID:           modelInDB.UID.String(),
+		TriggerUID:         logUUID.String(),
+		TriggerTime:        startTime,
+		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
+		ModelTask:          commonPB.Task(modelInDB.Task),
+	}
+
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
 		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		s.WriteNewDataPoint(ctx, usageData)
 		return
 	}
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch modelPB.Model_Task(modelInDB.Task) {
-	case modelPB.Model_TASK_CLASSIFICATION,
-		modelPB.Model_TASK_DETECTION,
-		modelPB.Model_TASK_INSTANCE_SEGMENTATION,
-		modelPB.Model_TASK_SEMANTIC_SEGMENTATION,
-		modelPB.Model_TASK_OCR,
-		modelPB.Model_TASK_KEYPOINT,
-		modelPB.Model_TASK_UNSPECIFIED:
+	switch commonPB.Task(modelInDB.Task) {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT,
+		commonPB.Task_TASK_UNSPECIFIED:
 		imageInput, err := parseImageFormDataInputsToBytes(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "File Input Error", err.Error())
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
-	case modelPB.Model_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseImageFormDataTextToImageInputs(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = 1
 		inputInfer = textToImage
-	case modelPB.Model_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
 		if err != nil {
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = 1
@@ -2945,6 +2976,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		if err != nil {
 			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
@@ -2952,16 +2985,20 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		if err != nil {
 			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		if !doSupportBatch {
 			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 	}
 
-	task := modelPB.Model_Task(modelInDB.Task)
+	task := commonPB.Task(modelInDB.Task)
 	var response []*modelPB.TaskOutput
 	if mode == "test" {
 		response, err = s.ModelInferTestMode(req.Context(), ownerPermalink, modelInDB.UID, inputInfer, task)
@@ -2994,6 +3031,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 500, st.Message(), string(obj))
 		span.SetStatus(1, st.Message())
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		s.WriteNewDataPoint(ctx, usageData)
 		return
 	}
 
@@ -3009,20 +3048,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	mDef, err := s.GetModelDefinitionByUID(ctx, modelInDB.ModelDefinitionUid)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return
-	}
-	s.WriteNewDataPoint(
-		ctx,
-		owner.GetUid(),
-		modelInDB.UID.String(),
-		logUUID.String(),
-		startTime,
-		mDef.ID,
-		task,
-	)
+	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+	s.WriteNewDataPoint(ctx, usageData)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,

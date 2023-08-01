@@ -9,12 +9,13 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelState modelPB.Model_State
 type ModelVisibility modelPB.Model_Visibility
-type ModelTask modelPB.Model_Task
+type ModelTask commonPB.Task
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -192,11 +193,11 @@ func (s *ModelState) Scan(value interface{}) error {
 }
 
 func (s ModelTask) Value() (driver.Value, error) {
-	return modelPB.Model_Task(s).String(), nil
+	return commonPB.Task(s).String(), nil
 }
 
 func (s *ModelTask) Scan(value interface{}) error {
-	*s = ModelTask(modelPB.Model_Task_value[value.(string)])
+	*s = ModelTask(commonPB.Task_value[value.(string)])
 	return nil
 }
 

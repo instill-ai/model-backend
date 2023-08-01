@@ -9,14 +9,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/repo"
 
 	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	usagePB "github.com/instill-ai/protogen-go/base/usage/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	usageClient "github.com/instill-ai/usage-client/client"
 	usageReporter "github.com/instill-ai/usage-client/reporter"
 )
@@ -85,40 +84,6 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 		// Roll all model resources on a user
 		for _, user := range userResp.Users {
-			modelPageToken := ""
-
-			modelOnlineStateNum := int64(0)  // Number of models that have at least one 'online' instance
-			modelOfflineStateNum := int64(0) // Number of models that have no 'online' instances
-
-			for {
-				dbModels, modelNextPageToken, _, err := u.repository.ListModels(fmt.Sprintf("users/%s", user.GetUid()), modelPB.View_VIEW_BASIC, repository.MaxPageSize, modelPageToken)
-				if err != nil {
-					logger.Error(fmt.Sprintf("%s", err))
-				}
-
-				for _, model := range dbModels {
-					isModelOnline := false
-					if err != nil {
-						logger.Error(fmt.Sprintf("%s", err))
-					}
-
-					if model.State == datamodel.ModelState(modelPB.Model_STATE_ONLINE) {
-						isModelOnline = true
-					}
-
-					if isModelOnline {
-						modelOnlineStateNum++
-					} else {
-						modelOfflineStateNum++
-					}
-				}
-
-				if modelNextPageToken == "" {
-					break
-				} else {
-					modelPageToken = modelNextPageToken
-				}
-			}
 
 			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
 
@@ -131,17 +96,25 @@ func (u *usage) RetrieveUsageData() interface{} {
 					triggerData.ModelUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_uid", user.GetUid())).Val()
 					triggerData.TriggerUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid())).Val()
 					triggerData.TriggerTime = timestamppb.New(timeStr)
-					triggerData.ModelDefinitionId = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_definition_id", user.GetUid())).Val()
-					triggerData.ModelTask = modelPB.Model_Task(modelPB.Model_Task_value[u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_task", user.GetUid())).Val()])
+					triggerData.ModelDefinitionUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_definition_uid", user.GetUid())).Val()
+					triggerData.ModelTask = commonPB.Task(commonPB.Task_value[u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_task", user.GetUid())).Val()])
 					triggerDataList = append(triggerDataList, triggerData)
 				}
 			}
 
+			u.redisClient.Unlink(
+				ctx,
+				fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid()),
+				fmt.Sprintf("user:%s:trigger.trigger_time", user.GetUid()),
+				fmt.Sprintf("user:%s:trigger.model_uid", user.GetUid()),
+				fmt.Sprintf("user:%s:trigger.model_definition_uid", user.GetUid()),
+				fmt.Sprintf("user:%s:trigger.model_task", user.GetUid()),
+				fmt.Sprintf("user:%s:trigger.status", user.GetUid()),
+			)
+
 			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
-				UserUid:              user.GetUid(),
-				ModelOnlineStateNum:  modelOnlineStateNum,
-				ModelOfflineStateNum: modelOfflineStateNum,
-				ModelTriggerData:     triggerDataList,
+				UserUid:          user.GetUid(),
+				ModelTriggerData: triggerDataList,
 			})
 		}
 
@@ -151,6 +124,11 @@ func (u *usage) RetrieveUsageData() interface{} {
 			userPageToken = userResp.NextPageToken
 		}
 	}
+
+	fmt.Println("\n========================================================================")
+	fmt.Println(pbModelUsageData)
+	fmt.Println("========================================================================")
+	fmt.Println()
 
 	logger.Debug("Send retrieved usage data...")
 	return &usagePB.SessionReport_ModelUsageData{
