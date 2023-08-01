@@ -125,11 +125,6 @@ func (u *usage) RetrieveUsageData() interface{} {
 		}
 	}
 
-	fmt.Println("\n========================================================================")
-	fmt.Println(pbModelUsageData)
-	fmt.Println("========================================================================")
-	fmt.Println()
-
 	logger.Debug("Send retrieved usage data...")
 	return &usagePB.SessionReport_ModelUsageData{
 		ModelUsageData: &usagePB.ModelUsageData{
