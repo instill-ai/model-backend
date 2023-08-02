@@ -5,7 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 )
@@ -106,13 +106,13 @@ func NewLogMessage(
 		EventResult   interface{} "json:\"eventResult\""
 		EventMessage  string      "json:\"eventMessage\""
 	}{
-		IsAuditEvent: util.IsAuditEvent(eventName),
+		IsAuditEvent: utils.IsAuditEvent(eventName),
 		EventInfo: struct {
 			EventName string "json:\"eventName\""
 			Billable  bool   "json:\"billable\""
 		}{
 			EventName: eventName,
-			Billable:  util.IsBillableEvent(eventName),
+			Billable:  utils.IsBillableEvent(eventName),
 		},
 	}
 

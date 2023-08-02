@@ -6,7 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -71,7 +71,7 @@ var preDeployModelMap = map[string]map[string]string{
 
 func GetPreDeployGitHubModelUUID(model datamodel.Model) (*datamodel.PreDeployModel, error) {
 	var preDeployModelConfigs []PreModelConfig
-	err := util.GetJSON(config.Config.InitModel.Path, &preDeployModelConfigs)
+	err := utils.GetJSON(config.Config.InitModel.Path, &preDeployModelConfigs)
 	if err != nil {
 		return nil, err
 	}

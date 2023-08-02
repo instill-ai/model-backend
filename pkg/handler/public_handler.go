@@ -40,7 +40,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
 
@@ -411,12 +411,12 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	viz := req.FormValue("visibility")
 	var visibility modelPB.Model_Visibility
 	if viz != "" {
-		if util.Visibility[viz] == modelPB.Model_VISIBILITY_UNSPECIFIED {
+		if utils.Visibility[viz] == modelPB.Model_VISIBILITY_UNSPECIFIED {
 			makeJSONResponse(w, 400, "Invalid parameter", "Visibility is invalid")
 			span.SetStatus(1, "Visibility is invalid")
 			return
 		} else {
-			visibility = util.Visibility[viz]
+			visibility = utils.Visibility[viz]
 		}
 	} else {
 		visibility = modelPB.Model_VISIBILITY_PRIVATE
@@ -459,7 +459,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		span.SetStatus(1, "Error reading input file")
 		return
 	}
-	err = util.WriteToFp(fp, buf.Bytes())
+	err = utils.WriteToFp(fp, buf.Bytes())
 	if err != nil {
 		makeJSONResponse(w, 400, "File Error", "Error reading input file")
 		span.SetStatus(1, "Error reading input file")
@@ -518,18 +518,18 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, ownerPermalink, &uploadedModel)
+	readmeFilePath, ensembleFilePath, err := utils.Unzip(tmpFile, config.Config.TritonServer.ModelStore, ownerPermalink, &uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 400, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 			makeJSONResponse(w, 400, "Add Model Error", err.Error())
 			span.SetStatus(1, err.Error())
 			return
@@ -537,10 +537,10 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		if modelMeta.Task == "" {
 			uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 		} else {
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 				makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 				span.SetStatus(1, "README.md contains unsupported task")
 				return
@@ -552,7 +552,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	maxBatchSize := 0
 	if ensembleFilePath != "" {
-		maxBatchSize, err = util.GetMaxBatchSize(ensembleFilePath)
+		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -567,13 +567,13 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			}
 			obj, _ := json.Marshal(st.Details())
 			makeJSONResponse(w, 400, st.Message(), string(obj))
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 			span.SetStatus(1, err.Error())
 			return
 		}
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Task)
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -588,7 +588,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 400, st.Message(), string(obj))
 		span.SetStatus(1, string(obj))
@@ -597,7 +597,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	wfId, err := s.CreateModelAsync(req.Context(), ownerPermalink, &uploadedModel)
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -615,7 +615,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		},
 	}})
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -653,7 +653,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	}
 	ownerPermalink := GenOwnerPermalink(owner)
 
-	tmpFile, uploadedModel, modelDefID, err := util.SaveFile(stream)
+	tmpFile, uploadedModel, modelDefID, err := utils.SaveFile(stream)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.InvalidArgument, err.Error())
@@ -680,27 +680,27 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 	uploadedModel.Owner = ownerPermalink
 
 	// extract zip file from tmp to models directory
-	readmeFilePath, ensembleFilePath, err := util.Unzip(tmpFile, config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel)
+	readmeFilePath, ensembleFilePath, err := utils.Unzip(tmpFile, config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.Internal, err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 			span.SetStatus(1, err.Error())
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 		if modelMeta.Task == "" {
 			uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 		} else {
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 				span.SetStatus(1, "README.md contains unsupported task")
 				return status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
@@ -709,7 +709,7 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -722,12 +722,12 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
 		return st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(uploadedModel.Task)
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -742,14 +742,14 @@ func (h *PublicHandler) CreateModelBinaryFileUpload(stream modelPB.ModelPublicSe
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		span.SetStatus(1, st.String())
 		return st.Err()
 	}
 
 	wfId, err := h.service.CreateModelAsync(stream.Context(), ownerPermalink, uploadedModel)
 	if err != nil {
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
 		return err
 	}
@@ -803,15 +803,15 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		span.SetStatus(1, "Invalid GitHub URL")
 		return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
-	var githubInfo *util.GitHubInfo
+	var githubInfo *utils.GitHubInfo
 	if config.Config.Server.ItMode.Enabled {
-		githubInfo = &util.GitHubInfo{
+		githubInfo = &utils.GitHubInfo{
 			Description: "This is a test model",
 			Visibility:  "public",
-			Tags:        []util.Tag{{Name: "v1.0-cpu"}, {Name: "v1.1-cpu"}},
+			Tags:        []utils.Tag{{Name: "v1.0-cpu"}, {Name: "v1.1-cpu"}},
 		}
 	} else {
-		githubInfo, err = util.GetGitHubRepoInfo(modelConfig.Repository)
+		githubInfo, err = utils.GetGitHubRepoInfo(modelConfig.Repository)
 		if err != nil {
 			span.SetStatus(1, "Invalid GitHub Info")
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
@@ -821,7 +821,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 			return &modelPB.CreateModelResponse{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 		}
 	}
-	visibility := util.Visibility[githubInfo.Visibility]
+	visibility := utils.Visibility[githubInfo.Visibility]
 	if req.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
 		visibility = modelPB.Model_VISIBILITY_PUBLIC
 	} else if req.Model.Visibility == modelPB.Model_VISIBILITY_PRIVATE {
@@ -853,18 +853,18 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
 	if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-		modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
+		modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
 	}
 
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
-		err = util.GitHubClone(modelSrcDir, modelConfig, false)
+		err = utils.GitHubClone(modelSrcDir, modelConfig, false)
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -877,12 +877,12 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 	}
-	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &githubModel)
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &githubModel)
 	if !config.Config.Cache.Model {
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	}
@@ -899,12 +899,12 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil || modelMeta.Task == "" {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -917,11 +917,11 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+		if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 			githubModel.Task = datamodel.ModelTask(val)
 		} else {
 			if modelMeta.Task != "" {
@@ -936,7 +936,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, modelConfig.Tag)
 				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
@@ -946,7 +946,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 	} else {
 		githubModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
-	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -963,7 +963,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(githubModel.Task)
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(githubModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -996,7 +996,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 			logger.Error(err.Error())
 		}
 		for _, tag := range githubInfo.Tags {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, githubModel.ID, tag.Name)
 		}
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
@@ -1096,7 +1096,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
-		if err := util.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
+		if err := utils.HuggingFaceClone(configTmpDir, modelConfig); err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
 				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
@@ -1115,7 +1115,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 	}
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err := util.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
+	if err := utils.GenerateHuggingFaceModel(configTmpDir, modelDir, req.Model.Id); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
@@ -1133,7 +1133,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 	}
 	_ = os.RemoveAll(configTmpDir)
 
-	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, &huggingfaceModel)
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, owner, &huggingfaceModel)
 
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
@@ -1148,12 +1148,12 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -1166,13 +1166,13 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
 		if modelMeta.Task != "" {
 
-			if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				huggingfaceModel.Task = datamodel.ModelTask(val)
 			} else {
 				st, err := sterr.CreateErrorResourceInfo(
@@ -1186,7 +1186,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, modelConfig.Tag)
 				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			}
@@ -1196,7 +1196,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 			} else { // check in tags also for HuggingFace model card README.md
 				huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 				for _, tag := range modelMeta.Tags {
-					if val, ok := util.Tags[strings.ToUpper(tag)]; ok {
+					if val, ok := utils.Tags[strings.ToUpper(tag)]; ok {
 						huggingfaceModel.Task = datamodel.ModelTask(val)
 						break
 					}
@@ -1206,7 +1206,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 	} else {
 		huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
-	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1223,7 +1223,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(huggingfaceModel.Task)
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(huggingfaceModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -1255,7 +1255,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, huggingfaceModel.ID, "latest")
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
@@ -1348,12 +1348,12 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 			span.SetStatus(1, err.Error())
 			return &modelPB.CreateModelResponse{}, err
 		}
 	} else {
-		err = util.ArtiVCClone(modelSrcDir, modelConfig, false)
+		err = utils.ArtiVCClone(modelSrcDir, modelConfig, false)
 		if err != nil {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -1367,14 +1367,14 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 				logger.Error(e.Error())
 			}
 			_ = os.RemoveAll(modelSrcDir)
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		util.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
+		utils.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
 	}
 
-	readmeFilePath, ensembleFilePath, err := util.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &artivcModel)
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, owner, &artivcModel)
 	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -1388,12 +1388,12 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := util.GetModelMetaFromReadme(readmeFilePath)
+		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil || modelMeta.Task == "" {
 			st, e := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -1406,11 +1406,11 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 			span.SetStatus(1, st.Err().Error())
 			return &modelPB.CreateModelResponse{}, st.Err()
 		}
-		if val, ok := util.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+		if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 			artivcModel.Task = datamodel.ModelTask(val)
 		} else {
 			if modelMeta.Task != "" {
@@ -1425,7 +1425,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 				span.SetStatus(1, st.Err().Error())
 				return &modelPB.CreateModelResponse{}, st.Err()
 			} else {
@@ -1436,7 +1436,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		artivcModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize, err := util.GetMaxBatchSize(ensembleFilePath)
+	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1453,7 +1453,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
 
-	allowedMaxBatchSize := util.GetSupportedBatchSize(artivcModel.Task)
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(artivcModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
 		st, e := sterr.CreateErrorPreconditionFailure(
@@ -1486,7 +1486,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		util.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, owner, artivcModel.ID, modelConfig.Tag)
 		span.SetStatus(1, st.Err().Error())
 		return &modelPB.CreateModelResponse{}, st.Err()
 	}
@@ -1562,7 +1562,7 @@ func (h *PublicHandler) CreateModel(ctx context.Context, req *modelPB.CreateMode
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if model, err := h.service.GetModelByID(ctx, ownerPermalink, req.Model.Id, modelPB.View_VIEW_FULL); err == nil {
-		if util.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, model.ID) {
+		if utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, model.ID) {
 			span.SetStatus(1, "Model already existed")
 			return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 		}
@@ -2368,7 +2368,7 @@ func (h *PublicHandler) TestModelBinaryFileUpload(stream modelPB.ModelPublicServ
 			return err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return status.Error(codes.InvalidArgument, err.Error())
@@ -2457,11 +2457,11 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		return err
 	}
 
-	usageData := util.UsageMetricData{
+	usageData := utils.UsageMetricData{
 		OwnerUID:           owner.GetUid(),
 		ModelUID:           modelInDB.UID.String(),
 		TriggerUID:         logUUID.String(),
-		TriggerTime:        startTime,
+		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
 		ModelTask:          commonPB.Task(modelInDB.Task),
 	}
@@ -2482,15 +2482,15 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
@@ -2526,7 +2526,7 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		h.service.WriteNewDataPoint(ctx, usageData)
+		_ = h.service.WriteNewDataPoint(ctx, usageData)
 		return st.Err()
 	}
 
@@ -2536,7 +2536,9 @@ func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelPB.ModelPublicS
 	})
 
 	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
-	h.service.WriteNewDataPoint(ctx, usageData)
+	if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
+		logger.Warn("usage and metric data write fail")
+	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
@@ -2582,11 +2584,11 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		return &modelPB.TriggerModelResponse{}, err
 	}
 
-	usageData := util.UsageMetricData{
+	usageData := utils.UsageMetricData{
 		OwnerUID:           owner.GetUid(),
 		ModelUID:           modelInDB.UID.String(),
 		TriggerUID:         logUUID.String(),
-		TriggerTime:        startTime,
+		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
 		ModelTask:          commonPB.Task(modelInDB.Task),
 	}
@@ -2605,7 +2607,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
@@ -2615,7 +2617,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -2625,7 +2627,7 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -2637,15 +2639,15 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			h.service.WriteNewDataPoint(ctx, usageData)
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
 			return &modelPB.TriggerModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
@@ -2680,12 +2682,14 @@ func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelPB.TriggerMo
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		h.service.WriteNewDataPoint(ctx, usageData)
+		_ = h.service.WriteNewDataPoint(ctx, usageData)
 		return &modelPB.TriggerModelResponse{}, st.Err()
 	}
 
 	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
-	h.service.WriteNewDataPoint(ctx, usageData)
+	if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
+		logger.Warn("usage and metric data write fail")
+	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
@@ -2786,7 +2790,7 @@ func (h *PublicHandler) TestModel(ctx context.Context, req *modelPB.TestModelReq
 			return &modelPB.TestModelResponse{}, err
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return &modelPB.TestModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
@@ -2908,11 +2912,11 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	usageData := util.UsageMetricData{
+	usageData := utils.UsageMetricData{
 		OwnerUID:           owner.GetUid(),
 		ModelUID:           modelInDB.UID.String(),
 		TriggerUID:         logUUID.String(),
-		TriggerTime:        startTime,
+		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
 		ModelTask:          commonPB.Task(modelInDB.Task),
 	}
@@ -2922,7 +2926,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		s.WriteNewDataPoint(ctx, usageData)
+		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
 	}
 
@@ -2941,7 +2945,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			makeJSONResponse(w, 400, "File Input Error", err.Error())
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = len(imageInput)
@@ -2952,7 +2956,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = 1
@@ -2963,7 +2967,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			makeJSONResponse(w, 400, "Parser input error", err.Error())
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		lenInputs = 1
@@ -2977,23 +2981,23 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := util.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
 		if err != nil {
 			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 		if !doSupportBatch {
 			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			s.WriteNewDataPoint(ctx, usageData)
+			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
 	}
@@ -3032,13 +3036,13 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		makeJSONResponse(w, 500, st.Message(), string(obj))
 		span.SetStatus(1, st.Message())
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		s.WriteNewDataPoint(ctx, usageData)
+		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
 	}
 
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(200)
-	res, err := util.MarshalOptions.Marshal(&modelPB.TestModelBinaryFileUploadResponse{
+	res, err := utils.MarshalOptions.Marshal(&modelPB.TestModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
@@ -3049,7 +3053,9 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
-	s.WriteNewDataPoint(ctx, usageData)
+	if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+		logger.Warn("usage and metric data write fail")
+	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,

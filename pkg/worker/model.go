@@ -16,7 +16,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -76,7 +76,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
 
 	updateResourceReq := controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
@@ -91,73 +91,73 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	switch modelDef.ID {
 	case "github":
-		if !config.Config.Server.ItMode.Enabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var modelConfig datamodel.GitHubModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err
 			}
 
 			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-				modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
+				modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
 			}
 
-			if err := util.GitHubClone(modelSrcDir, modelConfig, true); err != nil {
+			if err := utils.GitHubClone(modelSrcDir, modelConfig, true); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
 		}
 	case "huggingface":
-		if !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var modelConfig datamodel.HuggingFaceModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err
 			}
 
 			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-				modelSrcDir = util.MODEL_CACHE_DIR + "/" + modelConfig.RepoId
+				modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.RepoId
 			}
 
 			if config.Config.Server.ItMode.Enabled { // use local model to remove internet connection issue while integration testing
-				if err = util.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
+				if err = utils.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
 					RepoId: "assets/tiny-vit-random",
 				}, dbModel.ID); err != nil {
 					_ = os.RemoveAll(modelSrcDir)
 					return err
 				}
 			} else {
-				if err = util.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
+				if err = utils.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
 					_ = os.RemoveAll(modelSrcDir)
 					return err
 				}
 			}
 
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
 
-			if err := util.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
+			if err := utils.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
 				return err
 			}
 		}
 	case "artivc":
-		if !config.Config.Server.ItMode.Enabled && !util.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
 			var modelConfig datamodel.ArtiVCModelConfiguration
 			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
 			if err != nil {
 				return err
 			}
 
-			err = util.ArtiVCClone(modelSrcDir, modelConfig, true)
+			err = utils.ArtiVCClone(modelSrcDir, modelConfig, true)
 			if err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
-			if err := util.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
@@ -252,7 +252,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
 
 	updateResourceReq := controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
@@ -327,7 +327,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		return err
 	}
 
-	resourcePermalink := util.ConvertModelToResourcePermalink(dbModel.UID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
 
 	updateResourceReq.Resource.ResourcePermalink = resourcePermalink
 	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{

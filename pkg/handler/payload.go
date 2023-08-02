@@ -16,7 +16,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -39,11 +39,11 @@ func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {
 		return nil, fmt.Errorf("unable to read content body from image at %v", url)
 	}
 
-	if numBytes > int64(config.Config.Server.MaxDataSize*util.MB) {
+	if numBytes > int64(config.Config.Server.MaxDataSize*utils.MB) {
 		return nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
 			config.Config.Server.MaxDataSize,
-			float32(numBytes)/float32(util.MB),
+			float32(numBytes)/float32(utils.MB),
 		)
 	}
 
@@ -66,11 +66,11 @@ func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, er
 		return nil, fmt.Errorf("unable to decode base64 image")
 	}
 	numBytes := len(decoded)
-	if numBytes > config.Config.Server.MaxDataSize*util.MB {
+	if numBytes > config.Config.Server.MaxDataSize*utils.MB {
 		return nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
 			config.Config.Server.MaxDataSize,
-			float32(numBytes)/float32(util.MB),
+			float32(numBytes)/float32(utils.MB),
 		)
 	}
 	img, _, err := image.Decode(bytes.NewReader(decoded))
@@ -166,19 +166,19 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelRequest) (textToImage
 	}
 
 	for _, taskInput := range req.TaskInputs {
-		steps := int64(util.TEXT_TO_IMAGE_STEPS)
+		steps := int64(utils.TEXT_TO_IMAGE_STEPS)
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = int64(*taskInput.GetTextToImage().Steps)
 		}
-		cfgScale := float32(util.IMAGE_TO_TEXT_CFG_SCALE)
+		cfgScale := float32(utils.IMAGE_TO_TEXT_CFG_SCALE)
 		if taskInput.GetTextToImage().CfgScale != nil {
 			cfgScale = float32(*taskInput.GetTextToImage().CfgScale)
 		}
-		seed := int64(util.IMAGE_TO_TEXT_SEED)
+		seed := int64(utils.IMAGE_TO_TEXT_SEED)
 		if taskInput.GetTextToImage().Seed != nil {
 			seed = int64(*taskInput.GetTextToImage().Seed)
 		}
-		samples := int64(util.IMAGE_TO_TEXT_SAMPLES)
+		samples := int64(utils.IMAGE_TO_TEXT_SAMPLES)
 		if taskInput.GetTextToImage().Samples != nil {
 			samples = int64(*taskInput.GetTextToImage().Samples)
 		}
@@ -198,7 +198,7 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerModelRequest) (textToImage
 
 func parseTexGenerationRequestInputs(req *modelPB.TriggerModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
 	for _, taskInput := range req.TaskInputs {
-		outputLen := int64(util.TEXT_GENERATION_OUTPUT_LEN)
+		outputLen := int64(utils.TEXT_GENERATION_OUTPUT_LEN)
 		if taskInput.GetTextGeneration().OutputLen != nil {
 			outputLen = int64(*taskInput.GetTextGeneration().OutputLen)
 		}
@@ -210,11 +210,11 @@ func parseTexGenerationRequestInputs(req *modelPB.TriggerModelRequest) (textGene
 		if taskInput.GetTextGeneration().StopWordsList != nil {
 			stopWordsList = *taskInput.GetTextGeneration().BadWordsList
 		}
-		topK := int64(util.TEXT_GENERATION_TOP_K)
+		topK := int64(utils.TEXT_GENERATION_TOP_K)
 		if taskInput.GetTextGeneration().Topk != nil {
 			topK = int64(*taskInput.GetTextGeneration().Topk)
 		}
-		seed := int64(util.TEXT_GENERATION_SEED)
+		seed := int64(utils.TEXT_GENERATION_SEED)
 		if taskInput.GetTextGeneration().Seed != nil {
 			seed = int64(*taskInput.GetTextGeneration().Seed)
 		}
@@ -253,11 +253,11 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 			return nil, fmt.Errorf("unable to read content body from image")
 		}
 
-		if numBytes > int64(config.Config.Server.MaxDataSize*util.MB) {
+		if numBytes > int64(config.Config.Server.MaxDataSize*utils.MB) {
 			return nil, fmt.Errorf(
 				"image size must be smaller than %vMB. Got %vMB from image %v",
 				config.Config.Server.MaxDataSize,
-				float32(numBytes)/float32(util.MB),
+				float32(numBytes)/float32(utils.MB),
 				content.Filename,
 			)
 		}
@@ -309,7 +309,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := int(util.TEXT_TO_IMAGE_STEPS)
+	step := int(utils.TEXT_TO_IMAGE_STEPS)
 	if len(stepStr) > 0 {
 		step, err = strconv.Atoi(stepStr[0])
 		if err != nil {
@@ -317,7 +317,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	cfgScale := float64(util.IMAGE_TO_TEXT_CFG_SCALE)
+	cfgScale := float64(utils.IMAGE_TO_TEXT_CFG_SCALE)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -325,7 +325,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	seed := int(util.IMAGE_TO_TEXT_SEED)
+	seed := int(utils.IMAGE_TO_TEXT_SEED)
 	if len(seedStr) > 0 {
 		seed, err = strconv.Atoi(seedStr[0])
 		if err != nil {
@@ -333,7 +333,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	samples := int(util.IMAGE_TO_TEXT_SAMPLES)
+	samples := int(utils.IMAGE_TO_TEXT_SAMPLES)
 	if len(samplesStr) > 0 {
 		samples, err = strconv.Atoi(samplesStr[0])
 		if err != nil {
@@ -375,7 +375,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		stopWordsList = stopWordsListInput[0]
 	}
 
-	outputLen := int(util.TEXT_GENERATION_OUTPUT_LEN)
+	outputLen := int(utils.TEXT_GENERATION_OUTPUT_LEN)
 	if len(outputLenInput) > 0 {
 		outputLen, err = strconv.Atoi(outputLenInput[0])
 		if err != nil {
@@ -383,7 +383,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		}
 	}
 
-	topK := int(util.TEXT_GENERATION_TOP_K)
+	topK := int(utils.TEXT_GENERATION_TOP_K)
 	if len(topKInput) > 0 {
 		topK, err = strconv.Atoi(topKInput[0])
 		if err != nil {
@@ -391,7 +391,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		}
 	}
 
-	seed := int(util.TEXT_GENERATION_SEED)
+	seed := int(utils.TEXT_GENERATION_SEED)
 	if len(seedInput) > 0 {
 		seed, err = strconv.Atoi(seedInput[0])
 		if err != nil {

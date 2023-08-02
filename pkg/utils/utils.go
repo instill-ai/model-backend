@@ -1,4 +1,4 @@
-package util
+package utils
 
 import (
 	"bufio"
@@ -16,7 +16,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gernest/front"
 	"github.com/gofrs/uuid"
@@ -870,6 +869,6 @@ type UsageMetricData struct {
 	Status             mgmtPB.Status
 	TriggerUID         string
 	ModelDefinitionUID string
-	TriggerTime        time.Time
+	TriggerTime        string
 	ModelTask          commonPB.Task
 }

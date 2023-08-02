@@ -2,6 +2,7 @@ package usage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,11 +12,11 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/repo"
 
 	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	usagePB "github.com/instill-ai/protogen-go/base/usage/v1alpha"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	usageClient "github.com/instill-ai/usage-client/client"
 	usageReporter "github.com/instill-ai/usage-client/reporter"
 )
@@ -87,30 +88,33 @@ func (u *usage) RetrieveUsageData() interface{} {
 
 			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
 
-			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid())).Val()
+			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("user:%s:model.trigger_data", user.GetUid())).Val() // O(1)
 
 			if triggerCount != 0 {
 				for i := int64(0); i < triggerCount; i++ {
-					timeStr, _ := time.Parse(time.RFC3339Nano, u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.trigger_time", user.GetUid())).Val())
-					triggerData := &usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
-					triggerData.ModelUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_uid", user.GetUid())).Val()
-					triggerData.TriggerUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid())).Val()
-					triggerData.TriggerTime = timestamppb.New(timeStr)
-					triggerData.ModelDefinitionUid = u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_definition_uid", user.GetUid())).Val()
-					triggerData.ModelTask = commonPB.Task(commonPB.Task_value[u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:trigger.model_task", user.GetUid())).Val()])
-					triggerDataList = append(triggerDataList, triggerData)
+
+					strData := u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:model.trigger_data", user.GetUid())).Val()
+
+					triggerData := &utils.UsageMetricData{}
+					if err := json.Unmarshal([]byte(strData), triggerData); err != nil {
+						logger.Warn("Usage data might be corrupted")
+					}
+
+					triggerTime, _ := time.Parse(time.RFC3339Nano, triggerData.TriggerTime)
+
+					triggerDataList = append(
+						triggerDataList,
+						&usagePB.ModelUsageData_UserUsageData_ModelTriggerData{
+							TriggerUid:         triggerData.TriggerUID,
+							TriggerTime:        timestamppb.New(triggerTime),
+							ModelUid:           triggerData.ModelUID,
+							ModelDefinitionUid: triggerData.ModelDefinitionUID,
+							ModelTask:          triggerData.ModelTask,
+							Status:             triggerData.Status,
+						},
+					)
 				}
 			}
-
-			u.redisClient.Unlink(
-				ctx,
-				fmt.Sprintf("user:%s:trigger.trigger_uid", user.GetUid()),
-				fmt.Sprintf("user:%s:trigger.trigger_time", user.GetUid()),
-				fmt.Sprintf("user:%s:trigger.model_uid", user.GetUid()),
-				fmt.Sprintf("user:%s:trigger.model_definition_uid", user.GetUid()),
-				fmt.Sprintf("user:%s:trigger.model_task", user.GetUid()),
-				fmt.Sprintf("user:%s:trigger.status", user.GetUid()),
-			)
 
 			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
 				UserUid:          user.GetUid(),

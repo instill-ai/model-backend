@@ -15,7 +15,7 @@ import (
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	repository "github.com/instill-ai/model-backend/pkg/repository"
 	service "github.com/instill-ai/model-backend/pkg/service"
-	util "github.com/instill-ai/model-backend/pkg/util"
+	util "github.com/instill-ai/model-backend/pkg/utils"
 	mgmtv1alpha "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"

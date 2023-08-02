@@ -40,7 +40,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/usage"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
@@ -213,8 +213,8 @@ func main() {
 		runtime.WithErrorHandler(middleware.ErrorHandler),
 		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-			MarshalOptions:   util.MarshalOptions,
-			UnmarshalOptions: util.UnmarshalOptions,
+			MarshalOptions:   utils.MarshalOptions,
+			UnmarshalOptions: utils.UnmarshalOptions,
 		}),
 	)
 
@@ -223,8 +223,8 @@ func main() {
 		runtime.WithErrorHandler(middleware.ErrorHandler),
 		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-			MarshalOptions:   util.MarshalOptions,
-			UnmarshalOptions: util.UnmarshalOptions,
+			MarshalOptions:   utils.MarshalOptions,
+			UnmarshalOptions: utils.UnmarshalOptions,
 		}),
 	)
 

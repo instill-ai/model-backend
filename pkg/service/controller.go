@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/model-backend/pkg/util"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
-	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(modelUID.String())
 
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
 		ResourcePermalink: resourcePermalink,
@@ -24,7 +24,7 @@ func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*mo
 }
 
 func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowId *string) error {
-	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(modelUID.String())
 
 	if _, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
 		Resource: &controllerPB.Resource{
@@ -43,7 +43,7 @@ func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, s
 }
 
 func (s *service) DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error {
-	resourcePermalink := util.ConvertModelToResourcePermalink(modelUID.String())
+	resourcePermalink := utils.ConvertModelToResourcePermalink(modelUID.String())
 
 	if _, err := s.controllerClient.DeleteResource(ctx, &controllerPB.DeleteResourceRequest{
 		ResourcePermalink: resourcePermalink,
