@@ -29,9 +29,9 @@ func (s *service) DeployModelAsync(ctx context.Context, owner string, modelUID u
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       id.String(),
 		TaskQueue:                worker.TaskQueue,
-		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Temporal.Workflow.MaxWorkflowTimeout) * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+			MaximumAttempts: config.Config.Temporal.Workflow.MaxWorkflowRetry,
 		},
 	}
 
@@ -64,9 +64,9 @@ func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       id.String(),
 		TaskQueue:                worker.TaskQueue,
-		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Temporal.Workflow.MaxWorkflowTimeout) * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+			MaximumAttempts: config.Config.Temporal.Workflow.MaxWorkflowRetry,
 		},
 	}
 
@@ -145,9 +145,9 @@ func (s *service) CreateModelAsync(ctx context.Context, owner string, model *dat
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       id.String(),
 		TaskQueue:                worker.TaskQueue,
-		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Temporal.Workflow.MaxWorkflowTimeout) * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+			MaximumAttempts: config.Config.Temporal.Workflow.MaxWorkflowRetry,
 		},
 	}
 

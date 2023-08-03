@@ -14,10 +14,6 @@ server:
   itmode:
     enabled: false
   maxdatasize: 12 # MB in unit
-  workflow:
-    maxworkflowtimeout: 3600 # in seconds
-    maxworkflowretry: 3
-    maxactivityretry: 1
 database:
   username: postgres
   password: password
@@ -60,6 +56,10 @@ temporal:
   cert:
   key:
   servername:
+  workflow:
+    maxworkflowtimeout: 3600 # in seconds
+    maxworkflowretry: 3
+    maxactivityretry: 1
 controller:
   host: controller-model
   privateport: 3086

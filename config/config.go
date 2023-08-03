@@ -34,11 +34,6 @@ type ServerConfig struct {
 		Enabled bool `koanf:"enabled"`
 	}
 	MaxDataSize int `koanf:"maxdatasize"`
-	Workflow    struct {
-		MaxWorkflowTimeout int32 `koanf:"maxworkflowtimeout"`
-		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
-		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
-	}
 }
 
 // DatabaseConfig related to database
@@ -116,6 +111,11 @@ type TemporalConfig struct {
 	Cert       string `koanf:"cert"`
 	Key        string `koanf:"key"`
 	ServerName string `koanf:"servername"`
+	Workflow   struct {
+		MaxWorkflowTimeout int32 `koanf:"maxworkflowtimeout"`
+		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
+		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
+	}
 }
 
 // LogConfig related to logging

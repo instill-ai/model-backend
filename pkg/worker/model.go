@@ -37,7 +37,7 @@ func (w *worker) DeployModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		TaskQueue:           TaskQueue,
 		StartToCloseTimeout: 300 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
+			MaximumAttempts: config.Config.Temporal.Workflow.MaxActivityRetry,
 		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
@@ -216,7 +216,7 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 2 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
+			MaximumAttempts: config.Config.Temporal.Workflow.MaxActivityRetry,
 		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
