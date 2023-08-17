@@ -1839,7 +1839,7 @@ func (h *PublicHandler) UpdateModel(ctx context.Context, req *modelPB.UpdateMode
 
 func (h *PublicHandler) DeleteModel(ctx context.Context, req *modelPB.DeleteModelRequest) (*modelPB.DeleteModelResponse, error) {
 
-	eventName := "UpdateModel"
+	eventName := "DeleteModel"
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -2065,17 +2065,6 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
-	state, err := h.service.GetResourceState(ctx, dbModel.UID)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.DeployModelResponse{}, err
-	}
-
-	if *state != modelPB.Model_STATE_OFFLINE {
-		return &modelPB.DeployModelResponse{},
-			status.Error(codes.FailedPrecondition, fmt.Sprintf("Deploy model only work with offline model state, current model state is %s", state))
-	}
-
 	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -2087,45 +2076,6 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
-	wfId, err := h.service.DeployModelAsync(ctx, ownerPermalink, dbModel.UID)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
-			"triton-inference-server",
-			"deploy model",
-			"",
-			err.Error(),
-		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] deploy model error",
-				"triton-inference-server",
-				"Out of memory for deploying the model to triton server, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		span.SetStatus(1, st.Err().Error())
-		return &modelPB.DeployModelResponse{}, st.Err()
-	}
-
-	if err := h.service.UpdateResourceState(
-		ctx,
-		dbModel.UID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.DeployModelResponse{}, err
-	}
-
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -2133,15 +2083,10 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		eventName,
 		custom_otel.SetEventResource(dbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
-			Response: &anypb.Any{
-				Value: []byte(wfId),
-			},
-		}),
 	)))
 
 	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", ""),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -2184,45 +2129,13 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Unauthenticated, "Unauthorized")
 	}
 
-	state, err := h.service.GetResourceState(ctx, dbModel.UID)
-
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
-	}
-
-	if *state != modelPB.Model_STATE_ONLINE {
-		span.SetStatus(1, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
-			state))
-		return &modelPB.UndeployModelResponse{},
-			status.Error(codes.FailedPrecondition, fmt.Sprintf("undeploy model only work with online model instance state, current model state is %s",
-				state))
 	}
 
 	// set user desired state to STATE_OFFLINE
 	if _, err := h.service.UpdateModelState(ctx, dbModel.UID, &dbModel, datamodel.ModelState(modelPB.Model_STATE_OFFLINE)); err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.UndeployModelResponse{}, err
-	}
-
-	wfId, err := h.service.UndeployModelAsync(ctx, ownerPermalink, dbModel.UID)
-	if err != nil {
-		// Manually set the custom header to have a StatusUnprocessableEntity http response for REST endpoint
-		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusUnprocessableEntity))); err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.UndeployModelResponse{}, status.Errorf(codes.Internal, err.Error())
-		}
-		span.SetStatus(1, err.Error())
-		return &modelPB.UndeployModelResponse{}, err
-	}
-
-	if err := h.service.UpdateResourceState(
-		ctx,
-		dbModel.UID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployModelResponse{}, err
 	}
@@ -2234,15 +2147,10 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		eventName,
 		custom_otel.SetEventResource(dbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
-			Response: &anypb.Any{
-				Value: []byte(wfId),
-			},
-		}),
 	)))
 
 	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", ""),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},

@@ -117,6 +117,19 @@ export function GetModel() {
           r.json().model.update_time !== undefined,
       });
 
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
@@ -339,6 +352,22 @@ export function ListModels() {
           r.json().models[1].update_time !== undefined,
       });
 
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res_1 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_1}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_2 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_2}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res_1.json().state !== "STATE_UNSPECIFIED" && res_2.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_1}`, null, {
         headers: genHeader(`application/json`),
@@ -454,6 +483,19 @@ export function LookupModel() {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
+
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {

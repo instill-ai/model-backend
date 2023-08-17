@@ -78,6 +78,19 @@ export function DeployUndeployModel() {
           r.json().model.state === "STATE_ONLINE",
       })
 
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
         headers: genHeader(`application/json`),
       }), {
@@ -161,6 +174,19 @@ export function DeployUndeployModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
           r.json().operation.response !== undefined,
       });
+
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state === "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
         headers: genHeader(`application/json`),

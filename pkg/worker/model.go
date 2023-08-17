@@ -18,7 +18,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -74,16 +73,6 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	var tritonModels []datamodel.TritonModel
 	if tritonModels, err = w.repository.GetTritonModels(dbModel.UID); err != nil {
 		return err
-	}
-
-	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
-
-	updateResourceReq := controllerPB.UpdateResourceRequest{
-		Resource: &controllerPB.Resource{
-			ResourcePermalink: resourcePermalink,
-			State:             &controllerPB.Resource_ModelState{},
-			Progress:          nil,
-		},
 	}
 
 	// downloading model weight when making inference
@@ -176,32 +165,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
 			continue
 		}
-		updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-			ModelState: modelPB.Model_STATE_ERROR,
-		}
-		if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
-			return err
-		}
 		return err
 	}
 
 	if tEnsembleModel.Name != "" { // load ensemble model.
 		if _, err = w.triton.LoadModelRequest(ctx, tEnsembleModel.Name); err != nil {
-			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ERROR,
-			}
-			if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
-				return err
-			}
 			return err
 		}
-	}
-
-	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-		ModelState: modelPB.Model_STATE_ONLINE,
-	}
-	if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
-		return err
 	}
 
 	logger.Info("DeployModelActivity completed")
@@ -247,39 +217,11 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		return err
 	}
 
-	dbModel, err := w.repository.GetModelByUID(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
-
-	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
-
-	updateResourceReq := controllerPB.UpdateResourceRequest{
-		Resource: &controllerPB.Resource{
-			ResourcePermalink: resourcePermalink,
-			State:             &controllerPB.Resource_ModelState{},
-			Progress:          nil,
-		},
-	}
-
 	for _, tm := range tritonModels {
 		// Unload all models composing the ensemble model
 		if _, err = w.triton.UnloadModelRequest(ctx, tm.Name); err != nil {
-			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ERROR,
-			}
-			if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
-				return err
-			}
 			return err
 		}
-	}
-
-	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-		ModelState: modelPB.Model_STATE_OFFLINE,
-	}
-	if _, err := w.controllerClient.UpdateResource(ctx, &updateResourceReq); err != nil {
-		return err
 	}
 
 	logger.Info("UnDeployModelActivity completed")
@@ -292,17 +234,6 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
-	updateResourceReq := controllerPB.UpdateResourceRequest{
-		Resource: &controllerPB.Resource{
-			ResourcePermalink: "",
-			State:             &controllerPB.Resource_ModelState{},
-			Progress:          nil,
-		},
-	}
-
-	controllerCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	preDeployModel, err := GetPreDeployGitHubModelUUID(param.Model)
 	if err != nil {
 		return err
@@ -310,31 +241,12 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 
 	if preDeployModel != nil && !config.Config.Server.ItMode.Enabled {
 		if err := w.repository.CreatePreDeployModel(*preDeployModel); err != nil {
-			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ERROR,
-			}
+			return err
 		}
 	} else {
 		if err := w.repository.CreateModel(param.Model); err != nil {
-			updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-				ModelState: modelPB.Model_STATE_ERROR,
-			}
+			return err
 		}
-	}
-
-	dbModel, err := w.repository.GetModelByID(param.Owner, param.Model.ID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return err
-	}
-
-	resourcePermalink := utils.ConvertModelToResourcePermalink(dbModel.UID.String())
-
-	updateResourceReq.Resource.ResourcePermalink = resourcePermalink
-	updateResourceReq.Resource.State = &controllerPB.Resource_ModelState{
-		ModelState: modelPB.Model_STATE_OFFLINE,
-	}
-	if _, err := w.controllerClient.UpdateResource(controllerCtx, &updateResourceReq); err != nil {
-		return err
 	}
 
 	logger.Info("CreateModelWorkflow completed")

@@ -117,6 +117,7 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 	return s.mgmtPrivateServiceClient
 }
 
+// TODO: determine the necessity of this block of codes
 // func (s *service) DeployModel(modelUID uuid.UUID) error {
 // 	var tEnsembleModel datamodel.TritonModel
 // 	var err error
@@ -145,24 +146,11 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 
 func (s *service) UndeployModel(ctx context.Context, modelUID uuid.UUID) error {
 
-	var tritonModels []datamodel.TritonModel
+	// var tritonModels []datamodel.TritonModel
 	var err error
 
-	if tritonModels, err = s.repository.GetTritonModels(modelUID); err != nil {
+	if _, err = s.repository.GetTritonModels(modelUID); err != nil {
 		return err
-	}
-
-	for _, tm := range tritonModels {
-		// Unload all models composing the ensemble model
-		if _, err = s.triton.UnloadModelRequest(ctx, tm.Name); err != nil {
-			// If any models unloaded with error, we set the ensemble model status with ERROR and return
-			if err1 := s.repository.UpdateModel(modelUID, datamodel.Model{
-				State: datamodel.ModelState(modelPB.Model_STATE_ERROR),
-			}); err1 != nil {
-				return err1
-			}
-			return err
-		}
 	}
 
 	if err := s.repository.UpdateModel(modelUID, datamodel.Model{
@@ -704,15 +692,6 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 	}
 
 	if err := s.UndeployModel(ctx, modelInDB.UID); err != nil {
-		if err := s.UpdateResourceState(
-			ctx,
-			modelInDB.UID,
-			modelPB.Model_STATE_ERROR,
-			nil,
-			nil,
-		); err != nil {
-			return err
-		}
 		return err
 	}
 

@@ -88,7 +88,18 @@ export function ListModels() {
       "ListModelsAdmin response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
       "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
     });
-
+    currentTime = new Date().getTime();
+    timeoutTime = new Date().getTime() + 120000;
+    while (timeoutTime > currentTime) {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+        name: `models/${model_id}`
+      }, {})
+      if (res.message.state !== "STATE_UNSPECIFIED") {
+        break
+      }
+      sleep(1)
+      currentTime = new Date().getTime();
+    }
     check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
@@ -167,6 +178,18 @@ export function LookUpModel() {
     }, {}), {
       'LookUpModelAdmin non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
+    currentTime = new Date().getTime();
+    timeoutTime = new Date().getTime() + 120000;
+    while (timeoutTime > currentTime) {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+        name: `models/${model_id}`
+      }, {})
+      if (res.message.state !== "STATE_UNSPECIFIED") {
+        break
+      }
+      sleep(1)
+      currentTime = new Date().getTime();
+    }
     check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {

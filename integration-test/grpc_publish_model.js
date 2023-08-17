@@ -110,7 +110,18 @@ export function PublishUnPublishModel() {
     }), {
       "UnpublishModel response not found status": (r) => r.status === grpc.StatusNotFound,
     });
-
+    currentTime = new Date().getTime();
+    timeoutTime = new Date().getTime() + 120000;
+    while (timeoutTime > currentTime) {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+        name: `models/${model_id}`
+      }, {})
+      if (res.message.state !== "STATE_UNSPECIFIED") {
+        break
+      }
+      sleep(1)
+      currentTime = new Date().getTime();
+    }
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {
