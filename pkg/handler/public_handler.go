@@ -2034,6 +2034,10 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 
 	eventName := "DeployModel"
 
+	// block for controller to update the state
+	ctx, cancel := context.WithTimeout(ctx, 4 * time.Second)
+	defer cancel()
+
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
@@ -2076,6 +2080,13 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		return &modelPB.DeployModelResponse{}, err
 	}
 
+	state := modelPB.Model_STATE_OFFLINE.Enum()
+	for state == modelPB.Model_STATE_OFFLINE.Enum() {
+		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
+			return &modelPB.DeployModelResponse{}, err
+		}
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -2085,18 +2096,16 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return &modelPB.DeployModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", ""),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}}, nil
+	return &modelPB.DeployModelResponse{ModelId: dbModel.ID}, nil
 }
 
 func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.UndeployModelRequest) (*modelPB.UndeployModelResponse, error) {
 
 	eventName := "UndeployModel"
+
+	// block for controller to update the state
+	ctx, cancel := context.WithTimeout(ctx, 4 * time.Second)
+	defer cancel()
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -2140,6 +2149,13 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
+	state := modelPB.Model_STATE_OFFLINE.Enum()
+	for state == modelPB.Model_STATE_OFFLINE.Enum() {
+		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
+			return &modelPB.UndeployModelResponse{}, err
+		}
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -2149,13 +2165,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return &modelPB.UndeployModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", ""),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}}, nil
+	return &modelPB.UndeployModelResponse{ModelId: dbModel.ID}, nil
 }
 
 func (h *PublicHandler) WatchModel(ctx context.Context, req *modelPB.WatchModelRequest) (*modelPB.WatchModelResponse, error) {
