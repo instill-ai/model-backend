@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
@@ -704,6 +705,13 @@ func (s *service) DeleteModel(ctx context.Context, owner string, modelID string)
 			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
 			_ = os.RemoveAll(modelDir)
 		}
+	}
+
+	for state.String() == modelPB.Model_STATE_ONLINE.String() {
+		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	if err := s.DeleteResourceState(ctx, modelInDB.UID); err != nil {
