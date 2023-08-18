@@ -80,6 +80,19 @@ export function GetModel() {
           r.status === 200,
       });
 
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
@@ -214,6 +227,19 @@ export function LookupModel() {
         [`[with default "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 200`]: (r) =>
           r.status === 200,
       });
+
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {

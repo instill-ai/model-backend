@@ -54,7 +54,8 @@ export default () => {
     queryModelPrivate.ListModels()
     queryModelPrivate.LookUpModel()
     deployModelPrivate.CheckModel()
-    deployModelPrivate.DeployUndeployModel()
+    // private deploy will be triggered by public deploy
+    // deployModelPrivate.DeployUndeployModel()
   }
 
   // Create model API

@@ -123,6 +123,20 @@ export function UpdateModel() {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.update_time`]: (r) =>
           r.json().model.update_time !== undefined,
       });
+
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
         headers: genHeader(`application/json`),

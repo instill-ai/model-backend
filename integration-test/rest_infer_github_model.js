@@ -64,13 +64,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
@@ -333,13 +327,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model instance state being updated in 1 hours. Some GitHub models is huge.
@@ -602,13 +590,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task det response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model instance state being updated in 1 hour
@@ -1010,13 +992,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task det response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model instance state being updated in 1 hour
@@ -1418,13 +1394,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model instance state being updated in 1 hours. Some GitHub models is huge.

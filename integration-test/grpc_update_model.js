@@ -84,7 +84,18 @@ export function UpdateModel() {
       "UpdateModel response model.create_time": (r) => r.message.model.createTime !== undefined,
       "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
-
+    currentTime = new Date().getTime();
+    timeoutTime = new Date().getTime() + 120000;
+    while (timeoutTime > currentTime) {
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+        name: `models/${model_id}`
+      }, {})
+      if (res.message.state !== "STATE_UNSPECIFIED") {
+        break
+      }
+      sleep(1)
+      currentTime = new Date().getTime();
+    }
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {

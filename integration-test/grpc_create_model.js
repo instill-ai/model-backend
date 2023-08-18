@@ -71,9 +71,7 @@ export function CreateModel() {
     }
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeployModel', req, {}), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
-      'DeployModel operation name': (r) => r && r.message.operation.name !== undefined,
-      'DeployModel operation metadata': (r) => r && r.message.operation.metadata === null,
-      'DeployModel operation done': (r) => r && r.message.operation.done === false,
+      'DeployModel model name': (r) => r && r.message.modelId === model_id
     });
 
     // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)

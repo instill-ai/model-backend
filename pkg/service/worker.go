@@ -13,8 +13,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	workflowpb "go.temporal.io/api/workflow/v1"
-
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -94,16 +92,42 @@ func (s *service) UndeployModelAsync(ctx context.Context, owner string, modelUID
 	return id.String(), nil
 }
 
-func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExecutionInfo) (*longrunningpb.Operation, error) {
+func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrunningpb.Operation, error) {
+	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowId, "")
+	if err != nil {
+		return nil, err
+	}
+
+	workflowExecutionInfo := workflowExecutionRes.WorkflowExecutionInfo
+
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
-		operation = longrunningpb.Operation{
-			Done: true,
-			Result: &longrunningpb.Operation_Response{
-				Response: &anypb.Any{},
-			},
+		var result error
+		workflowRun := s.temporalClient.GetWorkflow(ctx, workflowId, "")
+		err = workflowRun.Get(ctx, &result)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			operation = longrunningpb.Operation{
+				Done: true,
+				Result: &longrunningpb.Operation_Error{
+					Error: &status.Status{
+						Code:    int32(enums.WORKFLOW_EXECUTION_STATUS_FAILED),
+						Details: []*anypb.Any{},
+						Message: result.Error(),
+					},
+				},
+			}
+		} else {
+			operation = longrunningpb.Operation{
+				Done: true,
+				Result: &longrunningpb.Operation_Response{
+					Response: &anypb.Any{},
+				},
+			}
 		}
 	case enums.WORKFLOW_EXECUTION_STATUS_RUNNING:
 	case enums.WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW:
@@ -128,15 +152,6 @@ func getOperationFromWorkflowInfo(workflowExecutionInfo *workflowpb.WorkflowExec
 
 	operation.Name = fmt.Sprintf("operations/%s", workflowExecutionInfo.Execution.WorkflowId)
 	return &operation, nil
-}
-
-func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrunningpb.Operation, error) {
-	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowId, "")
-
-	if err != nil {
-		return nil, err
-	}
-	return getOperationFromWorkflowInfo(workflowExecutionRes.WorkflowExecutionInfo)
 }
 
 func (s *service) CreateModelAsync(ctx context.Context, owner string, model *datamodel.Model) (string, error) {

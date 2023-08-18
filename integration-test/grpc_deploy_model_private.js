@@ -90,6 +90,18 @@ export function CheckModel() {
     }, {}), {
       'CheckModelAdmin uuid length is invalid': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
+    currentTime = new Date().getTime();
+    timeoutTime = new Date().getTime() + 120000;
+    while (timeoutTime > currentTime) {
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+        name: `models/${model_id}`
+      }, {})
+      if (res.message.state !== "STATE_UNSPECIFIED") {
+        break
+      }
+      sleep(1)
+      currentTime = new Date().getTime();
+    }
     check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
       name: "models/" + model_id
     }), {

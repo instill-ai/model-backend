@@ -161,21 +161,19 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 		wfID := strings.Split(resp.Operation.Name, "/")[1]
 
-		if err := h.service.UpdateResourceState(
-			ctx,
-			dbModel.UID,
-			modelPB.Model_STATE_UNSPECIFIED,
-			nil,
-			&wfID,
-		); err != nil {
-			return &modelPB.DeployModelAdminResponse{}, err
-		}
-
+		var operation *longrunningpb.Operation
 		done := false
 		for !done {
-			operation, _ := h.service.GetOperation(ctx, wfID)
-			done = operation.Done
 			time.Sleep(time.Second)
+			operation, err = h.service.GetOperation(ctx, wfID)
+			if err != nil {
+				return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "get model create operation error")
+			}
+			done = operation.Done
+		}
+
+		if operation.GetError() != nil {
+			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model create operation error")
 		}
 
 	}
@@ -212,16 +210,6 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, st.Err()
 	}
 
-	if err := h.service.UpdateResourceState(
-		ctx,
-		dbModel.UID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfID,
-	); err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
-	}
-
 	return &modelPB.DeployModelAdminResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
@@ -249,16 +237,6 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 
 	wfId, err := h.service.UndeployModelAsync(ctx, dbModel.Owner, dbModel.UID)
 	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-
-	if err := h.service.UpdateResourceState(
-		ctx,
-		dbModel.UID,
-		modelPB.Model_STATE_UNSPECIFIED,
-		nil,
-		&wfId,
-	); err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 

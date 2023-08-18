@@ -169,6 +169,31 @@ export function CreateModelFromLocal() {
           r.status === 409,
       });
 
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_cls}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_det}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_keypoint}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_unspecified}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
+          res_det.json().state !== "STATE_UNSPECIFIED" &&
+          res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
+          res_unspecified.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_cls}`, null, {
         headers: genHeader(`application/json`),
@@ -281,6 +306,31 @@ export function CreateModelFromLocal() {
           r.status === 400,
       });
 
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_cls}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_det}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_keypoint}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_unspecified}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
+          res_det.json().state !== "STATE_UNSPECIFIED" &&
+          res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
+          res_unspecified.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_cls}`, null, {
         headers: genHeader(`application/json`),
@@ -387,6 +437,19 @@ export function CreateModelFromGitHub() {
         "POST /v1alpha/models by github missing github_url status": (r) =>
           r.status === 400,
       });
+
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+          headers: genHeader(`application/json`),
+        })
+        if (res.json().state !== "STATE_UNSPECIFIED") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {

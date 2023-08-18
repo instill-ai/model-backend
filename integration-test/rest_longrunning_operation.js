@@ -54,41 +54,24 @@ export function GetLongRunningOperation() {
         currentTime = new Date().getTime();
       }
 
+      // TODO: public endpoint of deploy/undeploy is not longrunning anymore, need test revise
+
       let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+          r.json().model_id === model_id
       });
 
       sleep(1) // take time to execute in Temporal
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${operationRes.json().operation.name}`, {}, {
-        headers: genHeader(`application/json`),
-      }), {
-        [`GET v1alpha/${operationRes.json().operation.name} response status`]: (r) =>
-          r.status === 200,
-        [`GET v1alpha/${operationRes.json().operation.name} response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`GET v1alpha/${operationRes.json().operation.name} response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`GET v1alpha/${operationRes.json().operation.name} response operation.done`]: (r) =>
-          r.json().operation.done !== undefined,
-      });
 
-      // Check the model state being updated in 120 secs
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_UNSPECIFIED") {
@@ -97,6 +80,19 @@ export function GetLongRunningOperation() {
         sleep(1)
         currentTime = new Date().getTime();
       }
+
+      // check(http.get(`${constant.apiPublicHost}/v1alpha/${operationRes.json().operation.name}`, {}, {
+      //   headers: genHeader(`application/json`),
+      // }), {
+      //   [`GET v1alpha/${operationRes.json().operation.name} response status`]: (r) =>
+      //     r.status === 200,
+      //   [`GET v1alpha/${operationRes.json().operation.name} response operation.name`]: (r) =>
+      //     r.json().operation.name !== undefined,
+      //   [`GET v1alpha/${operationRes.json().operation.name} response operation.metadata`]: (r) =>
+      //     r.json().operation.metadata === null,
+      //   [`GET v1alpha/${operationRes.json().operation.name} response operation.done`]: (r) =>
+      //     r.json().operation.done !== undefined,
+      // });
 
       // model can only be deleted after operation done
       while (timeoutTime > currentTime) {
