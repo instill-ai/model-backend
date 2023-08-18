@@ -340,8 +340,9 @@ message DeployModelRequest {
 
 // DeployModelResponse represents a response for a deployed model
 message DeployModelResponse {
-  // Deploy operation message
-  google.longrunning.Operation operation = 1;
+  // Deployed model's id
+  // Format: models/{model}
+  string model_id = 1;
 }
 
 // UndeployModelRequest represents a request to undeploy a model to offline
@@ -357,8 +358,9 @@ message UndeployModelRequest {
 
 // UndeployModelResponse represents a response for a undeployed model
 message UndeployModelResponse {
-  // Undeploy operation message
-  google.longrunning.Operation operation = 1;
+  // Undeployed model's id
+  // Format: models/{model}
+  string model_id = 1;
 }
 
 // GetModelCardRequest represents a request to query a model's README card

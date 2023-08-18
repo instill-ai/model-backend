@@ -62,13 +62,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -331,13 +325,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task det response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task det response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -740,13 +728,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task unspecified response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task unspecified response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task unspecified response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task unspecified response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task unspecified response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -1066,13 +1048,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task keypoint response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -1442,13 +1418,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task det empty response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task det empty response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task det empty response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task det empty response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task det empty response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -1814,13 +1784,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -2107,16 +2071,10 @@ export function InferModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/deploy online task response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -2539,16 +2497,10 @@ export function InferModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/deploy online task text to image response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task text to image response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task text to image response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task text to image response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task text to image response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
@@ -2775,16 +2727,10 @@ export function InferModel() {
       check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
-        [`POST /v1alpha/models/${model_id}/deploy online task text generation response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task text generation response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task text generation response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task text generation response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task text generation response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+          r.json().model_id === model_id
       });
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)

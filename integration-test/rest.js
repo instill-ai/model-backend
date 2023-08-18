@@ -50,7 +50,8 @@ export default function (data) {
   if (!constant.apiGatewayMode) {
     queryModelPrivate.ListModelsAdmin()
     queryModelPrivate.LookupModelAdmin()
-    deployModelPrivate.DeployUndeployModel()
+    // private deploy will be trigger by public deploy
+    // deployModelPrivate.DeployUndeployModel()
   }
 
   // Infer Model API

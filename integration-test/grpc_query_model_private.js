@@ -91,7 +91,7 @@ export function ListModels() {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
         name: `models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {
@@ -181,7 +181,7 @@ export function LookUpModel() {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
         name: `models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {

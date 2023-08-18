@@ -60,16 +60,10 @@ export function GetLongRunningOperation() {
         headers: genHeader(`application/json`),
       })
       check(operationRes, {
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+          r.json().model_id === model_id
       });
 
       sleep(1) // take time to execute in Temporal

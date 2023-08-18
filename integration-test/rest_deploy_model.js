@@ -59,14 +59,8 @@ export function DeployUndeployModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response mode ID`]: (r) =>
+          r.json().model_id === model_id
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
@@ -128,13 +122,7 @@ export function DeployUndeployModel() {
         [`POST /v1alpha/models/${model_id}/undeploy online task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/undeploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/undeploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/undeploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/undeploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+          r.json().model_id === model_id
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
@@ -165,14 +153,8 @@ export function DeployUndeployModel() {
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.name`]: (r) =>
-          r.json().operation.name !== undefined,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.metadata`]: (r) =>
-          r.json().operation.metadata === null,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.done`]: (r) =>
-          r.json().operation.done === false,
-        [`POST /v1alpha/models/${model_id}/deploy online task cls response operation.response`]: (r) =>
-          r.json().operation.response !== undefined,
+        [`POST /v1alpha/models/${model_id}/deploy online task cls response model ID`]: (r) =>
+          r.json().model_id === model_id
       });
 
       currentTime = new Date().getTime();

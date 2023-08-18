@@ -2035,7 +2035,7 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	eventName := "DeployModel"
 
 	// block for controller to update the state
-	ctx, cancel := context.WithTimeout(ctx, 4 * time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	ctx, span := tracer.Start(ctx, eventName,
@@ -2081,10 +2081,11 @@ func (h *PublicHandler) DeployModel(ctx context.Context, req *modelPB.DeployMode
 	}
 
 	state := modelPB.Model_STATE_OFFLINE.Enum()
-	for state == modelPB.Model_STATE_OFFLINE.Enum() {
+	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
 		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
 			return &modelPB.DeployModelResponse{}, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -2104,7 +2105,7 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 	eventName := "UndeployModel"
 
 	// block for controller to update the state
-	ctx, cancel := context.WithTimeout(ctx, 4 * time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	ctx, span := tracer.Start(ctx, eventName,
@@ -2149,11 +2150,12 @@ func (h *PublicHandler) UndeployModel(ctx context.Context, req *modelPB.Undeploy
 		return &modelPB.UndeployModelResponse{}, err
 	}
 
-	state := modelPB.Model_STATE_OFFLINE.Enum()
-	for state == modelPB.Model_STATE_OFFLINE.Enum() {
+	state := modelPB.Model_STATE_ONLINE.Enum()
+	for state.String() == modelPB.Model_STATE_ONLINE.String() {
 		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
 			return &modelPB.UndeployModelResponse{}, err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
