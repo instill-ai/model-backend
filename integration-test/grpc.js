@@ -58,11 +58,11 @@ export default () => {
     // deployModelPrivate.DeployUndeployModel()
   }
 
-  // Create model API
-  createModel.CreateModel()
-
   // Update model API
   updateModel.UpdateModel()
+
+  // Create model API
+  createModel.CreateModel()
 
   // Deploy Model API
   deployModel.DeployUndeployModel()
