@@ -126,7 +126,7 @@ func main() {
 			defer cancel()
 
 			logger.Info("Creating model: " + modelConfig.ID)
-			createOperation, err := modelPublicServiceClient.CreateModel(ctx, &modelPB.CreateModelRequest{
+			createOperation, err := modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
 				Model: &modelPB.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
@@ -153,7 +153,7 @@ func main() {
 					if isCreated || time.Since(startTime) > 5*time.Minute {
 						break
 					}
-					operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
+					operation, err := modelPublicServiceClient.GetUserModelOperation(ctx, &modelPB.GetUserModelOperationRequest{
 						Name: createOperation.Operation.Name,
 					})
 					if err != nil {
@@ -167,7 +167,7 @@ func main() {
 					logger.Fatal("handler.CreateModel: " + err.Error())
 					return
 				} else {
-					_, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
+					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
 						Name: fmt.Sprintf("models/%s", modelConfig.ID),
 					})
 					if err != nil {

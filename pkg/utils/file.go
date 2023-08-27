@@ -328,10 +328,10 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 	return readmeFilePath, ensembleFilePath, nil
 }
 
-func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServer) (outFile string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
+func SaveFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadServer) (outFile string, parent string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
 	firstChunk := true
 	var fp *os.File
-	var fileData *modelPB.CreateModelBinaryFileUploadRequest
+	var fileData *modelPB.CreateUserModelBinaryFileUploadRequest
 
 	var tmpFile string
 
@@ -342,13 +342,19 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 			if err == io.EOF {
 				break
 			}
-			return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
+			return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 
 		if firstChunk { //first chunk contains file name
 			if fileData.Model == nil {
-				return "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
+				return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 			}
+
+			if fileData.Parent == "" {
+				return "", "", &datamodel.Model{}, "", fmt.Errorf("failed namespace parsing")
+			}
+
+			parent = fileData.Parent
 
 			rdid, _ := uuid.NewV4()
 			tmpFile = path.Join("/tmp", rdid.String()+".zip")
@@ -364,7 +370,7 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 			modelDefName := fileData.Model.ModelDefinition
 			modelDefinitionID, err = resource.GetDefinitionID(modelDefName)
 			if err != nil {
-				return "", &datamodel.Model{}, "", err
+				return "", "", &datamodel.Model{}, "", err
 			}
 			uploadedModel = datamodel.Model{
 				ID:         fileData.Model.Id,
@@ -377,7 +383,7 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 				Configuration: datatypes.JSON{},
 			}
 			if err != nil {
-				return "", &datamodel.Model{}, "", err
+				return "", "", &datamodel.Model{}, "", err
 			}
 			defer fp.Close()
 
@@ -385,10 +391,10 @@ func SaveFile(stream modelPB.ModelPublicService_CreateModelBinaryFileUploadServe
 		}
 		err = WriteToFp(fp, fileData.Content)
 		if err != nil {
-			return "", &datamodel.Model{}, "", err
+			return "", "", &datamodel.Model{}, "", err
 		}
 	}
-	return tmpFile, &uploadedModel, modelDefinitionID, nil
+	return tmpFile, parent, &uploadedModel, modelDefinitionID, nil
 }
 
 // GetJSON fetches the contents of the given URL

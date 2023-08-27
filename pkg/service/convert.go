@@ -1,4 +1,4 @@
-package handler
+package service
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func PBModelToDBModel(ctx context.Context, owner string, pbModel *modelPB.Model) *datamodel.Model {
+func (s *service) PBModelToDBModel(ctx context.Context, owner string, pbModel *modelPB.Model) *datamodel.Model {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	return &datamodel.Model{
@@ -57,8 +57,13 @@ func PBModelToDBModel(ctx context.Context, owner string, pbModel *modelPB.Model)
 	}
 }
 
-func DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, ownerName string) *modelPB.Model {
+func (s *service) DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
 	logger, _ := logger.GetZapLogger(ctx)
+
+	owner, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
+	if err != nil {
+		return nil, err
+	}
 
 	pbModel := modelPB.Model{
 		Name:            fmt.Sprintf("models/%s", dbModel.ID),
@@ -102,15 +107,15 @@ func DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, 
 		}(),
 	}
 
-	if strings.HasPrefix(ownerName, "users/") {
-		pbModel.Owner = &modelPB.Model_User{User: ownerName}
-	} else if strings.HasPrefix(ownerName, "organizations/") {
-		pbModel.Owner = &modelPB.Model_Org{Org: ownerName}
+	if strings.HasPrefix(dbModel.Owner, "users/") {
+		pbModel.Owner = &modelPB.Model_User{User: owner}
+	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
+		pbModel.Owner = &modelPB.Model_Org{Org: owner}
 	}
-	return &pbModel
+	return &pbModel, nil
 }
 
-func DBModelDefinitionToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
+func (s *service) DBModelDefinitionToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	pbModelDefinition := modelPB.ModelDefinition{

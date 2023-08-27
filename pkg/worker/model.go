@@ -22,8 +22,7 @@ import (
 )
 
 type ModelParams struct {
-	Model datamodel.Model
-	Owner string
+	Model          *datamodel.Model
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -60,7 +59,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	logger.Info("DeployModelActivity started")
 
-	dbModel, err := w.repository.GetModelByUID(param.Owner, param.Model.UID, modelPB.View_VIEW_FULL)
+	dbModel, err := w.repository.GetModelByUIDAdmin(ctx, param.Model.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -240,11 +239,11 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	}
 
 	if preDeployModel != nil && !config.Config.Server.ItMode.Enabled {
-		if err := w.repository.CreatePreDeployModel(*preDeployModel); err != nil {
+		if err := w.repository.CreatePreDeployModel(preDeployModel); err != nil {
 			return err
 		}
 	} else {
-		if err := w.repository.CreateModel(param.Model); err != nil {
+		if err := w.repository.CreateUserModel(param.Model); err != nil {
 			return err
 		}
 	}

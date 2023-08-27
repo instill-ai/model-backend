@@ -1,27 +1,38 @@
 package repository
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgconn"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/x/paginate"
+	"github.com/instill-ai/x/sterr"
+
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
+const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
+
 type Repository interface {
-	CreateModel(model datamodel.Model) error
-	CreatePreDeployModel(model datamodel.PreDeployModel) error
-	GetModelByID(owner string, modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUID(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
-	DeleteModel(modelUID uuid.UUID) error
-	UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error
-	UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error
-	ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
+	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
+	CreatePreDeployModel(model *datamodel.PreDeployModel) error
+
+	CreateUserModel(model *datamodel.Model) error
+	ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
+	GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error)
+	GetUserModelByUID(ctx context.Context, ownerPermalink string, userPermalink string, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error)
+	UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error
+	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state datamodel.ModelState) error
 
 	CreateTritonModel(model datamodel.TritonModel) error
 	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
@@ -29,10 +40,11 @@ type Repository interface {
 	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+	DeleteModel(modelUID uuid.UUID) error
 
-	GetModelByIDAdmin(modelID string, view modelPB.View) (datamodel.Model, error)
-	GetModelByUIDAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error)
-	ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error)
+	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error)
+	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error)
+	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -51,107 +63,16 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
-var GetModelSelectedFields = []string{
-	`CONCAT('models/', id) as name`,
-	`"model"."uid"`,
-	`"model"."id"`,
-	`"model"."description"`,
-	`"model"."model_definition_uid"`,
-	`"model"."configuration"`,
-	`"model"."visibility"`,
-	`"model"."owner"`,
-	`"model"."state"`,
-	`"model"."task"`,
-	`"model"."create_time"`,
-	`"model"."update_time"`,
-}
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View, pageSize int, pageToken string) (models []*datamodel.Model, nextPageToken string, totalSize int64, err error) {
 
-var GetModelSelectedFieldsWOConfiguration = []string{
-	`CONCAT('models/', id) as name`,
-	`"model"."uid"`,
-	`"model"."id"`,
-	`"model"."description"`,
-	`"model"."model_definition_uid"`,
-	`"model"."visibility"`,
-	`"model"."owner"`,
-	`"model"."state"`,
-	`"model"."task"`,
-	`"model"."create_time"`,
-	`"model"."update_time"`,
-}
+	logger, _ := logger.GetZapLogger(ctx)
 
-func (r *repository) CreateModel(model datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
-		return status.Errorf(codes.Internal, "Error %v", result.Error)
-	}
-
-	return nil
-}
-
-func (r *repository) CreatePreDeployModel(model datamodel.PreDeployModel) error {
-	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-func (r *repository) GetModelByID(owner string, modelID string, view modelPB.View) (datamodel.Model, error) {
-	var model datamodel.Model
-	selectedFields := GetModelSelectedFields
-	if view != modelPB.View_VIEW_FULL {
-		selectedFields = GetModelSelectedFieldsWOConfiguration
-	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, ID: modelID}).
-		Or(&datamodel.Model{Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC), ID: modelID}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found in namespace %s", modelID, owner)
-	}
-	return model, nil
-}
-
-func (r *repository) GetModelByIDAdmin(modelID string, view modelPB.View) (datamodel.Model, error) {
-	var model datamodel.Model
-	selectedFields := GetModelSelectedFields
-	if view != modelPB.View_VIEW_FULL {
-		selectedFields = GetModelSelectedFieldsWOConfiguration
-	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{ID: modelID}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model id %s you specified is not found", modelID)
-	}
-	return model, nil
-}
-
-func (r *repository) GetModelByUID(owner string, modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
-	var model datamodel.Model
-	selectedFields := GetModelSelectedFields
-	if view != modelPB.View_VIEW_FULL {
-		selectedFields = GetModelSelectedFieldsWOConfiguration
-	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{Owner: owner, BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).
-		Or(&datamodel.Model{Visibility: datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC), BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found in namespace %s", modelUID, owner)
-	}
-	return model, nil
-}
-
-func (r *repository) GetModelByUIDAdmin(modelUID uuid.UUID, view modelPB.View) (datamodel.Model, error) {
-	var model datamodel.Model
-	selectedFields := GetModelSelectedFields
-	if view != modelPB.View_VIEW_FULL {
-		selectedFields = GetModelSelectedFieldsWOConfiguration
-	}
-	if result := r.db.Model(&datamodel.Model{}).Select(selectedFields).Where(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}).First(&model); result.Error != nil {
-		return datamodel.Model{}, status.Errorf(codes.NotFound, "The model uid %s you specified is not found", modelUID)
-	}
-	return model, nil
-}
-
-func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-	if result := r.db.Model(&datamodel.Model{}).Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).Count(&totalSize); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize); result.Error != nil {
+		logger.Error(result.Error.Error())
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC))
+	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where(where, whereArgs...)
 
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
@@ -162,11 +83,23 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 	queryBuilder = queryBuilder.Limit(int(pageSize))
 
 	if pageToken != "" {
-		createTime, id, err := paginate.DecodeToken(pageToken)
+		createdAt, uid, err := paginate.DecodeToken(pageToken)
 		if err != nil {
-			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
+			st, err := sterr.CreateErrorBadRequest(
+				fmt.Sprintf("[db] list Model error: %s", err.Error()),
+				[]*errdetails.BadRequest_FieldViolation{
+					{
+						Field:       "page_token",
+						Description: fmt.Sprintf("Invalid page token: %s", err.Error()),
+					},
+				},
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			return nil, "", 0, st.Err()
 		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, id)
+		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createdAt, uid)
 	}
 
 	if view != modelPB.View_VIEW_FULL {
@@ -176,23 +109,46 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 	var createTime time.Time
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			fmt.Sprintf("[db] list Model error: %s", err.Error()),
+			"model",
+			"",
+			"",
+			err.Error(),
+		)
+
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return nil, "", 0, st.Err()
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.Model
 		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Error(codes.Internal, err.Error())
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.Internal,
+				fmt.Sprintf("[db] list Model error: %s", err.Error()),
+				"model",
+				"",
+				"",
+				err.Error(),
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			return nil, "", 0, st.Err()
 		}
 		createTime = item.CreateTime
-		models = append(models, item)
+		models = append(models, &item)
 	}
 
 	if len(models) > 0 {
 		lastID := (models)[len(models)-1].ID
 		lastItem := &datamodel.Model{}
 		if result := r.db.Model(&datamodel.Model{}).
-			Where("owner = ? or visibility = ?", owner, datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)).
+			Where(where, whereArgs...).
 			Order("create_time ASC, id ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
 			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
@@ -207,78 +163,129 @@ func (r *repository) ListModels(owner string, view modelPB.View, pageSize int, p
 	return models, nextPageToken, totalSize, nil
 }
 
-func (r *repository) ListModelsAdmin(view modelPB.View, pageSize int, pageToken string) (models []datamodel.Model, nextPageToken string, totalSize int64, err error) {
-	if result := r.db.Model(&datamodel.Model{}).Count(&totalSize); result.Error != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
-	}
+func (r *repository) ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
+	return r.listModels(ctx,
+		"(owner = ? OR visibility = ?)",
+		[]interface{}{userPermalink, VisibilityPublic},
+		view, pageSize, pageToken,
+	)
+}
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC")
+func (r *repository) ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
+	return r.listModels(ctx,
+		"(owner = ? AND (visibility = ? OR ? = ?))",
+		[]interface{}{ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
+		view, pageSize, pageToken,
+	)
+}
 
-	if pageSize == 0 {
-		pageSize = DefaultPageSize
-	} else if pageSize > MaxPageSize {
-		pageSize = MaxPageSize
-	}
+func (r *repository) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
+	return r.listModels(ctx, "", []interface{}{}, view, pageSize, pageToken)
+}
 
-	queryBuilder = queryBuilder.Limit(int(pageSize))
+func (r *repository) getUserModel(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View) (*datamodel.Model, error) {
 
-	if pageToken != "" {
-		createTime, id, err := paginate.DecodeToken(pageToken)
-		if err != nil {
-			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
-		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, id)
-	}
+	logger, _ := logger.GetZapLogger(ctx)
+
+	var model datamodel.Model
+
+	queryBuilder := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...)
 
 	if view != modelPB.View_VIEW_FULL {
 		queryBuilder.Omit("configuration")
 	}
 
-	var createTime time.Time
-	rows, err := queryBuilder.Rows()
-	if err != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var item datamodel.Model
-		if err = r.db.ScanRows(rows, &item); err != nil {
-			return nil, "", 0, status.Error(codes.Internal, err.Error())
+	if result := queryBuilder.First(&model); result.Error != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.NotFound,
+			fmt.Sprintf("[db] getUserModel error: %s", result.Error.Error()),
+			"model",
+			"",
+			"",
+			result.Error.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
 		}
-		createTime = item.CreateTime
-		models = append(models, item)
+		return nil, st.Err()
 	}
-
-	if len(models) > 0 {
-		lastID := (models)[len(models)-1].ID
-		lastItem := &datamodel.Model{}
-		if result := r.db.Model(&datamodel.Model{}).
-			Order("create_time ASC, id ASC").
-			Limit(1).Find(lastItem); result.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
-		}
-		if lastItem.ID == lastID {
-			nextPageToken = ""
-		} else {
-			nextPageToken = paginate.EncodeToken(createTime, lastID)
-		}
-	}
-
-	return models, nextPageToken, totalSize, nil
+	return &model, nil
 }
 
-func (r *repository) UpdateModel(modelUID uuid.UUID, updatedModel datamodel.Model) error {
-	result := r.db.Model(&datamodel.Model{}).Where("uid", modelUID).Updates(&updatedModel)
-	if result.Error != nil {
-		return status.Errorf(codes.Internal, "Error %v", result.Error)
+func (r *repository) GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error) {
+	return r.getUserModel(ctx,
+		"(id = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
+		[]interface{}{modelID, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
+		view,
+	)
+}
+
+func (r *repository) GetUserModelByUID(ctx context.Context, ownerPermalink string, userPermalink string, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error) {
+	return r.getUserModel(ctx,
+		"(uid = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
+		[]interface{}{uid, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
+		view,
+	)
+}
+
+func (r *repository) GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error) {
+	return r.getUserModel(ctx,
+		"(id = ?)",
+		[]interface{}{modelID},
+		view,
+	)
+}
+
+func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error) {
+	return r.getUserModel(ctx,
+		"(uid = ?)",
+		[]interface{}{uid},
+		view,
+	)
+}
+
+func (r *repository) CreateUserModel(model *datamodel.Model) error {
+	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) {
+			if pgErr.Code == "23505" {
+				return status.Errorf(codes.AlreadyExists, pgErr.Message)
+			}
+		}
 	}
 
+	return nil
+}
+
+func (r *repository) CreatePreDeployModel(model *datamodel.PreDeployModel) error {
+	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) {
+			if pgErr.Code == "23505" {
+				return status.Errorf(codes.AlreadyExists, pgErr.Message)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *repository) UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error {
+	if result := r.db.Model(&datamodel.Model{}).
+		Where("(uid = ? AND owner = ? AND ? = ? )", modelUID, ownerPermalink, ownerPermalink, userPermalink).
+		Updates(updatedModel); result.Error != nil {
+		return status.Error(codes.Internal, result.Error.Error())
+	} else if result.RowsAffected == 0 {
+		return status.Errorf(codes.NotFound, "[UpdateModel] The model uid %s you specified is not found", modelUID)
+	}
 	return nil
 }
 
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-func (r *repository) UpdateModelState(modelUID uuid.UUID, state datamodel.ModelState) error {
-	if result := r.db.Model(&datamodel.Model{}).Where(map[string]interface{}{"uid": modelUID}).Updates(map[string]interface{}{"state": state}); result.Error != nil {
+func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state datamodel.ModelState) error {
+	if result := r.db.Model(&datamodel.Model{}).
+		Where("(uid = ? AND owner = ? AND ? = ? )", modelUID, ownerPermalink, ownerPermalink, userPermalink).
+		Updates(map[string]interface{}{"state": state}); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 
