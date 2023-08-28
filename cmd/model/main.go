@@ -20,6 +20,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
@@ -135,6 +136,7 @@ func main() {
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 				},
+				Parent: "users/" + constant.DefaultUserID,
 			})
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))

@@ -14,6 +14,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -134,6 +135,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 		createReq := &modelPB.CreateUserModelRequest{
 			Model: pbModel,
+			Parent: "users/" + constant.DefaultUserID,
 		}
 
 		var resp *modelPB.CreateUserModelResponse
