@@ -120,6 +120,16 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
+	userUID, err := resource.GetRscPermalinkUID(dbModel.Owner)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	parent, err := h.service.ConvertOwnerPermalinkToName(dbModel.Owner)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
 	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, dbModel.Owner, dbModel.ID) {
 
 		modelDefinition, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
@@ -134,17 +144,18 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 		createReq := &modelPB.CreateUserModelRequest{
 			Model: pbModel,
+			Parent: parent,
 		}
 
 		var resp *modelPB.CreateUserModelResponse
 
 		switch modelDefinition.ID {
 		case "github":
-			resp, err = createGitHubModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
+			resp, err = createGitHubModel(h.service, ctx, createReq, userUID, &modelDefinition)
 		case "artivc":
-			resp, err = createArtiVCModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
+			resp, err = createArtiVCModel(h.service, ctx, createReq, userUID, &modelDefinition)
 		case "huggingface":
-			resp, err = createHuggingFaceModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
+			resp, err = createHuggingFaceModel(h.service, ctx, createReq, userUID, &modelDefinition)
 		default:
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
 		}

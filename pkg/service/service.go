@@ -184,7 +184,7 @@ func (s *service) GetUserUid(ctx context.Context) (uuid.UUID, error) {
 func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) {
 	userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
 	if err != nil {
-		return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
+		return "", fmt.Errorf("UID look up error/miss in user database")
 	}
 	return fmt.Sprintf("users/%s", userResp.User.Id), nil
 }
