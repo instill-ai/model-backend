@@ -31,7 +31,7 @@ export function GetModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -54,14 +54,16 @@ export function GetModel() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+      console.log(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
+        headers: genHeader(`application/json`),
+      }))
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id} task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/models/${model_id} task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.id`]: (r) =>
@@ -86,13 +88,13 @@ export function GetModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${model_id} task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id} task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/models/${model_id} task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.id`]: (r) =>
@@ -120,7 +122,7 @@ export function GetModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -131,7 +133,7 @@ export function GetModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -146,7 +148,7 @@ export function ListModels() {
   {
     group("Model Backend API: Get model list", function () {
       let model_id_1 = randomString(10)
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_1,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -178,7 +180,7 @@ export function ListModels() {
       }
 
       let model_id_2 = randomString(10)
-      createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_2,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -208,7 +210,7 @@ export function ListModels() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let resp = http.get(`${constant.apiPublicHost}/v1alpha/models?page_size=1`, {
+      let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, {
         headers: genHeader(`application/json`),
       })
       check(resp, {
@@ -221,7 +223,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models.length`]: (r) =>
           r.json().models.length === 1,
         [`GET /v1alpha/models task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_2}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_2}`,
         [`GET /v1alpha/models task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/models task cls response models[0].id`]: (r) =>
@@ -246,7 +248,7 @@ export function ListModels() {
           r.json().models[0].update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models?page_size=1&page_token=${resp.json().next_page_token}`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1&page_token=${resp.json().next_page_token}`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models task cls response status`]: (r) =>
@@ -258,7 +260,7 @@ export function ListModels() {
         [`GET /v1alpha/models task cls response models.length`]: (r) =>
           r.json().models.length === 1,
         [`GET /v1alpha/models task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_1}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_1}`,
         [`GET /v1alpha/models task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/models task cls response models[0].id`]: (r) =>
@@ -283,7 +285,7 @@ export function ListModels() {
           r.json().models[0].update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response status`]: (r) =>
@@ -295,7 +297,7 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models.length`]: (r) =>
           r.json().models.length === 2,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_2}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_2}`,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].id`]: (r) =>
@@ -323,7 +325,7 @@ export function ListModels() {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
           r.json().models[0].update_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].name`]: (r) =>
-          r.json().models[1].name === `models/${model_id_1}`,
+          r.json().models[1].name === `${constant.namespace}/models/${model_id_1}`,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].uid`]: (r) =>
           r.json().models[1].uid !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].id`]: (r) =>
@@ -355,10 +357,10 @@ export function ListModels() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res_1 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_1}/watch`, {
+        let res_1 = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_1}/watch`, {
           headers: genHeader(`application/json`),
         })
-        let res_2 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_2}/watch`, {
+        let res_2 = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_2}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res_1.json().state !== "STATE_UNSPECIFIED" && res_2.json().state !== "STATE_UNSPECIFIED") {
@@ -369,13 +371,13 @@ export function ListModels() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_1}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_1}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_2}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_2}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -396,7 +398,7 @@ export function LookupModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -419,16 +421,16 @@ export function LookupModel() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let modelRes = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+      let modelRes = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeader(`application/json`),
       })
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelRes.json().model.uid}/lookUp`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelRes.json().model.uid}/lookUp`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.id`]: (r) =>
@@ -453,13 +455,13 @@ export function LookupModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelRes.json().model.uid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelRes.json().model.uid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.id`]: (r) =>
@@ -487,7 +489,7 @@ export function LookupModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -498,7 +500,7 @@ export function LookupModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

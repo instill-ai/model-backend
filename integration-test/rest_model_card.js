@@ -31,7 +31,7 @@ export function GetModelCard() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -55,11 +55,11 @@ export function GetModelCard() {
         currentTime = new Date().getTime();
       }
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`), {
         [`GET /v1alpha/models/${model_id}/readme response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id}/readme response readme.name`]: (r) =>
-          r.json().readme.name === `models/${model_id}/readme`,
+          r.json().readme.name === `${constant.namespace}/models/${model_id}/readme`,
         [`GET /v1alpha/models/${model_id}/readme response readme.size`]: (r) =>
           r.json().readme.size !== undefined,
         [`GET /v1alpha/models/${model_id}/readme response readme.type`]: (r) =>
@@ -73,7 +73,7 @@ export function GetModelCard() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -84,7 +84,7 @@ export function GetModelCard() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -102,7 +102,7 @@ export function GetModelCard() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_no_readme_model, "dummy-cls-no-readme.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -126,11 +126,11 @@ export function GetModelCard() {
         currentTime = new Date().getTime();
       }
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`), {
         [`GET /v1alpha/models/${model_id}/readme response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models/${model_id}/readme no readme response readme.name`]: (r) =>
-          r.json().readme.name === `models/${model_id}/readme`,
+          r.json().readme.name === `${constant.namespace}/models/${model_id}/readme`,
         [`GET /v1alpha/models/${model_id}/readme no readme response readme.size`]: (r) =>
           r.json().readme.size === 0,
         [`GET /v1alpha/models/${model_id}/readme no readme response readme.type`]: (r) =>
@@ -144,7 +144,7 @@ export function GetModelCard() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -155,7 +155,7 @@ export function GetModelCard() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

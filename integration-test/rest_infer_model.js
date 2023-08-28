@@ -32,7 +32,7 @@ export function InferModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -56,7 +56,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
@@ -69,7 +69,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -87,7 +87,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls status`]: (r) =>
@@ -116,7 +116,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls multiple images status`]: (r) =>
@@ -143,7 +143,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls status`]: (r) =>
@@ -172,7 +172,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls multiple images status`]: (r) =>
@@ -194,7 +194,7 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls status`]: (r) =>
@@ -208,7 +208,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.score`]: (r) =>
           r.json().task_outputs[0].classification.score === 1,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -228,7 +228,7 @@ export function InferModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images status`]: (r) =>
@@ -250,7 +250,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
           r.json().task_outputs[2].classification.score === 1,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -274,7 +274,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -295,7 +295,7 @@ export function InferModel() {
       fd_det.append("model_definition", model_def_name);
       fd_det.append("content", http.file(constant.det_model, "dummy-det-model.zip"));
 
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_det.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
       })
       check(createModelRes, {
@@ -319,7 +319,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
@@ -332,7 +332,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -350,7 +350,7 @@ export function InferModel() {
           }
         }],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url det status`]: (r) =>
@@ -389,7 +389,7 @@ export function InferModel() {
         }
         ],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url det status`]: (r) =>
@@ -436,7 +436,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 det status`]: (r) =>
@@ -475,7 +475,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 multiple images det status`]: (r) =>
@@ -517,7 +517,7 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
@@ -541,7 +541,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].detection.objects[0].bounding_box.height === 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart det status`]: (r) =>
@@ -571,7 +571,7 @@ export function InferModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det status`]: (r) =>
@@ -623,7 +623,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[2].detection.objects[0].bounding_box.height === 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images det status`]: (r) =>
@@ -677,7 +677,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -698,7 +698,7 @@ export function InferModel() {
       fd.append("model_definition", model_def_name);
       fd.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
 
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       })
       check(createModelRes, {
@@ -722,7 +722,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task unspecified response status`]: (r) =>
@@ -735,7 +735,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -753,7 +753,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url undefined status`]: (r) =>
@@ -788,7 +788,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url multiple images undefined status`]: (r) =>
@@ -825,7 +825,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 undefined status`]: (r) =>
@@ -860,7 +860,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 multiple images undefined status`]: (r) =>
@@ -892,7 +892,7 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart undefined status`]: (r) =>
@@ -913,7 +913,7 @@ export function InferModel() {
           r.json().task_outputs[0].unspecified.raw_outputs[0].shape !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart undefined status`]: (r) =>
@@ -938,7 +938,7 @@ export function InferModel() {
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart undefined status`]: (r) =>
@@ -967,7 +967,7 @@ export function InferModel() {
           r.json().task_outputs[1].unspecified.raw_outputs[0].shape !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart undefined status`]: (r) =>
@@ -997,7 +997,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -1018,7 +1018,7 @@ export function InferModel() {
       fd_keypoint.append("model_definition", model_def_name);
       fd_keypoint.append("content", http.file(constant.keypoint_model, "dummy-keypoint-model.zip"));
 
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_keypoint.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
       })
       check(createModelRes, {
@@ -1042,7 +1042,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response status`]: (r) =>
@@ -1055,7 +1055,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -1073,7 +1073,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url keypoint status`]: (r) =>
@@ -1108,7 +1108,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger multiple images url keypoint status`]: (r) =>
@@ -1155,7 +1155,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 keypoint status`]: (r) =>
@@ -1194,7 +1194,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger multiple images base64 keypoint status`]: (r) =>
@@ -1236,7 +1236,7 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart keypoint status`]: (r) =>
@@ -1260,7 +1260,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].keypoint.objects[0].bounding_box.height === 1,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart keypoint status`]: (r) =>
@@ -1289,7 +1289,7 @@ export function InferModel() {
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint status`]: (r) =>
@@ -1327,7 +1327,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[1].keypoint.objects[0].bounding_box.height === 1,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images keypoint status`]: (r) =>
@@ -1367,7 +1367,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -1388,7 +1388,7 @@ export function InferModel() {
       fd_empty.append("model_definition", model_def_name);
       fd_empty.append("content", http.file(constant.empty_response_model, "empty-response-model.zip"));
 
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_empty.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_empty.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_empty.boundary}`),
       })
       check(createModelRes, {
@@ -1412,7 +1412,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task det empty response status`]: (r) =>
@@ -1425,7 +1425,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -1443,7 +1443,7 @@ export function InferModel() {
           }
         }],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url det status`]: (r) =>
@@ -1482,7 +1482,7 @@ export function InferModel() {
         }
         ],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url det multiple images status`]: (r) =>
@@ -1527,7 +1527,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 det status`]: (r) =>
@@ -1566,7 +1566,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 det multiple images status`]: (r) =>
@@ -1606,7 +1606,7 @@ export function InferModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
@@ -1630,7 +1630,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].detection.objects[0].bounding_box.height === 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart det status`]: (r) =>
@@ -1659,7 +1659,7 @@ export function InferModel() {
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart det multiple images status`]: (r) =>
@@ -1695,7 +1695,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart det multiple images task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[1].detection.objects[0].bounding_box.height === 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart det multiple images status`]: (r) =>
@@ -1734,7 +1734,7 @@ export function InferModel() {
 
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -1754,7 +1754,7 @@ export function InferModel() {
       fd.append("description", model_description);
       fd.append("model_definition", model_def_name);
       fd.append("content", http.file(constant.semantic_segmentation_model, "dummy-semantic_segmentation_model.zip"));
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       })
       check(createModelRes, {
@@ -1778,7 +1778,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -1791,7 +1791,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -1809,7 +1809,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url semantic status`]: (r) =>
@@ -1840,7 +1840,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url semantic multiple images status`]: (r) =>
@@ -1871,7 +1871,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 semantic status`]: (r) =>
@@ -1902,7 +1902,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 semantic multiple images status`]: (r) =>
@@ -1928,7 +1928,7 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart semantic status`]: (r) =>
@@ -1944,7 +1944,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs[0].rle`]: (r) =>
           r.json().task_outputs[0].semantic_segmentation.stuffs[0].rle !== undefined,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart semantic status`]: (r) =>
@@ -1966,7 +1966,7 @@ export function InferModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple images status`]: (r) =>
@@ -1994,7 +1994,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs[0].rle`]: (r) =>
           r.json().task_outputs[2].semantic_segmentation.stuffs[0].rle !== undefined,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -2024,7 +2024,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -2044,7 +2044,7 @@ export function InferModel() {
       fd.append("description", model_description);
       fd.append("model_definition", model_def_name);
       fd.append("content", http.file(constant.instance_segmentation_model, "dummy-instance-segmentation-model.zip"));
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       })
       check(createModelRes, {
@@ -2068,7 +2068,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -2081,7 +2081,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -2099,7 +2099,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url instance status`]: (r) =>
@@ -2140,7 +2140,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url instance multiple images status`]: (r) =>
@@ -2189,7 +2189,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 instance status`]: (r) =>
@@ -2230,7 +2230,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 instance multiple images status`]: (r) =>
@@ -2274,7 +2274,7 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
@@ -2300,7 +2300,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
           r.json().task_outputs[0].instance_segmentation.objects[0].score === 1.0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart status`]: (r) =>
@@ -2332,7 +2332,7 @@ export function InferModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images status`]: (r) =>
@@ -2390,7 +2390,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].score`]: (r) =>
           r.json().task_outputs[2].instance_segmentation.objects[0].score === 1.0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images status`]: (r) =>
@@ -2450,7 +2450,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -2470,7 +2470,7 @@ export function InferModel() {
       fd.append("description", model_description);
       fd.append("model_definition", model_def_name);
       fd.append("content", http.file(constant.text_to_image_model, "dummy-text-to-image-model.zip"));
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       })
       check(createModelRes, {
@@ -2494,7 +2494,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -2507,7 +2507,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -2526,7 +2526,7 @@ export function InferModel() {
         }]
       })
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger text to image status`]: (r) =>
@@ -2555,7 +2555,7 @@ export function InferModel() {
         }]
       });
 
-      let resp = http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      let resp = http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       })
 
@@ -2567,7 +2567,7 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status`]: (r) =>
@@ -2581,7 +2581,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
           r.json().task_outputs[0].text_to_image.images[0] !== undefined,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart text to image status`]: (r) =>
@@ -2619,7 +2619,7 @@ export function InferModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger text to image status [with multiple prompt]`]: (r) =>
@@ -2629,7 +2629,7 @@ export function InferModel() {
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
       fd.append("prompt", "hello this is a test");
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple prompts]`]: (r) =>
@@ -2640,7 +2640,7 @@ export function InferModel() {
       fd.append("prompt", "hello this is a test");
       fd.append("steps", 1);
       fd.append("steps", 1);
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple steps]`]: (r) =>
@@ -2651,7 +2651,7 @@ export function InferModel() {
       fd.append("prompt", "hello this is a test");
       fd.append("samples", 1);
       fd.append("samples", 1);
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple samples]`]: (r) =>
@@ -2662,7 +2662,7 @@ export function InferModel() {
       fd.append("prompt", "hello this is a test");
       fd.append("seed", 1);
       fd.append("seed", 1);
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple seed]`]: (r) =>
@@ -2673,7 +2673,7 @@ export function InferModel() {
       fd.append("prompt", "hello this is a test");
       fd.append("cfg_scale", 1.0);
       fd.append("cfg_scale", 1.0);
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart text to image status [with multiple cfg_scale]`]: (r) =>
@@ -2681,7 +2681,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -2700,7 +2700,7 @@ export function InferModel() {
       fd.append("description", model_description);
       fd.append("model_definition", model_def_name);
       fd.append("content", http.file(constant.text_generation_model, "dummy-text-generation-model.zip"));
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd.body(), {
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       })
       check(createModelRes, {
@@ -2724,7 +2724,7 @@ export function InferModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -2737,7 +2737,7 @@ export function InferModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -2755,7 +2755,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url text generation status`]: (r) =>
@@ -2779,7 +2779,7 @@ export function InferModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url text generation input multiple params status`]: (r) =>
@@ -2795,7 +2795,7 @@ export function InferModel() {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
@@ -2807,7 +2807,7 @@ export function InferModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
           r.json().task_outputs[0].text_generation.text !== undefined,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart status`]: (r) =>
@@ -2821,7 +2821,7 @@ export function InferModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

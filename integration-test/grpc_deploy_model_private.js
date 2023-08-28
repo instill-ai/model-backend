@@ -50,13 +50,13 @@ export function CheckModel() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -74,8 +74,8 @@ export function CheckModel() {
       currentTime = new Date().getTime();
     }
 
-    let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
-      name: "models/" + model_id
+    let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }, {})
 
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
@@ -88,13 +88,13 @@ export function CheckModel() {
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
       model_permalink: "models/" + randomString(10)
     }, {}), {
-      'CheckModelAdmin uuid length is invalid': (r) => r && r.status === grpc.StatusInvalidArgument,
+      'CheckModelAdmin uuid length is invalid': (r) => r && r.status === grpc.StatusNotFound,
     });
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
@@ -102,8 +102,8 @@ export function CheckModel() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
@@ -131,13 +131,13 @@ export function DeployUndeployModel() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -155,8 +155,8 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
     }
 
-    let getModelRes = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
-      name: "models/" + model_id
+    let getModelRes = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }, {})
 
     let req = {
@@ -174,8 +174,8 @@ export function DeployUndeployModel() {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      var res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      var res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state === "STATE_ONLINE") {
         break
@@ -195,8 +195,8 @@ export function DeployUndeployModel() {
       'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });

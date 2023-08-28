@@ -66,7 +66,7 @@ func (s *service) DBModelToPBModel(ctx context.Context, modelDef *datamodel.Mode
 	}
 
 	pbModel := modelPB.Model{
-		Name:            fmt.Sprintf("models/%s", dbModel.ID),
+		Name:            fmt.Sprintf("%s/models/%s", owner, dbModel.ID),
 		Uid:             dbModel.BaseDynamic.UID.String(),
 		Id:              dbModel.ID,
 		CreateTime:      timestamppb.New(dbModel.CreateTime),
@@ -108,9 +108,9 @@ func (s *service) DBModelToPBModel(ctx context.Context, modelDef *datamodel.Mode
 	}
 
 	if strings.HasPrefix(dbModel.Owner, "users/") {
-		pbModel.Owner = &modelPB.Model_User{User: owner}
+		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
 	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
-		pbModel.Owner = &modelPB.Model_Org{Org: owner}
+		pbModel.Owner = &modelPB.Model_Org{Org: dbModel.Owner}
 	}
 	return &pbModel, nil
 }

@@ -36,7 +36,7 @@ export function PublishUnpublishModel() {
   {
     group(`Model Backend API: PublishModel [with "jwt-sub" header]`, function () {
 
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
       })
 
@@ -54,28 +54,28 @@ export function PublishUnpublishModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/publish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/unpublish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/publish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/unpublish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 200`]: (r) =>
@@ -85,7 +85,7 @@ export function PublishUnpublishModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -96,7 +96,7 @@ export function PublishUnpublishModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with random "jwt-sub" header] DELETE clean up response status 204`]: (r) =>

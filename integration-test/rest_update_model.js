@@ -31,7 +31,7 @@ export function UpdateModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -59,13 +59,13 @@ export function UpdateModel() {
       let payload = JSON.stringify({
         "description": new_description
       })
-      check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls response status`]: (r) =>
           r.status === 200,
         [`PATCH /v1alpha/models/${model_id} task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`PATCH /v1alpha/models/${model_id} task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls response model.id`]: (r) =>
@@ -93,13 +93,13 @@ export function UpdateModel() {
       payload = JSON.stringify({
         "description": ""
       })
-      check(http.patch(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, payload, {
+      check(http.patch(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, payload, {
         headers: genHeader(`application/json`)
       }), {
         [`PATCH /v1alpha/models/${model_id} task cls description empty response status`]: (r) =>
           r.status === 200,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.id`]: (r) =>
@@ -127,7 +127,7 @@ export function UpdateModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -138,7 +138,7 @@ export function UpdateModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

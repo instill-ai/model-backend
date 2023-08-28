@@ -153,7 +153,7 @@ func main() {
 					if isCreated || time.Since(startTime) > 5*time.Minute {
 						break
 					}
-					operation, err := modelPublicServiceClient.GetUserModelOperation(ctx, &modelPB.GetUserModelOperationRequest{
+					operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
 						Name: createOperation.Operation.Name,
 					})
 					if err != nil {
@@ -168,7 +168,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("models/%s", modelConfig.ID),
+						Name: fmt.Sprintf("users/instill-ai/models/%s", modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))

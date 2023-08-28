@@ -89,7 +89,7 @@ export default function (data) {
 export function teardown(data) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-      .request("GET", `${constant.apiPublicHost}/v1alpha/models`, null, {
+      .request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, null, {
         headers: genHeader(
           "application/json"
         ),
@@ -99,7 +99,7 @@ export function teardown(data) {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
       check(
-        http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model.id}`, null, {
+        http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model.id}`, null, {
           headers: genHeader("application/json"),
         }), {
         [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>

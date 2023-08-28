@@ -26,9 +26,9 @@ client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
-export function GetModel() {
+export function GetUserModel() {
   // GetModel check
-  group("Model API: GetModel", () => {
+  group("Model API: GetUserModel", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
@@ -40,13 +40,13 @@ export function GetModel() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -64,11 +64,11 @@ export function GetModel() {
       currentTime = new Date().getTime();
     }
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
-      name: "models/" + model_id
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }, {}), {
       "GetModel response status": (r) => r.status === grpc.StatusOK,
-      "GetModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
+      "GetModel response model.name": (r) => r.message.model.name === `${constant.namespace}/models/${model_id}`,
       "GetModel response model.uid": (r) => r.message.model.uid !== undefined,
       "GetModel response model.id": (r) => r.message.model.id === model_id,
       "GetModel response model.description": (r) => r.message.model.description === model_description,
@@ -80,16 +80,16 @@ export function GetModel() {
       "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
-      name: "models/" + randomString(10)
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+      name: "users/instill-ai/models/" + randomString(10)
     }, {}), {
       'GetModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
@@ -97,8 +97,8 @@ export function GetModel() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
@@ -107,9 +107,9 @@ export function GetModel() {
 };
 
 
-export function ListModels() {
+export function ListUserModels() {
   // ListModel check
-  group("Model API: ListModels", () => {
+  group("Model API: ListUserModels", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
@@ -121,13 +121,13 @@ export function ListModels() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -144,12 +144,12 @@ export function ListModels() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/ListUserModels', {parent: `${constant.namespace}`}, {}), {
       "ListModels response status": (r) => r.status === grpc.StatusOK,
       "ListModels response total_size": (r) => r.message.totalSize >= 1,
       "ListModels response next_page_token": (r) => r.message.nextPageToken !== undefined,
       "ListModels response models.length": (r) => r.message.models.length >= 1,
-      "ListModels response models[0].name": (r) => r.message.models[0].name === `models/${model_id}`,
+      "ListModels response models[0].name": (r) => r.message.models[0].name === `${constant.namespace}/models/${model_id}`,
       "ListModels response models[0].uid": (r) => r.message.models[0].uid !== undefined,
       "ListModels response models[0].id": (r) => r.message.models[0].id === model_id,
       "ListModels response models[0].description": (r) => r.message.models[0].description !== undefined,
@@ -163,8 +163,8 @@ export function ListModels() {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
@@ -172,8 +172,8 @@ export function ListModels() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
@@ -181,7 +181,7 @@ export function ListModels() {
   });
 };
 
-export function LookupModel() {
+export function LookupUserModel() {
   // LookUpModel check
   group("Model API: LookUpModel", () => {
     client.connect(constant.gRPCPublicHost, {
@@ -195,13 +195,13 @@ export function LookupModel() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -219,14 +219,14 @@ export function LookupModel() {
       currentTime = new Date().getTime();
     }
 
-    let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModel', {
-      name: `models/${model_id}`
+    let res = client.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }, {})
-    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
-      permalink: "models/" + res.message.model.uid
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpUserModel', {
+      permalink: "users/instill-ai/models/" + res.message.model.uid
     }, {}), {
       "LookUpModel response status": (r) => r.status === grpc.StatusOK,
-      "LookUpModel response model.name": (r) => r.message.model.name === `models/${model_id}`,
+      "LookUpModel response model.name": (r) => r.message.model.name === `${constant.namespace}/models/${model_id}`,
       "LookUpModel response model.uid": (r) => r.message.model.uid !== undefined,
       "LookUpModel response model.id": (r) => r.message.model.id === model_id,
       "LookUpModel response model.description": (r) => r.message.model.description === model_description,
@@ -238,16 +238,16 @@ export function LookupModel() {
       "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
-      permalink: "models/" + randomString(10)
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpUserModel', {
+      permalink: "users/instill-ai/models/" + randomString(10)
     }, {}), {
-      'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusInvalidArgument,
+      'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
@@ -255,8 +255,8 @@ export function LookupModel() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });

@@ -335,6 +335,16 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	headers := map[string]string{}
+	// inject header into ctx
+	for key, value := range req.Header {
+		if len(value) > 0 {
+			headers[key] = value[0]
+		}
+	}
+	md := metadata.New(headers)
+	ctx = metadata.NewIncomingContext(ctx, md)
+
 	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
@@ -366,6 +376,11 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	parent := pathParams["parent"]
 
 	ns, _, err := s.GetRscNamespaceAndNameID(parent)
+	if err != nil {
+		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
+		span.SetStatus(1, "Model path format error")
+		return
+	}
 
 	modelID := req.FormValue("id")
 	if modelID == "" {
@@ -1595,6 +1610,10 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 	resp := &modelPB.CreateUserModelResponse{}
 
 	ns, _, err := h.service.GetRscNamespaceAndNameID(req.Parent)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.CreateUserModelResponse{}, err
+	}
 
 	userUID, err := h.service.GetUserUid(ctx)
 	if err != nil {
@@ -1687,6 +1706,10 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 	logger, _ := logger.GetZapLogger(ctx)
 
 	ns, _, err := h.service.GetRscNamespaceAndNameID(req.Parent)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.ListUserModelsResponse{}, err
+	}
 
 	userUID, err := h.service.GetUserUid(ctx)
 	if err != nil {
@@ -1703,6 +1726,10 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 	pbModels := []*modelPB.Model{}
 	for _, dbModel := range dbModels {
 		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.ListUserModelsResponse{}, err
+		}
 		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -2852,6 +2879,17 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	// inject header into ctx
+	headers := map[string]string{}
+	// inject header into ctx
+	for key, value := range req.Header {
+		if len(value) > 0 {
+			headers[key] = value[0]
+		}
+	}
+	md := metadata.New(headers)
+	ctx = metadata.NewIncomingContext(ctx, md)
+
 	logUUID, _ := uuid.NewV4()
 
 	logger, _ := logger.GetZapLogger(ctx)
@@ -2886,6 +2924,11 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	path := pathParams["path"]
 
 	ns, modelID, err := s.GetRscNamespaceAndNameID(path)
+	if err != nil {
+		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
+		span.SetStatus(1, "Model path format error")
+		return
+	}
 
 	modelInDB, err := s.GetUserModelByID(req.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -3170,7 +3213,7 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 	return &resp, nil
 }
 
-func (h *PublicHandler) GetUserModelOperation(ctx context.Context, req *modelPB.GetUserModelOperationRequest) (*modelPB.GetUserModelOperationResponse, error) {
+func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
 
 	ctx, span := tracer.Start(ctx, "GetModelOperation",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -3178,14 +3221,14 @@ func (h *PublicHandler) GetUserModelOperation(ctx context.Context, req *modelPB.
 
 	operationId, err := resource.GetOperationID(req.Name)
 	if err != nil {
-		return &modelPB.GetUserModelOperationResponse{}, err
+		return &modelPB.GetModelOperationResponse{}, err
 	}
 	operation, err := h.service.GetOperation(ctx, operationId)
 	if err != nil {
-		return &modelPB.GetUserModelOperationResponse{}, err
+		return &modelPB.GetModelOperationResponse{}, err
 	}
 
-	return &modelPB.GetUserModelOperationResponse{
+	return &modelPB.GetModelOperationResponse{
 		Operation: operation,
 	}, nil
 }

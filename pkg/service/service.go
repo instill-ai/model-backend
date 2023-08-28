@@ -200,12 +200,12 @@ func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, str
 
 	splits := strings.Split(path, "/")
 	if len(splits) < 2 {
-		return resource.Namespace{}, "", fmt.Errorf("namespace error")
+		return resource.Namespace{}, "", status.Errorf(codes.InvalidArgument, "Namespace format error")
 	}
 	uidStr, err := s.ConvertOwnerNameToPermalink(fmt.Sprintf("%s/%s", splits[0], splits[1]))
 
 	if err != nil {
-		return resource.Namespace{}, "", fmt.Errorf("namespace error")
+		return resource.Namespace{}, "", status.Errorf(codes.InvalidArgument, "Namespace format error")
 	}
 	if len(splits) < 4 {
 		return resource.Namespace{
@@ -222,11 +222,11 @@ func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, str
 func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error) {
 	splits := strings.Split(path, "/")
 	if len(splits) < 2 {
-		return resource.Namespace{}, uuid.Nil, fmt.Errorf("namespace error")
+		return resource.Namespace{}, uuid.Nil, status.Errorf(codes.InvalidArgument, "Namespace format error")
 	}
 	uidStr, err := s.ConvertOwnerNameToPermalink((fmt.Sprintf("%s/%s", splits[0], splits[1])))
 	if err != nil {
-		return resource.Namespace{}, uuid.Nil, fmt.Errorf("namespace error")
+		return resource.Namespace{}, uuid.Nil, status.Errorf(codes.InvalidArgument, "Namespace format error")
 	}
 	if len(splits) < 4 {
 		return resource.Namespace{
@@ -343,7 +343,7 @@ func (s *service) TriggerUserModelTestMode(ctx context.Context, modelUID uuid.UU
 func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
-		return nil, fmt.Errorf("triton model not found")
+		return nil, status.Errorf(codes.NotFound, "triton model not found")
 	}
 
 	ensembleModelName := ensembleModel.Name
@@ -366,7 +366,7 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 
 	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
 	if err != nil {
-		return nil, fmt.Errorf("triton model not found")
+		return nil, status.Errorf(codes.NotFound, "triton model not found")
 	}
 
 	ensembleModelName := ensembleModel.Name

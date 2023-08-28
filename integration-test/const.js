@@ -33,6 +33,8 @@ if (apiGatewayMode) {
 
 export const defaultUserId = "instill-ai"
 
+export const namespace = "users/instill-ai"
+
 export const gRPCPrivateHost = `${host}:${privatePort}`
 export const apiPrivateHost = `${proto}://${host}:${privatePort}`
 

@@ -94,6 +94,9 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.CheckModelAdminRequest) (*modelPB.CheckModelAdminResponse, error) {
 
 	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
+	if err != nil {
+		return &modelPB.CheckModelAdminResponse{}, err
+	}
 
 	state, err := h.service.CheckModel(ctx, modelUID)
 	if err != nil {

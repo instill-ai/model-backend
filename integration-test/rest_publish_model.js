@@ -31,7 +31,7 @@ export function PublishUnpublishModel() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -55,13 +55,13 @@ export function PublishUnpublishModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/publish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/publish task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.id`]: (r) =>
@@ -82,13 +82,13 @@ export function PublishUnpublishModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/unpublish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.id`]: (r) =>
@@ -109,13 +109,13 @@ export function PublishUnpublishModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${randomString(10)}/publish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/publish`, null, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/publish task cls response not found status`]: (r) => r.status === 404,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${randomString(10)}/unpublish`, null, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/unpublish`, null, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response not found status`]: (r) => r.status === 404,
@@ -124,7 +124,7 @@ export function PublishUnpublishModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -135,7 +135,7 @@ export function PublishUnpublishModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
