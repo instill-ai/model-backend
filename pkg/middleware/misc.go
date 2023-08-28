@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -161,8 +160,6 @@ func CustomMatcher(key string) (string, bool) {
 
 	switch key {
 	case "request-id":
-		return key, true
-	case constant.HeaderOwnerIDKey:
 		return key, true
 	case "X-B3-Traceid", "X-B3-Spanid", "X-B3-Sampled":
 		return key, true

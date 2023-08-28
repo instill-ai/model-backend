@@ -41,7 +41,7 @@ export function TestModel() {
 
   {
     group(`Model Backend API: Predict Model with classification model [with random "jwt-sub" header]`, function () {
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
       })
 
@@ -59,14 +59,14 @@ export function TestModel() {
         currentTime = new Date().getTime();
       }
 
-      http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       })
 
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeaderwithJwtSub(`application/json`, userUid),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -85,14 +85,14 @@ export function TestModel() {
         }]
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 200`]: (r) =>
@@ -113,13 +113,13 @@ export function TestModel() {
         }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 401`]: (r) =>
+          r.status === 401,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 200`]: (r) =>
@@ -135,14 +135,14 @@ export function TestModel() {
         }]
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 200`]: (r) =>
@@ -164,14 +164,14 @@ export function TestModel() {
         ]
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 200`]: (r) =>
@@ -182,14 +182,14 @@ export function TestModel() {
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 200`]: (r) =>
@@ -202,14 +202,14 @@ export function TestModel() {
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, userUid),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 200`]: (r) =>
@@ -217,7 +217,7 @@ export function TestModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>

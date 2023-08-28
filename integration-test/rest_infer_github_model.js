@@ -27,7 +27,7 @@ export function InferGitHubModel() {
   {
     group("Model Backend API: Predict Model with MobilenetV2 model", function () {
       let model_id = randomString(10)
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -58,7 +58,7 @@ export function InferGitHubModel() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
@@ -71,7 +71,7 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -89,7 +89,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls status`]: (r) =>
@@ -118,7 +118,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls multiple images status`]: (r) =>
@@ -145,7 +145,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls status`]: (r) =>
@@ -174,7 +174,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls multiple images status`]: (r) =>
@@ -196,7 +196,7 @@ export function InferGitHubModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls status`]: (r) =>
@@ -210,7 +210,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.score`]: (r) =>
           r.json().task_outputs[0].classification.score > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -230,7 +230,7 @@ export function InferGitHubModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images status`]: (r) =>
@@ -252,7 +252,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
           r.json().task_outputs[2].classification.score > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -276,7 +276,7 @@ export function InferGitHubModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -290,7 +290,7 @@ export function InferGitHubModel() {
   {
     group("Model Backend API: Predict Model with MobilenetV2 DVC model", function () {
       let model_id = randomString(10)
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -321,7 +321,7 @@ export function InferGitHubModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task cls response status`]: (r) =>
@@ -334,7 +334,7 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -352,7 +352,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls status`]: (r) =>
@@ -381,7 +381,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url cls multiple images status`]: (r) =>
@@ -408,7 +408,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls status`]: (r) =>
@@ -437,7 +437,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 cls multiple images status`]: (r) =>
@@ -459,7 +459,7 @@ export function InferGitHubModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls status`]: (r) =>
@@ -473,7 +473,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.score`]: (r) =>
           r.json().task_outputs[0].classification.score > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -493,7 +493,7 @@ export function InferGitHubModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images status`]: (r) =>
@@ -515,7 +515,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
           r.json().task_outputs[2].classification.score > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -539,7 +539,7 @@ export function InferGitHubModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -553,7 +553,7 @@ export function InferGitHubModel() {
   {
     group("Model Backend API: Predict Model with YoloV4 model", function () {
       let model_id = randomString(10)
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -584,7 +584,7 @@ export function InferGitHubModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
@@ -597,7 +597,7 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -615,7 +615,7 @@ export function InferGitHubModel() {
           }
         }],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger det status`]: (r) =>
@@ -654,7 +654,7 @@ export function InferGitHubModel() {
           }
         ],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger det status`]: (r) =>
@@ -701,7 +701,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 det status`]: (r) =>
@@ -740,7 +740,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 multiple images det status`]: (r) =>
@@ -782,7 +782,7 @@ export function InferGitHubModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
@@ -806,7 +806,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart det status`]: (r) =>
@@ -836,7 +836,7 @@ export function InferGitHubModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det status`]: (r) =>
@@ -888,7 +888,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images det status`]: (r) =>
@@ -942,7 +942,7 @@ export function InferGitHubModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -955,7 +955,7 @@ export function InferGitHubModel() {
   {
     group("Model Backend API: Predict Model with YoloV4 DVC model", function () {
       let model_id = randomString(10)
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -986,7 +986,7 @@ export function InferGitHubModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task det response status`]: (r) =>
@@ -999,7 +999,7 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -1017,7 +1017,7 @@ export function InferGitHubModel() {
           }
         }],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger det status`]: (r) =>
@@ -1056,7 +1056,7 @@ export function InferGitHubModel() {
           }
         ],
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger det status`]: (r) =>
@@ -1103,7 +1103,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 det status`]: (r) =>
@@ -1142,7 +1142,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 multiple images det status`]: (r) =>
@@ -1184,7 +1184,7 @@ export function InferGitHubModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
@@ -1208,7 +1208,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart det status`]: (r) =>
@@ -1238,7 +1238,7 @@ export function InferGitHubModel() {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det status`]: (r) =>
@@ -1290,7 +1290,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images det status`]: (r) =>
@@ -1344,7 +1344,7 @@ export function InferGitHubModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -1357,7 +1357,7 @@ export function InferGitHubModel() {
   {
     group("Model Backend API: Predict Model with keypoint model", function () {
       let model_id = randomString(10)
-      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -1388,7 +1388,7 @@ export function InferGitHubModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/deploy online task keypoint response status`]: (r) =>
@@ -1401,7 +1401,7 @@ export function InferGitHubModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state === "STATE_ONLINE") {
@@ -1419,7 +1419,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger url keypoint status`]: (r) =>
@@ -1458,7 +1458,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger multiple images url keypoint status`]: (r) =>
@@ -1505,7 +1505,7 @@ export function InferGitHubModel() {
           }
         }]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger base64 keypoint status`]: (r) =>
@@ -1544,7 +1544,7 @@ export function InferGitHubModel() {
           }
         ]
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
         headers: genHeader(`application/json`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger multiple images base64 keypoint status`]: (r) =>
@@ -1586,7 +1586,7 @@ export function InferGitHubModel() {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart keypoint status`]: (r) =>
@@ -1610,7 +1610,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[0].keypoint.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart keypoint status`]: (r) =>
@@ -1639,7 +1639,7 @@ export function InferGitHubModel() {
       fd = new FormData();
       fd.append("file", http.file(constant.dance_img));
       fd.append("file", http.file(constant.dance_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint status`]: (r) =>
@@ -1677,7 +1677,7 @@ export function InferGitHubModel() {
         [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.height`]: (r) =>
           r.json().task_outputs[1].keypoint.objects[0].bounding_box.height > 0,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
       }), {
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images keypoint status`]: (r) =>
@@ -1717,7 +1717,7 @@ export function InferGitHubModel() {
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -1730,7 +1730,7 @@ export function InferGitHubModel() {
   // // Model Backend API: Predict Model with semantic segmentation model
   // {
   //   group("Model Backend API: Predict Model with semantic segmentation model", function () {
-  //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+  //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
   //       "id": model_id,
   //       "model_definition": "model-definitions/github",
   //       "configuration": {
@@ -1761,7 +1761,7 @@ export function InferGitHubModel() {
   //       currentTime = new Date().getTime();
   //     }
 
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -1780,7 +1780,7 @@ export function InferGitHubModel() {
   //     currentTime = new Date().getTime();
   //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
   //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+  //       var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
   //         headers: genHeader(`application/json`),
   //       })
   //       if (res.json().instance.state === "STATE_ONLINE") {
@@ -1798,7 +1798,7 @@ export function InferGitHubModel() {
   //         }
   //       }]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger url semantic status`]: (r) =>
@@ -1829,7 +1829,7 @@ export function InferGitHubModel() {
   //         }
   //       ]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger url semantic multiple images status`]: (r) =>
@@ -1860,7 +1860,7 @@ export function InferGitHubModel() {
   //         }
   //       }]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger base64 semantic status`]: (r) =>
@@ -1891,7 +1891,7 @@ export function InferGitHubModel() {
   //         }
   //       ]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger base64 semantic multiple images status`]: (r) =>
@@ -1917,7 +1917,7 @@ export function InferGitHubModel() {
   //     // Predict with multiple-part
   //     fd = new FormData();
   //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/test-multipart semantic status`]: (r) =>
@@ -1933,7 +1933,7 @@ export function InferGitHubModel() {
   //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs[0].rle`]: (r) =>
   //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].rle !== undefined,
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger-multipart semantic status`]: (r) =>
@@ -1955,7 +1955,7 @@ export function InferGitHubModel() {
   //     fd.append("file", http.file(constant.dog_img));
   //     fd.append("file", http.file(constant.cat_img));
   //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple images status`]: (r) =>
@@ -1983,7 +1983,7 @@ export function InferGitHubModel() {
   //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs[0].rle`]: (r) =>
   //         r.json().task_outputs[2].semantic_segmentation.stuffs[0].rle !== undefined,
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger-multipart cls multiple images status`]: (r) =>
@@ -2013,7 +2013,7 @@ export function InferGitHubModel() {
   //     });
 
   //     // clean up
-  //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+  //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       "DELETE clean up response status": (r) =>
@@ -2026,7 +2026,7 @@ export function InferGitHubModel() {
   // // Model Backend API: Predict Model with instance segmentation model
   // {
   //   group("Model Backend API: Predict Model with instance segmentation model", function () {
-  //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+  //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
   //       "id": model_id,
   //       "model_definition": "model-definitions/github",
   //       "configuration": {
@@ -2057,7 +2057,7 @@ export function InferGitHubModel() {
   //       currentTime = new Date().getTime();
   //     }
 
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/deploy`, {}, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/deploy online task instance response status`]: (r) =>
@@ -2076,7 +2076,7 @@ export function InferGitHubModel() {
   //     currentTime = new Date().getTime();
   //     timeoutTime = new Date().getTime() + 1 * 60 * 60 * 1000;
   //     while (timeoutTime > currentTime) {
-  //       var res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+  //       var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
   //         headers: genHeader(`application/json`),
   //       })
   //       if (res.json().instance.state === "STATE_ONLINE") {
@@ -2094,7 +2094,7 @@ export function InferGitHubModel() {
   //         }
   //       }]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger url instance status`]: (r) =>
@@ -2135,7 +2135,7 @@ export function InferGitHubModel() {
   //         }
   //       ]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger url instance multiple images status`]: (r) =>
@@ -2184,7 +2184,7 @@ export function InferGitHubModel() {
   //         }
   //       }]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger base64 instance status`]: (r) =>
@@ -2225,7 +2225,7 @@ export function InferGitHubModel() {
   //         }
   //       ]
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger`, payload, {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger base64 instance multiple images status`]: (r) =>
@@ -2269,7 +2269,7 @@ export function InferGitHubModel() {
   //     // Predict with multiple-part
   //     fd = new FormData();
   //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
@@ -2295,7 +2295,7 @@ export function InferGitHubModel() {
   //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
   //         r.json().task_outputs[0].instance_segmentation.objects[0].score > 0.0,
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger-multipart instance status`]: (r) =>
@@ -2327,7 +2327,7 @@ export function InferGitHubModel() {
   //     fd.append("file", http.file(constant.dog_img));
   //     fd.append("file", http.file(constant.cat_img));
   //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/test-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images status`]: (r) =>
@@ -2385,7 +2385,7 @@ export function InferGitHubModel() {
   //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].score`]: (r) =>
   //         r.json().task_outputs[2].instance_segmentation.objects[0].score > 0.0,
   //     });
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/models/${model_id}/trigger-multipart`, fd.body(), {
+  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`),
   //     }), {
   //       [`POST /v1alpha/models/${model_id}/trigger-multipart instance multiple images status`]: (r) =>
@@ -2445,7 +2445,7 @@ export function InferGitHubModel() {
   //     });
 
   //     // clean up
-  //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+  //     check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
   //       headers: genHeader(`application/json`),
   //     }), {
   //       "DELETE clean up response status": (r) =>

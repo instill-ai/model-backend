@@ -10,8 +10,6 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-
-	"github.com/instill-ai/model-backend/pkg/constant"
 )
 
 // RecoveryInterceptor - panic handler
@@ -28,8 +26,6 @@ func UnaryAppendMetadataInterceptor(ctx context.Context, req interface{}, info *
 		return nil, status.Error(codes.Internal, "can not extract metadata")
 	}
 
-	md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
-
 	newCtx := metadata.NewIncomingContext(ctx, md)
 	h, err := handler(newCtx, req)
 
@@ -42,8 +38,6 @@ func StreamAppendMetadataInterceptor(srv interface{}, stream grpc.ServerStream, 
 	if !ok {
 		return status.Error(codes.Internal, "can not extract metadata")
 	}
-
-	md.Append(constant.HeaderOwnerIDKey, constant.DefaultOwnerID)
 
 	newCtx := metadata.NewIncomingContext(stream.Context(), md)
 	wrapped := grpc_middleware.WrapServerStream(stream)

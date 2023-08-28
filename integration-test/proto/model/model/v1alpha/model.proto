@@ -13,6 +13,8 @@ import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 import "google/longrunning/operations.proto";
 
+import "../../../common/healthcheck/v1alpha/healthcheck.proto";
+import "../../../common/task/v1alpha/task.proto";
 import "../../../model/model/v1alpha/model_definition.proto";
 import "../../../model/model/v1alpha/task_classification.proto";
 import "../../../model/model/v1alpha/task_detection.proto";
@@ -24,11 +26,35 @@ import "../../../model/model/v1alpha/task_text_to_image.proto";
 import "../../../model/model/v1alpha/task_text_generation.proto";
 import "../../../model/model/v1alpha/task_unspecified.proto";
 
+// LivenessRequest represents a request to check a service liveness status
+message LivenessRequest {
+  // HealthCheckRequest message
+  optional common.healthcheck.v1alpha.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// LivenessResponse represents a response for a service liveness status
+message LivenessResponse {
+  // HealthCheckResponse message
+  common.healthcheck.v1alpha.HealthCheckResponse health_check_response = 1;
+}
+
+// ReadinessRequest represents a request to check a service readiness status
+message ReadinessRequest {
+  // HealthCheckRequest message
+  optional common.healthcheck.v1alpha.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ReadinessResponse represents a response for a service readiness status
+message ReadinessResponse {
+  // HealthCheckResponse message
+  common.healthcheck.v1alpha.HealthCheckResponse health_check_response = 1;
+}
+
 // Model represents a model
 message Model {
   option (google.api.resource) = {
-    type : "api.instill.tech/Model"
-    pattern : "models/{model}"
+    type: "api.instill.tech/Model"
+    pattern: "users/{user}/models/{model}"
   };
 
   // Model visibility including public or private
@@ -39,28 +65,6 @@ message Model {
     VISIBILITY_PRIVATE = 1;
     // Visibility: PUBLIC
     VISIBILITY_PUBLIC = 2;
-  }
-
-  // Task enumerates the task type of a model
-  enum Task {
-    // Task: UNSPECIFIED
-    TASK_UNSPECIFIED = 0;
-    // Task: CLASSIFICATION
-    TASK_CLASSIFICATION = 1;
-    // Task: DETECTION
-    TASK_DETECTION = 2;
-    // Task: KEYPOINT
-    TASK_KEYPOINT = 3;
-    // Task: OCR
-    TASK_OCR = 4;
-    // Task: INSTANCE SEGMENTATION
-    TASK_INSTANCE_SEGMENTATION = 5;
-    // Task: SEMANTIC SEGMENTATION
-    TASK_SEMANTIC_SEGMENTATION = 6;
-    // Task: TEXT TO IMAGE
-    TASK_TEXT_TO_IMAGE = 7;
-    // Task: TEXT Generation
-    TASK_TEXT_GENERATION = 8;
   }
 
   // State enumerates a model state
@@ -75,18 +79,18 @@ message Model {
     STATE_ERROR = 3;
   }
 
-  // Resource name. It must have the format of "models/{model}".
-  // For example: "models/yolov4"
-  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Resource name. It must have the format of "users/{user}/models/{model}".
+  // For example: "users/instill-ai/models/yolov4"
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model ID in UUIDv4
-  string uid = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Resource ID (the last segment of the resource name) used to construct the
   // resource name. This conforms to RFC-1034, which restricts to letters,
   // numbers, and hyphen, with the first character a letter, the last a letter
   // or a number, and a 63 character maximum.
-  string id = 3 [ (google.api.field_behavior) = IMMUTABLE ];
+  string id = 3 [(google.api.field_behavior) = IMMUTABLE];
   // Model description
-  optional string description = 4 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string description = 4 [(google.api.field_behavior) = OPTIONAL];
   // Model definition resource name
   string model_definition = 5 [
     (google.api.field_behavior) = IMMUTABLE,
@@ -94,14 +98,13 @@ message Model {
   ];
   // Model configuration represents the configuration JSON that has been
   // validated using the `model_spec` JSON schema of a ModelDefinition
-  google.protobuf.Struct configuration = 6
-      [ (google.api.field_behavior) = IMMUTABLE ];
+  google.protobuf.Struct configuration = 6 [(google.api.field_behavior) = IMMUTABLE];
   // Model task
-  Task task = 7 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  common.task.v1alpha.Task task = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model state
-  State state = 8 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  State state = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model visibility including public or private
-  Visibility visibility = 9 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  Visibility visibility = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model owner
   oneof owner {
     // The resource name with UUID of a user, e.g.,
@@ -115,34 +118,32 @@ message Model {
       (google.api.resource_reference).type = "api.instill.tech/Organization",
       (google.api.field_behavior) = OUTPUT_ONLY
     ];
-  };
+  }
   // Model create time
-  google.protobuf.Timestamp create_time = 12
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model update time
-  google.protobuf.Timestamp update_time = 13
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ModelCard represents the README card for a model. There
 // exists one and exactly one README card per model.
 message ModelCard {
   option (google.api.resource) = {
-    type : "api.instill.tech/ModelCard"
-    pattern : "models/{model}/readme"
+    type: "api.instill.tech/ModelCard"
+    pattern: "users/{user}/models/{model}/readme"
   };
 
   // Resource name. It must have the format of
-  // "models/{model}/readme"
-  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // "users/{user}/models/{model}/readme"
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Size of the file
-  int32 size = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  int32 size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Type of the resource. Fixed to "file".
-  string type = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string type = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Content of the README file in bytes and base64 format
-  bytes content = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  bytes content = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Encoding type of the content. Fixed to "base64".
-  string encoding = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string encoding = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListModelsRequest represents a request to list all models
@@ -151,13 +152,13 @@ message ListModelsRequest {
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
   // 100.
-  optional int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  optional int64 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
   // Page token
-  optional string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
   // Model view (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
   // VIEW_FULL: show full information
-  optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListModelsResponse represents a response for a list of models
@@ -170,235 +171,274 @@ message ListModelsResponse {
   int64 total_size = 3;
 }
 
-// CreateModelRequest represents a request to create a model
-message CreateModelRequest {
+// CreateUserModelRequest represents a request to create a model
+message CreateUserModelRequest {
   // The model to be created
   //
   // The model `name` field is used to identify the model to create.
-  // Format: models/{model}
-  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Format: users/{user}/models/{model}
+  Model model = 1 [(google.api.field_behavior) = REQUIRED];
+  // The parent resource where this connector resource will be created.
+  // Format: users/{users}
+  string parent = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"}
+  ];
 }
 
-// CreateModelResponse represents a response for a model
-message CreateModelResponse {
+// CreateUserModelResponse represents a response for a model
+message CreateUserModelResponse {
   // Create model operation message
-  google.longrunning.Operation operation = 1
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// CreateModelBinaryFileUploadRequest represents a request to create a model
-message CreateModelBinaryFileUploadRequest {
+// CreateUserModelBinaryFileUploadRequest represents a request to create a model
+message CreateUserModelBinaryFileUploadRequest {
   // The model to be created
   //
   // The model `name` field is used to identify the model to create.
-  // Format: models/{model}
-  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Format: users/{user}/models/{model}
+  Model model = 1 [(google.api.field_behavior) = REQUIRED];
   // Model content in bytes
-  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
+  // The parent resource where this connector resource will be created.
+  // Format: users/{users}
+  string parent = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"}
+  ];
 }
 
-// CreateModelBinaryFileUploadResponse represents a response for a model
-message CreateModelBinaryFileUploadResponse {
+// CreateUserModelBinaryFileUploadResponse represents a response for a model
+message CreateUserModelBinaryFileUploadResponse {
   // Create model operation message
-  google.longrunning.Operation operation = 1
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// GetModelRequest represents a request to query a model
-message GetModelRequest {
+// ListUserModelsRequest represents a request to list all models
+message ListUserModelsRequest {
+  // Page size: the maximum number of resources to return. The service may
+  // return fewer than this value. If unspecified, at most 10 models will be
+  // returned. The maximum value is 100; values above 100 will be coereced to
+  // 100.
+  optional int64 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Page token
+  optional string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The parent resource where this connector resource will be created.
+  // Format: users/{users}
+  string parent = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"}
+  ];
+}
+
+// ListUserModelsResponse represents a response for a list of models
+message ListUserModelsResponse {
+  // a list of Models
+  repeated Model models = 1;
+  // Next page token
+  string next_page_token = 2;
+  // Total count of models
+  int64 total_size = 3;
+}
+
+// GetUserModelRequest represents a request to query a model
+message GetUserModelRequest {
   // Resource name of the model.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration : {path_param_name : "model.name"}
+      field_configuration: {path_param_name: "model.name"}
     }
   ];
   // Model view (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
   // VIEW_FULL: show full information
-  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// GetModelResponse represents a response for a model
-message GetModelResponse {
+// GetUserModelResponse represents a response for a model
+message GetUserModelResponse {
   // The retrieved model
   Model model = 1;
 }
 
-// UpdateModelRequest represents a request to update a model
-message UpdateModelRequest {
+// UpdateUserModelRequest represents a request to update a model
+message UpdateUserModelRequest {
   // The model to update
-  //
-  // The model `name` field is used to identify the model to update.
-  // Format: models/{model}
-  Model model = 1 [ (google.api.field_behavior) = REQUIRED ];
+  Model model = 1 [(google.api.field_behavior) = REQUIRED];
   // Mask of fields to update.
-  google.protobuf.FieldMask update_mask = 2
-      [ (google.api.field_behavior) = REQUIRED ];
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// UpdateModelResponse represents a response for a model
-message UpdateModelResponse {
+// UpdateUserModelResponse represents a response for a model
+message UpdateUserModelResponse {
   // The updated model
   Model model = 1;
 }
 
-// DeleteModelRequest represents a request to delete a model
-message DeleteModelRequest {
+// DeleteUserModelRequest represents a request to delete a model
+message DeleteUserModelRequest {
   // Resource name of the model.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration : {path_param_name : "model.name"}
+      field_configuration: {path_param_name: "model.name"}
     }
   ];
 }
 
-// DeleteModelResponse represents an empty response
-message DeleteModelResponse {}
+// DeleteUserModelResponse represents an empty response
+message DeleteUserModelResponse {}
 
-// LookUpModelRequest represents a request to query a model via permalink
-message LookUpModelRequest {
+// LookUpUserModelRequest represents a request to query a model via permalink
+message LookUpUserModelRequest {
   // Permalink of a model. For example:
-  // "models/{uid}"
-  string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  // Format: users/{user}/models/{uid}
+  string permalink = 1 [(google.api.field_behavior) = REQUIRED];
   // Model view (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
   // VIEW_FULL: show full information
-  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// LookUpModelResponse represents a response for a model
-message LookUpModelResponse {
+// LookUpUserModelResponse represents a response for a model
+message LookUpUserModelResponse {
   // A model resource
   Model model = 1;
 }
 
-// RenameModelRequest represents a request to rename a model
-message RenameModelRequest {
+// RenameUserModelRequest represents a request to rename a model
+message RenameUserModelRequest {
   // Resource name for the model to be renamed.
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
 
   // New ID of this model
-  string new_model_id = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // Format: users/{user}/models/{new_model_id}
+  string new_model_id = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// RenameModelResponse represents a response for a model
-message RenameModelResponse {
+// RenameUserModelResponse represents a response for a model
+message RenameUserModelResponse {
   // Renamed model
   Model model = 1;
 }
 
-// PublishModelRequest represents a request to publish a model
-message PublishModelRequest {
+// PublisUserhModelRequest represents a request to publish a model
+message PublishUserModelRequest {
   // Resource name of the model.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
 }
 
-// PublishModelResponse represents a response for the published model
-message PublishModelResponse {
+// PublishUserModelResponse represents a response for the published model
+message PublishUserModelResponse {
   // Published model
   Model model = 1;
 }
 
-// UnpublishModelRequest represents a request to unpublish a model
-message UnpublishModelRequest {
+// UnpublishUserModelRequest represents a request to unpublish a model
+message UnpublishUserModelRequest {
   // Resource name of the model.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
 }
 
-// UnpublishModelResponse represents a response for the unpublished model
-message UnpublishModelResponse {
+// UnpublishUserModelResponse represents a response for the unpublished model
+message UnpublishUserModelResponse {
   // Unpublished model
   Model model = 1;
 }
 
-// DeployModelRequest represents a request to deploy a model to online state
-message DeployModelRequest {
+// DeployUserModelRequest represents a request to deploy a model to online state
+message DeployUserModelRequest {
   // Resource name for the model to be deployed.
-  // Format: models/{model}
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
 }
 
-// DeployModelResponse represents a response for a deployed model
-message DeployModelResponse {
+// DeployUserModelResponse represents a response for a deployed model
+message DeployUserModelResponse {
   // Deployed model's id
-  // Format: models/{model}
+  // Format: users/{user}/models/{model}
   string model_id = 1;
 }
 
-// UndeployModelRequest represents a request to undeploy a model to offline
+// UndeployUserModelRequest represents a request to undeploy a model to offline
 // state
-message UndeployModelRequest {
+message UndeployUserModelRequest {
   // Resource name for the model to be undeployed.
-  // Format: models/{model}
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
 }
 
-// UndeployModelResponse represents a response for a undeployed model
-message UndeployModelResponse {
+// UndeployUserModelResponse represents a response for a undeployed model
+message UndeployUserModelResponse {
   // Undeployed model's id
-  // Format: models/{model}
+  // Format: users/{user}/models/{model}
   string model_id = 1;
 }
 
-// GetModelCardRequest represents a request to query a model's README card
-message GetModelCardRequest {
+// GetUserModelCardRequest represents a request to query a model's README card
+message GetUserModelCardRequest {
   // Resource name of the model card.
-  // For example "models/{model}/readme"
+  // For example "// Format: users/{user}/models/{model}/readme"
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/ModelCard",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration : {path_param_name : "model.name/readme"}
+      field_configuration: {path_param_name: "model.name/readme"}
     }
   ];
 }
 
-// GetModelCardResponse represents a response to fetch a model's README card
-message GetModelCardResponse {
+// GetUserModelCardResponse represents a response to fetch a model's README card
+message GetUserModelCardResponse {
   // Retrieved model card
   ModelCard readme = 1;
 }
 
-// WatchModelRequest represents a public request to query
+// WatchUserModelRequest represents a public request to query
 // a model's current state and longrunning progress
-message WatchModelRequest {
+message WatchUserModelRequest {
   // Resource name of the model.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration : {path_param_name : "model.name/watch"}
+      field_configuration: {path_param_name: "model.name/watch"}
     }
   ];
 }
 
-// WatchModelResponse represents a public response to
+// WatchUserModelResponse represents a public response to
 // fetch a model current state and longrunning progress
-message WatchModelResponse {
+message WatchUserModelResponse {
   // Retrieved model state
   Model.State state = 1;
   // Retrieved model logrunning progress
@@ -464,129 +504,120 @@ message TaskOutput {
   // The inference task output
   oneof output {
     // The classification output
-    ClassificationOutput classification = 1
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    ClassificationOutput classification = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The detection output
-    DetectionOutput detection = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    DetectionOutput detection = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The keypoint output
-    KeypointOutput keypoint = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    KeypointOutput keypoint = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The ocr output
-    OcrOutput ocr = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    OcrOutput ocr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The instance segmentation output
-    InstanceSegmentationOutput instance_segmentation = 5
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    InstanceSegmentationOutput instance_segmentation = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The semantic segmentation output
-    SemanticSegmentationOutput semantic_segmentation = 6
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    SemanticSegmentationOutput semantic_segmentation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The text to image output
-    TextToImageOutput text_to_image = 7
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    TextToImageOutput text_to_image = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The text generation output
-    TextGenerationOutput text_generation = 8
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    TextGenerationOutput text_generation = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The unspecified task output
-    UnspecifiedOutput unspecified = 9
-        [ (google.api.field_behavior) = OUTPUT_ONLY ];
+    UnspecifiedOutput unspecified = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 }
 
-// TriggerModelRequest represents a request to trigger a model
-message TriggerModelRequest {
+// TriggerUserModelRequest represents a request to trigger a model
+message TriggerUserModelRequest {
   // The resource name of the model to trigger.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
   // Input to trigger the model
-  repeated TaskInput task_inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerModelResponse represents a response for the output for
+// TriggerUserModelResponse represents a response for the output for
 // triggering a model
-message TriggerModelResponse {
+message TriggerUserModelResponse {
   // The task type
-  Model.Task task = 1;
+  common.task.v1alpha.Task task = 1;
   // The task output from a model
   repeated TaskOutput task_outputs = 2;
 }
 
-// TriggerModelBinaryFileUploadRequest represents a request to test a
+// TriggerUserModelBinaryFileUploadRequest represents a request to test a
 // model by uploading binary file
-message TriggerModelBinaryFileUploadRequest {
+message TriggerUserModelBinaryFileUploadRequest {
   // The resource name of the model to trigger.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
   // Input to trigger the model
-  TaskInputStream task_input = 2 [ (google.api.field_behavior) = REQUIRED ];
+  TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerModelBinaryFileUploadResponse represents a response for the
+// TriggerUserModelBinaryFileUploadResponse represents a response for the
 // output for testing a model
-message TriggerModelBinaryFileUploadResponse {
+message TriggerUserModelBinaryFileUploadResponse {
   // The task type
-  Model.Task task = 1 [ (google.api.field_behavior) = REQUIRED ];
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
   // The task output from a model
-  repeated TaskOutput task_outputs = 2
-      [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TestModelRequest represents a request to test a model
-message TestModelRequest {
+// TestUserModelRequest represents a request to test a model
+message TestUserModelRequest {
   // The resource name of the model to trigger.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
   // Input to trigger the model
-  repeated TaskInput task_inputs = 2 [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TestModelResponse represents a response for the output for
+// TestUserModelResponse represents a response for the output for
 // testing a model
-message TestModelResponse {
+message TestUserModelResponse {
   // The task type
-  Model.Task task = 1 [ (google.api.field_behavior) = REQUIRED ];
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
   // The task output from a model
-  repeated TaskOutput task_outputs = 2
-      [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TestModelBinaryFileUploadRequest represents a request to test a
+// TestUserModelBinaryFileUploadRequest represents a request to test a
 // model by uploading binary file
-message TestModelBinaryFileUploadRequest {
+message TestUserModelBinaryFileUploadRequest {
   // The resource name of the model to trigger.
-  // For example "models/{model}"
+  // Format: users/{user}/models/{model}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "api.instill.tech/Model"
   ];
   // Input to trigger the model
-  TaskInputStream task_input = 2 [ (google.api.field_behavior) = REQUIRED ];
+  TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TestModelBinaryFileUploadResponse represents a response for the
+// TestUserModelBinaryFileUploadResponse represents a response for the
 // output for testing a model
-message TestModelBinaryFileUploadResponse {
+message TestUserModelBinaryFileUploadResponse {
   // The task type
-  Model.Task task = 1 [ (google.api.field_behavior) = REQUIRED ];
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
   // The task output from a model
-  repeated TaskOutput task_outputs = 2
-      [ (google.api.field_behavior) = REQUIRED ];
+  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // GetModelOperationRequest represents a request to query a model operation
 message GetModelOperationRequest {
   // The name of the operation resource.
-  string name = 1 [ (google.api.field_behavior) = REQUIRED ];
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
   // View (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`,
   // `Model.configuration` VIEW_FULL: show full information
-  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // GetModelOperationResponse represents a response for a model operation
@@ -604,13 +635,13 @@ message ListModelsAdminRequest {
   // return fewer than this value. If unspecified, at most 10 models will be
   // returned. The maximum value is 100; values above 100 will be coereced to
   // 100.
-  optional int64 page_size = 1 [ (google.api.field_behavior) = OPTIONAL ];
+  optional int64 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
   // Page token
-  optional string page_token = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
   // Model view (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
   // VIEW_FULL: show full information
-  optional View view = 3 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListModelsAdminResponse represents a response for a list of models
@@ -628,11 +659,11 @@ message ListModelsAdminResponse {
 message LookUpModelAdminRequest {
   // Permalink of a model. For example:
   // "models/{uid}"
-  string permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  string permalink = 1 [(google.api.field_behavior) = REQUIRED];
   // Model view (default is VIEW_BASIC)
   // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
   // VIEW_FULL: show full information
-  optional View view = 2 [ (google.api.field_behavior) = OPTIONAL ];
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // LookUpModelResponse represents a response for a model
@@ -646,7 +677,7 @@ message LookUpModelAdminResponse {
 message CheckModelAdminRequest {
   // Permalink of a model. For example:
   // "models/{uid}"
-  string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // CheckModelAdminResponse represents a response to fetch a model's
@@ -660,7 +691,7 @@ message CheckModelAdminResponse {
 message DeployModelAdminRequest {
   // Permalink for the model to be deployed.
   // Format: "models/{uid}"
-  string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // DeployModelAdminResponse represents a response for a deployed model
@@ -674,7 +705,7 @@ message DeployModelAdminResponse {
 message UndeployModelAdminRequest {
   // Permalink for the model to be undeployed.
   // Format: "models/{uid}"
-  string model_permalink = 1 [ (google.api.field_behavior) = REQUIRED ];
+  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // UndeployModelAdminResponse represents a response for a undeployed model

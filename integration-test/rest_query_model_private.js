@@ -26,7 +26,7 @@ export function ListModelsAdmin() {
   {
     group("Model Backend API: Get model list by admin", function () {
       let model_id_1 = randomString(10)
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_1,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -58,7 +58,7 @@ export function ListModelsAdmin() {
       }
 
       let model_id_2 = randomString(10)
-      createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models`, JSON.stringify({
+      createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_2,
         "model_definition": "model-definitions/github",
         "configuration": {
@@ -101,7 +101,7 @@ export function ListModelsAdmin() {
         [`GET /v1alpha/admin/models task cls response models.length`]: (r) =>
           r.json().models.length === 1,
         [`GET /v1alpha/admin/models task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_2}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_2}`,
         [`GET /v1alpha/admin/models task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/admin/models task cls response models[0].id`]: (r) =>
@@ -138,7 +138,7 @@ export function ListModelsAdmin() {
         [`GET /v1alpha/admin/models task cls response models.length`]: (r) =>
           r.json().models.length === 1,
         [`GET /v1alpha/admin/models task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_1}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_1}`,
         [`GET /v1alpha/admin/models task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/admin/models task cls response models[0].id`]: (r) =>
@@ -175,7 +175,7 @@ export function ListModelsAdmin() {
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models.length`]: (r) =>
           r.json().models.length === 2,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].name`]: (r) =>
-          r.json().models[0].name === `models/${model_id_2}`,
+          r.json().models[0].name === `${constant.namespace}/models/${model_id_2}`,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].uid`]: (r) =>
           r.json().models[0].uid !== undefined,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].id`]: (r) =>
@@ -201,7 +201,7 @@ export function ListModelsAdmin() {
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
           r.json().models[0].update_time !== undefined,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].name`]: (r) =>
-          r.json().models[1].name === `models/${model_id_1}`,
+          r.json().models[1].name === `${constant.namespace}/models/${model_id_1}`,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].uid`]: (r) =>
           r.json().models[1].uid !== undefined,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].id`]: (r) =>
@@ -231,10 +231,10 @@ export function ListModelsAdmin() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res_1 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_1}/watch`, {
+        let res_1 = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_1}/watch`, {
           headers: genHeader(`application/json`),
         })
-        let res_2 = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id_2}/watch`, {
+        let res_2 = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_2}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res_1.json().state !== "STATE_UNSPECIFIED" && res_2.json().state !== "STATE_UNSPECIFIED") {
@@ -245,13 +245,13 @@ export function ListModelsAdmin() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_1}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_1}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id_2}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_2}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>
@@ -272,7 +272,7 @@ export function LookupModelAdmin() {
       fd_cls.append("description", model_description);
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
       })
       check(createClsModelRes, {
@@ -296,7 +296,7 @@ export function LookupModelAdmin() {
         currentTime = new Date().getTime();
       }
 
-      let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}`, {
+      let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeader(`application/json`),
       })
       let modelUid = res.json().model.uid
@@ -307,7 +307,7 @@ export function LookupModelAdmin() {
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.id`]: (r) =>
@@ -338,7 +338,7 @@ export function LookupModelAdmin() {
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.name`]: (r) =>
-          r.json().model.name === `models/${model_id}`,
+          r.json().model.name === `${constant.namespace}/models/${model_id}`,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.uid`]: (r) =>
           r.json().model.uid !== undefined,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.id`]: (r) =>
@@ -366,7 +366,7 @@ export function LookupModelAdmin() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -379,7 +379,7 @@ export function LookupModelAdmin() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -390,7 +390,7 @@ export function LookupModelAdmin() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeader(`application/json`),
       }), {
         "DELETE clean up response status": (r) =>

@@ -10,7 +10,7 @@ import * as queryModel from "./grpc_query_model.js"
 import * as queryModelPrivate from "./grpc_query_model_private.js"
 import * as deployModelPrivate from "./grpc_deploy_model_private.js"
 import * as deployModel from "./grpc_deploy_model.js"
-import * as inferModel from "./grpc_infer_model.js"
+import * as triggerModel from "./grpc_infer_model.js"
 import * as publishModel from "./grpc_publish_model.js"
 import * as queryModelDefinition from "./grpc_query_model_definition.js"
 
@@ -59,24 +59,24 @@ export default () => {
   }
 
   // Update model API
-  updateModel.UpdateModel()
+  updateModel.UpdateUserModel()
 
   // Create model API
-  createModel.CreateModel()
+  createModel.CreateUserModel()
 
   // Deploy Model API
-  deployModel.DeployUndeployModel()
+  deployModel.DeployUndeployUserModel()
 
   // Query Model API
-  queryModel.GetModel()
-  queryModel.ListModels()
-  queryModel.LookupModel()
+  queryModel.GetUserModel()
+  queryModel.ListUserModels()
+  queryModel.LookupUserModel()
 
   // Publish Model API
-  publishModel.PublishUnPublishModel()
+  publishModel.PublishUnPublishUserModel()
 
-  // Infer Model API
-  inferModel.InferModel()
+  // Trigger Model API
+  triggerModel.TriggerUserModel()
 
   // Query Model Definition API
   queryModelDefinition.GetModelDefinition()
@@ -89,8 +89,8 @@ export function teardown() {
   });
   group("Model API: Delete all models created by this test", () => {
     for (const model of client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, {}).message.models) {
-      check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-        name: model.name
+      check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+        name: "users/instill-ai/" + model.name
       }), {
         'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
       });

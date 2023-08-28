@@ -69,7 +69,7 @@ var preDeployModelMap = map[string]map[string]string{
 	},
 }
 
-func GetPreDeployGitHubModelUUID(model datamodel.Model) (*datamodel.PreDeployModel, error) {
+func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployModel, error) {
 	var preDeployModelConfigs []PreModelConfig
 	err := utils.GetJSON(config.Config.InitModel.Path, &preDeployModelConfigs)
 	if err != nil {

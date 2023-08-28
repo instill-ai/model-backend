@@ -25,9 +25,9 @@ client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
-export function DeployUndeployModel() {
+export function DeployUndeployUserModel() {
   // Deploy Model check
-  group("Model API: Deploy Model", () => {
+  group("Model API: Deploy User Model", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
@@ -39,13 +39,13 @@ export function DeployUndeployModel() {
     fd_cls.append("description", model_description);
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -64,9 +64,9 @@ export function DeployUndeployModel() {
     }
 
     let req = {
-      name: `models/${model_id}`
+      name: `${constant.namespace}/models/${model_id}`
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployModel', req, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, {}), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel model name': (r) => r && r.message.modelId === model_id
     });
@@ -75,8 +75,8 @@ export function DeployUndeployModel() {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchModel', {
-        name: `models/${model_id}`
+      var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+        name: `${constant.namespace}/models/${model_id}`
       }, {})
       if (res.message.state === "STATE_ONLINE") {
         break
@@ -85,14 +85,14 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
     }
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployModel', {
-      name: `models/non-existed`
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', {
+      name: `${constant.namespace}/models/non-existed`
     }), {
       'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteModel', {
-      name: "models/" + model_id
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+      name: `${constant.namespace}/models/${model_id}`
     }), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });

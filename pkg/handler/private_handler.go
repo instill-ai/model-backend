@@ -38,6 +38,7 @@ func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) 
 }
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
+
 	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
@@ -49,13 +50,11 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
-
-		owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
+		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
 		if err != nil {
 			return &modelPB.ListModelsAdminResponse{}, err
 		}
-
-		pbModels = append(pbModels, DBModelToPBModel(ctx, &modelDef, &dbModel, GenOwnerPermalink(owner)))
+		pbModels = append(pbModels, pbModel)
 	}
 
 	resp := modelPB.ListModelsAdminResponse{
@@ -68,20 +67,13 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 }
 
 func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.LookUpModelAdminRequest) (*modelPB.LookUpModelAdminResponse, error) {
-	sUID, err := resource.GetID(req.Permalink)
-	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, err
-	}
-	uid, err := uuid.FromString(sUID)
-	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, req.GetView())
+
+	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	owner, err := resource.GetOwner(ctx, h.service.GetMgmtPrivateServiceClient(), h.service.GetRedisClient())
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
@@ -90,21 +82,23 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
-	pbModel := DBModelToPBModel(ctx, &modelDef, &dbModel, GenOwnerPermalink(owner))
+
+	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
+	if err != nil {
+		return &modelPB.LookUpModelAdminResponse{}, err
+	}
+
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
 func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.CheckModelAdminRequest) (*modelPB.CheckModelAdminResponse, error) {
-	sUID, err := resource.GetID(req.ModelPermalink)
+
+	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
 	if err != nil {
 		return &modelPB.CheckModelAdminResponse{}, err
 	}
-	uid, err := uuid.FromString(sUID)
-	if err != nil {
-		return &modelPB.CheckModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
 
-	state, err := h.service.CheckModel(ctx, uid)
+	state, err := h.service.CheckModel(ctx, modelUID)
 	if err != nil {
 		return &modelPB.CheckModelAdminResponse{}, err
 	}
@@ -116,16 +110,12 @@ func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.Check
 
 func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.DeployModelAdminRequest) (*modelPB.DeployModelAdminResponse, error) {
 
-	sUID, err := resource.GetID(req.ModelPermalink)
+	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
-	uid, err := uuid.FromString(sUID)
-	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
 
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, modelPB.View_VIEW_FULL)
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
@@ -137,21 +127,24 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			return &modelPB.DeployModelAdminResponse{}, err
 		}
 
-		pbModel := DBModelToPBModel(ctx, &modelDefinition, &dbModel, dbModel.Owner)
+		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDefinition, dbModel)
+		if err != nil {
+			return &modelPB.DeployModelAdminResponse{}, err
+		}
 
-		createReq := &modelPB.CreateModelRequest{
+		createReq := &modelPB.CreateUserModelRequest{
 			Model: pbModel,
 		}
 
-		var resp *modelPB.CreateModelResponse
+		var resp *modelPB.CreateUserModelResponse
 
 		switch modelDefinition.ID {
 		case "github":
-			resp, err = createGitHubModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+			resp, err = createGitHubModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
 		case "artivc":
-			resp, err = createArtiVCModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+			resp, err = createArtiVCModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
 		case "huggingface":
-			resp, err = createHuggingFaceModel(h.service, ctx, createReq, dbModel.Owner, &modelDefinition)
+			resp, err = createHuggingFaceModel(h.service, ctx, createReq, uuid.FromStringOrNil(dbModel.Owner), &modelDefinition)
 		default:
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
 		}
@@ -183,7 +176,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	wfID, err := h.service.DeployModelAsync(ctx, dbModel.Owner, dbModel.UID)
+	wfID, err := h.service.DeployUserModelAsyncAdmin(ctx, modelUID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -221,21 +214,17 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.UndeployModelAdminRequest) (*modelPB.UndeployModelAdminResponse, error) {
 
-	sUID, err := resource.GetID(req.ModelPermalink)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-	uid, err := uuid.FromString(sUID)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, uid, modelPB.View_VIEW_FULL)
+	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	wfId, err := h.service.UndeployModelAsync(ctx, dbModel.Owner, dbModel.UID)
+	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	wfId, err := h.service.UndeployUserModelAsyncAdmin(ctx, uuid.FromStringOrNil(dbModel.Owner), modelUID)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}

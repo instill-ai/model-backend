@@ -126,7 +126,7 @@ func main() {
 			defer cancel()
 
 			logger.Info("Creating model: " + modelConfig.ID)
-			createOperation, err := modelPublicServiceClient.CreateModel(ctx, &modelPB.CreateModelRequest{
+			createOperation, err := modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
 				Model: &modelPB.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
@@ -167,8 +167,8 @@ func main() {
 					logger.Fatal("handler.CreateModel: " + err.Error())
 					return
 				} else {
-					_, err := modelPublicServiceClient.DeployModel(ctx, &modelPB.DeployModelRequest{
-						Name: fmt.Sprintf("models/%s", modelConfig.ID),
+					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
+						Name: fmt.Sprintf("users/instill-ai/models/%s", modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))

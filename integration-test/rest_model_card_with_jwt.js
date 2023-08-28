@@ -36,7 +36,7 @@ export function GetModelCard() {
   fd_cls.append("model_definition", model_def_name);
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
   {
-    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/models/multipart`, fd_cls.body(), {
+    let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
     })
 
@@ -55,14 +55,14 @@ export function GetModelCard() {
     }
 
     group(`Model Backend API: Get model card [with "jwt-sub" header]`, function () {
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 404`]: (r) =>
-          r.status === 404,
+        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 401`]: (r) =>
+          r.status === 401,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/readme`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 200`]: (r) =>
@@ -72,7 +72,7 @@ export function GetModelCard() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/models/${model_id}/watch`, {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
           headers: genHeader(`application/json`),
         })
         if (res.json().state !== "STATE_UNSPECIFIED") {
@@ -83,7 +83,7 @@ export function GetModelCard() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
