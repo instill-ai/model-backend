@@ -88,7 +88,6 @@ export function CreateUserModel() {
       sleep(1)
       currentTime = new Date().getTime();
     }
-
     check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${model_id}`,
       task_inputs: [{

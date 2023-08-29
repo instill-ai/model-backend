@@ -171,6 +171,23 @@ message ListModelsResponse {
   int64 total_size = 3;
 }
 
+// LookUpModelRequest represents a request to query a model via permalink
+message LookUpModelRequest {
+  // Permalink of a model. For example:
+  // Format: models/{uid}
+  string permalink = 1 [(google.api.field_behavior) = REQUIRED];
+  // Model view (default is VIEW_BASIC)
+  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
+  // VIEW_FULL: show full information
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// LookUpModelResponse represents a response for a model
+message LookUpModelResponse {
+  // A model resource
+  Model model = 1;
+}
+
 // CreateUserModelRequest represents a request to create a model
 message CreateUserModelRequest {
   // The model to be created
@@ -298,23 +315,6 @@ message DeleteUserModelRequest {
 
 // DeleteUserModelResponse represents an empty response
 message DeleteUserModelResponse {}
-
-// LookUpUserModelRequest represents a request to query a model via permalink
-message LookUpUserModelRequest {
-  // Permalink of a model. For example:
-  // Format: users/{user}/models/{uid}
-  string permalink = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model view (default is VIEW_BASIC)
-  // VIEW_UNSPECIFIED/VIEW_BASIC: omit `Model.configuration`
-  // VIEW_FULL: show full information
-  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
-}
-
-// LookUpUserModelResponse represents a response for a model
-message LookUpUserModelResponse {
-  // A model resource
-  Model model = 1;
-}
 
 // RenameUserModelRequest represents a request to rename a model
 message RenameUserModelRequest {
@@ -610,7 +610,7 @@ message TestUserModelBinaryFileUploadResponse {
   repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// GetModelOperationRequest represents a request to query a model operation
+// GerModelOperationRequest represents a request to query a model operation
 message GetModelOperationRequest {
   // The name of the operation resource.
   string name = 1 [(google.api.field_behavior) = REQUIRED];

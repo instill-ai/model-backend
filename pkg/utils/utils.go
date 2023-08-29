@@ -105,7 +105,7 @@ func AddMissingTritonModelFolder(ctx context.Context, dir string) {
 	})
 }
 
-func getPreModelConfigPath(modelRepository string, tritonModels []datamodel.TritonModel) string {
+func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
 	modelPath := ""
 	for _, triton := range tritonModels {
 		if strings.Contains(triton.Name, "#pre#") {
@@ -114,7 +114,7 @@ func getPreModelConfigPath(modelRepository string, tritonModels []datamodel.Trit
 	}
 	return modelPath
 }
-func getInferModelConfigPath(modelRepository string, tritonModels []datamodel.TritonModel) string {
+func getInferModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
 	modelPath := ""
 	for _, triton := range tritonModels {
 		if strings.Contains(triton.Name, "-infer#") {
@@ -231,7 +231,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 }
 
 // CopyModelFileToModelRepository copies model files to model repository.
-func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []datamodel.TritonModel) error {
+func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []*datamodel.TritonModel) error {
 	modelPaths := findModelFiles(dir)
 	for _, modelPath := range modelPaths {
 		folderModelDir := filepath.Dir(modelPath)
@@ -682,7 +682,7 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	return nil
 }
 
-func HasModelWeightFile(modelRepository string, tritonModels []datamodel.TritonModel) bool {
+func HasModelWeightFile(modelRepository string, tritonModels []*datamodel.TritonModel) bool {
 	for _, tritonModel := range tritonModels {
 		modelDir := fmt.Sprintf("%s/%s", modelRepository, tritonModel.Name)
 		modelFiles := findModelFiles(modelDir)
@@ -710,7 +710,7 @@ func updateModelConfigModel(configFilePath string, oldStr string, newStr string)
 	return os.WriteFile(configFilePath, fileData, 0o600)
 }
 
-func UpdateModelConfig(modelRepository string, tritonModels []datamodel.TritonModel) error {
+func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.TritonModel) error {
 	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
 	if modelPathDir == "" {
 		return fmt.Errorf("there is no model")

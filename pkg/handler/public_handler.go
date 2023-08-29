@@ -21,6 +21,7 @@ import (
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"go.opentelemetry.io/otel"
@@ -32,6 +33,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
@@ -52,9 +55,6 @@ import (
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
 var requiredFields = []string{"Id"}
-
-// outputOnlyFields are Protobuf message fields with OUTPUT_ONLY field_behavior annotation
-var outputOnlyFields = []string{"Name", "Uid", "Visibility", "Owner", "CreateTime", "UpdateTime"}
 
 var tracer = otel.Tracer("model-backend.public-handler.tracer")
 
@@ -357,7 +357,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	userUID, err := s.GetUserUid(ctx)
+	_, userUID, err := s.GetUser(ctx)
 	if err != nil {
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -499,7 +499,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	}
 
 	// Validate ModelDefinition JSON Schema
-	pbModel, err := s.DBModelToPBModel(ctx, &localModelDefinition, &uploadedModel)
+	pbModel, err := s.DBToPBModel(ctx, localModelDefinition, &uploadedModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return
@@ -669,7 +669,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -690,7 +690,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		return status.Errorf(codes.AlreadyExists, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 	}
 
-	modelDef, err := h.service.GetModelDefinition(stream.Context(), modelDefID)
+	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -698,7 +698,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 	uploadedModel.ModelDefinitionUid = modelDef.UID
 
 	// Validate ModelDefinition JSON Schema
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, uploadedModel)
+	pbModel, err := h.service.DBToPBModel(ctx, modelDef, uploadedModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return status.Errorf(codes.InvalidArgument, err.Error())
@@ -1556,31 +1556,16 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	dbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
-	}
-
-	pbModels := []*modelPB.Model{}
-	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.ListModelsResponse{}, err
-		}
-		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.ListModelsResponse{}, err
-		}
-		pbModels = append(pbModels, pbModel)
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -1588,7 +1573,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModels),
+		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -1615,7 +1600,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 		return &modelPB.CreateUserModelResponse{}, err
 	}
 
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return resp, err
@@ -1645,7 +1630,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if model, err := h.service.GetUserModelByID(ctx, ns, userUID, req.Model.Id, modelPB.View_VIEW_FULL); err == nil {
-		if utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, model.ID) {
+		if utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, model.Id) {
 			span.SetStatus(1, "Model already existed")
 			return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
 		}
@@ -1662,7 +1647,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 		return resp, err
 	}
 
-	modelDefinition, err := h.service.GetModelDefinition(ctx, modelDefinitionID)
+	modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return resp, status.Errorf(codes.InvalidArgument, err.Error())
@@ -1681,11 +1666,11 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 
 	switch modelDefinitionID {
 	case "github":
-		return createGitHubModel(h.service, ctx, req, userUID, &modelDefinition)
+		return createGitHubModel(h.service, ctx, req, userUID, modelDefinition)
 	case "artivc":
-		return createArtiVCModel(h.service, ctx, req, userUID, &modelDefinition)
+		return createArtiVCModel(h.service, ctx, req, userUID, modelDefinition)
 	case "huggingface":
-		return createHuggingFaceModel(h.service, ctx, req, userUID, &modelDefinition)
+		return createHuggingFaceModel(h.service, ctx, req, userUID, modelDefinition)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
@@ -1711,31 +1696,16 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 		return &modelPB.ListUserModelsResponse{}, err
 	}
 
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListUserModelsResponse{}, err
 	}
 
-	dbModels, nextPageToken, totalSize, err := h.service.ListUserModels(ctx, ns, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListUserModels(ctx, ns, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListUserModelsResponse{}, err
-	}
-
-	pbModels := []*modelPB.Model{}
-	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.ListUserModelsResponse{}, err
-		}
-		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.ListUserModelsResponse{}, err
-		}
-		pbModels = append(pbModels, pbModel)
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -1743,7 +1713,7 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModels),
+		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -1756,9 +1726,9 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 	return &resp, nil
 }
 
-func (h *PublicHandler) LookUpUserModel(ctx context.Context, req *modelPB.LookUpUserModelRequest) (*modelPB.LookUpUserModelResponse, error) {
+func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
 
-	eventName := "LookUpUserModel"
+	eventName := "LookUpModel"
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -1768,30 +1738,21 @@ func (h *PublicHandler) LookUpUserModel(ctx context.Context, req *modelPB.LookUp
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	ns, modelUID, err := h.service.GetRscNamespaceAndPermalinkUID(req.Permalink)
+	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, err
+		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, err
+		return &modelPB.LookUpModelResponse{}, err
 	}
 
+	pbModel, err := h.service.GetModelByUID(ctx, userUID, modelUID, req.GetView())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return &modelPB.LookUpUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	dbModel, err := h.service.GetUserModelByUID(ctx, ns, userUID, modelUID, req.GetView())
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.LookUpUserModelResponse{}, err
-	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.LookUpUserModelResponse{}, err
+		return &modelPB.LookUpModelResponse{}, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -1799,17 +1760,11 @@ func (h *PublicHandler) LookUpUserModel(ctx context.Context, req *modelPB.LookUp
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.LookUpUserModelResponse{}, err
-	}
-
-	return &modelPB.LookUpUserModelResponse{Model: pbModel}, nil
+	return &modelPB.LookUpModelResponse{Model: pbModel}, nil
 }
 
 func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelPB.GetUserModelRequest) (*modelPB.GetUserModelResponse, error) {
@@ -1829,18 +1784,13 @@ func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelPB.GetUserMo
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, req.GetView())
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.GetUserModelResponse{}, err
-	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, req.GetView())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelResponse{}, err
@@ -1851,15 +1801,9 @@ func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelPB.GetUserMo
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
-
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.GetUserModelResponse{}, err
-	}
 
 	return &modelPB.GetUserModelResponse{Model: pbModel}, err
 }
@@ -1881,42 +1825,54 @@ func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelPB.Update
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel := req.GetModel()
+	pbUpdateMask := req.GetUpdateMask()
+
+	if !pbUpdateMask.IsValid(pbModel) {
+		return nil, status.Error(codes.InvalidArgument, "The update_mask is invalid")
+	}
+
+	pbModelToUpdate, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateUserModelResponse{}, err
 	}
 
-	updateModel := datamodel.Model{
-		ID:    modelID,
-		State: dbModel.State,
-	}
-	if req.UpdateMask != nil && len(req.UpdateMask.Paths) > 0 {
-		for _, field := range req.UpdateMask.Paths {
-			switch field {
-			case "description":
-				updateModel.Description = sql.NullString{
-					String: *req.Model.Description,
-					Valid:  true,
-				}
-			}
-		}
-	}
-	dbModel, err = h.service.UpdateUserModel(ctx, ns, userUID, &updateModel)
+	pbUpdateMask, err = checkfield.CheckUpdateOutputOnlyFields(pbUpdateMask, outputOnlyFields)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateUserModelResponse{}, err
 	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+
+	mask, err := fieldmask_utils.MaskFromProtoFieldMask(pbUpdateMask, strcase.ToCamel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UpdateUserModelResponse{}, err
+	}
+
+	if mask.IsEmpty() {
+		return &modelPB.UpdateUserModelResponse{
+			Model: pbModelToUpdate,
+		}, nil
+	}
+
+	// Return error if IMMUTABLE fields are intentionally changed
+	if err := checkfield.CheckUpdateImmutableFields(pbModel, pbModelToUpdate, immutableFields); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Only the fields mentioned in the field mask will be copied to `pbPipelineToUpdate`, other fields are left intact
+	err = fieldmask_utils.StructToStruct(mask, pbModel, pbModelToUpdate)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -1924,17 +1880,11 @@ func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelPB.Update
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModelToUpdate),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.UpdateUserModelResponse{}, err
-	}
-
-	return &modelPB.UpdateUserModelResponse{Model: pbModel}, err
+	return &modelPB.UpdateUserModelResponse{Model: pbModelToUpdate}, err
 }
 
 func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.DeleteUserModelRequest) (*modelPB.DeleteUserModelResponse, error) {
@@ -1954,7 +1904,7 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeleteUserModelResponse{}, err
@@ -1966,19 +1916,12 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		return nil, err
 	}
 
-	deleteModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_BASIC)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.DeleteUserModelResponse{}, err
-	}
-
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(deleteModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, modelID)),
 	)))
 
 	return &modelPB.DeleteUserModelResponse{}, h.service.DeleteUserModel(ctx, ns, userUID, modelID)
@@ -2001,18 +1944,13 @@ func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelPB.Rename
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.RenameUserModel(ctx, ns, userUID, modelID, req.NewModelId)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.RenameUserModelResponse{}, err
-	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+	pbModel, err := h.service.RenameUserModel(ctx, ns, userUID, modelID, req.NewModelId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.RenameUserModelResponse{}, err
@@ -2023,15 +1961,9 @@ func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelPB.Rename
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
-
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.RenameUserModelResponse{}, err
-	}
 
 	return &modelPB.RenameUserModelResponse{Model: pbModel}, nil
 }
@@ -2053,18 +1985,13 @@ func (h *PublicHandler) PublishUserModel(ctx context.Context, req *modelPB.Publi
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.PublishUserModel(ctx, ns, userUID, modelID)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.PublishUserModelResponse{}, err
-	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+	pbModel, err := h.service.PublishUserModel(ctx, ns, userUID, modelID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.PublishUserModelResponse{}, err
@@ -2075,15 +2002,9 @@ func (h *PublicHandler) PublishUserModel(ctx context.Context, req *modelPB.Publi
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
-
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.PublishUserModelResponse{}, err
-	}
 
 	return &modelPB.PublishUserModelResponse{Model: pbModel}, nil
 }
@@ -2105,18 +2026,13 @@ func (h *PublicHandler) UnpublishUserModel(ctx context.Context, req *modelPB.Unp
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.UnpublishUserModel(ctx, ns, userUID, modelID)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.UnpublishUserModelResponse{}, err
-	}
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+	pbModel, err := h.service.UnpublishUserModel(ctx, ns, userUID, modelID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UnpublishUserModelResponse{}, err
@@ -2127,15 +2043,9 @@ func (h *PublicHandler) UnpublishUserModel(ctx context.Context, req *modelPB.Unp
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
-
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.UnpublishUserModelResponse{}, err
-	}
 
 	return &modelPB.UnpublishUserModelResponse{Model: pbModel}, nil
 }
@@ -2161,32 +2071,34 @@ func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.Deploy
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
-	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
+	_, err = h.service.GetTritonModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
 	// set user desired state to STATE_ONLINE
-	if _, err := h.service.UpdateUserModelState(ctx, ns, userUID, dbModel, datamodel.ModelState(modelPB.Model_STATE_ONLINE)); err != nil {
+	if _, err := h.service.UpdateUserModelState(ctx, ns, userUID, pbModel, modelPB.Model_STATE_ONLINE); err != nil {
+		fmt.Println("============================================================5")
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
 	state := modelPB.Model_STATE_OFFLINE.Enum()
 	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
-		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
+		if state, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
+			fmt.Println("============================================================6")
 			return &modelPB.DeployUserModelResponse{}, err
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -2197,11 +2109,11 @@ func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.Deploy
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return &modelPB.DeployUserModelResponse{ModelId: dbModel.ID}, nil
+	return &modelPB.DeployUserModelResponse{ModelId: pbModel.Id}, nil
 }
 
 func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.UndeployUserModelRequest) (*modelPB.UndeployUserModelResponse, error) {
@@ -2225,13 +2137,13 @@ func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.Unde
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployUserModelResponse{}, err
 	}
 
-	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployUserModelResponse{}, err
@@ -2243,14 +2155,14 @@ func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.Unde
 	}
 
 	// set user desired state to STATE_OFFLINE
-	if _, err := h.service.UpdateUserModelState(ctx, ns, userUID, dbModel, datamodel.ModelState(modelPB.Model_STATE_OFFLINE)); err != nil {
+	if _, err := h.service.UpdateUserModelState(ctx, ns, userUID, pbModel, modelPB.Model_STATE_OFFLINE); err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.UndeployUserModelResponse{}, err
 	}
 
 	state := modelPB.Model_STATE_ONLINE.Enum()
 	for state.String() == modelPB.Model_STATE_ONLINE.String() {
-		if state, err = h.service.GetResourceState(ctx, dbModel.UID); err != nil {
+		if state, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
 			return &modelPB.UndeployUserModelResponse{}, err
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -2261,11 +2173,11 @@ func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.Unde
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return &modelPB.UndeployUserModelResponse{ModelId: dbModel.ID}, nil
+	return &modelPB.UndeployUserModelResponse{ModelId: pbModel.Id}, nil
 }
 
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUserModelRequest) (*modelPB.WatchUserModelResponse, error) {
@@ -2285,7 +2197,7 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUs
 		span.SetStatus(1, err.Error())
 		return &modelPB.WatchUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.WatchUserModelResponse{}, err
@@ -2305,7 +2217,7 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUs
 	}
 
 	// check permission
-	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_BASIC)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -2319,7 +2231,7 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUs
 		return &modelPB.WatchUserModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(ctx, dbModel.UID)
+	state, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
 
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -2362,20 +2274,20 @@ func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublic
 		span.SetStatus(1, err.Error())
 		return err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
 
-	modelInDB, err := h.service.GetUserModelByID(stream.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(stream.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
 
 	numberOfInferences := 1
-	switch commonPB.Task(modelInDB.Task) {
+	switch commonPB.Task(pbModel.Task) {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -2387,7 +2299,7 @@ func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublic
 
 	// check whether model support batching or not. If not, raise an error
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return err
@@ -2404,8 +2316,8 @@ func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublic
 		}
 	}
 
-	task := commonPB.Task(modelInDB.Task)
-	response, err := h.service.TriggerUserModelTestMode(stream.Context(), modelInDB.UID, triggerInput, task)
+	task := commonPB.Task(pbModel.Task)
+	response, err := h.service.TriggerUserModelTestMode(stream.Context(), uuid.FromStringOrNil(pbModel.Uid), triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2443,7 +2355,7 @@ func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublic
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -2474,30 +2386,42 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		span.SetStatus(1, err.Error())
 		return err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
 
-	modelInDB, err := h.service.GetUserModelByID(stream.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(stream.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
+	}
+
+	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return err
+	}
+
+	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	usageData := utils.UsageMetricData{
 		OwnerUID:           userUID.String(),
-		ModelUID:           modelInDB.UID.String(),
+		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
-		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
-		ModelTask:          commonPB.Task(modelInDB.Task),
+		ModelDefinitionUID: modelDef.UID.String(),
+		ModelTask:          commonPB.Task(pbModel.Task),
 	}
 
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
-	switch commonPB.Task(modelInDB.Task) {
+	switch commonPB.Task(pbModel.Task) {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -2507,7 +2431,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
@@ -2528,8 +2452,8 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		}
 	}
 
-	task := commonPB.Task(modelInDB.Task)
-	response, err := h.service.TriggerUserModel(stream.Context(), modelInDB.UID, triggerInput, task)
+	task := commonPB.Task(pbModel.Task)
+	response, err := h.service.TriggerUserModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid), triggerInput, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2574,7 +2498,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -2599,30 +2523,42 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerUserModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TriggerUserModelResponse{}, err
+	}
+
+	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.TriggerUserModelResponse{}, err
+	}
+
+	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	usageData := utils.UsageMetricData{
 		OwnerUID:           userUID.String(),
-		ModelUID:           modelInDB.UID.String(),
+		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
-		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
-		ModelTask:          commonPB.Task(modelInDB.Task),
+		ModelDefinitionUID: modelDef.UID.String(),
+		ModelTask:          commonPB.Task(pbModel.Task),
 	}
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch commonPB.Task(modelInDB.Task) {
+	switch commonPB.Task(pbModel.Task) {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -2662,7 +2598,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
@@ -2682,8 +2618,8 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	task := commonPB.Task(modelInDB.Task)
-	response, err := h.service.TriggerUserModel(ctx, modelInDB.UID, inputInfer, task)
+	task := commonPB.Task(pbModel.Task)
+	response, err := h.service.TriggerUserModel(ctx, uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2723,7 +2659,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -2750,13 +2686,13 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 		span.SetStatus(1, err.Error())
 		return &modelPB.TestUserModelResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TestUserModelResponse{}, err
 	}
 
-	modelInDB, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.TestUserModelResponse{}, err
@@ -2764,7 +2700,7 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch commonPB.Task(modelInDB.Task) {
+	switch commonPB.Task(pbModel.Task) {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -2809,7 +2745,7 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, modelInDB.UID)
+		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return &modelPB.TestUserModelResponse{}, err
@@ -2826,8 +2762,8 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 		}
 	}
 
-	task := commonPB.Task(modelInDB.Task)
-	response, err := h.service.TriggerUserModelTestMode(ctx, modelInDB.UID, inputInfer, task)
+	task := commonPB.Task(pbModel.Task)
+	response, err := h.service.TriggerUserModelTestMode(ctx, uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -2860,7 +2796,7 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -2906,7 +2842,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
-	userUID, err := s.GetUserUid(ctx)
+	_, userUID, err := s.GetUser(ctx)
 	if err != nil {
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -2930,20 +2866,33 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	modelInDB, err := s.GetUserModelByID(req.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := s.GetUserModelByID(req.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		span.SetStatus(1, "The model not found in server")
 		return
 	}
 
+	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return
+	}
+
+	modelDef, err := s.GetRepository().GetModelDefinition(modelDefID)
+	if err != nil {
+		makeJSONResponse(w, 404, "Model definition not found", "The model definition not found in server")
+		span.SetStatus(1, "The model definition not found in server")
+		return
+	}
+
 	usageData := utils.UsageMetricData{
 		OwnerUID:           userUID.String(),
-		ModelUID:           modelInDB.UID.String(),
+		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
-		ModelDefinitionUID: modelInDB.ModelDefinitionUid.String(),
-		ModelTask:          commonPB.Task(modelInDB.Task),
+		ModelDefinitionUID: modelDef.UID.String(),
+		ModelTask:          commonPB.Task(pbModel.Task),
 	}
 
 	err = req.ParseMultipartForm(4 << 20)
@@ -2957,7 +2906,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	var inputInfer interface{}
 	var lenInputs = 1
-	switch commonPB.Task(modelInDB.Task) {
+	switch commonPB.Task(pbModel.Task) {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -3001,10 +2950,10 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := s.GetTritonEnsembleModel(req.Context(), modelInDB.UID)
+		tritonModelInDB, err := s.GetTritonEnsembleModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
-			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
-			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", modelInDB.ID))
+			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
+			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
@@ -3027,12 +2976,12 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		}
 	}
 
-	task := commonPB.Task(modelInDB.Task)
+	task := commonPB.Task(pbModel.Task)
 	var response []*modelPB.TaskOutput
 	if mode == "test" {
-		response, err = s.TriggerUserModelTestMode(req.Context(), modelInDB.UID, inputInfer, task)
+		response, err = s.TriggerUserModelTestMode(req.Context(), uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	} else {
-		response, err = s.TriggerUserModel(req.Context(), modelInDB.UID, inputInfer, task)
+		response, err = s.TriggerUserModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	}
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -3087,7 +3036,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		logUUID.String(),
 		userUID,
 		eventName,
-		custom_otel.SetEventResource(modelInDB),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -3120,7 +3069,7 @@ func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelPB.GetUs
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelCardResponse{}, err
 	}
-	userUID, err := h.service.GetUserUid(ctx)
+	_, userUID, err := h.service.GetUser(ctx)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelCardResponse{}, err
@@ -3179,12 +3128,11 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelPB.Get
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	dbModelDefinition, err := h.service.GetModelDefinition(ctx, definitionID)
+	pbModelDefinition, err := h.service.GetModelDefinition(ctx, definitionID)
 	if err != nil {
 		return &modelPB.GetModelDefinitionResponse{}, err
 	}
 
-	pbModelDefinition := h.service.DBModelDefinitionToPBModelDefinition(ctx, &dbModelDefinition)
 	return &modelPB.GetModelDefinitionResponse{ModelDefinition: pbModelDefinition}, nil
 }
 
@@ -3194,18 +3142,13 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	dbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModelDefinitions, nextPageToken, totalSize, err := h.service.ListModelDefinitions(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
 	}
 
-	pbDefinitions := []*modelPB.ModelDefinition{}
-	for _, dbModelDefinition := range dbModelDefinitions {
-		pbDefinitions = append(pbDefinitions, h.service.DBModelDefinitionToPBModelDefinition(ctx, &dbModelDefinition))
-	}
-
 	resp := modelPB.ListModelDefinitionsResponse{
-		ModelDefinitions: pbDefinitions,
+		ModelDefinitions: pbModelDefinitions,
 		NextPageToken:    nextPageToken,
 		TotalSize:        totalSize,
 	}

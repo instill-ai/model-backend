@@ -54,9 +54,6 @@ export function GetModel() {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      console.log(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
-        headers: genHeader(`application/json`),
-      }))
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeader(`application/json`),
       }), {
@@ -424,7 +421,7 @@ export function LookupModel() {
       let modelRes = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeader(`application/json`),
       })
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelRes.json().model.uid}/lookUp`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelRes.json().model.uid}/lookUp`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response status`]: (r) =>
@@ -455,7 +452,7 @@ export function LookupModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelRes.json().model.uid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelRes.json().model.uid}/lookUp?view=VIEW_FULL`, {
         headers: genHeader(`application/json`),
       }), {
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response status`]: (r) =>
