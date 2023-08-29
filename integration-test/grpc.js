@@ -70,7 +70,7 @@ export default () => {
   // Query Model API
   queryModel.GetUserModel()
   queryModel.ListUserModels()
-  queryModel.LookupUserModel()
+  queryModel.LookupModel()
 
   // Publish Model API
   publishModel.PublishUnPublishUserModel()
@@ -90,7 +90,7 @@ export function teardown() {
   group("Model API: Delete all models created by this test", () => {
     for (const model of client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, {}).message.models) {
       check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
-        name: "users/instill-ai/" + model.name
+        name: model.name
       }), {
         'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
       });

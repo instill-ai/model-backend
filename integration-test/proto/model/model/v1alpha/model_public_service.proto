@@ -54,6 +54,13 @@ service ModelPublicService {
     option (google.api.http) = {get: "/v1alpha/models"};
   }
 
+  // LookUpUodel method receives a LookUpModelRequest message and returns a
+  // LookUpModelResponse
+  rpc LookUpModel(LookUpModelRequest) returns (LookUpModelResponse) {
+    option (google.api.http) = {get: "/v1alpha/{permalink=models/*}/lookUp"};
+    option (google.api.method_signature) = "permalink";
+  }
+
   // LisUsertModels method receives a ListUserModelsRequest message and returns a
   // ListUserModelsResponse
   rpc ListUserModels(ListUserModelsRequest) returns (ListUserModelsResponse) {
@@ -102,13 +109,6 @@ service ModelPublicService {
   rpc DeleteUserModel(DeleteUserModelRequest) returns (DeleteUserModelResponse) {
     option (google.api.http) = {delete: "/v1alpha/{name=users/*/models/*}"};
     option (google.api.method_signature) = "name";
-  }
-
- // LookUpUserModel method receives a LookUpUserModelRequest message and returns a
-  // LookUpUserModelResponse
-  rpc LookUpUserModel(LookUpUserModelRequest) returns (LookUpUserModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/{permalink=users/*/models/*}/lookUp"};
-    option (google.api.method_signature) = "permalink";
   }
 
   // RenameUserModel method rename a model

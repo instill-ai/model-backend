@@ -454,7 +454,7 @@ func TestGetModelDefinition(t *testing.T) {
 		mockRepository.
 			EXPECT().
 			GetModelDefinition("github").
-			Return(datamodel.ModelDefinition{}, nil).
+			Return(&datamodel.ModelDefinition{}, nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, uuid.Nil)
 
@@ -471,7 +471,7 @@ func TestListModelDefinitions(t *testing.T) {
 		mockRepository.
 			EXPECT().
 			ListModelDefinitions(modelPB.View_VIEW_FULL, int(100), "").
-			Return([]datamodel.ModelDefinition{}, "", int64(100), nil).
+			Return([]*datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, uuid.Nil)
 

@@ -200,28 +200,28 @@ export function LookupModel() {
     let modelUid = resp.json().model.uid
 
     group(`Model Backend API: Look up model [with "jwt-sub" header]`, function () {
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelUid}/lookUp`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelUid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL`, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelUid}/lookUp`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${modelUid}/lookUp?view=VIEW_FULL`, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL`, {
         headers: genHeaderwithJwtSub(`application/json`, userUid),
       }), {
         [`[with default "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 200`]: (r) =>

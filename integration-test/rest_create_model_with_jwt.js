@@ -84,11 +84,9 @@ export function CreateModelFromLocal() {
       }
 
       // clean up
-      let s = http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
-      })
-      console.log(s)
-      check(s, {
+      }), {
         [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 401`]: (r) =>
           r.status === 401
       });

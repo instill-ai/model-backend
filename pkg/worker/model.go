@@ -69,7 +69,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	var tritonModels []datamodel.TritonModel
+	var tritonModels []*datamodel.TritonModel
 	if tritonModels, err = w.repository.GetTritonModels(dbModel.UID); err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	logger.Info("UnDeployModelActivity started")
 
-	var tritonModels []datamodel.TritonModel
+	var tritonModels []*datamodel.TritonModel
 	var err error
 
 	if tritonModels, err = w.repository.GetTritonModels(param.Model.UID); err != nil {

@@ -181,7 +181,7 @@ export function ListUserModels() {
   });
 };
 
-export function LookupUserModel() {
+export function LookupModel() {
   // LookUpModel check
   group("Model API: LookUpModel", () => {
     client.connect(constant.gRPCPublicHost, {
@@ -222,8 +222,8 @@ export function LookupUserModel() {
     let res = client.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, {})
-    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpUserModel', {
-      permalink: "users/instill-ai/models/" + res.message.model.uid
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
+      permalink: "models/" + res.message.model.uid
     }, {}), {
       "LookUpModel response status": (r) => r.status === grpc.StatusOK,
       "LookUpModel response model.name": (r) => r.message.model.name === `${constant.namespace}/models/${model_id}`,
@@ -238,8 +238,8 @@ export function LookupUserModel() {
       "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpUserModel', {
-      permalink: "users/instill-ai/models/" + randomString(10)
+    check(client.invoke('model.model.v1alpha.ModelPublicService/LookUpModel', {
+      permalink: "models/" + randomString(10)
     }, {}), {
       'LookUpModel non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
     });

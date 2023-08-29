@@ -39,22 +39,9 @@ func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) 
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
 
-	dbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
-	}
-
-	pbModels := []*modelPB.Model{}
-	for _, dbModel := range dbModels {
-		modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
-		if err != nil {
-			return &modelPB.ListModelsAdminResponse{}, err
-		}
-		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
-		if err != nil {
-			return &modelPB.ListModelsAdminResponse{}, err
-		}
-		pbModels = append(pbModels, pbModel)
 	}
 
 	resp := modelPB.ListModelsAdminResponse{
@@ -73,17 +60,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, req.GetView())
-	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, err
-	}
-
-	modelDef, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
-	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, err
-	}
-
-	pbModel, err := h.service.DBModelToPBModel(ctx, &modelDef, dbModel)
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, req.GetView())
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
@@ -115,29 +92,38 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	userUID, err := resource.GetRscPermalinkUID(dbModel.Owner)
+	var userPermalink string
+	if pbModel.GetUser() != "" {
+		userPermalink = pbModel.GetUser()
+	} else if pbModel.GetOrg() != "" {
+		userPermalink = pbModel.GetOrg()
+	} else {
+		return &modelPB.DeployModelAdminResponse{}, fmt.Errorf("model no owner")
+	}
+
+	userUID, err := resource.GetRscPermalinkUID(userPermalink)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	parent, err := h.service.ConvertOwnerPermalinkToName(dbModel.Owner)
+	parent, err := h.service.ConvertOwnerPermalinkToName(userPermalink)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, dbModel.Owner, dbModel.ID) {
+	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, userPermalink, pbModel.Id) {
 
-		modelDefinition, err := h.service.GetModelDefinitionByUID(ctx, dbModel.ModelDefinitionUid)
+		modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 		if err != nil {
 			return &modelPB.DeployModelAdminResponse{}, err
 		}
 
-		pbModel, err := h.service.DBModelToPBModel(ctx, &modelDefinition, dbModel)
+		modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefID)
 		if err != nil {
 			return &modelPB.DeployModelAdminResponse{}, err
 		}
@@ -151,11 +137,11 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 		switch modelDefinition.ID {
 		case "github":
-			resp, err = createGitHubModel(h.service, ctx, createReq, userUID, &modelDefinition)
+			resp, err = createGitHubModel(h.service, ctx, createReq, userUID, modelDefinition)
 		case "artivc":
-			resp, err = createArtiVCModel(h.service, ctx, createReq, userUID, &modelDefinition)
+			resp, err = createArtiVCModel(h.service, ctx, createReq, userUID, modelDefinition)
 		case "huggingface":
-			resp, err = createHuggingFaceModel(h.service, ctx, createReq, userUID, &modelDefinition)
+			resp, err = createHuggingFaceModel(h.service, ctx, createReq, userUID, modelDefinition)
 		default:
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
 		}
@@ -182,7 +168,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 	}
 
-	_, err = h.service.GetTritonModels(ctx, dbModel.UID)
+	_, err = h.service.GetTritonModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
@@ -230,12 +216,26 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	dbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	wfId, err := h.service.UndeployUserModelAsyncAdmin(ctx, uuid.FromStringOrNil(dbModel.Owner), modelUID)
+	var userPermalink string
+	if pbModel.GetUser() != "" {
+		userPermalink = pbModel.GetUser()
+	} else if pbModel.GetOrg() != "" {
+		userPermalink = pbModel.GetOrg()
+	} else {
+		return &modelPB.UndeployModelAdminResponse{}, fmt.Errorf("model no owner")
+	}
+
+	userUID, err := resource.GetRscPermalinkUID(userPermalink)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	wfId, err := h.service.UndeployUserModelAsyncAdmin(ctx, userUID, modelUID)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}

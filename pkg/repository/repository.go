@@ -26,20 +26,21 @@ const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBL
 type Repository interface {
 	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
 	CreatePreDeployModel(model *datamodel.PreDeployModel) error
+	GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error)
 
 	CreateUserModel(model *datamodel.Model) error
 	ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
 	GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error)
-	GetUserModelByUID(ctx context.Context, ownerPermalink string, userPermalink string, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error)
 	UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error
-	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state datamodel.ModelState) error
+	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error
 
-	CreateTritonModel(model datamodel.TritonModel) error
-	GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error)
-	GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error)
-	GetModelDefinition(id string) (datamodel.ModelDefinition, error)
-	GetModelDefinitionByUID(uid uuid.UUID) (datamodel.ModelDefinition, error)
-	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+	CreateTritonModel(model *datamodel.TritonModel) error
+	GetTritonModels(modelUID uuid.UUID) ([]*datamodel.TritonModel, error)
+	GetTritonEnsembleModel(modelUID uuid.UUID) (*datamodel.TritonModel, error)
+
+	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
+	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
+	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 	DeleteModel(modelUID uuid.UUID) error
 
 	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error)
@@ -212,18 +213,18 @@ func (r *repository) getUserModel(ctx context.Context, where string, whereArgs [
 	return &model, nil
 }
 
-func (r *repository) GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error) {
+func (r *repository) GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error) {
 	return r.getUserModel(ctx,
-		"(id = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
-		[]interface{}{modelID, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
+		"(uid = ? AND (visibility = ? OR owner = ?))",
+		[]interface{}{uid, VisibilityPublic, userPermalink},
 		view,
 	)
 }
 
-func (r *repository) GetUserModelByUID(ctx context.Context, ownerPermalink string, userPermalink string, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error) {
+func (r *repository) GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error) {
 	return r.getUserModel(ctx,
-		"(uid = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
-		[]interface{}{uid, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
+		"(id = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
+		[]interface{}{modelID, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
 		view,
 	)
 }
@@ -258,7 +259,7 @@ func (r *repository) CreateUserModel(model *datamodel.Model) error {
 }
 
 func (r *repository) CreatePreDeployModel(model *datamodel.PreDeployModel) error {
-	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
+	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(result.Error, &pgErr) {
 			if pgErr.Code == "23505" {
@@ -282,7 +283,7 @@ func (r *repository) UpdateUserModel(ownerPermalink string, userPermalink string
 }
 
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state datamodel.ModelState) error {
+func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error {
 	if result := r.db.Model(&datamodel.Model{}).
 		Where("(uid = ? AND owner = ? AND ? = ? )", modelUID, ownerPermalink, ownerPermalink, userPermalink).
 		Updates(map[string]interface{}{"state": state}); result.Error != nil {
@@ -292,7 +293,7 @@ func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink s
 	return nil
 }
 
-func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
+func (r *repository) CreateTritonModel(model *datamodel.TritonModel) error {
 	if result := r.db.Model(&datamodel.TritonModel{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
@@ -300,19 +301,19 @@ func (r *repository) CreateTritonModel(model datamodel.TritonModel) error {
 	return nil
 }
 
-func (r *repository) GetTritonModels(modelUID uuid.UUID) ([]datamodel.TritonModel, error) {
-	var tmodels []datamodel.TritonModel
+func (r *repository) GetTritonModels(modelUID uuid.UUID) ([]*datamodel.TritonModel, error) {
+	var tmodels []*datamodel.TritonModel
 	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
-		return []datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
+		return []*datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
 	}
 	return tmodels, nil
 }
 
-func (r *repository) GetTritonEnsembleModel(modelUID uuid.UUID) (datamodel.TritonModel, error) {
-	var ensembleModel datamodel.TritonModel
+func (r *repository) GetTritonEnsembleModel(modelUID uuid.UUID) (*datamodel.TritonModel, error) {
+	var ensembleModel *datamodel.TritonModel
 	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_uid": modelUID, "platform": "ensemble"}).First(&ensembleModel)
 	if result.Error != nil {
-		return datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
+		return &datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}
 	return ensembleModel, nil
 }
@@ -324,23 +325,23 @@ func (r *repository) DeleteModel(modelUID uuid.UUID) error {
 	return nil
 }
 
-func (r *repository) GetModelDefinition(id string) (datamodel.ModelDefinition, error) {
-	var definitionDB datamodel.ModelDefinition
+func (r *repository) GetModelDefinition(id string) (*datamodel.ModelDefinition, error) {
+	var definitionDB *datamodel.ModelDefinition
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("id", id).First(&definitionDB); result.Error != nil {
-		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
+		return &datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
 	}
 	return definitionDB, nil
 }
 
-func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (datamodel.ModelDefinition, error) {
-	var definitionDB datamodel.ModelDefinition
+func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error) {
+	var definitionDB *datamodel.ModelDefinition
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Where("uid", uid).First(&definitionDB); result.Error != nil {
-		return datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
+		return &datamodel.ModelDefinition{}, status.Errorf(codes.NotFound, "The model definition not found")
 	}
 	return definitionDB, nil
 }
 
-func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
@@ -373,7 +374,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageT
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var item datamodel.ModelDefinition
+		var item *datamodel.ModelDefinition
 		if err = r.db.ScanRows(rows, &item); err != nil {
 			return nil, "", 0, status.Error(codes.Internal, err.Error())
 		}

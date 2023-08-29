@@ -20,7 +20,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (s *service) PBModelToDBModel(ctx context.Context, owner string, pbModel *modelPB.Model) *datamodel.Model {
+func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *datamodel.Model {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	return &datamodel.Model{
@@ -57,7 +57,7 @@ func (s *service) PBModelToDBModel(ctx context.Context, owner string, pbModel *m
 	}
 }
 
-func (s *service) DBModelToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
+func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	owner, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
@@ -109,13 +109,36 @@ func (s *service) DBModelToPBModel(ctx context.Context, modelDef *datamodel.Mode
 
 	if strings.HasPrefix(dbModel.Owner, "users/") {
 		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
-	} else if strings.HasPrefix(dbModel.Owner, "organizations/") {
+	} else if strings.HasPrefix(dbModel.Owner, "orgs/") {
 		pbModel.Owner = &modelPB.Model_Org{Org: dbModel.Owner}
 	}
 	return &pbModel, nil
 }
 
-func (s *service) DBModelDefinitionToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) *modelPB.ModelDefinition {
+func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model) ([]*modelPB.Model, error) {
+
+	pbModels := make([]*modelPB.Model, len(dbModels))
+
+	for idx := range dbModels {
+		modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModels[idx].ModelDefinitionUid)
+		if err != nil {
+			return nil, err
+		}
+
+		pbModels[idx], err = s.DBToPBModel(
+			ctx,
+			modelDef,
+			dbModels[idx],
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return pbModels, nil
+}
+
+func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	pbModelDefinition := modelPB.ModelDefinition{
@@ -141,5 +164,23 @@ func (s *service) DBModelDefinitionToPBModelDefinition(ctx context.Context, dbMo
 		}(),
 	}
 
-	return &pbModelDefinition
+	return &pbModelDefinition, nil
+}
+
+func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error) {
+
+	var err error
+	pbModelDefinitions := make([]*modelPB.ModelDefinition, len(dbModelDefinitions))
+
+	for idx := range dbModelDefinitions {
+		pbModelDefinitions[idx], err = s.DBToPBModelDefinition(
+			ctx,
+			dbModelDefinitions[idx],
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return pbModelDefinitions, nil
 }
