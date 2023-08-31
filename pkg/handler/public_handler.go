@@ -695,20 +695,29 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		span.SetStatus(1, err.Error())
 		return err
 	}
+
 	uploadedModel.ModelDefinitionUid = modelDef.UID
-
-	// Validate ModelDefinition JSON Schema
-	pbModel, err := h.service.DBToPBModel(ctx, modelDef, uploadedModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, pbModel, true); err != nil {
-		span.SetStatus(1, err.Error())
-		return status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
 	uploadedModel.Owner = ownerPermalink
+
+	// validate model configuration
+	rs := &jsonschema.Schema{}
+	if err = json.Unmarshal([]byte(modelDef.ModelSpec.String()), rs); err != nil {
+		span.SetStatus(1, err.Error())
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	modelConfiguration := datamodel.LocalModelConfiguration{
+		Content: tmpFile,
+	}
+
+	if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
+		span.SetStatus(1, err.Error())
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	modelConfiguration.Tag = "latest"
+	bModelConfig, _ := json.Marshal(modelConfiguration)
+	uploadedModel.Configuration = bModelConfig
 
 	// extract zip file from tmp to models directory
 	readmeFilePath, ensembleFilePath, err := utils.Unzip(tmpFile, config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel)
@@ -2091,14 +2100,12 @@ func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.Deploy
 
 	// set user desired state to STATE_ONLINE
 	if _, err := h.service.UpdateUserModelState(ctx, ns, userUID, pbModel, modelPB.Model_STATE_ONLINE); err != nil {
-		fmt.Println("============================================================5")
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
 	state := modelPB.Model_STATE_OFFLINE.Enum()
 	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
 		if state, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
-			fmt.Println("============================================================6")
 			return &modelPB.DeployUserModelResponse{}, err
 		}
 		time.Sleep(100 * time.Millisecond)
