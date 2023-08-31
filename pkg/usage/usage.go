@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -46,7 +47,14 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivate
 		return nil
 	}
 
-	reporter, err := usageClient.InitReporter(ctx, usc, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version)
+	var defaultUserUID string
+	if resp, err := u.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
+		defaultUserUID = resp.GetUser().GetUid()
+	} else {
+		logger.Error(err.Error())
+	}
+
+	reporter, err := usageClient.InitReporter(ctx, usc, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version, defaultUserUID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -143,9 +151,18 @@ func (u *usage) StartReporter(ctx context.Context) {
 	}
 
 	logger, _ := logger.GetZapLogger(ctx)
+
+	var defaultUserUID string
+	if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
+		defaultUserUID = resp.GetUser().GetUid()
+	} else {
+		logger.Error(err.Error())
+		return
+	}
+
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.RetrieveUsageData)
+		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, defaultUserUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -156,8 +173,18 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 	if u.reporter == nil {
 		return
 	}
+
 	logger, _ := logger.GetZapLogger(ctx)
-	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.RetrieveUsageData())
+
+	var defaultUserUID string
+	if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
+		defaultUserUID = resp.GetUser().GetUid()
+	} else {
+		logger.Error(err.Error())
+		return
+	}
+
+	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, defaultUserUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
