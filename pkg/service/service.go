@@ -1039,26 +1039,22 @@ func (s *service) UpdateUserModelState(ctx context.Context, ns resource.Namespac
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, model.Id, modelPB.View_VIEW_FULL)
 	if err != nil {
-		fmt.Println("============================================================1")
 		return nil, err
 	}
 
 	dbState := datamodel.ModelState(state)
 
 	if err := s.repository.UpdateUserModelState(ownerPermalink, userPermalink, dbModel.UID, &dbState); err != nil {
-		fmt.Println("============================================================2")
 		return nil, err
 	}
 
 	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		fmt.Println("============================================================3")
 		return nil, err
 	}
 
 	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
 	if err != nil {
-		fmt.Println("============================================================4")
 		return nil, err
 	}
 
