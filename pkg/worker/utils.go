@@ -2,12 +2,12 @@ package worker
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type PreModelConfig struct {
@@ -70,6 +70,11 @@ var preDeployModelMap = map[string]map[string]string{
 }
 
 func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployModel, error) {
+
+	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") {
+		return nil, nil
+	}
+
 	var preDeployModelConfigs []PreModelConfig
 	err := utils.GetJSON(config.Config.InitModel.Path, &preDeployModelConfigs)
 	if err != nil {
@@ -105,7 +110,7 @@ func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployMo
 				ID:                 model.ID,
 				ModelDefinitionUid: modelDefinitionUID,
 				Owner:              model.Owner,
-				Visibility:         datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC),
+				Visibility:         model.Visibility,
 				State:              model.State,
 				Task:               model.Task,
 				Description:        model.Description,
