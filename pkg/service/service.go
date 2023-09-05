@@ -137,30 +137,6 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 // GetUser returns the api user
 func (s *service) GetUser(ctx context.Context) (string, uuid.UUID, error) {
 
-	// Verify if "authorization" is in the header
-	authorization := resource.GetRequestSingleHeader(ctx, constant.HeaderAuthorization)
-	// TODO: temporary solution to restrict cloud version from calling APIs without header
-	// need further concrete design of authentication
-	if strings.HasPrefix(config.Config.Server.Edition, "cloud") && authorization == "" {
-		return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
-	}
-	apiToken := strings.Replace(authorization, "Bearer ", "", 1)
-	if apiToken != "" {
-		ownerPermalink, err := s.redisClient.Get(context.Background(), fmt.Sprintf(constant.AccessTokenKeyFormat, apiToken)).Result()
-		if err != nil {
-			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: ownerPermalink})
-		if err != nil {
-			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
-		}
-
-		return resp.User.Id, uuid.FromStringOrNil(*resp.User.Uid), nil
-	}
 	// Verify if "jwt-sub" is in the header
 	headerUserUId := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	if headerUserUId != "" {
