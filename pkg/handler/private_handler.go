@@ -39,7 +39,7 @@ func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) 
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
 
-	pbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken(), req.GetShowDeleted())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
 	}
@@ -129,7 +129,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		}
 
 		createReq := &modelPB.CreateUserModelRequest{
-			Model: pbModel,
+			Model:  pbModel,
 			Parent: parent,
 		}
 

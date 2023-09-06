@@ -57,9 +57,9 @@ type Service interface {
 	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error)
 	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error)
 
-	ListModels(ctx context.Context, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error)
+	ListModels(ctx context.Context, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error)
 	GetModelByUID(ctx context.Context, userUID uuid.UUID, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListUserModels(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error)
+	ListUserModels(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error)
 	GetUserModelByID(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string, view modelPB.View) (*modelPB.Model, error)
 	DeleteUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string) error
 	RenameUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string, newModelID string) (*modelPB.Model, error)
@@ -83,7 +83,7 @@ type Service interface {
 
 	// Private
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error)
+	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error)
 	DeployUserModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error)
 	UndeployUserModelAsyncAdmin(ctx context.Context, userUID uuid.UUID, modelUID uuid.UUID) (string, error)
 	CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
@@ -782,11 +782,11 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 	}
 }
 
-func (s *service) ListModels(ctx context.Context, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error) {
+func (s *service) ListModels(ctx context.Context, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error) {
 
 	userPermalLink := resource.UserUidToUserPermalink(userUID)
 
-	dbModels, nextPageToken, totalSize, err := s.repository.ListModels(ctx, userPermalLink, view, pageSize, pageToken)
+	dbModels, nextPageToken, totalSize, err := s.repository.ListModels(ctx, userPermalLink, view, pageSize, pageToken, showDeleted)
 	if err != nil {
 		return nil, "", 0, err
 	}
@@ -796,12 +796,12 @@ func (s *service) ListModels(ctx context.Context, userUID uuid.UUID, view modelP
 	return pbModels, nextPageToken, totalSize, err
 }
 
-func (s *service) ListUserModels(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error) {
+func (s *service) ListUserModels(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error) {
 
 	ownerPermalink := ns.String()
 	userPermalink := resource.UserUidToUserPermalink(userUID)
 
-	dbModels, nextPageToken, totalSize, err := s.repository.ListUserModels(ctx, ownerPermalink, userPermalink, view, pageSize, pageToken)
+	dbModels, nextPageToken, totalSize, err := s.repository.ListUserModels(ctx, ownerPermalink, userPermalink, view, pageSize, pageToken, showDeleted)
 	if err != nil {
 		return nil, "", 0, err
 	}
@@ -811,9 +811,9 @@ func (s *service) ListUserModels(ctx context.Context, ns resource.Namespace, use
 	return pbModels, nextPageToken, totalSize, err
 }
 
-func (s *service) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.Model, string, int64, error) {
+func (s *service) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error) {
 
-	dbModels, nextPageToken, totalSize, err := s.repository.ListModelsAdmin(ctx, view, pageSize, pageToken)
+	dbModels, nextPageToken, totalSize, err := s.repository.ListModelsAdmin(ctx, view, pageSize, pageToken, showDeleted)
 	if err != nil {
 		return nil, "", 0, err
 	}
