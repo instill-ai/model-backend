@@ -66,11 +66,18 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	}
 
 	pbModel := modelPB.Model{
-		Name:            fmt.Sprintf("%s/models/%s", owner, dbModel.ID),
-		Uid:             dbModel.BaseDynamic.UID.String(),
-		Id:              dbModel.ID,
-		CreateTime:      timestamppb.New(dbModel.CreateTime),
-		UpdateTime:      timestamppb.New(dbModel.UpdateTime),
+		Name:       fmt.Sprintf("%s/models/%s", owner, dbModel.ID),
+		Uid:        dbModel.BaseDynamic.UID.String(),
+		Id:         dbModel.ID,
+		CreateTime: timestamppb.New(dbModel.CreateTime),
+		UpdateTime: timestamppb.New(dbModel.UpdateTime),
+		DeleteTime: func() *timestamppb.Timestamp {
+			if dbModel.DeleteTime.Time.IsZero() {
+				return nil
+			} else {
+				return timestamppb.New(dbModel.DeleteTime.Time)
+			}
+		}(),
 		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),

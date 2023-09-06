@@ -24,12 +24,12 @@ import (
 const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
-	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
+	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
 	CreatePreDeployModel(model *datamodel.PreDeployModel) error
 	GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error)
 
 	CreateUserModel(model *datamodel.Model) error
-	ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
+	ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
 	GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error)
 	UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error
 	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error
@@ -45,7 +45,7 @@ type Repository interface {
 
 	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error)
-	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error)
+	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -64,16 +64,21 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
-func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View, pageSize int, pageToken string) (models []*datamodel.Model, nextPageToken string, totalSize int64, err error) {
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View, pageSize int, pageToken string, showDeleted bool) (models []*datamodel.Model, nextPageToken string, totalSize int64, err error) {
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	if result := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize); result.Error != nil {
+	db := r.db
+	if showDeleted {
+		db = db.Unscoped()
+	}
+
+	if result := db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize); result.Error != nil {
 		logger.Error(result.Error.Error())
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where(where, whereArgs...)
+	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where(where, whereArgs...)
 
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
@@ -127,7 +132,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.Model
-		if err = r.db.ScanRows(rows, &item); err != nil {
+		if err = db.ScanRows(rows, &item); err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.Internal,
 				fmt.Sprintf("[db] list Model error: %s", err.Error()),
@@ -148,7 +153,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	if len(models) > 0 {
 		lastID := (models)[len(models)-1].ID
 		lastItem := &datamodel.Model{}
-		if result := r.db.Model(&datamodel.Model{}).
+		if result := db.Model(&datamodel.Model{}).
 			Where(where, whereArgs...).
 			Order("create_time ASC, id ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
@@ -164,24 +169,24 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	return models, nextPageToken, totalSize, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
+func (r *repository) ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
 	return r.listModels(ctx,
 		"(owner = ? OR visibility = ?)",
 		[]interface{}{userPermalink, VisibilityPublic},
-		view, pageSize, pageToken,
+		view, pageSize, pageToken, showDeleted,
 	)
 }
 
-func (r *repository) ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
+func (r *repository) ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
 	return r.listModels(ctx,
 		"(owner = ? AND (visibility = ? OR ? = ?))",
 		[]interface{}{ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
-		view, pageSize, pageToken,
+		view, pageSize, pageToken, showDeleted,
 	)
 }
 
-func (r *repository) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*datamodel.Model, string, int64, error) {
-	return r.listModels(ctx, "", []interface{}{}, view, pageSize, pageToken)
+func (r *repository) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
+	return r.listModels(ctx, "", []interface{}{}, view, pageSize, pageToken, showDeleted)
 }
 
 func (r *repository) getUserModel(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View) (*datamodel.Model, error) {

@@ -1571,7 +1571,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	pbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListModels(ctx, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken(), req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -1711,7 +1711,7 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 		return &modelPB.ListUserModelsResponse{}, err
 	}
 
-	pbModels, nextPageToken, totalSize, err := h.service.ListUserModels(ctx, ns, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModels, nextPageToken, totalSize, err := h.service.ListUserModels(ctx, ns, userUID, req.GetView(), int(req.GetPageSize()), req.GetPageToken(), req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListUserModelsResponse{}, err
