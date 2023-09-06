@@ -160,6 +160,18 @@
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "text"
+    },
+    "delete_time": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "title": "Delete time",
+      "description": "The date when the model is deleted in the format YYYY-MM-DDTHH:MM::SS.",
+      "examples": ["2022-04-29T01:33:34.910865Z"],
+      "readOnly": true,
+      "ui_order": 9,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
     }
   }
 }
