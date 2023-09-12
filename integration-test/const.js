@@ -1,10 +1,6 @@
-let proto, host, publicPort, privatePort, mgmtHost, mgmtPrivatePort
+let proto
 
-if (__ENV.API_GATEWAY_MODEL_HOST && !__ENV.API_GATEWAY_MODEL_PORT || !__ENV.API_GATEWAY_MODEL_HOST && __ENV.API_GATEWAY_MODEL_PORT) {
-  fail("both API_GATEWAY_MODEL_HOST and API_GATEWAY_MODEL_PORT should be properly configured.")
-}
-
-export const apiGatewayMode = (__ENV.API_GATEWAY_MODEL_HOST && __ENV.API_GATEWAY_MODEL_PORT);
+export const apiGatewayMode = (__ENV.API_GATEWAY_URL && true);
 
 if (__ENV.API_GATEWAY_PROTOCOL) {
   if (__ENV.API_GATEWAY_PROTOCOL !== "http" && __ENV.API_GATEWAY_PROTOCOL != "https") {
@@ -15,34 +11,17 @@ if (__ENV.API_GATEWAY_PROTOCOL) {
   proto = "http"
 }
 
-if (apiGatewayMode) {
-  // api gateway mode
-  host = __ENV.API_GATEWAY_MODEL_HOST
-  publicPort = __ENV.API_GATEWAY_MODEL_PORT
-  privatePort = 3083
-  mgmtHost = __ENV.API_GATEWAY_MODEL_PORT
-  mgmtPrivatePort = 3084
-} else {
-  // direct microservice mode
-  host = "model-backend"
-  publicPort = 8083
-  privatePort = 3083
-  mgmtHost = "mgmt-backend"
-  mgmtPrivatePort = 3084
-}
-
 export const defaultUserId = "instill-ai"
-
 export const namespace = "users/instill-ai"
 
-export const gRPCPrivateHost = `${host}:${privatePort}`
-export const apiPrivateHost = `${proto}://${host}:${privatePort}`
+export const gRPCPrivateHost = "model-backend:3083"
+export const apiPrivateHost = "http://model-backend:3083"
 
-export const gRPCPublicHost = `${host}:${publicPort}`
-export const apiPublicHost = `${proto}://${host}:${publicPort}`
+export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}/model` : `model-backend:8083`
+export const apiPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/model` : `http://model-backend:8083`
 
-export const mgmtGRPCPrivateHost = `${mgmtHost}:${mgmtPrivatePort}`
-export const mgmtApiPrivateHost = `${proto}://${mgmtHost}:${mgmtPrivatePort}`
+export const mgmtGRPCPrivateHost = "mgmt-backend:3084"
+export const mgmtApiPrivateHost = "http://mgmt-backend:3084"
 
 export const cls_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test/data/dummy-cls-model.zip`, "b");
 export const det_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-det-model.zip`, "b");
