@@ -58,6 +58,11 @@ $ docker exec -it model-backend /bin/bash
 $ make integration-test
 ```
 
+#### Run with api-gateway mode
+```bash
+$ make integration-test API_GATEWAY_URL=localhost:8080
+```
+
 ### Stop the dev container
 
 ```bash
