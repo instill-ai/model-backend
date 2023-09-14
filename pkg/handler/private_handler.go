@@ -47,7 +47,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 	resp := modelPB.ListModelsAdminResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
+		TotalSize:     int32(totalSize),
 	}
 
 	return &resp, nil
