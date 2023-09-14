@@ -79,7 +79,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 	var fileData *modelPB.TriggerUserModelBinaryFileUploadRequest
 
 	var allContentFiles []byte
-	var fileLengths []uint64
+	var fileLengths []uint32
 
 	var textToImageInput *triton.TextToImageInput
 	var textGeneration *triton.TextGenerationInput
@@ -124,19 +124,19 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
+					Steps:    int64(*fileData.TaskInput.GetTextToImage().Steps),
 					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
-					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+					Seed:     int64(*fileData.TaskInput.GetTextToImage().Seed),
+					Samples:  int64(*fileData.TaskInput.GetTextToImage().Samples),
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
+					OutputLen:     int64(*fileData.TaskInput.GetTextGeneration().OutputLen),
 					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
-					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+					TopK:          int64(*fileData.TaskInput.GetTextGeneration().Topk),
+					Seed:          int64(*fileData.TaskInput.GetTextGeneration().Seed),
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -172,7 +172,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
-		start := uint64(0)
+		start := uint32(0)
 		for i := 0; i < len(fileLengths); i++ {
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
@@ -203,7 +203,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 	var textGeneration *triton.TextGenerationInput
 
 	var allContentFiles []byte
-	var fileLengths []uint64
+	var fileLengths []uint32
 	for {
 		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
 		if err != nil {
@@ -244,19 +244,19 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
+					Steps:    int64(*fileData.TaskInput.GetTextToImage().Steps),
 					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
-					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+					Seed:     int64(*fileData.TaskInput.GetTextToImage().Seed),
+					Samples:  int64(*fileData.TaskInput.GetTextToImage().Samples),
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
+					OutputLen:     int64(*fileData.TaskInput.GetTextGeneration().OutputLen),
 					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
-					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+					TopK:          int64(*fileData.TaskInput.GetTextGeneration().Topk),
+					Seed:          int64(*fileData.TaskInput.GetTextGeneration().Seed),
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -291,7 +291,7 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 			return nil, "", fmt.Errorf("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
-		start := uint64(0)
+		start := uint32(0)
 		for i := 0; i < len(fileLengths); i++ {
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
@@ -1589,7 +1589,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	resp := modelPB.ListModelsResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
+		TotalSize:     int32(totalSize),
 	}
 
 	return &resp, nil
@@ -1729,7 +1729,7 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUse
 	resp := modelPB.ListUserModelsResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
-		TotalSize:     totalSize,
+		TotalSize:     int32(totalSize),
 	}
 
 	return &resp, nil
@@ -3157,7 +3157,7 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 	resp := modelPB.ListModelDefinitionsResponse{
 		ModelDefinitions: pbModelDefinitions,
 		NextPageToken:    nextPageToken,
-		TotalSize:        totalSize,
+		TotalSize:        int32(totalSize),
 	}
 
 	return &resp, nil
