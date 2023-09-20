@@ -1,4 +1,4 @@
-import http from "k6/http";
+import http, { head } from "k6/http";
 import {
   check,
   group
@@ -30,9 +30,28 @@ export let options = {
   },
 };
 
-export function setup() { }
+export function setup() {
+  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1alpha/auth/login`, JSON.stringify({
+    "username": constant.defaultUserId,
+    "password": constant.defaultPassword,
+  }))
 
-export default function (data) {
+  check(loginResp, {
+    [`POST ${constant.mgmtPublicHost}/v1alpha//auth/login response status is 200`]: (
+      r
+    ) => r.status === 200,
+  });
+
+  var header = {
+    "headers": {
+      "Authorization": `Bearer ${loginResp.json().access_token}`
+    },
+    "timeout": "600s",
+  }
+  return header
+}
+
+export default function (header) {
   /*
    * Model API - API CALLS
    */
@@ -40,7 +59,7 @@ export default function (data) {
   // Health check
   {
     group("Model API: health check", () => {
-      check(http.request("GET", `${constant.apiPublicHost}/v1alpha/health/model`), {
+      check(http.request("GET", `${constant.apiPublicHost}/v1alpha/health/model`, null, header), {
         "GET /v1alpha/health/model response status is 200": (r) => r.status === 200,
       });
     });
@@ -48,60 +67,56 @@ export default function (data) {
 
   // Query Model API by admin
   if (!constant.apiGatewayMode) {
-    queryModelPrivate.ListModelsAdmin()
-    queryModelPrivate.LookupModelAdmin()
+    queryModelPrivate.ListModelsAdmin(header)
+    queryModelPrivate.LookupModelAdmin(header)
     // private deploy will be trigger by public deploy
     // deployModelPrivate.DeployUndeployModel()
   }
+  else {
 
-  // Infer Model API
-  inferModel.InferModel()
+    // Infer Model API
+    inferModel.InferModel(header)
 
-  // Create Model API
-  createModel.CreateModelFromLocal()
-  createModel.CreateModelFromGitHub()
+    // Create Model API
+    createModel.CreateModelFromLocal(header)
+    createModel.CreateModelFromGitHub(header)
 
-  // Query Model API
-  queryModel.GetModel()
-  queryModel.ListModels()
-  queryModel.LookupModel()
+    // Query Model API
+    queryModel.GetModel(header)
+    queryModel.ListModels(header)
+    queryModel.LookupModel(header)
 
-  // Deploy/Undeploy Model API
-  deployModel.DeployUndeployModel()
+    // Deploy/Undeploy Model API
+    deployModel.DeployUndeployModel(header)
 
-  // Publish/Unpublish Model API
-  publishModel.PublishUnpublishModel()
+    // Publish/Unpublish Model API
+    publishModel.PublishUnpublishModel(header)
 
-  // Update Model API
-  updateModel.UpdateModel()
+    // Update Model API
+    updateModel.UpdateModel(header)
 
-  // Query Model Definition API
-  queryModelDefinition.GetModelDefinition()
-  queryModelDefinition.ListModelDefinitions()
+    // Query Model Definition API
+    queryModelDefinition.GetModelDefinition(header)
+    queryModelDefinition.ListModelDefinitions(header)
 
-  // Get model card
-  getModelCard.GetModelCard()
+    // Get model card
+    getModelCard.GetModelCard(header)
 
-  // Long-running Operation
-  longrunningOperation.GetLongRunningOperation()
+    // Long-running Operation
+    longrunningOperation.GetLongRunningOperation(header)
+  }
 }
 
-export function teardown(data) {
+export function teardown(header) {
   group("Model API: Delete all models created by this test", () => {
     for (const model of http
-      .request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, null, {
-        headers: genHeader(
-          "application/json"
-        ),
-      })
+      .request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, null, header)
       .json("models")) {
       check(model, {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });
       check(
-        http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model.id}`, null, {
-          headers: genHeader("application/json"),
-        }), {
+        http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model.id}`, null, header), {
         [`DELETE /v1alpha/models/${model.id} response status is 204`]: (r) =>
           r.status === 204,
       }

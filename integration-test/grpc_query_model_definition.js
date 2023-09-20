@@ -13,12 +13,12 @@ client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/github"
 
-export function GetModelDefinition() {
+export function GetModelDefinition(header) {
   group("Model API: GetModelDefinition", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModelDefinition', { name: model_def_name }, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/GetModelDefinition', { name: model_def_name }, header), {
       "GetModelDefinition response status": (r) => r.status === grpc.StatusOK,
       "GetModelDefinition response modelDefinition.name": (r) => r.message.modelDefinition.name === model_def_name,
       "GetModelDefinition response modelDefinition.uid": (r) => r.message.modelDefinition.uid !== undefined,
@@ -34,12 +34,12 @@ export function GetModelDefinition() {
   });
 };
 
-export function ListModelDefinitions() {
+export function ListModelDefinitions(header) {
   group("Model API: ListModelDefinitions", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    check(client.invoke('model.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/ListModelDefinitions', {}, header), {
       "ListModelDefinitions response status": (r) => r.status === grpc.StatusOK,
       "ListModelDefinitions response modelDefinitions[2].name": (r) => r.message.modelDefinitions[2].name === "model-definitions/local",
       "ListModelDefinitions response modelDefinitions[2].uid": (r) => r.message.modelDefinitions[2].uid !== undefined,

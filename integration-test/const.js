@@ -11,14 +11,19 @@ if (__ENV.API_GATEWAY_PROTOCOL) {
   proto = "http"
 }
 
-export const defaultUserId = "instill-ai"
-export const namespace = "users/instill-ai"
+export const defaultUserId = "admin"
+export const namespace = "users/admin"
+export const defaultPassword = "password"
+
 
 export const gRPCPrivateHost = "model-backend:3083"
 export const apiPrivateHost = "http://model-backend:3083"
 
-export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `model-backend:8083`
-export const apiPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/model` : `http://model-backend:8083`
+export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-gateway:8080`
+export const apiPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/model` : `http://api-gateway:8080/model`
+
+export const mgmtGRPCPublicHost =  apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-gateway:8080`
+export const mgmtPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/base` : `http://api-gateway:8080/base`
 
 export const mgmtGRPCPrivateHost = "mgmt-backend:3084"
 export const mgmtApiPrivateHost = "http://mgmt-backend:3084"

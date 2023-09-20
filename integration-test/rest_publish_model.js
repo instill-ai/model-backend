@@ -20,7 +20,7 @@ import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/local"
 
-export function PublishUnpublishModel() {
+export function PublishUnpublishModel(header) {
   // Model Backend API: PublishModel
   {
     group("Model Backend API: PublishModel", function () {
@@ -32,7 +32,7 @@ export function PublishUnpublishModel() {
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -45,9 +45,7 @@ export function PublishUnpublishModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -55,9 +53,7 @@ export function PublishUnpublishModel() {
         currentTime = new Date().getTime();
       }
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, header), {
         [`POST /v1alpha/models/${model_id}/publish task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.name`]: (r) =>
@@ -82,9 +78,7 @@ export function PublishUnpublishModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, header), {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response status`]: (r) =>
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.name`]: (r) =>
@@ -109,24 +103,18 @@ export function PublishUnpublishModel() {
           r.json().model.update_time !== undefined,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/publish`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/publish`, null, header), {
         [`POST /v1alpha/models/${model_id}/publish task cls response not found status`]: (r) => r.status === 404,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/unpublish`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/unpublish`, null, header), {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response not found status`]: (r) => r.status === 404,
       });
 
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state !== "STATE_UNSPECIFIED") {
           break
         }
@@ -135,9 +123,7 @@ export function PublishUnpublishModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });

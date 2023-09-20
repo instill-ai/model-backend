@@ -27,7 +27,7 @@ client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 const model_def_name = "model-definitions/local"
 
 
-export function UpdateUserModel() {
+export function UpdateUserModel(header) {
   // UpdateModel check
   group("Model API: UpdateUserModel", () => {
     client.connect(constant.gRPCPublicHost, {
@@ -42,12 +42,12 @@ export function UpdateUserModel() {
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -57,7 +57,7 @@ export function UpdateUserModel() {
     while (timeoutTime > currentTime) {
       let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -70,7 +70,7 @@ export function UpdateUserModel() {
         description: "new_description"
       },
       update_mask: "description"
-    })
+    }, header)
     check(res, {
       "UpdateModel response status": (r) => r.status === grpc.StatusOK,
       "UpdateModel response model.name": (r) => r.message.model.name === `${constant.namespace}/models/${model_id}`,
@@ -89,7 +89,7 @@ export function UpdateUserModel() {
     while (timeoutTime > currentTime) {
       let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
       }
@@ -98,7 +98,7 @@ export function UpdateUserModel() {
     }
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
     client.close();

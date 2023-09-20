@@ -22,9 +22,28 @@ export let options = {
   },
 };
 
-export function setup() {}
+export function setup() {
+  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1alpha/auth/login`, JSON.stringify({
+    "username": constant.defaultUserId,
+    "password": constant.defaultPassword,
+  }))
 
-export default function (data) {
+  check(loginResp, {
+    [`POST ${constant.mgmtPublicHost}/v1alpha//auth/login response status is 200`]: (
+      r
+    ) => r.status === 200,
+  });
+
+  var header = {
+    "headers": {
+      "Authorization": `Bearer ${loginResp.json().access_token}`
+    },
+    "timeout": "600s",
+  }
+  return header
+}
+
+export default function (header) {
   /*
    * Model API - API CALLS
    */
@@ -40,29 +59,29 @@ export default function (data) {
 
   if (!constant.apiGatewayMode) {
     // Test Model API
-    testModel.TestModel()
+    testModel.TestModel(header)
 
     // Create Model API
-    createModel.CreateModelFromLocal()
-    createModel.CreateModelFromGitHub()
+    createModel.CreateModelFromLocal(header)
+    createModel.CreateModelFromGitHub(header)
 
     // Query Model API
-    queryModel.GetModel()
-    queryModel.ListModels()
-    queryModel.LookupModel()
+    queryModel.GetModel(header)
+    queryModel.ListModels(header)
+    queryModel.LookupModel(header)
 
     // Deploy/Undeploy Model API
-    deployModel.DeployUndeployModel()
+    deployModel.DeployUndeployModel(header)
 
     // Publish/Unpublish Model API
-    publishModel.PublishUnpublishModel()
+    publishModel.PublishUnpublishModel(header)
 
     // Update Model API
-    updateModel.UpdateModel()
+    updateModel.UpdateModel(header)
 
     // Get model card
-    getModelCard.GetModelCard()
+    getModelCard.GetModelCard(header)
   }
 }
 
-export function teardown(data) {}
+export function teardown(header) {}

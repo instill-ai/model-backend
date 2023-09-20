@@ -14,18 +14,16 @@ import {
 
 import {
   genHeader,
-  genHeaderwithJwtSub,
+  genHeaderWithRandomAuth,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
 
 
-export function CreateModelFromLocal() {
+export function CreateModelFromLocal(header) {
   // Model Backend API: upload model
   {
-    let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, {
-      headers: genHeader(`application/json`),
-    })
+    let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
     let userUid = resp.json().user.uid
 
     let fd_cls = new FormData();
@@ -38,7 +36,7 @@ export function CreateModelFromLocal() {
 
     group(`Model Backend API: CreateModelFromLocal [with random "jwt-sub" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd_cls.boundary}`, uuidv4()),
       })
 
       check(createClsModelRes, {
@@ -49,7 +47,7 @@ export function CreateModelFromLocal() {
 
     group(`Model Backend API: CreateModelFromLocal [with default user "jwt-sub" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
         [`[with default user "jwt-sub" header] POST /v1alpha/models/multipart task cls response status 201`]: (r) =>
@@ -60,9 +58,7 @@ export function CreateModelFromLocal() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -73,9 +69,7 @@ export function CreateModelFromLocal() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state !== "STATE_UNSPECIFIED") {
           break
         }
@@ -85,15 +79,13 @@ export function CreateModelFromLocal() {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 401`]: (r) =>
           r.status === 401
       });
 
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });
@@ -101,11 +93,9 @@ export function CreateModelFromLocal() {
   }
 }
 
-export function CreateModelFromGitHub() {
+export function CreateModelFromGitHub(header) {
   // Model Backend API: upload model by GitHub
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, {
-    headers: genHeader(`application/json`),
-  })
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   {
@@ -114,14 +104,14 @@ export function CreateModelFromGitHub() {
       "id": model_id,
       "model_definition": "model-definitions/github",
       "configuration": {
-        "repository": "instill-ai/model-dummy-cls",
+        "repository": "admin/model-dummy-cls",
         "tag": "v1.0-cpu"
       }
     })
 
     group(`Model Backend API: Upload a model by GitHub [with random "jwt-sub" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, payload, {
-        headers: genHeaderwithJwtSub("application/json", uuidv4()),
+        headers: genHeaderWithRandomAuth("application/json", uuidv4()),
       })
 
       check(createClsModelRes, {
@@ -131,9 +121,7 @@ export function CreateModelFromGitHub() {
     });
 
     group(`Model Backend API: Upload a model by GitHub [with default user "jwt-sub" header]`, function () {
-      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, payload, {
-        headers: genHeaderwithJwtSub("application/json", userUid),
-      })
+      let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, payload, header)
       check(createClsModelRes, {
         [`[with default user "jwt-sub" header] POST /v1alpha/models task cls response status 201`]: (r) =>
           r.status === 201,
@@ -141,7 +129,7 @@ export function CreateModelFromGitHub() {
 
       // Check model creation finished
       check(http.request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/watch status 401`]: (r) =>
           r.status === 401
@@ -150,9 +138,7 @@ export function CreateModelFromGitHub() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -163,9 +149,7 @@ export function CreateModelFromGitHub() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state !== "STATE_UNSPECIFIED") {
           break
         }
@@ -175,15 +159,13 @@ export function CreateModelFromGitHub() {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status not 204`]: (r) =>
           r.status !== 204
       });
 
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });

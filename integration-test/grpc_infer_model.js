@@ -4,7 +4,7 @@ import {
   group,
   sleep
 } from 'k6';
-import http from "k6/http";
+import http, { head } from "k6/http";
 import {
   FormData
 } from "https://jslib.k6.io/formdata/0.0.2/index.js";
@@ -26,7 +26,7 @@ client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 const model_def_name = "model-definitions/local"
 
 
-export function TriggerUserModel() {
+export function TriggerUserModel(header) {
   // TriggerModel check
   group("Model API: TriggerUserModel", () => {
     client.connect(constant.gRPCPublicHost, {
@@ -41,12 +41,12 @@ export function TriggerUserModel() {
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -56,7 +56,7 @@ export function TriggerUserModel() {
     while (timeoutTime > currentTime) {
       let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -67,7 +67,7 @@ export function TriggerUserModel() {
     let req = {
       name: `${constant.namespace}/models/${model_id}`
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel model name': (r) => r && r.message.modelId === model_id
     });
@@ -78,7 +78,7 @@ export function TriggerUserModel() {
     while (timeoutTime > currentTime) {
       var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state === "STATE_ONLINE") {
         break
       }
@@ -90,7 +90,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
-    }, {})
+    }, header)
     check(res, {
       'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
       'TriggerModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
@@ -103,7 +103,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
       }]
-    }, {}), {
+    }, header), {
       'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
       'TriggerModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
       'TriggerModel output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category !== undefined,
@@ -116,7 +116,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
     });
 
@@ -125,13 +125,13 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TriggerModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
     client.close();
@@ -151,12 +151,12 @@ export function TriggerUserModel() {
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -166,7 +166,7 @@ export function TriggerUserModel() {
     while (timeoutTime > currentTime) {
       let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -177,7 +177,7 @@ export function TriggerUserModel() {
     let req = {
       name: `${constant.namespace}/models/${model_id}`
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel model name': (r) => r && r.message.modelId === model_id
     });
@@ -188,7 +188,7 @@ export function TriggerUserModel() {
     while (timeoutTime > currentTime) {
       var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state === "STATE_ONLINE") {
         break
       }
@@ -201,7 +201,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TestModel status': (r) => r && r.status === grpc.StatusOK,
       'TestModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
       'TestModel output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
@@ -213,7 +213,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
       }]
-    }, {}), {
+    }, header), {
       'TestModel status': (r) => r && r.status === grpc.StatusOK,
       'TestModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
       'TestModel output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category !== undefined,
@@ -225,7 +225,7 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TestModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
     });
 
@@ -234,13 +234,13 @@ export function TriggerUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TestModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
     client.close();
