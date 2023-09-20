@@ -7,6 +7,7 @@
 ## Local dev
 
 On the local machine, clone `model` repository in your workspace, move to the repository folder, and launch all dependent microservices:
+
 ```
 $ cd <your-workspace>
 $ git clone https://github.com/instill-ai/model.git
@@ -15,6 +16,7 @@ $ make latest PROFILE=model
 ```
 
 Clone `model-backend` repository in your workspace and move to the repository folder:
+
 ```
 $ cd <your-workspace>
 $ git clone https://github.com/instill-ai/model-backend.git
@@ -53,12 +55,13 @@ $ CFG_SERVER_ITMODE_ENABLED=true go run ./cmd/worker
 
 ### Run the integration test
 
-``` bash
+```bash
 $ docker exec -it model-backend /bin/bash
 $ make integration-test
 ```
 
 #### Run with api-gateway mode
+
 ```bash
 $ make integration-test API_GATEWAY_URL=localhost:8080
 ```
@@ -79,6 +82,10 @@ $ make stop
 Once the release PR is merged to the `main` branch, the [release-please-action](https://github.com/google-github-actions/release-please-action) will tag and release a version correspondingly.
 
 The images are pushed to Docker Hub [repository](https://hub.docker.com/r/instill/model-backend).
+
+## Contributing
+
+Please refer to the [Contributing Guidelines](https://github.com/instill-ai/model/blob/main/.github/CONTRIBUTING.md) for more details.
 
 ## License
 
