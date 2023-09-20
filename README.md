@@ -2,15 +2,15 @@
 
 [![Integration Test](https://github.com/instill-ai/model-backend/actions/workflows/integration-test.yml/badge.svg)](https://github.com/instill-ai/model-backend/actions/workflows/integration-test.yml)
 
-`model-backend` manages all model resources including model definitions and model instances within [Versatile Data Pipeline (VDP)](https://github.com/instill-ai/vdp) to convert the unstructured data to meaningful data representations.
+`model-backend` manages all model resources including model definitions and model instances within [Instill Model](https://github.com/instill-ai/model) to convert the unstructured data to meaningful data representations.
 
 ## Local dev
 
-On the local machine, clone `vdp` repository in your workspace, move to the repository folder, and launch all dependent microservices:
+On the local machine, clone `model` repository in your workspace, move to the repository folder, and launch all dependent microservices:
 ```
 $ cd <your-workspace>
-$ git clone https://github.com/instill-ai/vdp.git
-$ cd vdp
+$ git clone https://github.com/instill-ai/model.git
+$ cd model
 $ make latest PROFILE=model
 ```
 
