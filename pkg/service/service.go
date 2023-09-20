@@ -152,7 +152,7 @@ func (s *service) GetUser(ctx context.Context) (string, uuid.UUID, error) {
 		return resp.User.Id, uuid.FromStringOrNil(headerUserUId), nil
 	}
 
-	return constant.DefaultUserID, s.defaultUserUid, nil
+	return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
 }
 
 func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) {
