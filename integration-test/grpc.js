@@ -1,4 +1,5 @@
 import grpc from 'k6/net/grpc';
+import http from 'k6/http';
 import {
   check,
   group
@@ -31,9 +32,29 @@ client.load(['proto/model/model/v1alpha'], 'model.proto');
 client.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
 client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
-export function setup() { }
+export function setup() {
+  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1alpha/auth/login`, JSON.stringify({
+    "username": constant.defaultUserId,
+    "password": constant.defaultPassword,
+  }))
 
-export default () => {
+  check(loginResp, {
+    [`POST ${constant.mgmtPublicHost}/v1alpha/auth/login response status is 200`]: (
+      r
+    ) => r.status === 200,
+  });
+
+  var metadata = {
+    "metadata": {
+      "Authorization": `Bearer ${loginResp.json().access_token}`
+    },
+    "timeout": "600s",
+  }
+
+  return metadata
+}
+
+export default (header) => {
   // Liveness check
   {
     group("Model API: Liveness", () => {
@@ -51,39 +72,41 @@ export default () => {
 
   // Private API
   if (!constant.apiGatewayMode) {
-    queryModelPrivate.ListModels()
-    queryModelPrivate.LookUpModel()
-    deployModelPrivate.CheckModel()
+    queryModelPrivate.ListModels(header)
+    queryModelPrivate.LookUpModel(header)
+    deployModelPrivate.CheckModel(header)
     // private deploy will be triggered by public deploy
     // deployModelPrivate.DeployUndeployModel()
   }
+  else {
 
-  // Update model API
-  updateModel.UpdateUserModel()
+    // Update model API
+    updateModel.UpdateUserModel(header)
 
-  // Create model API
-  createModel.CreateUserModel()
+    // Create model API
+    createModel.CreateUserModel(header)
 
-  // Deploy Model API
-  deployModel.DeployUndeployUserModel()
+    // Deploy Model API
+    deployModel.DeployUndeployUserModel(header)
 
-  // Query Model API
-  queryModel.GetUserModel()
-  queryModel.ListUserModels()
-  queryModel.LookupModel()
+    // Query Model API
+    queryModel.GetUserModel(header)
+    queryModel.ListUserModels(header)
+    queryModel.LookupModel(header)
 
-  // Publish Model API
-  publishModel.PublishUnPublishUserModel()
+    // Publish Model API
+    publishModel.PublishUnPublishUserModel(header)
 
-  // Trigger Model API
-  triggerModel.TriggerUserModel()
+    // Trigger Model API
+    triggerModel.TriggerUserModel(header)
 
-  // Query Model Definition API
-  queryModelDefinition.GetModelDefinition()
-  queryModelDefinition.ListModelDefinitions()
+    // Query Model Definition API
+    queryModelDefinition.GetModelDefinition(header)
+    queryModelDefinition.ListModelDefinitions(header)
+  }
 };
 
-export function teardown() {
+export function teardown(header) {
   client.connect(constant.gRPCPublicHost, {
     plaintext: true
   });

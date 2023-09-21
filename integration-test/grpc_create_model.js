@@ -17,13 +17,13 @@ import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/github"
 
-export function CreateUserModel() {
+export function CreateUserModel(header) {
   // CreateModelBinaryFileUpload check
   group("Model API: CreateUserModelBinaryFileUpload", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModelBinaryFileUpload', {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModelBinaryFileUpload', {}, header), {
       'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
     });
 
@@ -42,12 +42,12 @@ export function CreateUserModel() {
         id: model_id,
         model_definition: model_def_name,
         configuration: {
-          repository: "instill-ai/model-dummy-cls",
+          repository: "admin/model-dummy-cls",
           tag: "v1.0-cpu"
         }
       },
       parent: constant.namespace,
-    })
+    }, header)
     check(createOperationRes, {
       'CreateUserModel status': (r) => r && r.status === grpc.StatusOK,
       'CreateUserModel operation name': (r) => r && r.message.operation.name !== undefined,
@@ -59,7 +59,7 @@ export function CreateUserModel() {
     while (timeoutTime > currentTime) {
       let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createOperationRes.message.operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -70,7 +70,7 @@ export function CreateUserModel() {
     let req = {
       name: `${constant.namespace}/models/${model_id}`
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, {}), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
       'DeployUserModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployUserModel model name': (r) => r && r.message.modelId === model_id
     });
@@ -81,7 +81,7 @@ export function CreateUserModel() {
     while (timeoutTime > currentTime) {
       var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state === "STATE_ONLINE") {
         break
       }
@@ -93,7 +93,7 @@ export function CreateUserModel() {
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
-    }, {}), {
+    }, header), {
       'TriggerUserModel status': (r) => r && r.status === grpc.StatusOK,
       'TriggerUserModel output classification_outputs length': (r) => r && r.message.taskOutputs.length === 1,
       'TriggerUserModel output classification_outputs category': (r) => r && r.message.taskOutputs[0].classification.category === "match",
@@ -105,12 +105,12 @@ export function CreateUserModel() {
         id: randomString(10),
         model_definition: randomString(10),
         configuration: {
-          repository: "instill-ai/model-dummy-cls",
+          repository: "admin/model-dummy-cls",
           tag: "v1.0-cpu"
         }
       },
       parent: constant.namespace,
-    }), {
+    }, header), {
       'status': (r) => r && r.status == grpc.StatusInvalidArgument,
     });
 
@@ -118,12 +118,12 @@ export function CreateUserModel() {
       model: {
         model_definition: model_def_name,
         configuration: {
-          repository: "instill-ai/model-dummy-cls",
+          repository: "admin/model-dummy-cls",
           tag: "v1.0-cpu"
         }
       },
       parent: constant.namespace,
-    }), {
+    }, header), {
       'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
     });
 
@@ -131,11 +131,11 @@ export function CreateUserModel() {
       model: {
         model_definition: model_def_name,
         configuration: {
-          repository: "instill-ai/model-dummy-cls",
+          repository: "admin/model-dummy-cls",
           tag: "v1.0-cpu"
         }
       }
-    }), {
+    }, header), {
       'missing namespace': (r) => r && r.status == grpc.StatusInvalidArgument,
     });
 
@@ -145,13 +145,13 @@ export function CreateUserModel() {
         model_definition: model_def_name,
       },
       parent: constant.namespace,
-    }), {
+    }, header), {
       'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
 

@@ -15,7 +15,7 @@ import {
 import {
   genHeader,
   base64_image,
-  genHeaderwithJwtSub,
+  genHeaderWithRandomAuth,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -23,12 +23,10 @@ import * as constant from "./const.js"
 const model_def_name = "model-definitions/local"
 
 
-export function TestModel() {
+export function TestModel(header) {
   // Model Backend API: Predict Model with classification model
   // Model Backend API: load model online
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, {
-    headers: genHeader(`application/json`),
-  })
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   let fd_cls = new FormData();
@@ -42,16 +40,14 @@ export function TestModel() {
   {
     group(`Model Backend API: Predict Model with classification model [with random "jwt-sub" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
 
       // Check model creation finished
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -59,16 +55,12 @@ export function TestModel() {
         currentTime = new Date().getTime();
       }
 
-      http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      })
+      http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header)
 
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state === "STATE_ONLINE") {
           break
         }
@@ -86,15 +78,13 @@ export function TestModel() {
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 200`]: (r) =>
           r.status === 200,
       });
@@ -114,14 +104,12 @@ export function TestModel() {
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
@@ -136,15 +124,13 @@ export function TestModel() {
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 200`]: (r) =>
           r.status === 200,
       });
@@ -165,15 +151,13 @@ export function TestModel() {
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
@@ -183,14 +167,14 @@ export function TestModel() {
       fd.append("file", http.file(constant.dog_img));
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, userUid),
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 200`]: (r) =>
           r.status === 200,
@@ -203,23 +187,21 @@ export function TestModel() {
       fd.append("file", http.file(constant.bear_img));
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd.boundary}`, userUid),
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
           r.status === 204
       });

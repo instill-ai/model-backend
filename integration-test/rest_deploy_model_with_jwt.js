@@ -13,18 +13,16 @@ import {
 } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 import {
-  genHeader, genHeaderwithJwtSub,
+  genHeader, genHeaderWithRandomAuth,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
 
 const model_def_name = "model-definitions/local"
 
-export function DeployUndeployModel() {
+export function DeployUndeployModel(header) {
   // Model Backend API: load model online
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, {
-    headers: genHeader(`application/json`),
-  })
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   {
@@ -35,7 +33,7 @@ export function DeployUndeployModel() {
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeaderwithJwtSub(`multipart/form-data; boundary=${fd_cls.boundary}`, userUid),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -46,9 +44,7 @@ export function DeployUndeployModel() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -57,15 +53,13 @@ export function DeployUndeployModel() {
       }
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 200`]: (r) =>
           r.status === 200,
       });
@@ -73,9 +67,7 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state === "STATE_ONLINE") {
           break
         }
@@ -84,15 +76,13 @@ export function DeployUndeployModel() {
       }
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/undeploy`, {}, {
-        headers: genHeaderwithJwtSub(`application/json`, uuidv4()),
+        headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
         [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/undeploy`, {}, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/undeploy`, {}, header), {
         [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 200`]: (r) =>
           r.status === 200,
       });
@@ -100,9 +90,7 @@ export function DeployUndeployModel() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeaderwithJwtSub(`application/json`, userUid),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state === "STATE_OFFLINE") {
           break
         }
@@ -111,9 +99,7 @@ export function DeployUndeployModel() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeaderwithJwtSub(`application/json`, userUid),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         [`[with default "jwt-sub" header] DELETE clean up response status`]: (r) =>
           r.status === 204
       });

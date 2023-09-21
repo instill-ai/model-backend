@@ -21,7 +21,7 @@ import * as constant from "./const.js"
 const model_def_name = "model-definitions/local"
 
 
-export function GetLongRunningOperation() {
+export function GetLongRunningOperation(header) {
   // Model Backend API: Predict Model with classification model
   {
     group("Model Backend API: Get LongRunning Operation", function () {
@@ -33,7 +33,7 @@ export function GetLongRunningOperation() {
       fd_cls.append("model_definition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -44,9 +44,7 @@ export function GetLongRunningOperation() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
@@ -57,7 +55,7 @@ export function GetLongRunningOperation() {
       // TODO: public endpoint of deploy/undeploy is not longrunning anymore, need test revise
 
       let operationRes = http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
-        headers: genHeader(`application/json`),
+        headers: genHeader(`application/json`, header.headers.Authorization),
       })
       check(operationRes, {
         [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
@@ -71,9 +69,7 @@ export function GetLongRunningOperation() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state === "STATE_UNSPECIFIED") {
           break
         }
@@ -82,7 +78,7 @@ export function GetLongRunningOperation() {
       }
 
       // check(http.get(`${constant.apiPublicHost}/v1alpha/${operationRes.json().operation.name}`, {}, {
-      //   headers: genHeader(`application/json`),
+      //   headers: genHeader(`application/json`, header.headers.Authorization),
       // }), {
       //   [`GET v1alpha/${operationRes.json().operation.name} response status`]: (r) =>
       //     r.status === 200,
@@ -96,9 +92,7 @@ export function GetLongRunningOperation() {
 
       // model can only be deleted after operation done
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state === "STATE_ONLINE") {
           break
         }
@@ -107,9 +101,7 @@ export function GetLongRunningOperation() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });

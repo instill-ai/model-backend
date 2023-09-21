@@ -32,7 +32,7 @@ publicClient.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 const model_def_name = "model-definitions/local"
 
 
-export function CheckModel() {
+export function CheckModel(header) {
   // CheckModelAdmin check
   group("Model API: CheckModel by admin", () => {
     privateClient.connect(constant.gRPCPrivateHost, {
@@ -51,12 +51,12 @@ export function CheckModel() {
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -66,7 +66,7 @@ export function CheckModel() {
     while (timeoutTime > currentTime) {
       let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -76,18 +76,18 @@ export function CheckModel() {
 
     let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }, {})
+    }, header)
 
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
       model_permalink: "models/" + res.message.model.uid
-    }, {}), {
+    }, header), {
       "CheckModelAdmin response status": (r) => r.status === grpc.StatusOK,
       "CheckModelAdmin response state": (r) => r.message.state === "STATE_OFFLINE",
     });
 
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
       model_permalink: "models/" + randomString(10)
-    }, {}), {
+    }, header), {
       'CheckModelAdmin uuid length is invalid': (r) => r && r.status === grpc.StatusNotFound,
     });
     currentTime = new Date().getTime();
@@ -95,7 +95,7 @@ export function CheckModel() {
     while (timeoutTime > currentTime) {
       let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
         break
       }
@@ -104,7 +104,7 @@ export function CheckModel() {
     }
     check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
 
@@ -113,7 +113,7 @@ export function CheckModel() {
   });
 };
 
-export function DeployUndeployModel() {
+export function DeployUndeployModel(header) {
   // Deploy Model check
   group("Model API: Deploy and Undeploy Model by admin", () => {
     privateClient.connect(constant.gRPCPrivateHost, {
@@ -132,12 +132,12 @@ export function DeployUndeployModel() {
     fd_cls.append("model_definition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+      headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
     })
     check(createClsModelRes, {
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response status": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response status": (r) =>
         r.status === 201,
-      "POST /v1alpha/users/instill-ai/models/multipart task cls response operation.name": (r) =>
+      "POST /v1alpha/users/admin/models/multipart task cls response operation.name": (r) =>
         r.json().operation.name !== undefined,
     });
 
@@ -147,7 +147,7 @@ export function DeployUndeployModel() {
     while (timeoutTime > currentTime) {
       let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
-      }, {})
+      }, header)
       if (res.message.operation.done === true) {
         break
       }
@@ -157,13 +157,13 @@ export function DeployUndeployModel() {
 
     let getModelRes = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }, {})
+    }, header)
 
     let req = {
       model_permalink: "models/" + getModelRes.message.model.uid
     }
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', req, {}), {
+    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', req, header), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel operation name': (r) => r && r.message.operation.name !== undefined,
       'DeployModel operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -176,7 +176,7 @@ export function DeployUndeployModel() {
     while (timeoutTime > currentTime) {
       var res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
-      }, {})
+      }, header)
       if (res.message.state === "STATE_ONLINE") {
         break
       }
@@ -186,18 +186,18 @@ export function DeployUndeployModel() {
 
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', {
       model_permalink: `models/non-existed`
-    }), {
+    }, header), {
       'DeployModel uuid length is invalid': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', {
       model_permalink: `models/${uuidv4()}`
-    }), {
+    }, header), {
       'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
     check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
-    }), {
+    }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
 

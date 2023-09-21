@@ -1,4 +1,4 @@
-import http from "k6/http";
+import http, { head } from "k6/http";
 import {
   check,
   group,
@@ -18,7 +18,7 @@ import {
 import * as constant from "./const.js"
 
 
-export function CreateModelFromLocal() {
+export function CreateModelFromLocal(header) {
   // Model Backend API: upload model
   {
     group("Model Backend API: CreateModelFromLocal", function () {
@@ -30,7 +30,7 @@ export function CreateModelFromLocal() {
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
@@ -43,16 +43,14 @@ export function CreateModelFromLocal() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header), {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls status`]: (r) => r.status === 200,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.done`]: (r) => r.json().operation.done === true,
       });
@@ -65,7 +63,7 @@ export function CreateModelFromLocal() {
       fd_det.append("model_definition", "model-definitions/local");
       fd_det.append("content", http.file(constant.det_model, "dummy-det-model.zip"));
       let createDetModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
       })
       check(createDetModelRes, {
         "POST /v1alpha/models/multipart task det response status": (r) =>
@@ -78,16 +76,14 @@ export function CreateModelFromLocal() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createDetModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createDetModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createDetModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${createDetModelRes.json().operation.name}`, header), {
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det status`]: (r) => r.status === 200,
         [`GET v1alpha/${createDetModelRes.json().operation.name} task det operation.done`]: (r) => r.json().operation.done === true,
       });
@@ -100,7 +96,7 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("model_definition", "model-definitions/local");
       fd_keypoint.append("content", http.file(constant.keypoint_model, "dummy-keypoint-model.zip"));
       let createKpModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
       })
       check(createKpModelRes, {
         "POST /v1alpha/models/multipart task keypoint response status": (r) =>
@@ -113,16 +109,14 @@ export function CreateModelFromLocal() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createKpModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createKpModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createKpModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${createKpModelRes.json().operation.name}`, header), {
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint status`]: (r) => r.status === 200,
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.done`]: (r) => r.json().operation.done === true,
       });
@@ -135,7 +129,7 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("model_definition", "model-definitions/local");
       fd_unspecified.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
       let createUnspecifiedModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
       })
       check(createUnspecifiedModelRes, {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
@@ -148,22 +142,20 @@ export function CreateModelFromLocal() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header), {
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified status`]: (r) => r.status === 200,
         [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.done`]: (r) => r.json().operation.done === true,
       });
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart already existed response status 409": (r) =>
           r.status === 409,
@@ -172,18 +164,10 @@ export function CreateModelFromLocal() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
+        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
+        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
+        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
         if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
           res_det.json().state !== "STATE_UNSPECIFIED" &&
           res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
@@ -195,27 +179,19 @@ export function CreateModelFromLocal() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
@@ -230,7 +206,7 @@ export function CreateModelFromLocal() {
       fd_cls.append("model_definition", "model-definitions/local");
       fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task cls response status": (r) =>
           r.status === 400,
@@ -244,7 +220,7 @@ export function CreateModelFromLocal() {
       fd_det.append("model_definition", "model-definitions/local");
       fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task det response status": (r) =>
           r.status === 400,
@@ -258,7 +234,7 @@ export function CreateModelFromLocal() {
       fd_keypoint.append("model_definition", "model-definitions/local");
       fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task keypoint response status": (r) =>
           r.status === 400,
@@ -272,7 +248,7 @@ export function CreateModelFromLocal() {
       fd_unspecified.append("model_definition", "model-definitions/local");
       fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
           r.status === 400,
@@ -286,7 +262,7 @@ export function CreateModelFromLocal() {
       fd_semantic.append("model_definition", "model-definitions/local");
       fd_semantic.append("content", http.file(constant.semantic_segmentation_model_bz9, "dummy-semantic-segmentation-model-bz9.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_semantic.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
           r.status === 400,
@@ -300,7 +276,7 @@ export function CreateModelFromLocal() {
       fd_instance.append("model_definition", "model-definitions/local");
       fd_instance.append("content", http.file(constant.instance_segmentation_model_bz9, "dummy-instance-segmentation-model-bz9.zip"));
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_instance.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`),
+        headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`, header.headers.Authorization),
       }), {
         "POST /v1alpha/models/multipart task unspecified response status": (r) =>
           r.status === 400,
@@ -309,18 +285,10 @@ export function CreateModelFromLocal() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, {
-          headers: genHeader(`application/json`),
-        })
-        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
+        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
+        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
+        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
         if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
           res_det.json().state !== "STATE_UNSPECIFIED" &&
           res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
@@ -332,28 +300,20 @@ export function CreateModelFromLocal() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
 
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 404
       });
@@ -361,7 +321,7 @@ export function CreateModelFromLocal() {
   }
 }
 
-export function CreateModelFromGitHub() {
+export function CreateModelFromGitHub(header) {
   // Model Backend API: upload model by GitHub
   {
     group("Model Backend API: Upload a model by GitHub", function () {
@@ -370,12 +330,10 @@ export function CreateModelFromGitHub() {
         "id": model_id,
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls",
+          "repository": "admin/model-dummy-cls",
           "tag": "v1.0-cpu"
         },
-      }), {
-        headers: genHeader("application/json"),
-      })
+      }), header)
 
       check(createClsModelRes, {
         "POST /v1alpha/models task cls response status": (r) =>
@@ -388,16 +346,14 @@ export function CreateModelFromGitHub() {
       let currentTime = new Date().getTime();
       let timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header)
         if (res.json().operation.done === true) {
           break
         }
         sleep(1)
         currentTime = new Date().getTime();
       }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`), {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${createClsModelRes.json().operation.name}`, header), {
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls status`]: (r) => r.status === 200,
         [`GET v1alpha/${createClsModelRes.json().operation.name} task cls operation.done`]: (r) => r.json().operation.done === true,
       });
@@ -406,11 +362,9 @@ export function CreateModelFromGitHub() {
         "id": randomString(10),
         "model_definition": randomString(10),
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "admin/model-dummy-cls"
         },
-      }), {
-        headers: genHeader("application/json"),
-      }), {
+      }), header), {
         "POST /v1alpha/models by github invalid url status": (r) =>
           r.status === 400,
       });
@@ -418,11 +372,9 @@ export function CreateModelFromGitHub() {
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "model_definition": "model-definitions/github",
         "configuration": {
-          "repository": "instill-ai/model-dummy-cls"
+          "repository": "admin/model-dummy-cls"
         }
-      }), {
-        headers: genHeader("application/json"),
-      }), {
+      }), header), {
         "POST /v1alpha/models by github missing name status": (r) =>
           r.status === 400,
       });
@@ -431,9 +383,7 @@ export function CreateModelFromGitHub() {
         "id": randomString(10),
         "model_definition": "model-definitions/github",
         "configuration": {}
-      }), {
-        headers: genHeader("application/json"),
-      }), {
+      }), header), {
         "POST /v1alpha/models by github missing github_url status": (r) =>
           r.status === 400,
       });
@@ -441,9 +391,7 @@ export function CreateModelFromGitHub() {
       currentTime = new Date().getTime();
       timeoutTime = new Date().getTime() + 120000;
       while (timeoutTime > currentTime) {
-        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, {
-          headers: genHeader(`application/json`),
-        })
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
         if (res.json().state !== "STATE_UNSPECIFIED") {
           break
         }
@@ -452,9 +400,7 @@ export function CreateModelFromGitHub() {
       }
 
       // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
-        headers: genHeader(`application/json`),
-      }), {
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });

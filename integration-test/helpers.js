@@ -1,13 +1,15 @@
-export function genHeader(contentType) {
+export function genHeader(contentType, authorization) {
   return {
     "Content-Type": `${contentType}`,
+    "Authorization": authorization
   };
 }
 
-export function genHeaderwithJwtSub(contentType, sub) {
+export function genHeaderWithRandomAuth(contentType, randomStr) {
+
   return {
     "Content-Type": `${contentType}`,
-    "Jwt-Sub": sub
+    "Authorization": randomStr
   }
 }
 
