@@ -1,5 +1,5 @@
 package constant
 
 // Constants for resource owner
-const DefaultUserID string = "instill-ai"
+const DefaultUserID string = "admin"
 const HeaderUserUIDKey = "jwt-sub"
