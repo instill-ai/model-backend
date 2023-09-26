@@ -22,9 +22,11 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -35,6 +37,31 @@ type ModelConfig struct {
 	Task            string                 `json:"task"`
 	ModelDefinition string                 `json:"model_definition"`
 	Configuration   map[string]interface{} `json:"configuration"`
+}
+
+// InitMgmtPrivateServiceClient initialises a MgmtPrivateServiceClient instance
+func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
+	logger, _ := logger.GetZapLogger(ctx)
+
+	var clientDialOpts grpc.DialOption
+	var creds credentials.TransportCredentials
+	var err error
+	if config.Config.MgmtBackend.HTTPS.Cert != "" && config.Config.MgmtBackend.HTTPS.Key != "" {
+		creds, err = credentials.NewServerTLSFromFile(config.Config.MgmtBackend.HTTPS.Cert, config.Config.MgmtBackend.HTTPS.Key)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		clientDialOpts = grpc.WithTransportCredentials(creds)
+	} else {
+		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PrivatePort), clientDialOpts)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
 // InitModelPublicServiceClient initialises a ModelServiceClient instance
@@ -68,7 +95,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 func main() {
 
 	// setup tracing
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
@@ -99,13 +126,27 @@ func main() {
 		return
 	}
 
+	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := InitMgmtPrivateServiceClient(ctx)
+	if mgmtPrivateServiceClientConn != nil {
+		defer mgmtPrivateServiceClientConn.Close()
+	}
+
 	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient(ctx)
 	if modelPublicServiceClientConn != nil {
 		defer modelPublicServiceClientConn.Close()
 	}
 
+	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
+		Name: fmt.Sprintf("users/%v", constant.DefaultUserID),
+	})
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	ctx = middleware.InjectOwnerToContext(ctx, resp.GetUser())
+
 	var modelConfigs []ModelConfig
-	err := utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
+	err = utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -123,8 +164,6 @@ func main() {
 				log.Fatal("structpb.NewValue: ", err)
 				return
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
-			defer cancel()
 
 			logger.Info("Creating model: " + modelConfig.ID)
 			createOperation, err := modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
