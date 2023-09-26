@@ -170,7 +170,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("users/instill-ai/models/%s", modelConfig.ID),
+						Name: fmt.Sprintf("users/%s/models/%s", constant.DefaultUserID, modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
