@@ -104,11 +104,10 @@ type service struct {
 	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
 	temporalClient           client.Client
 	controllerClient         controllerPB.ControllerPrivateServiceClient
-	defaultUserUid           uuid.UUID
 }
 
 // NewService returns a new service instance
-func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient, defaultUserUid uuid.UUID) Service {
+func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
 	return &service{
 		repository:               r,
 		triton:                   t,
@@ -116,7 +115,6 @@ func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateSe
 		redisClient:              rc,
 		temporalClient:           tc,
 		controllerClient:         cs,
-		defaultUserUid:           defaultUserUid,
 	}
 }
 
