@@ -9,13 +9,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/instill-ai/model-backend/pkg/logger"
+
+	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 )
 
 func HttpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
@@ -166,4 +170,9 @@ func CustomMatcher(key string) (string, bool) {
 	default:
 		return runtime.DefaultHeaderMatcher(key)
 	}
+}
+
+func InjectOwnerToContext(ctx context.Context, owner *mgmtPB.User) context.Context {
+	ctx = metadata.AppendToOutgoingContext(ctx, "Jwt-Sub", owner.GetUid())
+	return ctx
 }
