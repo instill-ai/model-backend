@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
-	"github.com/gofrs/uuid"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
@@ -33,7 +32,6 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -48,7 +46,6 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -156,12 +153,6 @@ func main() {
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
-	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: "users/" + constant.DefaultUserID})
-	if err != nil {
-		panic(err)
-	}
-	defaultUserUID := uuid.FromStringOrNil(*resp.User.Uid)
-
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
@@ -169,7 +160,7 @@ func main() {
 	defer controllerClientConn.Close()
 
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
-		Tracer: otel.Tracer("temporal-tracer"),
+		Tracer:            otel.Tracer("temporal-tracer"),
 		TextMapPropagator: propagator,
 	})
 	if err != nil {
@@ -207,7 +198,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, defaultUserUID)
+	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
