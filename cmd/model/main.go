@@ -95,7 +95,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 func main() {
 
 	// setup tracing
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
@@ -164,8 +164,6 @@ func main() {
 				log.Fatal("structpb.NewValue: ", err)
 				return
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
-			defer cancel()
 
 			logger.Info("Creating model: " + modelConfig.ID)
 			createOperation, err := modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
