@@ -175,7 +175,7 @@ func main() {
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 				},
-				Parent: "users/" + constant.DefaultUserID,
+				Parent: "users/" + constant.InstillUserID,
 			})
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
@@ -209,7 +209,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("users/%s/models/%s", constant.DefaultUserID, modelConfig.ID),
+						Name: fmt.Sprintf("users/%s/models/%s", constant.InstillUserID, modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
