@@ -137,7 +137,7 @@ func main() {
 	}
 
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-		Name: fmt.Sprintf("users/%v", constant.DefaultUserID),
+		Name: fmt.Sprintf("users/%v", constant.InstillUserID),
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
