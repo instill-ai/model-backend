@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.0-alpha...v0.17.1-alpha) (2023-09-30)
+
+
+### Bug Fixes
+
+* **main:** fix namespace error when deploying model ([#423](https://github.com/instill-ai/model-backend/issues/423)) ([dd5badf](https://github.com/instill-ai/model-backend/commit/dd5badf0d6d95babdde033a9a2a441d715f301b1))
+
 ## [0.17.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.16.11-alpha...v0.17.0-alpha) (2023-09-13)
 
 
