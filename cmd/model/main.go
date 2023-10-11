@@ -136,8 +136,15 @@ func main() {
 		defer modelPublicServiceClientConn.Close()
 	}
 
+	var userID string
+	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") {
+		userID = fmt.Sprintf("users/%s", constant.DefaultUserID)
+	} else {
+		userID = fmt.Sprintf("users/%s", constant.InstillUserID)
+	}
+
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-		Name: fmt.Sprintf("users/%v", constant.InstillUserID),
+		Name: userID,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -175,7 +182,7 @@ func main() {
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 				},
-				Parent: "users/" + constant.InstillUserID,
+				Parent: userID,
 			})
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
@@ -209,7 +216,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("users/%s/models/%s", constant.InstillUserID, modelConfig.ID),
+						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
