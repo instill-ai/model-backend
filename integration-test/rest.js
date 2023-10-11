@@ -37,7 +37,7 @@ export function setup() {
   }))
 
   check(loginResp, {
-    [`POST ${constant.mgmtPublicHost}/v1alpha//auth/login response status is 200`]: (
+    [`POST ${constant.mgmtPublicHost}/v1alpha/auth/login response status is 200`]: (
       r
     ) => r.status === 200,
   });
