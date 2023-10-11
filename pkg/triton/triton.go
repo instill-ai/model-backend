@@ -124,9 +124,10 @@ func (ts *triton) ModelReadyRequest(ctx context.Context, modelName string, model
 		Name:    modelName,
 		Version: modelInstance,
 	}
+
 	// Submit modelReady request to server
 	modelReadyResponse, err := ts.tritonClient.ModelReady(ctx, &modelReadyRequest)
-	logger.Debug(fmt.Sprintf("ModelReadyResponse: %v %v", modelReadyResponse, err))
+
 	if err != nil {
 		logger.Error(err.Error())
 	}
