@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.1-alpha...v0.17.2-alpha) (2023-10-13)
+
+
+### Bug Fixes
+
+* **model:** fix init model namespace ([77a35b3](https://github.com/instill-ai/model-backend/commit/77a35b3eaecb876641ce952342d12e14d6edf0c7))
+
 ## [0.17.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.0-alpha...v0.17.1-alpha) (2023-09-30)
 
 
