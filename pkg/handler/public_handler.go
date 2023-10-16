@@ -124,19 +124,19 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    int64(*fileData.TaskInput.GetTextToImage().Steps),
+					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
 					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     int64(*fileData.TaskInput.GetTextToImage().Seed),
-					Samples:  int64(*fileData.TaskInput.GetTextToImage().Samples),
+					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     int64(*fileData.TaskInput.GetTextGeneration().OutputLen),
+					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
 					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          int64(*fileData.TaskInput.GetTextGeneration().Topk),
-					Seed:          int64(*fileData.TaskInput.GetTextGeneration().Seed),
+					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -244,19 +244,19 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    int64(*fileData.TaskInput.GetTextToImage().Steps),
+					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
 					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     int64(*fileData.TaskInput.GetTextToImage().Seed),
-					Samples:  int64(*fileData.TaskInput.GetTextToImage().Samples),
+					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     int64(*fileData.TaskInput.GetTextGeneration().OutputLen),
+					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
 					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          int64(*fileData.TaskInput.GetTextGeneration().Topk),
-					Seed:          int64(*fileData.TaskInput.GetTextGeneration().Seed),
+					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")

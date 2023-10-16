@@ -28,19 +28,19 @@ type InferInput interface{}
 
 type TextToImageInput struct {
 	Prompt   string
-	Steps    int64
+	Steps    int32
 	CfgScale float32
-	Seed     int64
-	Samples  int64
+	Seed     int32
+	Samples  int32
 }
 
 type TextGenerationInput struct {
 	Prompt        string
-	OutputLen     int64
+	OutputLen     int32
 	BadWordsList  string
 	StopWordsList string
-	TopK          int64
-	Seed          int64
+	TopK          int32
+	Seed          int32
 }
 
 type ImageInput struct {

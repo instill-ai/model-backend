@@ -69,16 +69,16 @@ var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
 const DefaultPageSize = 10
 
 const (
-	TEXT_TO_IMAGE_STEPS     = int64(10)
+	TEXT_TO_IMAGE_STEPS     = int32(10)
 	IMAGE_TO_TEXT_CFG_SCALE = float32(7)
-	IMAGE_TO_TEXT_SEED      = int64(1024)
-	IMAGE_TO_TEXT_SAMPLES   = int64(1)
+	IMAGE_TO_TEXT_SEED      = int32(1024)
+	IMAGE_TO_TEXT_SAMPLES   = int32(1)
 )
 
 const (
-	TEXT_GENERATION_OUTPUT_LEN = int64(100)
-	TEXT_GENERATION_TOP_K      = int64(1)
-	TEXT_GENERATION_SEED       = int64(0)
+	TEXT_GENERATION_OUTPUT_LEN = int32(100)
+	TEXT_GENERATION_TOP_K      = int32(1)
+	TEXT_GENERATION_SEED       = int32(0)
 )
 
 const MODEL_CACHE_DIR = "/.cache/models"
