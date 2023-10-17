@@ -177,10 +177,17 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 				Shape:    []int64{1},
 			})
 		case commonPB.Task_TASK_TEXT_GENERATION:
+			var inputShape []int64
+			if modelConfig.Config.MaxBatchSize > 0 {
+				inputShape = []int64{1, 1}
+			} else {
+				inputShape = []int64{1}
+			}
+
 			inferInputs = append(inferInputs, &inferenceserver.ModelInferRequest_InferInputTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
-				Shape:    []int64{1, 1},
+				Shape:    inputShape,
 			})
 		case commonPB.Task_TASK_CLASSIFICATION,
 			commonPB.Task_TASK_DETECTION,
