@@ -12,11 +12,11 @@ RUN go mod download
 COPY . .
 
 ARG TARGETOS TARGETARCH
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME} ./cmd/main
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME} ./cmd/main
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
 
 # ArtiVC to work with cloud storage
 ARG TARGETOS TARGETARCH ARTIVC_VERSION

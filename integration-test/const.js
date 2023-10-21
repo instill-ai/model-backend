@@ -23,7 +23,7 @@ export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-
 export const apiPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/model` : `http://api-gateway:8080/model`
 
 export const mgmtGRPCPublicHost =  apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-gateway:8080`
-export const mgmtPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/base` : `http://api-gateway:8080/base`
+export const mgmtPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/core` : `http://api-gateway:8080/core`
 
 export const mgmtGRPCPrivateHost = "mgmt-backend:3084"
 export const mgmtApiPrivateHost = "http://mgmt-backend:3084"

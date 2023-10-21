@@ -15,8 +15,8 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
-	mgmtPB "github.com/instill-ai/protogen-go/base/mgmt/v1alpha"
-	usagePB "github.com/instill-ai/protogen-go/base/usage/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	usagePB "github.com/instill-ai/protogen-go/core/usage/v1alpha"
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 )
 

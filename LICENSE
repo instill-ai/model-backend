@@ -1,14 +1,3 @@
-Instill Model project uses a polyrepo structure with multiple licenses.
-
-The license for a piece of source code is defined with the following prioritized rules:
-1. LICENSE present in the file
-2. LICENSE file in the same directory as the file
-3. First LICENSE file found in the parent directories up to the top level
-4. By default to the Elastic License 2.0 (ELv2)
-
-If you have any question regarding licenses, just visit our [License](https://www.instill.tech/docs/license) or [contact us](mailto:hello@instill.tech).
-
-------------------------------------------------------------------------------------
 Elastic License 2.0 (ELv2)
 
 **Acceptance**
@@ -53,5 +42,3 @@ The *licensor* is the entity offering these terms, and the *software* is the sof
 *use* means anything you do with the software requiring one of your licenses.
 
 *trademark* means trademarks, service marks, and similar rights.
-
-------------------------------------------------------------------------------------
