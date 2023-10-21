@@ -1,6 +1,8 @@
 module github.com/instill-ai/model-backend
 
-go 1.19
+go 1.21
+
+toolchain go1.21.3
 
 require (
 	cloud.google.com/go/longrunning v0.5.1
