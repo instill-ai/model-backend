@@ -254,10 +254,10 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 			} else if (modelSubNames[len(modelSubNames)-3] == "fastertransformer" ||
 				modelSubNames[len(modelSubNames)-3] == "llava_13b" ||
 				modelSubNames[len(modelSubNames)-3] == "llama2_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "llamacode" ||
+				modelSubNames[len(modelSubNames)-3] == "codellama" ||
 				modelSubNames[len(modelSubNames)-3] == "llama2_13b_chat" ||
 				modelSubNames[len(modelSubNames)-3] == "mistral_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "mbt_7b") &&
+				modelSubNames[len(modelSubNames)-3] == "mpt_7b") &&
 				tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
 				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
 				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
