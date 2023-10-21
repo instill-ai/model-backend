@@ -91,17 +91,17 @@ jobs:
             ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
-      - name: Checkout repo (base)
+      - name: Checkout repo (core)
         uses: actions/checkout@v3
         with:
-          repository: instill-ai/base
+          repository: instill-ai/core
 
-      - name: Load .env file (base)
+      - name: Load .env file (core)
         uses: cardinalby/export-env-action@v2
         with:
           envFile: .env
 
-      - name: Launch Instill Base (latest)
+      - name: Launch Instill Core (latest)
         run: |
           COMPOSE_PROFILES=all \
           EDITION=local-ce:test \

@@ -1,6 +1,6 @@
 module github.com/instill-ai/model-backend
 
-go 1.19
+go 1.21
 
 require (
 	cloud.google.com/go/longrunning v0.5.1
@@ -15,8 +15,8 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20230926065719-21b2e1fe684c
-	github.com/instill-ai/usage-client v0.2.4-alpha.0.20230814155646-874e57a1e4b0
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20231019202606-71607ddcd93f
+	github.com/instill-ai/usage-client v0.2.4-alpha.0.20231019203021-70410a0a8061
 	github.com/instill-ai/x v0.3.0-alpha
 	github.com/knadh/koanf v1.4.4
 	github.com/mennanov/fieldmask-utils v1.1.0
