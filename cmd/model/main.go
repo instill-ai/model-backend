@@ -26,8 +26,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -137,7 +137,9 @@ func main() {
 	}
 
 	var userID string
-	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") || strings.HasSuffix(config.Config.Server.Edition, "test"){
+	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
+		strings.HasSuffix(config.Config.Server.Edition, "test") ||
+		strings.HasSuffix(config.Config.Server.Edition, "dev") {
 		userID = fmt.Sprintf("users/%s", constant.DefaultUserID)
 	} else {
 		userID = fmt.Sprintf("users/%s", constant.InstillUserID)

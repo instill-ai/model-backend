@@ -75,6 +75,10 @@ func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployMo
 		return nil, nil
 	}
 
+	if _, found := preDeployModelMap[model.ID]; !found {
+		return nil, nil
+	}
+
 	var preDeployModelConfigs []PreModelConfig
 	err := utils.GetJSON(config.Config.InitModel.Path, &preDeployModelConfigs)
 	if err != nil {
@@ -88,10 +92,6 @@ func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployMo
 	}
 
 	var githubModel *datamodel.PreDeployModel
-
-	if _, found := preDeployModelMap[model.ID]; !found {
-		return githubModel, nil
-	}
 
 	for _, preDeployModelConfigs := range preDeployModelConfigs {
 		if modelConfig.Repository == preDeployModelConfigs.Configuration["repository"] &&
