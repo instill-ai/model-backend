@@ -46,12 +46,10 @@ require (
 )
 
 require (
+	github.com/instill-ai/mgmt-backend v0.6.1-alpha.0.20231019224100-43a72b7eb664 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	google.golang.org/genproto v0.0.0-20230725213213-b022f6e96895 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230725213213-b022f6e96895 // indirect
-)
-
-require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -60,9 +58,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.39.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.16.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
-)
-
-require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/catalinc/hashcash v0.0.0-20220723060415-5e3ec3e24f67 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
