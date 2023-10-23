@@ -38,22 +38,19 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-setuptools \
     python3-pip \
-    python3-jsonschema \
-    python3-yaml \
-    python3-wheel \
-    python3-pil \
-    python3-pil.imagetk \
-    pipx \
+    python3-venv \
     git \
     git-lfs \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pipx install torch
-RUN pipx install torchvision --include-deps
-RUN pipx install onnxruntime
-RUN pipx install dvc[gs]
-RUN git clone https://github.com/huggingface/transformers.git && cd transformers && pipx install -e .
+ENV VENV=/opt/venv
+RUN python3 -m venv $VENV
+ENV PATH="$VENV/bin:$PATH"
+
+RUN pip install jsonschema pyyaml
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
