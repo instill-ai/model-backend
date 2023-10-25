@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/models/model_card.json",
+  "$id": "https://github.com/instill-ai/model-backend/blob/main/config/model/model_card.json",
   "type": "object",
   "title": "Model card",
   "description": "The model README card",

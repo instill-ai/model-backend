@@ -15,6 +15,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/x/temporal"
@@ -61,7 +62,10 @@ func main() {
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient)
+	rayService := ray.NewRay()
+	defer rayService.Close()
+
+	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient, rayService)
 
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),

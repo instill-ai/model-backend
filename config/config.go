@@ -39,6 +39,7 @@ type ServerConfig struct {
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
 	}
+	InferenceBackend string `koanf:"inferencebackend"`
 }
 
 // DatabaseConfig related to database
@@ -59,6 +60,12 @@ type DatabaseConfig struct {
 
 // TritonServerConfig related to Triton server
 type TritonServerConfig struct {
+	GrpcURI    string `koanf:"grpcuri"`
+	ModelStore string `koanf:"modelstore"`
+}
+
+// RayServerConfig related to Ray server
+type RayServerConfig struct {
 	GrpcURI    string `koanf:"grpcuri"`
 	ModelStore string `koanf:"modelstore"`
 }
@@ -132,6 +139,7 @@ type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
 	Database               DatabaseConfig     `koanf:"database"`
 	TritonServer           TritonServerConfig `koanf:"tritonserver"`
+	RayServer              RayServerConfig    `koanf:"rayserver"`
 	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`
 	Cache                  CacheConfig        `koanf:"cache"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`

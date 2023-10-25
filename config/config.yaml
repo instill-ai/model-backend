@@ -18,13 +18,14 @@ server:
     maxworkflowtimeout: 3600 # in seconds
     maxworkflowretry: 3
     maxactivityretry: 1
+  inferencebackend: ray
 database:
   username: postgres
   password: password
   host: pg-sql
   port: 5432
   name: model
-  version: 1
+  version: 2
   timezone: Etc/UTC
   pool:
     idleconnections: 5
@@ -32,6 +33,9 @@ database:
     connlifetime: 30m # In minutes, e.g., '60m'
 tritonserver:
   grpcuri: triton-server:8001
+  modelstore: /model-repository
+rayserver:
+  grpcuri: ray-server:9000
   modelstore: /model-repository
 mgmtbackend:
   host: mgmt-backend

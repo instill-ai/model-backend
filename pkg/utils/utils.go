@@ -106,20 +106,20 @@ func AddMissingTritonModelFolder(ctx context.Context, dir string) {
 	})
 }
 
-func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
+func getPreModelConfigPath(modelRepository string, inferenceModels []*datamodel.InferenceModel) string {
 	modelPath := ""
-	for _, triton := range tritonModels {
-		if strings.Contains(triton.Name, "#pre#") {
-			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
+	for _, inference := range inferenceModels {
+		if strings.Contains(inference.Name, "#pre#") {
+			return fmt.Sprintf("%s/%s", modelRepository, inference.Name)
 		}
 	}
 	return modelPath
 }
-func getInferModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
+func getInferModelConfigPath(modelRepository string, inferenceModels []*datamodel.InferenceModel) string {
 	modelPath := ""
-	for _, triton := range tritonModels {
-		if strings.Contains(triton.Name, "-infer#") {
-			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
+	for _, inference := range inferenceModels {
+		if strings.Contains(inference.Name, "-infer#") {
+			return fmt.Sprintf("%s/%s", modelRepository, inference.Name)
 		}
 	}
 	return modelPath
@@ -230,7 +230,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 }
 
 // CopyModelFileToModelRepository copies model files to model repository.
-func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []*datamodel.TritonModel) error {
+func CopyModelFileToModelRepository(modelRepository string, dir string, inferenceModels []*datamodel.InferenceModel) error {
 	modelPaths := findModelFiles(dir)
 	for _, modelPath := range modelPaths {
 		folderModelDir := filepath.Dir(modelPath)
@@ -238,15 +238,15 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 		if len(modelSubNames) < 2 {
 			continue
 		}
-		for _, tritonModel := range tritonModels {
-			tritonModelName := tritonModel.Name
-			tritonSubNames := strings.Split(tritonModelName, "#")
-			if len(tritonSubNames) < 4 {
+		for _, inferenceModel := range inferenceModels {
+			inferenceModelName := inferenceModel.Name
+			inferenceSubNames := strings.Split(inferenceModelName, "#")
+			if len(inferenceSubNames) < 4 {
 				continue
 			}
 
-			if tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/%s/1", modelPath, modelRepository, tritonModelName))
+			if inferenceSubNames[len(inferenceSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/%s/1", modelPath, modelRepository, inferenceModelName))
 				if err := cmd.Run(); err != nil {
 					return err
 				}
@@ -258,8 +258,8 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 				modelSubNames[len(modelSubNames)-3] == "llama2_13b_chat" ||
 				modelSubNames[len(modelSubNames)-3] == "mistral_7b" ||
 				modelSubNames[len(modelSubNames)-3] == "mpt_7b") &&
-				tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
-				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
+				inferenceSubNames[len(inferenceSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
+				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, inferenceModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
 				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
 					return err
 				}
@@ -321,7 +321,7 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 
 func HasModelInModelRepository(modelRepositoryRoot string, namespace string, modelName string) bool {
 
-	path := fmt.Sprintf("%v/%v#%v#*", modelRepositoryRoot, namespace, modelName)
+	path := fmt.Sprintf("%v/%v/%v/*", modelRepositoryRoot, namespace, modelName)
 
 	if matches, _ := filepath.Glob(path); matches == nil {
 		return false
@@ -604,7 +604,7 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 }
 
 func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration, modelID string) error {
-	// export model to folder structure similar with triton to support copy the model into model repository later
+	// export model to folder structure similar with inference to support copy the model into model repository later
 	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelID), os.ModePerm); err != nil {
 		return err
 	}
@@ -688,9 +688,9 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	return nil
 }
 
-func HasModelWeightFile(modelRepository string, tritonModels []*datamodel.TritonModel) bool {
-	for _, tritonModel := range tritonModels {
-		modelDir := fmt.Sprintf("%s/%s", modelRepository, tritonModel.Name)
+func HasModelWeightFile(modelRepository string, inferenceModels []*datamodel.InferenceModel) bool {
+	for _, inferenceModel := range inferenceModels {
+		modelDir := fmt.Sprintf("%s/%s", modelRepository, inferenceModel.Name)
 		modelFiles := findModelFiles(modelDir)
 		if len(modelFiles) > 0 {
 			for _, modelFile := range modelFiles {
@@ -716,8 +716,8 @@ func updateModelConfigModel(configFilePath string, oldStr string, newStr string)
 	return os.WriteFile(configFilePath, fileData, 0o600)
 }
 
-func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.TritonModel) error {
-	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
+func UpdateModelConfig(modelRepository string, inferenceModels []*datamodel.InferenceModel) error {
+	modelPathDir := getInferModelConfigPath(modelRepository, inferenceModels)
 	if modelPathDir == "" {
 		return fmt.Errorf("there is no model")
 	}
@@ -763,7 +763,7 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.TritonM
 		return err
 	}
 
-	preModelPathDir := getPreModelConfigPath(modelRepository, tritonModels)
+	preModelPathDir := getPreModelConfigPath(modelRepository, inferenceModels)
 	preConfigFilePath := fmt.Sprintf("%s/config.pbtxt", preModelPathDir)
 	err = updateModelConfigModel(preConfigFilePath,
 		"dims: [ 3, 224, 224 ]",

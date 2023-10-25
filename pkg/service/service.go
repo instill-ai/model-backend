@@ -25,13 +25,14 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -76,8 +77,8 @@ type Service interface {
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.ModelDefinition, string, int64, error)
 
-	GetTritonEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.TritonModel, error)
-	GetTritonModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.TritonModel, error)
+	GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error)
+	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
 
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
@@ -104,10 +105,11 @@ type service struct {
 	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
 	temporalClient           client.Client
 	controllerClient         controllerPB.ControllerPrivateServiceClient
+	ray                      ray.Ray
 }
 
 // NewService returns a new service instance
-func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient) Service {
+func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Service {
 	return &service{
 		repository:               r,
 		triton:                   t,
@@ -115,6 +117,7 @@ func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateSe
 		redisClient:              rc,
 		temporalClient:           tc,
 		controllerClient:         cs,
+		ray:                      ra,
 	}
 }
 
@@ -241,13 +244,6 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 
 func (s *service) UndeployModel(ctx context.Context, ownerPermalink string, userPermalink string, modelUID uuid.UUID) error {
 
-	// var tritonModels []datamodel.TritonModel
-	var err error
-
-	if _, err = s.repository.GetTritonModels(modelUID); err != nil {
-		return err
-	}
-
 	if err := s.repository.UpdateUserModel(ownerPermalink, userPermalink, modelUID, &datamodel.Model{
 		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 	}); err != nil {
@@ -343,14 +339,14 @@ func (s *service) TriggerUserModelTestMode(ctx context.Context, modelUID uuid.UU
 }
 
 func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
-	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
+	inferenceModel, err := s.repository.GetInferenceEnsembleModel(modelUID)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "triton model not found")
+		return nil, status.Errorf(codes.NotFound, "ray model not found")
 	}
 
-	ensembleModelName := ensembleModel.Name
-	ensembleModelVersion := ensembleModel.Version
-	modelReadyResponse := s.triton.ModelReadyRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	inferenceModelName := inferenceModel.Name
+	inferenceModelVersion := inferenceModel.Version
+	modelReadyResponse := s.ray.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
 
 	state := modelPB.Model_STATE_UNSPECIFIED
 	if modelReadyResponse == nil {
@@ -360,33 +356,33 @@ func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.
 	} else {
 		state = modelPB.Model_STATE_OFFLINE
 	}
-
 	return &state, nil
 }
 
 func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
 
-	ensembleModel, err := s.repository.GetTritonEnsembleModel(modelUID)
+	inferenceModel, err := s.repository.GetInferenceEnsembleModel(modelUID)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "triton model not found")
 	}
 
-	ensembleModelName := ensembleModel.Name
-	ensembleModelVersion := ensembleModel.Version
-	modelMetadataResponse := s.triton.ModelMetadataRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	inferenceModelName := inferenceModel.Name
+	inferenceModelVersion := inferenceModel.Version
+	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("model is offline")
 	}
-	modelConfigResponse := s.triton.ModelConfigRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
-	if modelMetadataResponse == nil {
-		return nil, err
-	}
+
+	// modelConfigResponse := s.triton.ModelConfigRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
+	// if modelMetadataResponse == nil {
+	// 	return nil, err
+	// }
 
 	// We use a simple model that takes 2 input tensors of 16 integers
 	// each and returns 2 output tensors of 16 integers each. One
 	// output tensor is the element-wise sum of the inputs and one
 	// output is the element-wise difference.
-	inferResponse, err := s.triton.ModelInferRequest(ctx, task, inferInput, ensembleModelName, fmt.Sprint(ensembleModelVersion), modelMetadataResponse, modelConfigResponse)
+	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +390,7 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 	// We expect there to be 2 results (each with batch-size 1). Walk
 	// over all 16 result elements and print the sum and difference
 	// calculated by the modelPB.
-	postprocessResponse, err := s.triton.PostProcess(inferResponse, modelMetadataResponse, task)
+	postprocessResponse, err := s.ray.PostProcess(inferResponse, modelMetadataResponse, task)
 	if err != nil {
 		return nil, err
 	}
@@ -403,8 +399,10 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 	case commonPB.Task_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
 		var clsOutputs []*modelPB.TaskOutput
+		fmt.Println("========================postProcessClassification==============================")
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
+			fmt.Println(len(clsResSplit))
 			if len(clsResSplit) == 2 {
 				score, err := strconv.ParseFloat(clsResSplit[0], 32)
 				if err != nil {
@@ -858,16 +856,11 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 		return err
 	}
 
+	// TODO: implement this
 	// remove README.md
 	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, ownerPermalink, modelInDB.ID))
-	tritonModels, err := s.repository.GetTritonModels(modelInDB.UID)
-	if err == nil {
-		// remove model folders
-		for i := 0; i < len(tritonModels); i++ {
-			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
-			_ = os.RemoveAll(modelDir)
-		}
-	}
+	modelDir := filepath.Join(config.Config.TritonServer.ModelStore, "")
+	_ = os.RemoveAll(modelDir)
 
 	for state.String() == modelPB.Model_STATE_ONLINE.String() {
 		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
@@ -1067,10 +1060,10 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, p
 	return pbModelDefs, nextPageToken, totalSize, err
 }
 
-func (s *service) GetTritonEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.TritonModel, error) {
-	return s.repository.GetTritonEnsembleModel(modelUID)
+func (s *service) GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
+	return s.repository.GetInferenceEnsembleModel(modelUID)
 }
 
-func (s *service) GetTritonModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.TritonModel, error) {
-	return s.repository.GetTritonModels(modelUID)
+func (s *service) GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
+	return s.repository.GetInferenceModels(modelUID)
 }

@@ -39,6 +39,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/temporal"
@@ -155,6 +156,9 @@ func main() {
 	triton := triton.NewTriton()
 	defer triton.Close()
 
+	rayService := ray.NewRay()
+	defer rayService.Close()
+
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
@@ -203,7 +207,7 @@ func main() {
 
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient)
+	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,

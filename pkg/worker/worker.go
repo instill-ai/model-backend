@@ -7,6 +7,7 @@ import (
 	"github.com/allegro/bigcache"
 	"go.temporal.io/sdk/workflow"
 
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 
@@ -34,10 +35,11 @@ type worker struct {
 	repository       repository.Repository
 	triton           triton.Triton
 	controllerClient controllerPB.ControllerPrivateServiceClient
+	ray              ray.Ray
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, t triton.Triton, c controllerPB.ControllerPrivateServiceClient) Worker {
+func NewWorker(r repository.Repository, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Worker {
 	cache, _ := bigcache.NewBigCache(bigcache.DefaultConfig(60 * time.Minute))
 
 	return &worker{
@@ -45,5 +47,6 @@ func NewWorker(r repository.Repository, t triton.Triton, c controllerPB.Controll
 		repository:       r,
 		triton:           t,
 		controllerClient: c,
+		ray:              ra,
 	}
 }
