@@ -51,6 +51,7 @@ ENV PATH="$VENV/bin:$PATH"
 RUN pip install jsonschema pyyaml
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
+RUN pip install --no-cache-dir ray[serve] scikit-image
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
@@ -76,6 +77,9 @@ COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init-model ./
 COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
+
+RUN mkdir -p /${SERVICE_NAME}/pkg/ray
+COPY pkg/ray /${SERVICE_NAME}/pkg/ray
 
 COPY --from=build --chown=nobody:nogroup /etc/vdp /etc/vdp
 COPY --from=build --chown=nobody:nogroup /vdp /vdp
