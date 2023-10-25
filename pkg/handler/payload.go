@@ -166,21 +166,21 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerUserModelRequest) (textToI
 	}
 
 	for _, taskInput := range req.TaskInputs {
-		steps := int64(utils.TEXT_TO_IMAGE_STEPS)
+		steps := utils.TEXT_TO_IMAGE_STEPS
 		if taskInput.GetTextToImage().Steps != nil {
-			steps = int64(*taskInput.GetTextToImage().Steps)
+			steps = *taskInput.GetTextToImage().Steps
 		}
 		cfgScale := float32(utils.IMAGE_TO_TEXT_CFG_SCALE)
 		if taskInput.GetTextToImage().CfgScale != nil {
 			cfgScale = float32(*taskInput.GetTextToImage().CfgScale)
 		}
-		seed := int64(utils.IMAGE_TO_TEXT_SEED)
+		seed := utils.IMAGE_TO_TEXT_SEED
 		if taskInput.GetTextToImage().Seed != nil {
-			seed = int64(*taskInput.GetTextToImage().Seed)
+			seed = *taskInput.GetTextToImage().Seed
 		}
-		samples := int64(utils.IMAGE_TO_TEXT_SAMPLES)
+		samples := utils.IMAGE_TO_TEXT_SAMPLES
 		if taskInput.GetTextToImage().Samples != nil {
-			samples = int64(*taskInput.GetTextToImage().Samples)
+			samples = *taskInput.GetTextToImage().Samples
 		}
 		if samples > 1 {
 			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
@@ -198,9 +198,9 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerUserModelRequest) (textToI
 
 func parseTexGenerationRequestInputs(req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
 	for _, taskInput := range req.TaskInputs {
-		outputLen := int64(utils.TEXT_GENERATION_OUTPUT_LEN)
+		outputLen := utils.TEXT_GENERATION_OUTPUT_LEN
 		if taskInput.GetTextGeneration().OutputLen != nil {
-			outputLen = int64(*taskInput.GetTextGeneration().OutputLen)
+			outputLen = *taskInput.GetTextGeneration().OutputLen
 		}
 		badWordsList := string("")
 		if taskInput.GetTextGeneration().BadWordsList != nil {
@@ -210,13 +210,13 @@ func parseTexGenerationRequestInputs(req *modelPB.TriggerUserModelRequest) (text
 		if taskInput.GetTextGeneration().StopWordsList != nil {
 			stopWordsList = *taskInput.GetTextGeneration().BadWordsList
 		}
-		topK := int64(utils.TEXT_GENERATION_TOP_K)
+		topK := utils.TEXT_GENERATION_TOP_K
 		if taskInput.GetTextGeneration().Topk != nil {
-			topK = int64(*taskInput.GetTextGeneration().Topk)
+			topK = *taskInput.GetTextGeneration().Topk
 		}
-		seed := int64(utils.TEXT_GENERATION_SEED)
+		seed := utils.TEXT_GENERATION_SEED
 		if taskInput.GetTextGeneration().Seed != nil {
-			seed = int64(*taskInput.GetTextGeneration().Seed)
+			seed = *taskInput.GetTextGeneration().Seed
 		}
 		textGenerationInput = &triton.TextGenerationInput{
 			Prompt:        taskInput.GetTextGeneration().Prompt,
@@ -309,12 +309,13 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := int(utils.TEXT_TO_IMAGE_STEPS)
+	step := utils.TEXT_TO_IMAGE_STEPS
 	if len(stepStr) > 0 {
-		step, err = strconv.Atoi(stepStr[0])
+		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid step input %w", err)
 		}
+		step = int32(parseStep)
 	}
 
 	cfgScale := float64(utils.IMAGE_TO_TEXT_CFG_SCALE)
@@ -325,20 +326,22 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	seed := int(utils.IMAGE_TO_TEXT_SEED)
+	seed := utils.IMAGE_TO_TEXT_SEED
 	if len(seedStr) > 0 {
-		seed, err = strconv.Atoi(seedStr[0])
+		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid seed input %w", err)
 		}
+		seed = int32(parseSeed)
 	}
 
-	samples := int(utils.IMAGE_TO_TEXT_SAMPLES)
+	samples := utils.IMAGE_TO_TEXT_SAMPLES
 	if len(samplesStr) > 0 {
-		samples, err = strconv.Atoi(samplesStr[0])
+		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid samples input %w", err)
 		}
+		samples = int32(parseSamples)
 	}
 
 	if samples > 1 {
@@ -347,10 +350,10 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 
 	return &triton.TextToImageInput{
 		Prompt:   prompts[0],
-		Steps:    int64(step),
+		Steps:    step,
 		CfgScale: float32(cfgScale),
-		Seed:     int64(seed),
-		Samples:  int64(samples),
+		Seed:     seed,
+		Samples:  samples,
 	}, nil
 }
 
@@ -375,37 +378,40 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		stopWordsList = stopWordsListInput[0]
 	}
 
-	outputLen := int(utils.TEXT_GENERATION_OUTPUT_LEN)
+	outputLen := utils.TEXT_GENERATION_OUTPUT_LEN
 	if len(outputLenInput) > 0 {
-		outputLen, err = strconv.Atoi(outputLenInput[0])
+		parseOutputLen, err := strconv.ParseInt(outputLenInput[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
+		outputLen = int32(parseOutputLen)
 	}
 
-	topK := int(utils.TEXT_GENERATION_TOP_K)
+	topK := utils.TEXT_GENERATION_TOP_K
 	if len(topKInput) > 0 {
-		topK, err = strconv.Atoi(topKInput[0])
+		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
+		topK = int32(parseTopK)
 	}
 
-	seed := int(utils.TEXT_GENERATION_SEED)
+	seed := utils.TEXT_GENERATION_SEED
 	if len(seedInput) > 0 {
-		seed, err = strconv.Atoi(seedInput[0])
+		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
+		seed = int32(parseSeed)
 	}
 
 	// TODO: add support for bad/stop words
 	return &triton.TextGenerationInput{
 		Prompt:        prompts[0],
-		OutputLen:     int64(outputLen),
+		OutputLen:     outputLen,
 		BadWordsList:  badWordsList,
 		StopWordsList: stopWordsList,
-		TopK:          int64(topK),
-		Seed:          int64(seed),
+		TopK:          topK,
+		Seed:          seed,
 	}, nil
 }
