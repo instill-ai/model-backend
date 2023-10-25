@@ -263,26 +263,16 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 	switch task {
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImageInput := inferInput.(*TextToImageInput)
-		// Correctly handle the conversion with an upper-bound check
 		samples := make([]byte, 4)
-		if textToImageInput.Samples > math.MaxUint32 {
-		    textToImageInput.Samples = math.MaxUint32
-		}
 		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
 		steps := make([]byte, 4)
-		if textToImageInput.Steps > math.MaxUint32 {
-		    textToImageInput.Steps = math.MaxUint32
-		}
 		binary.LittleEndian.PutUint32(steps, uint32(textToImageInput.Steps))
 		guidanceScale := make([]byte, 4)
 		if textToImageInput.CfgScale > math.MaxFloat32 {
-		    textToImageInput.CfgScale = math.MaxFloat32
+			textToImageInput.CfgScale = math.MaxFloat32
 		}
 		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(textToImageInput.CfgScale)) // Fixed value.
 		seed := make([]byte, 8)
-		if textToImageInput.Seed > math.MaxUint64 {
-		    textToImageInput.Seed = math.MaxUint64
-		}
 		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
@@ -294,24 +284,10 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*TextGenerationInput)
 		outputLen := make([]byte, 4)
-		 if textGenerationInput.OutputLen > math.MaxUint32 {
-		textGenerationInput.OutputLen = math.MaxUint32
-	    	}
 		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInput.OutputLen))
-		// Add an upper-bound check for TopK
-		const maxUint32 = math.MaxUint32
-		if textGenerationInput.TopK > maxUint32 {
-		    textGenerationInput.TopK = maxUint32
-		}
 		topK := make([]byte, 4)
-		if textGenerationInput.TopK > math.MaxUint32 {
-		textGenerationInput.TopK = math.MaxUint32
-	    	}
 		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInput.TopK))
 		seed := make([]byte, 8)
-		if textGenerationInput.Seed > math.MaxUint64 {
-	        textGenerationInput.Seed = math.MaxUint64
-	    	}
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
