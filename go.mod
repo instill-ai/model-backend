@@ -38,7 +38,7 @@ require (
 	golang.org/x/image v0.5.0
 	golang.org/x/net v0.17.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230725213213-b022f6e96895
-	google.golang.org/grpc v1.56.2
+	google.golang.org/grpc v1.56.3
 	google.golang.org/protobuf v1.31.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.4.5
