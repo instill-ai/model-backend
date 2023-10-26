@@ -138,8 +138,7 @@ func main() {
 
 	var userID string
 	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-		strings.HasSuffix(config.Config.Server.Edition, "test") ||
-		strings.HasSuffix(config.Config.Server.Edition, "dev") {
+		strings.HasSuffix(config.Config.Server.Edition, "test") {
 		userID = fmt.Sprintf("users/%s", constant.DefaultUserID)
 	} else {
 		userID = fmt.Sprintf("users/%s", constant.InstillUserID)
