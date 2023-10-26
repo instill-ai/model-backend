@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.18.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.2-alpha...v0.18.0-alpha) (2023-10-26)
+
+
+### Features
+
+* **model:** Enhancements for Llava Model Support and Model Hub File Movement ([#434](https://github.com/instill-ai/model-backend/issues/434)) ([58cb97c](https://github.com/instill-ai/model-backend/commit/58cb97c005722ccba05370513268ecd60be7b5b4))
+* **model:** Support for LLM-like models in TRITON Inference Server ([#432](https://github.com/instill-ai/model-backend/issues/432)) ([590eb0b](https://github.com/instill-ai/model-backend/commit/590eb0b8d19a78ea7d1432bce4b22bc3d0a37609))
+
+
+### Bug Fixes
+
+* **Dockerfile:** fix Python 3.11 using Debian base image ([#438](https://github.com/instill-ai/model-backend/issues/438)) ([2ace6eb](https://github.com/instill-ai/model-backend/commit/2ace6eb91e233db8ed8e0a8ed86758b743be409a))
+* **payload:** fix incorrect conversion between integer types ([#440](https://github.com/instill-ai/model-backend/issues/440)) ([32bffea](https://github.com/instill-ai/model-backend/commit/32bffea38c95025de39d52b6e53c55af4b5b0e3a))
+
 ## [0.17.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.1-alpha...v0.17.2-alpha) (2023-10-13)
 
 
