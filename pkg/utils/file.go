@@ -157,7 +157,15 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			return "", "", err
 		}
 
-		dstFile.Close()
+		// Close the file handle and sync the data to the storage medium
+		if err := dstFile.Close(); err != nil {
+			return "", "", err
+		}
+
+		if err := dstFile.Sync(); err != nil {
+			return "", "", err
+		}
+
 		fileInArchive.Close()
 		// Update ModelName in config.pbtxt
 		fileExtension := filepath.Ext(fPath)
@@ -277,10 +285,22 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			return "", "", err
 		}
 		if _, err := io.Copy(dstFile, srcFile); err != nil {
+			srcFile.Close()  // Close the source file in case of an error
+    		dstFile.Close()  // Close the destination file in case of an error
 			return "", "", err
 		}
-		dstFile.Close()
-		srcFile.Close()
+
+		// Close both files and sync the data to the storage medium
+		if err := srcFile.Close(); err != nil {
+			return "", "", err
+		}
+		if err := dstFile.Close(); err != nil {
+			return "", "", err
+		}
+		if err := dstFile.Sync(); err != nil {
+			return "", "", err
+		}
+		
 		// Update ModelName in config.pbtxt
 		fileExtension := filepath.Ext(filePath)
 		if fileExtension == ".pbtxt" {
