@@ -146,6 +146,15 @@ func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInst
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse {
+	logger, _ := logger.GetZapLogger(ctx)
+
+	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
 	// Create status request for a given model
 	modelMetadataRequest := rayserver.ModelMetadataRequest{
@@ -161,6 +170,15 @@ func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelI
 }
 
 func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.ModelInferResponse, error) {
+	logger, _ := logger.GetZapLogger(ctx)
+
+	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
 	// Create request input tensors
 	var inferInputs []*rayserver.InferTensor

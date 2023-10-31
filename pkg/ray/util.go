@@ -34,9 +34,7 @@ func GetApplicationMetadaValue(inferenceModelName string) (applicationMetadataVa
 		return "", fmt.Errorf("inferenceModelName format error")
 	}
 
-	fmt.Println("================================================================================================================")
 	fmt.Println(strings.Join(applicationNameParts[:2], "_"))
-	fmt.Println("================================================================================================================")
 
 	return strings.Join(applicationNameParts[:2], "_"), nil
 }
