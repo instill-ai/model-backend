@@ -1,4 +1,4 @@
-package ray
+package triton
 
 import (
 	"bytes"
@@ -9,11 +9,97 @@ import (
 	"image/jpeg"
 	"log"
 
-	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
-	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
+
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
-func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
+	var (
+		outputs interface{}
+		err     error
+	)
+
+	switch task {
+	case commonPB.Task_TASK_CLASSIFICATION:
+		outputs, err = postProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process classification output: %w", err)
+		}
+	case commonPB.Task_TASK_DETECTION:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("wrong output format of detection task")
+		}
+		outputs, err = postProcessDetection(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process detection output: %w", err)
+		}
+	case commonPB.Task_TASK_KEYPOINT:
+		if len(modelMetadata.Outputs) < 3 {
+			return nil, fmt.Errorf("wrong output format of keypoint detection task")
+		}
+		outputs, err = postProcessKeypoint(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process keypoint output: %w", err)
+		}
+	case commonPB.Task_TASK_OCR:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("wrong output format of OCR task")
+		}
+		switch len(modelMetadata.Outputs) {
+		case 2:
+			outputs, err = postProcessOcrWithoutScore(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+			if err != nil {
+				return nil, fmt.Errorf("unable to post-process detection output: %w", err)
+			}
+		case 3:
+			outputs, err = postProcessOcrWithScore(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name)
+			if err != nil {
+				return nil, fmt.Errorf("unable to post-process detection output: %w", err)
+			}
+		}
+
+	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
+		if len(modelMetadata.Outputs) < 4 {
+			return nil, fmt.Errorf("wrong output format of instance segmentation task")
+		}
+		outputs, err = postProcessInstanceSegmentation(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name, modelMetadata.Outputs[2].Name, modelMetadata.Outputs[3].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process instance segmentation output: %w", err)
+		}
+
+	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
+		if len(modelMetadata.Outputs) < 2 {
+			return nil, fmt.Errorf("wrong output format of semantic segmentation task")
+		}
+		outputs, err = postProcessSemanticSegmentation(inferResponse, modelMetadata.Outputs[0].Name, modelMetadata.Outputs[1].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process semantic segmentation output: %w", err)
+		}
+
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
+		}
+
+	case commonPB.Task_TASK_TEXT_GENERATION:
+		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
+		}
+
+	default:
+		outputs, err = postProcessUnspecifiedTask(inferResponse, modelMetadata.Outputs)
+		if err != nil {
+			return nil, fmt.Errorf("unable to post-process unspecified output: %w", err)
+		}
+	}
+
+	return outputs, nil
+}
+
+func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -31,15 +117,15 @@ func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outp
 		return nil, fmt.Errorf("unable to find output content for labels")
 	}
 
-	outputDataBboxes := triton.DeserializeFloat32Tensor(rawOutputContentBboxes)
-	batchedOutputDataBboxes, err := triton.Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
+	outputDataBboxes := DeserializeFloat32Tensor(rawOutputContentBboxes)
+	batchedOutputDataBboxes, err := Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for boxes")
 	}
 
-	outputDataLabels := triton.DeserializeBytesTensor(rawOutputContentLabels, outputTensorBboxes.Shape[0]*outputTensorBboxes.Shape[1])
-	batchedOutputDataLabels, err := triton.Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorBboxes.Shape[0]*outputTensorBboxes.Shape[1])
+	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
@@ -50,13 +136,13 @@ func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outp
 		return nil, fmt.Errorf("inconsistent batch size for bboxes and labels")
 	}
 
-	return triton.DetectionOutput{
+	return DetectionOutput{
 		Boxes:  batchedOutputDataBboxes,
 		Labels: batchedOutputDataLabels,
 	}, nil
 }
 
-func postProcessOcrWithScore(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessOcrWithScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -82,22 +168,22 @@ func postProcessOcrWithScore(modelInferResponse *rayserver.ModelInferResponse, o
 		return nil, fmt.Errorf("unable to find output content for scores")
 	}
 
-	outputDataBboxes := triton.DeserializeFloat32Tensor(rawOutputContentBboxes)
-	batchedOutputDataBboxes, err := triton.Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
+	outputDataBboxes := DeserializeFloat32Tensor(rawOutputContentBboxes)
+	batchedOutputDataBboxes, err := Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for boxes")
 	}
 
-	outputDataLabels := triton.DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
-	batchedOutputDataLabels, err := triton.Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
+	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
 	}
 
-	outputDataScores := triton.DeserializeFloat32Tensor(rawOutputContentScores)
-	batchedOutputDataScores, err := triton.Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
@@ -108,14 +194,14 @@ func postProcessOcrWithScore(modelInferResponse *rayserver.ModelInferResponse, o
 		return nil, fmt.Errorf("inconsistent batch size for bboxes and labels")
 	}
 
-	return triton.OcrOutput{
+	return OcrOutput{
 		Boxes:  batchedOutputDataBboxes,
 		Texts:  batchedOutputDataLabels,
 		Scores: batchedOutputDataScores,
 	}, nil
 }
 
-func postProcessOcrWithoutScore(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessOcrWithoutScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -133,15 +219,15 @@ func postProcessOcrWithoutScore(modelInferResponse *rayserver.ModelInferResponse
 		return nil, fmt.Errorf("unable to find output content for labels")
 	}
 
-	outputDataBboxes := triton.DeserializeFloat32Tensor(rawOutputContentBboxes)
-	batchedOutputDataBboxes, err := triton.Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
+	outputDataBboxes := DeserializeFloat32Tensor(rawOutputContentBboxes)
+	batchedOutputDataBboxes, err := Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for boxes")
 	}
 
-	outputDataLabels := triton.DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
-	batchedOutputDataLabels, err := triton.Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
+	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
@@ -161,15 +247,16 @@ func postProcessOcrWithoutScore(modelInferResponse *rayserver.ModelInferResponse
 		batchedOutputDataScores = append(batchedOutputDataScores, batchedOutputDataScore)
 	}
 
-	return triton.OcrOutput{
+	return OcrOutput{
 		Boxes:  batchedOutputDataBboxes,
 		Texts:  batchedOutputDataLabels,
 		Scores: batchedOutputDataScores,
 	}, nil
 }
 
-func postProcessClassification(modelInferResponse *rayserver.ModelInferResponse, outputName string) (interface{}, error) {
+func postProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (interface{}, error) {
 	outputTensor, rawOutputContent, err := GetOutputFromInferResponse(outputName, modelInferResponse)
+
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to find inference output")
@@ -177,12 +264,12 @@ func postProcessClassification(modelInferResponse *rayserver.ModelInferResponse,
 	if rawOutputContent == nil {
 		return nil, fmt.Errorf("unable to find output content")
 	}
-	outputData := triton.DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+	outputData := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
 	return outputData, nil
 }
 
-func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse, outputs []*rayserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
-	var postprocessedOutputs []triton.BatchUnspecifiedTaskOutputs
+func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferResponse, outputs []*inferenceserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
+	var postprocessedOutputs []BatchUnspecifiedTaskOutputs
 	for _, output := range outputs {
 		outputTensor, rawOutputContent, err := GetOutputFromInferResponse(output.Name, modelInferResponse)
 		if err != nil {
@@ -197,21 +284,21 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 		switch output.Datatype {
 		case "BYTES":
 			if len(outputTensor.Shape) == 1 {
-				deserializedRawOutput := triton.DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0])
+				deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0])
 				serializedOutputs = append(serializedOutputs, deserializedRawOutput)
 			} else {
-				deserializedRawOutput := triton.DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
-				reshapedOutputs, _ := triton.Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
+				deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+				reshapedOutputs, _ := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
 				for _, reshapedOutput := range reshapedOutputs {
 					serializedOutputs = append(serializedOutputs, reshapedOutput)
 				}
 			}
 		case "FP32":
-			deserializedRawOutput := triton.DeserializeFloat32Tensor(rawOutputContent)
+			deserializedRawOutput := DeserializeFloat32Tensor(rawOutputContent)
 			if len(outputTensor.Shape) == 1 {
 				serializedOutputs = append(serializedOutputs, deserializedRawOutput)
 			} else if len(outputTensor.Shape) == 2 {
-				reshapedOutputs, err := triton.Reshape1DArrayFloat32To2D(deserializedRawOutput, outputTensor.Shape)
+				reshapedOutputs, err := Reshape1DArrayFloat32To2D(deserializedRawOutput, outputTensor.Shape)
 				if err != nil {
 					return nil, err
 				}
@@ -219,7 +306,7 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 					serializedOutputs = append(serializedOutputs, reshapedOutput)
 				}
 			} else if len(outputTensor.Shape) == 3 {
-				reshapedOutputs, err := triton.Reshape1DArrayFloat32To3D(deserializedRawOutput, outputTensor.Shape)
+				reshapedOutputs, err := Reshape1DArrayFloat32To3D(deserializedRawOutput, outputTensor.Shape)
 				if err != nil {
 					return nil, err
 				}
@@ -228,11 +315,11 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 				}
 			}
 		case "INT32":
-			deserializedRawOutput := triton.DeserializeInt32Tensor(rawOutputContent)
+			deserializedRawOutput := DeserializeInt32Tensor(rawOutputContent)
 			if len(outputTensor.Shape) == 1 {
 				serializedOutputs = append(serializedOutputs, deserializedRawOutput)
 			} else if len(outputTensor.Shape) == 2 {
-				reshapedOutputs, err := triton.Reshape1DArrayInt32To2D(deserializedRawOutput, outputTensor.Shape)
+				reshapedOutputs, err := Reshape1DArrayInt32To2D(deserializedRawOutput, outputTensor.Shape)
 				if err != nil {
 					return nil, err
 				}
@@ -241,8 +328,8 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 				}
 			}
 		case "STRING":
-			deserializedRawOutput := triton.DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
-			reshapedOutputs, err := triton.Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
+			deserializedRawOutput := DeserializeBytesTensor(rawOutputContent, outputTensor.Shape[0]*outputTensor.Shape[1])
+			reshapedOutputs, err := Reshape1DArrayStringTo2D(deserializedRawOutput, outputTensor.Shape)
 			if err != nil {
 				return nil, err
 			}
@@ -258,7 +345,7 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 		} else {
 			shape = outputTensor.Shape[1:]
 		}
-		postprocessedOutputs = append(postprocessedOutputs, triton.BatchUnspecifiedTaskOutputs{
+		postprocessedOutputs = append(postprocessedOutputs, BatchUnspecifiedTaskOutputs{
 			Name:              output.Name,
 			Shape:             shape,
 			DataType:          output.Datatype,
@@ -268,7 +355,7 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 	return postprocessedOutputs, nil
 }
 
-func postProcessKeypoint(modelInferResponse *rayserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
+func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
 	outputTensorKeypoints, rawOutputContentKeypoints, err := GetOutputFromInferResponse(outputNameKeypoints, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -296,22 +383,22 @@ func postProcessKeypoint(modelInferResponse *rayserver.ModelInferResponse, outpu
 		return nil, fmt.Errorf("unable to find output content for labels")
 	}
 
-	outputDataKeypoints := triton.DeserializeFloat32Tensor(rawOutputContentKeypoints)
-	batchedOutputDataKeypoints, err := triton.Reshape1DArrayFloat32To4D(outputDataKeypoints, outputTensorKeypoints.Shape)
+	outputDataKeypoints := DeserializeFloat32Tensor(rawOutputContentKeypoints)
+	batchedOutputDataKeypoints, err := Reshape1DArrayFloat32To4D(outputDataKeypoints, outputTensorKeypoints.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for keypoints")
 	}
 
-	outputDataBoxes := triton.DeserializeFloat32Tensor(rawOutputContentBoxes)
-	batchedOutputDataBoxes, err := triton.Reshape1DArrayFloat32To3D(outputDataBoxes, outputTensorBoxes.Shape)
+	outputDataBoxes := DeserializeFloat32Tensor(rawOutputContentBoxes)
+	batchedOutputDataBoxes, err := Reshape1DArrayFloat32To3D(outputDataBoxes, outputTensorBoxes.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for boxes")
 	}
 
-	outputDataScores := triton.DeserializeFloat32Tensor(rawOutputContentScores)
-	batchedOutputDataScores, err := triton.Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for scores")
@@ -321,14 +408,14 @@ func postProcessKeypoint(modelInferResponse *rayserver.ModelInferResponse, outpu
 		return nil, fmt.Errorf("inconsistent batch size for keypoints and scores")
 	}
 
-	return triton.KeypointOutput{
+	return KeypointOutput{
 		Keypoints: batchedOutputDataKeypoints,
 		Boxes:     batchedOutputDataBoxes,
 		Scores:    batchedOutputDataScores,
 	}, nil
 }
 
-func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -355,8 +442,8 @@ func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferRes
 		return nil, fmt.Errorf("unable to find output content for labels")
 	}
 
-	outputDataLabels := triton.DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
-	batchedOutputDataLabels, err := triton.Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentLabels, outputTensorLabels.Shape[0]*outputTensorLabels.Shape[1])
+	batchedOutputDataLabels, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorLabels.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
@@ -370,22 +457,22 @@ func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferRes
 	if rawOutputContentScores == nil {
 		return nil, fmt.Errorf("unable to find output content for scores")
 	}
-	outputDataRles := triton.DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
-	batchedOutputDataRles, err := triton.Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
+	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
+	batchedOutputDataRles, err := Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for RLEs")
 	}
 
-	outputDataBboxes := triton.DeserializeFloat32Tensor(rawOutputContentBboxes)
-	batchedOutputDataBboxes, err := triton.Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
+	outputDataBboxes := DeserializeFloat32Tensor(rawOutputContentBboxes)
+	batchedOutputDataBboxes, err := Reshape1DArrayFloat32To3D(outputDataBboxes, outputTensorBboxes.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for boxes")
 	}
 
-	outputDataScores := triton.DeserializeFloat32Tensor(rawOutputContentScores)
-	batchedOutputDataScores, err := triton.Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
+	outputDataScores := DeserializeFloat32Tensor(rawOutputContentScores)
+	batchedOutputDataScores, err := Reshape1DArrayFloat32To2D(outputDataScores, outputTensorScores.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for scores")
@@ -399,7 +486,7 @@ func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferRes
 		return nil, fmt.Errorf("inconsistent batch size for rles, bboxes, labels and scores")
 	}
 
-	return triton.InstanceSegmentationOutput{
+	return InstanceSegmentationOutput{
 		Rles:   batchedOutputDataRles,
 		Boxes:  batchedOutputDataBboxes,
 		Labels: batchedOutputDataLabels,
@@ -407,7 +494,7 @@ func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferRes
 	}, nil
 }
 
-func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
+func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -426,15 +513,15 @@ func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferRes
 		return nil, fmt.Errorf("unable to find output content for labels")
 	}
 
-	outputDataLabels := triton.DeserializeBytesTensor(rawOutputContentCategories, outputTensorCategories.Shape[0]*outputTensorCategories.Shape[1])
-	batchedOutputDataCategories, err := triton.Reshape1DArrayStringTo2D(outputDataLabels, outputTensorCategories.Shape)
+	outputDataLabels := DeserializeBytesTensor(rawOutputContentCategories, outputTensorCategories.Shape[0]*outputTensorCategories.Shape[1])
+	batchedOutputDataCategories, err := Reshape1DArrayStringTo2D(outputDataLabels, outputTensorCategories.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for labels")
 	}
 
-	outputDataRles := triton.DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
-	batchedOutputDataRles, err := triton.Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
+	outputDataRles := DeserializeBytesTensor(rawOutputContentRles, outputTensorRles.Shape[0]*outputTensorRles.Shape[1])
+	batchedOutputDataRles, err := Reshape1DArrayStringTo2D(outputDataRles, outputTensorRles.Shape)
 	if err != nil {
 		log.Printf("%v", err.Error())
 		return nil, fmt.Errorf("unable to reshape inference output for RLEs")
@@ -446,13 +533,13 @@ func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferRes
 		return nil, fmt.Errorf("inconsistent batch size for rles and categories")
 	}
 
-	return triton.SemanticSegmentationOutput{
+	return SemanticSegmentationOutput{
 		Rles:       batchedOutputDataRles,
 		Categories: batchedOutputDataCategories,
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, outputNameImages string) (interface{}, error) {
+func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string) (interface{}, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -464,7 +551,7 @@ func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, ou
 	batchedOutputDataImages = append(batchedOutputDataImages, []string{}) // single batch support
 	var lenSingleImage int = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
 	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
-		imgRaw := triton.DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
+		imgRaw := DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
 
 		width := int(outputTensorImages.Shape[1])
 		height := int(outputTensorImages.Shape[2])
@@ -487,12 +574,12 @@ func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, ou
 		base64EncodedStr := base64.StdEncoding.EncodeToString(buff.Bytes())
 		batchedOutputDataImages[0] = append(batchedOutputDataImages[0], base64EncodedStr)
 	}
-	return triton.TextToImageOutput{
+	return TextToImageOutput{
 		Images: batchedOutputDataImages,
 	}, nil
 }
 
-func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse, outputNameTexts string) (interface{}, error) {
+func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string) (interface{}, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")
@@ -500,9 +587,9 @@ func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse,
 	if outputTensorTexts == nil {
 		return nil, fmt.Errorf("unable to find output content for generated texts")
 	}
-	outputTexts := triton.DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
+	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
 
-	return triton.TextGenerationOutput{
+	return TextGenerationOutput{
 		Text: outputTexts,
 	}, nil
 }

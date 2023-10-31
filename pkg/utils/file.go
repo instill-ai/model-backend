@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -65,7 +67,12 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 	}
 	defer archive.Close()
 	var readmeFilePath string
-	var modelName string
+	var createdModels []datamodel.InferenceModel
+	var currentNewModelName string
+	var currentOldModelName string
+	var ensembleFilePath string
+	var newModelNameMap = make(map[string]string)
+	var configFiles []string
 	for _, f := range archive.File {
 		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
 			continue
@@ -78,15 +85,57 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			return "", "", fmt.Errorf("invalid file path")
 		}
 
-		// TODO: version mapping?
-		fPath = filepath.Join(dstDir, owner, uploadedModel.ID, "latest", f.Name)
-
-		if strings.Contains(f.Name, "README.md") {
-			readmeFilePath = fPath
-		} else {
-			modelName = filepath.Join(owner, uploadedModel.ID, "latest", f.Name)
+		if f.FileInfo().IsDir() {
+			dirName := f.Name
+			if string(dirName[len(dirName)-1]) == "/" {
+				dirName = dirName[:len(dirName)-1]
+			}
+			if !strings.Contains(dirName, "/") { // top directory model
+				currentOldModelName = dirName
+				dirName = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, dirName, "latest")
+				currentNewModelName = dirName
+				newModelNameMap[currentOldModelName] = currentNewModelName
+			} else { // version folder
+				dirName = strings.Replace(dirName, currentOldModelName, currentNewModelName, 1)
+				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentNewModelName)
+				match, _ := regexp.MatchString(patternVersionFolder, dirName)
+				if match {
+					elems := strings.Split(dirName, "/")
+					sVersion := elems[len(elems)-1]
+					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
+					if err == nil {
+						createdModels = append(createdModels, datamodel.InferenceModel{
+							Name:    currentNewModelName, // Triton model name
+							State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
+							Version: int(iVersion),
+						})
+					}
+				}
+			}
+			fPath := filepath.Join(dstDir, dirName)
+			if err := ValidateFilePath(fPath); err != nil {
+				return "", "", err
+			}
+			err = os.MkdirAll(fPath, os.ModePerm)
+			if err != nil {
+				return "", "", err
+			}
+			continue
 		}
 
+		// Update triton folder into format {model_name}#{task_name}#{task_version}
+		subStrs := strings.Split(f.Name, "/")
+		if len(subStrs) < 1 {
+			continue
+		}
+		// Triton modelname is folder name
+		oldModelName := subStrs[0]
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], "latest")
+		newModelName := subStrs[0]
+		fPath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
+		if strings.Contains(f.Name, "README.md") {
+			readmeFilePath = fPath
+		}
 		if err := ValidateFilePath(fPath); err != nil {
 			return "", "", err
 		}
@@ -111,23 +160,182 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 
 		dstFile.Close()
 		fileInArchive.Close()
+		// Update ModelName in config.pbtxt
+		fileExtension := filepath.Ext(fPath)
+		if fileExtension == ".pbtxt" {
+			configFiles = append(configFiles, fPath)
+			if isEnsembleConfig(fPath) {
+				ensembleFilePath = fPath
+			}
+			err = UpdateConfigModelName(fPath, oldModelName, newModelName)
+			if err != nil {
+				return "", "", err
+			}
+		}
 	}
 
-	uploadedModel.InferenceModels = []datamodel.InferenceModel{
-		{
-			Name:     modelName,
-			Platform: "onnx",
-			Version:  1,
-		},
-	}
+	if ensembleFilePath == "" && len(configFiles) != 0 {
+		for _, filePath := range configFiles {
+			if couldBeEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+				break
+			}
+		}
 
-	return readmeFilePath, fPath, nil
+		for oldModelName, newModelName := range newModelNameMap {
+			err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	// Update ModelName in ensemble model config file
+	if ensembleFilePath != "" && len(configFiles) != 0 {
+		for oldModelName, newModelName := range newModelNameMap {
+			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
+			if err != nil {
+				return "", "", err
+			}
+		}
+		for i := 0; i < len(createdModels); i++ {
+			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
+				createdModels[i].Platform = "ensemble"
+				break
+			}
+		}
+	} else {
+		for i := 0; i < len(createdModels); i++ {
+			createdModels[i].Platform = "ray"
+		}
+	}
+	uploadedModel.InferenceModels = createdModels
+	return readmeFilePath, ensembleFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
 func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
+	var createdModels []datamodel.InferenceModel
+	var ensembleFilePath string
+	var newModelNameMap = make(map[string]string)
+	var readmeFilePath string
+	files := []FileMeta{}
+	var configFiles []string
+	var fileRe = regexp.MustCompile(`/.git|/.dvc|/.dvcignore`)
+	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
+		if !fileRe.MatchString(path) {
+			files = append(files, FileMeta{
+				path:  path,
+				fInfo: f,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+	modelRootDir := strings.Join([]string{dstDir, owner}, "/")
+	err = os.MkdirAll(modelRootDir, os.ModePerm)
+	if err != nil {
+		return "", "", err
+	}
+	var modelConfiguration datamodel.GitHubModelConfiguration
+	_ = json.Unmarshal(model.Configuration, &modelConfiguration)
+	for _, f := range files {
+		if f.path == modelDir {
+			continue
+		}
+		// Update triton folder into format {model_name}#{task_name}#{task_version}
+		subStrs := strings.Split(strings.Replace(f.path, modelDir+"/", "", 1), "/")
+		if len(subStrs) < 1 {
+			continue
+		}
+		// Triton modelname is folder name
+		oldModelName := subStrs[0]
+		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, model.ID, oldModelName, modelConfiguration.Tag)
+		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 
-	return "", "", nil
+		if f.fInfo.IsDir() { // create new folder
+			err = os.MkdirAll(filePath, os.ModePerm)
+
+			if err != nil {
+				return "", "", err
+			}
+			newModelNameMap[oldModelName] = subStrs[0]
+			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
+				createdModels = append(createdModels, datamodel.InferenceModel{
+					Name:    subStrs[0], // Triton model name
+					State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
+					Version: int(v),
+				})
+			}
+			continue
+		}
+		if strings.Contains(filePath, "README") {
+			readmeFilePath = filePath
+		}
+
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
+		if err != nil {
+			return "", "", err
+		}
+		srcFile, err := os.Open(f.path)
+		if err != nil {
+			return "", "", err
+		}
+		if _, err := io.Copy(dstFile, srcFile); err != nil {
+			return "", "", err
+		}
+		dstFile.Close()
+		srcFile.Close()
+		// Update ModelName in config.pbtxt
+		fileExtension := filepath.Ext(filePath)
+		if fileExtension == ".pbtxt" {
+			configFiles = append(configFiles, filePath)
+			if isEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+			}
+			err = UpdateConfigModelName(filePath, oldModelName, subStrs[0])
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	if ensembleFilePath == "" && len(configFiles) != 0 {
+		for _, filePath := range configFiles {
+			if couldBeEnsembleConfig(filePath) {
+				ensembleFilePath = filePath
+				break
+			}
+		}
+
+		for oldModelName, newModelName := range newModelNameMap {
+			err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	// Update ModelName in ensemble model config file
+	if ensembleFilePath != "" && len(configFiles) != 0 {
+		for oldModelName, newModelName := range newModelNameMap {
+			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
+			if err != nil {
+				return "", "", err
+			}
+		}
+		for i := 0; i < len(createdModels); i++ {
+			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
+				createdModels[i].Platform = "ensemble"
+				break
+			}
+		}
+	} else {
+		for i := 0; i < len(createdModels); i++ {
+			createdModels[i].Platform = "ray"
+		}
+	}
+	model.InferenceModels = createdModels
+	return readmeFilePath, ensembleFilePath, nil
 }
 
 func SaveFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadServer) (outFile string, parent string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {

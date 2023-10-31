@@ -89,7 +89,7 @@ func Reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error)
 	}
 
 	if len(shape) != 2 {
-		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 2D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -97,7 +97,7 @@ func Reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error)
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 
 	res := make([][]string, shape[0])
@@ -114,7 +114,7 @@ func Reshape1DArrayFloat32To3D(array []float32, shape []int64) ([][][]float32, e
 	}
 
 	if len(shape) != 3 {
-		return nil, fmt.Errorf("Expected a 3D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 3D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -122,7 +122,7 @@ func Reshape1DArrayFloat32To3D(array []float32, shape []int64) ([][][]float32, e
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 
 	res := make([][][]float32, shape[0])
@@ -145,7 +145,7 @@ func Reshape1DArrayFloat32To4D(array []float32, shape []int64) ([][][][]float32,
 	}
 
 	if len(shape) != 4 {
-		return nil, fmt.Errorf("Expected a 4D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 4D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -153,7 +153,7 @@ func Reshape1DArrayFloat32To4D(array []float32, shape []int64) ([][][][]float32,
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 
 	res := make([][][][]float32, shape[0])
@@ -178,7 +178,7 @@ func Reshape1DArrayInt32To3D(array []int32, shape []int64) ([][][]int32, error) 
 	}
 
 	if len(shape) != 3 {
-		return nil, fmt.Errorf("Expected a 3D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 3D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -186,7 +186,7 @@ func Reshape1DArrayInt32To3D(array []int32, shape []int64) ([][][]int32, error) 
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 
 	res := make([][][]int32, shape[0])
@@ -209,7 +209,7 @@ func Reshape1DArrayFloat32To2D(array []float32, shape []int64) ([][]float32, err
 	}
 
 	if len(shape) != 2 {
-		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 2D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -217,7 +217,7 @@ func Reshape1DArrayFloat32To2D(array []float32, shape []int64) ([][]float32, err
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 	res := make([][]float32, shape[0])
 	for i := int64(0); i < shape[0]; i++ {
@@ -235,7 +235,7 @@ func Reshape1DArrayInt32To2D(array []int32, shape []int64) ([][]int32, error) {
 	}
 
 	if len(shape) != 2 {
-		return nil, fmt.Errorf("Expected a 2D shape, got %vD shape %v", len(shape), shape)
+		return nil, fmt.Errorf("expected a 2D shape, got %vD shape %v", len(shape), shape)
 	}
 
 	var prod int64 = 1
@@ -243,7 +243,7 @@ func Reshape1DArrayInt32To2D(array []int32, shape []int64) ([][]int32, error) {
 		prod *= s
 	}
 	if prod != int64(len(array)) {
-		return nil, fmt.Errorf("Cannot reshape array of length %v into shape %v", len(array), shape)
+		return nil, fmt.Errorf("cannot reshape array of length %v into shape %v", len(array), shape)
 	}
 	res := make([][]int32, shape[0])
 	for i := int64(0); i < shape[0]; i++ {
@@ -266,7 +266,7 @@ func GetOutputFromInferResponse(name string, response *inferenceserver.ModelInfe
 		}
 	}
 
-	return nil, nil, fmt.Errorf("Unable to find output named %v", name)
+	return nil, nil, fmt.Errorf("unable to find output named %v", name)
 }
 
 func ParseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (int64, int64, int64) {

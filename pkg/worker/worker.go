@@ -33,9 +33,9 @@ type Worker interface {
 type worker struct {
 	cache            *bigcache.BigCache
 	repository       repository.Repository
+	ray              ray.Ray
 	triton           triton.Triton
 	controllerClient controllerPB.ControllerPrivateServiceClient
-	ray              ray.Ray
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
@@ -45,8 +45,8 @@ func NewWorker(r repository.Repository, t triton.Triton, c controllerPB.Controll
 	return &worker{
 		cache:            cache,
 		repository:       r,
+		ray:              ra,
 		triton:           t,
 		controllerClient: c,
-		ray:              ra,
 	}
 }

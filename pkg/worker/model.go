@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -157,26 +158,26 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		_ = os.RemoveAll(modelSrcDir)
 	}
 
-	// tEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
-	// for _, tModel := range inferenceModels {
-	// 	if tEnsembleModel.Name != "" && tEnsembleModel.Name == tModel.Name { // load ensemble model last.
-	// 		continue
-	// 	}
-	// 	if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
-	// 		continue
-	// 	}
-	// 	return err
-	// }
-
-	// if tEnsembleModel.Name != "" { // load ensemble model.
-	// 	if _, err = w.triton.LoadModelRequest(ctx, tEnsembleModel.Name); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	rayModels, _ := w.repository.GetInferenceModels(param.Model.UID)
-	for _, rModel := range rayModels {
-		if err = w.ray.DeployModel(commonPB.Task(param.Model.Task), rModel.Name); err != nil {
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	switch iEnsembleModel.Platform {
+	case "ensemble":
+		for _, tModel := range inferenceModels {
+			if iEnsembleModel.Name != "" && iEnsembleModel.Name == tModel.Name { // load ensemble model last.
+				continue
+			}
+			if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
+				continue
+			}
+			return err
+		}
+		if iEnsembleModel.Name != "" { // load ensemble model.
+			if _, err = w.triton.LoadModelRequest(ctx, iEnsembleModel.Name); err != nil {
+				return err
+			}
+		}
+	case "ray":
+		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
+		if err = w.ray.DeployModel(commonPB.Task(param.Model.Task), name); err != nil {
 			logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
 		}
 	}
@@ -217,9 +218,18 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	logger.Info("UnDeployModelActivity started")
 
-	rayModels, _ := w.repository.GetInferenceModels(param.Model.UID)
-	for _, rModel := range rayModels {
-		if err := w.ray.UndeployModel(rModel.Name); err != nil {
+	inferenceModels, _ := w.repository.GetInferenceModels(param.Model.UID)
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	switch iEnsembleModel.Platform {
+	case "ensemble":
+		for _, rModel := range inferenceModels {
+			if err := w.ray.UndeployModel(rModel.Name); err != nil {
+				logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
+			}
+		}
+	case "ray":
+		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
+		if err := w.ray.UndeployModel(name); err != nil {
 			logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
 		}
 	}

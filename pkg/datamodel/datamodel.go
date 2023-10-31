@@ -140,7 +140,7 @@ type InferenceModel struct {
 	// Inference Model status
 	State ModelState `json:"state,omitempty"`
 
-	// Model platform, only store ensemble model for triton, and inference framework for ray
+	// Model platform, only store ensemble model for triton, or ray
 	Platform string `json:"platform,omitempty"`
 
 	// Model uid

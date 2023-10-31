@@ -316,7 +316,9 @@ func (r *repository) GetInferenceModels(modelUID uuid.UUID) ([]*datamodel.Infere
 
 func (r *repository) GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
 	var ensembleModel *datamodel.InferenceModel
-	result := r.db.Model(&datamodel.InferenceModel{}).Where(map[string]interface{}{"model_uid": modelUID, "platform": "onnx"}).First(&ensembleModel)
+	result := r.db.Model(&datamodel.InferenceModel{}).
+		Where("(model_uid = ? AND (platform = ? OR platform = ?))", modelUID, "ensemble", "ray").
+		First(&ensembleModel)
 	if result.Error != nil {
 		return &datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}

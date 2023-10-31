@@ -19,6 +19,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
+	"github.com/instill-ai/model-backend/pkg/triton"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
@@ -52,7 +53,7 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(task commonPB.Task, modelPath string) error
 	UndeployModel(modelPath string) error
-	PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error)
+	Init()
 	Close()
 }
 
@@ -102,7 +103,6 @@ func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInst
 
 	// Submit modelReady request to server
 	modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
-
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			modelReadyResponse = &rayserver.ModelReadyResponse{
@@ -208,10 +208,10 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(textToImageInput.CfgScale)) // Fixed value.
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("NONE")}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
@@ -223,10 +223,10 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInput.TopK))
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.BadWordsList)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.BadWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case commonPB.Task_TASK_CLASSIFICATION,
@@ -235,9 +235,9 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		commonPB.Task_TASK_OCR,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
 		commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor(inferInput.([][]byte)))
 	default:
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor(inferInput.([][]byte)))
 	}
 
 	// Submit inference request to server
@@ -250,7 +250,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	return modelInferResponse, nil
 }
 
-func (r *ray) PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
+func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error
@@ -336,44 +336,36 @@ func (r *ray) PostProcess(inferResponse *rayserver.ModelInferResponse, modelMeta
 }
 
 func (r *ray) DeployModel(task commonPB.Task, modelPath string) error {
-	cmd := exec.Command("python", "ray_server.py",
+	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	cmd := exec.Command("python", "model.py",
 		"--func", "deploy",
 		"--task", task.String(),
-		"--model", filepath.Join(config.Config.RayServer.ModelStore, modelPath),
+		"--model", filepath.Join(modelPath, "model.onnx"),
 	)
-	cmd.Dir = FolderPath
+	cmd.Dir = modelPath
 
-	// var outb, errb bytes.Buffer
-	// cmd.Stdout = &outb
-	// cmd.Stderr = &errb
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
-
-	// fmt.Println("out:", outb.String(), "errb:", errb.String(), "err", err)
 
 	return err
 }
 
 func (r *ray) UndeployModel(modelPath string) error {
-	cmd := exec.Command("python", "ray_server.py",
+	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	cmd := exec.Command("python", "model.py",
 		"--func", "undeploy",
-		"--model", filepath.Join(config.Config.RayServer.ModelStore, modelPath),
+		"--model", filepath.Join(modelPath, "model.onnx"),
 	)
-	cmd.Dir = FolderPath
+	cmd.Dir = modelPath
 
-	// var outb, errb bytes.Buffer
-	// cmd.Stdout = &outb
-	// cmd.Stderr = &errb
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
-
-	// fmt.Println("out:", outb.String(), "errb:", errb.String(), "err", err)
 
 	return err
 }

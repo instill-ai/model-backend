@@ -112,12 +112,12 @@ type service struct {
 func NewService(r repository.Repository, t triton.Triton, m mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, tc client.Client, cs controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Service {
 	return &service{
 		repository:               r,
+		ray:                      ra,
 		triton:                   t,
 		mgmtPrivateServiceClient: m,
 		redisClient:              rc,
 		temporalClient:           tc,
 		controllerClient:         cs,
-		ray:                      ra,
 	}
 }
 
@@ -244,6 +244,12 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 
 func (s *service) UndeployModel(ctx context.Context, ownerPermalink string, userPermalink string, modelUID uuid.UUID) error {
 
+	var err error
+
+	if _, err = s.repository.GetInferenceModels(modelUID); err != nil {
+		return err
+	}
+
 	if err := s.repository.UpdateUserModel(ownerPermalink, userPermalink, modelUID, &datamodel.Model{
 		State: datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 	}); err != nil {
@@ -346,16 +352,28 @@ func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.
 
 	inferenceModelName := inferenceModel.Name
 	inferenceModelVersion := inferenceModel.Version
-	modelReadyResponse := s.ray.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-
 	state := modelPB.Model_STATE_UNSPECIFIED
-	if modelReadyResponse == nil {
-		state = modelPB.Model_STATE_ERROR
-	} else if modelReadyResponse.Ready {
-		state = modelPB.Model_STATE_ONLINE
-	} else {
-		state = modelPB.Model_STATE_OFFLINE
+	switch inferenceModel.Platform {
+	case "ensemble":
+		modelReadyResponse := s.triton.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if modelReadyResponse == nil {
+			state = modelPB.Model_STATE_ERROR
+		} else if modelReadyResponse.Ready {
+			state = modelPB.Model_STATE_ONLINE
+		} else {
+			state = modelPB.Model_STATE_OFFLINE
+		}
+	case "ray":
+		modelReadyResponse := s.ray.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if modelReadyResponse == nil {
+			state = modelPB.Model_STATE_ERROR
+		} else if modelReadyResponse.Ready {
+			state = modelPB.Model_STATE_ONLINE
+		} else {
+			state = modelPB.Model_STATE_OFFLINE
+		}
 	}
+
 	return &state, nil
 }
 
@@ -368,41 +386,53 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 
 	inferenceModelName := inferenceModel.Name
 	inferenceModelVersion := inferenceModel.Version
-	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-	if modelMetadataResponse == nil {
-		return nil, fmt.Errorf("model is offline")
-	}
-
-	// modelConfigResponse := s.triton.ModelConfigRequest(ctx, ensembleModelName, fmt.Sprint(ensembleModelVersion))
-	// if modelMetadataResponse == nil {
-	// 	return nil, err
-	// }
-
-	// We use a simple model that takes 2 input tensors of 16 integers
-	// each and returns 2 output tensors of 16 integers each. One
-	// output tensor is the element-wise sum of the inputs and one
-	// output is the element-wise difference.
-	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	// We expect there to be 2 results (each with batch-size 1). Walk
-	// over all 16 result elements and print the sum and difference
-	// calculated by the modelPB.
-	postprocessResponse, err := s.ray.PostProcess(inferResponse, modelMetadataResponse, task)
-	if err != nil {
-		return nil, err
+	var postprocessResponse interface{}
+	switch inferenceModel.Platform {
+	case "ensemble":
+		modelMetadataResponse := s.triton.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if modelMetadataResponse == nil {
+			return nil, fmt.Errorf("model is offline")
+		}
+		modelConfigResponse := s.triton.ModelConfigRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if modelConfigResponse == nil {
+			return nil, err
+		}
+		// We use a simple model that takes 2 input tensors of 16 integers
+		// each and returns 2 output tensors of 16 integers each. One
+		// output tensor is the element-wise sum of the inputs and one
+		// output is the element-wise difference.
+		inferResponse, err := s.triton.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse, modelConfigResponse)
+		if err != nil {
+			return nil, err
+		}
+		// We expect there to be 2 results (each with batch-size 1). Walk
+		// over all 16 result elements and print the sum and difference
+		// calculated by the modelPB.
+		postprocessResponse, err = triton.PostProcess(inferResponse, modelMetadataResponse, task)
+		if err != nil {
+			return nil, err
+		}
+	case "ray":
+		modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if modelMetadataResponse == nil {
+			return nil, fmt.Errorf("model is offline")
+		}
+		inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse)
+		if err != nil {
+			return nil, err
+		}
+		postprocessResponse, err = ray.PostProcess(inferResponse, modelMetadataResponse, task)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	switch task {
 	case commonPB.Task_TASK_CLASSIFICATION:
 		clsResponses := postprocessResponse.([]string)
 		var clsOutputs []*modelPB.TaskOutput
-		fmt.Println("========================postProcessClassification==============================")
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
-			fmt.Println(len(clsResSplit))
 			if len(clsResSplit) == 2 {
 				score, err := strconv.ParseFloat(clsResSplit[0], 32)
 				if err != nil {
@@ -856,11 +886,16 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 		return err
 	}
 
-	// TODO: implement this
 	// remove README.md
 	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, ownerPermalink, modelInDB.ID))
-	modelDir := filepath.Join(config.Config.TritonServer.ModelStore, "")
-	_ = os.RemoveAll(modelDir)
+	tritonModels, err := s.repository.GetInferenceModels(modelInDB.UID)
+	if err == nil {
+		// remove model folders
+		for i := 0; i < len(tritonModels); i++ {
+			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
+			_ = os.RemoveAll(modelDir)
+		}
+	}
 
 	for state.String() == modelPB.Model_STATE_ONLINE.String() {
 		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
