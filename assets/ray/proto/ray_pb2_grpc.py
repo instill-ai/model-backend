@@ -16,17 +16,17 @@ class RayServiceStub(object):
             channel: A grpc.Channel.
         """
         self.ModelReady = channel.unary_unary(
-                '/model.ray.v1alpha.RayService/ModelReady',
+                '/ray.serve.RayService/ModelReady',
                 request_serializer=ray__pb2.ModelReadyRequest.SerializeToString,
                 response_deserializer=ray__pb2.ModelReadyResponse.FromString,
                 )
         self.ModelMetadata = channel.unary_unary(
-                '/model.ray.v1alpha.RayService/ModelMetadata',
+                '/ray.serve.RayService/ModelMetadata',
                 request_serializer=ray__pb2.ModelMetadataRequest.SerializeToString,
                 response_deserializer=ray__pb2.ModelMetadataResponse.FromString,
                 )
         self.ModelInfer = channel.unary_unary(
-                '/model.ray.v1alpha.RayService/ModelInfer',
+                '/ray.serve.RayService/ModelInfer',
                 request_serializer=ray__pb2.ModelInferRequest.SerializeToString,
                 response_deserializer=ray__pb2.ModelInferResponse.FromString,
                 )
@@ -80,7 +80,7 @@ def add_RayServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'model.ray.v1alpha.RayService', rpc_method_handlers)
+            'ray.serve.RayService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -100,7 +100,7 @@ class RayService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/model.ray.v1alpha.RayService/ModelReady',
+        return grpc.experimental.unary_unary(request, target, '/ray.serve.RayService/ModelReady',
             ray__pb2.ModelReadyRequest.SerializeToString,
             ray__pb2.ModelReadyResponse.FromString,
             options, channel_credentials,
@@ -117,7 +117,7 @@ class RayService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/model.ray.v1alpha.RayService/ModelMetadata',
+        return grpc.experimental.unary_unary(request, target, '/ray.serve.RayService/ModelMetadata',
             ray__pb2.ModelMetadataRequest.SerializeToString,
             ray__pb2.ModelMetadataResponse.FromString,
             options, channel_credentials,
@@ -134,7 +134,7 @@ class RayService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/model.ray.v1alpha.RayService/ModelInfer',
+        return grpc.experimental.unary_unary(request, target, '/ray.serve.RayService/ModelInfer',
             ray__pb2.ModelInferRequest.SerializeToString,
             ray__pb2.ModelInferResponse.FromString,
             options, channel_credentials,

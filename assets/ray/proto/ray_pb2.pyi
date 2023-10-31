@@ -27,6 +27,16 @@ class ModelMetadataRequest(_message.Message):
     version: str
     def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ...) -> None: ...
 
+class InferTensor(_message.Message):
+    __slots__ = ["name", "datatype", "shape"]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    DATATYPE_FIELD_NUMBER: _ClassVar[int]
+    SHAPE_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    datatype: str
+    shape: _containers.RepeatedScalarFieldContainer[int]
+    def __init__(self, name: _Optional[str] = ..., datatype: _Optional[str] = ..., shape: _Optional[_Iterable[int]] = ...) -> None: ...
+
 class ModelMetadataResponse(_message.Message):
     __slots__ = ["name", "versions", "framework", "inputs", "outputs"]
     class TensorMetadata(_message.Message):
@@ -49,16 +59,6 @@ class ModelMetadataResponse(_message.Message):
     inputs: _containers.RepeatedCompositeFieldContainer[ModelMetadataResponse.TensorMetadata]
     outputs: _containers.RepeatedCompositeFieldContainer[ModelMetadataResponse.TensorMetadata]
     def __init__(self, name: _Optional[str] = ..., versions: _Optional[_Iterable[str]] = ..., framework: _Optional[str] = ..., inputs: _Optional[_Iterable[_Union[ModelMetadataResponse.TensorMetadata, _Mapping]]] = ..., outputs: _Optional[_Iterable[_Union[ModelMetadataResponse.TensorMetadata, _Mapping]]] = ...) -> None: ...
-
-class InferTensor(_message.Message):
-    __slots__ = ["name", "datatype", "shape"]
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    DATATYPE_FIELD_NUMBER: _ClassVar[int]
-    SHAPE_FIELD_NUMBER: _ClassVar[int]
-    name: str
-    datatype: str
-    shape: _containers.RepeatedScalarFieldContainer[int]
-    def __init__(self, name: _Optional[str] = ..., datatype: _Optional[str] = ..., shape: _Optional[_Iterable[int]] = ...) -> None: ...
 
 class ModelInferRequest(_message.Message):
     __slots__ = ["model_name", "model_version", "inputs", "outputs", "raw_input_contents"]

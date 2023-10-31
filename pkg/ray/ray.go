@@ -58,8 +58,9 @@ type Ray interface {
 }
 
 type ray struct {
-	rayClient  rayserver.RayServiceClient
-	connection *grpc.ClientConn
+	rayClient       rayserver.RayServiceClient
+	rayServerClient rayserver.RayServeAPIServiceClient
+	connection      *grpc.ClientConn
 }
 
 func NewRay() Ray {
@@ -79,40 +80,71 @@ func (r *ray) Init() {
 	// Create client from gRPC server connection
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
+	r.rayServerClient = rayserver.NewRayServeAPIServiceClient(conn)
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
-	return true
+	logger, _ := logger.GetZapLogger(ctx)
+
+	resp, err := r.rayServerClient.Healthz(ctx, &rayserver.HealthzRequest{})
+	if err != nil {
+		logger.Error(err.Error())
+		return false
+	}
+
+	if resp != nil && resp.Message == "success" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelReadyResponse {
 	logger, _ := logger.GetZapLogger(ctx)
 
+	listResp, err := r.rayServerClient.ListApplications(ctx, &rayserver.ListApplicationsRequest{})
+	if err != nil {
+		fmt.Println("============================")
+		logger.Error(err.Error())
+		fmt.Println("============================")
+		return nil
+	}
+
+	servingApps := listResp.GetApplicationNames()
+
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
 	if err != nil {
 		logger.Error(err.Error())
+		return nil
 	}
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
+	for _, app := range servingApps {
+		if app == applicationMetadatValue {
+			ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-	// Create ready request for a given model
-	modelReadyRequest := rayserver.ModelReadyRequest{
-		Name:    modelName,
-		Version: modelInstance,
-	}
-
-	// Submit modelReady request to server
-	modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			modelReadyResponse = &rayserver.ModelReadyResponse{
-				Ready: false,
+			// Create ready request for a given model
+			modelReadyRequest := rayserver.ModelReadyRequest{
+				Name:    modelName,
+				Version: modelInstance,
 			}
-		} else {
-			logger.Error(err.Error())
+
+			// Submit modelReady request to server
+			modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
+			if err != nil {
+				if status.Code(err) == codes.NotFound {
+					modelReadyResponse = &rayserver.ModelReadyResponse{
+						Ready: false,
+					}
+				} else {
+					logger.Error(err.Error())
+				}
+			}
+			return modelReadyResponse
 		}
 	}
-	return modelReadyResponse
+	return &rayserver.ModelReadyResponse{
+		Ready: false,
+	}
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse {
