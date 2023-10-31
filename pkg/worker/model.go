@@ -19,7 +19,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -177,7 +176,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}
 	case "ray":
 		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
-		if err = w.ray.DeployModel(commonPB.Task(param.Model.Task), name); err != nil {
+		if err = w.ray.DeployModel(name); err != nil {
 			logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
 		}
 	}

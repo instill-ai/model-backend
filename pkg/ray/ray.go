@@ -51,7 +51,7 @@ type Ray interface {
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	DeployModel(task commonPB.Task, modelPath string) error
+	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
 	Init()
 	Close()
@@ -104,9 +104,7 @@ func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInst
 
 	listResp, err := r.rayServerClient.ListApplications(ctx, &rayserver.ListApplicationsRequest{})
 	if err != nil {
-		fmt.Println("============================")
 		logger.Error(err.Error())
-		fmt.Println("============================")
 		return nil
 	}
 
@@ -367,11 +365,10 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 	return outputs, nil
 }
 
-func (r *ray) DeployModel(task commonPB.Task, modelPath string) error {
+func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	cmd := exec.Command("python", "model.py",
 		"--func", "deploy",
-		"--task", task.String(),
 		"--model", filepath.Join(modelPath, "model.onnx"),
 	)
 	cmd.Dir = modelPath
