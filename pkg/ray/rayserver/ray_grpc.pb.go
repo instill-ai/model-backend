@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RayService_ModelReady_FullMethodName    = "/ray.RayService/ModelReady"
-	RayService_ModelMetadata_FullMethodName = "/ray.RayService/ModelMetadata"
-	RayService_ModelInfer_FullMethodName    = "/ray.RayService/ModelInfer"
+	RayService_ModelReady_FullMethodName    = "/ray.serve.RayService/ModelReady"
+	RayService_ModelMetadata_FullMethodName = "/ray.serve.RayService/ModelMetadata"
+	RayService_ModelInfer_FullMethodName    = "/ray.serve.RayService/ModelInfer"
 )
 
 // RayServiceClient is the client API for RayService service.
@@ -174,7 +174,7 @@ func _RayService_ModelInfer_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var RayService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "ray.RayService",
+	ServiceName: "ray.serve.RayService",
 	HandlerType: (*RayServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
