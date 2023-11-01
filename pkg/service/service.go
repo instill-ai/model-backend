@@ -885,7 +885,8 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 	if err := s.UndeployModel(ctx, ownerPermalink, userPermalink, modelInDB.UID); err != nil {
 		return err
 	}
-	for state.String() != modelPB.Model_STATE_OFFLINE.String() {
+
+	for *state == modelPB.Model_STATE_ONLINE {
 		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
 			return err
 		}

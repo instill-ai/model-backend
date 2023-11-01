@@ -167,17 +167,20 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
 				continue
 			}
+			logger.Error(fmt.Sprintf("triton model deployment failed: %v", err))
 			return err
 		}
 		if iEnsembleModel.Name != "" { // load ensemble model.
 			if _, err = w.triton.LoadModelRequest(ctx, iEnsembleModel.Name); err != nil {
+				logger.Error(fmt.Sprintf("triton model deployment failed: %v", err))
 				return err
 			}
 		}
 	case "ray":
 		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
 		if err = w.ray.DeployModel(name); err != nil {
-			logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
+			logger.Error(fmt.Sprintf("ray model deployment failed: %v", err))
+			return err
 		}
 	}
 
@@ -222,14 +225,14 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 	switch iEnsembleModel.Platform {
 	case "ensemble":
 		for _, rModel := range inferenceModels {
-			if err := w.ray.UndeployModel(rModel.Name); err != nil {
-				logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
+			if _, err := w.triton.UnloadModelRequest(ctx, rModel.Name); err != nil {
+				logger.Error(fmt.Sprintf("triton model undeployment failed: %v", err))
 			}
 		}
 	case "ray":
 		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
 		if err := w.ray.UndeployModel(name); err != nil {
-			logger.Error(fmt.Sprintf("Ray model deployment failed: %v", err))
+			logger.Error(fmt.Sprintf("ray model undeployment failed: %v", err))
 		}
 	}
 

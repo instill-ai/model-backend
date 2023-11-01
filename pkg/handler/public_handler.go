@@ -1939,6 +1939,11 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		return nil, err
 	}
 
+	if err := h.service.DeleteUserModel(ctx, ns, userUID, modelID); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -1947,7 +1952,7 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, modelID)),
 	)))
 
-	return &modelPB.DeleteUserModelResponse{}, h.service.DeleteUserModel(ctx, ns, userUID, modelID)
+	return &modelPB.DeleteUserModelResponse{}, nil
 }
 
 func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelPB.RenameUserModelRequest) (*modelPB.RenameUserModelResponse, error) {
