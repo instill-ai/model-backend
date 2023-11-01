@@ -284,20 +284,24 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		if err != nil {
 			return "", "", err
 		}
-		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			srcFile.Close()  // Close the source file in case of an error
-    		dstFile.Close()  // Close the destination file in case of an error
-			return "", "", err
-		}
 
-		// Close both files and sync the data to the storage medium
+		if _, err := io.Copy(dstFile, srcFile); err != nil {
+			// If there is an error while copying, return the error
+			return "", "", err
+		}
+		
+		// Defer the closing and syncing of dstFile
+		defer func() {
+			if err := dstFile.Close(); err != nil {
+				log.Printf("%v", err.Error())
+			}
+			if err := dstFile.Sync(); err != nil {
+				log.Printf("%v", err.Error())
+			}
+		}()
+		
+		// Close and sync the srcFile
 		if err := srcFile.Close(); err != nil {
-			return "", "", err
-		}
-		if err := dstFile.Close(); err != nil {
-			return "", "", err
-		}
-		if err := dstFile.Sync(); err != nil {
 			return "", "", err
 		}
 		
