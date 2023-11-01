@@ -885,6 +885,12 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 	if err := s.UndeployModel(ctx, ownerPermalink, userPermalink, modelInDB.UID); err != nil {
 		return err
 	}
+	for state.String() != modelPB.Model_STATE_OFFLINE.String() {
+		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	// remove README.md
 	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, ownerPermalink, modelInDB.ID))
@@ -895,13 +901,6 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
 			_ = os.RemoveAll(modelDir)
 		}
-	}
-
-	for state.String() == modelPB.Model_STATE_ONLINE.String() {
-		if state, err = s.GetResourceState(ctx, modelInDB.UID); err != nil {
-			return err
-		}
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	if err := s.DeleteResourceState(ctx, modelInDB.UID); err != nil {
