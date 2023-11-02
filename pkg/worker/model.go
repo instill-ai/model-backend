@@ -194,7 +194,7 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 	logger.Info("UnDeployModelWorkflow started")
 
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 2 * time.Minute,
+		StartToCloseTimeout: 10 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
 		},
