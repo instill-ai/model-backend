@@ -47,9 +47,9 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -559,7 +559,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 				"Local model",
 				"Missing ensemble model",
 				"",
-				"err.Error()",
+				err.Error(),
 			)
 			if e != nil {
 				logger.Error(e.Error())
@@ -749,22 +749,25 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			"[handler] create a model error",
-			"Local model",
-			"Missing ensemble model",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
+	maxBatchSize := 0
+	if ensembleFilePath != "" {
+		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error",
+				"Local model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
+			span.SetStatus(1, err.Error())
+			return st.Err()
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
-		span.SetStatus(1, err.Error())
-		return st.Err()
 	}
 
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
@@ -988,21 +991,25 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 	} else {
 		githubModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
-	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"GitHub model",
-			"Missing ensemble model",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
+
+	maxBatchSize := 0
+	if ensembleFilePath != "" {
+		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"GitHub model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			span.SetStatus(1, st.Err().Error())
+			return &modelPB.CreateUserModelResponse{}, st.Err()
 		}
-		span.SetStatus(1, st.Err().Error())
-		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(githubModel.Task)
@@ -1244,21 +1251,25 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 	} else {
 		huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
-	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"HuggingFace model",
-			"Missing ensemble model",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
+
+	maxBatchSize := 0
+	if ensembleFilePath != "" {
+		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"HuggingFace model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			span.SetStatus(1, st.Err().Error())
+			return &modelPB.CreateUserModelResponse{}, st.Err()
 		}
-		span.SetStatus(1, st.Err().Error())
-		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(huggingfaceModel.Task)
@@ -1470,21 +1481,24 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		artivcModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize, err := utils.GetMaxBatchSize(ensembleFilePath)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-			"ArtiVC model",
-			"Missing ensemble model",
-			"",
-			err.Error(),
-		)
-		if e != nil {
-			logger.Error(e.Error())
+	maxBatchSize := 0
+	if ensembleFilePath != "" {
+		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
+		if err != nil {
+			st, e := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+				"ArtiVC model",
+				"Missing ensemble model",
+				"",
+				err.Error(),
+			)
+			if e != nil {
+				logger.Error(e.Error())
+			}
+			span.SetStatus(1, st.Err().Error())
+			return &modelPB.CreateUserModelResponse{}, st.Err()
 		}
-		span.SetStatus(1, st.Err().Error())
-		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(artivcModel.Task)
@@ -1925,6 +1939,11 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		return nil, err
 	}
 
+	if err := h.service.DeleteUserModel(ctx, ns, userUID, modelID); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -1933,7 +1952,7 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.Delete
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, modelID)),
 	)))
 
-	return &modelPB.DeleteUserModelResponse{}, h.service.DeleteUserModel(ctx, ns, userUID, modelID)
+	return &modelPB.DeleteUserModelResponse{}, nil
 }
 
 func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelPB.RenameUserModelRequest) (*modelPB.RenameUserModelResponse, error) {
@@ -2092,7 +2111,7 @@ func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.Deploy
 		return &modelPB.DeployUserModelResponse{}, err
 	}
 
-	_, err = h.service.GetTritonModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
+	_, err = h.service.GetInferenceModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.DeployUserModelResponse{}, err
@@ -2306,7 +2325,7 @@ func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublic
 
 	// check whether model support batching or not. If not, raise an error
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
+		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return err
@@ -2438,7 +2457,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
+		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
@@ -2605,24 +2624,26 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
-			return &modelPB.TriggerUserModelResponse{}, err
-		}
-		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
-			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if !doSupportBatch {
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		if tritonModelInDB.Platform == "ensemble" {
+			if err != nil {
+				span.SetStatus(1, err.Error())
+				usageData.Status = mgmtPB.Status_STATUS_ERRORED
+				_ = h.service.WriteNewDataPoint(ctx, usageData)
+				return &modelPB.TriggerUserModelResponse{}, err
+			}
+			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
+			if err != nil {
+				span.SetStatus(1, err.Error())
+				usageData.Status = mgmtPB.Status_STATUS_ERRORED
+				_ = h.service.WriteNewDataPoint(ctx, usageData)
+				return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			}
+			if !doSupportBatch {
+				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+				return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			}
 		}
 	}
 	task := commonPB.Task(pbModel.Task)
@@ -2734,7 +2755,6 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 			span.SetStatus(1, err.Error())
 			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = 1
 		inputInfer = textToImage
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
@@ -2746,29 +2766,28 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 			span.SetStatus(1, err.Error())
 			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
-		lenInputs = 1
 		inputInfer = textGeneration
 	}
-
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetTritonEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, err
-		}
-		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if !doSupportBatch {
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		if tritonModelInDB.Platform == "ensemble" {
+			if err != nil {
+				span.SetStatus(1, err.Error())
+				return &modelPB.TestUserModelResponse{}, err
+			}
+			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
+			if err != nil {
+				span.SetStatus(1, err.Error())
+				return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			}
+			if !doSupportBatch {
+				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+				return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+			}
 		}
 	}
-
 	task := commonPB.Task(pbModel.Task)
 	response, err := h.service.TriggerUserModelTestMode(ctx, uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	if err != nil {
@@ -2940,7 +2959,6 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		lenInputs = 1
 		inputInfer = textToImage
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
@@ -2951,38 +2969,37 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		lenInputs = 1
 		inputInfer = textGeneration
 	}
-
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := s.GetTritonEnsembleModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid))
-		if err != nil {
-			makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
-			span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-		if err != nil {
-			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		if !doSupportBatch {
-			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
+		tritonModelInDB, err := s.GetInferenceEnsembleModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid))
+		if tritonModelInDB.Platform == "ensemble" {
+			if err != nil {
+				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
+				span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
+				usageData.Status = mgmtPB.Status_STATUS_ERRORED
+				_ = s.WriteNewDataPoint(ctx, usageData)
+				return
+			}
+			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
+			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
+			if err != nil {
+				makeJSONResponse(w, 400, "Batching Support Error", err.Error())
+				span.SetStatus(1, err.Error())
+				usageData.Status = mgmtPB.Status_STATUS_ERRORED
+				_ = s.WriteNewDataPoint(ctx, usageData)
+				return
+			}
+			if !doSupportBatch {
+				makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+				usageData.Status = mgmtPB.Status_STATUS_ERRORED
+				_ = s.WriteNewDataPoint(ctx, usageData)
+				return
+			}
 		}
 	}
-
 	task := commonPB.Task(pbModel.Task)
 	var response []*modelPB.TaskOutput
 	if mode == "test" {

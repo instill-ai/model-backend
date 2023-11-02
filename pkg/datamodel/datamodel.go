@@ -63,7 +63,7 @@ type ModelDefinition struct {
 	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
 }
 
-// Model combines several Triton model. It includes ensemble model.
+// Model combines several ensenble Triton model or ray model
 type Model struct {
 	BaseDynamic
 
@@ -92,7 +92,7 @@ type Model struct {
 	State ModelState `json:"state,omitempty"`
 
 	// Not stored in DB, only used for processing
-	TritonModels []TritonModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+	InferenceModels []InferenceModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
 // Temporary model type for migration
@@ -124,28 +124,29 @@ type PreDeployModel struct {
 	State ModelState `json:"state,omitempty"`
 
 	// Not stored in DB, only used for processing
-	TritonModels []TritonModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+	InferenceModels []InferenceModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
 
-// Triton model
-type TritonModel struct {
+// Inference model
+type InferenceModel struct {
 	BaseDynamic
 
-	// Triton Model name
+	// Inference Model name
 	Name string `json:"name,omitempty"`
 
-	// Triton Model version
+	// Inference Model version
 	Version int `json:"version,omitempty"`
 
-	// Triton Model status
+	// Inference Model status
 	State ModelState `json:"state,omitempty"`
 
-	// Model triton platform, only store ensemble model to make inferencing
+	// Model platform, only store ensemble model for triton, or ray
 	Platform string `json:"platform,omitempty"`
 
 	// Model uid
 	ModelUID uuid.UUID `json:"model_uid,omitempty"`
 }
+
 type ModelInferResult struct {
 	BaseDynamic
 

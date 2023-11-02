@@ -9,6 +9,6 @@ jobs:
   track_pr:
     uses: instill-ai/.github/.github/workflows/add-to-prj.yml@main
     with:
-      project_number: 11
+      project_number: 5
     secrets:
       botGitHubToken: ${{ secrets.botGitHubToken }}

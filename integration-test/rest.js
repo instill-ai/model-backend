@@ -72,39 +72,37 @@ export default function (header) {
     // private deploy will be trigger by public deploy
     // deployModelPrivate.DeployUndeployModel()
   }
-  else {
 
-    // Infer Model API
-    inferModel.InferModel(header)
+  // Infer Model API
+  inferModel.InferModel(header)
 
-    // Create Model API
-    createModel.CreateModelFromLocal(header)
-    createModel.CreateModelFromGitHub(header)
+  // Create Model API
+  createModel.CreateModelFromLocal(header)
+  createModel.CreateModelFromGitHub(header)
 
-    // Query Model API
-    queryModel.GetModel(header)
-    queryModel.ListModels(header)
-    queryModel.LookupModel(header)
+  // Query Model API
+  queryModel.GetModel(header)
+  queryModel.ListModels(header)
+  queryModel.LookupModel(header)
 
-    // Deploy/Undeploy Model API
-    deployModel.DeployUndeployModel(header)
+  // Deploy/Undeploy Model API
+  deployModel.DeployUndeployModel(header)
 
-    // Publish/Unpublish Model API
-    publishModel.PublishUnpublishModel(header)
+  // Publish/Unpublish Model API
+  publishModel.PublishUnpublishModel(header)
 
-    // Update Model API
-    updateModel.UpdateModel(header)
+  // Update Model API
+  updateModel.UpdateModel(header)
 
-    // Query Model Definition API
-    queryModelDefinition.GetModelDefinition(header)
-    queryModelDefinition.ListModelDefinitions(header)
+  // Query Model Definition API
+  queryModelDefinition.GetModelDefinition(header)
+  queryModelDefinition.ListModelDefinitions(header)
 
-    // Get model card
-    getModelCard.GetModelCard(header)
+  // Get model card
+  getModelCard.GetModelCard(header)
 
-    // Long-running Operation
-    longrunningOperation.GetLongRunningOperation(header)
-  }
+  // Long-running Operation
+  longrunningOperation.GetLongRunningOperation(header)
 }
 
 export function teardown(header) {

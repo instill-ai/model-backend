@@ -115,7 +115,6 @@ func GetPreDeployGitHubModelUUID(model *datamodel.Model) (*datamodel.PreDeployMo
 				Task:               model.Task,
 				Description:        model.Description,
 				Configuration:      model.Configuration,
-				TritonModels:       model.TritonModels,
 			}
 		}
 	}

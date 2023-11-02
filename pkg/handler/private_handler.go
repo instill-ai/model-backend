@@ -168,7 +168,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 	}
 
-	_, err = h.service.GetTritonModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
+	_, err = h.service.GetInferenceModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}

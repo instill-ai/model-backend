@@ -78,32 +78,30 @@ export default (header) => {
     // private deploy will be triggered by public deploy
     // deployModelPrivate.DeployUndeployModel()
   }
-  else {
 
-    // Update model API
-    updateModel.UpdateUserModel(header)
+  // Update model API
+  updateModel.UpdateUserModel(header)
 
-    // Create model API
-    createModel.CreateUserModel(header)
+  // Create model API
+  createModel.CreateUserModel(header)
 
-    // Deploy Model API
-    deployModel.DeployUndeployUserModel(header)
+  // Deploy Model API
+  deployModel.DeployUndeployUserModel(header)
 
-    // Query Model API
-    queryModel.GetUserModel(header)
-    queryModel.ListUserModels(header)
-    queryModel.LookupModel(header)
+  // Query Model API
+  queryModel.GetUserModel(header)
+  queryModel.ListUserModels(header)
+  queryModel.LookupModel(header)
 
-    // Publish Model API
-    publishModel.PublishUnPublishUserModel(header)
+  // Publish Model API
+  publishModel.PublishUnPublishUserModel(header)
 
-    // Trigger Model API
-    triggerModel.TriggerUserModel(header)
+  // Trigger Model API
+  triggerModel.TriggerUserModel(header)
 
-    // Query Model Definition API
-    queryModelDefinition.GetModelDefinition(header)
-    queryModelDefinition.ListModelDefinitions(header)
-  }
+  // Query Model Definition API
+  queryModelDefinition.GetModelDefinition(header)
+  queryModelDefinition.ListModelDefinitions(header)
 };
 
 export function teardown(header) {

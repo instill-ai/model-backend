@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -22,7 +23,7 @@ import (
 )
 
 type ModelParams struct {
-	Model          *datamodel.Model
+	Model *datamodel.Model
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -69,8 +70,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	var tritonModels []*datamodel.TritonModel
-	if tritonModels, err = w.repository.GetTritonModels(dbModel.UID); err != nil {
+	var inferenceModels []*datamodel.InferenceModel
+	if inferenceModels, err = w.repository.GetInferenceModels(dbModel.UID); err != nil {
 		return err
 	}
 
@@ -79,7 +80,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	switch modelDef.ID {
 	case "github":
-		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.GitHubModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err
@@ -93,13 +94,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
-			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, inferenceModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
 		}
 	case "huggingface":
-		if !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.HuggingFaceModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err
@@ -123,17 +124,17 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				}
 			}
 
-			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, inferenceModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
 
-			if err := utils.UpdateModelConfig(config.Config.TritonServer.ModelStore, tritonModels); err != nil {
+			if err := utils.UpdateModelConfig(config.Config.TritonServer.ModelStore, inferenceModels); err != nil {
 				return err
 			}
 		}
 	case "artivc":
-		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, tritonModels) {
+		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.ArtiVCModelConfiguration
 			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
 			if err != nil {
@@ -145,7 +146,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
-			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, tritonModels); err != nil {
+			if err := utils.CopyModelFileToModelRepository(config.Config.TritonServer.ModelStore, modelSrcDir, inferenceModels); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
@@ -156,19 +157,29 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		_ = os.RemoveAll(modelSrcDir)
 	}
 
-	tEnsembleModel, _ := w.repository.GetTritonEnsembleModel(param.Model.UID)
-	for _, tModel := range tritonModels {
-		if tEnsembleModel.Name != "" && tEnsembleModel.Name == tModel.Name { // load ensemble model last.
-			continue
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	switch iEnsembleModel.Platform {
+	case "ensemble":
+		for _, tModel := range inferenceModels {
+			if iEnsembleModel.Name != "" && iEnsembleModel.Name == tModel.Name { // load ensemble model last.
+				continue
+			}
+			if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
+				continue
+			}
+			logger.Error(fmt.Sprintf("triton model deployment failed: %v", err))
+			return err
 		}
-		if _, err = w.triton.LoadModelRequest(ctx, tModel.Name); err == nil {
-			continue
+		if iEnsembleModel.Name != "" { // load ensemble model.
+			if _, err = w.triton.LoadModelRequest(ctx, iEnsembleModel.Name); err != nil {
+				logger.Error(fmt.Sprintf("triton model deployment failed: %v", err))
+				return err
+			}
 		}
-		return err
-	}
-
-	if tEnsembleModel.Name != "" { // load ensemble model.
-		if _, err = w.triton.LoadModelRequest(ctx, tEnsembleModel.Name); err != nil {
+	case "ray":
+		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
+		if err = w.ray.DeployModel(name); err != nil {
+			logger.Error(fmt.Sprintf("ray model deployment failed: %v", err))
 			return err
 		}
 	}
@@ -183,7 +194,7 @@ func (w *worker) UnDeployModelWorkflow(ctx workflow.Context, param *ModelParams)
 	logger.Info("UnDeployModelWorkflow started")
 
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 2 * time.Minute,
+		StartToCloseTimeout: 10 * time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: config.Config.Server.Workflow.MaxActivityRetry,
 		},
@@ -209,17 +220,19 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	logger.Info("UnDeployModelActivity started")
 
-	var tritonModels []*datamodel.TritonModel
-	var err error
-
-	if tritonModels, err = w.repository.GetTritonModels(param.Model.UID); err != nil {
-		return err
-	}
-
-	for _, tm := range tritonModels {
-		// Unload all models composing the ensemble model
-		if _, err = w.triton.UnloadModelRequest(ctx, tm.Name); err != nil {
-			return err
+	inferenceModels, _ := w.repository.GetInferenceModels(param.Model.UID)
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	switch iEnsembleModel.Platform {
+	case "ensemble":
+		for _, rModel := range inferenceModels {
+			if _, err := w.triton.UnloadModelRequest(ctx, rModel.Name); err != nil {
+				logger.Error(fmt.Sprintf("triton model undeployment failed: %v", err))
+			}
+		}
+	case "ray":
+		name := filepath.Join(iEnsembleModel.Name, fmt.Sprint(iEnsembleModel.Version))
+		if err := w.ray.UndeployModel(name); err != nil {
+			logger.Error(fmt.Sprintf("ray model undeployment failed: %v", err))
 		}
 	}
 

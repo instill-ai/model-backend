@@ -34,9 +34,9 @@ type Repository interface {
 	UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error
 	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error
 
-	CreateTritonModel(model *datamodel.TritonModel) error
-	GetTritonModels(modelUID uuid.UUID) ([]*datamodel.TritonModel, error)
-	GetTritonEnsembleModel(modelUID uuid.UUID) (*datamodel.TritonModel, error)
+	CreateInferenceModel(model *datamodel.InferenceModel) error
+	GetInferenceModels(modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
+	GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.InferenceModel, error)
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
@@ -298,33 +298,35 @@ func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink s
 	return nil
 }
 
-func (r *repository) CreateTritonModel(model *datamodel.TritonModel) error {
-	if result := r.db.Model(&datamodel.TritonModel{}).Create(&model); result.Error != nil {
+func (r *repository) CreateInferenceModel(model *datamodel.InferenceModel) error {
+	if result := r.db.Model(&datamodel.InferenceModel{}).Create(&model); result.Error != nil {
 		return status.Errorf(codes.Internal, "Error %v", result.Error)
 	}
 
 	return nil
 }
 
-func (r *repository) GetTritonModels(modelUID uuid.UUID) ([]*datamodel.TritonModel, error) {
-	var tmodels []*datamodel.TritonModel
-	if result := r.db.Model(&datamodel.TritonModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
-		return []*datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
+func (r *repository) GetInferenceModels(modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
+	var tmodels []*datamodel.InferenceModel
+	if result := r.db.Model(&datamodel.InferenceModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
+		return []*datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
 	}
 	return tmodels, nil
 }
 
-func (r *repository) GetTritonEnsembleModel(modelUID uuid.UUID) (*datamodel.TritonModel, error) {
-	var ensembleModel *datamodel.TritonModel
-	result := r.db.Model(&datamodel.TritonModel{}).Where(map[string]interface{}{"model_uid": modelUID, "platform": "ensemble"}).First(&ensembleModel)
+func (r *repository) GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
+	var ensembleModel *datamodel.InferenceModel
+	result := r.db.Model(&datamodel.InferenceModel{}).
+		Where("(model_uid = ? AND (platform = ? OR platform = ?))", modelUID, "ensemble", "ray").
+		First(&ensembleModel)
 	if result.Error != nil {
-		return &datamodel.TritonModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
+		return &datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}
 	return ensembleModel, nil
 }
 
 func (r *repository) DeleteModel(modelUID uuid.UUID) error {
-	if result := r.db.Select("TritonModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
+	if result := r.db.Select("InferenceModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
 		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUID)
 	}
 	return nil

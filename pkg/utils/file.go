@@ -67,7 +67,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 	}
 	defer archive.Close()
 	var readmeFilePath string
-	var createdTModels []datamodel.TritonModel
+	var createdModels []datamodel.InferenceModel
 	var currentNewModelName string
 	var currentOldModelName string
 	var ensembleFilePath string
@@ -84,6 +84,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			fmt.Println("invalid file path")
 			return "", "", fmt.Errorf("invalid file path")
 		}
+
 		if f.FileInfo().IsDir() {
 			dirName := f.Name
 			if string(dirName[len(dirName)-1]) == "/" {
@@ -103,7 +104,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 					sVersion := elems[len(elems)-1]
 					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
 					if err == nil {
-						createdTModels = append(createdTModels, datamodel.TritonModel{
+						createdModels = append(createdModels, datamodel.InferenceModel{
 							Name:    currentNewModelName, // Triton model name
 							State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 							Version: int(iVersion),
@@ -172,7 +173,8 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			}
 		}
 	}
-	if ensembleFilePath == "" {
+
+	if ensembleFilePath == "" && len(configFiles) != 0 {
 		for _, filePath := range configFiles {
 			if couldBeEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
@@ -188,27 +190,31 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		}
 	}
 	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" {
+	if ensembleFilePath != "" && len(configFiles) != 0 {
 		for oldModelName, newModelName := range newModelNameMap {
 			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
 				return "", "", err
 			}
 		}
-		for i := 0; i < len(createdTModels); i++ {
-			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
-				createdTModels[i].Platform = "ensemble"
+		for i := 0; i < len(createdModels); i++ {
+			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
+				createdModels[i].Platform = "ensemble"
 				break
 			}
 		}
+	} else {
+		for i := 0; i < len(createdModels); i++ {
+			createdModels[i].Platform = "ray"
+		}
 	}
-	uploadedModel.TritonModels = createdTModels
+	uploadedModel.InferenceModels = createdModels
 	return readmeFilePath, ensembleFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
 func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
-	var createdTModels []datamodel.TritonModel
+	var createdModels []datamodel.InferenceModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
 	var readmeFilePath string
@@ -256,7 +262,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			}
 			newModelNameMap[oldModelName] = subStrs[0]
 			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
-				createdTModels = append(createdTModels, datamodel.TritonModel{
+				createdModels = append(createdModels, datamodel.InferenceModel{
 					Name:    subStrs[0], // Triton model name
 					State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
 					Version: int(v),
@@ -294,7 +300,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 			}
 		}
 	}
-	if ensembleFilePath == "" {
+	if ensembleFilePath == "" && len(configFiles) != 0 {
 		for _, filePath := range configFiles {
 			if couldBeEnsembleConfig(filePath) {
 				ensembleFilePath = filePath
@@ -310,21 +316,25 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		}
 	}
 	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" {
+	if ensembleFilePath != "" && len(configFiles) != 0 {
 		for oldModelName, newModelName := range newModelNameMap {
 			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
 			if err != nil {
 				return "", "", err
 			}
 		}
-		for i := 0; i < len(createdTModels); i++ {
-			if strings.Contains(ensembleFilePath, createdTModels[i].Name) {
-				createdTModels[i].Platform = "ensemble"
+		for i := 0; i < len(createdModels); i++ {
+			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
+				createdModels[i].Platform = "ensemble"
 				break
 			}
 		}
+	} else {
+		for i := 0; i < len(createdModels); i++ {
+			createdModels[i].Platform = "ray"
+		}
 	}
-	model.TritonModels = createdTModels
+	model.InferenceModels = createdModels
 	return readmeFilePath, ensembleFilePath, nil
 }
 

@@ -27,8 +27,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
 )
 
 type ModelMeta struct {
@@ -106,7 +106,7 @@ func AddMissingTritonModelFolder(ctx context.Context, dir string) {
 	})
 }
 
-func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
+func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.InferenceModel) string {
 	modelPath := ""
 	for _, triton := range tritonModels {
 		if strings.Contains(triton.Name, "#pre#") {
@@ -115,7 +115,7 @@ func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.Tri
 	}
 	return modelPath
 }
-func getInferModelConfigPath(modelRepository string, tritonModels []*datamodel.TritonModel) string {
+func getInferModelConfigPath(modelRepository string, tritonModels []*datamodel.InferenceModel) string {
 	modelPath := ""
 	for _, triton := range tritonModels {
 		if strings.Contains(triton.Name, "-infer#") {
@@ -230,7 +230,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 }
 
 // CopyModelFileToModelRepository copies model files to model repository.
-func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []*datamodel.TritonModel) error {
+func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []*datamodel.InferenceModel) error {
 	modelPaths := findModelFiles(dir)
 	for _, modelPath := range modelPaths {
 		folderModelDir := filepath.Dir(modelPath)
@@ -604,7 +604,7 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 }
 
 func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfiguration, modelID string) error {
-	// export model to folder structure similar with triton to support copy the model into model repository later
+	// export model to folder structure similar with inference to support copy the model into model repository later
 	if err := os.MkdirAll(fmt.Sprintf("%s/%s-infer/1", dir, modelID), os.ModePerm); err != nil {
 		return err
 	}
@@ -688,9 +688,9 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	return nil
 }
 
-func HasModelWeightFile(modelRepository string, tritonModels []*datamodel.TritonModel) bool {
-	for _, tritonModel := range tritonModels {
-		modelDir := fmt.Sprintf("%s/%s", modelRepository, tritonModel.Name)
+func HasModelWeightFile(modelRepository string, inferenceModels []*datamodel.InferenceModel) bool {
+	for _, inferenceModel := range inferenceModels {
+		modelDir := fmt.Sprintf("%s/%s", modelRepository, inferenceModel.Name)
 		modelFiles := findModelFiles(modelDir)
 		if len(modelFiles) > 0 {
 			for _, modelFile := range modelFiles {
@@ -716,7 +716,7 @@ func updateModelConfigModel(configFilePath string, oldStr string, newStr string)
 	return os.WriteFile(configFilePath, fileData, 0o600)
 }
 
-func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.TritonModel) error {
+func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.InferenceModel) error {
 	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
 	if modelPathDir == "" {
 		return fmt.Errorf("there is no model")

@@ -43,6 +43,8 @@ ENV PATH="$VENV/bin:$PATH"
 RUN pip install jsonschema pyyaml
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
+RUN pip install --no-cache-dir ray[serve] scikit-image
+RUN pip install --no-cache-dir instill-sdk==0.3.0rc11
 
 # -- set up Go
 COPY go.mod go.sum ./
