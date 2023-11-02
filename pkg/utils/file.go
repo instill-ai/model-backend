@@ -291,14 +291,14 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		}
 		
 		// Defer the closing and syncing of dstFile
-		defer func() {
+		defer func(logger *log.Logger) {
 			if err := dstFile.Close(); err != nil {
 				log.Printf("%v", err.Error())
 			}
 			if err := dstFile.Sync(); err != nil {
 				log.Printf("%v", err.Error())
 			}
-		}()
+		}(log.Default())
 		
 		// Close and sync the srcFile
 		if err := srcFile.Close(); err != nil {
