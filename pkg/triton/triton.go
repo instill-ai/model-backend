@@ -30,11 +30,13 @@ type TextToImageInput struct {
 
 type TextGenerationInput struct {
 	Prompt        string
-	OutputLen     int32
-	BadWordsList  string
+	PromptImage   string
+	MaxNewTokens  int32
 	StopWordsList string
+	Temperature   float32
 	TopK          int32
 	Seed          int32
+	ExtraParams   string
 }
 
 type ImageInput struct {
@@ -276,18 +278,22 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*TextGenerationInput)
-		outputLen := make([]byte, 4)
-		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInput.OutputLen))
+		maxNewToken := make([]byte, 4)
+		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationInput.MaxNewTokens))
+		temperature := make([]byte, 4)
+		binary.LittleEndian.PutUint32(temperature, math.Float32bits(textGenerationInput.Temperature))
 		topK := make([]byte, 4)
 		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInput.TopK))
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.BadWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImage)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ExtraParams)}))
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_KEYPOINT,

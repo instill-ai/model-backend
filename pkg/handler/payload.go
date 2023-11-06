@@ -118,6 +118,11 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 				ImgUrl:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
+		case *modelPB.TaskInput_TextGeneration:
+			imageInput = triton.ImageInput{
+				ImgUrl:    taskInput.GetTextGeneration().GetPromptImageUrl(),
+				ImgBase64: taskInput.GetTextGeneration().GetPromptImageBase64(),
+			}
 		default:
 			return nil, fmt.Errorf("unknown task input type")
 		}
@@ -196,35 +201,50 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerUserModelRequest) (textToI
 	return textToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
-	for _, taskInput := range req.TaskInputs {
-		outputLen := utils.TEXT_GENERATION_OUTPUT_LEN
-		if taskInput.GetTextGeneration().OutputLen != nil {
-			outputLen = *taskInput.GetTextGeneration().OutputLen
-		}
-		badWordsList := string("")
-		if taskInput.GetTextGeneration().BadWordsList != nil {
-			badWordsList = *taskInput.GetTextGeneration().BadWordsList
+func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
+	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
+	for idx, taskInput := range req.TaskInputs {
+
+		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		if taskInput.GetTextGeneration().MaxNewTokens != nil {
+			maxNewTokens = *taskInput.GetTextGeneration().MaxNewTokens
 		}
 		stopWordsList := string("")
 		if taskInput.GetTextGeneration().StopWordsList != nil {
-			stopWordsList = *taskInput.GetTextGeneration().BadWordsList
+			stopWordsList = *taskInput.GetTextGeneration().StopWordsList
+		}
+		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		if taskInput.GetTextGeneration().Temperature != nil {
+			temperature = *taskInput.GetTextGeneration().Temperature
 		}
 		topK := utils.TEXT_GENERATION_TOP_K
-		if taskInput.GetTextGeneration().Topk != nil {
-			topK = *taskInput.GetTextGeneration().Topk
+		if taskInput.GetTextGeneration().TopK != nil {
+			topK = *taskInput.GetTextGeneration().TopK
 		}
 		seed := utils.TEXT_GENERATION_SEED
 		if taskInput.GetTextGeneration().Seed != nil {
 			seed = *taskInput.GetTextGeneration().Seed
 		}
+		extraParams := string("")
+		if taskInput.GetTextGeneration().ExtraParams != nil {
+			extraParams = *taskInput.GetTextGeneration().ExtraParams
+		}
+
+		// Handling Image Input
+		var inputBytes []byte
+		if parsedImageErr == nil {
+			inputBytes = pargedImages[idx]
+		}
+
 		textGenerationInput = &triton.TextGenerationInput{
 			Prompt:        taskInput.GetTextGeneration().Prompt,
-			OutputLen:     outputLen,
-			BadWordsList:  badWordsList,
+			PromptImage:   string(inputBytes),
+			MaxNewTokens:  maxNewTokens,
 			StopWordsList: stopWordsList,
+			Temperature:   temperature,
 			TopK:          topK,
 			Seed:          seed,
+			ExtraParams:   extraParams,
 		}
 	}
 	return textGenerationInput, nil
@@ -362,29 +382,34 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-	badWordsListInput := req.MultipartForm.Value["stop_words_list"]
 	stopWordsListInput := req.MultipartForm.Value["stop_words_list"]
-	outputLenInput := req.MultipartForm.Value["output_len"]
+	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	temperatureInput := req.MultipartForm.Value["temperature"]
 	topKInput := req.MultipartForm.Value["topk"]
 	seedInput := req.MultipartForm.Value["seed"]
-
-	badWordsList := string("")
-	if len(badWordsListInput) > 0 {
-		badWordsList = badWordsListInput[0]
-	}
+	extraParamsInput := req.MultipartForm.Value["extra_params"]
 
 	stopWordsList := string("")
 	if len(stopWordsListInput) > 0 {
 		stopWordsList = stopWordsListInput[0]
 	}
 
-	outputLen := utils.TEXT_GENERATION_OUTPUT_LEN
-	if len(outputLenInput) > 0 {
-		parseOutputLen, err := strconv.ParseInt(outputLenInput[0], 10, 32)
+	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	if len(maxNewTokenInput) > 0 {
+		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input %w", err)
 		}
-		outputLen = int32(parseOutputLen)
+		maxNewTokens = int32(parseMaxNewToken)
+	}
+
+	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	if len(temperatureInput) > 0 {
+		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		temperature = float32(parseTemperature)
 	}
 
 	topK := utils.TEXT_GENERATION_TOP_K
@@ -405,13 +430,25 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		seed = int32(parseSeed)
 	}
 
-	// TODO: add support for bad/stop words
+	extraParams := ""
+	if len(extraParamsInput) > 0 {
+		extraParams = extraParamsInput[0]
+	}
+
+	parsedImages, err := parseImageFormDataInputsToBytes(req)
+	var promptImage string
+	if err != nil && len(parsedImages) == 1 {
+		promptImage = string(parsedImages[0])
+	}
+
 	return &triton.TextGenerationInput{
 		Prompt:        prompts[0],
-		OutputLen:     outputLen,
-		BadWordsList:  badWordsList,
+		PromptImage:   promptImage,
+		MaxNewTokens:  maxNewTokens,
 		StopWordsList: stopWordsList,
+		Temperature:   temperature,
 		TopK:          topK,
 		Seed:          seed,
+		ExtraParams:   extraParams,
 	}, nil
 }

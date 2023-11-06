@@ -132,11 +132,13 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
-					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
+					PromptImage:   "", // TODO: support streaming image generation
+					MaxNewTokens:  *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Temperature:   *fileData.TaskInput.GetTextGeneration().Temperature,
+					TopK:          *fileData.TaskInput.GetTextGeneration().TopK,
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+					ExtraParams:   *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -252,11 +254,13 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
 					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					OutputLen:     *fileData.TaskInput.GetTextGeneration().OutputLen,
-					BadWordsList:  *fileData.TaskInput.GetTextGeneration().BadWordsList,
+					PromptImage:   "", // TODO: support streaming image generation
+					MaxNewTokens:  *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
 					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					TopK:          *fileData.TaskInput.GetTextGeneration().Topk,
+					Temperature:   *fileData.TaskInput.GetTextGeneration().Temperature,
+					TopK:          *fileData.TaskInput.GetTextGeneration().TopK,
 					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
+					ExtraParams:   *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -2612,7 +2616,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 		lenInputs = 1
 		inputInfer = textToImage
 	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(req)
+		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
@@ -2758,6 +2762,7 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 		inputInfer = textToImage
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
+			ctx,
 			&modelPB.TriggerUserModelRequest{
 				Name:       req.Name,
 				TaskInputs: req.TaskInputs,
