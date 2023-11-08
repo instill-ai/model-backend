@@ -11,10 +11,8 @@ import (
 	"path/filepath"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -118,26 +116,29 @@ func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInst
 
 	for _, app := range servingApps {
 		if app == applicationMetadatValue {
-			ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
+			// TODO: let see if GetApplication is reliable
+			// ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-			// Create ready request for a given model
-			modelReadyRequest := rayserver.ModelReadyRequest{
-				Name:    modelName,
-				Version: modelInstance,
-			}
+			// // Create ready request for a given model
+			// modelReadyRequest := rayserver.ModelReadyRequest{
+			// 	Name:    modelName,
+			// 	Version: modelInstance,
+			// }
 
-			// Submit modelReady request to server
-			modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
-			if err != nil {
-				if status.Code(err) == codes.NotFound {
-					modelReadyResponse = &rayserver.ModelReadyResponse{
-						Ready: false,
-					}
-				} else {
-					logger.Error(err.Error())
-				}
+			// // Submit modelReady request to server
+			// modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
+			// if err != nil {
+			// 	if status.Code(err) == codes.NotFound {
+			// 		modelReadyResponse = &rayserver.ModelReadyResponse{
+			// 			Ready: false,
+			// 		}
+			// 	} else {
+			// 		logger.Error(err.Error())
+			// 	}
+			// }
+			return &rayserver.ModelReadyResponse{
+				Ready: true,
 			}
-			return modelReadyResponse
 		}
 	}
 	return &rayserver.ModelReadyResponse{
