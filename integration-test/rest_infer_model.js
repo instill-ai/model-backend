@@ -2620,7 +2620,6 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_generation": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
           }
         }]
       });
