@@ -2619,7 +2619,8 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "text_generation": {
-            "prompt": "hello this is a test"
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
           }
         }]
       });
@@ -2639,8 +2640,9 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_generation": {
             "prompt": "hello this is a test",
-            "output_len": "50",
-            "topk": "2",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "max_new_tokens": "50",
+            "top_k": "2",
             "seed": "0"
           }
         }]
@@ -2659,6 +2661,7 @@ export function InferModel(header) {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
