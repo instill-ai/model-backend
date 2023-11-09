@@ -76,9 +76,10 @@ const (
 )
 
 const (
-	TEXT_GENERATION_OUTPUT_LEN = int32(100)
-	TEXT_GENERATION_TOP_K      = int32(1)
-	TEXT_GENERATION_SEED       = int32(0)
+	TEXT_GENERATION_MAX_NEW_TOKENS = int32(100)
+	TEXT_GENERATION_TEMPERATURE    = float32(1.0)
+	TEXT_GENERATION_TOP_K          = int32(1)
+	TEXT_GENERATION_SEED           = int32(0)
 )
 
 const MODEL_CACHE_DIR = "/.cache/models"
