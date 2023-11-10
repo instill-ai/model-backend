@@ -203,7 +203,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 				break
 			}
 		}
-	} else {
+	} else if len(configFiles) == 0 {
 		for i := 0; i < len(createdModels); i++ {
 			createdModels[i].Platform = "ray"
 		}
