@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.19.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.18.0-alpha...v0.19.0-alpha) (2023-11-11)
+
+
+### Features
+
+* **model:** Support New Fields for Multi-Modal Model In Text Generation Task and Refactor Existing Ones ([#448](https://github.com/instill-ai/model-backend/issues/448)) ([49bdf5b](https://github.com/instill-ai/model-backend/commit/49bdf5b2fe2a26e78b6564172c778b2721177cd8))
+* **ray:** add `ray serve` as model serving backend ([#445](https://github.com/instill-ai/model-backend/issues/445)) ([a9b4005](https://github.com/instill-ai/model-backend/commit/a9b4005697237e85609d5245469c4cfc14e4bd72))
+
+
+### Bug Fixes
+
+* **ray:** fix model healthcheck causing scaling loop ([#450](https://github.com/instill-ai/model-backend/issues/450)) ([4d8cdbf](https://github.com/instill-ai/model-backend/commit/4d8cdbfb10fddbc1642a52e59bcd46a1388cb85c))
+* **ray:** fix unziping ray model ([ca79411](https://github.com/instill-ai/model-backend/commit/ca79411dee9e2d8a4b1cf77ee9c2ec1c0a961e8b))
+* **service:** fix fail model deletion in state error ([#449](https://github.com/instill-ai/model-backend/issues/449)) ([91125c0](https://github.com/instill-ai/model-backend/commit/91125c0779fc9fcc4557669ea8106600b67c6556))
+
 ## [0.18.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.17.2-alpha...v0.18.0-alpha) (2023-10-26)
 
 
