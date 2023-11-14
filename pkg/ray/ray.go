@@ -24,23 +24,6 @@ import (
 
 type InferInput interface{}
 
-type TextToImageInput struct {
-	Prompt   string
-	Steps    int64
-	CfgScale float32
-	Seed     int64
-	Samples  int64
-}
-
-type TextGenerationInput struct {
-	Prompt        string
-	OutputLen     int64
-	BadWordsList  string
-	StopWordsList string
-	TopK          int64
-	Seed          int64
-}
-
 type Ray interface {
 	// grpc
 	ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelReadyResponse
@@ -248,7 +231,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 
 	switch task {
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImageInput := inferInput.(*TextToImageInput)
+		textToImageInput := inferInput.(*triton.TextToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
 		steps := make([]byte, 4)
@@ -265,19 +248,23 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
 	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGenerationInput := inferInput.(*TextGenerationInput)
-		outputLen := make([]byte, 4)
-		binary.LittleEndian.PutUint32(outputLen, uint32(textGenerationInput.OutputLen))
+		textGenerationInput := inferInput.(*triton.TextGenerationInput)
+		maxNewToken := make([]byte, 4)
+		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationInput.MaxNewTokens))
+		temperature := make([]byte, 4)
+		binary.LittleEndian.PutUint32(temperature, math.Float32bits(textGenerationInput.Temperature))
 		topK := make([]byte, 4)
 		binary.LittleEndian.PutUint32(topK, uint32(textGenerationInput.TopK))
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, outputLen)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.BadWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImage)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ExtraParams)}))
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_KEYPOINT,
@@ -388,7 +375,7 @@ func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	cmd := exec.Command("python", "model.py",
 		"--func", "deploy",
-		"--model", filepath.Join(modelPath, "model.onnx"),
+		"--model", modelPath,
 	)
 	cmd.Dir = modelPath
 
@@ -405,7 +392,7 @@ func (r *ray) UndeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	cmd := exec.Command("python", "model.py",
 		"--func", "undeploy",
-		"--model", filepath.Join(modelPath, "model.onnx"),
+		"--model", modelPath,
 	)
 	cmd.Dir = modelPath
 
