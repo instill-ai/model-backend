@@ -373,7 +373,7 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 
 func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("python", "model.py",
+	cmd := exec.Command("/ray-conda/bin/python", "model.py",
 		"--func", "deploy",
 		"--model", modelPath,
 	)
@@ -390,7 +390,7 @@ func (r *ray) DeployModel(modelPath string) error {
 
 func (r *ray) UndeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("python", "model.py",
+	cmd := exec.Command("/ray-conda/bin/python", "model.py",
 		"--func", "undeploy",
 		"--model", modelPath,
 	)

@@ -609,7 +609,12 @@ func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfigu
 		return err
 	}
 	// atol 0.001 mean that accept difference with 0.1%
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 -m transformers.onnx --feature=image-classification --atol 0.001 --model=%s %s/%s-infer/1", modelConfig.RepoId, dir, modelID))
+	cmd := exec.Command("/ray-conda/bin/python",
+		"-m", "transformers.onnx",
+		"--feature=image-classification",
+		"--atol", "0.001",
+		fmt.Sprintf("--model=%s", modelConfig.RepoId),
+		fmt.Sprintf("%s/%s-infer/1", dir, modelID))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -726,7 +731,10 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 		return err
 	}
 
-	out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("python3 assets/scripts/query_model_onnx.py -f %s", modelFilePath)).Output()
+	out, err := exec.Command("/ray-conda/bin/python",
+		"assets/scripts/query_model_onnx.py",
+		"-f", modelFilePath,
+	).Output()
 	if err != nil {
 		return err
 	}
