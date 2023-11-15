@@ -48,11 +48,13 @@ ENV VENV=/opt/venv
 RUN python3 -m venv $VENV
 ENV PATH="$VENV/bin:$PATH"
 
-RUN pip install jsonschema pyyaml
+# RUN export PIP_DEFAULT_TIMEOUT=10000
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir opencv-contrib-python-headless transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
-RUN pip install --no-cache-dir ray[serve] scikit-image
-RUN pip install --no-cache-dir instill-sdk==0.3.2rc7
+RUN pip install dvc[gs]==2.34.2
+# RUN pip install jsonschema pyyaml
+# RUN pip install --no-cache-dir opencv-contrib-python-headless transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
+# RUN pip install --no-cache-dir ray[serve] scikit-image
+# RUN pip install --no-cache-dir instill-sdk==0.3.2rc7
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
