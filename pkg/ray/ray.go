@@ -375,6 +375,7 @@ func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	cmd := exec.Command("/ray-conda/bin/python", "model.py",
 		"--func", "deploy",
+		"--ray-addr", config.Config.RayServer.GrpcURI,
 		"--model", modelPath,
 	)
 	cmd.Dir = modelPath
@@ -392,6 +393,7 @@ func (r *ray) UndeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	cmd := exec.Command("/ray-conda/bin/python", "model.py",
 		"--func", "undeploy",
+		"--ray-addr", config.Config.RayServer.GrpcURI,
 		"--model", modelPath,
 	)
 	cmd.Dir = modelPath
