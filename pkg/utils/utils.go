@@ -84,7 +84,8 @@ func findModelFiles(dir string) []string {
 		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") ||
 			strings.HasSuffix(f.Name(), ".weight") || strings.HasSuffix(f.Name(), ".ini") || strings.HasSuffix(f.Name(), ".bin") ||
 			strings.HasPrefix(f.Name(), "onnx__") || strings.HasSuffix(f.Name(), ".model") || strings.HasSuffix(f.Name(), ".json") ||
-			strings.HasSuffix(f.Name(), ".safetensors") {
+			strings.HasSuffix(f.Name(), ".xml") || strings.HasSuffix(f.Name(), ".msgpack") || strings.HasSuffix(f.Name(), ".onnx_data") ||
+			strings.HasSuffix(f.Name(), ".txt") || strings.HasSuffix(f.Name(), ".safetensors") {
 			modelPaths = append(modelPaths, path)
 		}
 		return nil
@@ -238,11 +239,39 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 		if len(modelSubNames) < 2 {
 			continue
 		}
+		modelNamesToCheck := map[string]bool{
+			"fastertransformer": true,
+			"llava_13b":         true,
+			"llava_7b":          true,
+			"llama2_7b":         true,
+			"codellama":         true,
+			"llama2_13b_chat":   true,
+			"llama2_7b_chat":    true,
+			"mistral_7b":        true,
+			"fuyu_8b":           true,
+			"controlnet":        true,
+			"sdxl":              true,
+			"zephyr_7b":         true,
+			"mpt_7b":            true,
+		}
+
 		for _, tritonModel := range tritonModels {
 			tritonModelName := tritonModel.Name
 			tritonSubNames := strings.Split(tritonModelName, "#")
 			if len(tritonSubNames) < 4 {
 				continue
+			}
+			startIdx := 2
+			contains := false
+
+			for idx, name := range modelSubNames {
+				if _, found := modelNamesToCheck[name]; found {
+					contains = true
+					if name == tritonSubNames[len(tritonSubNames)-2] {
+						startIdx = idx
+						break
+					}
+				}
 			}
 
 			if tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
@@ -250,22 +279,15 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 				if err := cmd.Run(); err != nil {
 					return err
 				}
+			} else if contains {
 				// TODO: add general function to check if backend use fastertransformer, which has different model file structure
-			} else if (modelSubNames[len(modelSubNames)-3] == "fastertransformer" ||
-				modelSubNames[len(modelSubNames)-3] == "llava_13b" ||
-				modelSubNames[len(modelSubNames)-3] == "llava_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "llama2_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "codellama" ||
-				modelSubNames[len(modelSubNames)-3] == "llama2_13b_chat" ||
-				modelSubNames[len(modelSubNames)-3] == "llama2_7b_chat" ||
-				modelSubNames[len(modelSubNames)-3] == "mistral_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "fuyu_8b" ||
-				modelSubNames[len(modelSubNames)-3] == "controlnet" ||
-				modelSubNames[len(modelSubNames)-3] == "sdxl" ||
-				modelSubNames[len(modelSubNames)-3] == "zephyr_7b" ||
-				modelSubNames[len(modelSubNames)-3] == "mpt_7b") &&
-				tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
-				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])
+				var modelSubNamesPath string
+				for idx, subName := range modelSubNames {
+					if idx > startIdx {
+						modelSubNamesPath += subName + "/"
+					}
+				}
+				targetPath := fmt.Sprintf("%s/%s/%s", modelRepository, tritonModelName, modelSubNamesPath)
 				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
 					return err
 				}
