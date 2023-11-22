@@ -75,7 +75,15 @@ func NewTriton() Triton {
 func (ts *triton) Init() {
 	grpcUri := config.Config.TritonServer.GrpcURI
 	// Connect to gRPC server
-	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	maxMsgSize := 1024 * 1024 * 20 // 20 MB
+	conn, err := grpc.Dial(
+		grpcUri,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	)
 	if err != nil {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
 	}
