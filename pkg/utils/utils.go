@@ -253,10 +253,16 @@ func CopyModelFileToModelRepository(modelRepository string, dir string, tritonMo
 				// TODO: add general function to check if backend use fastertransformer, which has different model file structure
 			} else if (modelSubNames[len(modelSubNames)-3] == "fastertransformer" ||
 				modelSubNames[len(modelSubNames)-3] == "llava_13b" ||
+				modelSubNames[len(modelSubNames)-3] == "llava_7b" ||
 				modelSubNames[len(modelSubNames)-3] == "llama2_7b" ||
 				modelSubNames[len(modelSubNames)-3] == "codellama" ||
 				modelSubNames[len(modelSubNames)-3] == "llama2_13b_chat" ||
+				modelSubNames[len(modelSubNames)-3] == "llama2_7b_chat" ||
 				modelSubNames[len(modelSubNames)-3] == "mistral_7b" ||
+				modelSubNames[len(modelSubNames)-3] == "fuyu_8b" ||
+				modelSubNames[len(modelSubNames)-3] == "controlnet" ||
+				modelSubNames[len(modelSubNames)-3] == "sdxl" ||
+				modelSubNames[len(modelSubNames)-3] == "zephyr_7b" ||
 				modelSubNames[len(modelSubNames)-3] == "mpt_7b") &&
 				tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-3] {
 				targetPath := fmt.Sprintf("%s/%s/%s/%s/", modelRepository, tritonModelName, modelSubNames[len(modelSubNames)-2], modelSubNames[len(modelSubNames)-1])

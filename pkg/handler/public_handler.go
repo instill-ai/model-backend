@@ -123,11 +123,13 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
-					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
-					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
-					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
+					PromptImage: "", // TODO: support streaming image generation
+					Steps:       *fileData.TaskInput.GetTextToImage().Steps,
+					CfgScale:    *fileData.TaskInput.GetTextToImage().CfgScale,
+					Seed:        *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
+					ExtraParams: *fileData.TaskInput.GetTextToImage().ExtraParams,
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
@@ -245,11 +247,13 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			case *modelPB.TaskInputStream_TextToImage:
 				textToImageInput = &triton.TextToImageInput{
-					Prompt:   fileData.TaskInput.GetTextToImage().Prompt,
-					Steps:    *fileData.TaskInput.GetTextToImage().Steps,
-					CfgScale: *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:     *fileData.TaskInput.GetTextToImage().Seed,
-					Samples:  *fileData.TaskInput.GetTextToImage().Samples,
+					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
+					PromptImage: "", // TODO: support streaming image generation
+					Steps:       *fileData.TaskInput.GetTextToImage().Steps,
+					CfgScale:    *fileData.TaskInput.GetTextToImage().CfgScale,
+					Seed:        *fileData.TaskInput.GetTextToImage().Seed,
+					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
+					ExtraParams: *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
 				textGeneration = &triton.TextGenerationInput{
@@ -2606,7 +2610,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(req)
+		textToImage, err := parseTexToImageRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
@@ -2751,7 +2755,7 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 		lenInputs = len(imageInput)
 		inputInfer = imageInput
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(&modelPB.TriggerUserModelRequest{
+		textToImage, err := parseTexToImageRequestInputs(ctx, &modelPB.TriggerUserModelRequest{
 			Name:       req.Name,
 			TaskInputs: req.TaskInputs,
 		})
