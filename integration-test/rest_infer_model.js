@@ -2427,6 +2427,7 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_to_image": {
             "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
             "steps": "1",
             "cfg_scale": "5.5",
             "seed": "1",

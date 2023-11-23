@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/zip"
+	"bufio"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -58,8 +59,82 @@ func WriteToFp(fp *os.File, data []byte) error {
 	}
 }
 
+func checkIsEnsembleProject(fPath string) (bool, error) {
+	fileInfo, err := os.Stat(fPath)
+	if err != nil {
+		return false, err
+	}
+
+	if fileInfo.IsDir() {
+		var result bool
+		err := filepath.Walk(fPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && strings.HasSuffix(path, ".pbtxt") {
+				f, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				scanner := bufio.NewScanner(f)
+				for scanner.Scan() {
+					if strings.Contains(scanner.Text(), "ensemble") {
+						result = true
+						return nil
+					}
+				}
+
+				if err := scanner.Err(); err != nil {
+					result = false
+					return err
+				}
+			}
+			result = false
+			return nil
+		})
+		return result, err
+	} else {
+		archive, err := zip.OpenReader(fPath)
+		if err != nil {
+			return false, err
+		}
+		defer archive.Close()
+
+		for _, file := range archive.File {
+			// Check if the file has a .pbtxt suffix
+			if strings.HasSuffix(file.Name, ".pbtxt") {
+				f, err := file.Open()
+				if err != nil {
+					return false, err
+				}
+				defer f.Close()
+
+				scanner := bufio.NewScanner(f)
+				for scanner.Scan() {
+					if strings.Contains(scanner.Text(), "ensemble") {
+						return true, nil
+					}
+				}
+				if err := scanner.Err(); err != nil {
+					return false, err
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
 // TODO: need to clean up this function
 func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
+	isEnsembleProject, err := checkIsEnsembleProject(fPath)
+	if err != nil {
+		fmt.Println("Error when open zip file ", err)
+		return "", "", err
+	}
+
 	archive, err := zip.OpenReader(fPath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
@@ -181,11 +256,12 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 				break
 			}
 		}
-
-		for oldModelName, newModelName := range newModelNameMap {
-			err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
-			if err != nil {
-				return "", "", err
+		if isEnsembleProject {
+			for oldModelName, newModelName := range newModelNameMap {
+				err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
+				if err != nil {
+					return "", "", err
+				}
 			}
 		}
 	}
@@ -214,6 +290,12 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 
 // modelDir and dstDir are absolute path
 func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
+	isEnsembleProject, ensemble_err := checkIsEnsembleProject(modelDir)
+	if ensemble_err != nil {
+		fmt.Println("Error when UpdateModelPath checkIsEnsembleProject func", ensemble_err)
+		return "", "", ensemble_err
+	}
+
 	var createdModels []datamodel.InferenceModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
@@ -307,11 +389,12 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 				break
 			}
 		}
-
-		for oldModelName, newModelName := range newModelNameMap {
-			err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
-			if err != nil {
-				return "", "", err
+		if isEnsembleProject {
+			for oldModelName, newModelName := range newModelNameMap {
+				err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
+				if err != nil {
+					return "", "", err
+				}
 			}
 		}
 	}

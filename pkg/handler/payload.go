@@ -123,6 +123,11 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 				ImgUrl:    taskInput.GetTextGeneration().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetTextGeneration().GetPromptImageBase64(),
 			}
+		case *modelPB.TaskInput_TextToImage:
+			imageInput = triton.ImageInput{
+				ImgUrl:    taskInput.GetTextToImage().GetPromptImageUrl(),
+				ImgBase64: taskInput.GetTextToImage().GetPromptImageBase64(),
+			}
 		default:
 			return nil, fmt.Errorf("unknown task input type")
 		}
@@ -165,12 +170,12 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 	return inputBytes, nil
 }
 
-func parseTexToImageRequestInputs(req *modelPB.TriggerUserModelRequest) (textToImageInput *triton.TextToImageInput, err error) {
+func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textToImageInput *triton.TextToImageInput, err error) {
 	if len(req.TaskInputs) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
-
-	for _, taskInput := range req.TaskInputs {
+	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
+	for idx, taskInput := range req.TaskInputs {
 		steps := utils.TEXT_TO_IMAGE_STEPS
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = *taskInput.GetTextToImage().Steps
@@ -190,12 +195,24 @@ func parseTexToImageRequestInputs(req *modelPB.TriggerUserModelRequest) (textToI
 		if samples > 1 {
 			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 		}
+		extraParams := string("")
+		if taskInput.GetTextToImage().ExtraParams != nil {
+			extraParams = *taskInput.GetTextToImage().ExtraParams
+		}
+
+		// Handling Image Input
+		var inputBytes []byte
+		if parsedImageErr == nil {
+			inputBytes = pargedImages[idx]
+		}
 		textToImageInput = &triton.TextToImageInput{
-			Prompt:   taskInput.GetTextToImage().Prompt,
-			Steps:    steps,
-			CfgScale: cfgScale,
-			Seed:     seed,
-			Samples:  samples,
+			Prompt:      taskInput.GetTextToImage().Prompt,
+			PromptImage: string(inputBytes),
+			Steps:       steps,
+			CfgScale:    cfgScale,
+			Seed:        seed,
+			Samples:     samples,
+			ExtraParams: extraParams,
 		}
 	}
 	return textToImageInput, nil
@@ -315,6 +332,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 	cfgScaleStr := req.MultipartForm.Value["cfg_scale"]
 	seedStr := req.MultipartForm.Value["seed"]
 	samplesStr := req.MultipartForm.Value["samples"]
+	extraParamsInput := req.MultipartForm.Value["extra_params"]
 
 	if len(stepStr) > 1 {
 		return nil, fmt.Errorf("invalid steps input, only support a single steps")
@@ -368,12 +386,25 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 	}
 
+	extraParams := ""
+	if len(extraParamsInput) > 0 {
+		extraParams = extraParamsInput[0]
+	}
+
+	parsedImages, err := parseImageFormDataInputsToBytes(req)
+	var promptImage string
+	if err != nil && len(parsedImages) == 1 {
+		promptImage = string(parsedImages[0])
+	}
+
 	return &triton.TextToImageInput{
-		Prompt:   prompts[0],
-		Steps:    step,
-		CfgScale: float32(cfgScale),
-		Seed:     seed,
-		Samples:  samples,
+		Prompt:      prompts[0],
+		PromptImage: promptImage,
+		Steps:       step,
+		CfgScale:    float32(cfgScale),
+		Seed:        seed,
+		Samples:     samples,
+		ExtraParams: extraParams,
 	}, nil
 }
 

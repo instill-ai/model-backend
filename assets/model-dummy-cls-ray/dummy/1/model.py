@@ -1,13 +1,10 @@
-from typing import List
-
 import ray
 import numpy as np
-from instill.configuration import CORE_RAY_ADDRESS
-from instill.helpers.ray_helper import (
+from ray import serve
+from instill.helpers.const import DataType
+from instill.helpers.ray_io import serialize_byte_tensor, deserialize_bytes_tensor
+from instill.helpers.ray_config import (
     InstillRayModelConfig,
-    DataType,
-    serialize_byte_tensor,
-    deserialize_bytes_tensor,
     entry,
 )
 
@@ -21,16 +18,11 @@ from ray_pb2 import (
     InferTensor,
 )
 
-ray.init(address=CORE_RAY_ADDRESS)
-# this import must come after `ray.init()`
-from ray import serve
-
 
 @serve.deployment()
 class MobileNet:
-    def __init__(self, model_path: str):
-        self.application_name = "_".join(model_path.split("/")[3:5])
-        self.deployement_name = model_path.split("/")[4]
+    def __init__(self):
+        pass
 
     def ModelMetadata(self, req: ModelMetadataRequest) -> ModelMetadataResponse:
         resp = ModelMetadataResponse(
@@ -85,7 +77,7 @@ def deploy_model(model_config: InstillRayModelConfig):
         ray_actor_options=model_config.ray_actor_options,
         max_concurrent_queries=model_config.max_concurrent_queries,
         autoscaling_config=model_config.ray_autoscaling_options,
-    ).bind(model_config.model_path)
+    ).bind()
 
     serve.run(
         c_app, name=model_config.model_name, route_prefix=model_config.route_prefix
@@ -97,7 +89,11 @@ def undeploy_model(model_name: str):
 
 
 if __name__ == "__main__":
-    func, model_config = entry()
+    func, model_config = entry("")
+
+    ray.init(
+        address=model_config.ray_addr,
+    )
 
     if func == "deploy":
         deploy_model(model_config=model_config)

@@ -21,11 +21,13 @@ import (
 type InferInput interface{}
 
 type TextToImageInput struct {
-	Prompt   string
-	Steps    int32
-	CfgScale float32
-	Seed     int32
-	Samples  int32
+	Prompt      string
+	PromptImage string
+	Steps       int32
+	CfgScale    float32
+	Seed        int32
+	Samples     int32
+	ExtraParams string
 }
 
 type TextGenerationInput struct {
@@ -271,11 +273,13 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.PromptImage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textToImageInput.ExtraParams)}))
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*TextGenerationInput)
 		maxNewToken := make([]byte, 4)
