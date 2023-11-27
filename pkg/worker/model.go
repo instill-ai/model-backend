@@ -246,19 +246,8 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
-	preDeployModel, err := GetPreDeployGitHubModelUUID(param.Model)
-	if err != nil {
+	if err := w.repository.CreateUserModel(param.Model); err != nil {
 		return err
-	}
-
-	if preDeployModel != nil && !config.Config.Server.ItMode.Enabled {
-		if err := w.repository.CreatePreDeployModel(preDeployModel); err != nil {
-			return err
-		}
-	} else {
-		if err := w.repository.CreateUserModel(param.Model); err != nil {
-			return err
-		}
 	}
 
 	logger.Info("CreateModelWorkflow completed")
