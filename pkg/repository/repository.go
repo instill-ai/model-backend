@@ -25,7 +25,6 @@ const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBL
 
 type Repository interface {
 	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
-	CreatePreDeployModel(model *datamodel.PreDeployModel) error
 	GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error)
 
 	CreateUserModel(model *datamodel.Model) error
@@ -252,19 +251,6 @@ func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view
 
 func (r *repository) CreateUserModel(model *datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(result.Error, &pgErr) {
-			if pgErr.Code == "23505" {
-				return status.Errorf(codes.AlreadyExists, pgErr.Message)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (r *repository) CreatePreDeployModel(model *datamodel.PreDeployModel) error {
-	if result := r.db.Model(&datamodel.Model{}).Create(&model); result.Error != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(result.Error, &pgErr) {
 			if pgErr.Code == "23505" {
