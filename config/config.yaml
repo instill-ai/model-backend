@@ -15,7 +15,7 @@ server:
     enabled: false
   maxdatasize: 20 # MB in unit
   workflow:
-    maxworkflowtimeout: 3600 # in seconds
+    maxworkflowtimeout: 7200 # in seconds
     maxworkflowretry: 3
     maxactivityretry: 1
   inferencebackend: ray
