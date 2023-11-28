@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.19.0-alpha...v0.20.0-alpha) (2023-11-28)
+
+
+### Features
+
+* **model:** Enhancements for Image Inpu in Text 2 Image Task  ([#457](https://github.com/instill-ai/model-backend/issues/457)) ([eb604a1](https://github.com/instill-ai/model-backend/commit/eb604a13a058258c8a58bfdd9ca5f4aafa2363b7))
+* **ray:** use shared python executable ([#455](https://github.com/instill-ai/model-backend/issues/455)) ([db9658b](https://github.com/instill-ai/model-backend/commit/db9658bd2065aab93389a612dacbfce9fd3448af))
+
+
+### Bug Fixes
+
+* **ray:** fix model file extension ([#453](https://github.com/instill-ai/model-backend/issues/453)) ([424d632](https://github.com/instill-ai/model-backend/commit/424d63286125f599852a5088163e1980a5ca4a06))
+
 ## [0.19.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.18.0-alpha...v0.19.0-alpha) (2023-11-11)
 
 
