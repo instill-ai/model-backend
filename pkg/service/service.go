@@ -347,7 +347,7 @@ func (s *service) TriggerUserModelTestMode(ctx context.Context, modelUID uuid.UU
 func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
 	inferenceModel, err := s.repository.GetInferenceEnsembleModel(modelUID)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "ray model not found")
+		return nil, status.Errorf(codes.NotFound, "model not found")
 	}
 
 	inferenceModelName := inferenceModel.Name
@@ -381,7 +381,7 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 
 	inferenceModel, err := s.repository.GetInferenceEnsembleModel(modelUID)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "triton model not found")
+		return nil, status.Errorf(codes.NotFound, "model not found")
 	}
 
 	inferenceModelName := inferenceModel.Name

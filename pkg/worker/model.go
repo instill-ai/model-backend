@@ -14,6 +14,8 @@ import (
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -247,7 +249,14 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger.Info("CreateModelWorkflow started")
 
 	if err := w.repository.CreateUserModel(param.Model); err != nil {
-		return err
+		if e, ok := status.FromError(err); ok {
+			if e.Code() != codes.AlreadyExists {
+				return err
+			} else {
+				logger.Info("Model already existed, CreateModelWorkflow completed")
+				return nil
+			}
+		}
 	}
 
 	logger.Info("CreateModelWorkflow completed")
