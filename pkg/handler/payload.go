@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
 	_ "image/png"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -118,15 +120,20 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 				ImgUrl:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_TextGeneration:
+		case *modelPB.TaskInput_VisualQuestionAnswering:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetTextGeneration().GetPromptImageUrl(),
-				ImgBase64: taskInput.GetTextGeneration().GetPromptImageBase64(),
+				ImgUrl:    taskInput.GetVisualQuestionAnswering().GetPromptImageUrl(),
+				ImgBase64: taskInput.GetVisualQuestionAnswering().GetPromptImageBase64(),
 			}
 		case *modelPB.TaskInput_TextToImage:
 			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetTextToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetTextToImage().GetPromptImageBase64(),
+			}
+		case *modelPB.TaskInput_ImageToImage:
+			imageInput = triton.ImageInput{
+				ImgUrl:    taskInput.GetImageToImage().GetPromptImageUrl(),
+				ImgBase64: taskInput.GetImageToImage().GetPromptImageBase64(),
 			}
 		default:
 			return nil, fmt.Errorf("unknown task input type")
@@ -195,9 +202,15 @@ func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserM
 		if samples > 1 {
 			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
 		}
+
 		extraParams := string("")
 		if taskInput.GetTextToImage().ExtraParams != nil {
-			extraParams = *taskInput.GetTextToImage().ExtraParams
+			jsonData, err := json.Marshal(taskInput.GetTextToImage().ExtraParams)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				extraParams = string(jsonData)
+			}
 		}
 
 		// Handling Image Input
@@ -218,17 +231,70 @@ func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserM
 	return textToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
+func parseImageToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (imageToImageInput *triton.ImageToImageInput, err error) {
+	if len(req.TaskInputs) > 1 {
+		return nil, fmt.Errorf("text to image only support single batch")
+	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
 	for idx, taskInput := range req.TaskInputs {
+		steps := utils.TEXT_TO_IMAGE_STEPS
+		if taskInput.GetImageToImage().Steps != nil {
+			steps = *taskInput.GetImageToImage().Steps
+		}
+		cfgScale := float32(utils.IMAGE_TO_TEXT_CFG_SCALE)
+		if taskInput.GetImageToImage().CfgScale != nil {
+			cfgScale = float32(*taskInput.GetImageToImage().CfgScale)
+		}
+		seed := utils.IMAGE_TO_TEXT_SEED
+		if taskInput.GetImageToImage().Seed != nil {
+			seed = *taskInput.GetImageToImage().Seed
+		}
+		samples := utils.IMAGE_TO_TEXT_SAMPLES
+		if taskInput.GetImageToImage().Samples != nil {
+			samples = *taskInput.GetImageToImage().Samples
+		}
+		if samples > 1 {
+			return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
+		}
+
+		extraParams := string("")
+		if taskInput.GetImageToImage().ExtraParams != nil {
+			jsonData, err := json.Marshal(taskInput.GetImageToImage().ExtraParams)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				extraParams = string(jsonData)
+			}
+		}
+		prompt := string("")
+		if taskInput.GetImageToImage().Prompt != nil {
+			prompt = *taskInput.GetImageToImage().Prompt
+		}
+
+		// Handling Image Input
+		var inputBytes []byte
+		if parsedImageErr == nil {
+			inputBytes = pargedImages[idx]
+		}
+		imageToImageInput = &triton.ImageToImageInput{
+			Prompt:      prompt,
+			PromptImage: string(inputBytes),
+			Steps:       steps,
+			CfgScale:    cfgScale,
+			Seed:        seed,
+			Samples:     samples,
+			ExtraParams: extraParams,
+		}
+	}
+	return imageToImageInput, nil
+}
+
+func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
+	for _, taskInput := range req.TaskInputs {
 
 		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
 		if taskInput.GetTextGeneration().MaxNewTokens != nil {
 			maxNewTokens = *taskInput.GetTextGeneration().MaxNewTokens
-		}
-		stopWordsList := string("")
-		if taskInput.GetTextGeneration().StopWordsList != nil {
-			stopWordsList = *taskInput.GetTextGeneration().StopWordsList
 		}
 		temperature := utils.TEXT_GENERATION_TEMPERATURE
 		if taskInput.GetTextGeneration().Temperature != nil {
@@ -244,7 +310,104 @@ func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUs
 		}
 		extraParams := string("")
 		if taskInput.GetTextGeneration().ExtraParams != nil {
-			extraParams = *taskInput.GetTextGeneration().ExtraParams
+			jsonData, err := json.Marshal(taskInput.GetTextGeneration().ExtraParams)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				extraParams = string(jsonData)
+			}
+		}
+
+		textGenerationInput = &triton.TextGenerationInput{
+			Prompt: taskInput.GetTextGeneration().Prompt,
+			// PromptImage:  string(inputBytes),
+			MaxNewTokens: maxNewTokens,
+			// StopWordsList: stopWordsList,
+			Temperature: temperature,
+			TopK:        topK,
+			Seed:        seed,
+			ExtraParams: extraParams,
+		}
+	}
+	return textGenerationInput, nil
+}
+
+func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationChatInput *triton.TextGenerationChatInput, err error) {
+	for _, taskInput := range req.TaskInputs {
+		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		if taskInput.GetTextGenerationChat().MaxNewTokens != nil {
+			maxNewTokens = *taskInput.GetTextGenerationChat().MaxNewTokens
+		}
+		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		if taskInput.GetTextGenerationChat().Temperature != nil {
+			temperature = *taskInput.GetTextGenerationChat().Temperature
+		}
+		topK := utils.TEXT_GENERATION_TOP_K
+		if taskInput.GetTextGenerationChat().TopK != nil {
+			topK = *taskInput.GetTextGenerationChat().TopK
+		}
+		seed := utils.TEXT_GENERATION_SEED
+		if taskInput.GetTextGenerationChat().Seed != nil {
+			seed = *taskInput.GetTextGenerationChat().Seed
+		}
+		extraParams := string("")
+		if taskInput.GetTextGenerationChat().ExtraParams != nil {
+			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().ExtraParams)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				extraParams = string(jsonData)
+			}
+		}
+		conversation := string("")
+		if taskInput.GetTextGenerationChat().Conversation != nil {
+			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().Conversation)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				conversation = string(jsonData)
+			}
+		}
+		textGenerationChatInput = &triton.TextGenerationChatInput{
+			Conversation: conversation,
+			MaxNewTokens: maxNewTokens,
+			Temperature:  temperature,
+			TopK:         topK,
+			Seed:         seed,
+			ExtraParams:  extraParams,
+		}
+	}
+	return textGenerationChatInput, nil
+}
+
+func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
+	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
+	for idx, taskInput := range req.TaskInputs {
+
+		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		if taskInput.GetVisualQuestionAnswering().MaxNewTokens != nil {
+			maxNewTokens = *taskInput.GetVisualQuestionAnswering().MaxNewTokens
+		}
+		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		if taskInput.GetVisualQuestionAnswering().Temperature != nil {
+			temperature = *taskInput.GetVisualQuestionAnswering().Temperature
+		}
+		topK := utils.TEXT_GENERATION_TOP_K
+		if taskInput.GetVisualQuestionAnswering().TopK != nil {
+			topK = *taskInput.GetVisualQuestionAnswering().TopK
+		}
+		seed := utils.TEXT_GENERATION_SEED
+		if taskInput.GetVisualQuestionAnswering().Seed != nil {
+			seed = *taskInput.GetVisualQuestionAnswering().Seed
+		}
+		extraParams := string("")
+		if taskInput.GetVisualQuestionAnswering().ExtraParams != nil {
+			jsonData, err := json.Marshal(taskInput.GetVisualQuestionAnswering().ExtraParams)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON: %v", err)
+			} else {
+				extraParams = string(jsonData)
+			}
 		}
 
 		// Handling Image Input
@@ -252,19 +415,17 @@ func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUs
 		if parsedImageErr == nil {
 			inputBytes = pargedImages[idx]
 		}
-
-		textGenerationInput = &triton.TextGenerationInput{
-			Prompt:        taskInput.GetTextGeneration().Prompt,
-			PromptImage:   string(inputBytes),
-			MaxNewTokens:  maxNewTokens,
-			StopWordsList: stopWordsList,
-			Temperature:   temperature,
-			TopK:          topK,
-			Seed:          seed,
-			ExtraParams:   extraParams,
+		visualQuestionAnsweringInput = &triton.VisualQuestionAnsweringInput{
+			Prompt:       taskInput.GetVisualQuestionAnswering().Prompt,
+			PromptImage:  string(inputBytes),
+			MaxNewTokens: maxNewTokens,
+			Temperature:  temperature,
+			TopK:         topK,
+			Seed:         seed,
+			ExtraParams:  extraParams,
 		}
 	}
-	return textGenerationInput, nil
+	return visualQuestionAnsweringInput, nil
 }
 
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
@@ -408,22 +569,229 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 	}, nil
 }
 
+func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput *triton.ImageToImageInput, err error) {
+	prompts := req.MultipartForm.Value["prompt"]
+	if len(prompts) == 0 {
+		return nil, fmt.Errorf("missing prompt input")
+	}
+	if len(prompts) > 1 {
+		return nil, fmt.Errorf("invalid prompt input, only support a single prompt")
+	}
+	stepStr := req.MultipartForm.Value["steps"]
+	cfgScaleStr := req.MultipartForm.Value["cfg_scale"]
+	seedStr := req.MultipartForm.Value["seed"]
+	samplesStr := req.MultipartForm.Value["samples"]
+	extraParamsInput := req.MultipartForm.Value["extra_params"]
+
+	if len(stepStr) > 1 {
+		return nil, fmt.Errorf("invalid steps input, only support a single steps")
+	}
+	if len(cfgScaleStr) > 1 {
+		return nil, fmt.Errorf("invalid cfg_scale input, only support a single cfg_scale")
+	}
+	if len(seedStr) > 1 {
+		return nil, fmt.Errorf("invalid seed input, only support a single seed")
+	}
+	if len(samplesStr) > 1 {
+		return nil, fmt.Errorf("invalid samples input, only support a single samples")
+	}
+
+	step := utils.TEXT_TO_IMAGE_STEPS
+	if len(stepStr) > 0 {
+		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid step input %w", err)
+		}
+		step = int32(parseStep)
+	}
+
+	cfgScale := float64(utils.IMAGE_TO_TEXT_CFG_SCALE)
+	if len(cfgScaleStr) > 0 {
+		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cfgScale input %w", err)
+		}
+	}
+
+	seed := utils.IMAGE_TO_TEXT_SEED
+	if len(seedStr) > 0 {
+		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid seed input %w", err)
+		}
+		seed = int32(parseSeed)
+	}
+
+	samples := utils.IMAGE_TO_TEXT_SAMPLES
+	if len(samplesStr) > 0 {
+		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid samples input %w", err)
+		}
+		samples = int32(parseSamples)
+	}
+
+	if samples > 1 {
+		return nil, fmt.Errorf("we only allow samples=1 for now and will improve to allow the generation of multiple samples in the future")
+	}
+
+	extraParams := ""
+	if len(extraParamsInput) > 0 {
+		extraParams = extraParamsInput[0]
+	}
+
+	parsedImages, err := parseImageFormDataInputsToBytes(req)
+	var promptImage string
+	if err != nil && len(parsedImages) == 1 {
+		promptImage = string(parsedImages[0])
+	}
+
+	return &triton.ImageToImageInput{
+		Prompt:      prompts[0],
+		PromptImage: promptImage,
+		Steps:       step,
+		CfgScale:    float32(cfgScale),
+		Seed:        seed,
+		Samples:     samples,
+		ExtraParams: extraParams,
+	}, nil
+}
+
 func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *triton.TextGenerationInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-	stopWordsListInput := req.MultipartForm.Value["stop_words_list"]
 	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
 	temperatureInput := req.MultipartForm.Value["temperature"]
 	topKInput := req.MultipartForm.Value["topk"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
 
-	stopWordsList := string("")
-	if len(stopWordsListInput) > 0 {
-		stopWordsList = stopWordsListInput[0]
+	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	if len(maxNewTokenInput) > 0 {
+		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		maxNewTokens = int32(parseMaxNewToken)
 	}
+
+	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	if len(temperatureInput) > 0 {
+		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		temperature = float32(parseTemperature)
+	}
+
+	topK := utils.TEXT_GENERATION_TOP_K
+	if len(topKInput) > 0 {
+		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		topK = int32(parseTopK)
+	}
+
+	seed := utils.TEXT_GENERATION_SEED
+	if len(seedInput) > 0 {
+		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		seed = int32(parseSeed)
+	}
+
+	extraParams := ""
+	if len(extraParamsInput) > 0 {
+		extraParams = extraParamsInput[0]
+	}
+
+	return &triton.TextGenerationInput{
+		Prompt:       prompts[0],
+		MaxNewTokens: maxNewTokens,
+		Temperature:  temperature,
+		TopK:         topK,
+		Seed:         seed,
+		ExtraParams:  extraParams,
+	}, nil
+}
+
+func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGenerationChat *triton.TextGenerationChatInput, err error) {
+	conversations := req.MultipartForm.Value["conversation"]
+	if len(conversations) != 1 {
+		return nil, fmt.Errorf("only support batchsize 1")
+	}
+
+	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	temperatureInput := req.MultipartForm.Value["temperature"]
+	topKInput := req.MultipartForm.Value["topk"]
+	seedInput := req.MultipartForm.Value["seed"]
+	extraParamsInput := req.MultipartForm.Value["extra_params"]
+
+	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	if len(maxNewTokenInput) > 0 {
+		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		maxNewTokens = int32(parseMaxNewToken)
+	}
+
+	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	if len(temperatureInput) > 0 {
+		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		temperature = float32(parseTemperature)
+	}
+
+	topK := utils.TEXT_GENERATION_TOP_K
+	if len(topKInput) > 0 {
+		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		topK = int32(parseTopK)
+	}
+
+	seed := utils.TEXT_GENERATION_SEED
+	if len(seedInput) > 0 {
+		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input %w", err)
+		}
+		seed = int32(parseSeed)
+	}
+
+	extraParams := ""
+	if len(extraParamsInput) > 0 {
+		extraParams = extraParamsInput[0]
+	}
+
+	return &triton.TextGenerationChatInput{
+		Conversation: conversations[0],
+		MaxNewTokens: maxNewTokens,
+		Temperature:  temperature,
+		TopK:         topK,
+		Seed:         seed,
+		ExtraParams:  extraParams,
+	}, nil
+}
+
+func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQuestionAnswering *triton.VisualQuestionAnsweringInput, err error) {
+	prompts := req.MultipartForm.Value["prompt"]
+	if len(prompts) != 1 {
+		return nil, fmt.Errorf("only support batchsize 1")
+	}
+	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	temperatureInput := req.MultipartForm.Value["temperature"]
+	topKInput := req.MultipartForm.Value["topk"]
+	seedInput := req.MultipartForm.Value["seed"]
+	extraParamsInput := req.MultipartForm.Value["extra_params"]
 
 	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
 	if len(maxNewTokenInput) > 0 {
@@ -472,14 +840,13 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		promptImage = string(parsedImages[0])
 	}
 
-	return &triton.TextGenerationInput{
-		Prompt:        prompts[0],
-		PromptImage:   promptImage,
-		MaxNewTokens:  maxNewTokens,
-		StopWordsList: stopWordsList,
-		Temperature:   temperature,
-		TopK:          topK,
-		Seed:          seed,
-		ExtraParams:   extraParams,
+	return &triton.VisualQuestionAnsweringInput{
+		Prompt:       prompts[0],
+		PromptImage:  promptImage,
+		MaxNewTokens: maxNewTokens,
+		Temperature:  temperature,
+		TopK:         topK,
+		Seed:         seed,
+		ExtraParams:  extraParams,
 	}, nil
 }

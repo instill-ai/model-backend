@@ -19,10 +19,10 @@ export const defaultPassword = "password"
 export const gRPCPrivateHost = "model-backend:3083"
 export const apiPrivateHost = "http://model-backend:3083"
 
-export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-gateway:8080`
+export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}` : `api-gateway:8080`
 export const apiPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/model` : `http://api-gateway:8080/model`
 
-export const mgmtGRPCPublicHost =  apiGatewayMode ? `${__ENV.API_GATEWAY_URL}`: `api-gateway:8080`
+export const mgmtGRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}` : `api-gateway:8080`
 export const mgmtPublicHost = apiGatewayMode ? `${proto}://${__ENV.API_GATEWAY_URL}/core` : `http://api-gateway:8080/core`
 
 export const mgmtGRPCPrivateHost = "mgmt-backend:3084"
@@ -43,7 +43,10 @@ export const semantic_segmentation_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PAT
 export const instance_segmentation_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-instance-segmentation-model.zip`, "b");
 export const instance_segmentation_model_bz9 = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-instance-segmentation-model-bz9.zip`, "b");
 export const text_to_image_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-text-to-image-model.zip`, "b");
+export const image_to_image_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-image-to-image-model.zip`, "b");
 export const text_generation_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-text-generation-model.zip`, "b");
+export const text_generation_chat_model = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-text-generation-chat-model.zip`, "b");
+export const visual_question_answering = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dummy-visual-question-answering-model.zip`, "b");
 
 
 export const dog_img = open(`${__ENV.TEST_FOLDER_ABS_PATH}/integration-test//data/dog.jpg`, "b");

@@ -2381,9 +2381,9 @@ export function InferModel(header) {
       }
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task text to image response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task text to image response operation.name`]: (r) =>
           r.json().model_id === model_id
       });
 
@@ -2565,6 +2565,227 @@ export function InferModel(header) {
 
     })
   }
+  // Model Backend API: Predict Model with image to image model
+  {
+    group("Model Backend API: Predict Model with image to image model", function () {
+      let fd = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd.append("id", model_id);
+      fd.append("description", model_description);
+      fd.append("model_definition", model_def_name);
+      fd.append("content", http.file(constant.image_to_image_model, "dummy-image-to-image-model.zip"));
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      })
+      check(createModelRes, {
+        "POST /v1alpha/models/multipart task text to image response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models/multipart task text to image response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, header)
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
+        [`POST /v1alpha/models/${model_id}/deploy online task image to image response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/deploy online task image to image response operation.name`]: (r) =>
+          r.json().model_id === model_id
+      });
+
+      // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
+        if (res.json().state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // Inference with only required input
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "image_to_image": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+          }
+        }]
+      })
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger image to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger image to image task`]: (r) =>
+          r.json().task === "TASK_IMAGE_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].text_to_image.images.length`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+
+      // Inference with multiple samples, samples = 2
+      let num_samples = 2
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "image_to_image": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
+          }
+        }]
+      });
+
+      let resp = http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header)
+
+      check(resp, {
+        [`POST /v1alpha/models/${model_id}/trigger image to image status [with multiple samples]`]: (r) =>
+          r.status === 400,
+      });
+
+      // Predict with multiple-part
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task`]: (r) =>
+          r.json().task === "TASK_IMAGE_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].text_to_image.images`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task`]: (r) =>
+          r.json().task === "TASK_IMAGE_TO_IMAGE",
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs[0].text_to_image.images`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+      });
+
+
+      // Invalid cases: inference with multiple parameters
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "imaga_to_image": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
+          }
+        },
+        {
+          "image_to_image": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "steps": "1",
+            "cfg_scale": "5.5",
+            "seed": "1",
+            "samples": `${num_samples}`
+          }
+        }
+        ]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger image to image status [with multiple prompt]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status [with multiple prompts]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("steps", 1);
+      fd.append("steps", 1);
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status [with multiple steps]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("samples", 1);
+      fd.append("samples", 1);
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status [with multiple samples]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("seed", 1);
+      fd.append("seed", 1);
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status [with multiple seed]`]: (r) =>
+          r.status === 400,
+      });
+
+      fd = new FormData();
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("cfg_scale", 1.0);
+      fd.append("cfg_scale", 1.0);
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image status [with multiple cfg_scale]`]: (r) =>
+          r.status === 400,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+
+    })
+  }
   // Model Backend API: Predict Model with text generation model
   {
     group("Model Backend API: Predict Model with text generation model", function () {
@@ -2598,9 +2819,9 @@ export function InferModel(header) {
       }
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task generation response status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/deploy online task semantic response operation.name`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/deploy online task generation response operation.name`]: (r) =>
           r.json().model_id === model_id
       });
 
@@ -2640,10 +2861,19 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_generation": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
             "max_new_tokens": "50",
+            "temperature": "0.8",
             "top_k": "2",
-            "seed": "0"
+            "seed": "0",
+            "extra_params": [
+              {
+                "param_name": "test_param1",
+                "param_value": "test_value_1"
+              }, {
+                "param_name": "test_param2",
+                "param_value": "test_value_2"
+              },
+            ]
           }
         }]
       });
@@ -2661,7 +2891,24 @@ export function InferModel(header) {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("max_new_tokens", "50");
+      fd.append("temperature", "0.8");
+      fd.append("top_k", "2");
+      fd.append("seed", "0");
+
+      // For extra_params, you need to append them as JSON string because FormData does not support object directly
+      const extraParams = [
+        {
+          "param_name": "test_param1",
+          "param_value": "test_value_1"
+        },
+        {
+          "param_name": "test_param2",
+          "param_value": "test_value_2"
+        }
+      ];
+      fd.append("extra_params", JSON.stringify(extraParams));
+
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -2681,6 +2928,355 @@ export function InferModel(header) {
           r.status === 200,
         [`POST /v1alpha/models/${model_id}/trigger-multipart task`]: (r) =>
           r.json().task === "TASK_TEXT_GENERATION",
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
+  // Model Backend API: Predict Model with text generation chat model
+  {
+    group("Model Backend API: Predict Model with text generation chat model", function () {
+      let fd = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd.append("id", model_id);
+      fd.append("description", model_description);
+      fd.append("model_definition", model_def_name);
+      fd.append("content", http.file(constant.text_generation_chat_model, "dummy-text-generation-chat-model.zip"));
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      })
+      check(createModelRes, {
+        "POST /v1alpha/models/multipart task text generation chat response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models/multipart task text generation chat response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, header)
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
+        [`POST /v1alpha/models/${model_id}/deploy online task generation chat response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/deploy online task generation chat  response operation.name`]: (r) =>
+          r.json().model_id === model_id
+      });
+
+      // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
+        if (res.json().state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // Inference with only required input
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "text_generation_chat": {
+            "conversation": [
+              {
+                "role": "ADMIN",
+                "content": "You are an integration test bot",
+              }, {
+                "role": "ASSIST",
+                "content": "What can I help you?",
+              }, {
+                "role": "USER",
+                "content": "Test it",
+              }
+            ]
+          }
+        }]
+      });
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION_CHAT",
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Inference with multiple samples
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "text_generation_chat": {
+            "conversation": [
+              {
+                "role": "ADMIN",
+                "content": "You are an integration test bot",
+              }, {
+                "role": "ASSIST",
+                "content": "What can I help you?",
+              }, {
+                "role": "USER",
+                "content": "Test it",
+              }
+            ],
+            "max_new_tokens": "50",
+            "temperature": "0.8",
+            "top_k": "2",
+            "seed": "0",
+            "extra_params": [
+              {
+                "param_name": "test_param1",
+                "param_value": "test_value_1"
+              }, {
+                "param_name": "test_param2",
+                "param_value": "test_value_2"
+              },
+            ]
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat input multiple params status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION_CHAT",
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat multiple params task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Predict with multiple-part
+      fd = new FormData();
+      const conversation = [
+        {
+          "role": "ADMIN",
+          "content": "You are an integration test bot",
+        }, {
+          "role": "ASSIST",
+          "content": "What can I help you?",
+        }, {
+          "role": "USER",
+          "content": "Test it",
+        }
+      ]
+      fd.append("conversation", JSON.stringify(conversation));
+      fd.append("max_new_tokens", "50");
+      fd.append("temperature", "0.8");
+      fd.append("top_k", "2");
+      fd.append("seed", "0");
+
+      // For extra_params, you need to append them as JSON string because FormData does not support object directly
+      const extraParams = [
+        {
+          "param_name": "test_param1",
+          "param_value": "test_value_1"
+        },
+        {
+          "param_name": "test_param2",
+          "param_value": "test_value_2"
+        }
+      ];
+      fd.append("extra_params", JSON.stringify(extraParams));
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION_CHAT",
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/trigger-multipart status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task`]: (r) =>
+          r.json().task === "TASK_TEXT_GENERATION_CHAT",
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // clean up
+      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
+        "DELETE clean up response status": (r) =>
+          r.status === 204
+      });
+    });
+  }
+  // Model Backend API: Predict Model with visual question answering model
+  {
+    group("Model Backend API: Predict Model with visual question answering model", function () {
+      let fd = new FormData();
+      let model_id = randomString(10)
+      let model_description = randomString(20)
+      fd.append("id", model_id);
+      fd.append("description", model_description);
+      fd.append("model_definition", model_def_name);
+      fd.append("content", http.file(constant.visual_question_answering, "dummy-visual-question-answering-model.zip"));
+      let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      })
+      check(createModelRes, {
+        "POST /v1alpha/models/multipart task visual question answering response status": (r) =>
+          r.status === 201,
+        "POST /v1alpha/models/multipart task visual question answering response operation.name": (r) =>
+          r.json().operation.name !== undefined,
+      });
+
+      // Check model creation finished
+      let currentTime = new Date().getTime();
+      let timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        let res = http.get(`${constant.apiPublicHost}/v1alpha/${createModelRes.json().operation.name}`, header)
+        if (res.json().operation.done === true) {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
+        [`POST /v1alpha/models/${model_id}/deploy online task visual question answering response status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/deploy online task visual question answering response operation.name`]: (r) =>
+          r.json().model_id === model_id
+      });
+
+      // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+      currentTime = new Date().getTime();
+      timeoutTime = new Date().getTime() + 120000;
+      while (timeoutTime > currentTime) {
+        var res = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, header)
+        if (res.json().state === "STATE_ONLINE") {
+          break
+        }
+        sleep(1)
+        currentTime = new Date().getTime();
+      }
+
+      // Inference with only required input
+      let payload = JSON.stringify({
+        "task_inputs": [{
+          "visual_question_answering": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+          }
+        }]
+      });
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task`]: (r) =>
+          r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Inference with multiple samples
+      payload = JSON.stringify({
+        "task_inputs": [{
+          "visual_question_answering": {
+            "prompt": "hello this is a test",
+            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "max_new_tokens": "50",
+            "temperature": "0.8",
+            "top_k": "2",
+            "seed": "0",
+            "extra_params": [
+              {
+                "param_name": "test_param1",
+                "param_value": "test_value_1"
+              }, {
+                "param_name": "test_param2",
+                "param_value": "test_value_2"
+              },
+            ]
+          }
+        }]
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
+        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task input multiple params status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task`]: (r) =>
+          r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
+        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task multiple params task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+
+      // Predict with multiple-part
+      fd = new FormData();
+      fd.append("prompt", "hello this is a test");
+      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("max_new_tokens", "50");
+      fd.append("temperature", "0.8");
+      fd.append("top_k", "2");
+      fd.append("seed", "0");
+
+      // For extra_params, you need to append them as JSON string because FormData does not support object directly
+      const extraParams = [
+        {
+          "param_name": "test_param1",
+          "param_value": "test_value_1"
+        },
+        {
+          "param_name": "test_param2",
+          "param_value": "test_value_2"
+        }
+      ];
+      fd.append("extra_params", JSON.stringify(extraParams));
+
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task`]: (r) =>
+          r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
+          r.json().task_outputs.length === 1,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
+          r.json().task_outputs[0].text_generation.text !== undefined,
+      });
+      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
+        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
+      }), {
+        [`POST /v1alpha/models/${model_id}/trigger-multipart status`]: (r) =>
+          r.status === 200,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task`]: (r) =>
+          r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
         [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
         [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation.text`]: (r) =>

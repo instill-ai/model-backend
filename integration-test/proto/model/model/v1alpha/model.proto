@@ -23,7 +23,10 @@ import "../../../model/model/v1alpha/task_ocr.proto";
 import "../../../model/model/v1alpha/task_instance_segmentation.proto";
 import "../../../model/model/v1alpha/task_semantic_segmentation.proto";
 import "../../../model/model/v1alpha/task_text_to_image.proto";
+import "../../../model/model/v1alpha/task_image_to_image.proto";
 import "../../../model/model/v1alpha/task_text_generation.proto";
+import "../../../model/model/v1alpha/task_text_generation_chat.proto";
+import "../../../model/model/v1alpha/task_visual_question_answering.proto";
 import "../../../model/model/v1alpha/task_unspecified.proto";
 
 // LivenessRequest represents a request to check a service liveness status
@@ -467,10 +470,16 @@ message TaskInput {
     SemanticSegmentationInput semantic_segmentation = 6;
     // The text to image input
     TextToImageInput text_to_image = 7;
+    // The image to image input
+    ImageToImageInput image_to_image = 8;
     // The text generation input
-    TextGenerationInput text_generation = 8;
+    TextGenerationInput text_generation = 9;
+    // The text generation chat input
+    TextGenerationChatInput text_generation_chat = 10;
+    // The visual question answering input
+    VisualQuestionAnsweringInput visual_question_answering = 11;
     // The unspecified task input
-    UnspecifiedInput unspecified = 9;
+    UnspecifiedInput unspecified = 12;
   }
 }
 
@@ -492,10 +501,16 @@ message TaskInputStream {
     SemanticSegmentationInputStream semantic_segmentation = 6;
     // The text to image input
     TextToImageInput text_to_image = 7;
+    // The image to image input
+    ImageToImageInput image_to_image = 8;
     // The text generation input
-    TextGenerationInput text_generation = 8;
+    TextGenerationInput text_generation = 9;
+    // The text generation chat input
+    TextGenerationChatInput text_generation_chat = 10;
+    // The visual question answering input
+    VisualQuestionAnsweringInput visual_question_answering = 11;
     // The unspecified task input
-    UnspecifiedInput unspecified = 9;
+    UnspecifiedInput unspecified = 12;
   }
 }
 
@@ -517,10 +532,16 @@ message TaskOutput {
     SemanticSegmentationOutput semantic_segmentation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The text to image output
     TextToImageOutput text_to_image = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The image to image output
+    ImageToImageOutput image_to_image = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The text generation output
-    TextGenerationOutput text_generation = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+    TextGenerationOutput text_generation = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The text generation output
+    TextGenerationChatOutput text_generation_chat = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The text generation output
+    VisualQuestionAnsweringOutput visual_question_answering = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
     // The unspecified task output
-    UnspecifiedOutput unspecified = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+    UnspecifiedOutput unspecified = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 }
 

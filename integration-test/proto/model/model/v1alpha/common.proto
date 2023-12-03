@@ -8,11 +8,28 @@ import "google/api/field_behavior.proto";
 // BoundingBox represents the bounding box data structure
 message BoundingBox {
   // Bounding box top y-axis value
-  float top = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  float top = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Bounding box left x-axis value
-  float left = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  float left = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Bounding box width value
-  float width = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  float width = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Bounding box height value
-  float height = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  float height = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Additional hyperparameters for model inferences
+// or other configuration not listsed in protobuf
+message ExtraParamObject {
+  // Name of the hyperparameter
+  string param_name = 1;
+  // Value of the hyperparameter
+  string param_value = 2;
+}
+
+// Conversation based prompt for text generation model
+message ConversationObject {
+  // Role name of the conversation
+  string role = 1;
+  // Content of the conversation
+  string content = 2;
 }

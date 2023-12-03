@@ -168,13 +168,15 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	var inferInputs []*rayserver.InferTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
 		switch task {
-		case commonPB.Task_TASK_TEXT_TO_IMAGE:
+		case commonPB.Task_TASK_IMAGE_TO_IMAGE,
+			commonPB.Task_TASK_TEXT_TO_IMAGE:
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
-		case commonPB.Task_TASK_TEXT_GENERATION:
+		case commonPB.Task_TASK_TEXT_GENERATION_CHAT,
+			commonPB.Task_TASK_TEXT_GENERATION:
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
@@ -247,6 +249,58 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.ExtraParams)}))
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImageInput := inferInput.(*triton.ImageToImageInput)
+		samples := make([]byte, 4)
+		binary.LittleEndian.PutUint32(samples, uint32(imageToImageInput.Samples))
+		steps := make([]byte, 4)
+		binary.LittleEndian.PutUint32(steps, uint32(imageToImageInput.Steps))
+		guidanceScale := make([]byte, 4)
+		binary.LittleEndian.PutUint32(guidanceScale, math.Float32bits(imageToImageInput.CfgScale)) // Fixed value.
+		seed := make([]byte, 8)
+		binary.LittleEndian.PutUint64(seed, uint64(imageToImageInput.Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, guidanceScale)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.ExtraParams)}))
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQUestionAnsweringInput := inferInput.(*triton.VisualQuestionAnsweringInput)
+		maxNewToken := make([]byte, 4)
+		binary.LittleEndian.PutUint32(maxNewToken, uint32(visualQUestionAnsweringInput.MaxNewTokens))
+		temperature := make([]byte, 4)
+		binary.LittleEndian.PutUint32(temperature, math.Float32bits(visualQUestionAnsweringInput.Temperature))
+		topK := make([]byte, 4)
+		binary.LittleEndian.PutUint32(topK, uint32(visualQUestionAnsweringInput.TopK))
+		seed := make([]byte, 8)
+		binary.LittleEndian.PutUint64(seed, uint64(visualQUestionAnsweringInput.Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.PromptImage)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ExtraParams)}))
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChatInput := inferInput.(*triton.TextGenerationChatInput)
+		maxNewToken := make([]byte, 4)
+		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationChatInput.MaxNewTokens))
+		temperature := make([]byte, 4)
+		binary.LittleEndian.PutUint32(temperature, math.Float32bits(textGenerationChatInput.Temperature))
+		topK := make([]byte, 4)
+		binary.LittleEndian.PutUint32(topK, uint32(textGenerationChatInput.TopK))
+		seed := make([]byte, 8)
+		binary.LittleEndian.PutUint64(seed, uint64(textGenerationChatInput.Seed))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.Conversation)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ExtraParams)}))
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*triton.TextGenerationInput)
 		maxNewToken := make([]byte, 4)
@@ -258,9 +312,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.StopWordsList)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, seed)
@@ -349,16 +401,19 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 			return nil, fmt.Errorf("unable to post-process semantic segmentation output: %w", err)
 		}
 
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE,
+		commonPB.Task_TASK_TEXT_TO_IMAGE:
 		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}
 
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
+		commonPB.Task_TASK_TEXT_GENERATION_CHAT,
+		commonPB.Task_TASK_TEXT_GENERATION:
 		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
-			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
+			return nil, fmt.Errorf("unable to post-process text to text output: %w", err)
 		}
 
 	default:

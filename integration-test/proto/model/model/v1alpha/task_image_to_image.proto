@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package model.model.v1alpha;
+
+// Google api
+import "google/api/field_behavior.proto";
+import "../../../model/model/v1alpha/common.proto";
+
+// ImageToImageInput represents the input of image to image task
+message ImageToImageInput {
+  // The Prompt Image, only for multimodal input
+  oneof type {
+    // Image type URL
+    string prompt_image_url = 1;
+    // Image type base64
+    string prompt_image_base64 = 2;
+  }
+  // The prompt text
+  optional string prompt = 3 [(google.api.field_behavior) = REQUIRED];
+  // The steps, default is 5
+  optional int32 steps = 4 [(google.api.field_behavior) = OPTIONAL];
+  // The guidance scale, default is 7.5
+  optional float cfg_scale = 5 [(google.api.field_behavior) = OPTIONAL];
+  // The seed, default is 0
+  optional int32 seed = 6 [(google.api.field_behavior) = OPTIONAL];
+  // The number of generated samples, default is 1
+  optional int32 samples = 7 [(google.api.field_behavior) = OPTIONAL];
+  // The extra parameters
+  optional ExtraParamObject extra_params = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ImageToImageOutput represents the output of image to image task
+message ImageToImageOutput {
+  // List of generated images
+  repeated string images = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

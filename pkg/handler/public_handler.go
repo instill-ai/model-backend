@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -122,6 +123,15 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			case *modelPB.TaskInputStream_TextToImage:
+				extraParams := ""
+				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
+					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
+					if err != nil {
+						log.Fatalf("Error marshalling to JSON: %v", err)
+					} else {
+						extraParams = string(jsonData)
+					}
+				}
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
 					PromptImage: "", // TODO: support streaming image generation
@@ -129,18 +139,27 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 					CfgScale:    *fileData.TaskInput.GetTextToImage().CfgScale,
 					Seed:        *fileData.TaskInput.GetTextToImage().Seed,
 					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
-					ExtraParams: *fileData.TaskInput.GetTextToImage().ExtraParams,
+					ExtraParams: extraParams, // *fileData.TaskInput.GetTextToImage().ExtraParams
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
+				extraParams := ""
+				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
+					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
+					if err != nil {
+						log.Fatalf("Error marshalling to JSON: %v", err)
+					} else {
+						extraParams = string(jsonData)
+					}
+				}
 				textGeneration = &triton.TextGenerationInput{
-					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					PromptImage:   "", // TODO: support streaming image generation
-					MaxNewTokens:  *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
-					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					Temperature:   *fileData.TaskInput.GetTextGeneration().Temperature,
-					TopK:          *fileData.TaskInput.GetTextGeneration().TopK,
-					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
-					ExtraParams:   *fileData.TaskInput.GetTextGeneration().ExtraParams,
+					Prompt: fileData.TaskInput.GetTextGeneration().Prompt,
+					// PromptImage:  "", // TODO: support streaming image generation
+					MaxNewTokens: *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
+					// StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
+					Temperature: *fileData.TaskInput.GetTextGeneration().Temperature,
+					TopK:        *fileData.TaskInput.GetTextGeneration().TopK,
+					Seed:        *fileData.TaskInput.GetTextGeneration().Seed,
+					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -246,6 +265,15 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			case *modelPB.TaskInputStream_TextToImage:
+				extraParams := ""
+				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
+					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
+					if err != nil {
+						log.Fatalf("Error marshalling to JSON: %v", err)
+					} else {
+						extraParams = string(jsonData)
+					}
+				}
 				textToImageInput = &triton.TextToImageInput{
 					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
 					PromptImage: "", // TODO: support streaming image generation
@@ -253,18 +281,28 @@ func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBi
 					CfgScale:    *fileData.TaskInput.GetTextToImage().CfgScale,
 					Seed:        *fileData.TaskInput.GetTextToImage().Seed,
 					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
-					ExtraParams: *fileData.TaskInput.GetTextGeneration().ExtraParams,
+					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			case *modelPB.TaskInputStream_TextGeneration:
+				extraParams := ""
+				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
+					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
+					if err != nil {
+						log.Fatalf("Error marshalling to JSON: %v", err)
+					} else {
+						extraParams = string(jsonData)
+					}
+				}
+
 				textGeneration = &triton.TextGenerationInput{
-					Prompt:        fileData.TaskInput.GetTextGeneration().Prompt,
-					PromptImage:   "", // TODO: support streaming image generation
-					MaxNewTokens:  *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
-					StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					Temperature:   *fileData.TaskInput.GetTextGeneration().Temperature,
-					TopK:          *fileData.TaskInput.GetTextGeneration().TopK,
-					Seed:          *fileData.TaskInput.GetTextGeneration().Seed,
-					ExtraParams:   *fileData.TaskInput.GetTextGeneration().ExtraParams,
+					Prompt: fileData.TaskInput.GetTextGeneration().Prompt,
+					// PromptImage:   "", // TODO: support streaming image generation
+					MaxNewTokens: *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
+					// StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
+					Temperature: *fileData.TaskInput.GetTextGeneration().Temperature,
+					TopK:        *fileData.TaskInput.GetTextGeneration().TopK,
+					Seed:        *fileData.TaskInput.GetTextGeneration().Seed,
+					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			default:
 				return nil, "", fmt.Errorf("unsupported task input type")
@@ -2619,6 +2657,38 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 		}
 		lenInputs = 1
 		inputInfer = textToImage
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = imageToImage
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
+			ctx,
+			&modelPB.TriggerUserModelRequest{
+				Name:       req.Name,
+				TaskInputs: req.TaskInputs,
+			})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		inputInfer = visualQuestionAnswering
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			return &modelPB.TriggerUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
 		if err != nil {
@@ -2764,6 +2834,40 @@ func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUser
 			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		inputInfer = textToImage
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImage, err := parseImageToImageRequestInputs(ctx, &modelPB.TriggerUserModelRequest{
+			Name:       req.Name,
+			TaskInputs: req.TaskInputs,
+		})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		inputInfer = imageToImage
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
+			ctx,
+			&modelPB.TriggerUserModelRequest{
+				Name:       req.Name,
+				TaskInputs: req.TaskInputs,
+			})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		inputInfer = visualQuestionAnswering
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChat, err := parseTexGenerationChatRequestInputs(
+			ctx,
+			&modelPB.TriggerUserModelRequest{
+				Name:       req.Name,
+				TaskInputs: req.TaskInputs,
+			})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
+		}
+		inputInfer = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(
 			ctx,
@@ -2969,6 +3073,36 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			return
 		}
 		inputInfer = textToImage
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImage, err := parseImageFormDataImageToImageInputs(req)
+		if err != nil {
+			makeJSONResponse(w, 400, "Parser input error", err.Error())
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		inputInfer = imageToImage
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQuestionAnswering, err := parseTextFormDataVisualQuestionAnsweringInputs(req)
+		if err != nil {
+			makeJSONResponse(w, 400, "Parser input error", err.Error())
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		inputInfer = visualQuestionAnswering
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChat, err := parseTextFormDataTextGenerationChatInputs(req)
+		if err != nil {
+			makeJSONResponse(w, 400, "Parser input error", err.Error())
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		inputInfer = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
 		if err != nil {
