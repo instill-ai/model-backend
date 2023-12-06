@@ -50,7 +50,7 @@ ENV PATH="$VENV/bin:$PATH"
 
 # RUN export PIP_DEFAULT_TIMEOUT=10000
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install dvc[gs]==2.34.2
+RUN pip install dvc==3.30.3 dvc[gs]==3.30.3
 # RUN pip install jsonschema pyyaml
 # RUN pip install --no-cache-dir opencv-contrib-python-headless transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
 # RUN pip install --no-cache-dir ray[serve] scikit-image

@@ -90,20 +90,51 @@
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Offline", "Online", "Error"]
+      "ui_enum": [
+        "",
+        "Offline",
+        "Online",
+        "Error"
+      ]
     },
     "task": {
       "type": "string",
       "title": "Task",
       "description": "The model task",
-      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR", "TASK_TEXT_TO_IMAGE", "TASK_TEXT_GENERATION"],
+      "enum": [
+        "TASK_UNSPECIFIED",
+        "TASK_CLASSIFICATION",
+        "TASK_DETECTION",
+        "TASK_KEYPOINT",
+        "TASK_INSTANCE_SEGMENTATION",
+        "TASK_SEMANTIC_SEGMENTATION",
+        "TASK_OCR",
+        "TASK_TEXT_TO_IMAGE",
+        "TASK_IMAGE_TO_IMAGE",
+        "TASK_TEXT_GENERATION",
+        "TASK_TEXT_GENERATION_CHAT",
+        "TASK_VISUAL_QUESTION_ANSWERING"
+      ],
       "default": "TASK_UNSPECIFIED",
       "readOnly": true,
       "ui_order": 4,
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Image classification", "Object detection", "Keypoint detection", "Instance segmentation", "Semantic segmentation", "OCR", "Text to image", "Text generation"]
+      "ui_enum": [
+        "",
+        "Image classification",
+        "Object detection",
+        "Keypoint detection",
+        "Instance segmentation",
+        "Semantic segmentation",
+        "OCR",
+        "Text to image",
+        "Image to image",
+        "Text generation",
+        "Text generation chat",
+        "Visual question answering"
+      ]
     },
     "model_spec": {
       "type": "object",
@@ -133,7 +164,13 @@
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Alpha", "Beta", "Generally available", "Custom"]
+      "ui_enum": [
+        "",
+        "Alpha",
+        "Beta",
+        "Generally available",
+        "Custom"
+      ]
     }
   }
 }

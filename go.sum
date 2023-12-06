@@ -1311,6 +1311,8 @@ github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20231122080750-7a3598994bf3 h1:xr4Igd5mfdO+ks3mze4haoIW1QPpka69X38XvudukVQ=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20231122080750-7a3598994bf3/go.mod h1:q/YL5TZXD9nvmJ7Rih4gY3/B2HT2+GiFdxeZp9D+yE4=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20231203101206-e343366b9231 h1:HssWo42f3NnJH2YIIDAcEv2htajrYJjPBcVEsRdV//M=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20231203101206-e343366b9231/go.mod h1:q/YL5TZXD9nvmJ7Rih4gY3/B2HT2+GiFdxeZp9D+yE4=
 github.com/instill-ai/usage-client v0.2.4-alpha.0.20231019203021-70410a0a8061 h1:lOp2fORCj76/gfPuLqB3TEN2cvFRJHUQOxwFSl4qxEw=
 github.com/instill-ai/usage-client v0.2.4-alpha.0.20231019203021-70410a0a8061/go.mod h1:dxsx9oHibg/+FrFLxAMurvbheeVUrMdFTbVHsfANTCU=
 github.com/instill-ai/x v0.3.0-alpha h1:z9fedROOG2dVHhswBfVwU/hzHuq8/JKSUON7inF+FH8=

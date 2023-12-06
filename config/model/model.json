@@ -5,11 +5,40 @@
   "title": "Model",
   "description": "The model data structure",
   "additionalProperties": false,
-  "required": ["id", "model_definition", "configuration"],
+  "required": [
+    "id",
+    "model_definition",
+    "configuration"
+  ],
   "anyOf": [
-    {"required": ["user"], "not": {"required": ["org"]}},
-    {"required": ["org"], "not": {"required": ["user"]}},
-    {"not": {"required": ["user", "org"]}}
+    {
+      "required": [
+        "user"
+      ],
+      "not": {
+        "required": [
+          "org"
+        ]
+      }
+    },
+    {
+      "required": [
+        "org"
+      ],
+      "not": {
+        "required": [
+          "user"
+        ]
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "user",
+          "org"
+        ]
+      }
+    }
   ],
   "properties": {
     "name": {
@@ -86,7 +115,11 @@
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Private", "Public"]
+      "ui_enum": [
+        "",
+        "Private",
+        "Public"
+      ]
     },
     "user": {
       "type": "string",
@@ -122,27 +155,60 @@
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Offline", "Online", "Error"]
+      "ui_enum": [
+        "",
+        "Offline",
+        "Online",
+        "Error"
+      ]
     },
     "task": {
       "type": "string",
       "title": "Task",
       "description": "The model task",
-      "enum": ["TASK_UNSPECIFIED", "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_INSTANCE_SEGMENTATION", "TASK_SEMANTIC_SEGMENTATION", "TASK_OCR", "TASK_TEXT_TO_IMAGE", "TASK_TEXT_GENERATION"],
+      "enum": [
+        "TASK_UNSPECIFIED",
+        "TASK_CLASSIFICATION",
+        "TASK_DETECTION",
+        "TASK_KEYPOINT",
+        "TASK_INSTANCE_SEGMENTATION",
+        "TASK_SEMANTIC_SEGMENTATION",
+        "TASK_OCR",
+        "TASK_TEXT_TO_IMAGE",
+        "TASK_IMAGE_TO_IMAGE",
+        "TASK_TEXT_GENERATION",
+        "TASK_TEXT_GENERATION_CHAT",
+        "TASK_VISUAL_QUESTION_ANSWERING"
+      ],
       "default": "TASK_UNSPECIFIED",
       "readOnly": true,
       "ui_order": 4,
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": ["", "Image classification", "Object detection", "Keypoint detection", "Instance segmentation", "Semantic segmentation", "OCR", "Text to image", "Text generation"]
+      "ui_enum": [
+        "",
+        "Image classification",
+        "Object detection",
+        "Keypoint detection",
+        "Instance segmentation",
+        "Semantic segmentation",
+        "OCR",
+        "Text to image",
+        "Image to image",
+        "Text generation",
+        "Text generation chat",
+        "Visual Question Answering"
+      ]
     },
     "create_time": {
       "type": "string",
       "format": "date-time",
       "title": "Create time",
       "description": "The date when the model is created in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": ["2022-04-29T00:20:06.703547Z"],
+      "examples": [
+        "2022-04-29T00:20:06.703547Z"
+      ],
       "readOnly": true,
       "ui_order": 8,
       "ui_hidden": true,
@@ -154,7 +220,9 @@
       "format": "date-time",
       "title": "Update time",
       "description": "The date when the model is updated in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": ["2022-04-29T01:33:34.910865Z"],
+      "examples": [
+        "2022-04-29T01:33:34.910865Z"
+      ],
       "readOnly": true,
       "ui_order": 9,
       "ui_hidden": true,
@@ -162,11 +230,16 @@
       "ui_component": "text"
     },
     "delete_time": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time",
       "title": "Delete time",
       "description": "The date when the model is deleted in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": ["2022-04-29T01:33:34.910865Z"],
+      "examples": [
+        "2022-04-29T01:33:34.910865Z"
+      ],
       "readOnly": true,
       "ui_order": 9,
       "ui_hidden": true,

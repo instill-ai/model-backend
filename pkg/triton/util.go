@@ -5,11 +5,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 
 	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
 )
 
 func SerializeBytesTensor(tensor [][]byte) []byte {
+	// TODO: return error status here
 	// Prepend 4-byte length to the input
 	// https://github.com/triton-inference-server/server/issues/1100
 	// https://github.com/triton-inference-server/server/blob/ffa3d639514a6ba0524bbfef0684238598979c13/src/clients/python/library/tritonclient/utils/__init__.py#L203
@@ -17,9 +19,17 @@ func SerializeBytesTensor(tensor [][]byte) []byte {
 		return []byte{}
 	}
 
-	// Add capacity to avoid memory re-allocation
-	res := make([]byte, 0, len(tensor)*(4+len(tensor[0])))
-	for _, t := range tensor { // loop over batch
+	var totalLength int64
+	for _, t := range tensor {
+		totalLength += int64(4 + len(t)) // 4 bytes for length + length of the tensor
+		if totalLength > math.MaxInt32 { // Check for overflow
+			return nil // , errors.New("total length exceeds maximum allowable size")
+		}
+	}
+
+	// Proceed if no overflow
+	res := make([]byte, 0, totalLength)
+	for _, t := range tensor {
 		length := make([]byte, 4)
 		binary.LittleEndian.PutUint32(length, uint32(len(t)))
 		res = append(res, length...)

@@ -696,7 +696,8 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 			})
 		}
 		return semanticSegmentationOutputs, nil
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE,
+		commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImageResponses := postprocessResponse.(triton.TextToImageOutput)
 		batchedOutputDataImages := textToImageResponses.Images
 		var textToImageOutputs []*modelPB.TaskOutput
@@ -721,7 +722,9 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 			})
 		}
 		return textToImageOutputs, nil
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
+		commonPB.Task_TASK_TEXT_GENERATION_CHAT,
+		commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationResponses := postprocessResponse.(triton.TextGenerationOutput)
 		batchedOutputDataTexts := textGenerationResponses.Text
 		var textGenerationOutputs []*modelPB.TaskOutput
