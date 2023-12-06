@@ -48,9 +48,9 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1alpha"
+	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 

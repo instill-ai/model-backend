@@ -18,7 +18,7 @@ import (
 	service "github.com/instill-ai/model-backend/pkg/service"
 	utils "github.com/instill-ai/model-backend/pkg/utils"
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtv1alpha "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	mgmtv1alpha "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 

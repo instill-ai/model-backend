@@ -19,7 +19,7 @@ import * as constant from "./const.js"
 
 export function GetModel(header) {
   // Model Backend API: Get model info
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   let fd_cls = new FormData();
@@ -94,7 +94,7 @@ export function GetModel(header) {
 
 export function ListModels(header) {
   // Model Backend API: Get model list
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   {
@@ -135,7 +135,7 @@ export function ListModels(header) {
 
 export function LookupModel(header) {
   // Model Backend API: look up model
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   let fd_cls = new FormData();
