@@ -53,7 +53,7 @@ func main() {
 		_ = logger.Sync()
 	}()
 
-	db := database.GetConnection()
+	db := database.GetSharedConnection()
 	defer database.Close(db)
 
 	triton := triton.NewTriton()
