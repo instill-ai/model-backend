@@ -2483,7 +2483,10 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           userUID.String(),
+		OwnerUID:           ns.NsUid.String(),
+		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
+		UserUID:            userUID.String(),
+		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
@@ -2620,7 +2623,10 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           userUID.String(),
+		OwnerUID:           ns.NsUid.String(),
+		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
+		UserUID:            userUID.String(),
+		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
@@ -3026,7 +3032,10 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           userUID.String(),
+		OwnerUID:           ns.NsUid.String(),
+		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
+		UserUID:            userUID.String(),
+		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),

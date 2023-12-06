@@ -119,13 +119,16 @@ func (u *usage) RetrieveUsageData() interface{} {
 							ModelDefinitionUid: triggerData.ModelDefinitionUID,
 							ModelTask:          triggerData.ModelTask,
 							Status:             triggerData.Status,
+							UserUid:            triggerData.UserUID,
+							UserType:           triggerData.UserType,
 						},
 					)
 				}
 			}
 
 			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
-				UserUid:          user.GetUid(),
+				OwnerUid:         user.GetUid(),
+				OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_USER,
 				ModelTriggerData: triggerDataList,
 			})
 		}
