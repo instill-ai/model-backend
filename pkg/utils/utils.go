@@ -909,6 +909,9 @@ func IsBillableEvent(eventName string) bool {
 
 type UsageMetricData struct {
 	OwnerUID           string
+	OwnerType          mgmtPB.OwnerType
+	UserUID            string
+	UserType           mgmtPB.OwnerType
 	ModelUID           string
 	Status             mgmtPB.Status
 	TriggerUID         string
