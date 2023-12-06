@@ -32,25 +32,25 @@ import "../../../model/model/v1alpha/task_unspecified.proto";
 // LivenessRequest represents a request to check a service liveness status
 message LivenessRequest {
   // HealthCheckRequest message
-  optional common.healthcheck.v1alpha.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
+  optional common.healthcheck.v1beta.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // LivenessResponse represents a response for a service liveness status
 message LivenessResponse {
   // HealthCheckResponse message
-  common.healthcheck.v1alpha.HealthCheckResponse health_check_response = 1;
+  common.healthcheck.v1beta.HealthCheckResponse health_check_response = 1;
 }
 
 // ReadinessRequest represents a request to check a service readiness status
 message ReadinessRequest {
   // HealthCheckRequest message
-  optional common.healthcheck.v1alpha.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
+  optional common.healthcheck.v1beta.HealthCheckRequest health_check_request = 1 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ReadinessResponse represents a response for a service readiness status
 message ReadinessResponse {
   // HealthCheckResponse message
-  common.healthcheck.v1alpha.HealthCheckResponse health_check_response = 1;
+  common.healthcheck.v1beta.HealthCheckResponse health_check_response = 1;
 }
 
 // Model represents a model
