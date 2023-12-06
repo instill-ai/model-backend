@@ -28,7 +28,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/logger"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
 type ModelMeta struct {

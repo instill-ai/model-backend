@@ -33,13 +33,13 @@ client.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
 client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 export function setup() {
-  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1alpha/auth/login`, JSON.stringify({
+  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1beta/auth/login`, JSON.stringify({
     "username": constant.defaultUserId,
     "password": constant.defaultPassword,
   }))
 
   check(loginResp, {
-    [`POST ${constant.mgmtPublicHost}/v1alpha/auth/login response status is 200`]: (
+    [`POST ${constant.mgmtPublicHost}/v1beta/auth/login response status is 200`]: (
       r
     ) => r.status === 200,
   });

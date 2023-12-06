@@ -27,7 +27,7 @@ import (
 
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 

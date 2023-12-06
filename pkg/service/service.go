@@ -32,7 +32,7 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )

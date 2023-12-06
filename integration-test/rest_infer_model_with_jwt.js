@@ -26,7 +26,7 @@ const model_def_name = "model-definitions/local"
 export function TestModel(header) {
   // Model Backend API: Predict Model with classification model
   // Model Backend API: load model online
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1alpha/admin/users/${constant.defaultUserId}`, {}, header)
+  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
   let userUid = resp.json().user.uid
 
   let fd_cls = new FormData();
