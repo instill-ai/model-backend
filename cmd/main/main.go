@@ -100,7 +100,7 @@ func main() {
 	// verbosity 3 will avoid [transport] from emitting
 	grpc_zap.ReplaceGrpcLoggerV2WithVerbosity(logger, 3)
 
-	db := database.GetConnection()
+	db := database.GetSharedConnection()
 	defer database.Close(db)
 
 	// Create tls based credential.
