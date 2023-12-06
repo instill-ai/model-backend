@@ -13,7 +13,7 @@ import "google/api/resource.proto";
 import "google/api/field_behavior.proto";
 import "google/longrunning/operations.proto";
 
-import "../../../common/healthcheck/v1alpha/healthcheck.proto";
+import "../../../common/healthcheck/v1beta/healthcheck.proto";
 import "../../../common/task/v1alpha/task.proto";
 import "../../../model/model/v1alpha/model_definition.proto";
 import "../../../model/model/v1alpha/task_classification.proto";
