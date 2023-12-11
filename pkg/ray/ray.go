@@ -428,11 +428,7 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 
 func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("/ray-conda/bin/python", "model.py",
-		"--func", "deploy",
-		"--ray-addr", config.Config.RayServer.GrpcURI,
-		"--model", modelPath,
-	)
+	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(\"%s\", \"%s\")", modelPath, config.Config.RayServer.GrpcURI))
 	cmd.Dir = modelPath
 
 	cmd.Stdin = os.Stdin
@@ -446,11 +442,7 @@ func (r *ray) DeployModel(modelPath string) error {
 
 func (r *ray) UndeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("/ray-conda/bin/python", "model.py",
-		"--func", "undeploy",
-		"--ray-addr", config.Config.RayServer.GrpcURI,
-		"--model", modelPath,
-	)
+	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.undeploy(\"%s\", \"%s\")", modelPath, config.Config.RayServer.GrpcURI))
 	cmd.Dir = modelPath
 
 	cmd.Stdin = os.Stdin
