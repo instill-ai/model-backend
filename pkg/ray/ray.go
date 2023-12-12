@@ -3,12 +3,16 @@ package ray
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,13 +24,14 @@ import (
 	"github.com/instill-ai/model-backend/pkg/triton"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type InferInput interface{}
 
 type Ray interface {
 	// grpc
-	ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelReadyResponse
+	ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.Model_State, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse
 	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.ModelInferResponse, error)
 
@@ -39,9 +44,10 @@ type Ray interface {
 }
 
 type ray struct {
-	rayClient       rayserver.RayServiceClient
-	rayServerClient rayserver.RayServeAPIServiceClient
-	connection      *grpc.ClientConn
+	rayClient      rayserver.RayServiceClient
+	rayServeClient rayserver.RayServeAPIServiceClient
+	rayHttpClient  *http.Client
+	connection     *grpc.ClientConn
 }
 
 func NewRay() Ray {
@@ -61,13 +67,14 @@ func (r *ray) Init() {
 	// Create client from gRPC server connection
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
-	r.rayServerClient = rayserver.NewRayServeAPIServiceClient(conn)
+	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
+	r.rayHttpClient = &http.Client{Timeout: time.Second * 5}
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	logger, _ := logger.GetZapLogger(ctx)
 
-	resp, err := r.rayServerClient.Healthz(ctx, &rayserver.HealthzRequest{})
+	resp, err := r.rayServeClient.Healthz(ctx, &rayserver.HealthzRequest{})
 	if err != nil {
 		logger.Error(err.Error())
 		return false
@@ -80,53 +87,44 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	}
 }
 
-func (r *ray) ModelReadyRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelReadyResponse {
+func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.Model_State, error) {
 	logger, _ := logger.GetZapLogger(ctx)
-
-	listResp, err := r.rayServerClient.ListApplications(ctx, &rayserver.ListApplicationsRequest{})
-	if err != nil {
-		logger.Error(err.Error())
-		return nil
-	}
-
-	servingApps := listResp.GetApplicationNames()
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
 
-	for _, app := range servingApps {
-		if app == applicationMetadatValue {
-			// TODO: let see if GetApplication is reliable
-			// ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
-
-			// // Create ready request for a given model
-			// modelReadyRequest := rayserver.ModelReadyRequest{
-			// 	Name:    modelName,
-			// 	Version: modelInstance,
-			// }
-
-			// // Submit modelReady request to server
-			// modelReadyResponse, err := r.rayClient.ModelReady(ctx, &modelReadyRequest)
-			// if err != nil {
-			// 	if status.Code(err) == codes.NotFound {
-			// 		modelReadyResponse = &rayserver.ModelReadyResponse{
-			// 			Ready: false,
-			// 		}
-			// 	} else {
-			// 		logger.Error(err.Error())
-			// 	}
-			// }
-			return &rayserver.ModelReadyResponse{
-				Ready: true,
-			}
-		}
+	resp, err := r.rayHttpClient.Get(strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1))
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
 	}
-	return &rayserver.ModelReadyResponse{
-		Ready: false,
+
+	var applicationStatus rayserver.GetApplicationStatus
+	err = json.NewDecoder(resp.Body).Decode(&applicationStatus)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
 	}
+
+	deploymentStatus := applicationStatus.Applications[applicationMetadatValue].Status
+
+	switch deploymentStatus {
+	case "RUNNING":
+		return modelPB.Model_STATE_ONLINE.Enum(), nil
+	case "DEPLOY_FAILED":
+	case "UNHEALTHY":
+		return modelPB.Model_STATE_ERROR.Enum(), nil
+	case "DEPLOYING":
+	case "DELETING":
+		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
+	case "NOT_STARTED":
+		return modelPB.Model_STATE_OFFLINE.Enum(), nil
+	}
+
+	return modelPB.Model_STATE_ERROR.Enum(), nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse {
