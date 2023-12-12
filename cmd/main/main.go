@@ -36,10 +36,10 @@ import (
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/middleware"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
-	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/temporal"
@@ -211,7 +211,7 @@ func main() {
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
-		handler.NewPublicHandler(ctx, service, triton))
+		handler.NewPublicHandler(ctx, service, triton, rayService))
 
 	modelPB.RegisterModelPrivateServiceServer(
 		privateGrpcS,

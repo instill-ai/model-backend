@@ -352,29 +352,25 @@ func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.
 
 	inferenceModelName := inferenceModel.Name
 	inferenceModelVersion := inferenceModel.Version
-	state := modelPB.Model_STATE_UNSPECIFIED
+	state := modelPB.Model_STATE_UNSPECIFIED.Enum()
 	switch inferenceModel.Platform {
 	case "ensemble":
 		modelReadyResponse := s.triton.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
 		if modelReadyResponse == nil {
-			state = modelPB.Model_STATE_ERROR
+			state = modelPB.Model_STATE_ERROR.Enum()
 		} else if modelReadyResponse.Ready {
-			state = modelPB.Model_STATE_ONLINE
+			state = modelPB.Model_STATE_ONLINE.Enum()
 		} else {
-			state = modelPB.Model_STATE_OFFLINE
+			state = modelPB.Model_STATE_OFFLINE.Enum()
 		}
 	case "ray":
-		modelReadyResponse := s.ray.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if modelReadyResponse == nil {
-			state = modelPB.Model_STATE_ERROR
-		} else if modelReadyResponse.Ready {
-			state = modelPB.Model_STATE_ONLINE
-		} else {
-			state = modelPB.Model_STATE_OFFLINE
+		state, err = s.ray.ModelReady(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return &state, nil
+	return state, nil
 }
 
 func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {

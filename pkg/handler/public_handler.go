@@ -41,6 +41,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -63,13 +64,15 @@ type PublicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
 	triton  triton.Triton
+	ray     ray.Ray
 }
 
-func NewPublicHandler(ctx context.Context, s service.Service, t triton.Triton) modelPB.ModelPublicServiceServer {
+func NewPublicHandler(ctx context.Context, s service.Service, t triton.Triton, r ray.Ray) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PublicHandler{
 		service: s,
 		triton:  t,
+		ray:     r,
 	}
 }
 
@@ -686,12 +689,26 @@ func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessReques
 			},
 		}, nil
 	}
+	if !h.ray.IsRayServerReady(ctx) {
+		return &modelPB.LivenessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
+	}
 
 	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
 	if !h.triton.IsTritonServerReady(ctx) {
+		return &modelPB.ReadinessResponse{
+			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
+				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
+			},
+		}, nil
+	}
+	if !h.ray.IsRayServerReady(ctx) {
 		return &modelPB.ReadinessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
 				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
