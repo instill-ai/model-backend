@@ -236,6 +236,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		if err := w.ray.UndeployModel(name); err != nil {
 			logger.Error(fmt.Sprintf("ray model undeployment failed: %v", err))
 		}
+		// TODO: fix no return here by properly check in ray app is serving
+		// if not return nil even if workflow failed
 	}
 
 	logger.Info("UnDeployModelActivity completed")
