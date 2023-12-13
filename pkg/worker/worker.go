@@ -2,9 +2,8 @@ package worker
 
 import (
 	"context"
-	"time"
 
-	"github.com/allegro/bigcache"
+	"github.com/go-redis/redis/v9"
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/pkg/ray"
@@ -31,7 +30,7 @@ type Worker interface {
 
 // worker represents resources required to run Temporal workflow and activity
 type worker struct {
-	cache            *bigcache.BigCache
+	redisClient      *redis.Client
 	repository       repository.Repository
 	ray              ray.Ray
 	triton           triton.Triton
@@ -39,12 +38,11 @@ type worker struct {
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Worker {
-	cache, _ := bigcache.NewBigCache(bigcache.DefaultConfig(60 * time.Minute))
+func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Worker {
 
 	return &worker{
-		cache:            cache,
 		repository:       r,
+		redisClient:      rc,
 		ray:              ra,
 		triton:           t,
 		controllerClient: c,

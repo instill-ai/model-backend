@@ -85,7 +85,10 @@ type CacheConfig struct {
 	Redis struct {
 		RedisOptions redis.Options `koanf:"redisoptions"`
 	}
-	Model bool `koanf:"model"`
+	Model struct {
+		Enabled   bool   `koanf:"enabled"`
+		CacheDir  string `koanf:"cache_dir"`
+	}
 }
 
 // ControllerConfig related to controller

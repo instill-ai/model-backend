@@ -88,11 +88,11 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				return err
 			}
 
-			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-				modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
+			if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
+				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", modelConfig.Repository, modelConfig.Tag)
 			}
 
-			if err := utils.GitHubClone(modelSrcDir, modelConfig, true); err != nil {
+			if err := utils.GitHubClone(modelSrcDir, modelConfig, true, w.redisClient); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
 				return err
 			}
@@ -108,8 +108,8 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				return err
 			}
 
-			if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-				modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.RepoId
+			if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
+				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + modelConfig.RepoId
 			}
 
 			if config.Config.Server.ItMode.Enabled { // use local model to remove internet connection issue while integration testing
@@ -155,7 +155,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		}
 	}
 
-	if !config.Config.Cache.Model {
+	if !config.Config.Cache.Model.Enabled {
 		_ = os.RemoveAll(modelSrcDir)
 	}
 

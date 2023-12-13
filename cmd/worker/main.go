@@ -12,6 +12,7 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -65,7 +66,10 @@ func main() {
 	rayService := ray.NewRay()
 	defer rayService.Close()
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), triton, controllerClient, rayService)
+	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
+	defer redisClient.Close()
+
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, triton, controllerClient, rayService)
 
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),
