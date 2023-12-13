@@ -49,7 +49,7 @@ cache:
       addr: redis:6379
   model:
     enabled: false
-    cache_dir: /.cache/models
+    cache_dir: /model-repository/.cache/models
 maxbatchsizelimitation:
   unspecified: 2
   classification: 16

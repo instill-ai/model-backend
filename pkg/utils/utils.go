@@ -139,11 +139,11 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	defer cancel()
 
 	urlRepo := instanceConfig.Repository
-	modelRepo := fmt.Sprintf("%s_%s", instanceConfig.Repository, instanceConfig.Tag)
+	redisRepoKey := fmt.Sprintf("%s:%s", instanceConfig.Repository, instanceConfig.Tag)
 	// Check in the cache first.
 	if config.Config.Cache.Model.Enabled {
 		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)
-		if state, err := redisClient.Get(ctx, modelRepo).Result(); err != nil && err != redis.Nil {
+		if state, err := redisClient.Get(ctx, redisRepoKey).Result(); err != nil && err != redis.Nil {
 			return err
 		} else if err == nil {
 			if state == "done" {
@@ -183,11 +183,11 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 			}
 		}
 		if config.Config.Cache.Model.Enabled {
-			redisClient.Set(ctx, modelRepo, "done", time.Duration(0))
+			redisClient.Set(ctx, redisRepoKey, "done", time.Duration(0))
 		}
 	} else {
 		if config.Config.Cache.Model.Enabled {
-			redisClient.Set(ctx, modelRepo, "without_large_file", time.Duration(0))
+			redisClient.Set(ctx, redisRepoKey, "without_large_file", time.Duration(0))
 		}
 	}
 
