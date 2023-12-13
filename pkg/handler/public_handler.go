@@ -961,7 +961,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
 	if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
-		modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s:%s", modelConfig.Repository, modelConfig.Tag)
+		modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s/%s", modelConfig.Repository, modelConfig.Tag)
 	}
 
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing

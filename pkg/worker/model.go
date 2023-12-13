@@ -89,7 +89,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			}
 
 			if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
-				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s:%s", modelConfig.Repository, modelConfig.Tag)
+				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s/%s", modelConfig.Repository, modelConfig.Tag)
 			}
 
 			if err := utils.GitHubClone(modelSrcDir, modelConfig, true, w.redisClient); err != nil {
