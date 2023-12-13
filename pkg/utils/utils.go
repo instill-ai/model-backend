@@ -16,8 +16,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gernest/front"
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
@@ -132,33 +134,26 @@ type CacheModel struct {
 }
 
 // GitHubClone clones a repository from GitHub.
-func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, isWithLargeFile bool) error {
+func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, isWithLargeFile bool, redisClient *redis.Client) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	urlRepo := instanceConfig.Repository
+	modelRepo := fmt.Sprintf("%s:%s", instanceConfig.Repository, instanceConfig.Tag)
 	// Check in the cache first.
-	var cacheModels []CacheModel
-	if config.Config.Cache.Model {
-		_ = os.MkdirAll(MODEL_CACHE_DIR, os.ModePerm)
-		if _, err := os.Stat(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE); !os.IsNotExist(err) {
-			f, err := os.ReadFile(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE)
-			if err != nil {
-				return err
-			}
-			if err := json.Unmarshal([]byte(f), &cacheModels); err != nil {
-				return err
-			}
-			for _, cacheModel := range cacheModels {
-				if cacheModel.ModelRepo != (instanceConfig.Repository + instanceConfig.Tag) {
-					continue
-				}
-				if cacheModel.State == "done" { // everything is cached.
-					return nil
-				} else if cacheModel.State == "without_large_file" && !isWithLargeFile { // the GitHub repo is being cached.
-					return nil
-				}
+	if config.Config.Cache.Model.Enabled {
+		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)
+		if state, err := redisClient.Get(ctx, modelRepo).Result(); err != nil && err != redis.Nil {
+			return err
+		} else if err == nil {
+			if state == "done" {
+				return nil
+			} else if state == "without_large_file" && !isWithLargeFile {
+				return nil
 			}
 		}
 	}
-	if !isWithLargeFile || isWithLargeFile && !config.Config.Cache.Model {
+	if !isWithLargeFile || isWithLargeFile && !config.Config.Cache.Model.Enabled {
 		if !strings.HasPrefix(urlRepo, "https://github.com") {
 			urlRepo = "https://github.com/" + urlRepo
 		}
@@ -177,15 +172,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 		}
 	}
 
-	var f *os.File
 	var err error
-	if config.Config.Cache.Model {
-		f, err = os.Create(MODEL_CACHE_DIR + "/" + MODEL_CACHE_FILE)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-	}
 	if isWithLargeFile {
 		dvcPaths := findDVCPaths(dir)
 		for _, dvcPath := range dvcPaths {
@@ -195,35 +182,12 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 				return err
 			}
 		}
-		if config.Config.Cache.Model {
-			for i, cacheModel := range cacheModels {
-				if cacheModel.ModelRepo == (instanceConfig.Repository + instanceConfig.Tag) {
-					cacheModels[i].State = "done"
-					break
-				}
-			}
-			b, err := json.Marshal(cacheModels)
-			if err != nil {
-				return err
-			}
-			if _, err := f.Write(b); err != nil {
-				return err
-			}
+		if config.Config.Cache.Model.Enabled {
+			redisClient.Set(ctx, modelRepo, "done", time.Duration(0))
 		}
 	} else {
-		if config.Config.Cache.Model {
-			cacheFile := CacheModel{
-				ModelRepo: instanceConfig.Repository + instanceConfig.Tag,
-				State:     "without_large_file",
-			}
-			cacheModels = append(cacheModels, cacheFile)
-			b, err := json.Marshal(cacheModels)
-			if err != nil {
-				return err
-			}
-			if _, err := f.Write(b); err != nil {
-				return err
-			}
+		if config.Config.Cache.Model.Enabled {
+			redisClient.Set(ctx, modelRepo, "without_large_file", time.Duration(0))
 		}
 	}
 

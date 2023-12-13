@@ -47,7 +47,9 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-  model: false
+  model:
+    enabled: false
+    cache_dir: /.cache/models
 maxbatchsizelimitation:
   unspecified: 2
   classification: 16

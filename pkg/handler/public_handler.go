@@ -960,8 +960,8 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
-	if config.Config.Cache.Model { // cache model into ~/.cache/instill/models
-		modelSrcDir = utils.MODEL_CACHE_DIR + "/" + modelConfig.Repository + modelConfig.Tag
+	if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
+		modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s:%s", modelConfig.Repository, modelConfig.Tag)
 	}
 
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
@@ -972,7 +972,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 			return &modelPB.CreateUserModelResponse{}, err
 		}
 	} else {
-		err = utils.GitHubClone(modelSrcDir, modelConfig, false)
+		err = utils.GitHubClone(modelSrcDir, modelConfig, false, service.GetRedisClient())
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -991,7 +991,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		}
 	}
 	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ownerPermalink, &githubModel)
-	if !config.Config.Cache.Model {
+	if !config.Config.Cache.Model.Enabled {
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	}
 
