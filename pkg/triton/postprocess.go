@@ -79,7 +79,7 @@ func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadat
 
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE,
 		commonPB.Task_TASK_TEXT_TO_IMAGE:
-		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
+		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}
@@ -87,7 +87,7 @@ func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadat
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
 		commonPB.Task_TASK_TEXT_GENERATION_CHAT,
 		commonPB.Task_TASK_TEXT_GENERATION:
-		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
+		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to text output: %w", err)
 		}
@@ -542,7 +542,7 @@ func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelIn
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string) (interface{}, error) {
+func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string, task commonPB.Task) (interface{}, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -577,12 +577,20 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 		base64EncodedStr := base64.StdEncoding.EncodeToString(buff.Bytes())
 		batchedOutputDataImages[0] = append(batchedOutputDataImages[0], base64EncodedStr)
 	}
-	return TextToImageOutput{
-		Images: batchedOutputDataImages,
-	}, nil
+	switch task {
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		return ImageToImageOutput{
+			Images: batchedOutputDataImages,
+		}, nil
+
+	default:
+		return TextToImageOutput{
+			Images: batchedOutputDataImages,
+		}, nil
+	}
 }
 
-func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string) (interface{}, error) {
+func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string, task commonPB.Task) (interface{}, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")
@@ -592,7 +600,18 @@ func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferRes
 	}
 	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
 
-	return TextGenerationOutput{
-		Text: outputTexts,
-	}, nil
+	switch task {
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		return TextGenerationChatOutput{
+			Text: outputTexts,
+		}, nil
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		return VisualQuestionAnsweringOutput{
+			Text: outputTexts,
+		}, nil
+	default:
+		return TextGenerationOutput{
+			Text: outputTexts,
+		}, nil
+	}
 }

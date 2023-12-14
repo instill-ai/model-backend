@@ -11,6 +11,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/triton"
+	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
 func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
@@ -452,7 +453,7 @@ func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferRes
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, outputNameImages string) (interface{}, error) {
+func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, outputNameImages string, task commonPB.Task) (interface{}, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -487,12 +488,19 @@ func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, ou
 		base64EncodedStr := base64.StdEncoding.EncodeToString(buff.Bytes())
 		batchedOutputDataImages[0] = append(batchedOutputDataImages[0], base64EncodedStr)
 	}
-	return triton.TextToImageOutput{
-		Images: batchedOutputDataImages,
-	}, nil
+	switch task {
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		return triton.ImageToImageOutput{
+			Images: batchedOutputDataImages,
+		}, nil
+	default:
+		return triton.TextToImageOutput{
+			Images: batchedOutputDataImages,
+		}, nil
+	}
 }
 
-func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse, outputNameTexts string) (interface{}, error) {
+func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse, outputNameTexts string, task commonPB.Task) (interface{}, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")
@@ -502,7 +510,20 @@ func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse,
 	}
 	outputTexts := triton.DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
 
-	return triton.TextGenerationOutput{
-		Text: outputTexts,
-	}, nil
+	switch task {
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		return triton.VisualQuestionAnsweringOutput{
+			Text: outputTexts,
+		}, nil
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+
+		return triton.TextGenerationChatOutput{
+			Text: outputTexts,
+		}, nil
+	default:
+
+		return triton.TextGenerationOutput{
+			Text: outputTexts,
+		}, nil
+	}
 }

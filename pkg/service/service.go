@@ -692,8 +692,7 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 			})
 		}
 		return semanticSegmentationOutputs, nil
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE,
-		commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImageResponses := postprocessResponse.(triton.TextToImageOutput)
 		batchedOutputDataImages := textToImageResponses.Images
 		var textToImageOutputs []*modelPB.TaskOutput
@@ -718,9 +717,32 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 			})
 		}
 		return textToImageOutputs, nil
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
-		commonPB.Task_TASK_TEXT_GENERATION_CHAT,
-		commonPB.Task_TASK_TEXT_GENERATION:
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImageResponses := postprocessResponse.(triton.ImageToImageOutput)
+		batchedOutputDataImages := imageToImageResponses.Images
+		var imageToImageOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataImages { // loop over images
+			var imageToImageOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_ImageToImage{
+					ImageToImage: &modelPB.ImageToImageOutput{
+						Images: batchedOutputDataImages[i],
+					},
+				},
+			}
+
+			imageToImageOutputs = append(imageToImageOutputs, &imageToImageOutput)
+		}
+		if len(imageToImageOutputs) == 0 {
+			imageToImageOutputs = append(imageToImageOutputs, &modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_ImageToImage{
+					ImageToImage: &modelPB.ImageToImageOutput{
+						Images: []string{},
+					},
+				},
+			})
+		}
+		return imageToImageOutputs, nil
+	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGenerationResponses := postprocessResponse.(triton.TextGenerationOutput)
 		batchedOutputDataTexts := textGenerationResponses.Text
 		var textGenerationOutputs []*modelPB.TaskOutput
@@ -745,6 +767,56 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 			})
 		}
 		return textGenerationOutputs, nil
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQuestionAnsweringResponses := postprocessResponse.(triton.VisualQuestionAnsweringOutput)
+		batchedOutputDataTexts := visualQuestionAnsweringResponses.Text
+		var visualQuestionAnsweringOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataTexts {
+			var visualQuestionAnsweringOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
+					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
+						Text: batchedOutputDataTexts[i],
+					},
+				},
+			}
+
+			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &visualQuestionAnsweringOutput)
+		}
+		if len(visualQuestionAnsweringOutputs) == 0 {
+			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
+					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
+						Text: "",
+					},
+				},
+			})
+		}
+		return visualQuestionAnsweringOutputs, nil
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChatResponses := postprocessResponse.(triton.TextGenerationChatOutput)
+		batchedOutputDataTexts := textGenerationChatResponses.Text
+		var textGenerationChatOutputs []*modelPB.TaskOutput
+		for i := range batchedOutputDataTexts {
+			var textGenerationChatOutput = modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_TextGenerationChat{
+					TextGenerationChat: &modelPB.TextGenerationChatOutput{
+						Text: batchedOutputDataTexts[i],
+					},
+				},
+			}
+
+			textGenerationChatOutputs = append(textGenerationChatOutputs, &textGenerationChatOutput)
+		}
+		if len(textGenerationChatOutputs) == 0 {
+			textGenerationChatOutputs = append(textGenerationChatOutputs, &modelPB.TaskOutput{
+				Output: &modelPB.TaskOutput_TextGenerationChat{
+					TextGenerationChat: &modelPB.TextGenerationChatOutput{
+						Text: "",
+					},
+				},
+			})
+		}
+		return textGenerationChatOutputs, nil
 	default:
 		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput
