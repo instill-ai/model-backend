@@ -14,6 +14,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
@@ -101,8 +102,17 @@ func NewTriton() Triton {
 
 func (ts *triton) Init() {
 	grpcUri := config.Config.TritonServer.GrpcURI
+
+	maxMsgSize := int(config.Config.Server.MaxDataSize * utils.MB)
 	// Connect to gRPC server
-	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(
+		grpcUri,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	)
 	if err != nil {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
 	}
