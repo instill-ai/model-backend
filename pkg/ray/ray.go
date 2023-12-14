@@ -404,7 +404,7 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE,
 		commonPB.Task_TASK_TEXT_TO_IMAGE:
-		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name)
+		outputs, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}
@@ -412,7 +412,7 @@ func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *ray
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
 		commonPB.Task_TASK_TEXT_GENERATION_CHAT,
 		commonPB.Task_TASK_TEXT_GENERATION:
-		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name)
+		outputs, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to text output: %w", err)
 		}

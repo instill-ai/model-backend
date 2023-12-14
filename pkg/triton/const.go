@@ -51,6 +51,18 @@ type TextToImageOutput struct {
 	Images [][]string
 }
 
+type ImageToImageOutput struct {
+	Images [][]string
+}
+
 type TextGenerationOutput struct {
+	Text []string
+}
+
+type TextGenerationChatOutput struct {
+	Text []string
+}
+
+type VisualQuestionAnsweringOutput struct {
 	Text []string
 }

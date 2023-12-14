@@ -2633,10 +2633,10 @@ export function InferModel(header) {
           r.json().task === "TASK_IMAGE_TO_IMAGE",
         [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].text_to_image.images.length`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].text_to_image.images[0]`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].image_to_image.images.length`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger image to image task_outputs[0].image_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images[0] !== undefined,
       });
 
       // Inference with multiple samples, samples = 2
@@ -2674,10 +2674,10 @@ export function InferModel(header) {
           r.json().task === "TASK_IMAGE_TO_IMAGE",
         [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].text_to_image.images`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].text_to_image.images[0]`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].image_to_image.images`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/test-multipart image to image task_outputs[0].image_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images[0] !== undefined,
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -2688,10 +2688,10 @@ export function InferModel(header) {
           r.json().task === "TASK_IMAGE_TO_IMAGE",
         [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs[0].text_to_image.images`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger-multipart text to image task_outputs[0].text_to_image.images[0]`]: (r) =>
-          r.json().task_outputs[0].text_to_image.images[0] !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs[0].image_to_image.images`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images.length === 1,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart image to image task_outputs[0].image_to_image.images[0]`]: (r) =>
+          r.json().task_outputs[0].image_to_image.images[0] !== undefined,
       });
 
 
@@ -3019,8 +3019,8 @@ export function InferModel(header) {
           r.json().task === "TASK_TEXT_GENERATION_CHAT",
         [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].text_generation_chat.text`]: (r) =>
+          r.json().task_outputs[0].text_generation_chat.text !== undefined,
       });
 
       // Inference with multiple samples
@@ -3062,8 +3062,8 @@ export function InferModel(header) {
           r.json().task === "TASK_TEXT_GENERATION_CHAT",
         [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger url text generation chat multiple params task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat multiple params task_outputs[0].text_generation_chat.text`]: (r) =>
+          r.json().task_outputs[0].text_generation_chat.text !== undefined,
       });
 
       // Predict with multiple-part
@@ -3108,8 +3108,8 @@ export function InferModel(header) {
           r.json().task === "TASK_TEXT_GENERATION_CHAT",
         [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation_chat.text`]: (r) =>
+          r.json().task_outputs[0].text_generation_chat.text !== undefined,
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -3120,8 +3120,8 @@ export function InferModel(header) {
           r.json().task === "TASK_TEXT_GENERATION_CHAT",
         [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation_chat.text`]: (r) =>
+          r.json().task_outputs[0].text_generation_chat.text !== undefined,
       });
 
       // clean up
@@ -3199,8 +3199,8 @@ export function InferModel(header) {
           r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
         [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger url text generation chat task_outputs[0].visual_question_answering.text`]: (r) =>
+          r.json().task_outputs[0].visual_question_answering.text !== undefined,
       });
 
       // Inference with multiple samples
@@ -3232,8 +3232,8 @@ export function InferModel(header) {
           r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
         [`POST /v1alpha/models/${model_id}/trigger url visual question answering task task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task multiple params task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger url visual question answering task multiple params task_outputs[0].visual_question_answering.text`]: (r) =>
+          r.json().task_outputs[0].visual_question_answering.text !== undefined,
       });
 
       // Predict with multiple-part
@@ -3267,8 +3267,8 @@ export function InferModel(header) {
           r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
         [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].visual_question_answering.text`]: (r) =>
+          r.json().task_outputs[0].visual_question_answering.text !== undefined,
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -3279,8 +3279,8 @@ export function InferModel(header) {
           r.json().task === "TASK_VISUAL_QUESTION_ANSWERING",
         [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].text_generation.text`]: (r) =>
-          r.json().task_outputs[0].text_generation.text !== undefined,
+        [`POST /v1alpha/models/${model_id}/trigger-multipart task_outputs[0].visual_question_answering.text`]: (r) =>
+          r.json().task_outputs[0].visual_question_answering.text !== undefined,
       });
 
       // clean up
