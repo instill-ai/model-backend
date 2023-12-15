@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.21.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.20.0-alpha...v0.21.0-alpha) (2023-12-14)
+
+
+### Features
+
+* **model:** refactoring AI Tasks for Consistency Across Text and Image Generation ([#461](https://github.com/instill-ai/model-backend/issues/461)) ([e827130](https://github.com/instill-ai/model-backend/commit/e827130b1e05a010bca82f2e5c36135e1ff6a578))
+* **redis:** use redis for model state caching ([#472](https://github.com/instill-ai/model-backend/issues/472)) ([3b6b977](https://github.com/instill-ai/model-backend/commit/3b6b977a2b168af5152fdbb8ca453610faefed39))
+
+
+### Bug Fixes
+
+* **model:** fix grpc message size limit issue ([#474](https://github.com/instill-ai/model-backend/issues/474)) ([1ec7ae1](https://github.com/instill-ai/model-backend/commit/1ec7ae135c8a6b8cdf13ca1b30174eb761772521))
+
 ## [0.20.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.19.0-alpha...v0.20.0-alpha) (2023-11-30)
 
 
