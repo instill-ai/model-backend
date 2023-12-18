@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	cloud.google.com/go/longrunning v0.5.1
-	github.com/allegro/bigcache v1.2.1
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
@@ -91,9 +90,9 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/genproto v0.0.0-20230725213213-b022f6e96895 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230725213213-b022f6e96895 // indirect
