@@ -176,12 +176,16 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
-		case commonPB.Task_TASK_TEXT_GENERATION_CHAT,
+		case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
+			commonPB.Task_TASK_TEXT_GENERATION_CHAT,
 			commonPB.Task_TASK_TEXT_GENERATION:
+			var inputShape []int64
+			inputShape = []int64{1}
+
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
-				Shape:    []int64{1, 1},
+				Shape:    inputShape,
 			})
 		case commonPB.Task_TASK_CLASSIFICATION,
 			commonPB.Task_TASK_DETECTION,

@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	cloud.google.com/go/longrunning v0.5.1
-	github.com/allegro/bigcache v1.2.1
 	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
