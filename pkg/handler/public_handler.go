@@ -922,7 +922,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		githubInfo, err = utils.GetGitHubRepoInfo(modelConfig.Repository)
 		if err != nil {
 			span.SetStatus(1, "Invalid GitHub Info")
-			return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub Info")
+			return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid Github info: %s", err))
 		}
 		if len(githubInfo.Tags) == 0 {
 			span.SetStatus(1, "There is no tag in GitHub repository")

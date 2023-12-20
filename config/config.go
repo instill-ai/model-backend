@@ -42,6 +42,11 @@ type ServerConfig struct {
 	InferenceBackend string `koanf:"inferencebackend"`
 }
 
+type Github struct {
+	PatEnabled bool   `koanf:"patenabled"`
+	Pat        string `koanf:"pat"`
+}
+
 // DatabaseConfig related to database
 type DatabaseConfig struct {
 	Username string `koanf:"username"`
@@ -86,8 +91,8 @@ type CacheConfig struct {
 		RedisOptions redis.Options `koanf:"redisoptions"`
 	}
 	Model struct {
-		Enabled   bool   `koanf:"enabled"`
-		CacheDir  string `koanf:"cache_dir"`
+		Enabled  bool   `koanf:"enabled"`
+		CacheDir string `koanf:"cache_dir"`
 	}
 }
 
@@ -140,6 +145,7 @@ type LogConfig struct {
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
+	Github                 Github             `koanf:"github"`
 	Database               DatabaseConfig     `koanf:"database"`
 	TritonServer           TritonServerConfig `koanf:"tritonserver"`
 	RayServer              RayServerConfig    `koanf:"rayserver"`

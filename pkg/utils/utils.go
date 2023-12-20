@@ -155,7 +155,12 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	}
 	if !isWithLargeFile || isWithLargeFile && !config.Config.Cache.Model.Enabled {
 		if !strings.HasPrefix(urlRepo, "https://github.com") {
-			urlRepo = "https://github.com/" + urlRepo
+			if config.Config.Github.PatEnabled {
+				urlRepo = fmt.Sprintf("https://%s@github.com/%s", config.Config.Github.Pat, urlRepo)
+				fmt.Println(urlRepo)
+			} else {
+				urlRepo = fmt.Sprintf("https://github.com/%s", urlRepo)
+			}
 		}
 		if !strings.HasSuffix(urlRepo, ".git") {
 			urlRepo = urlRepo + ".git"
@@ -279,11 +284,23 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 		return &GitHubInfo{}, fmt.Errorf("invalid repo URL")
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v", repo))
+	repoRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v", repo), nil)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
-	body, err := io.ReadAll(resp.Body)
+	if config.Config.Github.PatEnabled {
+		repoRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.Config.Github.Pat))
+	}
+	repoResp, err := http.DefaultClient.Do(repoRequest)
+	if err != nil {
+		return &GitHubInfo{}, err
+	}
+	defer repoResp.Body.Close()
+	if repoResp.StatusCode != http.StatusOK {
+		return &GitHubInfo{}, fmt.Errorf(repoResp.Status)
+	}
+
+	body, err := io.ReadAll(repoResp.Body)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
@@ -292,11 +309,24 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
-	resp, err = http.Get(fmt.Sprintf("https://api.github.com/repos/%v/tags", repo))
+
+	tagRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v/tags", repo), nil)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
-	body, err = io.ReadAll(resp.Body)
+	if config.Config.Github.PatEnabled {
+		tagRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.Config.Github.Pat))
+	}
+	tagResp, err := http.DefaultClient.Do(tagRequest)
+	if err != nil {
+		return &GitHubInfo{}, err
+	}
+	defer tagResp.Body.Close()
+	if tagResp.StatusCode != http.StatusOK {
+		return &GitHubInfo{}, fmt.Errorf(tagResp.Status)
+	}
+
+	body, err = io.ReadAll(tagResp.Body)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
