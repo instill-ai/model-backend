@@ -101,6 +101,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		logger.Error(err.Error())
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	var applicationStatus rayserver.GetApplicationStatus
 	err = json.NewDecoder(resp.Body).Decode(&applicationStatus)

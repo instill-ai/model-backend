@@ -19,6 +19,9 @@ server:
     maxworkflowretry: 3
     maxactivityretry: 1
   inferencebackend: ray
+github:
+  patenabled: false
+  pat:
 database:
   username: postgres
   password: password
