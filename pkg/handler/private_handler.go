@@ -98,10 +98,8 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 	}
 
 	var userPermalink string
-	if pbModel.GetUser() != "" {
-		userPermalink = pbModel.GetUser()
-	} else if pbModel.GetOrg() != "" {
-		userPermalink = pbModel.GetOrg()
+	if pbModel.GetOwnerName() != "" {
+		userPermalink = pbModel.GetOwnerName()
 	} else {
 		return &modelPB.DeployModelAdminResponse{}, fmt.Errorf("model no owner")
 	}
@@ -222,10 +220,8 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 	}
 
 	var userPermalink string
-	if pbModel.GetUser() != "" {
-		userPermalink = pbModel.GetUser()
-	} else if pbModel.GetOrg() != "" {
-		userPermalink = pbModel.GetOrg()
+	if pbModel.GetOwnerName() != "" {
+		userPermalink = pbModel.GetOwnerName()
 	} else {
 		return &modelPB.UndeployModelAdminResponse{}, fmt.Errorf("model no owner")
 	}
