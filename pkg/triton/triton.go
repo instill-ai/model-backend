@@ -5,6 +5,7 @@ package triton
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math"
 
@@ -42,12 +43,15 @@ type ImageToImageInput struct {
 }
 
 type TextGenerationInput struct {
-	Prompt       string
-	MaxNewTokens int32
-	Temperature  float32
-	TopK         int32
-	Seed         int32
-	ExtraParams  string
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
 }
 
 type TextGenerationChatInput struct {
@@ -385,6 +389,9 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImages)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ChatHistory)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.SystemMessage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
@@ -402,12 +409,13 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 	}
 
 	// Submit inference request to server
+	fmt.Println(">>>>>>>>>>>>>>")
 	modelInferResponse, err := ts.tritonClient.ModelInfer(ctx, &modelInferRequest)
 	if err != nil {
 		log.Printf("Error processing InferRequest: %v", err)
 		return &inferenceserver.ModelInferResponse{}, err
 	}
-
+	fmt.Println(">>>>>>>>>>>>>>")
 	return modelInferResponse, nil
 }
 

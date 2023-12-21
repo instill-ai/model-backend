@@ -2800,9 +2800,9 @@ export function InferModel(header) {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       })
       check(createModelRes, {
-        "POST /v1alpha/models/multipart task text generation response status": (r) =>
+        "POST /v1alpha/models/multipart create task text generation response status": (r) =>
           r.status === 201,
-        "POST /v1alpha/models/multipart task text generation response operation.name": (r) =>
+        "POST /v1alpha/models/multipart create task text generation response operation.name": (r) =>
           r.json().operation.name !== undefined,
       });
 
@@ -2846,13 +2846,13 @@ export function InferModel(header) {
         }]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
-        [`POST /v1alpha/models/${model_id}/trigger url text generation status`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/trigger (only required field) url text generation status`]: (r) =>
           r.status === 200,
-        [`POST /v1alpha/models/${model_id}/trigger url text generation task`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/trigger (only required field) url text generation task`]: (r) =>
           r.json().task === "TASK_TEXT_GENERATION",
-        [`POST /v1alpha/models/${model_id}/trigger url text generation task_outputs.length`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/trigger (only required field) url text generation task_outputs.length`]: (r) =>
           r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/trigger url text generation task_outputs[0].text_generation.text`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/trigger (only required field) url text generation task_outputs[0].text_generation.text`]: (r) =>
           r.json().task_outputs[0].text_generation.text !== undefined,
       });
 
@@ -2861,19 +2861,24 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_generation": {
             "prompt": "hello this is a test",
+            "prompt_images": [
+              { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+            ],
+            "chat_history": [
+              { "type": "message", "content": "https://artifacts.instill.tech/imgs/dog.jpg" }
+            ],
+            "system_message": "Hi, I am admin",
             "max_new_tokens": "50",
             "temperature": "0.8",
             "top_k": "2",
             "seed": "0",
-            "extra_params": [
-              {
-                "param_name": "test_param1",
-                "param_value": "test_value_1"
-              }, {
-                "param_name": "test_param2",
-                "param_value": "test_value_2"
-              },
-            ]
+            "extra_params": {
+              "test_param_string": "test_param_string_value",
+              "test_param_int": 123,
+              "test_param_float": 0.2,
+              "test_param_arr": [1, 2, 3],
+              "test_param_onject": { "some_key": "some_value" }
+            }
           }
         }]
       });
@@ -2891,22 +2896,21 @@ export function InferModel(header) {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
+      // fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
       fd.append("max_new_tokens", "50");
       fd.append("temperature", "0.8");
       fd.append("top_k", "2");
       fd.append("seed", "0");
+      fd.append("file", http.file(constant.dog_img));
 
       // For extra_params, you need to append them as JSON string because FormData does not support object directly
-      const extraParams = [
-        {
-          "param_name": "test_param1",
-          "param_value": "test_value_1"
-        },
-        {
-          "param_name": "test_param2",
-          "param_value": "test_value_2"
-        }
-      ];
+      const extraParams = {
+        "test_param_string": "test_param_string_value",
+        "test_param_int": 123,
+        "test_param_float": 0.2,
+        "test_param_arr": [1, 2, 3],
+        "test_param_onject": { "some_key": "some_value" }
+      };
       fd.append("extra_params", JSON.stringify(extraParams));
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
