@@ -155,11 +155,6 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 				ImgUrl:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_VisualQuestionAnswering:
-			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetVisualQuestionAnswering().GetPromptImageUrl(),
-				ImgBase64: taskInput.GetVisualQuestionAnswering().GetPromptImageBase64(),
-			}
 		case *modelPB.TaskInput_TextToImage:
 			imageInput = triton.ImageInput{
 				ImgUrl:    taskInput.GetTextToImage().GetPromptImageUrl(),
@@ -433,35 +428,65 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.Trigg
 		if taskInput.GetTextGenerationChat().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON: %v", err)
+				log.Fatalf("Error marshalling to JSON in ExtraParams field: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
 		}
-		conversation := string("")
-		if taskInput.GetTextGenerationChat().Conversation != nil {
-			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().Conversation)
+
+		chatHistory := string("")
+		if taskInput.GetTextGenerationChat().ChatHistory != nil {
+			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().ChatHistory)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON: %v", err)
+				log.Fatalf("Error marshalling to JSON in ChatHistory field: %v", err)
 			} else {
-				conversation = string(jsonData)
+				chatHistory = string(jsonData)
+			}
+		}
+
+		systemMessage := string("")
+		if taskInput.GetTextGenerationChat().SystemMessage != nil {
+			systemMessage = *taskInput.GetTextGenerationChat().SystemMessage
+		}
+
+		promptImages := string("")
+		if taskInput.GetTextGenerationChat().PromptImages != nil {
+			var promptImagesArr [][]byte
+			for _, promptImageStruct := range taskInput.GetTextGenerationChat().PromptImages {
+				imageInput := triton.ImageInput{
+					ImgUrl:    promptImageStruct.GetPromptImageUrl(),
+					ImgBase64: promptImageStruct.GetPromptImageBase64(),
+				}
+				encodedImage, err := parseImageInputToByte(ctx, imageInput)
+				if err != nil {
+					return nil, err
+				}
+				promptImagesArr = append(promptImagesArr, encodedImage)
+			}
+			jsonData, err := json.Marshal(promptImagesArr)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON in promptImages field: %v", err)
+			} else {
+				promptImages = string(jsonData)
 			}
 		}
 		textGenerationChatInput = &triton.TextGenerationChatInput{
-			Conversation: conversation,
-			MaxNewTokens: maxNewTokens,
-			Temperature:  temperature,
-			TopK:         topK,
-			Seed:         seed,
-			ExtraParams:  extraParams,
+			Prompt:        taskInput.GetTextGenerationChat().Prompt,
+			PromptImages:  promptImages,
+			ChatHistory:   chatHistory,
+			SystemMessage: systemMessage,
+			MaxNewTokens:  maxNewTokens,
+			Temperature:   temperature,
+			TopK:          topK,
+			Seed:          seed,
+			ExtraParams:   extraParams,
 		}
 	}
 	return textGenerationChatInput, nil
 }
 
 func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
-	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
-	for idx, taskInput := range req.TaskInputs {
+	for _, taskInput := range req.TaskInputs {
 
 		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
 		if taskInput.GetVisualQuestionAnswering().MaxNewTokens != nil {
@@ -483,25 +508,59 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB
 		if taskInput.GetVisualQuestionAnswering().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetVisualQuestionAnswering().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON: %v", err)
+				log.Fatalf("Error marshalling to JSON in ExtraParams field: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
 		}
 
-		// Handling Image Input
-		var inputBytes []byte
-		if parsedImageErr == nil {
-			inputBytes = pargedImages[idx]
+		chatHistory := string("")
+		if taskInput.GetVisualQuestionAnswering().ChatHistory != nil {
+			jsonData, err := json.Marshal(taskInput.GetVisualQuestionAnswering().ChatHistory)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON in ChatHistory field: %v", err)
+			} else {
+				chatHistory = string(jsonData)
+			}
 		}
+
+		systemMessage := string("")
+		if taskInput.GetVisualQuestionAnswering().SystemMessage != nil {
+			systemMessage = *taskInput.GetVisualQuestionAnswering().SystemMessage
+		}
+
+		promptImages := string("")
+		if taskInput.GetVisualQuestionAnswering().PromptImages != nil {
+			var promptImagesArr [][]byte
+			for _, promptImageStruct := range taskInput.GetVisualQuestionAnswering().PromptImages {
+				imageInput := triton.ImageInput{
+					ImgUrl:    promptImageStruct.GetPromptImageUrl(),
+					ImgBase64: promptImageStruct.GetPromptImageBase64(),
+				}
+				encodedImage, err := parseImageInputToByte(ctx, imageInput)
+				if err != nil {
+					return nil, err
+				}
+				promptImagesArr = append(promptImagesArr, encodedImage)
+			}
+			jsonData, err := json.Marshal(promptImagesArr)
+			if err != nil {
+				log.Fatalf("Error marshalling to JSON in promptImages field: %v", err)
+			} else {
+				promptImages = string(jsonData)
+			}
+		}
+
 		visualQuestionAnsweringInput = &triton.VisualQuestionAnsweringInput{
-			Prompt:       taskInput.GetVisualQuestionAnswering().Prompt,
-			PromptImage:  string(inputBytes),
-			MaxNewTokens: maxNewTokens,
-			Temperature:  temperature,
-			TopK:         topK,
-			Seed:         seed,
-			ExtraParams:  extraParams,
+			Prompt:        taskInput.GetVisualQuestionAnswering().Prompt,
+			PromptImages:  promptImages,
+			ChatHistory:   chatHistory,
+			SystemMessage: systemMessage,
+			MaxNewTokens:  maxNewTokens,
+			Temperature:   temperature,
+			TopK:          topK,
+			Seed:          seed,
+			ExtraParams:   extraParams,
 		}
 	}
 	return visualQuestionAnsweringInput, nil
@@ -823,16 +882,17 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 }
 
 func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGenerationChat *triton.TextGenerationChatInput, err error) {
-	conversations := req.MultipartForm.Value["conversation"]
-	if len(conversations) != 1 {
+	prompts := req.MultipartForm.Value["prompt"]
+	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-
 	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
 	temperatureInput := req.MultipartForm.Value["temperature"]
 	topKInput := req.MultipartForm.Value["topk"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
+	chatHistoryInput := req.MultipartForm.Value["chat_history"]
+	systemMessageInput := req.MultipartForm.Value["system_message"]
 
 	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
 	if len(maxNewTokenInput) > 0 {
@@ -874,14 +934,35 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 	if len(extraParamsInput) > 0 {
 		extraParams = extraParamsInput[0]
 	}
+	chatHistory := ""
+	if len(chatHistoryInput) > 0 {
+		chatHistory = chatHistoryInput[0]
+	}
+	systemMessage := ""
+	if len(systemMessageInput) > 0 {
+		systemMessage = systemMessageInput[0]
+	}
+	promptImages := ""
+	parsedImages, err := parseImageFormDataInputsToBytes(req)
+	if err == nil {
+		jsonData, err := json.Marshal(parsedImages)
+		if err != nil {
+			log.Fatalf("Error marshalling to JSON: %v", err)
+		} else {
+			promptImages = string(jsonData)
+		}
+	}
 
 	return &triton.TextGenerationChatInput{
-		Conversation: conversations[0],
-		MaxNewTokens: maxNewTokens,
-		Temperature:  temperature,
-		TopK:         topK,
-		Seed:         seed,
-		ExtraParams:  extraParams,
+		Prompt:        prompts[0],
+		PromptImages:  promptImages,
+		ChatHistory:   chatHistory,
+		SystemMessage: systemMessage,
+		MaxNewTokens:  maxNewTokens,
+		Temperature:   temperature,
+		TopK:          topK,
+		Seed:          seed,
+		ExtraParams:   extraParams,
 	}, nil
 }
 
@@ -895,6 +976,8 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 	topKInput := req.MultipartForm.Value["topk"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
+	chatHistoryInput := req.MultipartForm.Value["chat_history"]
+	systemMessageInput := req.MultipartForm.Value["system_message"]
 
 	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
 	if len(maxNewTokenInput) > 0 {
@@ -936,20 +1019,35 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 	if len(extraParamsInput) > 0 {
 		extraParams = extraParamsInput[0]
 	}
+	chatHistory := ""
+	if len(chatHistoryInput) > 0 {
+		chatHistory = chatHistoryInput[0]
+	}
+	systemMessage := ""
+	if len(systemMessageInput) > 0 {
+		systemMessage = systemMessageInput[0]
+	}
 
+	promptImages := ""
 	parsedImages, err := parseImageFormDataInputsToBytes(req)
-	var promptImage string
-	if err != nil && len(parsedImages) == 1 {
-		promptImage = string(parsedImages[0])
+	if err == nil {
+		jsonData, err := json.Marshal(parsedImages)
+		if err != nil {
+			log.Fatalf("Error marshalling to JSON: %v", err)
+		} else {
+			promptImages = string(jsonData)
+		}
 	}
 
 	return &triton.VisualQuestionAnsweringInput{
-		Prompt:       prompts[0],
-		PromptImage:  promptImage,
-		MaxNewTokens: maxNewTokens,
-		Temperature:  temperature,
-		TopK:         topK,
-		Seed:         seed,
-		ExtraParams:  extraParams,
+		Prompt:        prompts[0],
+		PromptImages:  promptImages,
+		ChatHistory:   chatHistory,
+		SystemMessage: systemMessage,
+		MaxNewTokens:  maxNewTokens,
+		Temperature:   temperature,
+		TopK:          topK,
+		Seed:          seed,
+		ExtraParams:   extraParams,
 	}, nil
 }
