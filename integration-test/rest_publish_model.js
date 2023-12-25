@@ -71,7 +71,7 @@ export function PublishUnpublishModel(header) {
         [`POST /v1alpha/models/${model_id}/publish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         [`POST /v1alpha/models/${model_id}/publish task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+          isValidOwner(r.json().model.owner_name),
         [`POST /v1alpha/models/${model_id}/publish task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.update_time`]: (r) =>
@@ -96,7 +96,7 @@ export function PublishUnpublishModel(header) {
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+          isValidOwner(r.json().model.owner_name),
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.update_time`]: (r) =>

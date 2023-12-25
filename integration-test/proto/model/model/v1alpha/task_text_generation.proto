@@ -4,22 +4,29 @@ package model.model.v1alpha;
 
 // Google api
 import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
 import "../../../model/model/v1alpha/common.proto";
 
 // TextGenerationInput represents the input of text generation task
 message TextGenerationInput {
   // The prompt text
   string prompt = 1 [(google.api.field_behavior) = REQUIRED];
+  // The prompt images
+  repeated PromptImage prompt_images = 2 [(google.api.field_behavior) = OPTIONAL];
+  // The chat history
+  repeated Content chat_history = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The system message
+  optional string system_message = 4 [(google.api.field_behavior) = OPTIONAL];
   // The maximum number of tokens for model to generate
-  optional int32 max_new_tokens = 2 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 max_new_tokens = 5 [(google.api.field_behavior) = OPTIONAL];
   // The temperature for sampling
-  optional float temperature = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional float temperature = 6 [(google.api.field_behavior) = OPTIONAL];
   // Top k for sampling
-  optional int32 top_k = 4 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 top_k = 7 [(google.api.field_behavior) = OPTIONAL];
   // The seed
-  optional int32 seed = 5 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 seed = 8 [(google.api.field_behavior) = OPTIONAL];
   // The extra parameters
-  repeated ExtraParamObject extra_params = 6 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.Struct extra_params = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // TextGenerationOutput represents the output of text generation task

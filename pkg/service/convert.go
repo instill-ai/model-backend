@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -114,11 +113,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		}(),
 	}
 
-	if strings.HasPrefix(dbModel.Owner, "users/") {
-		pbModel.Owner = &modelPB.Model_User{User: dbModel.Owner}
-	} else if strings.HasPrefix(dbModel.Owner, "orgs/") {
-		pbModel.Owner = &modelPB.Model_Org{Org: dbModel.Owner}
-	}
+	pbModel.OwnerName = dbModel.Owner
 	return &pbModel, nil
 }
 
