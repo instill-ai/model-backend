@@ -161,6 +161,9 @@ func CustomMatcher(key string) (string, bool) {
 	if strings.HasPrefix(strings.ToLower(key), "jwt-") {
 		return key, true
 	}
+	if strings.HasPrefix(strings.ToLower(key), "instill-") {
+		return key, true
+	}
 
 	switch key {
 	case "request-id":
