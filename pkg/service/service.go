@@ -138,7 +138,7 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 // GetUser returns the api user
 func (s *service) GetUser(ctx context.Context) (string, uuid.UUID, error) {
 
-	// Verify if "jwt-sub" is in the header
+	// Verify if "Instill-User-Uid" is in the header
 	headerUserUId := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	if headerUserUId != "" {
 		_, err := uuid.FromString(headerUserUId)

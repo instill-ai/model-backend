@@ -173,6 +173,6 @@ func CustomMatcher(key string) (string, bool) {
 }
 
 func InjectOwnerToContext(ctx context.Context, owner *mgmtPB.User) context.Context {
-	ctx = metadata.AppendToOutgoingContext(ctx, "Jwt-Sub", owner.GetUid())
+	ctx = metadata.AppendToOutgoingContext(ctx, "Instill-User-Uid", owner.GetUid())
 	return ctx
 }

@@ -47,28 +47,28 @@ export function GetModel(header) {
       currentTime = new Date().getTime();
     }
 
-    group(`Model Backend API: Get model info [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: Get model info [with "Instill-User-Uid" header]`, function () {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}?view=VIEW_FULL`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}?view=VIEW_FULL`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -85,7 +85,7 @@ export function GetModel(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });
     });
@@ -98,35 +98,35 @@ export function ListModels(header) {
   let userUid = resp.json().user.uid
 
   {
-    group(`Model Backend API: Get model list [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: Get model list [with "Instill-User-Uid" header]`, function () {
       let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       })
       check(resp, {
-        [`[with random "jwt-sub" header] GET /v1alpha/models task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?view=VIEW_FULL`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, header)
       check(resp, {
-        [`[with default "jwt-sub" header] GET /v1alpha/models task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1&page_token=${resp.json().next_page_token}`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?view=VIEW_FULL`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models?view=VIEW_FULL task cls response status 200`]: (r) =>
           r.status === 200,
       });
     });
@@ -166,28 +166,28 @@ export function LookupModel(header) {
     resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header)
     let modelUid = resp.json().model.uid
 
-    group(`Model Backend API: Look up model [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: Look up model [with "Instill-User-Uid" header]`, function () {
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models/${modelUid}/lookUp task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models/${modelUid}/lookUp?view=VIEW_FULL task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -204,7 +204,7 @@ export function LookupModel(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });
     });
