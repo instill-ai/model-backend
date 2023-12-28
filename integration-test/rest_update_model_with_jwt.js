@@ -34,7 +34,7 @@ export function UpdateModel(header) {
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {
-    group(`Model Backend API: Update model [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: Update model [with "Instill-User-Uid" header]`, function () {
 
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -59,12 +59,12 @@ export function UpdateModel(header) {
       check(http.patch(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, payload, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4())
       }), {
-        [`[with random "jwt-sub" header] PATCH /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] PATCH /v1alpha/models/${model_id} task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.patch(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, payload, header), {
-        [`[with default "jwt-sub" header] PATCH /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] PATCH /v1alpha/models/${model_id} task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -81,7 +81,7 @@ export function UpdateModel(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE clean up response status 204`]: (r) =>
           r.status === 204
       });
     });

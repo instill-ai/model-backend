@@ -38,7 +38,7 @@ export function TestModel(header) {
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {
-    group(`Model Backend API: Predict Model with classification model [with random "jwt-sub" header]`, function () {
+    group(`Model Backend API: Predict Model with classification model [with random "Instill-User-Uid" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
@@ -80,12 +80,12 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test url cls status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test url cls status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -106,11 +106,11 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test url cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -126,12 +126,12 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test base64 cls status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test base64 cls status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -153,12 +153,12 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test`, payload, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test base64 cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -169,14 +169,14 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test-multipart cls status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test-multipart cls status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -189,20 +189,20 @@ export function TestModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd.boundary}`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/test-multipart cls multiple images status 200`]: (r) =>
           r.status === 200,
       });
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE clean up response status 204`]: (r) =>
           r.status === 204
       });
 

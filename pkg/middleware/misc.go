@@ -161,6 +161,9 @@ func CustomMatcher(key string) (string, bool) {
 	if strings.HasPrefix(strings.ToLower(key), "jwt-") {
 		return key, true
 	}
+	if strings.HasPrefix(strings.ToLower(key), "instill-") {
+		return key, true
+	}
 
 	switch key {
 	case "request-id":
@@ -173,6 +176,6 @@ func CustomMatcher(key string) (string, bool) {
 }
 
 func InjectOwnerToContext(ctx context.Context, owner *mgmtPB.User) context.Context {
-	ctx = metadata.AppendToOutgoingContext(ctx, "Jwt-Sub", owner.GetUid())
+	ctx = metadata.AppendToOutgoingContext(ctx, "Instill-User-Uid", owner.GetUid())
 	return ctx
 }
