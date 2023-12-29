@@ -2865,7 +2865,30 @@ export function InferModel(header) {
               { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
             ],
             "chat_history": [
-              { "type": "message", "content": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              {
+                "role": "system",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                ]
+              },
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                  {
+                    "type": "image_url",
+                    "image_url": {
+                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                    }
+                  }
+                ]
+              }
             ],
             "system_message": "Hi, I am admin",
             "max_new_tokens": "50",
@@ -3025,7 +3048,30 @@ export function InferModel(header) {
               { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
             ],
             "chat_history": [
-              { "type": "message", "content": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              {
+                "role": "system",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                ]
+              },
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                  {
+                    "type": "image_url",
+                    "image_url": {
+                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                    }
+                  }
+                ]
+              }
             ],
             "system_message": "Hi, I am admin",
             "max_new_tokens": "50",
@@ -3186,7 +3232,30 @@ export function InferModel(header) {
               { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
             ],
             "chat_history": [
-              { "type": "message", "content": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              {
+                "role": "system",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                ]
+              },
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What's in this image?"
+                  },
+                  {
+                    "type": "image_url",
+                    "image_url": {
+                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                    }
+                  }
+                ]
+              }
             ],
             "system_message": "Hi, I am admin",
             "max_new_tokens": "50",
