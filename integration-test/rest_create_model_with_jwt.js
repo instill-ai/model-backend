@@ -34,23 +34,23 @@ export function CreateModelFromLocal(header) {
     fd_cls.append("model_definition", "model-definitions/local");
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
-    group(`Model Backend API: CreateModelFromLocal [with random "jwt-sub" header]`, function () {
+    group(`Model Backend API: CreateModelFromLocal [with random "Instill-User-Uid" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeaderWithRandomAuth(`multipart/form-data; boundary=${fd_cls.boundary}`, uuidv4()),
       })
 
       check(createClsModelRes, {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/multipart task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/multipart task cls response status 401`]: (r) =>
           r.status === 401,
       });
     });
 
-    group(`Model Backend API: CreateModelFromLocal [with default user "jwt-sub" header]`, function () {
+    group(`Model Backend API: CreateModelFromLocal [with default user "Instill-User-Uid" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
       })
       check(createClsModelRes, {
-        [`[with default user "jwt-sub" header] POST /v1alpha/models/multipart task cls response status 201`]: (r) =>
+        [`[with default user "Instill-User-Uid" header] POST /v1alpha/models/multipart task cls response status 201`]: (r) =>
           r.status === 201,
       });
 
@@ -81,12 +81,12 @@ export function CreateModelFromLocal(header) {
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status 401`]: (r) =>
           r.status === 401
       });
 
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });
     });
@@ -109,21 +109,21 @@ export function CreateModelFromGitHub(header) {
       }
     })
 
-    group(`Model Backend API: Upload a model by GitHub [with random "jwt-sub" header]`, function () {
+    group(`Model Backend API: Upload a model by GitHub [with random "Instill-User-Uid" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, payload, {
         headers: genHeaderWithRandomAuth("application/json", uuidv4()),
       })
 
       check(createClsModelRes, {
-        [`[with random "jwt-sub" header] POST /v1alpha/models task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models task cls response status 401`]: (r) =>
           r.status === 401,
       });
     });
 
-    group(`Model Backend API: Upload a model by GitHub [with default user "jwt-sub" header]`, function () {
+    group(`Model Backend API: Upload a model by GitHub [with default user "Instill-User-Uid" header]`, function () {
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, payload, header)
       check(createClsModelRes, {
-        [`[with default user "jwt-sub" header] POST /v1alpha/models task cls response status 201`]: (r) =>
+        [`[with default user "Instill-User-Uid" header] POST /v1alpha/models task cls response status 201`]: (r) =>
           r.status === 201,
       });
 
@@ -131,7 +131,7 @@ export function CreateModelFromGitHub(header) {
       check(http.request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/watch`, null, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/watch status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${model_id}/watch status 401`]: (r) =>
           r.status === 401
       });
 
@@ -161,12 +161,12 @@ export function CreateModelFromGitHub(header) {
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] DELETE /v1alpha/models/${model_id} status not 204`]: (r) =>
+        [`[with random "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status not 204`]: (r) =>
           r.status !== 204
       });
 
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE /v1alpha/models/${model_id} status 204`]: (r) =>
           r.status === 204
       });
     });

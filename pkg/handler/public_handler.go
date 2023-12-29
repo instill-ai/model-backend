@@ -415,8 +415,8 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			span.SetStatus(1, "User not found")
 			return
 		default:
-			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
-			span.SetStatus(1, "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
+			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
 			return
 		}
 	}
@@ -3013,8 +3013,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			span.SetStatus(1, "User not found")
 			return
 		default:
-			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
-			span.SetStatus(1, "Required parameter 'jwt-sub' or 'owner-id' not found in your header")
+			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
+			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
 			return
 		}
 	}

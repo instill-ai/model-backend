@@ -32,7 +32,7 @@ export function PublishUnpublishModel(header) {
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {
-    group(`Model Backend API: PublishModel [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: PublishModel [with "Instill-User-Uid" header]`, function () {
 
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -53,24 +53,24 @@ export function PublishUnpublishModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/publish task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/publish`, null, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/publish task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/publish task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/unpublish task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -87,7 +87,7 @@ export function PublishUnpublishModel(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with random "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
+        [`[with random "Instill-User-Uid" header] DELETE clean up response status 204`]: (r) =>
           r.status === 204
       });
     });

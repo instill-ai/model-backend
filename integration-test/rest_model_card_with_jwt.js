@@ -50,16 +50,16 @@ export function GetModelCard(header) {
       currentTime = new Date().getTime();
     }
 
-    group(`Model Backend API: Get model card [with "jwt-sub" header]`, function () {
+    group(`Model Backend API: Get model card [with "Instill-User-Uid" header]`, function () {
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] GET /v1alpha/models/${model_id}/readme response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/readme`, header), {
-        [`[with default "jwt-sub" header] GET /v1alpha/models/${model_id}/readme response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] GET /v1alpha/models/${model_id}/readme response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -76,7 +76,7 @@ export function GetModelCard(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE clean up response status 204`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE clean up response status 204`]: (r) =>
           r.status === 204
       });
     });

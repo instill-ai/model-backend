@@ -26,7 +26,7 @@ export function DeployUndeployModel(header) {
   let userUid = resp.json().user.uid
 
   {
-    group(`Model Backend API: Load model online [with random "jwt-sub" header]`, function () {
+    group(`Model Backend API: Load model online [with random "Instill-User-Uid" header]`, function () {
       let fd_cls = new FormData();
       let model_id = randomString(10)
       fd_cls.append("id", model_id);
@@ -55,12 +55,12 @@ export function DeployUndeployModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/deploy`, {}, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/deploy online task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -78,12 +78,12 @@ export function DeployUndeployModel(header) {
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/undeploy`, {}, {
         headers: genHeaderWithRandomAuth(`application/json`, uuidv4()),
       }), {
-        [`[with random "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 401`]: (r) =>
+        [`[with random "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 401`]: (r) =>
           r.status === 401,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/undeploy`, {}, header), {
-        [`[with default "jwt-sub" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 200`]: (r) =>
+        [`[with default "Instill-User-Uid" header] POST /v1alpha/models/${model_id}/undeploy online task cls response status 200`]: (r) =>
           r.status === 200,
       });
 
@@ -100,7 +100,7 @@ export function DeployUndeployModel(header) {
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, null, header), {
-        [`[with default "jwt-sub" header] DELETE clean up response status`]: (r) =>
+        [`[with default "Instill-User-Uid" header] DELETE clean up response status`]: (r) =>
           r.status === 204
       });
     });
