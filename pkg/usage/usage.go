@@ -4,14 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -36,32 +34,17 @@ type usage struct {
 	redisClient              *redis.Client
 	reporter                 usageReporter.Reporter
 	version                  string
+	userUID                  string
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient) Usage {
+func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient, userUID string) Usage {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
-	}
-
-	var userUID string
-	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		if resp, err := u.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-		}
-	} else {
-		if resp, err := u.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.InstillUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-		}
 	}
 
 	reporter, err := usageClient.InitReporter(ctx, usc, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
@@ -76,6 +59,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivate
 		redisClient:              rc,
 		reporter:                 reporter,
 		version:                  version,
+		userUID:                  userUID,
 	}
 }
 
@@ -165,27 +149,9 @@ func (u *usage) StartReporter(ctx context.Context) {
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	var userUID string
-	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-			return
-		}
-	} else {
-		if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.InstillUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-			return
-		}
-	}
-
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, userUID, u.RetrieveUsageData)
+		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -199,25 +165,7 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	var userUID string
-	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-			return
-		}
-	} else {
-		if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.InstillUserID}); err == nil {
-			userUID = resp.GetUser().GetUid()
-		} else {
-			logger.Error(err.Error())
-			return
-		}
-	}
-
-	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, userUID, u.RetrieveUsageData())
+	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
