@@ -97,20 +97,20 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	var userPermalink string
+	var userID string
+	var userUID uuid.UUID
 	if pbModel.GetOwnerName() != "" {
-		userPermalink = pbModel.GetOwnerName()
+		userID = pbModel.GetOwnerName()
 	} else {
 		return &modelPB.DeployModelAdminResponse{}, fmt.Errorf("model no owner")
 	}
 
-	userUID, err := resource.GetRscPermalinkUID(userPermalink)
+	userPermalink, err := h.service.ConvertOwnerNameToPermalink(userID)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	parent, err := h.service.ConvertOwnerPermalinkToName(userPermalink)
-	if err != nil {
+	if userUID, err = resource.GetRscPermalinkUID(userPermalink); err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
@@ -128,7 +128,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 		createReq := &modelPB.CreateUserModelRequest{
 			Model:  pbModel,
-			Parent: parent,
+			Parent: userID,
 		}
 
 		var resp *modelPB.CreateUserModelResponse
