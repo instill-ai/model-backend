@@ -32,6 +32,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/logger"
@@ -47,6 +48,7 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -252,6 +254,24 @@ func main() {
 		panic(err)
 	}
 
+	var userUID string
+	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
+		strings.HasSuffix(config.Config.Server.Edition, "test") {
+		if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.CoreDefaultUserID}); err == nil {
+			userUID = resp.GetUser().GetUid()
+		} else {
+			logger.Error(err.Error())
+			return
+		}
+	} else {
+		if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.CloudDefaultUserID}); err == nil {
+			userUID = resp.GetUser().GetUid()
+		} else {
+			logger.Error(err.Error())
+			return
+		}
+	}
+
 	// Start usage reporter
 	var usg usage.Usage
 	if config.Config.Server.Usage.Enabled {
@@ -260,7 +280,7 @@ func main() {
 		logger.Info("try to start usage reporter")
 		go func() {
 			for {
-				usg = usage.NewUsage(ctx, repository, mgmtPrivateServiceClient, redisClient, usageServiceClient)
+				usg = usage.NewUsage(ctx, repository, mgmtPrivateServiceClient, redisClient, usageServiceClient, userUID)
 				if usg != nil {
 					usg.StartReporter(ctx)
 					logger.Info("usage reporter started")

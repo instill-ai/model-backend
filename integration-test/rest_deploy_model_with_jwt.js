@@ -22,9 +22,6 @@ const model_def_name = "model-definitions/local"
 
 export function DeployUndeployModel(header) {
   // Model Backend API: load model online
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-  let userUid = resp.json().user.uid
-
   {
     group(`Model Backend API: Load model online [with random "Instill-User-Uid" header]`, function () {
       let fd_cls = new FormData();

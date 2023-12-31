@@ -19,9 +19,6 @@ import * as constant from "./const.js"
 
 export function GetModel(header) {
   // Model Backend API: Get model info
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-  let userUid = resp.json().user.uid
-
   let fd_cls = new FormData();
   let model_id = randomString(10)
   let model_description = randomString(20)
@@ -94,9 +91,6 @@ export function GetModel(header) {
 
 export function ListModels(header) {
   // Model Backend API: Get model list
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-  let userUid = resp.json().user.uid
-
   {
     group(`Model Backend API: Get model list [with "Instill-User-Uid" header]`, function () {
       let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, {
@@ -135,9 +129,6 @@ export function ListModels(header) {
 
 export function LookupModel(header) {
   // Model Backend API: look up model
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-  let userUid = resp.json().user.uid
-
   let fd_cls = new FormData();
   let model_id = randomString(10)
   let model_description = randomString(20)

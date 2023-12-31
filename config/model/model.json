@@ -10,36 +10,6 @@
     "model_definition",
     "configuration"
   ],
-  "anyOf": [
-    {
-      "required": [
-        "user"
-      ],
-      "not": {
-        "required": [
-          "org"
-        ]
-      }
-    },
-    {
-      "required": [
-        "org"
-      ],
-      "not": {
-        "required": [
-          "user"
-        ]
-      }
-    },
-    {
-      "not": {
-        "required": [
-          "user",
-          "org"
-        ]
-      }
-    }
-  ],
   "properties": {
     "name": {
       "type": "string",
@@ -121,7 +91,7 @@
         "Public"
       ]
     },
-    "user": {
+    "owner_name": {
       "type": "string",
       "description": "The resource name of a user",
       "readOnly": true,
@@ -130,9 +100,23 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
-    "org": {
-      "type": "string",
-      "description": "The resource name of an organization",
+    "owner": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "title": "Owner",
+      "description": "The resource obeject of a user",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "object",
+          "null"
+        ],
+        "description": "Value can be a string, number, boolean, object, or null"
+      },
       "readOnly": true,
       "ui_order": 7,
       "ui_hidden": true,

@@ -139,9 +139,9 @@ func main() {
 	var userID string
 	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
 		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		userID = fmt.Sprintf("users/%s", constant.DefaultUserID)
+		userID = fmt.Sprintf("users/%s", constant.CoreDefaultUserID)
 	} else {
-		userID = fmt.Sprintf("users/%s", constant.InstillUserID)
+		userID = fmt.Sprintf("users/%s", constant.CloudDefaultUserID)
 	}
 
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
