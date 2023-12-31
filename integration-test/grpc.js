@@ -109,10 +109,10 @@ export function teardown(header) {
     plaintext: true
   });
   group("Model API: Delete all models created by this test", () => {
-    for (const model of client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, {}).message.models) {
+    for (const model of client.invoke('model.model.v1alpha.ModelPublicService/ListModels', {}, header).message.models) {
       check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
         name: model.name
-      }), {
+      }, header), {
         'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
       });
     }

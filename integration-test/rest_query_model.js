@@ -73,8 +73,8 @@ export function GetModel(header) {
           r.json().model.configuration === null,
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+        [`GET /v1alpha/models/${model_id} task cls response model.owner_name`]: (r) =>
+          isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -102,8 +102,8 @@ export function GetModel(header) {
           r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+        [`GET /v1alpha/models/${model_id} task cls response model.owner_name`]: (r) =>
+          isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
@@ -190,6 +190,7 @@ export function ListModels(header) {
         currentTime = new Date().getTime();
       }
       let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, header)
+      console.log(resp)
       check(resp, {
         [`GET /v1alpha/models task cls response status`]: (r) =>
           r.status === 200,
@@ -217,8 +218,8 @@ export function ListModels(header) {
           r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
-          isValidOwner(r.json().models[0].user),
+        [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
+          isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
@@ -252,8 +253,8 @@ export function ListModels(header) {
           r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/models task cls response models[0].owner`]: (r) =>
-          isValidOwner(r.json().models[0].user),
+        [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
+          isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
@@ -291,8 +292,8 @@ export function ListModels(header) {
           r.json().models[0].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
-          isValidOwner(r.json().models[0].user),
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner_name`]: (r) =>
+          isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
@@ -319,8 +320,8 @@ export function ListModels(header) {
           r.json().models[1].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
           r.json().models[1].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].owner`]: (r) =>
-          isValidOwner(r.json().models[1].user),
+        [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].owner_name`]: (r) =>
+          isValidOwner(r.json().models[1].owner_name),
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>
           r.json().models[1].create_time !== undefined,
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].update_time`]: (r) =>
@@ -406,8 +407,8 @@ export function LookupModel(header) {
           r.json().model.configuration === null,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+        [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner_name`]: (r) =>
+          isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>
@@ -435,8 +436,8 @@ export function LookupModel(header) {
           r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner`]: (r) =>
-          isValidOwner(r.json().model.user),
+        [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.owner_name`]: (r) =>
+          isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
         [`GET /v1alpha/models/${modelRes.json().model.uid}/lookUp task cls response model.update_time`]: (r) =>

@@ -23,9 +23,6 @@ import * as constant from "./const.js"
 export function CreateModelFromLocal(header) {
   // Model Backend API: upload model
   {
-    let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-    let userUid = resp.json().user.uid
-
     let fd_cls = new FormData();
     let model_id = randomString(10)
     let model_description = randomString(20)
@@ -95,8 +92,6 @@ export function CreateModelFromLocal(header) {
 
 export function CreateModelFromGitHub(header) {
   // Model Backend API: upload model by GitHub
-  let resp = http.request("GET", `${constant.mgmtApiPrivateHost}/v1beta/admin/users/${constant.defaultUserId}`, {}, header)
-  let userUid = resp.json().user.uid
 
   {
     let model_id = randomString(10)

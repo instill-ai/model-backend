@@ -80,7 +80,7 @@ export function UpdateUserModel(header) {
       "UpdateModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
       "UpdateModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "UpdateModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-      "UpdateModel response model.owner": (r) => isValidOwner(r.message.model.user),
+      "UpdateModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
       "UpdateModel response model.create_time": (r) => r.message.model.createTime !== undefined,
       "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
