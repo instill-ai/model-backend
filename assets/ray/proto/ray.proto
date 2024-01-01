@@ -2,21 +2,7 @@ syntax = "proto3";
 
 package ray.serve;
 
-option go_package = "./rayserver";
-
-// ModelReadyRequest represents a request to check if a model is ready
-message ModelReadyRequest {
-  // model id
-  string name = 1;
-  // model tag verion
-  string version = 2;
-}
-
-// ModelReadyResponse represents a response to check if a model is ready
-message ModelReadyResponse {
-  // whether the model is ready or not
-  bool ready = 1;
-}
+option go_package = "./ray";
 
 // ModelMetadataRequest represents a request to get the model metadata
 message ModelMetadataRequest {
@@ -59,8 +45,8 @@ message ModelMetadataResponse {
   repeated TensorMetadata outputs = 5;
 }
 
-// ModelInferRequest represents a request for model inference
-message ModelInferRequest {
+// RayServiceCallRequest represents a request for model inference
+message RayServiceCallRequest {
   // An output tensor requested for an inference request.
   message InferRequestedOutputTensor {
     // tensor name.
@@ -80,8 +66,8 @@ message ModelInferRequest {
   repeated bytes raw_input_contents = 7;
 }
 
-// ModelInferResponse represents a response for model inference
-message ModelInferResponse {
+// RayServiceCallResponse represents a response for model inference
+message RayServiceCallResponse {
   // name of the model to use for inferencing.
   string model_name = 1;
   // model tag version
@@ -94,13 +80,9 @@ message ModelInferResponse {
 
 // Ray service for internal process
 service RayService {
-  // ModelReady method receives a ModelReadyRequest message and
-  // returns a ModelReadyResponse
-  rpc ModelReady(ModelReadyRequest) returns (ModelReadyResponse) {}
   // ModelMetadata method receives a ModelMetadataRequest message and
   // returns a ModelMetadataResponse
   rpc ModelMetadata(ModelMetadataRequest) returns (ModelMetadataResponse) {}
-  // ModelInfer method receives a ModelInferRequest message and
-  // returns a ModelInferResponse
-  rpc ModelInfer(ModelInferRequest) returns (ModelInferResponse) {}
+  // __call__ method is the defaut trigger entry for ray deployment
+  rpc __call__(RayServiceCallRequest) returns (RayServiceCallResponse) {}
 }

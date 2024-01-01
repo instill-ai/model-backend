@@ -17,46 +17,6 @@ else:
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
-class ModelReadyRequest(google.protobuf.message.Message):
-    """ModelReadyRequest represents a request to check if a model is ready"""
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    """model id"""
-    version: builtins.str
-    """model tag verion"""
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        version: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "version", b"version"]) -> None: ...
-
-global___ModelReadyRequest = ModelReadyRequest
-
-@typing_extensions.final
-class ModelReadyResponse(google.protobuf.message.Message):
-    """ModelReadyResponse represents a response to check if a model is ready"""
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    READY_FIELD_NUMBER: builtins.int
-    ready: builtins.bool
-    """whether the model is ready or not"""
-    def __init__(
-        self,
-        *,
-        ready: builtins.bool = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ready", b"ready"]) -> None: ...
-
-global___ModelReadyResponse = ModelReadyResponse
-
-@typing_extensions.final
 class ModelMetadataRequest(google.protobuf.message.Message):
     """ModelMetadataRequest represents a request to get the model metadata"""
 
@@ -168,8 +128,8 @@ class ModelMetadataResponse(google.protobuf.message.Message):
 global___ModelMetadataResponse = ModelMetadataResponse
 
 @typing_extensions.final
-class ModelInferRequest(google.protobuf.message.Message):
-    """ModelInferRequest represents a request for model inference"""
+class RayServiceCallRequest(google.protobuf.message.Message):
+    """RayServiceCallRequest represents a request for model inference"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -202,7 +162,7 @@ class ModelInferRequest(google.protobuf.message.Message):
     def inputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___InferTensor]:
         """input tensors for the inference."""
     @property
-    def outputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ModelInferRequest.InferRequestedOutputTensor]:
+    def outputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___RayServiceCallRequest.InferRequestedOutputTensor]:
         """The requested output tensors for the inference. Optional, if not
         specified all outputs specified in the model config will be
         returned.
@@ -216,16 +176,16 @@ class ModelInferRequest(google.protobuf.message.Message):
         model_name: builtins.str = ...,
         model_version: builtins.str = ...,
         inputs: collections.abc.Iterable[global___InferTensor] | None = ...,
-        outputs: collections.abc.Iterable[global___ModelInferRequest.InferRequestedOutputTensor] | None = ...,
+        outputs: collections.abc.Iterable[global___RayServiceCallRequest.InferRequestedOutputTensor] | None = ...,
         raw_input_contents: collections.abc.Iterable[builtins.bytes] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["inputs", b"inputs", "model_name", b"model_name", "model_version", b"model_version", "outputs", b"outputs", "raw_input_contents", b"raw_input_contents"]) -> None: ...
 
-global___ModelInferRequest = ModelInferRequest
+global___RayServiceCallRequest = RayServiceCallRequest
 
 @typing_extensions.final
-class ModelInferResponse(google.protobuf.message.Message):
-    """ModelInferResponse represents a response for model inference"""
+class RayServiceCallResponse(google.protobuf.message.Message):
+    """RayServiceCallResponse represents a response for model inference"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -253,4 +213,4 @@ class ModelInferResponse(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["model_name", b"model_name", "model_version", b"model_version", "outputs", b"outputs", "raw_output_contents", b"raw_output_contents"]) -> None: ...
 
-global___ModelInferResponse = ModelInferResponse
+global___RayServiceCallResponse = RayServiceCallResponse
