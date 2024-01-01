@@ -143,17 +143,17 @@ func (s *service) GetUser(ctx context.Context) (string, uuid.UUID, error) {
 	if headerUserUId != "" {
 		_, err := uuid.FromString(headerUserUId)
 		if err != nil {
-			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "instill user uuid header parse failed")
 		}
 		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: "users/" + headerUserUId})
 		if err != nil {
-			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "mgmt lookup failed")
 		}
 
 		return resp.User.Id, uuid.FromStringOrNil(headerUserUId), nil
 	}
 
-	return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "Unauthorized")
+	return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "no instill-user-uid header found")
 }
 
 func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
