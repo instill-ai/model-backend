@@ -14,7 +14,7 @@ import (
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
-func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessDetection(modelInferResponse *rayserver.RayServiceCallResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -57,7 +57,7 @@ func postProcessDetection(modelInferResponse *rayserver.ModelInferResponse, outp
 	}, nil
 }
 
-func postProcessOcrWithScore(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessOcrWithScore(modelInferResponse *rayserver.RayServiceCallResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -116,7 +116,7 @@ func postProcessOcrWithScore(modelInferResponse *rayserver.ModelInferResponse, o
 	}, nil
 }
 
-func postProcessOcrWithoutScore(modelInferResponse *rayserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessOcrWithoutScore(modelInferResponse *rayserver.RayServiceCallResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -169,7 +169,7 @@ func postProcessOcrWithoutScore(modelInferResponse *rayserver.ModelInferResponse
 	}, nil
 }
 
-func postProcessClassification(modelInferResponse *rayserver.ModelInferResponse, outputName string) (interface{}, error) {
+func postProcessClassification(modelInferResponse *rayserver.RayServiceCallResponse, outputName string) (interface{}, error) {
 	outputTensor, rawOutputContent, err := GetOutputFromInferResponse(outputName, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -182,7 +182,7 @@ func postProcessClassification(modelInferResponse *rayserver.ModelInferResponse,
 	return outputData, nil
 }
 
-func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse, outputs []*rayserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
+func postProcessUnspecifiedTask(modelInferResponse *rayserver.RayServiceCallResponse, outputs []*rayserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
 	var postprocessedOutputs []triton.BatchUnspecifiedTaskOutputs
 	for _, output := range outputs {
 		outputTensor, rawOutputContent, err := GetOutputFromInferResponse(output.Name, modelInferResponse)
@@ -269,7 +269,7 @@ func postProcessUnspecifiedTask(modelInferResponse *rayserver.ModelInferResponse
 	return postprocessedOutputs, nil
 }
 
-func postProcessKeypoint(modelInferResponse *rayserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
+func postProcessKeypoint(modelInferResponse *rayserver.RayServiceCallResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
 	outputTensorKeypoints, rawOutputContentKeypoints, err := GetOutputFromInferResponse(outputNameKeypoints, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -329,7 +329,7 @@ func postProcessKeypoint(modelInferResponse *rayserver.ModelInferResponse, outpu
 	}, nil
 }
 
-func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessInstanceSegmentation(modelInferResponse *rayserver.RayServiceCallResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -408,7 +408,7 @@ func postProcessInstanceSegmentation(modelInferResponse *rayserver.ModelInferRes
 	}, nil
 }
 
-func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
+func postProcessSemanticSegmentation(modelInferResponse *rayserver.RayServiceCallResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -453,7 +453,7 @@ func postProcessSemanticSegmentation(modelInferResponse *rayserver.ModelInferRes
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, outputNameImages string, task commonPB.Task) (interface{}, error) {
+func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse, outputNameImages string, task commonPB.Task) (interface{}, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -500,7 +500,7 @@ func postProcessTextToImage(modelInferResponse *rayserver.ModelInferResponse, ou
 	}
 }
 
-func postProcessTextGeneration(modelInferResponse *rayserver.ModelInferResponse, outputNameTexts string, task commonPB.Task) (interface{}, error) {
+func postProcessTextGeneration(modelInferResponse *rayserver.RayServiceCallResponse, outputNameTexts string, task commonPB.Task) (interface{}, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")

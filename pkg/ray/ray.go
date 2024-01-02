@@ -33,7 +33,7 @@ type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.Model_State, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse
-	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.ModelInferResponse, error)
+	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
@@ -155,7 +155,7 @@ func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelI
 	return modelMetadataResponse
 }
 
-func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.ModelInferResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
@@ -211,26 +211,26 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	}
 
 	// Create request input output tensors
-	var inferOutputs []*rayserver.ModelInferRequest_InferRequestedOutputTensor
+	var inferOutputs []*rayserver.RayServiceCallRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch task {
 		case commonPB.Task_TASK_CLASSIFICATION:
-			inferOutputs = append(inferOutputs, &rayserver.ModelInferRequest_InferRequestedOutputTensor{
+			inferOutputs = append(inferOutputs, &rayserver.RayServiceCallRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
 		case commonPB.Task_TASK_DETECTION:
-			inferOutputs = append(inferOutputs, &rayserver.ModelInferRequest_InferRequestedOutputTensor{
+			inferOutputs = append(inferOutputs, &rayserver.RayServiceCallRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
 		default:
-			inferOutputs = append(inferOutputs, &rayserver.ModelInferRequest_InferRequestedOutputTensor{
+			inferOutputs = append(inferOutputs, &rayserver.RayServiceCallRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
 		}
 	}
 
 	// Create inference request for specific model/version
-	modelInferRequest := rayserver.ModelInferRequest{
+	modelInferRequest := rayserver.RayServiceCallRequest{
 		ModelName:    modelName,
 		ModelVersion: modelInstance,
 		Inputs:       inferInputs,
@@ -335,16 +335,16 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	}
 
 	// Submit inference request to server
-	modelInferResponse, err := r.rayClient.ModelInfer(ctx, &modelInferRequest)
+	modelInferResponse, err := r.rayClient.XCall__(ctx, &modelInferRequest)
 	if err != nil {
 		log.Printf("Error processing InferRequest: %v", err)
-		return &rayserver.ModelInferResponse{}, err
+		return &rayserver.RayServiceCallResponse{}, err
 	}
 
 	return modelInferResponse, nil
 }
 
-func PostProcess(inferResponse *rayserver.ModelInferResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
+func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
 	var (
 		outputs interface{}
 		err     error

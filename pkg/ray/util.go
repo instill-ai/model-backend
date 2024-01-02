@@ -7,7 +7,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 )
 
-func GetOutputFromInferResponse(name string, response *rayserver.ModelInferResponse) (*rayserver.InferTensor, []byte, error) {
+func GetOutputFromInferResponse(name string, response *rayserver.RayServiceCallResponse) (*rayserver.InferTensor, []byte, error) {
 	for idx, output := range response.Outputs {
 		if output.Name == name {
 			if len(response.RawOutputContents) > 0 {
