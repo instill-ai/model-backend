@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/zip"
 	"bufio"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -14,15 +15,56 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/logger"
+	"go.uber.org/zap"
 	"gorm.io/datatypes"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
+
+type ProgressReader struct {
+	r io.Reader
+
+	filename   string
+	n          float64
+	lastPrintN float64
+	lastPrint  time.Time
+	logger     *zap.Logger
+}
+
+func NewProgressReader(r io.Reader, filename string) *ProgressReader {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	logger, _ := logger.GetZapLogger(ctx)
+	return &ProgressReader{
+		r:        r,
+		logger:   logger,
+		filename: filename,
+	}
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.r.Read(p)
+	bf := float64(n)
+	bf = bf / (1 << 10)
+	pr.n += bf
+
+	if time.Since(pr.lastPrint) > time.Second ||
+		(err != nil && pr.n != pr.lastPrintN) {
+
+		pr.logger.Info(fmt.Sprintf("Copied %3.1fKiB for %s", pr.n, pr.filename))
+		pr.lastPrintN = pr.n
+		pr.lastPrint = time.Now()
+	}
+	return n, err
+}
 
 type FileMeta struct {
 	path  string
@@ -231,7 +273,8 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		if err != nil {
 			return "", "", err
 		}
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
+		reader := NewProgressReader(fileInArchive, f.Name)
+		if _, err := io.Copy(dstFile, reader); err != nil {
 			return "", "", err
 		}
 
@@ -374,7 +417,8 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		if err != nil {
 			return "", "", err
 		}
-		if _, err := io.Copy(dstFile, srcFile); err != nil {
+		reader := NewProgressReader(srcFile, f.fInfo.Name())
+		if _, err := io.Copy(dstFile, reader); err != nil {
 			return "", "", err
 		}
 		dstFile.Close()
@@ -552,6 +596,7 @@ func copyRayProto(dstPath string) error {
 			return err
 		}
 		defer source.Close()
+		reader := NewProgressReader(source, sourceFileStat.Name())
 
 		destination, err := os.Create(fmt.Sprintf("%s/%s", dstPath, sourceFileStat.Name()))
 		if err != nil {
@@ -559,7 +604,7 @@ func copyRayProto(dstPath string) error {
 		}
 		defer destination.Close()
 
-		if _, err = io.Copy(destination, source); err != nil {
+		if _, err = io.Copy(destination, reader); err != nil {
 			return err
 		}
 	}
