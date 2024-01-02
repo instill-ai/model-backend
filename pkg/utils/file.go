@@ -17,6 +17,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"gorm.io/datatypes"
 
@@ -141,6 +142,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		return "", "", err
 	}
 	defer archive.Close()
+	var protoFilePath string
 	var readmeFilePath string
 	var createdModels []datamodel.InferenceModel
 	var currentNewModelName string
@@ -247,6 +249,10 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 				return "", "", err
 			}
 		}
+
+		if filepath.Base(fPath) == "model.py" {
+			protoFilePath = filepath.Dir(fPath)
+		}
 	}
 
 	if ensembleFilePath == "" && len(configFiles) != 0 {
@@ -283,6 +289,9 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		for i := 0; i < len(createdModels); i++ {
 			createdModels[i].Platform = "ray"
 		}
+		if err = copyRayProto(protoFilePath); err != nil {
+			return "", "", err
+		}
 	}
 	uploadedModel.InferenceModels = createdModels
 	return readmeFilePath, ensembleFilePath, nil
@@ -296,6 +305,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		return "", "", ensemble_err
 	}
 
+	var protoFilePath string
 	var createdModels []datamodel.InferenceModel
 	var ensembleFilePath string
 	var newModelNameMap = make(map[string]string)
@@ -381,6 +391,10 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 				return "", "", err
 			}
 		}
+
+		if filepath.Base(filePath) == "model.py" {
+			protoFilePath = filepath.Dir(filePath)
+		}
 	}
 	if ensembleFilePath == "" && len(configFiles) != 0 {
 		for _, filePath := range configFiles {
@@ -415,6 +429,9 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 	} else {
 		for i := 0; i < len(createdModels); i++ {
 			createdModels[i].Platform = "ray"
+		}
+		if err = copyRayProto(protoFilePath); err != nil {
+			return "", "", err
 		}
 	}
 	model.InferenceModels = createdModels
@@ -509,6 +526,42 @@ func GetJSON(url string, result interface{}) error {
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	return nil
+}
+
+func copyRayProto(dstPath string) error {
+	files, err := filepath.Glob(fmt.Sprintf("%s/*pb2*", constant.RayProtoPath))
+	if err != nil {
+		return err
+	}
+
+	for _, filename := range files {
+		sourceFileStat, err := os.Stat(filename)
+		if err != nil {
+			return err
+		}
+
+		if !sourceFileStat.Mode().IsRegular() {
+			return fmt.Errorf("%s is not a regular file", filename)
+		}
+
+		source, err := os.Open(filename)
+		if err != nil {
+			return err
+		}
+		defer source.Close()
+
+		destination, err := os.Create(fmt.Sprintf("%s/%s", dstPath, sourceFileStat.Name()))
+		if err != nil {
+			return err
+		}
+		defer destination.Close()
+
+		if _, err = io.Copy(destination, source); err != nil {
+			return err
+		}
 	}
 
 	return nil
