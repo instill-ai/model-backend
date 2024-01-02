@@ -95,7 +95,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 func main() {
 
 	// setup tracing
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3600*time.Second)
 	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
