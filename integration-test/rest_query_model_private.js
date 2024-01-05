@@ -150,6 +150,7 @@ export function ListModelsAdmin(header) {
         [`GET /v1alpha/admin/models task cls response models[0].update_time`]: (r) =>
           r.json().models[0].update_time !== undefined,
       });
+
       check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?view=VIEW_FULL`, header), {
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response status`]: (r) =>
           r.status === 200,

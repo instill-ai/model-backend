@@ -19,7 +19,7 @@ export function isUUID(uuid) {
 }
 
 export function isNamespace(namepsace) {
-  const regexExp = /^(users|organizations)\/[a-z]/
+  const regexExp = /^(users|organizations)\/[0-9a-z\-]/
   return regexExp.test(namepsace)
 }
 

@@ -72,6 +72,12 @@ export function ListModels(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
+
+    console.log("--------------------------------")
+    var rrrr = privateClient.invoke('model.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {})
+    console.log(rrrr.message.models[0].ownerName)
+    console.log(isValidOwner(rrrr.message.models[0].ownerName))
+    console.log("--------------------------------")
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
       "ListModelsAdmin response status": (r) => r.status === grpc.StatusOK,
       "ListModelsAdmin response total_size": (r) => r.message.totalSize >= 1,

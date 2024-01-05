@@ -119,7 +119,6 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		Owner:     owner,
 	}
 
-	pbModel.OwnerName = dbModel.Owner
 	return &pbModel, nil
 }
 
