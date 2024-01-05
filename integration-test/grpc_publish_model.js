@@ -94,7 +94,7 @@ export function PublishUnPublishUserModel(header) {
       "UnpublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
       "UnpublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "UnpublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-      "UnpublishModel response model.owner": (r) => isValidOwner(r.message.model.user),
+      "UnpublishModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
       "UnpublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
       "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
