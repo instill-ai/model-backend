@@ -78,7 +78,7 @@ export function UpdateModel(header) {
           r.json().model.configuration !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`PATCH /v1alpha/models/${model_id} task cls response model.owner`]: (r) =>
+        [`PATCH /v1alpha/models/${model_id} task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
         [`PATCH /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
@@ -110,7 +110,7 @@ export function UpdateModel(header) {
           r.json().model.configuration !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.owner`]: (r) =>
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,

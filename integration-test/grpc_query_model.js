@@ -75,7 +75,7 @@ export function GetUserModel(header) {
       "GetModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
       "GetModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "GetModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-      "GetModel response model.owner": (r) => isValidOwner(r.message.model.ownerName),
+      "GetModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
       "GetModel response model.create_time": (r) => r.message.model.createTime !== undefined,
       "GetModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });
@@ -233,7 +233,7 @@ export function LookupModel(header) {
       "LookUpModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
       "LookUpModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "LookUpModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
-      "LookUpModel response model.owner": (r) => isValidOwner(r.message.model.ownerName),
+      "LookUpModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
       "LookUpModel response model.create_time": (r) => r.message.model.createTime !== undefined,
       "LookUpModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
     });

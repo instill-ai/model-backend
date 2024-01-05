@@ -59,13 +59,17 @@ func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *data
 func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
-	owner, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
+	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
+	if err != nil {
+		return nil, err
+	}
+	owner, err := s.FetchOwnerWithPermalink(dbModel.Owner)
 	if err != nil {
 		return nil, err
 	}
 
 	pbModel := modelPB.Model{
-		Name:       fmt.Sprintf("%s/models/%s", owner, dbModel.ID),
+		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
 		Id:         dbModel.ID,
 		CreateTime: timestamppb.New(dbModel.CreateTime),
@@ -111,6 +115,8 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 			}
 			return nil
 		}(),
+		OwnerName: ownerName,
+		Owner:     owner,
 	}
 
 	pbModel.OwnerName = dbModel.Owner

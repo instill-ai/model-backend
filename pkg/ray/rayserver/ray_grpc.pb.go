@@ -19,24 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RayService_ModelReady_FullMethodName    = "/ray.serve.RayService/ModelReady"
 	RayService_ModelMetadata_FullMethodName = "/ray.serve.RayService/ModelMetadata"
-	RayService_ModelInfer_FullMethodName    = "/ray.serve.RayService/ModelInfer"
+	RayService_XCall___FullMethodName       = "/ray.serve.RayService/__call__"
 )
 
 // RayServiceClient is the client API for RayService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RayServiceClient interface {
-	// ModelReady method receives a ModelReadyRequest message and
-	// returns a ModelReadyResponse
-	ModelReady(ctx context.Context, in *ModelReadyRequest, opts ...grpc.CallOption) (*ModelReadyResponse, error)
 	// ModelMetadata method receives a ModelMetadataRequest message and
 	// returns a ModelMetadataResponse
 	ModelMetadata(ctx context.Context, in *ModelMetadataRequest, opts ...grpc.CallOption) (*ModelMetadataResponse, error)
-	// ModelInfer method receives a ModelInferRequest message and
-	// returns a ModelInferResponse
-	ModelInfer(ctx context.Context, in *ModelInferRequest, opts ...grpc.CallOption) (*ModelInferResponse, error)
+	// __call__ method is the defaut trigger entry for ray deployment
+	XCall__(ctx context.Context, in *RayServiceCallRequest, opts ...grpc.CallOption) (*RayServiceCallResponse, error)
 }
 
 type rayServiceClient struct {
@@ -45,15 +40,6 @@ type rayServiceClient struct {
 
 func NewRayServiceClient(cc grpc.ClientConnInterface) RayServiceClient {
 	return &rayServiceClient{cc}
-}
-
-func (c *rayServiceClient) ModelReady(ctx context.Context, in *ModelReadyRequest, opts ...grpc.CallOption) (*ModelReadyResponse, error) {
-	out := new(ModelReadyResponse)
-	err := c.cc.Invoke(ctx, RayService_ModelReady_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *rayServiceClient) ModelMetadata(ctx context.Context, in *ModelMetadataRequest, opts ...grpc.CallOption) (*ModelMetadataResponse, error) {
@@ -65,9 +51,9 @@ func (c *rayServiceClient) ModelMetadata(ctx context.Context, in *ModelMetadataR
 	return out, nil
 }
 
-func (c *rayServiceClient) ModelInfer(ctx context.Context, in *ModelInferRequest, opts ...grpc.CallOption) (*ModelInferResponse, error) {
-	out := new(ModelInferResponse)
-	err := c.cc.Invoke(ctx, RayService_ModelInfer_FullMethodName, in, out, opts...)
+func (c *rayServiceClient) XCall__(ctx context.Context, in *RayServiceCallRequest, opts ...grpc.CallOption) (*RayServiceCallResponse, error) {
+	out := new(RayServiceCallResponse)
+	err := c.cc.Invoke(ctx, RayService_XCall___FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,15 +64,11 @@ func (c *rayServiceClient) ModelInfer(ctx context.Context, in *ModelInferRequest
 // All implementations must embed UnimplementedRayServiceServer
 // for forward compatibility
 type RayServiceServer interface {
-	// ModelReady method receives a ModelReadyRequest message and
-	// returns a ModelReadyResponse
-	ModelReady(context.Context, *ModelReadyRequest) (*ModelReadyResponse, error)
 	// ModelMetadata method receives a ModelMetadataRequest message and
 	// returns a ModelMetadataResponse
 	ModelMetadata(context.Context, *ModelMetadataRequest) (*ModelMetadataResponse, error)
-	// ModelInfer method receives a ModelInferRequest message and
-	// returns a ModelInferResponse
-	ModelInfer(context.Context, *ModelInferRequest) (*ModelInferResponse, error)
+	// __call__ method is the defaut trigger entry for ray deployment
+	XCall__(context.Context, *RayServiceCallRequest) (*RayServiceCallResponse, error)
 	mustEmbedUnimplementedRayServiceServer()
 }
 
@@ -94,14 +76,11 @@ type RayServiceServer interface {
 type UnimplementedRayServiceServer struct {
 }
 
-func (UnimplementedRayServiceServer) ModelReady(context.Context, *ModelReadyRequest) (*ModelReadyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ModelReady not implemented")
-}
 func (UnimplementedRayServiceServer) ModelMetadata(context.Context, *ModelMetadataRequest) (*ModelMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ModelMetadata not implemented")
 }
-func (UnimplementedRayServiceServer) ModelInfer(context.Context, *ModelInferRequest) (*ModelInferResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ModelInfer not implemented")
+func (UnimplementedRayServiceServer) XCall__(context.Context, *RayServiceCallRequest) (*RayServiceCallResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method XCall__ not implemented")
 }
 func (UnimplementedRayServiceServer) mustEmbedUnimplementedRayServiceServer() {}
 
@@ -114,24 +93,6 @@ type UnsafeRayServiceServer interface {
 
 func RegisterRayServiceServer(s grpc.ServiceRegistrar, srv RayServiceServer) {
 	s.RegisterService(&RayService_ServiceDesc, srv)
-}
-
-func _RayService_ModelReady_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ModelReadyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RayServiceServer).ModelReady(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RayService_ModelReady_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RayServiceServer).ModelReady(ctx, req.(*ModelReadyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _RayService_ModelMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -152,20 +113,20 @@ func _RayService_ModelMetadata_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RayService_ModelInfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ModelInferRequest)
+func _RayService_XCall___Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RayServiceCallRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RayServiceServer).ModelInfer(ctx, in)
+		return srv.(RayServiceServer).XCall__(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RayService_ModelInfer_FullMethodName,
+		FullMethod: RayService_XCall___FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RayServiceServer).ModelInfer(ctx, req.(*ModelInferRequest))
+		return srv.(RayServiceServer).XCall__(ctx, req.(*RayServiceCallRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -178,16 +139,12 @@ var RayService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RayServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ModelReady",
-			Handler:    _RayService_ModelReady_Handler,
-		},
-		{
 			MethodName: "ModelMetadata",
 			Handler:    _RayService_ModelMetadata_Handler,
 		},
 		{
-			MethodName: "ModelInfer",
-			Handler:    _RayService_ModelInfer_Handler,
+			MethodName: "__call__",
+			Handler:    _RayService_XCall___Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

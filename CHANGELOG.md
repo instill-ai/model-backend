@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.21.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.0-alpha...v0.21.1-alpha) (2024-01-02)
+
+
+### Features
+
+* **service:** support basic github pat to avoid rate-limit ([#477](https://github.com/instill-ai/model-backend/issues/477)) ([45931ca](https://github.com/instill-ai/model-backend/commit/45931caa0b136accb9abd42b83c128b20b0fe414))
+
+
+### Miscellaneous Chores
+
+* **release:** release v0.21.1-alpha ([bd320b0](https://github.com/instill-ai/model-backend/commit/bd320b02e4a05ba0c416fd12b94d752db745ed21))
+
 ## [0.21.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.20.0-alpha...v0.21.0-alpha) (2023-12-14)
 
 

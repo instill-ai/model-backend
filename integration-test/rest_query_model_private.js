@@ -108,7 +108,7 @@ export function ListModelsAdmin(header) {
           r.json().models[0].configuration === null,
         [`GET /v1alpha/admin/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/admin/models task cls response models[0].owner`]: (r) =>
+        [`GET /v1alpha/admin/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/admin/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
@@ -143,7 +143,7 @@ export function ListModelsAdmin(header) {
           r.json().models[0].configuration === null,
         [`GET /v1alpha/admin/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/admin/models task cls response models[0].owner`]: (r) =>
+        [`GET /v1alpha/admin/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/admin/models task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
@@ -179,7 +179,7 @@ export function ListModelsAdmin(header) {
           r.json().models[0].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].owner`]: (r) =>
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
           r.json().models[0].create_time !== undefined,
@@ -205,7 +205,7 @@ export function ListModelsAdmin(header) {
           r.json().models[1].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
           r.json().models[1].visibility === "VISIBILITY_PUBLIC",
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].owner`]: (r) =>
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].owner_name`]: (r) =>
           isValidOwner(r.json().models[1].owner_name),
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>
           r.json().models[1].create_time !== undefined,
@@ -295,7 +295,7 @@ export function LookupModelAdmin(header) {
           r.json().model.configuration === null,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,
@@ -324,7 +324,7 @@ export function LookupModelAdmin(header) {
           r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner`]: (r) =>
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
           r.json().model.create_time !== undefined,

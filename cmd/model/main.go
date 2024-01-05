@@ -95,7 +95,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 func main() {
 
 	// setup tracing
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3600*time.Second)
 	defer cancel()
 
 	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
@@ -139,9 +139,9 @@ func main() {
 	var userID string
 	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
 		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		userID = fmt.Sprintf("users/%s", constant.DefaultUserID)
+		userID = fmt.Sprintf("users/%s", constant.CoreDefaultUserID)
 	} else {
-		userID = fmt.Sprintf("users/%s", constant.InstillUserID)
+		userID = fmt.Sprintf("users/%s", constant.CloudDefaultUserID)
 	}
 
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
