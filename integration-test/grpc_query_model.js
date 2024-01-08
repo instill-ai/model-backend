@@ -144,7 +144,7 @@ export function ListUserModels(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/ListUserModels', {parent: `${constant.namespace}`}, header), {
+    check(client.invoke('model.model.v1alpha.ModelPublicService/ListUserModels', { parent: `${constant.namespace}` }, header), {
       "ListModels response status": (r) => r.status === grpc.StatusOK,
       "ListModels response total_size": (r) => r.message.totalSize >= 1,
       "ListModels response next_page_token": (r) => r.message.nextPageToken !== undefined,

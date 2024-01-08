@@ -154,7 +154,7 @@ export function LookupModel(header) {
       currentTime = new Date().getTime();
     }
 
-    resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header)
+    let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header)
     let modelUid = resp.json().model.uid
 
     group(`Model Backend API: Look up model [with "Instill-User-Uid" header]`, function () {

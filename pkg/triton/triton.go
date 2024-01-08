@@ -42,31 +42,39 @@ type ImageToImageInput struct {
 }
 
 type TextGenerationInput struct {
-	Prompt       string
-	MaxNewTokens int32
-	Temperature  float32
-	TopK         int32
-	Seed         int32
-	ExtraParams  string
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
 }
 
 type TextGenerationChatInput struct {
-	Conversation string
-	MaxNewTokens int32
-	Temperature  float32
-	TopK         int32
-	Seed         int32
-	ExtraParams  string
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
 }
 
 type VisualQuestionAnsweringInput struct {
-	Prompt       string
-	PromptImage  string
-	MaxNewTokens int32
-	Temperature  float32
-	TopK         int32
-	Seed         int32
-	ExtraParams  string
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
 }
 
 type ImageInput struct {
@@ -352,7 +360,9 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(visualQUestionAnsweringInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.Prompt)}))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.PromptImage)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.PromptImages)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ChatHistory)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.SystemMessage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
@@ -368,7 +378,10 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		binary.LittleEndian.PutUint32(topK, uint32(textGenerationChatInput.TopK))
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationChatInput.Seed))
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.Conversation)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.PromptImages)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ChatHistory)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.SystemMessage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
@@ -385,6 +398,9 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		seed := make([]byte, 8)
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImages)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ChatHistory)}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor([][]byte{[]byte(textGenerationInput.SystemMessage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, maxNewToken)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, temperature)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, topK)
@@ -407,7 +423,6 @@ func (ts *triton) ModelInferRequest(ctx context.Context, task commonPB.Task, inf
 		log.Printf("Error processing InferRequest: %v", err)
 		return &inferenceserver.ModelInferResponse{}, err
 	}
-
 	return modelInferResponse, nil
 }
 

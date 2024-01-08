@@ -72,6 +72,7 @@ export function ListModels(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
+
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
       "ListModelsAdmin response status": (r) => r.status === grpc.StatusOK,
       "ListModelsAdmin response total_size": (r) => r.message.totalSize >= 1,
@@ -84,7 +85,7 @@ export function ListModels(header) {
       "ListModelsAdmin response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
       "ListModelsAdmin response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
       "ListModelsAdmin response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
-      "ListModelsAdmin response models[0].owner": (r) => isValidOwner(r.message.models[0].ownerName),
+      "ListModelsAdmin response models[0].ownerName": (r) => isValidOwner(r.message.models[0].ownerName),
       "ListModelsAdmin response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
       "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
     });

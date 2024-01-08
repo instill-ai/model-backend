@@ -26,10 +26,23 @@ message ExtraParamObject {
   string param_value = 2;
 }
 
-// Conversation based prompt for text generation model
-message ConversationObject {
-  // Role name of the conversation
-  string role = 1;
-  // Content of the conversation
+// Prompt Image for text generation model
+message PromptImage {
+  // Image could be either a url or base64 encoded string
+  oneof type {
+    // Image URL
+    string prompt_image_url = 1;
+    // Base64 encoded Image
+    string prompt_image_base64 = 2;
+  }
+}
+
+// Content used for chat history in text generation model
+message Content {
+  // Type of Content
+  string type = 1;
+  // Content of Text Message
   string content = 2;
+  // Content of Image
+  PromptImage prompt_image = 3;
 }

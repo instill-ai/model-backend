@@ -260,7 +260,6 @@ export function ListModels(header) {
         [`GET /v1alpha/models task cls response models[0].update_time`]: (r) =>
           r.json().models[0].update_time !== undefined,
       });
-
       check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?view=VIEW_FULL`, header), {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response status`]: (r) =>
           r.status === 200,
