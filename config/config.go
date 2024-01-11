@@ -108,7 +108,7 @@ type ControllerConfig struct {
 }
 
 type InitModelConfig struct {
-	OwnerID  string `koanf:"ownerid"`
+	OwnerID string `koanf:"ownerid"`
 	Path    string `koanf:"path"`
 	Enabled bool   `koanf:"enabled"`
 }
