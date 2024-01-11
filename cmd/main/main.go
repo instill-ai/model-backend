@@ -257,22 +257,14 @@ func main() {
 	// Start usage reporter
 	var usg usage.Usage
 	if config.Config.Server.Usage.Enabled {
-		var userUID string
-		if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-			strings.HasSuffix(config.Config.Server.Edition, "test") {
-			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.CoreDefaultUserID}); err == nil {
-				userUID = resp.GetUser().GetUid()
-			} else {
-				logger.Error(err.Error())
-			}
-		} else {
-			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.CloudDefaultUserID}); err == nil {
+		userUID := config.Config.Server.Usage.UsageIdentifierUID
+		if userUID == "" {
+			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
 				userUID = resp.GetUser().GetUid()
 			} else {
 				logger.Error(err.Error())
 			}
 		}
-
 		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient(ctx)
 		defer usageServiceClientConn.Close()
 		logger.Info("try to start usage reporter")

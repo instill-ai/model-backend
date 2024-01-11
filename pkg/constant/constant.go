@@ -1,8 +1,7 @@
 package constant
 
 // Constants for resource owner
-const CoreDefaultUserID string = "admin"
-const CloudDefaultUserID string = "instill-wombat"
+const DefaultUserID string = "admin"
 const HeaderUserUIDKey = "Instill-User-Uid"
 
 // Ray proto path

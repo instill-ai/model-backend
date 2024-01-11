@@ -6,6 +6,7 @@ server:
     key:
   edition: local-ce:dev
   usage:
+    usageidentifieruid:
     enabled: true
     tlsenabled: true
     host: usage.instill.tech
@@ -76,6 +77,7 @@ controller:
     cert:
     key:
 initmodel:
+  ownerid: admin
   enabled: false
   path: https://raw.githubusercontent.com/instill-ai/model/main/model-hub/model_hub_cpu.json
 log:
