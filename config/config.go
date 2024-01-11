@@ -24,10 +24,11 @@ type ServerConfig struct {
 	}
 	Edition string `koanf:"edition"`
 	Usage   struct {
-		Enabled    bool   `koanf:"enabled"`
-		TLSEnabled bool   `koanf:"tlsenabled"`
-		Host       string `koanf:"host"`
-		Port       int    `koanf:"port"`
+		UsageIdentifierUID string `koanf:"usageidentifieruid"`
+		Enabled            bool   `koanf:"enabled"`
+		TLSEnabled         bool   `koanf:"tlsenabled"`
+		Host               string `koanf:"host"`
+		Port               int    `koanf:"port"`
 	}
 	Debug  bool `koanf:"debug"`
 	ItMode struct {
@@ -107,6 +108,7 @@ type ControllerConfig struct {
 }
 
 type InitModelConfig struct {
+	OwnerID  string `koanf:"ownerid"`
 	Path    string `koanf:"path"`
 	Enabled bool   `koanf:"enabled"`
 }

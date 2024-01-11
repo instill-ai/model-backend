@@ -20,7 +20,6 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -136,16 +135,8 @@ func main() {
 		defer modelPublicServiceClientConn.Close()
 	}
 
-	var userID string
-	if !strings.HasPrefix(config.Config.Server.Edition, "cloud") ||
-		strings.HasSuffix(config.Config.Server.Edition, "test") {
-		userID = fmt.Sprintf("users/%s", constant.CoreDefaultUserID)
-	} else {
-		userID = fmt.Sprintf("users/%s", constant.CloudDefaultUserID)
-	}
-
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-		Name: userID,
+		Name: config.Config.InitModel.OwnerID,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -183,7 +174,7 @@ func main() {
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 				},
-				Parent: userID,
+				Parent: config.Config.InitModel.OwnerID,
 			})
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
@@ -217,7 +208,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
+						Name: fmt.Sprintf("%s/models/%s", config.Config.InitModel.OwnerID, modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
