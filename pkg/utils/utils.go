@@ -139,7 +139,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	defer cancel()
 
 	urlRepo := instanceConfig.Repository
-	redisRepoKey := fmt.Sprintf("%s:%s", instanceConfig.Repository, instanceConfig.Tag)
+	redisRepoKey := fmt.Sprintf("model_cache:%s:%s", instanceConfig.Repository, instanceConfig.Tag)
 	// Check in the cache first.
 	if config.Config.Cache.Model.Enabled {
 		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)
