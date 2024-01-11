@@ -135,8 +135,10 @@ func main() {
 		defer modelPublicServiceClientConn.Close()
 	}
 
+	userID := fmt.Sprintf("users/%s", config.Config.InitModel.OwnerID)
+
 	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-		Name: config.Config.InitModel.OwnerID,
+		Name: userID,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -174,7 +176,7 @@ func main() {
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 				},
-				Parent: config.Config.InitModel.OwnerID,
+				Parent: userID,
 			})
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
@@ -208,7 +210,7 @@ func main() {
 					return
 				} else {
 					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("%s/models/%s", config.Config.InitModel.OwnerID, modelConfig.ID),
+						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
 					})
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
