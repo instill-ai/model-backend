@@ -169,6 +169,7 @@ func main() {
 			}
 			getResp, err := modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
 				Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
+				View: modelPB.View_VIEW_FULL.Enum(),
 			})
 			if err == nil {
 				var existedModelConfig datamodel.GitHubModelConfiguration
@@ -177,11 +178,16 @@ func main() {
 					logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
 					return
 				}
-				if err := json.Unmarshal(b, &modelConfig); err != nil {
+				if err := json.Unmarshal(b, &existedModelConfig); err != nil {
 					logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
 					return
 				}
 				if existedModelConfig.Repository != modelConfig.Configuration["repository"] || existedModelConfig.Tag != modelConfig.Configuration["tag"] {
+					logger.Info(fmt.Sprintf("requested repo: %s or tag: %s does not match the existing repo: %v or tag: %v, redeploying...",
+						modelConfig.Configuration["repository"],
+						modelConfig.Configuration["tag"],
+						existedModelConfig.Repository,
+						existedModelConfig.Tag))
 					_, err = modelPublicServiceClient.DeleteUserModel(ctx, &modelPB.DeleteUserModelRequest{
 						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
 					})
