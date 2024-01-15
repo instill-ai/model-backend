@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -20,6 +21,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -164,6 +166,33 @@ func main() {
 			if err != nil {
 				log.Fatal("structpb.NewValue: ", err)
 				return
+			}
+			getResp, err := modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
+				Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
+			})
+			if err == nil {
+				var existedModelConfig datamodel.GitHubModelConfiguration
+				b, err := getResp.Model.Configuration.MarshalJSON()
+				if err != nil {
+					logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
+					return
+				}
+				if err := json.Unmarshal(b, &modelConfig); err != nil {
+					logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
+					return
+				}
+				if existedModelConfig.Repository != modelConfig.Configuration["repository"] || existedModelConfig.Tag != modelConfig.Configuration["tag"] {
+					_, err = modelPublicServiceClient.DeleteUserModel(ctx, &modelPB.DeleteUserModelRequest{
+						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
+					})
+					if err != nil {
+						logger.Error(fmt.Sprintf("delete existing model err: %v", err))
+						return
+					}
+				} else {
+					logger.Info("model already existed")
+					return
+				}
 			}
 
 			logger.Info("Creating model: " + modelConfig.ID)
