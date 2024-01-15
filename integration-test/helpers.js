@@ -25,7 +25,6 @@ export function isNamespace(namepsace) {
 
 // TODO: proper owner check
 export function isValidOwner(user) {
-  console.log(user)
   return isNamespace(user);
 }
 
