@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.1-alpha...v0.21.2-alpha) (2024-01-17)
+
+
+### Bug Fixes
+
+* **main:** fix misused return statement ([5cbfc3d](https://github.com/instill-ai/model-backend/commit/5cbfc3d57606bf475893c3468a47d46c865e1ee5))
+
 ## [0.21.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.0-alpha...v0.21.1-alpha) (2024-01-02)
 
 
