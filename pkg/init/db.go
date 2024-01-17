@@ -21,7 +21,7 @@ func CreateModelDefinitionRecord(
 	modelDef := datamodel.ModelDefinition{
 		BaseStatic:       datamodel.BaseStatic{UID: uid_},
 		ID:               id,
-		DocumentationUrl: documentationURL,
+		DocumentationURL: documentationURL,
 		Icon:             icon,
 		ModelSpec:        modelSpec,
 		Title:            title,

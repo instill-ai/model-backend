@@ -20,11 +20,11 @@ const (
 
 type Namespace struct {
 	NsType NamespaceType
-	NsUid  uuid.UUID
+	NsUID  uuid.UUID
 }
 
 func (ns Namespace) String() string {
-	return fmt.Sprintf("%s/%s", ns.NsType, ns.NsUid.String())
+	return fmt.Sprintf("%s/%s", ns.NsType, ns.NsUID.String())
 }
 
 // ExtractFromMetadata extracts context metadata given a key
@@ -72,8 +72,8 @@ func GetRscPermalinkUID(path string) (uuid.UUID, error) {
 	return uuid.FromStringOrNil(splits[1]), nil
 }
 
-func UserUidToUserPermalink(userUid uuid.UUID) string {
-	return fmt.Sprintf("users/%s", userUid.String())
+func UserUIDToUserPermalink(userUID uuid.UUID) string {
+	return fmt.Sprintf("users/%s", userUID.String())
 }
 
 func GetOperationID(name string) (string, error) {

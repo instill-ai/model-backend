@@ -25,7 +25,7 @@ import (
 const ID = "modelID"
 const OWNER = "users/909c3278-f7d1-461c-9352-87741bef1ds1"
 
-var MODEL_DEFINITION, _ = uuid.FromString("909c3278-f7d1-461c-9352-87741bef11d3")
+var ModelDefinition, _ = uuid.FromString("909c3278-f7d1-461c-9352-87741bef11d3")
 
 //TODO: async method, need to figure out how to test this
 // func TestCreateModel(t *testing.T) {

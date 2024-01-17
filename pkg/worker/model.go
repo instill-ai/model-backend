@@ -67,7 +67,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		return err
 	}
 
-	modelDef, err := w.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := w.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return err
 	}
@@ -109,12 +109,12 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			}
 
 			if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
-				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + modelConfig.RepoId
+				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + modelConfig.RepoID
 			}
 
 			if config.Config.Server.ItMode.Enabled { // use local model to remove internet connection issue while integration testing
 				if err = utils.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
-					RepoId: "assets/tiny-vit-random",
+					RepoID: "assets/tiny-vit-random",
 				}, dbModel.ID); err != nil {
 					_ = os.RemoveAll(modelSrcDir)
 					return err

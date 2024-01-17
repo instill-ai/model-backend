@@ -22,7 +22,7 @@ import (
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
-func HttpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+func HTTPResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
 	md, ok := runtime.ServerMetadataFromContext(ctx)
 	if !ok {
 		return nil

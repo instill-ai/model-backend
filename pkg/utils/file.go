@@ -342,10 +342,10 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 
 // modelDir and dstDir are absolute path
 func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
-	isEnsembleProject, ensemble_err := checkIsEnsembleProject(modelDir)
-	if ensemble_err != nil {
-		fmt.Println("Error when UpdateModelPath checkIsEnsembleProject func", ensemble_err)
-		return "", "", ensemble_err
+	isEnsembleProject, ensembleErr := checkIsEnsembleProject(modelDir)
+	if ensembleErr != nil {
+		fmt.Println("Error when UpdateModelPath checkIsEnsembleProject func", ensembleErr)
+		return "", "", ensembleErr
 	}
 
 	var protoFilePath string

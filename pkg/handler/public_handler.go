@@ -420,7 +420,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			return
 		}
 	}
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	parent := pathParams["parent"]
 
@@ -536,7 +536,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	bModelConfig, _ := json.Marshal(modelConfiguration)
 	var uploadedModel = datamodel.Model{
 		ID:                 modelID,
-		ModelDefinitionUid: localModelDefinition.UID,
+		ModelDefinitionUID: localModelDefinition.UID,
 		Owner:              ownerPermalink,
 		Visibility:         datamodel.ModelVisibility(visibility),
 		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
@@ -643,7 +643,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	wfId, err := s.CreateUserModelAsync(req.Context(), &uploadedModel)
+	wfID, err := s.CreateUserModelAsync(req.Context(), &uploadedModel)
 	if err != nil {
 		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, modelConfiguration.Tag)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -656,7 +656,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
 	b, err := m.Marshal(&modelPB.CreateUserModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -737,7 +737,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		span.SetStatus(1, err.Error())
 		return err
 	}
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	tmpFile, parent, uploadedModel, modelDefID, err := utils.SaveFile(stream)
 	if err != nil {
@@ -759,7 +759,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		return err
 	}
 
-	uploadedModel.ModelDefinitionUid = modelDef.UID
+	uploadedModel.ModelDefinitionUID = modelDef.UID
 	uploadedModel.Owner = ownerPermalink
 
 	// validate model configuration
@@ -853,7 +853,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 		return st.Err()
 	}
 
-	wfId, err := h.service.CreateUserModelAsync(stream.Context(), uploadedModel)
+	wfID, err := h.service.CreateUserModelAsync(stream.Context(), uploadedModel)
 	if err != nil {
 		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
@@ -861,7 +861,7 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 	}
 
 	err = stream.SendAndClose(&modelPB.CreateUserModelBinaryFileUploadResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -895,7 +895,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	var modelConfig datamodel.GitHubModelConfiguration
 	b, err := req.Model.Configuration.MarshalJSON()
@@ -937,7 +937,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 	}
 	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
-		HtmlUrl:    "https://github.com/" + modelConfig.Repository,
+		HTMLURL:    "https://github.com/" + modelConfig.Repository,
 		Tag:        modelConfig.Tag,
 	})
 	description := ""
@@ -947,7 +947,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 
 	githubModel := datamodel.Model{
 		ID:                 req.Model.Id,
-		ModelDefinitionUid: modelDefinition.UID,
+		ModelDefinitionUID: modelDefinition.UID,
 		Owner:              ownerPermalink,
 		Visibility:         datamodel.ModelVisibility(visibility),
 		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
@@ -1094,7 +1094,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
-	wfId, err := service.CreateUserModelAsync(ctx, &githubModel)
+	wfID, err := service.CreateUserModelAsync(ctx, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1128,13 +1128,13 @@ func createGitHubModel(service service.Service, ctx context.Context, req *modelP
 		custom_otel.SetEventResource(githubModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
-				Value: []byte(wfId),
+				Value: []byte(wfID),
 			},
 		}),
 	)))
 
 	return &modelPB.CreateUserModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -1154,7 +1154,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	var modelConfig datamodel.HuggingFaceModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
@@ -1166,11 +1166,11 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		span.SetStatus(1, err.Error())
 		return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if modelConfig.RepoId == "" {
+	if modelConfig.RepoID == "" {
 		span.SetStatus(1, "Invalid model ID")
 		return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid model ID")
 	}
-	modelConfig.HtmlUrl = "https://huggingface.co/" + modelConfig.RepoId
+	modelConfig.HTMLURL = "https://huggingface.co/" + modelConfig.RepoID
 	modelConfig.Tag = "latest"
 
 	visibility := modelPB.Model_VISIBILITY_PRIVATE
@@ -1184,7 +1184,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 	}
 	huggingfaceModel := datamodel.Model{
 		ID:                 req.Model.Id,
-		ModelDefinitionUid: modelDefinition.UID,
+		ModelDefinitionUID: modelDefinition.UID,
 		Owner:              ownerPermalink,
 		Visibility:         datamodel.ModelVisibility(visibility),
 		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
@@ -1354,7 +1354,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
-	wfId, err := service.CreateUserModelAsync(ctx, &huggingfaceModel)
+	wfID, err := service.CreateUserModelAsync(ctx, &huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1386,13 +1386,13 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req *m
 		custom_otel.SetEventResource(huggingfaceModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
-				Value: []byte(wfId),
+				Value: []byte(wfID),
 			},
 		}),
 	)))
 
 	return &modelPB.CreateUserModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -1412,7 +1412,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 
 	logger, _ := logger.GetZapLogger(ctx)
 
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	var modelConfig datamodel.ArtiVCModelConfiguration
 	b, err := req.Model.GetConfiguration().MarshalJSON()
@@ -1424,7 +1424,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		span.SetStatus(1, err.Error())
 		return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if modelConfig.Url == "" {
+	if modelConfig.URL == "" {
 		span.SetStatus(1, "Invalid GitHub URL")
 		return &modelPB.CreateUserModelResponse{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
@@ -1440,7 +1440,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 	}
 	artivcModel := datamodel.Model{
 		ID:                 req.Model.Id,
-		ModelDefinitionUid: modelDefinition.UID,
+		ModelDefinitionUID: modelDefinition.UID,
 		Owner:              ownerPermalink,
 		Visibility:         datamodel.ModelVisibility(visibility),
 		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
@@ -1584,7 +1584,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		return &modelPB.CreateUserModelResponse{}, st.Err()
 	}
 
-	wfId, err := service.CreateUserModelAsync(ctx, &artivcModel)
+	wfID, err := service.CreateUserModelAsync(ctx, &artivcModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -1616,13 +1616,13 @@ func createArtiVCModel(service service.Service, ctx context.Context, req *modelP
 		custom_otel.SetEventResource(artivcModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
-				Value: []byte(wfId),
+				Value: []byte(wfID),
 			},
 		}),
 	)))
 
 	return &modelPB.CreateUserModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},
@@ -1691,7 +1691,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.Create
 		span.SetStatus(1, err.Error())
 		return resp, err
 	}
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
 	if err := checkfield.CheckCreateOutputOnlyFields(req.Model, outputOnlyFields); err != nil {
@@ -2500,7 +2500,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           ns.NsUid.String(),
+		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            userUID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
@@ -2640,7 +2640,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           ns.NsUid.String(),
+		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            userUID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
@@ -3049,7 +3049,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	usageData := utils.UsageMetricData{
-		OwnerUID:           ns.NsUid.String(),
+		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            userUID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
@@ -3267,7 +3267,7 @@ func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelPB.GetUs
 		span.SetStatus(1, err.Error())
 		return &modelPB.GetUserModelCardResponse{}, err
 	}
-	ownerPermalink := resource.UserUidToUserPermalink(userUID)
+	ownerPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -3355,11 +3355,11 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	operationId, err := resource.GetOperationID(req.Name)
+	operationID, err := resource.GetOperationID(req.Name)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}
-	operation, err := h.service.GetOperation(ctx, operationId)
+	operation, err := h.service.GetOperation(ctx, operationID)
 	if err != nil {
 		return &modelPB.GetModelOperationResponse{}, err
 	}

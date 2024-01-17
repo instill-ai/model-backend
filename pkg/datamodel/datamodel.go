@@ -52,7 +52,7 @@ type ModelDefinition struct {
 	Title string `json:"title,omitempty"`
 
 	// ModelDefinition documentation_url
-	DocumentationUrl string `json:"documentation_url,omitempty"`
+	DocumentationURL string `json:"documentation_url,omitempty"`
 
 	// ModelDefinition icon
 	Icon string `json:"icon,omitempty"`
@@ -74,7 +74,7 @@ type Model struct {
 	Description sql.NullString
 
 	// Model definition
-	ModelDefinitionUid uuid.UUID `gorm:"model_definition_uid,omitempty"`
+	ModelDefinitionUID uuid.UUID `gorm:"model_definition_uid,omitempty"`
 
 	// Model definition configuration
 	Configuration datatypes.JSON `json:"configuration,omitempty"`
@@ -132,19 +132,19 @@ type ModelInferResult struct {
 type GitHubModelConfiguration struct {
 	Repository string `json:"repository,omitempty"`
 	Tag        string `json:"tag,omitempty"`
-	HtmlUrl    string `json:"html_url,omitempty"`
+	HTMLURL    string `json:"html_url,omitempty"`
 }
 
 type ArtiVCModelConfiguration struct {
-	Url        string         `json:"url,omitempty"`
+	URL        string         `json:"url,omitempty"`
 	Tag        string         `json:"tag,omitempty"`
 	Credential datatypes.JSON `json:"credential,omitempty"`
 }
 
 type HuggingFaceModelConfiguration struct {
-	RepoId  string `json:"repo_id,omitempty"`
+	RepoID  string `json:"repo_id,omitempty"`
 	Tag     string `json:"tag,omitempty"`
-	HtmlUrl string `json:"html_url,omitempty"`
+	HTMLURL string `json:"html_url,omitempty"`
 }
 
 type LocalModelConfiguration struct {

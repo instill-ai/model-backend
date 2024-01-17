@@ -81,7 +81,7 @@ func findDVCPaths(dir string) []string {
 
 // TODO: clean up this function.
 func findModelFiles(dir string) []string {
-	var modelPaths []string = []string{}
+	var modelPaths = []string{}
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(f.Name(), ".onnx") || strings.HasSuffix(f.Name(), ".pt") || strings.HasSuffix(f.Name(), ".bias") ||
 			strings.HasSuffix(f.Name(), ".weight") || strings.HasSuffix(f.Name(), ".ini") || strings.HasSuffix(f.Name(), ".bin") ||
@@ -500,7 +500,7 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 			return "", err
 		}
 		defer out.Close()
-		resp, err := http.Get(DEFAULT_GCP_SERVICE_ACCOUNT_FILE)
+		resp, err := http.Get(DefaultGCPServiceAccountFile)
 		if err != nil {
 			return "", err
 		}
@@ -547,7 +547,7 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 }
 
 func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]string, error) {
-	url := config.Url
+	url := config.URL
 	var cmd *exec.Cmd
 	if strings.HasPrefix(url, "gs://") {
 		credentialFile, err := writeCredential(config.Credential)
@@ -585,7 +585,7 @@ func ArtiVCClone(dir string, modelConfig datamodel.ArtiVCModelConfiguration, wit
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	url := modelConfig.Url
+	url := modelConfig.URL
 	var cmd *exec.Cmd
 	if strings.HasPrefix(url, "gs://") {
 		credentialFile, err := writeCredential(modelConfig.Credential)
@@ -618,7 +618,7 @@ func HuggingFaceClone(dir string, modelConfig datamodel.HuggingFaceModelConfigur
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/%s %s", modelConfig.RepoId, dir))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/%s %s", modelConfig.RepoID, dir))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -635,7 +635,7 @@ func HuggingFaceExport(dir string, modelConfig datamodel.HuggingFaceModelConfigu
 		"-m", "transformers.onnx",
 		"--feature=image-classification",
 		"--atol", "0.001",
-		fmt.Sprintf("--model=%s", modelConfig.RepoId),
+		fmt.Sprintf("--model=%s", modelConfig.RepoID),
 		fmt.Sprintf("%s/%s-infer/1", dir, modelID))
 	if err := cmd.Run(); err != nil {
 		return err
@@ -811,10 +811,10 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 		return err
 	}
 	if id2label, ok := data["id2label"]; ok {
-		mId2label := id2label.(map[string]interface{})
+		mID2label := id2label.(map[string]interface{})
 
-		keys := make([]int, 0, len(mId2label))
-		for k := range mId2label {
+		keys := make([]int, 0, len(mID2label))
+		for k := range mID2label {
 			i, _ := strconv.Atoi(k)
 			keys = append(keys, i)
 		}
@@ -827,7 +827,7 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 		defer f.Close()
 
 		for _, k := range keys {
-			if _, err := f.WriteString(fmt.Sprintf("%s\n", mId2label[fmt.Sprintf("%v", k)])); err != nil {
+			if _, err := f.WriteString(fmt.Sprintf("%s\n", mID2label[fmt.Sprintf("%v", k)])); err != nil {
 				return err
 			}
 		}
