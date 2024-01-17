@@ -3,7 +3,7 @@ package rayserver
 type GetApplicationStatus struct {
 	ControllerInfo ControllerInfo         `json:"controller_info,omitempty"`
 	ProxyLocation  string                 `json:"proxy_location,omitempty"`
-	HttpOptions    HttpOptions            `json:"http_options,omitempty"`
+	HTTPOptions    HTTPOptions            `json:"http_options,omitempty"`
 	GrpcOptions    GrpcOptions            `json:"grpc_options,omitempty"`
 	Proxies        map[string]Proxy       `json:"proxies,omitempty"`
 	DeployMode     string                 `json:"deploy_mode,omitempty"`
@@ -19,7 +19,7 @@ type ControllerInfo struct {
 	LogFilePath string `json:"log_file_path,omitempty"`
 }
 
-type HttpOptions struct {
+type HTTPOptions struct {
 	Host              string  `json:"host,omitempty"`
 	Port              float64 `json:"port,omitempty"`
 	RootPath          string  `json:"root_path,omitempty"`
@@ -68,11 +68,11 @@ type ApplicationDeployment struct {
 	Name                 string               `json:"name,omitempty"`
 	Status               string               `json:"status,omitempty"`
 	Message              string               `json:"message,omitempty"`
-	HttpDeploymentConfig HttpDeploymentConfig `json:"deployment_config,omitempty"`
+	HTTPDeploymentConfig HTTPDeploymentConfig `json:"deployment_config,omitempty"`
 	Replicas             []Replica            `json:"replicas,omitempty"`
 }
 
-type HttpDeploymentConfig struct {
+type HTTPDeploymentConfig struct {
 	Name                      string                 `json:"name,omitempty"`
 	NumReplicas               float64                `json:"num_replicas,omitempty"`
 	MaxConcurrentQueries      float64                `json:"max_concurrent_queries,omitempty"`

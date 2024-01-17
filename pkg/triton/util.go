@@ -280,12 +280,12 @@ func GetOutputFromInferResponse(name string, response *inferenceserver.ModelInfe
 }
 
 func ParseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (int64, int64, int64) {
-	input_batch_dim := modelConfig.Config.MaxBatchSize
+	inputBatchDim := modelConfig.Config.MaxBatchSize
 	var c int64
 	var h int64
 	var w int64
 	if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
-		if input_batch_dim > 0 {
+		if inputBatchDim > 0 {
 			h = modelMetadata.Inputs[0].Shape[1]
 			w = modelMetadata.Inputs[0].Shape[2]
 			c = modelMetadata.Inputs[0].Shape[3]
@@ -295,7 +295,7 @@ func ParseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfi
 			c = modelMetadata.Inputs[0].Shape[2]
 		}
 	} else {
-		if input_batch_dim > 0 {
+		if inputBatchDim > 0 {
 			c = modelMetadata.Inputs[0].Shape[1]
 			h = modelMetadata.Inputs[0].Shape[2]
 			w = modelMetadata.Inputs[0].Shape[3]

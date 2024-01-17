@@ -223,7 +223,7 @@ func main() {
 		handler.NewPrivateHandler(ctx, service, triton))
 
 	privateGwS := runtime.NewServeMux(
-		runtime.WithForwardResponseOption(middleware.HttpResponseModifier),
+		runtime.WithForwardResponseOption(middleware.HTTPResponseModifier),
 		runtime.WithErrorHandler(middleware.ErrorHandler),
 		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
@@ -233,7 +233,7 @@ func main() {
 	)
 
 	publicGwS := runtime.NewServeMux(
-		runtime.WithForwardResponseOption(middleware.HttpResponseModifier),
+		runtime.WithForwardResponseOption(middleware.HTTPResponseModifier),
 		runtime.WithErrorHandler(middleware.ErrorHandler),
 		runtime.WithIncomingHeaderMatcher(middleware.CustomMatcher),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
@@ -298,12 +298,12 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	privateHttpServer := &http.Server{
+	privateHTTPServer := &http.Server{
 		Addr:    fmt.Sprintf(":%v", config.Config.Server.PrivatePort),
 		Handler: grpcHandlerFunc(privateGrpcS, privateGwS),
 	}
 
-	publicHttpServer := &http.Server{
+	publicHTTPServer := &http.Server{
 		Addr:    fmt.Sprintf(":%v", config.Config.Server.PublicPort),
 		Handler: grpcHandlerFunc(publicGrpcS, publicGwS),
 	}
@@ -313,26 +313,26 @@ func main() {
 	errSig := make(chan error)
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		go func() {
-			if err := privateHttpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
+			if err := privateHTTPServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
 				errSig <- err
 			}
 		}()
 	} else {
 		go func() {
-			if err := privateHttpServer.ListenAndServe(); err != nil {
+			if err := privateHTTPServer.ListenAndServe(); err != nil {
 				errSig <- err
 			}
 		}()
 	}
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
 		go func() {
-			if err := publicHttpServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
+			if err := publicHTTPServer.ListenAndServeTLS(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key); err != nil {
 				errSig <- err
 			}
 		}()
 	} else {
 		go func() {
-			if err := publicHttpServer.ListenAndServe(); err != nil {
+			if err := publicHTTPServer.ListenAndServe(); err != nil {
 				errSig <- err
 			}
 		}()

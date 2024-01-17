@@ -96,7 +96,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 						logger.Fatal(err.Error())
 					}
 					b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
-						Url: modelConfig.Url,
+						URL: modelConfig.URL,
 						Tag: modelConfig.Tag,
 					})
 					if err != nil {
@@ -127,7 +127,7 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model)
 	pbModels := make([]*modelPB.Model, len(dbModels))
 
 	for idx := range dbModels {
-		modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModels[idx].ModelDefinitionUid)
+		modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModels[idx].ModelDefinitionUID)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 		Id:               dbModelDefinition.ID,
 		Uid:              dbModelDefinition.BaseStatic.UID.String(),
 		Title:            dbModelDefinition.Title,
-		DocumentationUrl: dbModelDefinition.DocumentationUrl,
+		DocumentationUrl: dbModelDefinition.DocumentationURL,
 		Icon:             dbModelDefinition.Icon,
 		CreateTime:       timestamppb.New(dbModelDefinition.CreateTime),
 		UpdateTime:       timestamppb.New(dbModelDefinition.UpdateTime),

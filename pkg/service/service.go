@@ -139,18 +139,18 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient 
 func (s *service) GetUser(ctx context.Context) (string, uuid.UUID, error) {
 
 	// Verify if "Instill-User-Uid" is in the header
-	headerUserUId := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
-	if headerUserUId != "" {
-		_, err := uuid.FromString(headerUserUId)
+	headerUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	if headerUserUID != "" {
+		_, err := uuid.FromString(headerUserUID)
 		if err != nil {
 			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "instill user uuid header parse failed")
 		}
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: "users/" + headerUserUId})
+		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: "users/" + headerUserUID})
 		if err != nil {
 			return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "mgmt lookup failed")
 		}
 
-		return resp.User.Id, uuid.FromStringOrNil(headerUserUId), nil
+		return resp.User.Id, uuid.FromStringOrNil(headerUserUID), nil
 	}
 
 	return "", uuid.Nil, status.Errorf(codes.Unauthenticated, "no instill-user-uid header found")
@@ -224,12 +224,12 @@ func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, str
 	if len(splits) < 4 {
 		return resource.Namespace{
 			NsType: resource.NamespaceType(splits[0]),
-			NsUid:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
+			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 		}, "", nil
 	}
 	return resource.Namespace{
 		NsType: resource.NamespaceType(splits[0]),
-		NsUid:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
+		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 	}, splits[3], nil
 }
 
@@ -245,12 +245,12 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 	if len(splits) < 4 {
 		return resource.Namespace{
 			NsType: resource.NamespaceType(splits[0]),
-			NsUid:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
+			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 		}, uuid.Nil, nil
 	}
 	return resource.Namespace{
 		NsType: resource.NamespaceType(splits[0]),
-		NsUid:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
+		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 	}, uuid.FromStringOrNil(splits[3]), nil
 }
 
@@ -300,14 +300,14 @@ func (s *service) UndeployModel(ctx context.Context, ownerPermalink string, user
 
 func (s *service) GetModelByUID(ctx context.Context, userUID uuid.UUID, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetModelByUID(ctx, userPermalink, view, modelUID)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -333,14 +333,14 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 func (s *service) GetUserModelByID(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string, view modelPB.View) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, modelID, view)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -920,7 +920,7 @@ func (s *service) TriggerUserModel(ctx context.Context, modelUID uuid.UUID, infe
 
 func (s *service) ListModels(ctx context.Context, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error) {
 
-	userPermalLink := resource.UserUidToUserPermalink(userUID)
+	userPermalLink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModels, nextPageToken, totalSize, err := s.repository.ListModels(ctx, userPermalLink, view, pageSize, pageToken, showDeleted)
 	if err != nil {
@@ -935,7 +935,7 @@ func (s *service) ListModels(ctx context.Context, userUID uuid.UUID, view modelP
 func (s *service) ListUserModels(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*modelPB.Model, string, int64, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModels, nextPageToken, totalSize, err := s.repository.ListUserModels(ctx, ownerPermalink, userPermalink, view, pageSize, pageToken, showDeleted)
 	if err != nil {
@@ -964,7 +964,7 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 	logger, _ := logger.GetZapLogger(ctx)
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	modelInDB, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -1025,7 +1025,7 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 func (s *service) RenameUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string, newModelID string) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -1039,23 +1039,23 @@ func (s *service) RenameUserModel(ctx context.Context, ns resource.Namespace, us
 		return nil, err
 	}
 
-	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, newModelID, modelPB.View_VIEW_FULL)
+	updatedDBModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, newModelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDbModel)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
 func (s *service) PublishUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -1070,23 +1070,23 @@ func (s *service) PublishUserModel(ctx context.Context, ns resource.Namespace, u
 		return nil, err
 	}
 
-	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
+	updatedDBModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDbModel)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
 func (s *service) UnpublishUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, modelID string) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -1101,54 +1101,54 @@ func (s *service) UnpublishUserModel(ctx context.Context, ns resource.Namespace,
 		return nil, err
 	}
 
-	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
+	updatedDBModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDbModel)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
 func (s *service) UpdateUserModel(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, model *modelPB.Model) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, model.Id, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	toUpdateDbModel := s.PBToDBModel(ctx, model)
+	toUpdateDBModel := s.PBToDBModel(ctx, model)
 
-	err = s.repository.UpdateUserModel(ownerPermalink, userPermalink, dbModel.UID, toUpdateDbModel)
+	err = s.repository.UpdateUserModel(ownerPermalink, userPermalink, dbModel.UID, toUpdateDBModel)
 	if err != nil {
 		return nil, err
 	}
 
-	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
+	updatedDBModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDbModel)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
 func (s *service) UpdateUserModelState(ctx context.Context, ns resource.Namespace, userUID uuid.UUID, model *modelPB.Model, state modelPB.Model_State) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.String()
-	userPermalink := resource.UserUidToUserPermalink(userUID)
+	userPermalink := resource.UserUIDToUserPermalink(userUID)
 
 	dbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, model.Id, modelPB.View_VIEW_FULL)
 	if err != nil {
@@ -1161,17 +1161,17 @@ func (s *service) UpdateUserModelState(ctx context.Context, ns resource.Namespac
 		return nil, err
 	}
 
-	updatedDbModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
+	updatedDBModel, err := s.repository.GetUserModelByID(ctx, ownerPermalink, userPermalink, dbModel.ID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUid)
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDbModel)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
 func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error) {

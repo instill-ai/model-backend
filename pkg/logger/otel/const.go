@@ -12,11 +12,11 @@ import (
 type Option func(l logMessage) logMessage
 
 type logMessage struct {
-	Id          string `json:"id"`
+	ID          string `json:"ID"`
 	ServiceName string `json:"serviceName"`
 	TraceInfo   struct {
-		TraceId string `json:"traceID"`
-		SpanId  string `json:"spanID"`
+		TraceID string `json:"traceID"`
+		SpanID  string `json:"spanID"`
 	}
 	UserInfo struct {
 		UserID   string `json:"userID"`
@@ -74,25 +74,25 @@ func SetMetadata(m string) Option {
 func NewLogMessage(
 	span trace.Span,
 	logID string,
-	userUid uuid.UUID,
+	userUID uuid.UUID,
 	eventName string,
 	options ...Option,
 ) []byte {
 	logMessage := logMessage{}
-	logMessage.Id = logID
+	logMessage.ID = logID
 	logMessage.ServiceName = "model-backend"
 	logMessage.TraceInfo = struct {
-		TraceId string "json:\"traceID\""
-		SpanId  string "json:\"spanID\""
+		TraceID string "json:\"traceID\""
+		SpanID  string "json:\"spanID\""
 	}{
-		TraceId: span.SpanContext().TraceID().String(),
-		SpanId:  span.SpanContext().SpanID().String(),
+		TraceID: span.SpanContext().TraceID().String(),
+		SpanID:  span.SpanContext().SpanID().String(),
 	}
 	logMessage.UserInfo = struct {
 		UserID   string "json:\"userID\""
 		UserUUID string "json:\"userUUID\""
 	}{
-		UserUUID: userUid.String(),
+		UserUUID: userUID.String(),
 	}
 	logMessage.Event = struct {
 		IsAuditEvent bool "json:\"isAuditEvent\""

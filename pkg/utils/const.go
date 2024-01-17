@@ -56,7 +56,7 @@ var Visibility = map[string]modelPB.Model_Visibility{
 
 const MaxBatchSize int = 32
 
-const DEFAULT_GCP_SERVICE_ACCOUNT_FILE = "https://artifacts.instill.tech/default-service-account.json"
+const DefaultGCPServiceAccountFile = "https://artifacts.instill.tech/default-service-account.json"
 
 var MarshalOptions protojson.MarshalOptions = protojson.MarshalOptions{
 	UseProtoNames:   true,
@@ -71,15 +71,15 @@ var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
 const DefaultPageSize = 10
 
 const (
-	TEXT_TO_IMAGE_STEPS     = int32(10)
-	IMAGE_TO_TEXT_CFG_SCALE = float32(7)
-	IMAGE_TO_TEXT_SEED      = int32(1024)
-	IMAGE_TO_TEXT_SAMPLES   = int32(1)
+	TextToImageSteps    = int32(10)
+	ImageToTextCFGScale = float32(7)
+	ImageToTextSeed     = int32(1024)
+	ImageToTextSamples  = int32(1)
 )
 
 const (
-	TEXT_GENERATION_MAX_NEW_TOKENS = int32(100)
-	TEXT_GENERATION_TEMPERATURE    = float32(0.7)
-	TEXT_GENERATION_TOP_K          = int32(10)
-	TEXT_GENERATION_SEED           = int32(0)
+	TextGenerationMaxNewTokens = int32(100)
+	TextGenerationTemperature  = float32(0.7)
+	TextGenerationTopK         = int32(10)
+	TextGenerationSeed         = int32(0)
 )
