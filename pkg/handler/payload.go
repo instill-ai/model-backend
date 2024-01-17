@@ -16,6 +16,7 @@ import (
 	_ "golang.org/x/image/tiff"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -41,11 +42,11 @@ func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {
 		return nil, fmt.Errorf("unable to read content body from image at %v", url)
 	}
 
-	if numBytes > int64(config.Config.Server.MaxDataSize*utils.MB) {
+	if numBytes > int64(config.Config.Server.MaxDataSize*constant.MB) {
 		return nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
 			config.Config.Server.MaxDataSize,
-			float32(numBytes)/float32(utils.MB),
+			float32(numBytes)/float32(constant.MB),
 		)
 	}
 
@@ -68,11 +69,11 @@ func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, er
 		return nil, fmt.Errorf("unable to decode base64 image")
 	}
 	numBytes := len(decoded)
-	if numBytes > config.Config.Server.MaxDataSize*utils.MB {
+	if numBytes > config.Config.Server.MaxDataSize*constant.MB {
 		return nil, fmt.Errorf(
 			"image size must be smaller than %vMB. Got %vMB",
 			config.Config.Server.MaxDataSize,
-			float32(numBytes)/float32(utils.MB),
+			float32(numBytes)/float32(constant.MB),
 		)
 	}
 	img, _, err := image.Decode(bytes.NewReader(decoded))
@@ -589,11 +590,11 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 			return nil, fmt.Errorf("unable to read content body from image")
 		}
 
-		if numBytes > int64(config.Config.Server.MaxDataSize*utils.MB) {
+		if numBytes > int64(config.Config.Server.MaxDataSize*constant.MB) {
 			return nil, fmt.Errorf(
 				"image size must be smaller than %vMB. Got %vMB from image %v",
 				config.Config.Server.MaxDataSize,
-				float32(numBytes)/float32(utils.MB),
+				float32(numBytes)/float32(constant.MB),
 				content.Filename,
 			)
 		}

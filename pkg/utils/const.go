@@ -54,14 +54,6 @@ var Visibility = map[string]modelPB.Model_Visibility{
 	"private": modelPB.Model_VISIBILITY_PRIVATE,
 }
 
-const (
-	_  = iota
-	KB = 1 << (10 * iota)
-	MB
-	GB
-	TB
-)
-
 const MaxBatchSize int = 32
 
 const DEFAULT_GCP_SERVICE_ACCOUNT_FILE = "https://artifacts.instill.tech/default-service-account.json"

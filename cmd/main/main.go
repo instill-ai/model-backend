@@ -149,6 +149,9 @@ func main() {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
+	grpcServerOpts = append(grpcServerOpts, grpc.MaxRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB))
+	grpcServerOpts = append(grpcServerOpts, grpc.MaxSendMsgSize(config.Config.Server.MaxDataSize*constant.MB))
+
 	privateGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(privateGrpcS)
 
