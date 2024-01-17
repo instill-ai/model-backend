@@ -231,13 +231,13 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	wfId, err := h.service.UndeployUserModelAsyncAdmin(ctx, userUID, modelUID)
+	wfID, err := h.service.UndeployUserModelAsyncAdmin(ctx, userUID, modelUID)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
 	return &modelPB.UndeployModelAdminResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfId),
+		Name: fmt.Sprintf("operations/%s", wfID),
 		Done: false,
 		Result: &longrunningpb.Operation_Response{
 			Response: &anypb.Any{},

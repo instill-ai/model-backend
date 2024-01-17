@@ -21,8 +21,8 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrunningpb.Operation, error) {
-	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowId, "")
+func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error) {
+	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (s *service) GetOperation(ctx context.Context, workflowId string) (*longrun
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
 		var result error
-		workflowRun := s.temporalClient.GetWorkflow(ctx, workflowId, "")
+		workflowRun := s.temporalClient.GetWorkflow(ctx, workflowID, "")
 		err = workflowRun.Get(ctx, &result)
 		if err != nil {
 			return nil, err

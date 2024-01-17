@@ -78,7 +78,7 @@ type VisualQuestionAnsweringInput struct {
 }
 
 type ImageInput struct {
-	ImgUrl    string
+	ImgURL    string
 	ImgBase64 string
 }
 
@@ -109,11 +109,11 @@ func NewTriton() Triton {
 }
 
 func (ts *triton) Init() {
-	grpcUri := config.Config.TritonServer.GrpcURI
+	grpcURI := config.Config.TritonServer.GrpcURI
 
 	// Connect to gRPC server
 	conn, err := grpc.Dial(
-		grpcUri,
+		grpcURI,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
@@ -121,7 +121,7 @@ func (ts *triton) Init() {
 		),
 	)
 	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
+		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcURI, err)
 	}
 
 	// Create client from gRPC server connection

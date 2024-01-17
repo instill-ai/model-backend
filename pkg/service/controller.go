@@ -23,7 +23,7 @@ func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*mo
 	return resp.Resource.GetModelState().Enum(), nil
 }
 
-func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowId *string) error {
+func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error {
 	resourcePermalink := utils.ConvertModelToResourcePermalink(modelUID.String())
 
 	if _, err := s.controllerClient.UpdateResource(ctx, &controllerPB.UpdateResourceRequest{
@@ -34,7 +34,7 @@ func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, s
 			},
 			Progress: progress,
 		},
-		WorkflowId: workflowId,
+		WorkflowId: workflowID,
 	}); err != nil {
 		return err
 	}

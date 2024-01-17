@@ -552,7 +552,7 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 	}
 	var batchedOutputDataImages [][]string
 	batchedOutputDataImages = append(batchedOutputDataImages, []string{}) // single batch support
-	var lenSingleImage int = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
+	var lenSingleImage = len(rawOutputContentImages) / int(outputTensorImages.Shape[0])
 	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
 		imgRaw := DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
 

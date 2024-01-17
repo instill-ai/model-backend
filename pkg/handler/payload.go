@@ -87,10 +87,10 @@ func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, er
 
 func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (encodedImg []byte, err error) {
 	var img *image.Image
-	if imageInput.ImgUrl != "" || imageInput.ImgBase64 != "" {
+	if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
 		logger, _ := logger.GetZapLogger(ctx)
-		if len(imageInput.ImgUrl) > 0 {
-			img, err = parseImageFromURL(ctx, imageInput.ImgUrl)
+		if len(imageInput.ImgURL) > 0 {
+			img, err = parseImageFromURL(ctx, imageInput.ImgURL)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to parse image from url. %v", err))
 				return nil, fmt.Errorf("unable to parse image from url")
@@ -128,42 +128,42 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 		switch taskInput.Input.(type) {
 		case *modelPB.TaskInput_Classification:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetClassification().GetImageUrl(),
+				ImgURL:    taskInput.GetClassification().GetImageUrl(),
 				ImgBase64: taskInput.GetClassification().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Detection:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetDetection().GetImageUrl(),
+				ImgURL:    taskInput.GetDetection().GetImageUrl(),
 				ImgBase64: taskInput.GetDetection().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Ocr:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetOcr().GetImageUrl(),
+				ImgURL:    taskInput.GetOcr().GetImageUrl(),
 				ImgBase64: taskInput.GetOcr().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Keypoint:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetKeypoint().GetImageUrl(),
+				ImgURL:    taskInput.GetKeypoint().GetImageUrl(),
 				ImgBase64: taskInput.GetKeypoint().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_InstanceSegmentation:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetInstanceSegmentation().GetImageUrl(),
+				ImgURL:    taskInput.GetInstanceSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetInstanceSegmentation().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_SemanticSegmentation:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetSemanticSegmentation().GetImageUrl(),
+				ImgURL:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_TextToImage:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetTextToImage().GetPromptImageUrl(),
+				ImgURL:    taskInput.GetTextToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetTextToImage().GetPromptImageBase64(),
 			}
 		case *modelPB.TaskInput_ImageToImage:
 			imageInput = triton.ImageInput{
-				ImgUrl:    taskInput.GetImageToImage().GetPromptImageUrl(),
+				ImgURL:    taskInput.GetImageToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetImageToImage().GetPromptImageBase64(),
 			}
 		default:
@@ -180,9 +180,9 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 			err error
 		)
 
-		if imageInput.ImgUrl != "" || imageInput.ImgBase64 != "" {
-			if len(imageInput.ImgUrl) > 0 {
-				img, err = parseImageFromURL(ctx, imageInput.ImgUrl)
+		if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
+			if len(imageInput.ImgURL) > 0 {
+				img, err = parseImageFromURL(ctx, imageInput.ImgURL)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse image %v from url. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse image %v from url", idx)
@@ -220,19 +220,19 @@ func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserM
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
 	for idx, taskInput := range req.TaskInputs {
-		steps := utils.TEXT_TO_IMAGE_STEPS
+		steps := utils.TextToImageSteps
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = *taskInput.GetTextToImage().Steps
 		}
-		cfgScale := float32(utils.IMAGE_TO_TEXT_CFG_SCALE)
+		cfgScale := float32(utils.ImageToTextCFGScale)
 		if taskInput.GetTextToImage().CfgScale != nil {
 			cfgScale = float32(*taskInput.GetTextToImage().CfgScale)
 		}
-		seed := utils.IMAGE_TO_TEXT_SEED
+		seed := utils.ImageToTextSeed
 		if taskInput.GetTextToImage().Seed != nil {
 			seed = *taskInput.GetTextToImage().Seed
 		}
-		samples := utils.IMAGE_TO_TEXT_SAMPLES
+		samples := utils.ImageToTextSamples
 		if taskInput.GetTextToImage().Samples != nil {
 			samples = *taskInput.GetTextToImage().Samples
 		}
@@ -274,19 +274,19 @@ func parseImageToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUse
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
 	for idx, taskInput := range req.TaskInputs {
-		steps := utils.TEXT_TO_IMAGE_STEPS
+		steps := utils.TextToImageSteps
 		if taskInput.GetImageToImage().Steps != nil {
 			steps = *taskInput.GetImageToImage().Steps
 		}
-		cfgScale := float32(utils.IMAGE_TO_TEXT_CFG_SCALE)
+		cfgScale := float32(utils.ImageToTextCFGScale)
 		if taskInput.GetImageToImage().CfgScale != nil {
 			cfgScale = float32(*taskInput.GetImageToImage().CfgScale)
 		}
-		seed := utils.IMAGE_TO_TEXT_SEED
+		seed := utils.ImageToTextSeed
 		if taskInput.GetImageToImage().Seed != nil {
 			seed = *taskInput.GetImageToImage().Seed
 		}
-		samples := utils.IMAGE_TO_TEXT_SAMPLES
+		samples := utils.ImageToTextSamples
 		if taskInput.GetImageToImage().Samples != nil {
 			samples = *taskInput.GetImageToImage().Samples
 		}
@@ -329,19 +329,19 @@ func parseImageToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUse
 func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
 	for _, taskInput := range req.TaskInputs {
 
-		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetTextGeneration().MaxNewTokens != nil {
 			maxNewTokens = *taskInput.GetTextGeneration().MaxNewTokens
 		}
-		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		temperature := utils.TextGenerationTemperature
 		if taskInput.GetTextGeneration().Temperature != nil {
 			temperature = *taskInput.GetTextGeneration().Temperature
 		}
-		topK := utils.TEXT_GENERATION_TOP_K
+		topK := utils.TextGenerationTopK
 		if taskInput.GetTextGeneration().TopK != nil {
 			topK = *taskInput.GetTextGeneration().TopK
 		}
-		seed := utils.TEXT_GENERATION_SEED
+		seed := utils.TextGenerationSeed
 		if taskInput.GetTextGeneration().Seed != nil {
 			seed = *taskInput.GetTextGeneration().Seed
 		}
@@ -375,7 +375,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUs
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetTextGeneration().PromptImages {
 				imageInput := triton.ImageInput{
-					ImgUrl:    promptImageStruct.GetPromptImageUrl(),
+					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
 				encodedImage, err := parseImageInputToByte(ctx, imageInput)
@@ -409,19 +409,19 @@ func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUs
 
 func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationChatInput *triton.TextGenerationChatInput, err error) {
 	for _, taskInput := range req.TaskInputs {
-		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetTextGenerationChat().MaxNewTokens != nil {
 			maxNewTokens = *taskInput.GetTextGenerationChat().MaxNewTokens
 		}
-		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		temperature := utils.TextGenerationTemperature
 		if taskInput.GetTextGenerationChat().Temperature != nil {
 			temperature = *taskInput.GetTextGenerationChat().Temperature
 		}
-		topK := utils.TEXT_GENERATION_TOP_K
+		topK := utils.TextGenerationTopK
 		if taskInput.GetTextGenerationChat().TopK != nil {
 			topK = *taskInput.GetTextGenerationChat().TopK
 		}
-		seed := utils.TEXT_GENERATION_SEED
+		seed := utils.TextGenerationSeed
 		if taskInput.GetTextGenerationChat().Seed != nil {
 			seed = *taskInput.GetTextGenerationChat().Seed
 		}
@@ -455,7 +455,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.Trigg
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetTextGenerationChat().PromptImages {
 				imageInput := triton.ImageInput{
-					ImgUrl:    promptImageStruct.GetPromptImageUrl(),
+					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
 				encodedImage, err := parseImageInputToByte(ctx, imageInput)
@@ -489,19 +489,19 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.Trigg
 func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
 	for _, taskInput := range req.TaskInputs {
 
-		maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetVisualQuestionAnswering().MaxNewTokens != nil {
 			maxNewTokens = *taskInput.GetVisualQuestionAnswering().MaxNewTokens
 		}
-		temperature := utils.TEXT_GENERATION_TEMPERATURE
+		temperature := utils.TextGenerationTemperature
 		if taskInput.GetVisualQuestionAnswering().Temperature != nil {
 			temperature = *taskInput.GetVisualQuestionAnswering().Temperature
 		}
-		topK := utils.TEXT_GENERATION_TOP_K
+		topK := utils.TextGenerationTopK
 		if taskInput.GetVisualQuestionAnswering().TopK != nil {
 			topK = *taskInput.GetVisualQuestionAnswering().TopK
 		}
-		seed := utils.TEXT_GENERATION_SEED
+		seed := utils.TextGenerationSeed
 		if taskInput.GetVisualQuestionAnswering().Seed != nil {
 			seed = *taskInput.GetVisualQuestionAnswering().Seed
 		}
@@ -535,7 +535,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetVisualQuestionAnswering().PromptImages {
 				imageInput := triton.ImageInput{
-					ImgUrl:    promptImageStruct.GetPromptImageUrl(),
+					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
 				encodedImage, err := parseImageInputToByte(ctx, imageInput)
@@ -647,7 +647,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := utils.TEXT_TO_IMAGE_STEPS
+	step := utils.TextToImageSteps
 	if len(stepStr) > 0 {
 		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
 		if err != nil {
@@ -656,7 +656,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		step = int32(parseStep)
 	}
 
-	cfgScale := float64(utils.IMAGE_TO_TEXT_CFG_SCALE)
+	cfgScale := float64(utils.ImageToTextCFGScale)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -664,7 +664,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		}
 	}
 
-	seed := utils.IMAGE_TO_TEXT_SEED
+	seed := utils.ImageToTextSeed
 	if len(seedStr) > 0 {
 		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
 		if err != nil {
@@ -673,7 +673,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		seed = int32(parseSeed)
 	}
 
-	samples := utils.IMAGE_TO_TEXT_SAMPLES
+	samples := utils.ImageToTextSamples
 	if len(samplesStr) > 0 {
 		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
 		if err != nil {
@@ -735,7 +735,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := utils.TEXT_TO_IMAGE_STEPS
+	step := utils.TextToImageSteps
 	if len(stepStr) > 0 {
 		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
 		if err != nil {
@@ -744,7 +744,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		step = int32(parseStep)
 	}
 
-	cfgScale := float64(utils.IMAGE_TO_TEXT_CFG_SCALE)
+	cfgScale := float64(utils.ImageToTextCFGScale)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -752,7 +752,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		}
 	}
 
-	seed := utils.IMAGE_TO_TEXT_SEED
+	seed := utils.ImageToTextSeed
 	if len(seedStr) > 0 {
 		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
 		if err != nil {
@@ -761,7 +761,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		seed = int32(parseSeed)
 	}
 
-	samples := utils.IMAGE_TO_TEXT_SAMPLES
+	samples := utils.ImageToTextSamples
 	if len(samplesStr) > 0 {
 		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
 		if err != nil {
@@ -809,7 +809,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
 	systemMessageInput := req.MultipartForm.Value["system_message"]
 
-	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	maxNewTokens := utils.TextGenerationMaxNewTokens
 	if len(maxNewTokenInput) > 0 {
 		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
 		if err != nil {
@@ -818,7 +818,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		maxNewTokens = int32(parseMaxNewToken)
 	}
 
-	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	temperature := utils.TextGenerationTemperature
 	if len(temperatureInput) > 0 {
 		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
 		if err != nil {
@@ -827,7 +827,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		temperature = float32(parseTemperature)
 	}
 
-	topK := utils.TEXT_GENERATION_TOP_K
+	topK := utils.TextGenerationTopK
 	if len(topKInput) > 0 {
 		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
 		if err != nil {
@@ -836,7 +836,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		topK = int32(parseTopK)
 	}
 
-	seed := utils.TEXT_GENERATION_SEED
+	seed := utils.TextGenerationSeed
 	if len(seedInput) > 0 {
 		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
 		if err != nil {
@@ -895,7 +895,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
 	systemMessageInput := req.MultipartForm.Value["system_message"]
 
-	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	maxNewTokens := utils.TextGenerationMaxNewTokens
 	if len(maxNewTokenInput) > 0 {
 		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
 		if err != nil {
@@ -904,7 +904,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 		maxNewTokens = int32(parseMaxNewToken)
 	}
 
-	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	temperature := utils.TextGenerationTemperature
 	if len(temperatureInput) > 0 {
 		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
 		if err != nil {
@@ -913,7 +913,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 		temperature = float32(parseTemperature)
 	}
 
-	topK := utils.TEXT_GENERATION_TOP_K
+	topK := utils.TextGenerationTopK
 	if len(topKInput) > 0 {
 		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
 		if err != nil {
@@ -922,7 +922,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 		topK = int32(parseTopK)
 	}
 
-	seed := utils.TEXT_GENERATION_SEED
+	seed := utils.TextGenerationSeed
 	if len(seedInput) > 0 {
 		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
 		if err != nil {
@@ -980,7 +980,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
 	systemMessageInput := req.MultipartForm.Value["system_message"]
 
-	maxNewTokens := utils.TEXT_GENERATION_MAX_NEW_TOKENS
+	maxNewTokens := utils.TextGenerationMaxNewTokens
 	if len(maxNewTokenInput) > 0 {
 		parseMaxNewToken, err := strconv.ParseInt(maxNewTokenInput[0], 10, 32)
 		if err != nil {
@@ -989,7 +989,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 		maxNewTokens = int32(parseMaxNewToken)
 	}
 
-	temperature := utils.TEXT_GENERATION_TEMPERATURE
+	temperature := utils.TextGenerationTemperature
 	if len(temperatureInput) > 0 {
 		parseTemperature, err := strconv.ParseFloat(temperatureInput[0], 32)
 		if err != nil {
@@ -998,7 +998,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 		temperature = float32(parseTemperature)
 	}
 
-	topK := utils.TEXT_GENERATION_TOP_K
+	topK := utils.TextGenerationTopK
 	if len(topKInput) > 0 {
 		parseTopK, err := strconv.ParseInt(topKInput[0], 10, 32)
 		if err != nil {
@@ -1007,7 +1007,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 		topK = int32(parseTopK)
 	}
 
-	seed := utils.TEXT_GENERATION_SEED
+	seed := utils.TextGenerationSeed
 	if len(seedInput) > 0 {
 		parseSeed, err := strconv.ParseInt(seedInput[0], 10, 32)
 		if err != nil {

@@ -46,7 +46,7 @@ type Ray interface {
 type ray struct {
 	rayClient      rayserver.RayServiceClient
 	rayServeClient rayserver.RayServeAPIServiceClient
-	rayHttpClient  *http.Client
+	rayHTTPClient  *http.Client
 	connection     *grpc.ClientConn
 }
 
@@ -57,18 +57,18 @@ func NewRay() Ray {
 }
 
 func (r *ray) Init() {
-	grpcUri := config.Config.RayServer.GrpcURI
+	grpcURI := config.Config.RayServer.GrpcURI
 	// Connect to gRPC server
-	conn, err := grpc.Dial(grpcUri, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(grpcURI, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcUri, err)
+		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcURI, err)
 	}
 
 	// Create client from gRPC server connection
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
-	r.rayHttpClient = &http.Client{Timeout: time.Second * 5}
+	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
@@ -96,7 +96,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		return nil, err
 	}
 
-	resp, err := r.rayHttpClient.Get(strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1))
+	resp, err := r.rayHTTPClient.Get(strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1))
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
