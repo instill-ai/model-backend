@@ -20,6 +20,7 @@
         type: "string"
         title: "GitHub repository"
         description: "The name of a public GitHub repository, e.g. `instill-ai/model-yolov7`."
+        instillUIComponent: "textfield"
         examples:
           - "instill-ai/model-yolov7"
           - "instill-ai/model-mobilenetv2"
@@ -30,15 +31,16 @@
         type: "string"
         title: "GitHub repository tag"
         description: "The tag of the GitHub repository, e.g., `v0.1.0`."
+        instillUIComponent: "textfield"
         examples:
           - "v0.1.0-alpha"
           - "v1.0.0"
         instillUIOrder: 1
         minLength: 0
         maxLength: 200
-- id: local
+- id: "local"
   uid: "96b547c2-8927-43ca-a0cd-a72306621696"
-  title: Local
+  title: "Local"
   documentationUrl: "https://www.instill.tech/docs/import-models/local"
   icon: "local.svg"
   releaseStage: alpha
@@ -55,7 +57,7 @@
     properties:
       content:
         type: "string"
-        contentMediaType: "application/zip"
+        instillUIComponent: "file_upload"
         title: "Upload a .zip file"
         description: "Create and upload a zip file that contains all the model files from your computer. We recommend you add a README.md file in the root directory to describe the model in details."
         instillUIOrder: 0
