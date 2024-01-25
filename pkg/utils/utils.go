@@ -722,7 +722,10 @@ func HasModelWeightFile(modelRepository string, inferenceModels []*datamodel.Inf
 		if len(modelFiles) > 0 {
 			for _, modelFile := range modelFiles {
 				fi, _ := os.Stat(modelFile)
-				if fi.Size() < 200 { // 200b
+				if !strings.HasSuffix(fi.Name(), ".json") &&
+					!strings.HasSuffix(fi.Name(), ".txt") &&
+					!strings.HasSuffix(fi.Name(), ".xml") &&
+					fi.Size() < 200 { // 200b
 					return false
 				}
 			}
