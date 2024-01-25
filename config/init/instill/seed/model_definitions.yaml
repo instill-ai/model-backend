@@ -6,11 +6,12 @@
   releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
-    title: "GitHub spec for model"
+    title: "GitHub Model"
     type: "object"
     required:
       - "repository"
       - "tag"
+    instillShortDescription: ""
     additionalProperties: false
     minProperties: 2
     maxProperties: 3
@@ -19,156 +20,46 @@
         type: "string"
         title: "GitHub repository"
         description: "The name of a public GitHub repository, e.g. `instill-ai/model-yolov7`."
+        instillUIComponent: "textfield"
         examples:
           - "instill-ai/model-yolov7"
           - "instill-ai/model-mobilenetv2"
-        ui_order: 0
-        ui_component: "text"
+        instillUIOrder: 0
         minLength: 0
         maxLength: 1023
       tag:
         type: "string"
         title: "GitHub repository tag"
         description: "The tag of the GitHub repository, e.g., `v0.1.0`."
+        instillUIComponent: "textfield"
         examples:
           - "v0.1.0-alpha"
           - "v1.0.0"
-        readOnly: true
-        ui_order: 1
-        ui_disabled: true
-        ui_component: "text"
+        instillUIOrder: 1
         minLength: 0
         maxLength: 200
-      html_url:
-        type: "string"
-        title: "Github repository URL"
-        description: "The URL of the GitHub repository, e.g. `https://github.com/instill-ai/model-yolov7`."
-        examples:
-          - "https://github.com/instill-ai/model-yolov7"
-          - "https://github.com/instill-ai/model-mobilenetv2"
-        readOnly: true
-        ui_order: 2
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-- id: local
+- id: "local"
   uid: "96b547c2-8927-43ca-a0cd-a72306621696"
-  title: Local
+  title: "Local"
   documentationUrl: "https://www.instill.tech/docs/import-models/local"
   icon: "local.svg"
   releaseStage: alpha
   modelSpec:
     $schema: "http://json-schema.org/draft-07/schema#"
-    title: "Local spec for model"
+    title: "Local Model"
     type: "object"
     required:
       - "content"
+    instillShortDescription: ""
     additionalProperties: false
     minProperties: 1
     maxProperties: 1
     properties:
       content:
         type: "string"
-        contentMediaType: "application/zip"
+        instillUIComponent: "file_upload"
         title: "Upload a .zip file"
         description: "Create and upload a zip file that contains all the model files from your computer. We recommend you add a README.md file in the root directory to describe the model in details."
-        ui_order: 0
-        ui_disabled: true
-        ui_hidden: true
-        ui_component: "file"
-        minLength: 0
-        maxLength: 1023
-- id: artivc
-  uid: "53c5a6de-2a33-4bf0-bef3-4de8cade2a93"
-  title: ArtiVC
-  documentationUrl: "https://www.instill.tech/docs/import-models/artivc"
-  icon: "artivc.svg"
-  releaseStage: alpha
-  modelSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "ArtiVC spec for model"
-    type: "object"
-    required:
-      - "url"
-      - "tag"
-    additionalProperties: false
-    minProperties: 2
-    maxProperties: 3
-    properties:
-      url:
-        type: "string"
-        title: "GCS bucket path"
-        description: "The bucket path of Google Cloud Storage (GCS), e.g. `gs://mybucket/path/to/mymodel/`."
-        examples:
-          - "gs://public-europe-west2-c-artifacts/vdp/public-models/yolov4"
-        readOnly: true
-        ui_order: 0
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-      tag:
-        type: "string"
-        title: "ArtiVC tag"
-        description: "The tag name of ArtiVC source commit, e.g., `v0.1.0`."
-        examples:
-          - "v0.1.0-alpha"
-          - "v1.0.0"
-        readOnly: true
-        ui_order: 1
-        ui_disabled: true
-        ui_component: "text"
-        minLength: 0
-        maxLength: 200
-      credential:
-        type: "object"
-        title: "Credentials JSON"
-        description: "If the GCS bucket path is private, please provide the Google Cloud Application Default credential or service account credential in its JSON format to get access to the model. See [ArtiVC Google Cloud Storage setup guide](https://artivc.io/backends/gcs/)."
-        readOnly: true
-        ui_order: 2
-        minProperties: 0
-        maxProperties: 10
-- id: "huggingface"
-  uid: "5b2e1d10-1fab-462d-9d6a-ba41f4b4d816"
-  title: "Hugging Face"
-  documentationUrl: "https://www.instill.tech/docs/import-models/huggingface"
-  icon: "huggingface.svg"
-  releaseStage: alpha
-  modelSpec:
-    $schema: "http://json-schema.org/draft-07/schema#"
-    title: "Hugging Face spec for model"
-    type: "object"
-    required:
-      - "repo_id"
-    additionalProperties: false
-    minProperties: 1
-    maxProperties: 2
-    properties:
-      repo_id:
-        type: "string"
-        title: "Hugging Face repository"
-        description: "The name of a public Hugging Face repository, e.g. `google/vit-base-patch16-224`. Currently, we only support importing repositories tagged with `Image Classification`."
-        examples:
-          - "google/vit-base-patch16-224"
-          - "microsoft/resnet-50"
-          - "facebook/convnext-tiny-224"
-        ui_order: 0
-        ui_component: "text"
-        minLength: 0
-        maxLength: 1023
-      html_url:
-        type: "string"
-        title: "Hugging Face repository URL"
-        description: "The URL of the Hugging Face repository, e.g. `https://huggingface.co/google/vit-base-patch16-224`."
-        examples:
-          - "https://huggingface.co/google/vit-base-patch16-224"
-          - "https://huggingface.co/microsoft/resnet-50"
-          - "https://huggingface.co/facebook/convnext-tiny-224"
-        readOnly: true
-        ui_order: 2
-        ui_hidden: true
-        ui_disabled: true
-        ui_component: "text"
+        instillUIOrder: 0
         minLength: 0
         maxLength: 1023
