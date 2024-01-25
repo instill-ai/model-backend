@@ -11,6 +11,8 @@ const (
 // Constants for resource owner
 const DefaultUserID string = "admin"
 const HeaderUserUIDKey = "Instill-User-Uid"
+const HeaderVisitorUIDKey = "Instill-Visitor-Uid"
+const HeaderAuthTypeKey = "Instill-Auth-Type"
 
 // Ray proto path
 const RayProtoPath string = "assets/ray/proto"

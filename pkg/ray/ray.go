@@ -356,7 +356,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	// Submit inference request to server
 	modelInferResponse, err := r.rayClient.XCall__(ctx, &modelInferRequest)
 	if err != nil {
-		log.Printf("Error processing InferRequest: %v", err)
+		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
 		return &rayserver.RayServiceCallResponse{}, err
 	}
 

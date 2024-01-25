@@ -20,6 +20,7 @@ const (
 
 type Namespace struct {
 	NsType NamespaceType
+	NsID   string
 	NsUID  uuid.UUID
 }
 
@@ -70,6 +71,16 @@ func GetRscPermalinkUID(path string) (uuid.UUID, error) {
 	}
 
 	return uuid.FromStringOrNil(splits[1]), nil
+}
+
+// GetNamespaceTypeAndUID returns the namespace type and uid from permalink
+func GetNamespaceTypeAndUID(permalink string) (string, uuid.UUID, error) {
+	splits := strings.Split(permalink, "/")
+	if len(splits) < 2 {
+		return "", uuid.Nil, fmt.Errorf("error when extract resource id from resource permalink '%s'", permalink)
+	}
+
+	return splits[0], uuid.FromStringOrNil(splits[1]), nil
 }
 
 func UserUIDToUserPermalink(userUID uuid.UUID) string {

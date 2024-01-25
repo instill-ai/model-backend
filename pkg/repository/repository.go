@@ -2,13 +2,9 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/jackc/pgconn"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -16,7 +12,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/x/paginate"
-	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -24,27 +19,29 @@ import (
 const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
-	ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
-	GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error)
+	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
 
-	CreateUserModel(model *datamodel.Model) error
-	ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
-	GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error)
-	UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error
-	UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error
+	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
+	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error)
 
-	CreateInferenceModel(model *datamodel.InferenceModel) error
-	GetInferenceModels(modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
-	GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.InferenceModel, error)
+	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
+	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
+	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
+	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
+
+	CreateInferenceModel(ctx context.Context, ownerPermalink string, model *datamodel.InferenceModel) error
+	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
+	GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error)
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
-	DeleteModel(modelUID uuid.UUID) error
 
-	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error)
-	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error)
-	ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error)
+	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
+	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
+	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -63,7 +60,7 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
-func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View, pageSize int, pageToken string, showDeleted bool) (models []*datamodel.Model, nextPageToken string, totalSize int64, err error) {
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -72,12 +69,17 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 		db = db.Unscoped()
 	}
 
-	if result := db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize); result.Error != nil {
-		logger.Error(result.Error.Error())
-		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+	if uidAllowList != nil {
+		db.Model(&datamodel.Model{}).Where(where, whereArgs...).Where("uid in ?", uidAllowList).Count(&totalSize)
+	} else {
+		db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize)
 	}
 
-	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, id DESC").Where(where, whereArgs...)
+	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC").Where(where, whereArgs...)
+
+	if uidAllowList != nil {
+		queryBuilder = queryBuilder.Where("uid in ?", uidAllowList)
+	}
 
 	if pageSize == 0 {
 		pageSize = DefaultPageSize
@@ -90,105 +92,84 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	if pageToken != "" {
 		createdAt, uid, err := paginate.DecodeToken(pageToken)
 		if err != nil {
-			st, err := sterr.CreateErrorBadRequest(
-				fmt.Sprintf("[db] list Model error: %s", err.Error()),
-				[]*errdetails.BadRequest_FieldViolation{
-					{
-						Field:       "page_token",
-						Description: fmt.Sprintf("Invalid page token: %s", err.Error()),
-					},
-				},
-			)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-			return nil, "", 0, st.Err()
+			logger.Error(err.Error())
+			return nil, 0, "", ErrPageTokenDecode
 		}
-		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createdAt, uid)
+
+		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createdAt, uid)
 	}
 
-	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("configuration")
+	if isBasicView {
+		queryBuilder.Omit("pipeline.recipe")
 	}
 
-	var createTime time.Time
+	var createTime time.Time // only using one for all loops, we only need the latest one in the end
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[db] list Model error: %s", err.Error()),
-			"model",
-			"",
-			"",
-			err.Error(),
-		)
-
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		return nil, "", 0, st.Err()
+		logger.Error(err.Error())
+		return nil, 0, "", err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item datamodel.Model
 		if err = db.ScanRows(rows, &item); err != nil {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.Internal,
-				fmt.Sprintf("[db] list Model error: %s", err.Error()),
-				"model",
-				"",
-				"",
-				err.Error(),
-			)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-			return nil, "", 0, st.Err()
+			logger.Error(err.Error())
+			return nil, 0, "", err
 		}
 		createTime = item.CreateTime
 		models = append(models, &item)
 	}
 
 	if len(models) > 0 {
-		lastID := (models)[len(models)-1].ID
+		lastUID := (models)[len(models)-1].UID
 		lastItem := &datamodel.Model{}
-		if result := db.Model(&datamodel.Model{}).
-			Where(where, whereArgs...).
-			Order("create_time ASC, id ASC").
-			Limit(1).Find(lastItem); result.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+
+		if uidAllowList != nil {
+			if result := db.Model(&datamodel.Model{}).
+				Where(where, whereArgs...).
+				Where("uid in ?", uidAllowList).
+				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
+				logger.Error(err.Error())
+				return nil, 0, "", err
+			}
+		} else {
+			if result := db.Model(&datamodel.Model{}).
+				Where(where, whereArgs...).
+				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
+				logger.Error(err.Error())
+				return nil, 0, "", err
+			}
 		}
-		if lastItem.ID == lastID {
+
+		if lastItem.UID.String() == lastUID.String() {
 			nextPageToken = ""
 		} else {
-			nextPageToken = paginate.EncodeToken(createTime, lastID)
+			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
 		}
 	}
 
-	return models, nextPageToken, totalSize, nil
+	return models, totalSize, nextPageToken, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
+func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
 	return r.listModels(ctx,
-		"(owner = ? OR visibility = ?)",
-		[]interface{}{userPermalink, VisibilityPublic},
-		view, pageSize, pageToken, showDeleted,
-	)
+		"",
+		[]interface{}{},
+		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
 }
 
-func (r *repository) ListUserModels(ctx context.Context, ownerPermalink string, userPermalink string, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
+func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
 	return r.listModels(ctx,
-		"(owner = ? AND (visibility = ? OR ? = ?))",
-		[]interface{}{ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
-		view, pageSize, pageToken, showDeleted,
-	)
+		"(owner = ?)",
+		[]interface{}{ownerPermalink},
+		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
 }
 
-func (r *repository) ListModelsAdmin(ctx context.Context, view modelPB.View, pageSize int, pageToken string, showDeleted bool) ([]*datamodel.Model, string, int64, error) {
-	return r.listModels(ctx, "", []interface{}{}, view, pageSize, pageToken, showDeleted)
+func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
+	return r.listModels(ctx, "", []interface{}{}, pageSize, pageToken, isBasicView, nil, showDeleted)
 }
 
-func (r *repository) getUserModel(ctx context.Context, where string, whereArgs []interface{}, view modelPB.View) (*datamodel.Model, error) {
+func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []interface{}, isBasicView bool) (*datamodel.Model, error) {
 
 	logger, _ := logger.GetZapLogger(ctx)
 
@@ -196,111 +177,113 @@ func (r *repository) getUserModel(ctx context.Context, where string, whereArgs [
 
 	queryBuilder := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...)
 
-	if view != modelPB.View_VIEW_FULL {
+	if isBasicView {
 		queryBuilder.Omit("configuration")
 	}
 
 	if result := queryBuilder.First(&model); result.Error != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.NotFound,
-			fmt.Sprintf("[db] getUserModel error: %s", result.Error.Error()),
-			"model",
-			"",
-			"",
-			result.Error.Error(),
-		)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		return nil, st.Err()
+		logger.Error(result.Error.Error())
+		return nil, result.Error
 	}
 	return &model, nil
 }
 
-func (r *repository) GetModelByUID(ctx context.Context, userPermalink string, view modelPB.View, uid uuid.UUID) (*datamodel.Model, error) {
-	return r.getUserModel(ctx,
-		"(uid = ? AND (visibility = ? OR owner = ?))",
-		[]interface{}{uid, VisibilityPublic, userPermalink},
-		view,
-	)
-}
-
-func (r *repository) GetUserModelByID(ctx context.Context, ownerPermalink string, userPermalink string, modelID string, view modelPB.View) (*datamodel.Model, error) {
-	return r.getUserModel(ctx,
-		"(id = ? AND (owner = ? AND (visibility = ? OR ? = ?)))",
-		[]interface{}{modelID, ownerPermalink, VisibilityPublic, ownerPermalink, userPermalink},
-		view,
-	)
-}
-
-func (r *repository) GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*datamodel.Model, error) {
-	return r.getUserModel(ctx,
-		"(id = ?)",
-		[]interface{}{modelID},
-		view,
-	)
-}
-
-func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, view modelPB.View) (*datamodel.Model, error) {
-	return r.getUserModel(ctx,
+func (r *repository) GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error) {
+	// TODO: ACL
+	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
 		[]interface{}{uid},
-		view,
+		isBasicView)
+}
+
+func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error) {
+	return r.getNamespaceModel(ctx,
+		"(id = ? AND owner = ? )",
+		[]interface{}{id, ownerPermalink},
+		isBasicView)
+}
+
+func (r *repository) GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error) {
+	return r.getNamespaceModel(ctx,
+		"(id = ?)",
+		[]interface{}{id},
+		isBasicView)
+}
+
+func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error) {
+	return r.getNamespaceModel(ctx,
+		"(uid = ?)",
+		[]interface{}{uid},
+		isBasicView,
 	)
 }
 
-func (r *repository) CreateUserModel(model *datamodel.Model) error {
+func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(result.Error, &pgErr) {
-			if pgErr.Code == "23505" {
-				return status.Errorf(codes.AlreadyExists, pgErr.Message)
-			}
-		}
+		return result.Error
 	}
-
 	return nil
 }
 
-func (r *repository) UpdateUserModel(ownerPermalink string, userPermalink string, modelUID uuid.UUID, updatedModel *datamodel.Model) error {
+func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).
-		Where("(uid = ? AND owner = ? AND ? = ? )", modelUID, ownerPermalink, ownerPermalink, userPermalink).
-		Updates(updatedModel); result.Error != nil {
-		return status.Error(codes.Internal, result.Error.Error())
+		Where("(id = ? AND owner = ?)", id, ownerPermalink).
+		Updates(model); result.Error != nil {
+		return result.Error
 	} else if result.RowsAffected == 0 {
-		return status.Errorf(codes.NotFound, "[UpdateModel] The model uid %s you specified is not found", modelUID)
+		return ErrNoDataUpdated
+	}
+	return nil
+}
+
+func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error {
+	if result := r.db.Model(&datamodel.Model{}).
+		Where("(id = ? AND owner = ?)", id, ownerPermalink).
+		Update("id", newID); result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return ErrNoDataUpdated
 	}
 	return nil
 }
 
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-func (r *repository) UpdateUserModelState(ownerPermalink string, userPermalink string, modelUID uuid.UUID, state *datamodel.ModelState) error {
+func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error {
 	if result := r.db.Model(&datamodel.Model{}).
-		Where("(uid = ? AND owner = ? AND ? = ? )", modelUID, ownerPermalink, ownerPermalink, userPermalink).
+		Where("(id = ? AND owner = ?)", id, ownerPermalink).
 		Updates(map[string]interface{}{"state": state}); result.Error != nil {
-		return status.Errorf(codes.Internal, "Error %v", result.Error)
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return ErrNoDataUpdated
 	}
 
 	return nil
 }
 
-func (r *repository) CreateInferenceModel(model *datamodel.InferenceModel) error {
+func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
+	if result := r.db.Select("InferenceModels").Delete(&datamodel.Model{ID: id, Owner: ownerPermalink}); result.Error != nil {
+		return status.Errorf(codes.NotFound, "Could not delete model with id %s", id)
+	}
+	return nil
+}
+
+func (r *repository) CreateInferenceModel(ctx context.Context, ownerPermalink string, model *datamodel.InferenceModel) error {
 	if result := r.db.Model(&datamodel.InferenceModel{}).Create(&model); result.Error != nil {
-		return status.Errorf(codes.Internal, "Error %v", result.Error)
+		return result.Error
 	}
 
 	return nil
 }
 
-func (r *repository) GetInferenceModels(modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
-	var tmodels []*datamodel.InferenceModel
-	if result := r.db.Model(&datamodel.InferenceModel{}).Where("model_uid", modelUID).Find(&tmodels); result.Error != nil {
+func (r *repository) GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
+	var models []*datamodel.InferenceModel
+	if result := r.db.Model(&datamodel.InferenceModel{}).Where("model_uid", modelUID).Find(&models); result.Error != nil {
 		return []*datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
 	}
-	return tmodels, nil
+	return models, nil
 }
 
-func (r *repository) GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
+func (r *repository) GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
 	var ensembleModel *datamodel.InferenceModel
 	result := r.db.Model(&datamodel.InferenceModel{}).
 		Where("(model_uid = ? AND (platform = ? OR platform = ?))", modelUID, "ensemble", "ray").
@@ -309,13 +292,6 @@ func (r *repository) GetInferenceEnsembleModel(modelUID uuid.UUID) (*datamodel.I
 		return &datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
 	}
 	return ensembleModel, nil
-}
-
-func (r *repository) DeleteModel(modelUID uuid.UUID) error {
-	if result := r.db.Select("InferenceModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}}); result.Error != nil {
-		return status.Errorf(codes.NotFound, "Could not delete model with id %v", modelUID)
-	}
-	return nil
 }
 
 func (r *repository) GetModelDefinition(id string) (*datamodel.ModelDefinition, error) {
