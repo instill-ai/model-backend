@@ -41,6 +41,9 @@ tritonserver:
 rayserver:
   grpcuri: ray-server:9000
   modelstore: /model-repository
+  gpu:
+    enabled: false
+    vram: "8"
 mgmtbackend:
   host: mgmt-backend
   privateport: 3084

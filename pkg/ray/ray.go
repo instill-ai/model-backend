@@ -453,7 +453,7 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 
 func (r *ray) DeployModel(modelPath string) error {
 	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(\"%s\", \"%s\")", modelPath, config.Config.RayServer.GrpcURI))
+	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(\"%s\", \"%s\", \"%s\")", modelPath, config.Config.RayServer.GrpcURI, config.Config.RayServer.GPU.Vram))
 	cmd.Dir = modelPath
 
 	cmd.Stdin = os.Stdin
