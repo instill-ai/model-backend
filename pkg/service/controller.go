@@ -9,7 +9,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
+func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, *string, error) {
 	resourcePermalink := utils.ConvertModelToResourcePermalink(modelUID.String())
 
 	resp, err := s.controllerClient.GetResource(ctx, &controllerPB.GetResourceRequest{
@@ -17,10 +17,10 @@ func (s *service) GetResourceState(ctx context.Context, modelUID uuid.UUID) (*mo
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return resp.Resource.GetModelState().Enum(), nil
+	return resp.Resource.GetModelState().Enum(), resp.Resource.WorkflowId, nil
 }
 
 func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error {
@@ -32,9 +32,9 @@ func (s *service) UpdateResourceState(ctx context.Context, modelUID uuid.UUID, s
 			State: &controllerPB.Resource_ModelState{
 				ModelState: state,
 			},
-			Progress: progress,
+			Progress:   progress,
+			WorkflowId: workflowID,
 		},
-		WorkflowId: workflowID,
 	}); err != nil {
 		return err
 	}

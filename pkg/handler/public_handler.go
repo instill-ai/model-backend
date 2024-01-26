@@ -221,149 +221,6 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 	return nil, "", fmt.Errorf("unsupported task input type")
 }
 
-func savePredictInputsTestMode(stream modelPB.ModelPublicService_TestUserModelBinaryFileUploadServer) (triggerInput interface{}, modelID string, err error) {
-	var firstChunk = true
-	var fileData *modelPB.TestUserModelBinaryFileUploadRequest
-
-	var textToImageInput *triton.TextToImageInput
-	var textGeneration *triton.TextGenerationInput
-
-	var allContentFiles []byte
-	var fileLengths []uint32
-	for {
-		fileData, err = stream.Recv() //ignoring the data  TO-Do save files received
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
-			err = errors.Wrapf(err,
-				"failed while reading chunks from stream")
-			return nil, "", err
-		}
-
-		if firstChunk { //first chunk contains file name
-			firstChunk = false
-			modelID, err = resource.GetRscNameID(fileData.Name) // format "users/{user}/models/{model}"
-			if err != nil {
-				return nil, "", err
-			}
-			switch fileData.TaskInput.Input.(type) {
-			case *modelPB.TaskInputStream_Classification:
-				fileLengths = fileData.TaskInput.GetClassification().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
-			case *modelPB.TaskInputStream_Detection:
-				fileLengths = fileData.TaskInput.GetDetection().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
-			case *modelPB.TaskInputStream_Keypoint:
-				fileLengths = fileData.TaskInput.GetKeypoint().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
-			case *modelPB.TaskInputStream_Ocr:
-				fileLengths = fileData.TaskInput.GetOcr().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
-			case *modelPB.TaskInputStream_InstanceSegmentation:
-				fileLengths = fileData.TaskInput.GetInstanceSegmentation().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
-			case *modelPB.TaskInputStream_SemanticSegmentation:
-				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
-				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
-			case *modelPB.TaskInputStream_TextToImage:
-				extraParams := ""
-				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
-					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
-					if err != nil {
-						log.Fatalf("Error marshalling to JSON: %v", err)
-					} else {
-						extraParams = string(jsonData)
-					}
-				}
-				textToImageInput = &triton.TextToImageInput{
-					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
-					PromptImage: "", // TODO: support streaming image generation
-					Steps:       *fileData.TaskInput.GetTextToImage().Steps,
-					CfgScale:    *fileData.TaskInput.GetTextToImage().CfgScale,
-					Seed:        *fileData.TaskInput.GetTextToImage().Seed,
-					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
-					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
-				}
-			case *modelPB.TaskInputStream_TextGeneration:
-				extraParams := ""
-				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
-					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
-					if err != nil {
-						log.Fatalf("Error marshalling to JSON: %v", err)
-					} else {
-						extraParams = string(jsonData)
-					}
-				}
-
-				textGeneration = &triton.TextGenerationInput{
-					Prompt: fileData.TaskInput.GetTextGeneration().Prompt,
-					// PromptImage:   "", // TODO: support streaming image generation
-					MaxNewTokens: *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
-					// StopWordsList: *fileData.TaskInput.GetTextGeneration().StopWordsList,
-					Temperature: *fileData.TaskInput.GetTextGeneration().Temperature,
-					TopK:        *fileData.TaskInput.GetTextGeneration().TopK,
-					Seed:        *fileData.TaskInput.GetTextGeneration().Seed,
-					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
-				}
-			default:
-				return nil, "", fmt.Errorf("unsupported task input type")
-			}
-		}
-		switch fileData.TaskInput.Input.(type) {
-		case *modelPB.TaskInputStream_Classification:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
-		case *modelPB.TaskInputStream_Detection:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
-		case *modelPB.TaskInputStream_Keypoint:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
-		case *modelPB.TaskInputStream_Ocr:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
-		case *modelPB.TaskInputStream_InstanceSegmentation:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
-		case *modelPB.TaskInputStream_SemanticSegmentation:
-			allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
-		default:
-			return nil, "", fmt.Errorf("unsupported task input type")
-		}
-	}
-
-	switch fileData.TaskInput.Input.(type) {
-	case *modelPB.TaskInputStream_Classification,
-		*modelPB.TaskInputStream_Detection,
-		*modelPB.TaskInputStream_Keypoint,
-		*modelPB.TaskInputStream_Ocr,
-		*modelPB.TaskInputStream_InstanceSegmentation,
-		*modelPB.TaskInputStream_SemanticSegmentation:
-		if len(fileLengths) == 0 {
-			return nil, "", fmt.Errorf("wrong parameter length of files")
-		}
-		imageBytes := make([][]byte, len(fileLengths))
-		start := uint32(0)
-		for i := 0; i < len(fileLengths); i++ {
-			buff := new(bytes.Buffer)
-			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
-			if err != nil {
-				return nil, "", err
-			}
-			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
-			if err != nil {
-				return nil, "", err
-			}
-			imageBytes[i] = buff.Bytes()
-			start += fileLengths[i]
-		}
-		return imageBytes, modelID, nil
-	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, nil
-	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, nil
-	}
-	return nil, "", fmt.Errorf("unsupported task input type")
-
-}
-
 func makeJSONResponse(w http.ResponseWriter, status int, title string, detail string) {
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(status)
@@ -2187,7 +2044,7 @@ func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.Deploy
 
 	state := modelPB.Model_STATE_OFFLINE.Enum()
 	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
-		if state, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
+		if state, _, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
 			return &modelPB.DeployUserModelResponse{}, err
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -2251,7 +2108,7 @@ func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.Unde
 
 	state := modelPB.Model_STATE_ONLINE.Enum()
 	for state.String() == modelPB.Model_STATE_ONLINE.String() {
-		if state, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
+		if state, _, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
 			return &modelPB.UndeployUserModelResponse{}, err
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -2320,7 +2177,7 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUs
 		return &modelPB.WatchUserModelResponse{}, err
 	}
 
-	state, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
+	state, _, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
 
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -2338,117 +2195,6 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUs
 	return &modelPB.WatchUserModelResponse{
 		State: *state,
 	}, err
-}
-
-func (h *PublicHandler) TestUserModelBinaryFileUpload(stream modelPB.ModelPublicService_TestUserModelBinaryFileUploadServer) error {
-
-	eventName := "TestUserModelBinaryFileUpload"
-
-	ctx, span := tracer.Start(stream.Context(), eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := logger.GetZapLogger(ctx)
-
-	triggerInput, path, err := savePredictInputsTestMode(stream)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(path)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return err
-	}
-	_, userUID, err := h.service.GetUser(ctx)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return err
-	}
-
-	pbModel, err := h.service.GetUserModelByID(stream.Context(), ns, userUID, modelID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return err
-	}
-
-	numberOfInferences := 1
-	switch commonPB.Task(pbModel.Task) {
-	case commonPB.Task_TASK_CLASSIFICATION,
-		commonPB.Task_TASK_DETECTION,
-		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonPB.Task_TASK_OCR,
-		commonPB.Task_TASK_KEYPOINT:
-		numberOfInferences = len(triggerInput.([][]byte))
-	}
-
-	// check whether model support batching or not. If not, raise an error
-	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return err
-		}
-		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return status.Error(codes.InvalidArgument, err.Error())
-		}
-		if !doSupportBatch {
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
-		}
-	}
-
-	task := commonPB.Task(pbModel.Task)
-	response, err := h.service.TriggerUserModelTestMode(stream.Context(), uuid.FromStringOrNil(pbModel.Uid), triggerInput, task)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
-			"",
-			"",
-			err.Error(),
-		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"Triton inference server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		span.SetStatus(1, st.Err().Error())
-		return st.Err()
-	}
-
-	err = stream.SendAndClose(&modelPB.TestUserModelBinaryFileUploadResponse{
-		Task:        task,
-		TaskOutputs: response,
-	})
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		span,
-		logUUID.String(),
-		userUID,
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return err
 }
 
 func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) error {
@@ -2798,177 +2544,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.Trigg
 	}, nil
 }
 
-func (h *PublicHandler) TestUserModel(ctx context.Context, req *modelPB.TestUserModelRequest) (*modelPB.TestUserModelResponse, error) {
-
-	eventName := "TestUserModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.Name)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.TestUserModelResponse{}, err
-	}
-	_, userUID, err := h.service.GetUser(ctx)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.TestUserModelResponse{}, err
-	}
-
-	pbModel, err := h.service.GetUserModelByID(ctx, ns, userUID, modelID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.TestUserModelResponse{}, err
-	}
-
-	var inputInfer interface{}
-	var lenInputs = 1
-	switch commonPB.Task(pbModel.Task) {
-	case commonPB.Task_TASK_CLASSIFICATION,
-		commonPB.Task_TASK_DETECTION,
-		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonPB.Task_TASK_OCR,
-		commonPB.Task_TASK_KEYPOINT,
-		commonPB.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(ctx, &modelPB.TriggerUserModelRequest{
-			Name:       req.Name,
-			TaskInputs: req.TaskInputs,
-		})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = len(imageInput)
-		inputInfer = imageInput
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(ctx, &modelPB.TriggerUserModelRequest{
-			Name:       req.Name,
-			TaskInputs: req.TaskInputs,
-		})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		inputInfer = textToImage
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageToImageRequestInputs(ctx, &modelPB.TriggerUserModelRequest{
-			Name:       req.Name,
-			TaskInputs: req.TaskInputs,
-		})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		inputInfer = imageToImage
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
-			ctx,
-			&modelPB.TriggerUserModelRequest{
-				Name:       req.Name,
-				TaskInputs: req.TaskInputs,
-			})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		inputInfer = visualQuestionAnswering
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTexGenerationChatRequestInputs(
-			ctx,
-			&modelPB.TriggerUserModelRequest{
-				Name:       req.Name,
-				TaskInputs: req.TaskInputs,
-			})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		inputInfer = textGenerationChat
-	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(
-			ctx,
-			&modelPB.TriggerUserModelRequest{
-				Name:       req.Name,
-				TaskInputs: req.TaskInputs,
-			})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-		}
-		inputInfer = textGeneration
-	}
-	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
-		if tritonModelInDB.Platform == "ensemble" {
-			if err != nil {
-				span.SetStatus(1, err.Error())
-				return &modelPB.TestUserModelResponse{}, err
-			}
-			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-			if err != nil {
-				span.SetStatus(1, err.Error())
-				return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-			}
-			if !doSupportBatch {
-				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-				return &modelPB.TestUserModelResponse{}, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
-			}
-		}
-	}
-	task := commonPB.Task(pbModel.Task)
-	response, err := h.service.TriggerUserModelTestMode(ctx, uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
-			"",
-			"",
-			err.Error(),
-		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"Triton inference server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		span.SetStatus(1, st.Err().Error())
-		return &modelPB.TestUserModelResponse{}, st.Err()
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		span,
-		logUUID.String(),
-		userUID,
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return &modelPB.TestUserModelResponse{
-		Task:        task,
-		TaskOutputs: response,
-	}, nil
-}
-
-func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string, mode string) {
+func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
 	startTime := time.Now()
 	eventName := "InferModelByUpload"
@@ -3171,11 +2747,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 	task := commonPB.Task(pbModel.Task)
 	var response []*modelPB.TaskOutput
-	if mode == "test" {
-		response, err = s.TriggerUserModelTestMode(req.Context(), uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
-	} else {
-		response, err = s.TriggerUserModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
-	}
+	response, err = s.TriggerUserModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid), inputInfer, task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -3209,7 +2781,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(200)
-	res, err := utils.MarshalOptions.Marshal(&modelPB.TestUserModelBinaryFileUploadResponse{
+	res, err := utils.MarshalOptions.Marshal(&modelPB.TriggerUserModelBinaryFileUploadResponse{
 		Task:        task,
 		TaskOutputs: response,
 	})
@@ -3237,12 +2809,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 }
 
-func HandleTestModelByUpload(s service.Service, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(s, w, r, pathParams, "test")
-}
-
 func HandleTriggerModelByUpload(s service.Service, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(s, w, r, pathParams, "trigger")
+	inferModelByUpload(s, w, r, pathParams)
 }
 
 func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelPB.GetUserModelCardRequest) (*modelPB.GetUserModelCardResponse, error) {

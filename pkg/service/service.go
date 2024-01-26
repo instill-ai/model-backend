@@ -14,7 +14,6 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"go.temporal.io/sdk/client"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -29,7 +28,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/sterr"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -71,7 +69,6 @@ type Service interface {
 
 	CreateUserModelAsync(ctx context.Context, model *datamodel.Model) (string, error)
 	TriggerUserModel(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
-	TriggerUserModelTestMode(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
@@ -90,7 +87,7 @@ type Service interface {
 	CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
 
 	// Controller
-	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
+	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, *string, error)
 	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error
 	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
 
@@ -346,41 +343,6 @@ func (s *service) GetUserModelByID(ctx context.Context, ns resource.Namespace, u
 	}
 
 	return s.DBToPBModel(ctx, modelDef, dbModel)
-}
-
-func (s *service) TriggerUserModelTestMode(ctx context.Context, modelUID uuid.UUID, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
-
-	// switch task {
-	// case commonPB.Task_TASK_CLASSIFICATION,
-	// 	commonPB.Task_TASK_DETECTION,
-	// 	commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-	// 	commonPB.Task_TASK_KEYPOINT,
-	// 	commonPB.Task_TASK_OCR,
-	// 	commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
-	// 	commonPB.Task_TASK_UNSPECIFIED:
-
-	// 	if strings.HasPrefix(owner, "users/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), int64(len(inferInput.([][]byte))))
-	// 	} else if strings.HasPrefix(owner, "orgs/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), int64(len(inferInput.([][]byte))))
-	// 	}
-	// case commonPB.Task_TASK_TEXT_TO_IMAGE:
-	// 	if strings.HasPrefix(owner, "users/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
-	// 	} else if strings.HasPrefix(owner, "orgs/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
-	// 	}
-	// case commonPB.Task_TASK_TEXT_GENERATION:
-	// 	if strings.HasPrefix(owner, "users/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("user:%s:test.num", uid), 1)
-	// 	} else if strings.HasPrefix(owner, "orgs/") {
-	// 		s.redisClient.IncrBy(ctx, fmt.Sprintf("org:%s:test.num", uid), 1)
-	// 	}
-	// default:
-	// 	return nil, fmt.Errorf("unknown task input type")
-	// }
-
-	return s.TriggerUserModel(ctx, modelUID, inferInput, task)
 }
 
 func (s *service) CheckModel(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
@@ -971,25 +933,43 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 		return err
 	}
 
-	state, err := s.GetResourceState(ctx, modelInDB.UID)
+	state, workflowID, err := s.GetResourceState(ctx, modelInDB.UID)
 	if err != nil {
 		return err
 	}
 
 	if *state == modelPB.Model_STATE_UNSPECIFIED {
-		st, err := sterr.CreateErrorPreconditionFailure(
-			"[service] delete model",
-			[]*errdetails.PreconditionFailure_Violation{
-				{
-					Type:        "DELETE",
-					Subject:     fmt.Sprintf("id %s", modelInDB.ID),
-					Description: "The model is still in operations, please wait the operation finish and try it again",
-				},
-			})
-		if err != nil {
-			logger.Error(err.Error())
+		s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received")
+		if config.Config.Cache.Model.Enabled {
+			var existedModelConfig datamodel.GitHubModelConfiguration
+			b, err := modelInDB.Configuration.MarshalJSON()
+			if err != nil {
+				logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
+				return err
+			}
+			if err := json.Unmarshal(b, &existedModelConfig); err != nil {
+				logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
+				return err
+			}
+			modelSrcDir := config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", existedModelConfig.Repository, existedModelConfig.Tag)
+			redisRepoKey := fmt.Sprintf("model_cache:%s:%s", existedModelConfig.Repository, existedModelConfig.Tag)
+			_ = os.RemoveAll(modelSrcDir)
+			s.redisClient.Del(ctx, redisRepoKey)
 		}
-		return st.Err()
+		// TODO: add private delete for workflow termination
+		// st, err := sterr.CreateErrorPreconditionFailure(
+		// 	"[service] delete model",
+		// 	[]*errdetails.PreconditionFailure_Violation{
+		// 		{
+		// 			Type:        "DELETE",
+		// 			Subject:     fmt.Sprintf("id %s", modelInDB.ID),
+		// 			Description: "The model is still in operations, please wait the operation finish and try it again",
+		// 		},
+		// 	})
+		// if err != nil {
+		// 	logger.Error(err.Error())
+		// }
+		// return st.Err()
 	}
 
 	if err := s.UndeployModel(ctx, ownerPermalink, userPermalink, modelInDB.UID); err != nil {
@@ -997,7 +977,7 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 	}
 
 	for *state != modelPB.Model_STATE_OFFLINE {
-		state, err = s.GetResourceState(ctx, modelInDB.UID)
+		state, _, err = s.GetResourceState(ctx, modelInDB.UID)
 		if err != nil {
 			return err
 		}
