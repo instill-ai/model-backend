@@ -74,10 +74,7 @@ type TritonServerConfig struct {
 type RayServerConfig struct {
 	GrpcURI    string `koanf:"grpcuri"`
 	ModelStore string `koanf:"modelstore"`
-	GPU        struct {
-		Enabled bool   `koanf:"enabled"`
-		Vram    string `koanf:"vram"`
-	}
+	Vram       string `koanf:"vram"`
 }
 
 // MgmtBackendConfig related to mgmt-backend
