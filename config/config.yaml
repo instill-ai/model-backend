@@ -14,7 +14,7 @@ server:
   debug: true
   itmode:
     enabled: false
-  maxdatasize: 32 # MB in unit
+  maxdatasize: 100 # MB in unit
   workflow:
     maxworkflowtimeout: 7200 # in seconds
     maxworkflowretry: 3

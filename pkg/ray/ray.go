@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -59,7 +60,15 @@ func NewRay() Ray {
 func (r *ray) Init() {
 	grpcURI := config.Config.RayServer.GrpcURI
 	// Connect to gRPC server
-	conn, err := grpc.Dial(grpcURI, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(
+		grpcURI,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+			grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+		),
+	)
+
 	if err != nil {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcURI, err)
 	}
@@ -250,6 +259,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.PromptImage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
@@ -268,6 +278,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(imageToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.Prompt)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("NONE")}))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.PromptImage)}))
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, samples)
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")})) // Fixed value.
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, steps)
