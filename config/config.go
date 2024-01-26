@@ -74,6 +74,7 @@ type TritonServerConfig struct {
 type RayServerConfig struct {
 	GrpcURI    string `koanf:"grpcuri"`
 	ModelStore string `koanf:"modelstore"`
+	Vram       string `koanf:"vram"`
 }
 
 // MgmtBackendConfig related to mgmt-backend
