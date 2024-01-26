@@ -939,7 +939,10 @@ func (s *service) DeleteUserModel(ctx context.Context, ns resource.Namespace, us
 	}
 
 	if *state == modelPB.Model_STATE_UNSPECIFIED {
-		s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received")
+		err := s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received")
+		if err != nil {
+			return err
+		}
 		if config.Config.Cache.Model.Enabled {
 			var existedModelConfig datamodel.GitHubModelConfiguration
 			b, err := modelInDB.Configuration.MarshalJSON()
