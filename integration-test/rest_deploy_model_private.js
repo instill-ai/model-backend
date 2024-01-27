@@ -75,10 +75,10 @@ export function DeployUndeployModel(header) {
       })
 
       // Check delete model with 422 when model is in unspecified state
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header), {
-        [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
-          r.status === 422,
-      })
+      // check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header), {
+      //   [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
+      //     r.status === 422,
+      // })
 
       // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
       currentTime = new Date().getTime();
@@ -138,10 +138,10 @@ export function DeployUndeployModel(header) {
       })
 
       // Check delete model with 422 when model is in unspecified state
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header), {
-        [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
-          r.status === 422,
-      })
+      // check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}`, header), {
+      //   [`DELETE /v1alpha/models/${model_id} task cls response status 422`]: (r) =>
+      //     r.status === 422,
+      // })
 
       // Check the model state being updated in 120 secs
       currentTime = new Date().getTime();

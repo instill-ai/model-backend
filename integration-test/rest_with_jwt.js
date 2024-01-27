@@ -6,7 +6,6 @@ import {
 
 import * as createModel from "./rest_create_model_with_jwt.js"
 import * as queryModel from "./rest_query_model_with_jwt.js"
-import * as testModel from "./rest_infer_model_with_jwt.js"
 import * as deployModel from "./rest_deploy_model_with_jwt.js"
 import * as publishModel from "./rest_publish_model_with_jwt.js"
 import * as updateModel from "./rest_update_model_with_jwt.js"
@@ -58,9 +57,6 @@ export default function (header) {
   }
 
   if (!constant.apiGatewayMode) {
-    // Test Model API
-    testModel.TestModel(header)
-
     // Create Model API
     createModel.CreateModelFromLocal(header)
     createModel.CreateModelFromGitHub(header)

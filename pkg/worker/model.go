@@ -82,7 +82,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	modelSrcDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	switch modelDef.ID {
 	case "github":
-		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
+		if !config.Config.Server.ItMode.Enabled && !utils.HasDVCWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.GitHubModelConfiguration
 			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
 				return err

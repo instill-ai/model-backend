@@ -180,20 +180,6 @@ export function InferGitHubModel(header) {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart cls status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -214,28 +200,6 @@ export function InferGitHubModel(header) {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-          r.json().task_outputs[1].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
-          r.json().task_outputs[1].classification.score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-          r.json().task_outputs[2].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
-          r.json().task_outputs[2].classification.score > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -425,20 +389,6 @@ export function InferGitHubModel(header) {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart cls status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -459,28 +409,6 @@ export function InferGitHubModel(header) {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task`]: (r) =>
-          r.json().task === "TASK_CLASSIFICATION",
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[0].classification.category`]: (r) =>
-          r.json().task_outputs[0].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[0].classification.score`]: (r) =>
-          r.json().task_outputs[0].classification.score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[1].classification.category`]: (r) =>
-          r.json().task_outputs[1].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[1].classification.score`]: (r) =>
-          r.json().task_outputs[1].classification.score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls multiple images task_outputs[2].classification.category`]: (r) =>
-          r.json().task_outputs[2].classification.category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart cls response task_outputs[2].classification.score`]: (r) =>
-          r.json().task_outputs[2].classification.score > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -730,30 +658,6 @@ export function InferGitHubModel(header) {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task`]: (r) =>
-          r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-          r.json().task_outputs[0].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -784,58 +688,6 @@ export function InferGitHubModel(header) {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task`]: (r) =>
-          r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-          r.json().task_outputs[0].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-          r.json().task_outputs[1].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-          r.json().task_outputs[2].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -1114,30 +966,6 @@ export function InferGitHubModel(header) {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart det status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task`]: (r) =>
-          r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects.length`]: (r) =>
-          r.json().task_outputs[0].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -1168,58 +996,6 @@ export function InferGitHubModel(header) {
       fd.append("file", http.file(constant.dog_img));
       fd.append("file", http.file(constant.cat_img));
       fd.append("file", http.file(constant.bear_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task`]: (r) =>
-          r.json().task === "TASK_DETECTION",
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 3,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects.length`]: (r) =>
-          r.json().task_outputs[0].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart det task_outputs[0].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[0].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].detection.objects[0].bounding_box.height > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects.length`]: (r) =>
-          r.json().task_outputs[1].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[1].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].detection.objects[0].bounding_box.height > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects.length`]: (r) =>
-          r.json().task_outputs[2].detection.objects.length >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].category`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].category !== undefined,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].score`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images det task_outputs[2].detection.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[2].detection.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -1498,30 +1274,6 @@ export function InferGitHubModel(header) {
       // Predict with multiple-part
       let fd = new FormData();
       fd.append("file", http.file(constant.dog_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task`]: (r) =>
-          r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart keypoint task_outputs[0].keypoint.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -1551,44 +1303,6 @@ export function InferGitHubModel(header) {
       fd = new FormData();
       fd.append("file", http.file(constant.dance_img));
       fd.append("file", http.file(constant.dance_img));
-      check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-      }), {
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint status`]: (r) =>
-          r.status === 200,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task`]: (r) =>
-          r.json().task === "TASK_KEYPOINT",
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs.length`]: (r) =>
-          r.json().task_outputs.length === 2,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects.length`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects.length >= 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].keypoints`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].score`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[0].keypoint.objects[0].bounding_box.height > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects.length`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects.length === 1,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].keypoints`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].keypoints.length > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].score`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.top`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].bounding_box.top >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.left`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].bounding_box.left >= 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.width`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].bounding_box.width > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[1].keypoint.objects[0].bounding_box.height`]: (r) =>
-          r.json().task_outputs[1].keypoint.objects[0].bounding_box.height > 0,
-      });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -1604,7 +1318,7 @@ export function InferGitHubModel(header) {
           r.json().task_outputs[0].keypoint.objects[0].keypoints.length > 0,
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].score`]: (r) =>
           r.json().task_outputs[0].keypoint.objects[0].score > 0,
-        [`POST /v1alpha/models/${model_id}/test-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.top`]: (r) =>
+        [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.top`]: (r) =>
           r.json().task_outputs[0].keypoint.objects[0].bounding_box.top >= 0,
         [`POST /v1alpha/models/${model_id}/trigger-multipart multiple images keypoint task_outputs[0].keypoint.objects[0].bounding_box.left`]: (r) =>
           r.json().task_outputs[0].keypoint.objects[0].bounding_box.left >= 0,
@@ -1827,22 +1541,6 @@ export function InferGitHubModel(header) {
   //     // Predict with multiple-part
   //     fd = new FormData();
   //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task`]: (r) =>
-  //         r.json().task === "TASK_SEMANTIC_SEGMENTATION",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs[0].category`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].category === "tree",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic task_outputs[0].semantic_segmentation.stuffs[0].rle`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].rle !== undefined,
-  //     });
   //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
   //     }), {
@@ -1865,34 +1563,6 @@ export function InferGitHubModel(header) {
   //     fd.append("file", http.file(constant.dog_img));
   //     fd.append("file", http.file(constant.cat_img));
   //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task`]: (r) =>
-  //         r.json().task === "TASK_SEMANTIC_SEGMENTATION",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[0].semantic_segmentation.stuffs`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[0].semantic_segmentation.stuffs[0].category`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].category === "tree",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[0].semantic_segmentation.stuffs[0].rle`]: (r) =>
-  //         r.json().task_outputs[0].semantic_segmentation.stuffs[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[1].semantic_segmentation.stuffs`]: (r) =>
-  //         r.json().task_outputs[1].semantic_segmentation.stuffs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[1].semantic_segmentation.stuffs[0].category`]: (r) =>
-  //         r.json().task_outputs[1].semantic_segmentation.stuffs[0].category === "tree",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[1].semantic_segmentation.stuffs[0].rle`]: (r) =>
-  //         r.json().task_outputs[1].semantic_segmentation.stuffs[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs`]: (r) =>
-  //         r.json().task_outputs[2].semantic_segmentation.stuffs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs[0].category`]: (r) =>
-  //         r.json().task_outputs[2].semantic_segmentation.stuffs[0].category === "tree",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart semantic multiple task_outputs[2].semantic_segmentation.stuffs[0].rle`]: (r) =>
-  //         r.json().task_outputs[2].semantic_segmentation.stuffs[0].rle !== undefined,
-  //     });
   //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
   //     }), {
@@ -2179,32 +1849,6 @@ export function InferGitHubModel(header) {
   //     // Predict with multiple-part
   //     fd = new FormData();
   //     fd.append("file", http.file(constant.dog_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task`]: (r) =>
-  //         r.json().task === "TASK_INSTANCE_SEGMENTATION",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].rle`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.top !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.left !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].category === "dog",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].score > 0.0,
-  //     });
   //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
   //     }), {
@@ -2237,64 +1881,6 @@ export function InferGitHubModel(header) {
   //     fd.append("file", http.file(constant.dog_img));
   //     fd.append("file", http.file(constant.cat_img));
   //     fd.append("file", http.file(constant.bear_img));
-  //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/test-multipart`, fd.body(), {
-  //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
-  //     }), {
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images status`]: (r) =>
-  //         r.status === 200,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task`]: (r) =>
-  //         r.json().task === "TASK_INSTANCE_SEGMENTATION",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance task_outputs.length`]: (r) =>
-  //         r.json().task_outputs.length === 3,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].rle`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.top !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.left !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].category === "dog",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[0].instance_segmentation.objects[0].score > 0.0,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].rle`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].bounding_box.top !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].bounding_box.left !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].category === "dog",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[0].instance_segmentation.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[1].instance_segmentation.objects[0].score > 0.0,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects.length === 1,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].rle`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].rle !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].bounding_box.top`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].bounding_box.top !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].bounding_box.left`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].bounding_box.left !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].bounding_box.height`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].bounding_box.height !== undefined,
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].category`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].category === "dog",
-  //       [`POST /v1alpha/models/${model_id}/test-multipart instance multiple images task_outputs[2].instance_segmentation.objects[0].score`]: (r) =>
-  //         r.json().task_outputs[2].instance_segmentation.objects[0].score > 0.0,
-  //     });
   //     check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
   //       headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
   //     }), {

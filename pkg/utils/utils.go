@@ -735,6 +735,22 @@ func HasModelWeightFile(modelRepository string, inferenceModels []*datamodel.Inf
 	return false
 }
 
+func HasDVCWeightFile(modelRepository string, inferenceModels []*datamodel.InferenceModel) bool {
+	for _, inferenceModel := range inferenceModels {
+		modelDir := fmt.Sprintf("%s/%s", modelRepository, inferenceModel.Name)
+		dvcFiles := findDVCPaths(modelDir)
+		if len(dvcFiles) > 0 {
+			for _, dvcFile := range dvcFiles {
+				if _, err := os.Stat(strings.TrimSuffix(dvcFile, ".dvc")); err != nil {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func updateModelConfigModel(configFilePath string, oldStr string, newStr string) error {
 	if _, err := os.Stat(configFilePath); err != nil {
 		return err
