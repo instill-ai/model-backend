@@ -467,14 +467,14 @@ func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse
 	for i := 0; i < int(outputTensorImages.Shape[0]); i++ {
 		imgRaw := triton.DeserializeFloat32Tensor(rawOutputContentImages[i*lenSingleImage : (i+1)*lenSingleImage])
 
-		width := int(outputTensorImages.Shape[1])
-		height := int(outputTensorImages.Shape[2])
+		width := int(outputTensorImages.Shape[2])
+		height := int(outputTensorImages.Shape[1])
 		upLeft := image.Point{0, 0}
 		lowRight := image.Point{width, height}
 
 		imgRGBA := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-		for x := 0; x < width; x++ {
-			for y := 0; y < height; y++ {
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
 				imgRGBA.Set(x, y, color.RGBA{uint8(imgRaw[3*(x+width*y)] * 255), uint8(imgRaw[3*(x+width*y)+1] * 255), uint8(imgRaw[3*(x+width*y)+2] * 255), 0xff})
 			}
 		}
