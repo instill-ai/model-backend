@@ -173,7 +173,9 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		return nil, err
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
+	defer cancel()
 
 	// Create request input tensors
 	var inferInputs []*rayserver.InferTensor
