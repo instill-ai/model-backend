@@ -801,9 +801,9 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	maxNewTokenInput := req.MultipartForm.Value["max_new_tokens"]
 	temperatureInput := req.MultipartForm.Value["temperature"]
-	topKInput := req.MultipartForm.Value["topk"]
+	topKInput := req.MultipartForm.Value["top_k"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
@@ -887,9 +887,9 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	maxNewTokenInput := req.MultipartForm.Value["max_new_tokens"]
 	temperatureInput := req.MultipartForm.Value["temperature"]
-	topKInput := req.MultipartForm.Value["topk"]
+	topKInput := req.MultipartForm.Value["top_k"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
@@ -972,9 +972,9 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
 	}
-	maxNewTokenInput := req.MultipartForm.Value["max_new_token"]
+	maxNewTokenInput := req.MultipartForm.Value["max_new_tokens"]
 	temperatureInput := req.MultipartForm.Value["temperature"]
-	topKInput := req.MultipartForm.Value["topk"]
+	topKInput := req.MultipartForm.Value["top_k"]
 	seedInput := req.MultipartForm.Value["seed"]
 	extraParamsInput := req.MultipartForm.Value["extra_params"]
 	chatHistoryInput := req.MultipartForm.Value["chat_history"]
