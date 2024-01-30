@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.21.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.2-alpha...v0.21.3-alpha) (2024-01-30)
+
+
+### Bug Fixes
+
+* **model:** fix indexing error in text2img and img2img postprocessing ([#501](https://github.com/instill-ai/model-backend/issues/501)) ([0ba505b](https://github.com/instill-ai/model-backend/commit/0ba505bb9c4236590c6669e2e491ef8875eff500))
+* **model:** fix missing field in ray while serving img2img task ([#496](https://github.com/instill-ai/model-backend/issues/496)) ([f572f18](https://github.com/instill-ai/model-backend/commit/f572f18f2f35e7330b022cbc4da68f564e1661a5))
+* **payload:** fix wrong form data key ([#503](https://github.com/instill-ai/model-backend/issues/503)) ([4d69e5e](https://github.com/instill-ai/model-backend/commit/4d69e5e0322f50b76408ac6d0df6925067a3bb3a))
+
 ## [0.21.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.1-alpha...v0.21.2-alpha) (2024-01-25)
 
 
