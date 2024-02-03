@@ -381,7 +381,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, int32(req.GetPageSize()), req.GetPageToken(), req.GetView(), modelPB.Model_VISIBILITY_PUBLIC.Enum(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, int32(req.GetPageSize()), req.GetPageToken(), parseView(req.GetView()), modelPB.Model_VISIBILITY_PUBLIC.Enum(), req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -432,14 +432,14 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
 	if err := checkfield.CheckCreateOutputOnlyFields(req.GetModel(), outputOnlyFields); err != nil {
-		span.SetStatus(1, err.Error())
-		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+		span.SetStatus(1, ErrCheckOutputOnlyFields.Error())
+		return resp, ErrCheckOutputOnlyFields
 	}
 
 	// Return error if REQUIRED fields are not provided in the requested payload model resource
 	if err := checkfield.CheckRequiredFields(req.GetModel(), requiredFields); err != nil {
-		span.SetStatus(1, err.Error())
-		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+		span.SetStatus(1, ErrCheckRequiredFields.Error())
+		return resp, ErrCheckRequiredFields
 	}
 
 	// Return error if resource ID does not follow RFC-1034
@@ -523,12 +523,14 @@ type ListNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelPB.ListUserModelsRequest) (resp *modelPB.ListUserModelsResponse, err error) {
+	resp = &modelPB.ListUserModelsResponse{}
 	resp.Models, resp.NextPageToken, resp.TotalSize, err = h.listNamespaceModels(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) ListOrganizationModels(ctx context.Context, req *modelPB.ListOrganizationModelsRequest) (resp *modelPB.ListOrganizationModelsResponse, err error) {
+	resp = &modelPB.ListOrganizationModelsResponse{}
 	resp.Models, resp.NextPageToken, resp.TotalSize, err = h.listNamespaceModels(ctx, req)
 
 	return resp, err
@@ -558,7 +560,7 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		return nil, "", 0, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, authUser, req.GetPageSize(), req.GetPageToken(), req.GetView(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, "", 0, err
@@ -599,7 +601,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 		return &modelPB.LookUpModelResponse{}, err
 	}
 
-	pbModel, err := h.service.GetModelByUID(ctx, authUser, modelUID, req.GetView())
+	pbModel, err := h.service.GetModelByUID(ctx, authUser, modelUID, parseView(req.GetView()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
@@ -623,12 +625,14 @@ type GetNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelPB.GetUserModelRequest) (resp *modelPB.GetUserModelResponse, err error) {
+	resp = &modelPB.GetUserModelResponse{}
 	resp.Model, err = h.getNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelPB.GetOrganizationModelRequest) (resp *modelPB.GetOrganizationModelResponse, err error) {
+	resp = &modelPB.GetOrganizationModelResponse{}
 	resp.Model, err = h.getNamespaceModel(ctx, req)
 
 	return resp, err
@@ -657,7 +661,7 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, req.GetView())
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, parseView(req.GetView()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -681,12 +685,14 @@ type UpdateNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelPB.UpdateUserModelRequest) (resp *modelPB.UpdateUserModelResponse, err error) {
+	resp = &modelPB.UpdateUserModelResponse{}
 	resp.Model, err = h.updateNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelPB.UpdateOrganizationModelRequest) (resp *modelPB.UpdateOrganizationModelResponse, err error) {
+	resp = &modelPB.UpdateOrganizationModelResponse{}
 	resp.Model, err = h.updateNamespaceModel(ctx, req)
 
 	return resp, err
@@ -748,14 +754,14 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 
 	pbUpdateMask, err = checkfield.CheckUpdateOutputOnlyFields(pbUpdateMask, outputOnlyFields)
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
+		span.SetStatus(1, ErrCheckOutputOnlyFields.Error())
+		return nil, ErrCheckOutputOnlyFields
 	}
 
 	mask, err := fieldmask_utils.MaskFromProtoFieldMask(pbUpdateMask, strcase.ToCamel)
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
+		span.SetStatus(1, ErrFieldMask.Error())
+		return nil, ErrFieldMask
 	}
 
 	if mask.IsEmpty() {
@@ -764,15 +770,15 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 
 	// Return error if IMMUTABLE fields are intentionally changed
 	if err := checkfield.CheckUpdateImmutableFields(pbModel, pbModelToUpdate, immutableFields); err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		span.SetStatus(1, ErrCheckUpdateImmutableFields.Error())
+		return nil, ErrCheckUpdateImmutableFields
 	}
 
 	// Only the fields mentioned in the field mask will be copied to `pbModelToUpdate`, other fields are left intact
 	err = fieldmask_utils.StructToStruct(mask, pbModel, pbModelToUpdate)
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
+		span.SetStatus(1, ErrFieldMask.Error())
+		return nil, ErrFieldMask
 	}
 
 	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, authUser, modelID, pbModelToUpdate)
@@ -798,12 +804,14 @@ type DeleteNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelPB.DeleteUserModelRequest) (resp *modelPB.DeleteUserModelResponse, err error) {
+	resp = &modelPB.DeleteUserModelResponse{}
 	err = h.deleteNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelPB.DeleteOrganizationModelRequest) (resp *modelPB.DeleteOrganizationModelResponse, err error) {
+	resp = &modelPB.DeleteOrganizationModelResponse{}
 	err = h.deleteNamespaceModel(ctx, req)
 
 	return resp, err
@@ -860,12 +868,14 @@ type RenameNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelPB.RenameUserModelRequest) (resp *modelPB.RenameUserModelResponse, err error) {
+	resp = &modelPB.RenameUserModelResponse{}
 	resp.Model, err = h.renameNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelPB.RenameOrganizationModelRequest) (resp *modelPB.RenameOrganizationModelResponse, err error) {
+	resp = &modelPB.RenameOrganizationModelResponse{}
 	resp.Model, err = h.renameNamespaceModel(ctx, req)
 
 	return resp, err
@@ -917,12 +927,14 @@ type PublishNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) PublishUserModel(ctx context.Context, req *modelPB.PublishUserModelRequest) (resp *modelPB.PublishUserModelResponse, err error) {
+	resp = &modelPB.PublishUserModelResponse{}
 	resp.Model, err = h.publishNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) PublishOrganizationModel(ctx context.Context, req *modelPB.PublishOrganizationModelRequest) (resp *modelPB.PublishOrganizationModelResponse, err error) {
+	resp = &modelPB.PublishOrganizationModelResponse{}
 	resp.Model, err = h.publishNamespaceModel(ctx, req)
 
 	return resp, err
@@ -988,12 +1000,14 @@ type UnpublishNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) UnpublishUserModel(ctx context.Context, req *modelPB.UnpublishUserModelRequest) (resp *modelPB.UnpublishUserModelResponse, err error) {
+	resp = &modelPB.UnpublishUserModelResponse{}
 	resp.Model, err = h.unpublishNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) UnpublishOrganizationModel(ctx context.Context, req *modelPB.UnpublishOrganizationModelRequest) (resp *modelPB.UnpublishOrganizationModelResponse, err error) {
+	resp = &modelPB.UnpublishOrganizationModelResponse{}
 	resp.Model, err = h.unpublishNamespaceModel(ctx, req)
 
 	return resp, err
@@ -1059,12 +1073,14 @@ type DeployNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.DeployUserModelRequest) (resp *modelPB.DeployUserModelResponse, err error) {
+	resp = &modelPB.DeployUserModelResponse{}
 	resp.ModelId, err = h.deployNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) DeployOrganizationModel(ctx context.Context, req *modelPB.DeployOrganizationModelRequest) (resp *modelPB.DeployOrganizationModelResponse, err error) {
+	resp = &modelPB.DeployOrganizationModelResponse{}
 	resp.ModelId, err = h.deployNamespaceModel(ctx, req)
 
 	return resp, err
@@ -1139,12 +1155,14 @@ type UndeployNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.UndeployUserModelRequest) (resp *modelPB.UndeployUserModelResponse, err error) {
+	resp = &modelPB.UndeployUserModelResponse{}
 	resp.ModelId, err = h.undeployNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) UndeployOrganizationModel(ctx context.Context, req *modelPB.UndeployOrganizationModelRequest) (resp *modelPB.UndeployOrganizationModelResponse, err error) {
+	resp = &modelPB.UndeployOrganizationModelResponse{}
 	resp.ModelId, err = h.undeployNamespaceModel(ctx, req)
 
 	return resp, err
@@ -1219,12 +1237,14 @@ type WatchNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUserModelRequest) (resp *modelPB.WatchUserModelResponse, err error) {
+	resp = &modelPB.WatchUserModelResponse{}
 	resp.State, resp.Progress, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelPB.WatchOrganizationModelRequest) (resp *modelPB.WatchOrganizationModelResponse, err error) {
+	resp = &modelPB.WatchOrganizationModelResponse{}
 	resp.State, resp.Progress, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
@@ -1306,12 +1326,14 @@ type TriggerNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelPB.TriggerUserModelRequest) (resp *modelPB.TriggerUserModelResponse, err error) {
+	resp = &modelPB.TriggerUserModelResponse{}
 	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *modelPB.TriggerOrganizationModelRequest) (resp *modelPB.TriggerOrganizationModelResponse, err error) {
+	resp = &modelPB.TriggerOrganizationModelResponse{}
 	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, req)
 
 	return resp, err
@@ -1789,6 +1811,7 @@ type GetNamespaceModelCardRequestInterface interface {
 }
 
 func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelPB.GetUserModelCardRequest) (resp *modelPB.GetUserModelCardResponse, err error) {
+	resp = &modelPB.GetUserModelCardResponse{}
 	resp.Readme, err = h.getNamespaceModelCard(ctx, req)
 
 	return resp, err
@@ -1796,6 +1819,7 @@ func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelPB.GetUs
 }
 
 func (h *PublicHandler) GetOrganizationModelCard(ctx context.Context, req *modelPB.GetOrganizationModelCardRequest) (resp *modelPB.GetOrganizationModelCardResponse, err error) {
+	resp = &modelPB.GetOrganizationModelCardResponse{}
 	resp.Readme, err = h.getNamespaceModelCard(ctx, req)
 
 	return resp, err
@@ -1888,7 +1912,7 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	pbModelDefinitions, totalSize, nextPageToken, err := h.service.ListModelDefinitions(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken())
+	pbModelDefinitions, totalSize, nextPageToken, err := h.service.ListModelDefinitions(ctx, parseView(req.GetView()), int(req.GetPageSize()), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
 	}

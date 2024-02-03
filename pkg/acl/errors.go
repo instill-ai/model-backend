@@ -1,5 +1,8 @@
 package acl
 
-import "errors"
+import (
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
-var ErrMembershipNotFound = errors.New("membership not found")
+var ErrMembershipNotFound = status.New(codes.NotFound, "membership not found").Err()

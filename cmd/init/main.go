@@ -109,7 +109,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			err = aclClient.SetOwner("model", model.UID, nsType, userUID)
+			err = aclClient.SetOwner("model_", model.UID, nsType, userUID)
 			if err != nil {
 				panic(err)
 			}

@@ -8,9 +8,6 @@ import (
 	"github.com/gofrs/uuid"
 
 	openfga "github.com/openfga/go-sdk"
-
-	// "github.com/instill-ai/model-backend/pkg/datamodel"
-
 	openfgaClient "github.com/openfga/go-sdk/client"
 )
 
@@ -108,7 +105,7 @@ func (c *ACLClient) SetModelPermission(modelUID uuid.UUID, user string, role str
 				{
 					User:     user,
 					Relation: role,
-					Object:   fmt.Sprintf("model:%s", modelUID.String()),
+					Object:   fmt.Sprintf("model_:%s", modelUID.String()),
 				}},
 		}
 
@@ -133,7 +130,7 @@ func (c *ACLClient) DeleteModelPermission(modelUID uuid.UUID, user string) error
 				{
 					User:     user,
 					Relation: role,
-					Object:   fmt.Sprintf("model:%s", modelUID.String()),
+					Object:   fmt.Sprintf("model_:%s", modelUID.String()),
 				}}}
 		_, _ = c.client.Write(context.Background()).Body(body).Options(options).Execute()
 	}

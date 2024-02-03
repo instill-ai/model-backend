@@ -1,8 +1,11 @@
 package repository
 
-import "errors"
+import (
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
-var ErrPageTokenDecode = errors.New("page token decode error")
-var ErrOwnerTypeNotMatch = errors.New("owner type not match")
-var ErrNoDataDeleted = errors.New("no data deleted")
-var ErrNoDataUpdated = errors.New("no data updated")
+var ErrPageTokenDecode = status.New(codes.InvalidArgument, "page token decode error").Err()
+var ErrOwnerTypeNotMatch = status.New(codes.InvalidArgument, "owner type not match").Err()
+var ErrNoDataDeleted = status.New(codes.NotFound, "no data deleted").Err()
+var ErrNoDataUpdated = status.New(codes.NotFound, "no data updated").Err()

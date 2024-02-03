@@ -269,7 +269,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	}
 	ownerType := string(nsType)[0 : len(string(nsType))-1]
 
-	err = w.aclClient.SetOwner("model", dbCreatedModel.UID, ownerType, ownerUID)
+	err = w.aclClient.SetOwner("model_", dbCreatedModel.UID, ownerType, ownerUID)
 	if err != nil {
 		return err
 	}

@@ -501,7 +501,6 @@ func SaveUserFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUpl
 		}
 
 		if firstChunk { //first chunk contains file name
-
 			tmpFile, fp, parent, uploadedModel, modelDefinitionID, err = saveFile(fileData)
 			if err != nil {
 				return "", "", &datamodel.Model{}, "", err
@@ -547,34 +546,35 @@ func SaveOrganizationFile(stream modelPB.ModelPublicService_CreateOrganizationMo
 }
 
 func saveFile(fileData CreateNamespaceModelBinaryFileUploadRequestInterface) (tmpFile string, fp *os.File, parent string, uploadedModel *datamodel.Model, modelDefinitionID string, err error) {
-	if fileData.GetModel() == nil {
-		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
-	}
-
-	if fileData.GetParent() == "" {
-		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed namespace parsing")
-	}
-
 	parent = fileData.GetParent()
+	pbModel := fileData.GetModel()
+
+	if pbModel == nil {
+		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed to get model")
+	}
+
+	if parent == "" {
+		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed to get namespace")
+	}
 
 	rdid, _ := uuid.NewV4()
 	tmpFile = path.Join("/tmp", rdid.String()+".zip")
 	fp, _ = os.Create(tmpFile)
 	visibility := modelPB.Model_VISIBILITY_PRIVATE
-	if fileData.GetModel().Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+	if pbModel.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
 		visibility = modelPB.Model_VISIBILITY_PUBLIC
 	}
 	var description = ""
-	if fileData.GetModel().Description != nil {
-		description = *fileData.GetModel().Description
+	if pbModel.Description != nil {
+		description = *pbModel.Description
 	}
-	modelDefName := fileData.GetModel().ModelDefinition
+	modelDefName := pbModel.ModelDefinition
 	modelDefinitionID, err = resource.GetDefinitionID(modelDefName)
 	if err != nil {
 		return "", nil, "", &datamodel.Model{}, "", err
 	}
 	uploadedModel = &datamodel.Model{
-		ID:         fileData.GetModel().Id,
+		ID:         pbModel.Id,
 		Visibility: datamodel.ModelVisibility(visibility),
 		Description: sql.NullString{
 			String: description,

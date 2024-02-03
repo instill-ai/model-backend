@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/x/paginate"
+	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -29,7 +31,7 @@ type Repository interface {
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
 	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
 	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
-	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
+	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, modelUID uuid.UUID, id string) error
 
 	CreateInferenceModel(ctx context.Context, ownerPermalink string, model *datamodel.InferenceModel) error
 	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
@@ -182,8 +184,18 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	}
 
 	if result := queryBuilder.First(&model); result.Error != nil {
-		logger.Error(result.Error.Error())
-		return nil, result.Error
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.NotFound,
+			fmt.Sprintf("[db] getUserModel error: %s", result.Error.Error()),
+			"model",
+			"",
+			"",
+			result.Error.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return nil, st.Err()
 	}
 	return &model, nil
 }
@@ -260,10 +272,17 @@ func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPer
 	return nil
 }
 
-func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
-	if result := r.db.Select("InferenceModels").Delete(&datamodel.Model{ID: id, Owner: ownerPermalink}); result.Error != nil {
-		return status.Errorf(codes.NotFound, "Could not delete model with id %s", id)
+func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, modelUID uuid.UUID, id string) error {
+	result := r.db.Select("InferenceModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}})
+
+	if result.Error != nil {
+		return result.Error
 	}
+
+	if result.RowsAffected == 0 {
+		return ErrNoDataDeleted
+	}
+
 	return nil
 }
 
