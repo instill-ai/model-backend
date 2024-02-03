@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -337,6 +338,17 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		}
 	}
 	uploadedModel.InferenceModels = createdModels
+
+	_, err = filepath.Rel(config.Config.RayServer.ModelStore, readmeFilePath)
+	if err != nil {
+		return "", "", nil
+	}
+
+	_, err = filepath.Rel(config.Config.RayServer.ModelStore, ensembleFilePath)
+	if err != nil {
+		return "", "", nil
+	}
+
 	return readmeFilePath, ensembleFilePath, nil
 }
 
