@@ -110,9 +110,7 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 				return "", grpc_status.Errorf(codes.FailedPrecondition, "the organization subscription is not active")
 			}
 		}
-	}
 
-	if ns.NsType == "organizations" {
 		granted, err := s.aclClient.CheckPermission("organization", ns.NsUID, authUser.GetACLType(), authUser.UID, "member")
 		if err != nil {
 			return "", err

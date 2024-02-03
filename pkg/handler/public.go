@@ -965,6 +965,12 @@ func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNa
 		return nil, err
 	}
 
+	err = h.service.GetACLClient().SetPublicModelPermission(uuid.FromStringOrNil(pbModel.GetUid()))
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -1025,6 +1031,12 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 	pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
 
 	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, authUser, modelID, pbModel)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	err = h.service.GetACLClient().DeletePublicModelPermission(uuid.FromStringOrNil(pbModel.GetUid()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err

@@ -100,7 +100,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	}
 
 	if isBasicView {
-		queryBuilder.Omit("pipeline.recipe")
+		queryBuilder.Omit("configuration")
 	}
 
 	var createTime time.Time // only using one for all loops, we only need the latest one in the end

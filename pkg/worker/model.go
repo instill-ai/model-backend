@@ -258,7 +258,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 		}
 	}
 
-	dbCreatedPipeline, err := w.repository.GetNamespaceModelByID(c, param.Model.Owner, param.Model.ID, false)
+	dbCreatedModel, err := w.repository.GetNamespaceModelByID(c, param.Model.Owner, param.Model.ID, false)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	}
 	ownerType := string(nsType)[0 : len(string(nsType))-1]
 
-	err = w.aclClient.SetOwner("model", dbCreatedPipeline.UID, ownerType, ownerUID)
+	err = w.aclClient.SetOwner("model", dbCreatedModel.UID, ownerType, ownerUID)
 	if err != nil {
 		return err
 	}

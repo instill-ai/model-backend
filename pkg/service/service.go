@@ -48,6 +48,7 @@ type Service interface {
 	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
+	GetACLClient() *acl.ACLClient
 	GetRscNamespaceAndNameID(path string) (resource.Namespace, string, error)
 	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
@@ -189,6 +190,11 @@ func (s *service) GetRepository() repository.Repository {
 // GetRedisClient returns the redis client
 func (s *service) GetRedisClient() *redis.Client {
 	return s.redisClient
+}
+
+// GetACLClient returns the acl client
+func (s *service) GetACLClient() *acl.ACLClient {
+	return s.aclClient
 }
 
 // GetMgmtPrivateServiceClient returns the management private service client

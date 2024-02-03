@@ -67,6 +67,33 @@ func (c *ACLClient) SetOwner(objectType string, objectUID uuid.UUID, ownerType s
 	return nil
 }
 
+func (c *ACLClient) SetPublicModelPermission(modelUID uuid.UUID) error {
+	// TODO: support fine grained control soon
+	for _, t := range []string{"user", "visitor"} {
+		err := c.SetModelPermission(modelUID, fmt.Sprintf("%s:*", t), "reader", true)
+		if err != nil {
+			return err
+		}
+	}
+	err := c.SetModelPermission(modelUID, "user:*", "executor", true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *ACLClient) DeletePublicModelPermission(modelUID uuid.UUID) error {
+	for _, t := range []string{"user", "visitor"} {
+		err := c.DeleteModelPermission(modelUID, fmt.Sprintf("%s:*", t))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c *ACLClient) SetModelPermission(modelUID uuid.UUID, user string, role string, enable bool) error {
 	var err error
 	options := openfgaClient.ClientWriteOptions{
@@ -164,6 +191,27 @@ func (c *ACLClient) CheckPermission(objectType string, objectUID uuid.UUID, user
 	}
 
 	return false, nil
+}
+
+func (c *ACLClient) CheckPublicExecutable(objectType string, objectUID uuid.UUID) (bool, error) {
+
+	options := openfgaClient.ClientCheckOptions{
+		AuthorizationModelId: c.authorizationModelID,
+	}
+	body := openfgaClient.ClientCheckRequest{
+		User:     "user:*",
+		Relation: "executor",
+		Object:   fmt.Sprintf("%s:%s", objectType, objectUID.String()),
+	}
+	data, err := c.client.Check(context.Background()).Body(body).Options(options).Execute()
+	if err != nil {
+		return false, err
+	}
+	if *data.Allowed {
+		return *data.Allowed, nil
+	}
+
+	return *data.Allowed, nil
 }
 
 func (c *ACLClient) ListPermissions(objectType string, userType string, userUID uuid.UUID, role string) ([]uuid.UUID, error) {
