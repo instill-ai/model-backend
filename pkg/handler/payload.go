@@ -120,10 +120,10 @@ func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (e
 		return nil, fmt.Errorf("invalid input image")
 	}
 }
-func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUserModelRequest) (inputBytes [][]byte, err error) {
+func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceModelRequestInterface) (inputBytes [][]byte, err error) {
 	logger, _ := logger.GetZapLogger(ctx)
 
-	for idx, taskInput := range req.TaskInputs {
+	for idx, taskInput := range req.GetTaskInputs() {
 		var imageInput triton.ImageInput
 		switch taskInput.Input.(type) {
 		case *modelPB.TaskInput_Classification:
@@ -214,12 +214,12 @@ func parseImageRequestInputsToBytes(ctx context.Context, req *modelPB.TriggerUse
 	return inputBytes, nil
 }
 
-func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textToImageInput *triton.TextToImageInput, err error) {
-	if len(req.TaskInputs) > 1 {
+func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textToImageInput *triton.TextToImageInput, err error) {
+	if len(req.GetTaskInputs()) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
-	for idx, taskInput := range req.TaskInputs {
+	for idx, taskInput := range req.GetTaskInputs() {
 		steps := utils.TextToImageSteps
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = *taskInput.GetTextToImage().Steps
@@ -268,12 +268,12 @@ func parseTexToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserM
 	return textToImageInput, nil
 }
 
-func parseImageToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (imageToImageInput *triton.ImageToImageInput, err error) {
-	if len(req.TaskInputs) > 1 {
+func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (imageToImageInput *triton.ImageToImageInput, err error) {
+	if len(req.GetTaskInputs()) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
-	for idx, taskInput := range req.TaskInputs {
+	for idx, taskInput := range req.GetTaskInputs() {
 		steps := utils.TextToImageSteps
 		if taskInput.GetImageToImage().Steps != nil {
 			steps = *taskInput.GetImageToImage().Steps
@@ -326,8 +326,8 @@ func parseImageToImageRequestInputs(ctx context.Context, req *modelPB.TriggerUse
 	return imageToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationInput *triton.TextGenerationInput, err error) {
-	for _, taskInput := range req.TaskInputs {
+func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationInput *triton.TextGenerationInput, err error) {
+	for _, taskInput := range req.GetTaskInputs() {
 
 		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetTextGeneration().MaxNewTokens != nil {
@@ -407,8 +407,8 @@ func parseTexGenerationRequestInputs(ctx context.Context, req *modelPB.TriggerUs
 	return textGenerationInput, nil
 }
 
-func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (textGenerationChatInput *triton.TextGenerationChatInput, err error) {
-	for _, taskInput := range req.TaskInputs {
+func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationChatInput *triton.TextGenerationChatInput, err error) {
+	for _, taskInput := range req.GetTaskInputs() {
 		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetTextGenerationChat().MaxNewTokens != nil {
 			maxNewTokens = *taskInput.GetTextGenerationChat().MaxNewTokens
@@ -486,8 +486,8 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req *modelPB.Trigg
 	return textGenerationChatInput, nil
 }
 
-func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req *modelPB.TriggerUserModelRequest) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
-	for _, taskInput := range req.TaskInputs {
+func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
+	for _, taskInput := range req.GetTaskInputs() {
 
 		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetVisualQuestionAnswering().MaxNewTokens != nil {

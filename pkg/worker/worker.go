@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"go.temporal.io/sdk/workflow"
 
+	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -34,11 +35,12 @@ type worker struct {
 	repository       repository.Repository
 	ray              ray.Ray
 	triton           triton.Triton
+	aclClient        *acl.ACLClient
 	controllerClient controllerPB.ControllerPrivateServiceClient
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray) Worker {
+func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray, acl *acl.ACLClient) Worker {
 
 	return &worker{
 		repository:       r,
@@ -46,5 +48,6 @@ func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c con
 		ray:              ra,
 		triton:           t,
 		controllerClient: c,
+		aclClient:        acl,
 	}
 }

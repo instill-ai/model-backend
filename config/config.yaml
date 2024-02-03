@@ -44,6 +44,7 @@ rayserver:
   vram:
 mgmtbackend:
   host: mgmt-backend
+  publicport: 8084
   privateport: 3084
   https:
     cert:
@@ -86,3 +87,6 @@ log:
   otelcollector:
     host: otel-collector
     port: 8095
+openfga:
+  host: openfga
+  port: 8080

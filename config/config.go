@@ -81,6 +81,7 @@ type RayServerConfig struct {
 type MgmtBackendConfig struct {
 	Host        string `koanf:"host"`
 	PrivatePort int    `koanf:"privateport"`
+	PublicPort  int    `koanf:"publicport"`
 	HTTPS       struct {
 		Cert string `koanf:"cert"`
 		Key  string `koanf:"key"`
@@ -145,6 +146,12 @@ type LogConfig struct {
 	}
 }
 
+// OpenFGA config
+type OpenFGAConfig struct {
+	Host string `koanf:"host"`
+	Port int    `koanf:"port"`
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
@@ -157,6 +164,7 @@ type AppConfig struct {
 	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig     `koanf:"temporal"`
 	Controller             ControllerConfig   `koanf:"controller"`
+	OpenFGA                OpenFGAConfig      `koanf:"openfga"`
 	InitModel              InitModelConfig    `koanf:"initmodel"`
 	Log                    LogConfig          `koanf:"log"`
 }

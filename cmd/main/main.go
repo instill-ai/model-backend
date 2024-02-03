@@ -30,8 +30,10 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	openfgaClient "github.com/openfga/go-sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
@@ -164,6 +166,9 @@ func main() {
 	rayService := ray.NewRay()
 	defer rayService.Close()
 
+	mgmtPublicServiceClient, mgmtPublicServiceClientConn := external.InitMgmtPublicServiceClient(ctx)
+	defer mgmtPublicServiceClientConn.Close()
+
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
@@ -210,9 +215,32 @@ func main() {
 	}
 	defer temporalClient.Close()
 
+	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
+		ApiScheme: "http",
+		ApiHost:   fmt.Sprintf("%s:%d", config.Config.OpenFGA.Host, config.Config.OpenFGA.Port),
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	var aclClient acl.ACLClient
+	if stores, err := fgaClient.ListStores(context.Background()).Execute(); err == nil {
+		fgaClient.SetStoreId(stores.Stores[0].Id)
+		if models, err := fgaClient.ReadAuthorizationModels(context.Background()).Execute(); err == nil {
+			aclClient = acl.NewACLClient(fgaClient, &models.AuthorizationModels[0].Id)
+		}
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		panic(err)
+	}
+
 	repository := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService)
+	service := service.NewService(repository, triton, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,

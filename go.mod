@@ -20,6 +20,7 @@ require (
 	github.com/knadh/koanf v1.4.4
 	github.com/mennanov/fieldmask-utils v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/openfga/go-sdk v0.3.3
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	github.com/stretchr/testify v1.8.3
@@ -44,6 +45,8 @@ require (
 	gorm.io/gorm v1.24.2
 )
 
+require golang.org/x/sync v0.5.0 // indirect
+
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/catalinc/hashcash v0.0.0-20220723060415-5e3ec3e24f67 // indirect
@@ -64,7 +67,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.13.0
+	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.1 // indirect

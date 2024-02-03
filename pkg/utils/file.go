@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -337,6 +338,17 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		}
 	}
 	uploadedModel.InferenceModels = createdModels
+
+	_, err = filepath.Rel(config.Config.RayServer.ModelStore, readmeFilePath)
+	if err != nil {
+		return "", "", nil
+	}
+
+	_, err = filepath.Rel(config.Config.RayServer.ModelStore, ensembleFilePath)
+	if err != nil {
+		return "", "", nil
+	}
+
 	return readmeFilePath, ensembleFilePath, nil
 }
 
@@ -482,14 +494,15 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 	return readmeFilePath, ensembleFilePath, nil
 }
 
-func SaveFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadServer) (outFile string, parent string, modelInfo *datamodel.Model, modelDefinitionID string, err error) {
+type CreateNamespaceModelBinaryFileUploadRequestInterface interface {
+	GetModel() *modelPB.Model
+	GetParent() string
+}
+
+func SaveUserFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadServer) (tmpFile string, parent string, uploadedModel *datamodel.Model, modelDefinitionID string, err error) {
 	firstChunk := true
-	var fp *os.File
 	var fileData *modelPB.CreateUserModelBinaryFileUploadRequest
-
-	var tmpFile string
-
-	var uploadedModel datamodel.Model
+	var fp *os.File
 	for {
 		fileData, err = stream.Recv()
 		if err != nil {
@@ -500,46 +513,10 @@ func SaveFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadS
 		}
 
 		if firstChunk { //first chunk contains file name
-			if fileData.Model == nil {
-				return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
-			}
-
-			if fileData.Parent == "" {
-				return "", "", &datamodel.Model{}, "", fmt.Errorf("failed namespace parsing")
-			}
-
-			parent = fileData.Parent
-
-			rdid, _ := uuid.NewV4()
-			tmpFile = path.Join("/tmp", rdid.String()+".zip")
-			fp, _ = os.Create(tmpFile)
-			visibility := modelPB.Model_VISIBILITY_PRIVATE
-			if fileData.Model.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-				visibility = modelPB.Model_VISIBILITY_PUBLIC
-			}
-			var description = ""
-			if fileData.Model.Description != nil {
-				description = *fileData.Model.Description
-			}
-			modelDefName := fileData.Model.ModelDefinition
-			modelDefinitionID, err = resource.GetDefinitionID(modelDefName)
+			tmpFile, fp, parent, uploadedModel, modelDefinitionID, err = saveFile(fileData)
 			if err != nil {
 				return "", "", &datamodel.Model{}, "", err
 			}
-			uploadedModel = datamodel.Model{
-				ID:         fileData.Model.Id,
-				Visibility: datamodel.ModelVisibility(visibility),
-				Description: sql.NullString{
-					String: description,
-					Valid:  true,
-				},
-				State:         datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-				Configuration: datatypes.JSON{},
-			}
-			if err != nil {
-				return "", "", &datamodel.Model{}, "", err
-			}
-			defer fp.Close()
 
 			firstChunk = false
 		}
@@ -548,7 +525,82 @@ func SaveFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUploadS
 			return "", "", &datamodel.Model{}, "", err
 		}
 	}
-	return tmpFile, parent, &uploadedModel, modelDefinitionID, nil
+	return tmpFile, parent, uploadedModel, modelDefinitionID, nil
+}
+
+func SaveOrganizationFile(stream modelPB.ModelPublicService_CreateOrganizationModelBinaryFileUploadServer) (tmpFile string, parent string, uploadedModel *datamodel.Model, modelDefinitionID string, err error) {
+	firstChunk := true
+	var fp *os.File
+	var fileData *modelPB.CreateOrganizationModelBinaryFileUploadRequest
+	for {
+		fileData, err = stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
+		}
+
+		if firstChunk { //first chunk contains file name
+			tmpFile, fp, parent, uploadedModel, modelDefinitionID, err = saveFile(fileData)
+			if err != nil {
+				return "", "", &datamodel.Model{}, "", err
+			}
+
+			firstChunk = false
+		}
+		err = WriteToFp(fp, fileData.Content)
+		if err != nil {
+			return "", "", &datamodel.Model{}, "", err
+		}
+	}
+	return tmpFile, parent, uploadedModel, modelDefinitionID, nil
+}
+
+func saveFile(fileData CreateNamespaceModelBinaryFileUploadRequestInterface) (tmpFile string, fp *os.File, parent string, uploadedModel *datamodel.Model, modelDefinitionID string, err error) {
+	parent = fileData.GetParent()
+	pbModel := fileData.GetModel()
+
+	if pbModel == nil {
+		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed to get model")
+	}
+
+	if parent == "" {
+		return "", nil, "", &datamodel.Model{}, "", fmt.Errorf("failed to get namespace")
+	}
+
+	rdid, _ := uuid.NewV4()
+	tmpFile = path.Join("/tmp", rdid.String()+".zip")
+	fp, _ = os.Create(tmpFile)
+	visibility := modelPB.Model_VISIBILITY_PRIVATE
+	if pbModel.Visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		visibility = modelPB.Model_VISIBILITY_PUBLIC
+	}
+	var description = ""
+	if pbModel.Description != nil {
+		description = *pbModel.Description
+	}
+	modelDefName := pbModel.ModelDefinition
+	modelDefinitionID, err = resource.GetDefinitionID(modelDefName)
+	if err != nil {
+		return "", nil, "", &datamodel.Model{}, "", err
+	}
+	uploadedModel = &datamodel.Model{
+		ID:         pbModel.Id,
+		Visibility: datamodel.ModelVisibility(visibility),
+		Description: sql.NullString{
+			String: description,
+			Valid:  true,
+		},
+		State:         datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
+		Configuration: datatypes.JSON{},
+	}
+	if err != nil {
+		return "", nil, "", &datamodel.Model{}, "", err
+	}
+	defer fp.Close()
+
+	return tmpFile, fp, parent, uploadedModel, modelDefinitionID, nil
 }
 
 // GetJSON fetches the contents of the given URL

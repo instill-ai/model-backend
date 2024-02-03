@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/go-redis/redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/sdk/client"
@@ -12,8 +13,10 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
-	"github.com/go-redis/redis/v9"
+	openfgaClient "github.com/openfga/go-sdk/client"
+
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
@@ -69,8 +72,6 @@ func main() {
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, triton, controllerClient, rayService)
-
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),
 		TextMapPropagator: b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader)),
@@ -107,6 +108,31 @@ func main() {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
 	defer temporalClient.Close()
+
+	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
+		ApiScheme: "http",
+		ApiHost:   fmt.Sprintf("%s:%d", config.Config.OpenFGA.Host, config.Config.OpenFGA.Port),
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	var aclClient acl.ACLClient
+	if stores, err := fgaClient.ListStores(context.Background()).Execute(); err == nil {
+		fgaClient.SetStoreId(stores.Stores[0].Id)
+		if models, err := fgaClient.ReadAuthorizationModels(context.Background()).Execute(); err == nil {
+			aclClient = acl.NewACLClient(fgaClient, &models.AuthorizationModels[0].Id)
+		}
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		panic(err)
+	}
+
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, triton, controllerClient, rayService, &aclClient)
 
 	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
 

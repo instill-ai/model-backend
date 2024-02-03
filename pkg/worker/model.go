@@ -18,10 +18,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/utils"
-
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelParams struct {
@@ -62,18 +61,13 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 
 	logger.Info("DeployModelActivity started")
 
-	dbModel, err := w.repository.GetModelByUIDAdmin(ctx, param.Model.UID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return err
-	}
-
-	modelDef, err := w.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
+	modelDef, err := w.repository.GetModelDefinitionByUID(param.Model.ModelDefinitionUID)
 	if err != nil {
 		return err
 	}
 
 	var inferenceModels []*datamodel.InferenceModel
-	if inferenceModels, err = w.repository.GetInferenceModels(dbModel.UID); err != nil {
+	if inferenceModels, err = w.repository.GetInferenceModels(ctx, param.Model.UID); err != nil {
 		return err
 	}
 
@@ -84,7 +78,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	case "github":
 		if !config.Config.Server.ItMode.Enabled && !utils.HasDVCWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.GitHubModelConfiguration
-			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
+			if err := json.Unmarshal(param.Model.Configuration, &modelConfig); err != nil {
 				return err
 			}
 
@@ -104,7 +98,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	case "huggingface":
 		if !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.HuggingFaceModelConfiguration
-			if err := json.Unmarshal(dbModel.Configuration, &modelConfig); err != nil {
+			if err := json.Unmarshal(param.Model.Configuration, &modelConfig); err != nil {
 				return err
 			}
 
@@ -115,12 +109,12 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			if config.Config.Server.ItMode.Enabled { // use local model to remove internet connection issue while integration testing
 				if err = utils.HuggingFaceExport(modelSrcDir, datamodel.HuggingFaceModelConfiguration{
 					RepoID: "assets/tiny-vit-random",
-				}, dbModel.ID); err != nil {
+				}, param.Model.ID); err != nil {
 					_ = os.RemoveAll(modelSrcDir)
 					return err
 				}
 			} else {
-				if err = utils.HuggingFaceExport(modelSrcDir, modelConfig, dbModel.ID); err != nil {
+				if err = utils.HuggingFaceExport(modelSrcDir, modelConfig, param.Model.ID); err != nil {
 					_ = os.RemoveAll(modelSrcDir)
 					return err
 				}
@@ -138,7 +132,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 	case "artivc":
 		if !config.Config.Server.ItMode.Enabled && !utils.HasModelWeightFile(config.Config.TritonServer.ModelStore, inferenceModels) {
 			var modelConfig datamodel.ArtiVCModelConfiguration
-			err = json.Unmarshal([]byte(dbModel.Configuration), &modelConfig)
+			err = json.Unmarshal([]byte(param.Model.Configuration), &modelConfig)
 			if err != nil {
 				return err
 			}
@@ -159,7 +153,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		_ = os.RemoveAll(modelSrcDir)
 	}
 
-	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(ctx, param.Model.UID)
 	switch iEnsembleModel.Platform {
 	case "ensemble":
 		for _, tModel := range inferenceModels {
@@ -222,8 +216,8 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	logger.Info("UnDeployModelActivity started")
 
-	inferenceModels, _ := w.repository.GetInferenceModels(param.Model.UID)
-	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(param.Model.UID)
+	inferenceModels, _ := w.repository.GetInferenceModels(ctx, param.Model.UID)
+	iEnsembleModel, _ := w.repository.GetInferenceEnsembleModel(ctx, param.Model.UID)
 	switch iEnsembleModel.Platform {
 	case "ensemble":
 		for _, rModel := range inferenceModels {
@@ -250,7 +244,10 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 	logger := workflow.GetLogger(ctx)
 	logger.Info("CreateModelWorkflow started")
 
-	if err := w.repository.CreateUserModel(param.Model); err != nil {
+	c, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := w.repository.CreateNamespaceModel(c, param.Model.Owner, param.Model); err != nil {
 		if e, ok := status.FromError(err); ok {
 			if e.Code() != codes.AlreadyExists {
 				return err
@@ -259,6 +256,22 @@ func (w *worker) CreateModelWorkflow(ctx workflow.Context, param *ModelParams) e
 				return nil
 			}
 		}
+	}
+
+	dbCreatedModel, err := w.repository.GetNamespaceModelByID(c, param.Model.Owner, param.Model.ID, false)
+	if err != nil {
+		return err
+	}
+
+	nsType, ownerUID, err := resource.GetNamespaceTypeAndUID(param.Model.Owner)
+	if err != nil {
+		return err
+	}
+	ownerType := string(nsType)[0 : len(string(nsType))-1]
+
+	err = w.aclClient.SetOwner("model_", dbCreatedModel.UID, ownerType, ownerUID)
+	if err != nil {
+		return err
 	}
 
 	logger.Info("CreateModelWorkflow completed")

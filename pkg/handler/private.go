@@ -14,32 +14,16 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-type PrivateHandler struct {
-	modelPB.UnimplementedModelPrivateServiceServer
-	service service.Service
-	triton  triton.Triton
-}
-
-func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) modelPB.ModelPrivateServiceServer {
-	datamodel.InitJSONSchema(ctx)
-	return &PrivateHandler{
-		service: s,
-		triton:  t,
-	}
-}
-
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
 
-	pbModels, nextPageToken, totalSize, err := h.service.ListModelsAdmin(ctx, req.GetView(), int(req.GetPageSize()), req.GetPageToken(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListModelsAdmin(ctx, req.GetPageSize(), req.GetPageToken(), req.GetView(), req.GetShowDeleted())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
 	}
@@ -47,7 +31,7 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 	resp := modelPB.ListModelsAdminResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
-		TotalSize:     int32(totalSize),
+		TotalSize:     totalSize,
 	}
 
 	return &resp, nil
@@ -75,7 +59,7 @@ func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.Check
 		return &modelPB.CheckModelAdminResponse{}, err
 	}
 
-	state, err := h.service.CheckModel(ctx, modelUID)
+	state, err := h.service.CheckModelAdmin(ctx, modelUID)
 	if err != nil {
 		return &modelPB.CheckModelAdminResponse{}, err
 	}
@@ -105,6 +89,11 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, fmt.Errorf("model no owner")
 	}
 
+	ns, _, err := h.service.GetRscNamespaceAndNameID(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	userPermalink, err := h.service.ConvertOwnerNameToPermalink(userID)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
@@ -112,6 +101,11 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 	if userUID, err = resource.GetRscPermalinkUID(userPermalink); err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	authUser := &service.AuthUser{
+		UID:       userUID,
+		IsVisitor: false,
 	}
 
 	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, userPermalink, pbModel.Id) {
@@ -131,15 +125,15 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			Parent: userID,
 		}
 
-		var resp *modelPB.CreateUserModelResponse
+		var operation *longrunningpb.Operation
 
 		switch modelDefinition.ID {
 		case "github":
-			resp, err = createGitHubModel(h.service, ctx, createReq, userUID, modelDefinition)
+			operation, err = createGitHubModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
 		case "artivc":
-			resp, err = createArtiVCModel(h.service, ctx, createReq, userUID, modelDefinition)
+			operation, err = createArtiVCModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
 		case "huggingface":
-			resp, err = createHuggingFaceModel(h.service, ctx, createReq, userUID, modelDefinition)
+			operation, err = createHuggingFaceModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
 		default:
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
 		}
@@ -147,13 +141,10 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model creation error")
 		}
 
-		wfID := strings.Split(resp.Operation.Name, "/")[1]
-
-		var operation *longrunningpb.Operation
 		done := false
 		for !done {
 			time.Sleep(time.Second)
-			operation, err = h.service.GetOperation(ctx, wfID)
+			operation, err = h.service.GetOperation(ctx, strings.Split(operation.Name, "/")[1])
 			if err != nil {
 				return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "get model create operation error")
 			}
@@ -171,7 +162,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	wfID, err := h.service.DeployUserModelAsyncAdmin(ctx, modelUID)
+	wfID, err := h.service.DeployNamespaceModelAsyncAdmin(ctx, modelUID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -214,24 +205,7 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-
-	var userPermalink string
-	if pbModel.GetOwnerName() != "" {
-		userPermalink = pbModel.GetOwnerName()
-	} else {
-		return &modelPB.UndeployModelAdminResponse{}, fmt.Errorf("model no owner")
-	}
-
-	userUID, err := resource.GetRscPermalinkUID(userPermalink)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-
-	wfID, err := h.service.UndeployUserModelAsyncAdmin(ctx, userUID, modelUID)
+	wfID, err := h.service.UndeployNamespaceModelAsyncAdmin(ctx, modelUID)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
