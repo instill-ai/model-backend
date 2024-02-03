@@ -195,6 +195,9 @@ func (h *PublicHandler) CreateUserModelBinaryFileUpload(stream modelPB.ModelPubl
 	}
 
 	wfID, err := h.createNamespaceModelBinaryFileUpload(stream.Context(), authUser, tmpFile, parent, uploadedModel, modelDefID)
+	if err != nil {
+		return status.Errorf(codes.Internal, err.Error())
+	}
 
 	err = stream.SendAndClose(&modelPB.CreateUserModelBinaryFileUploadResponse{Operation: &longrunningpb.Operation{
 		Name: fmt.Sprintf("operations/%s", wfID),
