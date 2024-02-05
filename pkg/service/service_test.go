@@ -466,12 +466,12 @@ func TestListModelDefinitions(t *testing.T) {
 		mockRepository := NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
-			ListModelDefinitions(modelPB.View_VIEW_FULL, int(100), "").
+			ListModelDefinitions(modelPB.View_VIEW_FULL, int64(100), "").
 			Return([]*datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil)
 
-		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, 100, "")
+		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, int32(100), "")
 		assert.NoError(t, err)
 	})
 }
