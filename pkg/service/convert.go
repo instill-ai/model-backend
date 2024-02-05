@@ -13,14 +13,14 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *datamodel.Model {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	return &datamodel.Model{
 		BaseDynamic: datamodel.BaseDynamic{
@@ -57,7 +57,7 @@ func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *data
 }
 
 func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
 	if err != nil {
@@ -146,7 +146,7 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model)
 }
 
 func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	pbModelDefinition := modelPB.ModelDefinition{
 		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),

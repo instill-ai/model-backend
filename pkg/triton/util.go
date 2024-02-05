@@ -92,7 +92,7 @@ func DeserializeInt32Tensor(encodedTensor []byte) []int32 {
 	return arr
 }
 
-// TODO: generalise reshape functions by using interface{} arguments and returned values
+// TODO: generalise reshape functions by using any arguments and returned values
 func Reshape1DArrayStringTo2D(array []string, shape []int64) ([][]string, error) {
 	if len(array) == 0 {
 		return [][]string{}, nil
@@ -279,31 +279,28 @@ func GetOutputFromInferResponse(name string, response *inferenceserver.ModelInfe
 	return nil, nil, fmt.Errorf("unable to find output named %v", name)
 }
 
-func ParseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (int64, int64, int64) {
+func ParseModel(modelMetadata *inferenceserver.ModelMetadataResponse, modelConfig *inferenceserver.ModelConfigResponse) (channel int64, height int64, width int64) {
 	inputBatchDim := modelConfig.Config.MaxBatchSize
-	var c int64
-	var h int64
-	var w int64
 	if modelConfig.Config.Input[0].Format == 1 { //Format::FORMAT_NHWC = 1
 		if inputBatchDim > 0 {
-			h = modelMetadata.Inputs[0].Shape[1]
-			w = modelMetadata.Inputs[0].Shape[2]
-			c = modelMetadata.Inputs[0].Shape[3]
+			height = modelMetadata.Inputs[0].Shape[1]
+			width = modelMetadata.Inputs[0].Shape[2]
+			channel = modelMetadata.Inputs[0].Shape[3]
 		} else {
-			h = modelMetadata.Inputs[0].Shape[0]
-			w = modelMetadata.Inputs[0].Shape[1]
-			c = modelMetadata.Inputs[0].Shape[2]
+			height = modelMetadata.Inputs[0].Shape[0]
+			width = modelMetadata.Inputs[0].Shape[1]
+			channel = modelMetadata.Inputs[0].Shape[2]
 		}
 	} else {
 		if inputBatchDim > 0 {
-			c = modelMetadata.Inputs[0].Shape[1]
-			h = modelMetadata.Inputs[0].Shape[2]
-			w = modelMetadata.Inputs[0].Shape[3]
+			channel = modelMetadata.Inputs[0].Shape[1]
+			height = modelMetadata.Inputs[0].Shape[2]
+			width = modelMetadata.Inputs[0].Shape[3]
 		} else {
-			c = modelMetadata.Inputs[0].Shape[0]
-			h = modelMetadata.Inputs[0].Shape[1]
-			w = modelMetadata.Inputs[0].Shape[2]
+			channel = modelMetadata.Inputs[0].Shape[0]
+			height = modelMetadata.Inputs[0].Shape[1]
+			width = modelMetadata.Inputs[0].Shape[2]
 		}
 	}
-	return c, h, w
+	return channel, height, width
 }

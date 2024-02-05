@@ -22,27 +22,26 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelConfig struct {
-	ID              string                 `json:"id"`
-	Description     string                 `json:"description"`
-	Task            string                 `json:"task"`
-	ModelDefinition string                 `json:"model_definition"`
-	Configuration   map[string]interface{} `json:"configuration"`
+	ID              string         `json:"id"`
+	Description     string         `json:"description"`
+	Task            string         `json:"task"`
+	ModelDefinition string         `json:"model_definition"`
+	Configuration   map[string]any `json:"configuration"`
 }
 
-// InitMgmtPrivateServiceClient initialises a MgmtPrivateServiceClient instance
+// InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
 func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	var creds credentials.TransportCredentials
@@ -65,9 +64,9 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
-// InitModelPublicServiceClient initialises a ModelServiceClient instance
+// InitModelPublicServiceClient initializes a ModelServiceClient instance
 func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
@@ -111,7 +110,7 @@ func main() {
 		"main",
 	)
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
@@ -206,7 +205,7 @@ func main() {
 				Model: &modelPB.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
-					Task:            commonPB.Task(utils.Tasks[strings.ToUpper(modelConfig.Task)]),
+					Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
 					ModelDefinition: modelConfig.ModelDefinition,
 					Configuration:   configuration,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,

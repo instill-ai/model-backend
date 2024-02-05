@@ -28,22 +28,22 @@ type logMessage struct {
 			EventName string `json:"eventName"`
 			Billable  bool   `json:"billable"`
 		}
-		EventResource interface{} `json:"eventResource"`
-		EventResult   interface{} `json:"eventResult"`
-		EventMessage  string      `json:"eventMessage"`
+		EventResource any    `json:"eventResource"`
+		EventResult   any    `json:"eventResult"`
+		EventMessage  string `json:"eventMessage"`
 	}
 	ErrorMessage string `json:"errorMessage"`
-	Metadata     interface{}
+	Metadata     any
 }
 
-func SetEventResource(resource interface{}) Option {
+func SetEventResource(resource any) Option {
 	return func(l logMessage) logMessage {
 		l.Event.EventResource = resource
 		return l
 	}
 }
 
-func SetEventResult(result interface{}) Option {
+func SetEventResult(result any) Option {
 	return func(l logMessage) logMessage {
 		l.Event.EventResult = result
 		return l
@@ -100,9 +100,9 @@ func NewLogMessage(
 			EventName string "json:\"eventName\""
 			Billable  bool   "json:\"billable\""
 		}
-		EventResource interface{} "json:\"eventResource\""
-		EventResult   interface{} "json:\"eventResult\""
-		EventMessage  string      "json:\"eventMessage\""
+		EventResource any    "json:\"eventResource\""
+		EventResult   any    "json:\"eventResult\""
+		EventMessage  string "json:\"eventMessage\""
 	}{
 		IsAuditEvent: utils.IsAuditEvent(eventName),
 		EventInfo: struct {

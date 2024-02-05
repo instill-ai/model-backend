@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 )
 
-func checkExist(databaseConfig config.DatabaseConfig) error {
+func checkExist(databaseConfig *config.DatabaseConfig) error {
 	db, err := sql.Open(
 		"postgres",
 		fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%d sslmode=disable TimeZone=%s",
@@ -63,7 +63,7 @@ func checkExist(databaseConfig config.DatabaseConfig) error {
 
 	if !dbExist {
 		fmt.Printf("Create database %s\n", databaseConfig.Name)
-		if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE \"%s\";", databaseConfig.Name)); err != nil {
+		if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE %q;", databaseConfig.Name)); err != nil {
 			return err
 		}
 	}
@@ -76,7 +76,7 @@ func main() {
 
 	_ = config.Init()
 	databaseConfig := config.Config.Database
-	if err := checkExist(databaseConfig); err != nil {
+	if err := checkExist(&databaseConfig); err != nil {
 		panic(err)
 	}
 

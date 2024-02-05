@@ -3,6 +3,7 @@ package datamodel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -10,7 +11,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/instill-ai/model-backend/pkg/logger"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // ModelDefJSONSchema represents the ModelDefinition JSON Schema for validating the payload
@@ -28,10 +29,10 @@ var GCSUserAccountJSONSchema *jsonschema.Schema
 // GCSServiceAccountJSONSchema represents the GCS Service Account JSON Schema for validating the payload
 var GCSServiceAccountJSONSchema *jsonschema.Schema
 
-// InitJSONSchema initialise JSON Schema instances with the given files
+// InitJSONSchema initializes JSON Schema instances with the given files
 func InitJSONSchema(ctx context.Context) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	compiler := jsonschema.NewCompiler()
 
@@ -111,8 +112,8 @@ func InitJSONSchema(ctx context.Context) {
 }
 
 // ValidateJSONSchema validates the Protobuf message data
-func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopulated bool) error {
-	var v interface{}
+func ValidateJSONSchema(schema *jsonschema.Schema, msg any, emitUnpopulated bool) error {
+	var v any
 	var data []byte
 	var err error
 	switch msg := msg.(type) {
@@ -132,7 +133,7 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopula
 	}
 	if err := schema.Validate(v); err != nil {
 		b, _ := json.MarshalIndent(err.(*jsonschema.ValidationError).DetailedOutput(), "", "  ")
-		return fmt.Errorf(string(b))
+		return errors.New(string(b))
 	}
 
 	return nil
@@ -140,7 +141,7 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg interface{}, emitUnpopula
 
 // ValidateJSONSchemaString validates the string data given a string schema
 func ValidateJSONSchemaString(schema *jsonschema.Schema, data string) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal([]byte(data), &v); err != nil {
 		return err
 	}

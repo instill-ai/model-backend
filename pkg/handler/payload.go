@@ -17,18 +17,23 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {
+func parseImageFromURL(ctx context.Context, url string) (image.Image, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	response, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, err
+	}
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logger.Error(fmt.Sprintf("logUnable to download image at %v. %v", url, err))
 		return nil, fmt.Errorf("unable to download image at %v", url)
@@ -56,12 +61,12 @@ func parseImageFromURL(ctx context.Context, url string) (*image.Image, error) {
 		return nil, fmt.Errorf("unable to decode image at %v", url)
 	}
 
-	return &img, nil
+	return img, nil
 }
 
-func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, error) {
+func parseImageFromBase64(ctx context.Context, encoded string) (image.Image, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -82,13 +87,13 @@ func parseImageFromBase64(ctx context.Context, encoded string) (*image.Image, er
 		return nil, fmt.Errorf("unable to decode base64 image")
 	}
 
-	return &img, nil
+	return img, nil
 }
 
 func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (encodedImg []byte, err error) {
-	var img *image.Image
+	var img image.Image
 	if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
-		logger, _ := logger.GetZapLogger(ctx)
+		logger, _ := custom_logger.GetZapLogger(ctx)
 		if len(imageInput.ImgURL) > 0 {
 			img, err = parseImageFromURL(ctx, imageInput.ImgURL)
 			if err != nil {
@@ -108,7 +113,7 @@ func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (e
 		// Encode into jpeg to remove alpha channel (hack)
 		// This may slightly degrade the image quality
 		buff := new(bytes.Buffer)
-		err = jpeg.Encode(buff, *img, &jpeg.Options{Quality: 100})
+		err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 		if err != nil {
 			logger.Error(fmt.Sprintf("Unable to process image. %v", err))
 			return nil, fmt.Errorf("unable to process image ")
@@ -121,7 +126,7 @@ func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (e
 	}
 }
 func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceModelRequestInterface) (inputBytes [][]byte, err error) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	for idx, taskInput := range req.GetTaskInputs() {
 		var imageInput triton.ImageInput
@@ -176,7 +181,7 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 		// }
 		// inputBytes = append(inputBytes, encodedImage)
 		var (
-			img *image.Image
+			img image.Image
 			err error
 		)
 
@@ -200,7 +205,7 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 			// Encode into jpeg to remove alpha channel (hack)
 			// This may slightly degrade the image quality
 			buff := new(bytes.Buffer)
-			err = jpeg.Encode(buff, *img, &jpeg.Options{Quality: 100})
+			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to process image %v. %v", idx, err))
 				return nil, fmt.Errorf("unable to process image %v", idx)
@@ -224,9 +229,9 @@ func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModel
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = *taskInput.GetTextToImage().Steps
 		}
-		cfgScale := float32(utils.ImageToTextCFGScale)
+		cfgScale := utils.ImageToTextCFGScale
 		if taskInput.GetTextToImage().CfgScale != nil {
-			cfgScale = float32(*taskInput.GetTextToImage().CfgScale)
+			cfgScale = *taskInput.GetTextToImage().CfgScale
 		}
 		seed := utils.ImageToTextSeed
 		if taskInput.GetTextToImage().Seed != nil {
@@ -244,7 +249,7 @@ func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModel
 		if taskInput.GetTextToImage().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextToImage().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON: %v", err)
+				log.Fatalf("Error marshaling to JSON: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
@@ -278,9 +283,9 @@ func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceMod
 		if taskInput.GetImageToImage().Steps != nil {
 			steps = *taskInput.GetImageToImage().Steps
 		}
-		cfgScale := float32(utils.ImageToTextCFGScale)
+		cfgScale := utils.ImageToTextCFGScale
 		if taskInput.GetImageToImage().CfgScale != nil {
-			cfgScale = float32(*taskInput.GetImageToImage().CfgScale)
+			cfgScale = *taskInput.GetImageToImage().CfgScale
 		}
 		seed := utils.ImageToTextSeed
 		if taskInput.GetImageToImage().Seed != nil {
@@ -298,7 +303,7 @@ func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceMod
 		if taskInput.GetImageToImage().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetImageToImage().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON: %v", err)
+				log.Fatalf("Error marshaling to JSON: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
@@ -349,7 +354,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 		if taskInput.GetTextGeneration().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextGeneration().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ExtraParams field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ExtraParams field: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
@@ -359,7 +364,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 		if taskInput.GetTextGeneration().ChatHistory != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextGeneration().ChatHistory)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ChatHistory field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ChatHistory field: %v", err)
 			} else {
 				chatHistory = string(jsonData)
 			}
@@ -386,7 +391,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 			}
 			jsonData, err := json.Marshal(promptImagesArr)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in promptImages field: %v", err)
+				log.Fatalf("Error marshaling to JSON in promptImages field: %v", err)
 			} else {
 				promptImages = string(jsonData)
 			}
@@ -429,7 +434,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 		if taskInput.GetTextGenerationChat().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ExtraParams field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ExtraParams field: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
@@ -439,7 +444,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 		if taskInput.GetTextGenerationChat().ChatHistory != nil {
 			jsonData, err := json.Marshal(taskInput.GetTextGenerationChat().ChatHistory)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ChatHistory field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ChatHistory field: %v", err)
 			} else {
 				chatHistory = string(jsonData)
 			}
@@ -466,7 +471,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 			}
 			jsonData, err := json.Marshal(promptImagesArr)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in promptImages field: %v", err)
+				log.Fatalf("Error marshaling to JSON in promptImages field: %v", err)
 			} else {
 				promptImages = string(jsonData)
 			}
@@ -509,7 +514,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 		if taskInput.GetVisualQuestionAnswering().ExtraParams != nil {
 			jsonData, err := json.Marshal(taskInput.GetVisualQuestionAnswering().ExtraParams)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ExtraParams field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ExtraParams field: %v", err)
 			} else {
 				extraParams = string(jsonData)
 			}
@@ -519,7 +524,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 		if taskInput.GetVisualQuestionAnswering().ChatHistory != nil {
 			jsonData, err := json.Marshal(taskInput.GetVisualQuestionAnswering().ChatHistory)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in ChatHistory field: %v", err)
+				log.Fatalf("Error marshaling to JSON in ChatHistory field: %v", err)
 			} else {
 				chatHistory = string(jsonData)
 			}
@@ -546,7 +551,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 			}
 			jsonData, err := json.Marshal(promptImagesArr)
 			if err != nil {
-				log.Fatalf("Error marshalling to JSON in promptImages field: %v", err)
+				log.Fatalf("Error marshaling to JSON in promptImages field: %v", err)
 			} else {
 				promptImages = string(jsonData)
 			}
@@ -569,16 +574,14 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 
 func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {
 
-	logger, _ := logger.GetZapLogger(req.Context())
+	logger, _ := custom_logger.GetZapLogger(req.Context())
 
 	inputs := req.MultipartForm.File["file"]
 	for _, content := range inputs {
 		file, err := content.Open()
-		defer func() {
-			err = file.Close()
-		}()
 
 		if err != nil {
+			file.Close()
 			logger.Error(fmt.Sprintf("Unable to open file for image %v", err))
 			return nil, fmt.Errorf("unable to open file for image")
 		}
@@ -586,9 +589,11 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 		buff := new(bytes.Buffer) // pointer
 		numBytes, err := buff.ReadFrom(file)
 		if err != nil {
+			file.Close()
 			logger.Error(fmt.Sprintf("Unable to read content body from image %v", err))
 			return nil, fmt.Errorf("unable to read content body from image")
 		}
+		file.Close()
 
 		if numBytes > int64(config.Config.Server.MaxDataSize*constant.MB) {
 			return nil, fmt.Errorf(
@@ -863,7 +868,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 	if err == nil {
 		jsonData, err := json.Marshal(parsedImages)
 		if err != nil {
-			log.Fatalf("Error marshalling to JSON: %v", err)
+			log.Fatalf("Error marshaling to JSON: %v", err)
 		} else {
 			promptImages = string(jsonData)
 		}
@@ -948,7 +953,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 	if err == nil {
 		jsonData, err := json.Marshal(parsedImages)
 		if err != nil {
-			log.Fatalf("Error marshalling to JSON: %v", err)
+			log.Fatalf("Error marshaling to JSON: %v", err)
 		} else {
 			promptImages = string(jsonData)
 		}
@@ -1034,7 +1039,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 	if err == nil {
 		jsonData, err := json.Marshal(parsedImages)
 		if err != nil {
-			log.Fatalf("Error marshalling to JSON: %v", err)
+			log.Fatalf("Error marshaling to JSON: %v", err)
 		} else {
 			promptImages = string(jsonData)
 		}

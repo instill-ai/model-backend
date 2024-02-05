@@ -1,6 +1,7 @@
 package ray
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,13 +26,13 @@ func GetApplicationMetadaValue(inferenceModelName string) (applicationMetadataVa
 	nameParts := strings.Split(inferenceModelName, "/")
 
 	if len(nameParts) != 2 {
-		return "", fmt.Errorf("inferenceModelName format error")
+		return "", errors.New("inferenceModelName format error")
 	}
 
 	applicationNameParts := strings.Split(nameParts[1], "#")
 
 	if len(applicationNameParts) != 4 {
-		return "", fmt.Errorf("inferenceModelName format error")
+		return "", errors.New("inferenceModelName format error")
 	}
 
 	return strings.Join(applicationNameParts[:2], "_"), nil

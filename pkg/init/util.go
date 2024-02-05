@@ -16,14 +16,13 @@ var EnumRegistry = map[string]map[string]int32{
 
 // unmarshalModelPB unmarshals a slice of JSON object into a Protobuf Message Go struct element by element
 // See: https://github.com/golang/protobuf/issues/675#issuecomment-411182202
-func unmarshalModelPB(jsonSliceMap interface{}, pb interface{}) error {
+func unmarshalModelPB(jsonSliceMap any, pb any) error {
 
 	pj := protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}
 
-	switch v := jsonSliceMap.(type) {
-	case []map[string]interface{}:
+	if v, ok := jsonSliceMap.([]map[string]any); ok {
 		for _, vv := range v {
 
 			b, err := json.Marshal(vv)
@@ -31,8 +30,7 @@ func unmarshalModelPB(jsonSliceMap interface{}, pb interface{}) error {
 				return err
 			}
 
-			switch pb := pb.(type) {
-			case *[]*modelPB.ModelDefinition:
+			if pb, ok := pb.(*[]*modelPB.ModelDefinition); ok {
 				modelDef := modelPB.ModelDefinition{}
 				if err := pj.Unmarshal(b, &modelDef); err != nil {
 					return err
@@ -41,10 +39,11 @@ func unmarshalModelPB(jsonSliceMap interface{}, pb interface{}) error {
 			}
 		}
 	}
+
 	return nil
 }
 
-func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
+func processJSONSliceMap(filename string) ([]map[string]any, error) {
 
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
@@ -56,7 +55,7 @@ func processJSONSliceMap(filename string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	var jsonSliceMap []map[string]interface{}
+	var jsonSliceMap []map[string]any
 	if err := json.Unmarshal(b, &jsonSliceMap); err != nil {
 		return nil, err
 	}

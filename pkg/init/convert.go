@@ -8,9 +8,9 @@ import (
 )
 
 // convertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case except for the JSON Schema object.
-func convertAllJSONKeySnakeCase(i interface{}) {
+func convertAllJSONKeySnakeCase(i any) {
 	switch v := i.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k, vv := range v {
 			if k == "minLength" || k == "maxLength" || k == "minProperties" || k == "maxProperties" { // TODO: json schema validator failed with snake_case, need further check
 				continue
@@ -23,7 +23,7 @@ func convertAllJSONKeySnakeCase(i interface{}) {
 
 			convertAllJSONKeySnakeCase(vv)
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		for _, vv := range v {
 			convertAllJSONKeySnakeCase(vv)
 		}
@@ -34,28 +34,26 @@ func convertAllJSONKeySnakeCase(i interface{}) {
 // For examples:
 // - api in a Protobuf `Enum SourceType` type will be converted to SOURCE_TYPE_API
 // - oauth2.0  in a Protobuf `Enum AuthFlowType` type will be converted to AUTH_FLOW_TYPE_OAUTH2_0
-func convertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i interface{}) {
+func convertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i any) {
 	switch v := i.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k, vv := range v {
 			if _, ok := enumRegistry[k]; ok {
 				for enumKey := range enumRegistry[k] {
 					if reflect.TypeOf(vv).Kind() == reflect.Slice { // repeated enum type
-						for kk, vvv := range vv.([]interface{}) {
+						for kk, vvv := range vv.([]any) {
 							if strings.ReplaceAll(vvv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
-								vv.([]interface{})[kk] = enumKey
+								vv.([]any)[kk] = enumKey
 							}
 						}
-					} else {
-						if strings.ReplaceAll(vv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
-							v[k] = enumKey
-						}
+					} else if strings.ReplaceAll(vv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
+						v[k] = enumKey
 					}
 				}
 			}
 			convertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		for _, vv := range v {
 			convertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}

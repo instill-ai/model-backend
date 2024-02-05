@@ -40,7 +40,7 @@ type worker struct {
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray, acl *acl.ACLClient) Worker {
+func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray, a *acl.ACLClient) Worker {
 
 	return &worker{
 		repository:       r,
@@ -48,6 +48,6 @@ func NewWorker(r repository.Repository, rc *redis.Client, t triton.Triton, c con
 		ray:              ra,
 		triton:           t,
 		controllerClient: c,
-		aclClient:        acl,
+		aclClient:        a,
 	}
 }

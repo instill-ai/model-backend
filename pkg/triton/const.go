@@ -21,14 +21,14 @@ type BatchUnspecifiedTaskOutputs struct {
 	Name              string
 	Shape             []int64
 	DataType          string
-	SerializedOutputs []interface{} // batching output
+	SerializedOutputs []any // batching output
 }
 
 type SingleOutputUnspecifiedTaskOutput struct {
 	Name     string
 	Shape    []int64
 	DataType string
-	Data     interface{} // batching output
+	Data     any // batching output
 }
 
 type UnspecifiedTaskOutput struct {

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
@@ -16,9 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/instill-ai/model-backend/pkg/logger"
-
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
@@ -49,7 +48,7 @@ func ErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.
 	)
 	defer span.End()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	// return Internal when Marshal failed
 	const fallback = `{"code": 13, "message": "failed to marshal error message"}`

@@ -200,7 +200,7 @@ func (mr *MockRepositoryMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, ar
 }
 
 // ListModelDefinitions mocks base method.
-func (m *MockRepository) ListModelDefinitions(arg0 modelv1alpha.View, arg1 int, arg2 string) ([]*datamodel.ModelDefinition, string, int64, error) {
+func (m *MockRepository) ListModelDefinitions(arg0 modelv1alpha.View, arg1 int64, arg2 string) ([]*datamodel.ModelDefinition, string, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModelDefinitions", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*datamodel.ModelDefinition)

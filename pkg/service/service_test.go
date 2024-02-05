@@ -5,8 +5,6 @@ package service_test
 
 import (
 	"context"
-	// "database/sql"
-	// "fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,8 +15,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
-	// inferenceserver "github.com/instill-ai/model-backend/pkg/triton/inferenceserver"
-	// commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 

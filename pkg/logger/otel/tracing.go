@@ -39,14 +39,14 @@ func SetupTracing(ctx context.Context, serviceName string) (*trace.TracerProvide
 	}
 
 	// labels/tags/resources that are common to all traces.
-	resource := resource.NewWithAttributes(
+	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(serviceName),
 	)
 
 	provider := trace.NewTracerProvider(
 		trace.WithBatcher(exporter),
-		trace.WithResource(resource),
+		trace.WithResource(res),
 	)
 
 	otel.SetTracerProvider(provider)

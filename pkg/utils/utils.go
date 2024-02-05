@@ -27,8 +27,8 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
@@ -41,7 +41,7 @@ type ModelMeta struct {
 // validate to prevent security issue as https://codeql.github.com/codeql-query-help/go/go-path-injection/
 func ValidateFilePath(filePath string) error {
 	if strings.Contains(filePath, "..") {
-		return fmt.Errorf("the deleted file should not contain special characters")
+		return errors.New("the deleted file should not contain special characters")
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func findModelFiles(dir string) []string {
 }
 
 func AddMissingTritonModelFolder(ctx context.Context, dir string) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if f.Name() == "config.pbtxt" {
 			if _, err := os.Stat(fmt.Sprintf("%s/1", filepath.Dir(path))); err != nil {
@@ -143,7 +143,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	// Check in the cache first.
 	if config.Config.Cache.Model.Enabled {
 		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)
-		if state, err := redisClient.Get(ctx, redisRepoKey).Result(); err != nil && err != redis.Nil {
+		if state, err := redisClient.Get(ctx, redisRepoKey).Result(); err != nil && errors.Is(err, redis.Nil) {
 			return err
 		} else if err == nil {
 			if state == "done" {
@@ -163,7 +163,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 			}
 		}
 		if !strings.HasSuffix(urlRepo, ".git") {
-			urlRepo = urlRepo + ".git"
+			urlRepo += ".git"
 		}
 
 		extraFlag := ""
@@ -190,10 +190,8 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 		if config.Config.Cache.Model.Enabled {
 			redisClient.Set(ctx, redisRepoKey, "done", time.Duration(0))
 		}
-	} else {
-		if config.Config.Cache.Model.Enabled {
-			redisClient.Set(ctx, redisRepoKey, "without_large_file", time.Duration(0))
-		}
+	} else if config.Config.Cache.Model.Enabled {
+		redisClient.Set(ctx, redisRepoKey, "without_large_file", time.Duration(0))
 	}
 
 	return nil
@@ -280,11 +278,15 @@ type GitHubInfo struct {
 }
 
 func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if repo == "" {
-		return &GitHubInfo{}, fmt.Errorf("invalid repo URL")
+		return &GitHubInfo{}, errors.New("invalid repo URL")
 	}
 
-	repoRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v", repo), nil)
+	repoRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v", repo), http.NoBody)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
@@ -297,7 +299,7 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	}
 	defer repoResp.Body.Close()
 	if repoResp.StatusCode != http.StatusOK {
-		return &GitHubInfo{}, fmt.Errorf(repoResp.Status)
+		return &GitHubInfo{}, errors.New(repoResp.Status)
 	}
 
 	body, err := io.ReadAll(repoResp.Body)
@@ -310,7 +312,7 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 		return &GitHubInfo{}, err
 	}
 
-	tagRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v/tags", repo), nil)
+	tagRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v/tags", repo), http.NoBody)
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
@@ -323,7 +325,7 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	}
 	defer tagResp.Body.Close()
 	if tagResp.StatusCode != http.StatusOK {
-		return &GitHubInfo{}, fmt.Errorf(tagResp.Status)
+		return &GitHubInfo{}, errors.New(tagResp.Status)
 	}
 
 	body, err = io.ReadAll(tagResp.Body)
@@ -376,10 +378,10 @@ func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelNa
 }
 
 // ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.
-func ConvertAllJSONKeySnakeCase(i interface{}) {
+func ConvertAllJSONKeySnakeCase(i any) {
 
 	switch v := i.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k, vv := range v {
 			sc := strcase.ToSnake(k)
 			if sc != k {
@@ -388,11 +390,11 @@ func ConvertAllJSONKeySnakeCase(i interface{}) {
 			}
 			ConvertAllJSONKeySnakeCase(vv)
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		for _, vv := range v {
 			ConvertAllJSONKeySnakeCase(vv)
 		}
-	case map[string][]map[string]interface{}:
+	case map[string][]map[string]any:
 		for k, vv := range v {
 			sc := strcase.ToSnake(k)
 			if sc != k {
@@ -408,28 +410,26 @@ func ConvertAllJSONKeySnakeCase(i interface{}) {
 // For examples:
 // - api in a Protobuf `Enum SourceType` type will be converted to SOURCE_TYPE_API
 // - oauth2.0  in a Protobuf `Enum AuthFlowType` type will be converted to AUTH_FLOW_TYPE_OAUTH2_0
-func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i interface{}) {
+func ConvertAllJSONEnumValueToProtoStyle(enumRegistry map[string]map[string]int32, i any) {
 	switch v := i.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k, vv := range v {
 			if _, ok := enumRegistry[k]; ok {
 				for enumKey := range enumRegistry[k] {
 					if reflect.TypeOf(vv).Kind() == reflect.Slice { // repeated enum type
-						for kk, vvv := range vv.([]interface{}) {
+						for kk, vvv := range vv.([]any) {
 							if strings.ReplaceAll(vvv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
-								vv.([]interface{})[kk] = enumKey
+								vv.([]any)[kk] = enumKey
 							}
 						}
-					} else {
-						if strings.ReplaceAll(vv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
-							v[k] = enumKey
-						}
+					} else if strings.ReplaceAll(vv.(string), ".", "_") == strings.ToLower(strings.TrimPrefix(enumKey, strings.ToUpper(k)+"_")) {
+						v[k] = enumKey
 					}
 				}
 			}
 			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
-	case []map[string]interface{}:
+	case []map[string]any:
 		for _, vv := range v {
 			ConvertAllJSONEnumValueToProtoStyle(enumRegistry, vv)
 		}
@@ -447,22 +447,20 @@ func GetMaxBatchSize(configFilePath string) (int, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	r, err := regexp.Compile(`max_batch_size:`)
-	if err != nil {
-		return -1, err
-	}
+	r := regexp.MustCompile(`max_batch_size:`)
 
 	for scanner.Scan() {
-		if r.MatchString(scanner.Text()) {
-			maxBatchSize := scanner.Text()
-			maxBatchSize = strings.TrimPrefix(maxBatchSize, "max_batch_size:")
-			maxBatchSize = strings.Trim(maxBatchSize, " ")
-			intMaxBatchSize, err := strconv.Atoi(maxBatchSize)
-			return intMaxBatchSize, err
+		if !r.MatchString(scanner.Text()) {
+			continue
 		}
+		maxBatchSize := scanner.Text()
+		maxBatchSize = strings.TrimPrefix(maxBatchSize, "max_batch_size:")
+		maxBatchSize = strings.Trim(maxBatchSize, " ")
+		intMaxBatchSize, err := strconv.Atoi(maxBatchSize)
+		return intMaxBatchSize, err
 	}
 
-	return -1, fmt.Errorf("not found")
+	return -1, errors.New("not found")
 }
 
 func DoSupportBatch(configFilePath string) (bool, error) {
@@ -476,10 +474,7 @@ func DoSupportBatch(configFilePath string) (bool, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	r, err := regexp.Compile(`max_batch_size:\s0`) // this can also be a regex
-	if err != nil {
-		return false, err
-	}
+	r := regexp.MustCompile(`max_batch_size:\s0`) // this can also be a regex
 
 	for scanner.Scan() {
 		if r.MatchString(scanner.Text()) {
@@ -491,6 +486,9 @@ func DoSupportBatch(configFilePath string) (bool, error) {
 }
 
 func writeCredential(credential datatypes.JSON) (string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	uid, _ := uuid.NewV4()
 	credentialFile := fmt.Sprintf("/tmp/%v", uid.String())
 
@@ -500,11 +498,19 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 			return "", err
 		}
 		defer out.Close()
-		resp, err := http.Get(DefaultGCPServiceAccountFile)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, DefaultGCPServiceAccountFile, http.NoBody)
 		if err != nil {
 			return "", err
 		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("http.Do with  MethodGet %q: %w", DefaultGCPServiceAccountFile, err)
+		}
 		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("http.Do with  MethodGet status: %s", resp.Status)
+		}
 
 		if _, err := io.Copy(out, resp.Body); err != nil {
 			return "", err
@@ -546,11 +552,11 @@ func writeCredential(credential datatypes.JSON) (string, error) {
 	return credentialFile, nil
 }
 
-func ArtiVCGetTags(dir string, config datamodel.ArtiVCModelConfiguration) ([]string, error) {
-	url := config.URL
+func ArtiVCGetTags(dir string, modelConfig datamodel.ArtiVCModelConfiguration) ([]string, error) {
+	url := modelConfig.URL
 	var cmd *exec.Cmd
 	if strings.HasPrefix(url, "gs://") {
-		credentialFile, err := writeCredential(config.Credential)
+		credentialFile, err := writeCredential(modelConfig.Credential)
 		if err != nil {
 			return []string{}, err
 		}
@@ -704,7 +710,7 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	}
 
 	if _, err := os.Stat(fmt.Sprintf("%s/README.md", confDir)); err != nil {
-		return fmt.Errorf("there is no README file")
+		return errors.New("there is no README file")
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s/README.md %s/", confDir, dest))
@@ -765,7 +771,7 @@ func updateModelConfigModel(configFilePath string, oldStr string, newStr string)
 func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.InferenceModel) error {
 	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
 	if modelPathDir == "" {
-		return fmt.Errorf("there is no model")
+		return errors.New("there is no model")
 	}
 	modelFilePath := fmt.Sprintf("%s/1/model.onnx", modelPathDir)
 	if _, err := os.Stat(modelFilePath); err != nil {
@@ -782,7 +788,7 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 
 	elems := strings.Split(string(out), ",")
 	if len(elems) != 5 {
-		return fmt.Errorf("wrong output format")
+		return errors.New("wrong output format")
 	}
 	inputDim1, err := strconv.Atoi(elems[1])
 	if err != nil {
@@ -825,12 +831,12 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 	if err != nil {
 		return err
 	}
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(file, &data); err != nil {
 		return err
 	}
 	if id2label, ok := data["id2label"]; ok {
-		mID2label := id2label.(map[string]interface{})
+		mID2label := id2label.(map[string]any)
 
 		keys := make([]int, 0, len(mID2label))
 		for k := range mID2label {
@@ -846,7 +852,7 @@ func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.Inferen
 		defer f.Close()
 
 		for _, k := range keys {
-			if _, err := f.WriteString(fmt.Sprintf("%s\n", mID2label[fmt.Sprintf("%v", k)])); err != nil {
+			if _, err := fmt.Fprintf(f, "%s\n", mID2label[fmt.Sprintf("%v", k)]); err != nil {
 				return err
 			}
 		}
@@ -916,7 +922,7 @@ func IsAuditEvent(eventName string) bool {
 }
 
 // TODO: billable event TBD
-func IsBillableEvent(eventName string) bool {
+func IsBillableEvent(_ string) bool {
 	return false
 }
 

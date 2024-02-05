@@ -25,12 +25,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
@@ -38,7 +38,7 @@ import (
 )
 
 // InferInput is the interface for the input to the model
-type InferInput interface{}
+type InferInput any
 
 // Service is the interface for the service layer
 type Service interface {
@@ -74,7 +74,7 @@ type Service interface {
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
-	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
+	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
 
 	GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error)
 	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
@@ -94,7 +94,7 @@ type Service interface {
 	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
 
 	// Usage collection
-	WriteNewDataPoint(ctx context.Context, data utils.UsageMetricData) error
+	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 }
 
 type service struct {
@@ -119,7 +119,7 @@ func NewService(
 	tc client.Client,
 	cs controllerPB.ControllerPrivateServiceClient,
 	ra ray.Ray,
-	acl *acl.ACLClient) Service {
+	a *acl.ACLClient) Service {
 	return &service{
 		repository:               r,
 		ray:                      ra,
@@ -129,7 +129,7 @@ func NewService(
 		redisClient:              rc,
 		temporalClient:           tc,
 		controllerClient:         cs,
-		aclClient:                acl,
+		aclClient:                a,
 	}
 }
 
@@ -180,7 +180,6 @@ func (s *service) AuthenticateUser(ctx context.Context, allowVisitor bool) (auth
 			IsVisitor: true,
 		}, nil
 	}
-
 }
 
 func (s *service) GetRepository() repository.Repository {
@@ -416,7 +415,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	inferenceModelName := inferenceModel.Name
 	inferenceModelVersion := inferenceModel.Version
-	var postprocessResponse interface{}
+	var postprocessResponse any
 	switch inferenceModel.Platform {
 	case "ensemble":
 		modelMetadataResponse := s.triton.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
@@ -869,7 +868,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 					Data:     output.SerializedOutputs[i],
 				}
 
-				var mapOutput map[string]interface{}
+				var mapOutput map[string]any
 				b, err := json.Marshal(unspecifiedOutput)
 				if err != nil {
 					return nil, err
@@ -985,7 +984,7 @@ func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken
 
 func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := ns.String()
 
@@ -1105,7 +1104,7 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, ErrNoPermission
 	}
 
-	if err = s.repository.UpdateNamespaceModelIDByID(ctx, ownerPermalink, modelID, newModelID); err != nil {
+	if err := s.repository.UpdateNamespaceModelIDByID(ctx, ownerPermalink, modelID, newModelID); err != nil {
 		return nil, err
 	}
 
@@ -1212,9 +1211,9 @@ func (s *service) GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*
 	return s.DBToPBModelDefinition(ctx, dbModelDef)
 }
 
-func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error) {
+func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error) {
 
-	dbModelDefs, nextPageToken, totalSize, err := s.repository.ListModelDefinitions(view, pageSize, pageToken)
+	dbModelDefs, nextPageToken, totalSize, err := s.repository.ListModelDefinitions(view, int64(pageSize), pageToken)
 	if err != nil {
 		return nil, 0, "", err
 	}

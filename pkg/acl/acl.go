@@ -91,7 +91,7 @@ func (c *ACLClient) DeletePublicModelPermission(modelUID uuid.UUID) error {
 	return nil
 }
 
-func (c *ACLClient) SetModelPermission(modelUID uuid.UUID, user string, role string, enable bool) error {
+func (c *ACLClient) SetModelPermission(modelUID uuid.UUID, user, role string, enable bool) error {
 	var err error
 	options := openfgaClient.ClientWriteOptions{
 		AuthorizationModelId: c.authorizationModelID,
@@ -170,7 +170,6 @@ func (c *ACLClient) Purge(objectType string, objectUID uuid.UUID) error {
 }
 
 func (c *ACLClient) CheckPermission(objectType string, objectUID uuid.UUID, userType string, userUID uuid.UUID, role string) (bool, error) {
-
 	options := openfgaClient.ClientCheckOptions{
 		AuthorizationModelId: c.authorizationModelID,
 	}
