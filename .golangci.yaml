@@ -28,6 +28,10 @@ linters-settings:
       - ifElseChain
       - octalLiteral
       - whyNoLint
+      - paramTypeCombine
+      - unnamedResult
+      - commentedOutCode
+      - tooManyResultsChecker
   gocyclo:
     min-complexity: 15
   gofmt:
@@ -52,7 +56,7 @@ linters-settings:
       - strings.SplitN
 
   govet:
-    check-shadowing: true
+    check-shadowing: false
     settings:
       printf:
         funcs:
@@ -75,6 +79,7 @@ linters-settings:
       - name: unexported-return
         disabled: true
       - name: unused-parameter
+        disabled: true
 
 linters:
   disable-all: true
@@ -84,35 +89,32 @@ linters:
     - dogsled
     # - dupl
     - errcheck
-    # - errorlint
+    - errorlint
     - exportloopref
     # - funlen
     - gocheckcompilerdirectives
     - gochecknoinits
     - goconst
-    # - gocritic
+    - gocritic
     # - gocyclo
-    # - gofmt
-    # - goimports
-    # - gomnd
+    - gofmt
+    - goimports
     - goprintffuncname
     # - gosec
     - gosimple
-    # - govet
+    - govet
     - ineffassign
-    # - lll
-    # - misspell
-    # - nakedret
-    # - noctx
+    - misspell
+    - nakedret
+    - noctx
     - nolintlint
-    # - revive
+    - revive
     - staticcheck
     - stylecheck
     - typecheck
-    # - unconvert
+    - unconvert
     - unparam
     - unused
-    # - whitespace
 
   # don't enable:
   # - asciicheck
