@@ -79,6 +79,7 @@ controller:
     cert:
     key:
 initmodel:
+  ownertype: users
   ownerid: admin
   enabled: false
   path: https://raw.githubusercontent.com/instill-ai/model/main/model-hub/model_hub_cpu.json

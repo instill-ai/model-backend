@@ -110,9 +110,10 @@ type ControllerConfig struct {
 }
 
 type InitModelConfig struct {
-	OwnerID string `koanf:"ownerid"`
-	Path    string `koanf:"path"`
-	Enabled bool   `koanf:"enabled"`
+	OwnerType string `koanf:"ownertype"`
+	OwnerID   string `koanf:"ownerid"`
+	Path      string `koanf:"path"`
+	Enabled   bool   `koanf:"enabled"`
 }
 
 // MaxBatchSizeConfig defines the maximum size of the batch of a AI task
