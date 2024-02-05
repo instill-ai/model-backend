@@ -581,7 +581,9 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 		file, err := content.Open()
 
 		if err != nil {
-			file.Close()
+			if err := file.Close(); err != nil {
+				return nil, err
+			}
 			logger.Error(fmt.Sprintf("Unable to open file for image %v", err))
 			return nil, fmt.Errorf("unable to open file for image")
 		}
@@ -589,11 +591,15 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 		buff := new(bytes.Buffer) // pointer
 		numBytes, err := buff.ReadFrom(file)
 		if err != nil {
-			file.Close()
+			if err := file.Close(); err != nil {
+				return nil, err
+			}
 			logger.Error(fmt.Sprintf("Unable to read content body from image %v", err))
 			return nil, fmt.Errorf("unable to read content body from image")
 		}
-		file.Close()
+		if err := file.Close(); err != nil {
+			return nil, err
+		}
 
 		if numBytes > int64(config.Config.Server.MaxDataSize*constant.MB) {
 			return nil, fmt.Errorf(
