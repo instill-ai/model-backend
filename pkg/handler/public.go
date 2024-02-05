@@ -168,15 +168,16 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	count := 0
 	for {
 		if count, err = reader.Read(part); err != nil {
+			if !errors.Is(err, io.EOF) {
+				makeJSONResponse(w, 400, "File Error", "Error reading input file")
+				span.SetStatus(1, "Error reading input file")
+				return
+			}
 			break
 		}
 		buf.Write(part[:count])
 	}
-	if errors.Is(err, io.EOF) {
-		makeJSONResponse(w, 400, "File Error", "Error reading input file")
-		span.SetStatus(1, "Error reading input file")
-		return
-	}
+
 	rdid, _ := uuid.NewV4()
 	tmpFile := path.Join("/tmp", rdid.String())
 	fp, err := os.Create(tmpFile)
