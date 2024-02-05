@@ -134,7 +134,9 @@ func checkIsEnsembleProject(fPath string) (bool, error) {
 					result = false
 					return err
 				}
-				f.Close()
+				if err := f.Close(); err != nil {
+					return err
+				}
 			}
 			result = false
 			return nil
@@ -166,7 +168,9 @@ func checkIsEnsembleProject(fPath string) (bool, error) {
 			if err := scanner.Err(); err != nil {
 				return false, err
 			}
-			f.Close()
+			if err := f.Close(); err != nil {
+				return false, err
+			}
 		}
 	}
 
@@ -281,8 +285,13 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			return "", "", err
 		}
 
-		dstFile.Close()
-		fileInArchive.Close()
+		if err := dstFile.Close(); err != nil {
+			return "", "", err
+		}
+		if err := fileInArchive.Close(); err != nil {
+			return "", "", err
+		}
+
 		// Update ModelName in config.pbtxt
 		fileExtension := filepath.Ext(fPath)
 		if fileExtension == ".pbtxt" {
