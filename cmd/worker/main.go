@@ -18,7 +18,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/external"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/triton"
@@ -26,6 +25,7 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
@@ -51,7 +51,7 @@ func main() {
 	)
 	defer cancel()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
@@ -60,8 +60,8 @@ func main() {
 	db := database.GetSharedConnection()
 	defer database.Close(db)
 
-	triton := triton.NewTriton()
-	defer triton.Close()
+	tritonServer := triton.NewTriton()
+	defer tritonServer.Close()
 
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
@@ -132,7 +132,7 @@ func main() {
 		panic(err)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, triton, controllerClient, rayService, &aclClient)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, tritonServer, controllerClient, rayService, &aclClient)
 
 	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
 

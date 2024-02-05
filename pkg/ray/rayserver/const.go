@@ -60,9 +60,9 @@ type DeployedAppConfig struct {
 	Deployments []DeployedAppDeployment `json:"deployments,omitempty"`
 }
 type DeployedAppDeployment struct {
-	Name        string                 `json:"name,omitempty"`
-	NumReplicas string                 `json:"num_replicas,omitempty"`
-	UserConfig  map[string]interface{} `json:"user_config,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	NumReplicas string         `json:"num_replicas,omitempty"`
+	UserConfig  map[string]any `json:"user_config,omitempty"`
 }
 type ApplicationDeployment struct {
 	Name                 string               `json:"name,omitempty"`
@@ -73,16 +73,16 @@ type ApplicationDeployment struct {
 }
 
 type HTTPDeploymentConfig struct {
-	Name                      string                 `json:"name,omitempty"`
-	NumReplicas               float64                `json:"num_replicas,omitempty"`
-	MaxConcurrentQueries      float64                `json:"max_concurrent_queries,omitempty"`
-	UserConfig                map[string]interface{} `json:"user_config,omitempty"`
-	GracefulShutdownWaitLoopS float64                `json:"graceful_shutdown_wait_loop_s,omitempty"`
-	GracefulShutdownTimeoutS  float64                `json:"graceful_shutdown_timeout_s,omitempty"`
-	HealthCheckPeriodS        float64                `json:"health_check_period_s,omitempty"`
-	HealthCheckTimeoutS       float64                `json:"health_check_timeout_s,omitempty"`
-	RayActorOptions           map[string]interface{} `json:"ray_actor_options,omitempty"`
-	IsDriverDeployment        bool                   `json:"is_driver_deployment,omitempty"`
+	Name                      string         `json:"name,omitempty"`
+	NumReplicas               float64        `json:"num_replicas,omitempty"`
+	MaxConcurrentQueries      float64        `json:"max_concurrent_queries,omitempty"`
+	UserConfig                map[string]any `json:"user_config,omitempty"`
+	GracefulShutdownWaitLoopS float64        `json:"graceful_shutdown_wait_loop_s,omitempty"`
+	GracefulShutdownTimeoutS  float64        `json:"graceful_shutdown_timeout_s,omitempty"`
+	HealthCheckPeriodS        float64        `json:"health_check_period_s,omitempty"`
+	HealthCheckTimeoutS       float64        `json:"health_check_timeout_s,omitempty"`
+	RayActorOptions           map[string]any `json:"ray_actor_options,omitempty"`
+	IsDriverDeployment        bool           `json:"is_driver_deployment,omitempty"`
 }
 
 type Replica struct {

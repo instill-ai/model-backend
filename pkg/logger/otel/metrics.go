@@ -41,13 +41,13 @@ func SetupMetrics(ctx context.Context, serviceName string) (*sdkmetric.MeterProv
 	}
 
 	// labels/tags/resources that are common to all metrics.
-	resource := resource.NewWithAttributes(
+	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceNameKey.String(serviceName),
 	)
 
 	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(resource),
+		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(
 			// collects and exports metric data every 10 seconds.
 			sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(10*time.Second)),

@@ -9,8 +9,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 )
 
-func (s *service) WriteNewDataPoint(ctx context.Context, data utils.UsageMetricData) error {
-
+func (s *service) WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error {
 	if config.Config.Server.Usage.Enabled {
 
 		bData, err := json.Marshal(data)

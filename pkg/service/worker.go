@@ -21,9 +21,9 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/worker"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
@@ -91,7 +91,7 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 
 func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) (string, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	if ns.NsType == resource.Organization {
 		resp, err := s.mgmtPublicServiceClient.GetOrganizationSubscription(
@@ -105,10 +105,8 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 			if s.Code() != codes.Unimplemented {
 				return "", err
 			}
-		} else {
-			if resp.Subscription.Plan == "inactive" {
-				return "", grpc_status.Errorf(codes.FailedPrecondition, "the organization subscription is not active")
-			}
+		} else if resp.Subscription.Plan == "inactive" {
+			return "", grpc_status.Errorf(codes.FailedPrecondition, "the organization subscription is not active")
 		}
 
 		granted, err := s.aclClient.CheckPermission("organization", ns.NsUID, authUser.GetACLType(), authUser.UID, "member")
@@ -118,10 +116,8 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 		if !granted {
 			return "", ErrNoPermission
 		}
-	} else {
-		if ns.NsUID != authUser.UID {
-			return "", ErrNoPermission
-		}
+	} else if ns.NsUID != authUser.UID {
+		return "", ErrNoPermission
 	}
 
 	id, _ := uuid.NewV4()
@@ -153,7 +149,7 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 
 func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       id.String(),
@@ -188,7 +184,7 @@ func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID u
 
 func (s *service) UndeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       id.String(),

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -86,7 +87,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 	if pbModel.GetOwnerName() != "" {
 		userID = pbModel.GetOwnerName()
 	} else {
-		return &modelPB.DeployModelAdminResponse{}, fmt.Errorf("model no owner")
+		return &modelPB.DeployModelAdminResponse{}, errors.New("model no owner")
 	}
 
 	ns, _, err := h.service.GetRscNamespaceAndNameID(userID)
@@ -184,7 +185,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		}
 
 		if e != nil {
-			return &modelPB.DeployModelAdminResponse{}, fmt.Errorf(e.Error())
+			return &modelPB.DeployModelAdminResponse{}, errors.New(e.Error())
 		}
 		return &modelPB.DeployModelAdminResponse{}, st.Err()
 	}

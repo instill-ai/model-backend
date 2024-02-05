@@ -7,20 +7,20 @@ import (
 	"log"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 
-	"github.com/gofrs/uuid"
 	openfgaClient "github.com/openfga/go-sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	databaseInit "github.com/instill-ai/model-backend/pkg/init"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -66,12 +66,12 @@ func main() {
 	defer span.End()
 	defer cancel()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	db := database.GetConnection()
 	defer database.Close(db)
 
-	repository := repository.NewRepository(db)
+	repo := repository.NewRepository(db)
 
 	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
 		ApiScheme: "http",
@@ -98,7 +98,7 @@ func main() {
 	var models []*datamodel.Model
 	pageToken := ""
 	for {
-		models, _, pageToken, err = repository.ListModelsAdmin(ctx, 100, pageToken, true, false)
+		models, _, pageToken, err = repo.ListModelsAdmin(ctx, 100, pageToken, true, false)
 		if err != nil {
 			panic(err)
 		}

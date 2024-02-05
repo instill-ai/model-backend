@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,23 +36,23 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/checkfield"
 	"github.com/instill-ai/x/sterr"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func makeJSONResponse(w http.ResponseWriter, status int, title string, detail string) {
+func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string) {
 	w.Header().Add("Content-Type", "application/json+problem")
-	w.WriteHeader(status)
+	w.WriteHeader(st)
 	obj, _ := json.Marshal(datamodel.Error{
-		Status: int32(status),
+		Status: int32(st),
 		Title:  title,
 		Detail: detail,
 	})
@@ -79,7 +80,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	contentType := req.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "multipart/form-data") {
@@ -171,7 +172,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		}
 		buf.Write(part[:count])
 	}
-	if err != io.EOF {
+	if errors.Is(err, io.EOF) {
 		makeJSONResponse(w, 400, "File Error", "Error reading input file")
 		span.SetStatus(1, "Error reading input file")
 		return
@@ -373,7 +374,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	authUser, err := h.service.AuthenticateUser(ctx, true)
 	if err != nil {
@@ -381,7 +382,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, int32(req.GetPageSize()), req.GetPageToken(), parseView(req.GetView()), modelPB.Model_VISIBILITY_PUBLIC.Enum(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), modelPB.Model_VISIBILITY_PUBLIC.Enum(), req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -546,7 +547,7 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, _, err := h.service.GetRscNamespaceAndNameID(req.GetParent())
 	if err != nil {
@@ -588,7 +589,7 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
 	if err != nil {
@@ -648,7 +649,7 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -708,7 +709,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetModel().GetName())
 	if err != nil {
@@ -827,7 +828,7 @@ func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteName
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -891,7 +892,7 @@ func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameName
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -950,7 +951,7 @@ func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNa
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1023,7 +1024,7 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1100,7 +1101,7 @@ func (h *PublicHandler) deployNamespaceModel(ctx context.Context, req DeployName
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1182,7 +1183,7 @@ func (h *PublicHandler) undeployNamespaceModel(ctx context.Context, req Undeploy
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1238,19 +1239,19 @@ type WatchNamespaceModelRequestInterface interface {
 
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUserModelRequest) (resp *modelPB.WatchUserModelResponse, err error) {
 	resp = &modelPB.WatchUserModelResponse{}
-	resp.State, resp.Progress, err = h.watchNamespaceModel(ctx, req)
+	resp.State, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelPB.WatchOrganizationModelRequest) (resp *modelPB.WatchOrganizationModelResponse, err error) {
 	resp = &modelPB.WatchOrganizationModelResponse{}
-	resp.State, resp.Progress, err = h.watchNamespaceModel(ctx, req)
+	resp.State, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
-func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.Model_State, int32, error) {
+func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.Model_State, error) {
 
 	eventName := "WatchNamespaceModel"
 
@@ -1260,18 +1261,18 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return modelPB.Model_STATE_ERROR, 0, err
+		return modelPB.Model_STATE_ERROR, err
 	}
 
 	authUser, err := h.service.AuthenticateUser(ctx, false)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return modelPB.Model_STATE_ERROR, 0, err
+		return modelPB.Model_STATE_ERROR, err
 	}
 
 	if err != nil {
@@ -1284,7 +1285,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.Model_STATE_ERROR, 0, err
+		return modelPB.Model_STATE_ERROR, err
 	}
 
 	// check permission
@@ -1299,7 +1300,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.Model_STATE_ERROR, 0, err
+		return modelPB.Model_STATE_ERROR, err
 	}
 
 	state, _, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
@@ -1314,10 +1315,10 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.Model_STATE_ERROR, 0, err
+		return modelPB.Model_STATE_ERROR, err
 	}
 
-	return *state, 0, nil
+	return *state, nil
 }
 
 type TriggerNamespaceModelRequestInterface interface {
@@ -1350,7 +1351,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1381,7 +1382,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	usageData := utils.UsageMetricData{
+	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            authUser.UID.String(),
@@ -1390,12 +1391,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
-		ModelTask:          commonPB.Task(pbModel.Task),
+		ModelTask:          pbModel.Task,
 	}
 
-	var inputInfer interface{}
+	var inputInfer any
 	var lenInputs = 1
-	switch commonPB.Task(pbModel.Task) {
+	switch pbModel.Task {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -1489,8 +1490,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			}
 		}
 	}
-	task := commonPB.Task(pbModel.Task)
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, task)
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1534,7 +1534,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return task, response, nil
+	return pbModel.Task, response, nil
 }
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -1559,7 +1559,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	contentType := req.Header.Get("Content-Type")
 
@@ -1588,9 +1588,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		}
 	}
 
-	path := pathParams["path"]
-
-	ns, modelID, err := s.GetRscNamespaceAndNameID(path)
+	ns, modelID, err := s.GetRscNamespaceAndNameID(pathParams["path"])
 	if err != nil {
 		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
 		span.SetStatus(1, "Model path format error")
@@ -1617,7 +1615,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	usageData := utils.UsageMetricData{
+	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            authUser.UID.String(),
@@ -1626,7 +1624,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
-		ModelTask:          commonPB.Task(pbModel.Task),
+		ModelTask:          pbModel.Task,
 	}
 
 	err = req.ParseMultipartForm(4 << 20)
@@ -1638,9 +1636,9 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	var inputInfer interface{}
+	var inputInfer any
 	var lenInputs = 1
-	switch commonPB.Task(pbModel.Task) {
+	switch pbModel.Task {
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
@@ -1738,9 +1736,9 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			}
 		}
 	}
-	task := commonPB.Task(pbModel.Task)
+
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(req.Context(), ns, authUser, modelID, inputInfer, task)
+	response, err = s.TriggerNamespaceModelByID(req.Context(), ns, authUser, modelID, inputInfer, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1775,7 +1773,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(200)
 	res, err := utils.MarshalOptions.Marshal(&modelPB.TriggerUserModelBinaryFileUploadResponse{
-		Task:        task,
+		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})
 	if err != nil {
@@ -1835,7 +1833,7 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
@@ -1883,7 +1881,7 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		Size:     int32(stat.Size()),
 		Type:     "file",   // currently only support file type
 		Encoding: "base64", // currently only support base64 encoding
-		Content:  []byte(content),
+		Content:  content,
 	}, nil
 }
 
@@ -1912,7 +1910,7 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	pbModelDefinitions, totalSize, nextPageToken, err := h.service.ListModelDefinitions(ctx, parseView(req.GetView()), int(req.GetPageSize()), req.GetPageToken())
+	pbModelDefinitions, totalSize, nextPageToken, err := h.service.ListModelDefinitions(ctx, parseView(req.GetView()), req.GetPageSize(), req.GetPageToken())
 	if err != nil {
 		return &modelPB.ListModelDefinitionsResponse{}, err
 	}

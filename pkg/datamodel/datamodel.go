@@ -34,11 +34,11 @@ type BaseDynamic struct {
 
 // BeforeCreate will set a UUID rather than numeric ID.
 func (base *BaseDynamic) BeforeCreate(db *gorm.DB) error {
-	uuid, err := uuid.NewV4()
+	recordUUID, err := uuid.NewV4()
 	if err != nil {
 		return err
 	}
-	db.Statement.SetColumn("UID", uuid)
+	db.Statement.SetColumn("UID", recordUUID)
 	return nil
 }
 
@@ -156,7 +156,7 @@ type ListModelQuery struct {
 	Owner string
 }
 
-func (s *ModelState) Scan(value interface{}) error {
+func (s *ModelState) Scan(value any) error {
 	*s = ModelState(modelPB.Model_State_value[value.(string)])
 	return nil
 }
@@ -165,7 +165,7 @@ func (s ModelTask) Value() (driver.Value, error) {
 	return commonPB.Task(s).String(), nil
 }
 
-func (s *ModelTask) Scan(value interface{}) error {
+func (s *ModelTask) Scan(value any) error {
 	*s = ModelTask(commonPB.Task_value[value.(string)])
 	return nil
 }
@@ -174,7 +174,7 @@ func (s ModelState) Value() (driver.Value, error) {
 	return modelPB.Model_State(s).String(), nil
 }
 
-func (v *ModelVisibility) Scan(value interface{}) error {
+func (v *ModelVisibility) Scan(value any) error {
 	*v = ModelVisibility(modelPB.Model_Visibility_value[value.(string)])
 	return nil
 }
@@ -187,7 +187,7 @@ func (v ModelVisibility) Value() (driver.Value, error) {
 type ReleaseStage modelPB.ReleaseStage
 
 // Scan function for custom GORM type ReleaseStage
-func (r *ReleaseStage) Scan(value interface{}) error {
+func (r *ReleaseStage) Scan(value any) error {
 	*r = ReleaseStage(modelPB.ReleaseStage_value[value.(string)])
 	return nil
 }

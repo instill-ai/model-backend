@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/logger"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagePB "github.com/instill-ai/protogen-go/core/usage/v1beta"
@@ -21,7 +21,7 @@ import (
 )
 
 func InitMgmtPublicServiceClient(ctx context.Context) (mgmtPB.MgmtPublicServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	if config.Config.MgmtBackend.HTTPS.Cert != "" && config.Config.MgmtBackend.HTTPS.Key != "" {
@@ -43,9 +43,9 @@ func InitMgmtPublicServiceClient(ctx context.Context) (mgmtPB.MgmtPublicServiceC
 	return mgmtPB.NewMgmtPublicServiceClient(clientConn), clientConn
 }
 
-// InitMgmtPrivateServiceClient initialises a MgmtPrivateServiceClient instance
+// InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
 func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	var creds credentials.TransportCredentials
@@ -70,7 +70,7 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 
 // InitUsageServiceClient initializes a UsageServiceClient instance
 func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	if config.Config.Server.Usage.TLSEnabled {
@@ -110,9 +110,9 @@ func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *g
 	return usagePB.NewUsageServiceClient(clientConn), clientConn
 }
 
-// InitControllerPrivateServiceClient initialises a ControllerPrivateServiceClient instance
+// InitControllerPrivateServiceClient initializes a ControllerPrivateServiceClient instance
 func InitControllerPrivateServiceClient(ctx context.Context) (controllerPB.ControllerPrivateServiceClient, *grpc.ClientConn) {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
 	var creds credentials.TransportCredentials

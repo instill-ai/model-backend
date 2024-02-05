@@ -10,11 +10,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/repo"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagePB "github.com/instill-ai/protogen-go/core/usage/v1beta"
 	usageClient "github.com/instill-ai/usage-client/client"
@@ -23,7 +23,7 @@ import (
 
 // Usage interface
 type Usage interface {
-	RetrieveUsageData() interface{}
+	RetrieveUsageData() any
 	StartReporter(ctx context.Context)
 	TriggerSingleReporter(ctx context.Context)
 }
@@ -39,7 +39,7 @@ type usage struct {
 
 // NewUsage initiates a usage instance
 func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient, userUID string) Usage {
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
 	if err != nil {
@@ -63,10 +63,10 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivate
 	}
 }
 
-func (u *usage) RetrieveUsageData() interface{} {
+func (u *usage) RetrieveUsageData() any {
 
 	ctx := context.Background()
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	logger.Debug("Retrieve usage data...")
 
@@ -147,7 +147,7 @@ func (u *usage) StartReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	go func() {
 		time.Sleep(5 * time.Second)
@@ -163,7 +163,7 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
 	if err != nil {

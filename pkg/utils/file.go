@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,10 +23,10 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -43,7 +44,7 @@ func NewProgressReader(r io.Reader, filename string) *ProgressReader {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	return &ProgressReader{
 		r:        r,
 		logger:   logger,
@@ -54,7 +55,7 @@ func NewProgressReader(r io.Reader, filename string) *ProgressReader {
 func (pr *ProgressReader) Read(p []byte) (int, error) {
 	n, err := pr.r.Read(p)
 	bf := float64(n)
-	bf = bf / (1 << 10)
+	bf /= (1 << 10)
 	pr.n += bf
 
 	if time.Since(pr.lastPrint) > time.Second ||
@@ -120,7 +121,6 @@ func checkIsEnsembleProject(fPath string) (bool, error) {
 				if err != nil {
 					return err
 				}
-				defer f.Close()
 
 				scanner := bufio.NewScanner(f)
 				for scanner.Scan() {
@@ -134,6 +134,7 @@ func checkIsEnsembleProject(fPath string) (bool, error) {
 					result = false
 					return err
 				}
+				f.Close()
 			}
 			result = false
 			return nil
@@ -148,23 +149,24 @@ func checkIsEnsembleProject(fPath string) (bool, error) {
 
 		for _, file := range archive.File {
 			// Check if the file has a .pbtxt suffix
-			if strings.HasSuffix(file.Name, ".pbtxt") {
-				f, err := file.Open()
-				if err != nil {
-					return false, err
-				}
-				defer f.Close()
+			if !strings.HasSuffix(file.Name, ".pbtxt") {
+				continue
+			}
+			f, err := file.Open()
+			if err != nil {
+				return false, err
+			}
 
-				scanner := bufio.NewScanner(f)
-				for scanner.Scan() {
-					if strings.Contains(scanner.Text(), "ensemble") {
-						return true, nil
-					}
-				}
-				if err := scanner.Err(); err != nil {
-					return false, err
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				if strings.Contains(scanner.Text(), "ensemble") {
+					return true, nil
 				}
 			}
+			if err := scanner.Err(); err != nil {
+				return false, err
+			}
+			f.Close()
 		}
 	}
 
@@ -333,7 +335,7 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		for i := 0; i < len(createdModels); i++ {
 			createdModels[i].Platform = "ray"
 		}
-		if err = copyRayProto(protoFilePath); err != nil {
+		if err := copyRayProto(protoFilePath); err != nil {
 			return "", "", err
 		}
 	}
@@ -380,7 +382,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 	if err != nil {
 		return "", "", err
 	}
-	modelRootDir := strings.Join([]string{dstDir, owner}, "/")
+	modelRootDir := dstDir + "/" + owner
 	err = os.MkdirAll(modelRootDir, os.ModePerm)
 	if err != nil {
 		return "", "", err
@@ -412,7 +414,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 				createdModels = append(createdModels, datamodel.InferenceModel{
 					Name:    subStrs[0], // Triton model name
 					State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-					Version: int(v),
+					Version: v,
 				})
 			}
 			continue
@@ -486,7 +488,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		for i := 0; i < len(createdModels); i++ {
 			createdModels[i].Platform = "ray"
 		}
-		if err = copyRayProto(protoFilePath); err != nil {
+		if err := copyRayProto(protoFilePath); err != nil {
 			return "", "", err
 		}
 	}
@@ -506,13 +508,13 @@ func SaveUserFile(stream modelPB.ModelPublicService_CreateUserModelBinaryFileUpl
 	for {
 		fileData, err = stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 
-		if firstChunk { //first chunk contains file name
+		if firstChunk { // first chunk contains file name
 			tmpFile, fp, parent, uploadedModel, modelDefinitionID, err = saveFile(fileData)
 			if err != nil {
 				return "", "", &datamodel.Model{}, "", err
@@ -535,13 +537,13 @@ func SaveOrganizationFile(stream modelPB.ModelPublicService_CreateOrganizationMo
 	for {
 		fileData, err = stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return "", "", &datamodel.Model{}, "", fmt.Errorf("failed unexpectedly while reading chunks from stream")
 		}
 
-		if firstChunk { //first chunk contains file name
+		if firstChunk { // first chunk contains file name
 			tmpFile, fp, parent, uploadedModel, modelDefinitionID, err = saveFile(fileData)
 			if err != nil {
 				return "", "", &datamodel.Model{}, "", err
@@ -606,14 +608,21 @@ func saveFile(fileData CreateNamespaceModelBinaryFileUploadRequestInterface) (tm
 // GetJSON fetches the contents of the given URL
 // and decodes it as JSON into the given result,
 // which should be a pointer to the expected data.
-func GetJSON(url string, result interface{}) error {
-	resp, err := http.Get(url)
+func GetJSON(url string, result any) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("http.Get %q: %w", url, err)
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("http.Do with  MethodGet %q: %w", url, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http.Get status: %s", resp.Status)
+		return fmt.Errorf("http.Do with  MethodGet status: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -647,18 +656,20 @@ func copyRayProto(dstPath string) error {
 		if err != nil {
 			return err
 		}
-		defer source.Close()
+
 		reader := NewProgressReader(source, sourceFileStat.Name())
 
 		destination, err := os.Create(fmt.Sprintf("%s/%s", dstPath, sourceFileStat.Name()))
 		if err != nil {
 			return err
 		}
-		defer destination.Close()
 
 		if _, err = io.Copy(destination, reader); err != nil {
 			return err
 		}
+
+		source.Close()
+		destination.Close()
 	}
 
 	return nil

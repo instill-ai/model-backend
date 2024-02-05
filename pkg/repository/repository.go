@@ -11,21 +11,21 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/x/paginate"
 	"github.com/instill-ai/x/sterr"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
-	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
 
 	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
-	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error)
 
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
@@ -39,7 +39,7 @@ type Repository interface {
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
-	ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
 	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
@@ -62,9 +62,9 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
-func (r *repository) listModels(ctx context.Context, where string, whereArgs []interface{}, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	db := r.db
 	if showDeleted {
@@ -153,27 +153,31 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []i
 	return models, totalSize, nextPageToken, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
-	return r.listModels(ctx,
+func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"",
-		[]interface{}{},
+		[]any{},
 		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
+
+	return models, totalSize, nextPageToken, err
 }
 
-func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
-	return r.listModels(ctx,
+func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"(owner = ?)",
-		[]interface{}{ownerPermalink},
+		[]any{ownerPermalink},
 		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
+
+	return models, totalSize, nextPageToken, err
 }
 
 func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
-	return r.listModels(ctx, "", []interface{}{}, pageSize, pageToken, isBasicView, nil, showDeleted)
+	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, nil, showDeleted)
 }
 
-func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []interface{}, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool) (*datamodel.Model, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var model datamodel.Model
 
@@ -204,28 +208,28 @@ func (r *repository) GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicVi
 	// TODO: ACL
 	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
-		[]interface{}{uid},
+		[]any{uid},
 		isBasicView)
 }
 
 func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(id = ? AND owner = ? )",
-		[]interface{}{id, ownerPermalink},
+		[]any{id, ownerPermalink},
 		isBasicView)
 }
 
 func (r *repository) GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(id = ?)",
-		[]interface{}{id},
+		[]any{id},
 		isBasicView)
 }
 
 func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
-		[]interface{}{uid},
+		[]any{uid},
 		isBasicView,
 	)
 }
@@ -263,7 +267,7 @@ func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermal
 func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error {
 	if result := r.db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
-		Updates(map[string]interface{}{"state": state}); result.Error != nil {
+		Updates(map[string]any{"state": state}); result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
 		return ErrNoDataUpdated
@@ -329,7 +333,7 @@ func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDef
 	return definitionDB, nil
 }
 
-func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}

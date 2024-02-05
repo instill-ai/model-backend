@@ -80,16 +80,16 @@ func GetZapLogger(ctx context.Context) (*zap.Logger, error) {
 
 			span.AddEvent("log", trace.WithAttributes(
 				attribute.KeyValue{
-					Key: "log.severity",
+					Key:   "log.severity",
 					Value: attribute.StringValue(entry.Level.String()),
 				},
 				attribute.KeyValue{
-					Key: "log.message",
+					Key:   "log.message",
 					Value: attribute.StringValue(entry.Message),
 				},
 			))
 			if entry.Level >= zap.ErrorLevel {
-				span.SetStatus(codes.Error, string(entry.Message))
+				span.SetStatus(codes.Error, entry.Message)
 			} else {
 				span.SetStatus(codes.Ok, "")
 			}

@@ -185,8 +185,8 @@ func Init() error {
 		log.Fatal(err.Error())
 	}
 
-	if err := k.Load(env.ProviderWithValue("CFG_", ".", func(s string, v string) (string, interface{}) {
-		key := strings.Replace(strings.ToLower(strings.TrimPrefix(s, "CFG_")), "_", ".", -1)
+	if err := k.Load(env.ProviderWithValue("CFG_", ".", func(s string, v string) (string, any) {
+		key := strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(s, "CFG_")), "_", ".")
 		if strings.Contains(v, ",") {
 			return key, strings.Split(strings.TrimSpace(v), ",")
 		}
@@ -203,6 +203,7 @@ func Init() error {
 }
 
 // ValidateConfig is for custom validation rules for the configuration
-func ValidateConfig(cfg *AppConfig) error {
+// for future use
+func ValidateConfig(_ *AppConfig) error {
 	return nil
 }

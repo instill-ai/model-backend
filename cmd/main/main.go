@@ -37,7 +37,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -49,6 +48,7 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -95,7 +95,7 @@ func main() {
 	)
 	defer cancel()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
@@ -151,8 +151,7 @@ func main() {
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
-	grpcServerOpts = append(grpcServerOpts, grpc.MaxRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB))
-	grpcServerOpts = append(grpcServerOpts, grpc.MaxSendMsgSize(config.Config.Server.MaxDataSize*constant.MB))
+	grpcServerOpts = append(grpcServerOpts, grpc.MaxRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB), grpc.MaxSendMsgSize(config.Config.Server.MaxDataSize*constant.MB))
 
 	privateGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(privateGrpcS)
@@ -160,8 +159,8 @@ func main() {
 	publicGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(publicGrpcS)
 
-	triton := triton.NewTriton()
-	defer triton.Close()
+	tritonServer := triton.NewTriton()
+	defer tritonServer.Close()
 
 	rayService := ray.NewRay()
 	defer rayService.Close()
@@ -238,17 +237,17 @@ func main() {
 		panic(err)
 	}
 
-	repository := repository.NewRepository(db)
+	repo := repository.NewRepository(db)
 
-	service := service.NewService(repository, triton, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
+	serv := service.NewService(repo, tritonServer, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
-		handler.NewPublicHandler(ctx, service, triton, rayService))
+		handler.NewPublicHandler(ctx, serv, tritonServer, rayService))
 
 	modelPB.RegisterModelPrivateServiceServer(
 		privateGrpcS,
-		handler.NewPrivateHandler(ctx, service, triton))
+		handler.NewPrivateHandler(ctx, serv, tritonServer))
 
 	privateGwS := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(middleware.HTTPResponseModifier),
@@ -271,12 +270,12 @@ func main() {
 	)
 
 	// Register custom route for  POST /v1alpha/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(service, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /models/multipart which uploads model for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=users/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(service, handler.HandleCreateModelByMultiPartFormData)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=users/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 
@@ -296,7 +295,7 @@ func main() {
 		logger.Info("try to start usage reporter")
 		go func() {
 			for {
-				usg = usage.NewUsage(ctx, repository, mgmtPrivateServiceClient, redisClient, usageServiceClient, userUID)
+				usg = usage.NewUsage(ctx, repo, mgmtPrivateServiceClient, redisClient, usageServiceClient, userUID)
 				if usg != nil {
 					usg.StartReporter(ctx)
 					logger.Info("usage reporter started")

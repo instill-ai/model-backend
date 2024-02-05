@@ -24,17 +24,17 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createGitHubModel(service service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateGitHubModel"
 
@@ -44,7 +44,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req CreateN
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var modelConfig datamodel.GitHubModelConfiguration
 	b, err := req.GetModel().Configuration.MarshalJSON()
@@ -121,7 +121,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req CreateN
 			return &longrunningpb.Operation{}, err
 		}
 	} else {
-		err = utils.GitHubClone(modelSrcDir, modelConfig, false, service.GetRedisClient())
+		err = utils.GitHubClone(modelSrcDir, modelConfig, false, s.GetRedisClient())
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -243,7 +243,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req CreateN
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := service.CreateNamespaceModelAsync(ctx, ns, authUser, &githubModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -291,7 +291,7 @@ func createGitHubModel(service service.Service, ctx context.Context, req CreateN
 	}, nil
 }
 
-func createHuggingFaceModel(service service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateHuggingFaceModel"
 
@@ -301,7 +301,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req Cr
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := authUser.Permalink()
 
@@ -503,7 +503,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req Cr
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := service.CreateNamespaceModelAsync(ctx, ns, authUser, &huggingfaceModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -549,7 +549,7 @@ func createHuggingFaceModel(service service.Service, ctx context.Context, req Cr
 	}, nil
 }
 
-func createArtiVCModel(service service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateArtiVCModel"
 
@@ -559,7 +559,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req CreateN
 
 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := authUser.Permalink()
 
@@ -733,7 +733,7 @@ func createArtiVCModel(service service.Service, ctx context.Context, req CreateN
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := service.CreateNamespaceModelAsync(ctx, ns, authUser, &artivcModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &artivcModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,

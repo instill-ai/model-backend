@@ -14,9 +14,9 @@ import (
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
-func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task commonPB.Task) (interface{}, error) {
+func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadata *inferenceserver.ModelMetadataResponse, task commonPB.Task) (any, error) {
 	var (
-		outputs interface{}
+		outputs any
 		err     error
 	)
 
@@ -102,7 +102,7 @@ func PostProcess(inferResponse *inferenceserver.ModelInferResponse, modelMetadat
 	return outputs, nil
 }
 
-func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (any, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -145,7 +145,7 @@ func postProcessDetection(modelInferResponse *inferenceserver.ModelInferResponse
 	}, nil
 }
 
-func postProcessOcrWithScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessOcrWithScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string, outputNameScores string) (any, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -204,7 +204,7 @@ func postProcessOcrWithScore(modelInferResponse *inferenceserver.ModelInferRespo
 	}, nil
 }
 
-func postProcessOcrWithoutScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (interface{}, error) {
+func postProcessOcrWithoutScore(modelInferResponse *inferenceserver.ModelInferResponse, outputNameBboxes string, outputNameLabels string) (any, error) {
 	outputTensorBboxes, rawOutputContentBboxes, err := GetOutputFromInferResponse(outputNameBboxes, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -257,7 +257,7 @@ func postProcessOcrWithoutScore(modelInferResponse *inferenceserver.ModelInferRe
 	}, nil
 }
 
-func postProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (interface{}, error) {
+func postProcessClassification(modelInferResponse *inferenceserver.ModelInferResponse, outputName string) (any, error) {
 	outputTensor, rawOutputContent, err := GetOutputFromInferResponse(outputName, modelInferResponse)
 
 	if err != nil {
@@ -271,7 +271,7 @@ func postProcessClassification(modelInferResponse *inferenceserver.ModelInferRes
 	return outputData, nil
 }
 
-func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferResponse, outputs []*inferenceserver.ModelMetadataResponse_TensorMetadata) (interface{}, error) {
+func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferResponse, outputs []*inferenceserver.ModelMetadataResponse_TensorMetadata) (any, error) {
 	var postprocessedOutputs []BatchUnspecifiedTaskOutputs
 	for _, output := range outputs {
 		outputTensor, rawOutputContent, err := GetOutputFromInferResponse(output.Name, modelInferResponse)
@@ -283,7 +283,7 @@ func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferRe
 			return nil, fmt.Errorf("unable to find output content")
 		}
 
-		var serializedOutputs []interface{}
+		var serializedOutputs []any
 		switch output.Datatype {
 		case "BYTES":
 			if len(outputTensor.Shape) == 1 {
@@ -358,7 +358,7 @@ func postProcessUnspecifiedTask(modelInferResponse *inferenceserver.ModelInferRe
 	return postprocessedOutputs, nil
 }
 
-func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (interface{}, error) {
+func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse, outputNameKeypoints string, outputNameBoxes string, outputNameScores string) (any, error) {
 	outputTensorKeypoints, rawOutputContentKeypoints, err := GetOutputFromInferResponse(outputNameKeypoints, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -418,7 +418,7 @@ func postProcessKeypoint(modelInferResponse *inferenceserver.ModelInferResponse,
 	}, nil
 }
 
-func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (interface{}, error) {
+func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameBboxes string, outputNameLabels string, outputNameScores string) (any, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -497,7 +497,7 @@ func postProcessInstanceSegmentation(modelInferResponse *inferenceserver.ModelIn
 	}, nil
 }
 
-func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (interface{}, error) {
+func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelInferResponse, outputNameRles string, outputNameCategories string) (any, error) {
 	outputTensorRles, rawOutputContentRles, err := GetOutputFromInferResponse(outputNameRles, modelInferResponse)
 	if err != nil {
 		log.Printf("%v", err.Error())
@@ -542,7 +542,7 @@ func postProcessSemanticSegmentation(modelInferResponse *inferenceserver.ModelIn
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string, task commonPB.Task) (interface{}, error) {
+func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferResponse, outputNameImages string, task commonPB.Task) (any, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -590,7 +590,7 @@ func postProcessTextToImage(modelInferResponse *inferenceserver.ModelInferRespon
 	}
 }
 
-func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string, task commonPB.Task) (interface{}, error) {
+func postProcessTextGeneration(modelInferResponse *inferenceserver.ModelInferResponse, outputNameTexts string, task commonPB.Task) (any, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")
