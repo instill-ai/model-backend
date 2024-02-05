@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gogo/status"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -21,6 +22,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -37,6 +39,14 @@ type ModelConfig struct {
 	Task            string         `json:"task"`
 	ModelDefinition string         `json:"model_definition"`
 	Configuration   map[string]any `json:"configuration"`
+}
+
+type GetNamespaceModelResponseInterface interface {
+	GetModel() *modelPB.Model
+}
+
+type CreateNamespaceModelResponseInterface interface {
+	GetOperation() *longrunningpb.Operation
 }
 
 // InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
@@ -136,19 +146,30 @@ func main() {
 		defer modelPublicServiceClientConn.Close()
 	}
 
-	userID := fmt.Sprintf("users/%s", config.Config.InitModel.OwnerID)
-
-	resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-		Name: userID,
-	})
-	if err != nil {
-		logger.Fatal(err.Error())
+	var owner middleware.Owner
+	name := fmt.Sprintf("%s/%s", config.Config.InitModel.OwnerType, config.Config.InitModel.OwnerID)
+	if config.Config.InitModel.OwnerType == string(resource.User) {
+		resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
+			Name: name,
+		})
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		owner = resp.GetUser()
+	} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+		resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
+			Name: name,
+		})
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		owner = resp.GetOrganization()
 	}
 
-	ctx = middleware.InjectOwnerToContext(ctx, resp.GetUser())
+	ctx = middleware.InjectOwnerToContext(ctx, owner)
 
 	var modelConfigs []ModelConfig
-	err = utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
+	err := utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -166,13 +187,23 @@ func main() {
 				log.Fatal("structpb.NewValue: ", err)
 				return
 			}
-			getResp, err := modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
-				Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
-				View: modelPB.View_VIEW_FULL.Enum(),
-			})
+
+			var getResp GetNamespaceModelResponseInterface
+			if config.Config.InitModel.OwnerType == string(resource.User) {
+				getResp, err = modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
+					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+					View: modelPB.View_VIEW_FULL.Enum(),
+				})
+			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+				getResp, err = modelPublicServiceClient.GetOrganizationModel(ctx, &modelPB.GetOrganizationModelRequest{
+					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+					View: modelPB.View_VIEW_FULL.Enum(),
+				})
+			}
+
 			if err == nil {
 				var existedModelConfig datamodel.GitHubModelConfiguration
-				b, err := getResp.Model.Configuration.MarshalJSON()
+				b, err := getResp.GetModel().GetConfiguration().MarshalJSON()
 				if err != nil {
 					logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
 					return
@@ -187,9 +218,15 @@ func main() {
 						modelConfig.Configuration["tag"],
 						existedModelConfig.Repository,
 						existedModelConfig.Tag))
-					_, err = modelPublicServiceClient.DeleteUserModel(ctx, &modelPB.DeleteUserModelRequest{
-						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
-					})
+					if config.Config.InitModel.OwnerType == string(resource.User) {
+						_, err = modelPublicServiceClient.DeleteUserModel(ctx, &modelPB.DeleteUserModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						})
+					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+						_, err = modelPublicServiceClient.DeleteOrganizationModel(ctx, &modelPB.DeleteOrganizationModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						})
+					}
 					if err != nil {
 						logger.Error(fmt.Sprintf("delete existing model err: %v", err))
 						return
@@ -201,17 +238,32 @@ func main() {
 			}
 
 			logger.Info("Creating model: " + modelConfig.ID)
-			createOperation, err := modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
-				Model: &modelPB.Model{
-					Id:              modelConfig.ID,
-					Description:     &modelConfig.Description,
-					Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
-					ModelDefinition: modelConfig.ModelDefinition,
-					Configuration:   configuration,
-					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
-				},
-				Parent: userID,
-			})
+			var createResp CreateNamespaceModelResponseInterface
+			if config.Config.InitModel.OwnerType == string(resource.User) {
+				createResp, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
+					Model: &modelPB.Model{
+						Id:              modelConfig.ID,
+						Description:     &modelConfig.Description,
+						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
+						ModelDefinition: modelConfig.ModelDefinition,
+						Configuration:   configuration,
+						Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+					},
+					Parent: name,
+				})
+			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+				createResp, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
+					Model: &modelPB.Model{
+						Id:              modelConfig.ID,
+						Description:     &modelConfig.Description,
+						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
+						ModelDefinition: modelConfig.ModelDefinition,
+						Configuration:   configuration,
+						Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+					},
+					Parent: name,
+				})
+			}
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
 				if e, ok := status.FromError(err); ok {
@@ -230,7 +282,7 @@ func main() {
 						break
 					}
 					operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
-						Name: createOperation.Operation.Name,
+						Name: createResp.GetOperation().GetName(),
 					})
 					if err != nil {
 						logger.Fatal("handler.GetModelOperation: " + err.Error())
@@ -243,9 +295,15 @@ func main() {
 					logger.Fatal("handler.CreateModel: " + err.Error())
 					return
 				} else {
-					_, err := modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-						Name: fmt.Sprintf("%s/models/%s", userID, modelConfig.ID),
-					})
+					if config.Config.InitModel.OwnerType == string(resource.User) {
+						_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						})
+					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+						_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						})
+					}
 					if err != nil {
 						logger.Error(fmt.Sprintf("deploy model err: %v", err))
 						if e, ok := status.FromError(err); ok {

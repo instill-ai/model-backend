@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
 func HTTPResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
@@ -174,7 +173,11 @@ func CustomMatcher(key string) (string, bool) {
 	}
 }
 
-func InjectOwnerToContext(ctx context.Context, owner *mgmtPB.User) context.Context {
+type Owner interface {
+	GetUid() string
+}
+
+func InjectOwnerToContext(ctx context.Context, owner Owner) context.Context {
 	ctx = metadata.AppendToOutgoingContext(ctx, "Instill-User-Uid", owner.GetUid())
 	return ctx
 }
