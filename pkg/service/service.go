@@ -303,7 +303,6 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 	}, uuid.FromStringOrNil(splits[3]), nil
 }
 
-
 func (s *service) GetModelByUID(ctx context.Context, authUser *AuthUser, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
 	if granted, err := s.aclClient.CheckPermission("model_", modelUID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
