@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,7 +33,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateGitHubModel"
 
@@ -47,7 +46,7 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var modelConfig datamodel.GitHubModelConfiguration
-	b, err := req.GetModel().Configuration.MarshalJSON()
+	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, err.Error())
@@ -78,45 +77,32 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 			return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 		}
 	}
-	visibility := utils.Visibility[githubInfo.Visibility]
-	if req.GetModel().Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		visibility = modelPB.Model_VISIBILITY_PUBLIC
-	} else if req.GetModel().Visibility == modelPB.Model_VISIBILITY_PRIVATE {
-		visibility = modelPB.Model_VISIBILITY_PRIVATE
-	}
 	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
 		HTMLURL:    "https://github.com/" + modelConfig.Repository,
 		Tag:        modelConfig.Tag,
 	})
-	description := ""
-	if req.GetModel().Description != nil {
-		description = *req.GetModel().Description
-	}
 
-	githubModel := datamodel.Model{
-		ID:                 req.GetModel().Id,
-		ModelDefinitionUID: modelDefinition.UID,
-		Owner:              authUser.Permalink(),
-		Visibility:         datamodel.ModelVisibility(visibility),
-		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-		Description: sql.NullString{
-			String: description,
-			Valid:  true,
-		},
-		Configuration: bModelConfig,
-	}
+	githubModel := s.PBToDBModel(ctx, model)
+	githubModel.State = datamodel.ModelState(modelPB.Model_STATE_OFFLINE)
+	githubModel.Configuration = bModelConfig
+	githubModel.ModelDefinitionUID = modelDefinition.UID
 
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
 	if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
 		modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", modelConfig.Repository, modelConfig.Tag)
+	} else {
+		defer func(modelSrcDir string) {
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		}(modelSrcDir)
 	}
 
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, err
 		}
@@ -134,15 +120,13 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
 	}
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, authUser.Permalink(), &githubModel)
-	if !config.Config.Cache.Model.Enabled {
-		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-	}
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ns.String(), githubModel)
 
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -156,7 +140,8 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -174,7 +159,8 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -193,7 +179,8 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+				_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			} else {
@@ -219,6 +206,8 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 			if e != nil {
 				logger.Error(e.Error())
 			}
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -239,11 +228,13 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 		if e != nil {
 			logger.Error(e.Error())
 		}
+		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &githubModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, githubModel)
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -257,8 +248,9 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 			logger.Error(err.Error())
 		}
 		for _, tag := range githubInfo.Tags {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), githubModel.ID, tag.Name)
+			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, tag.Name)
 		}
+		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -291,7 +283,7 @@ func createGitHubModel(s service.Service, ctx context.Context, req CreateNamespa
 	}, nil
 }
 
-func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createHuggingFaceModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateHuggingFaceModel"
 
@@ -306,7 +298,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 	ownerPermalink := authUser.Permalink()
 
 	var modelConfig datamodel.HuggingFaceModelConfiguration
-	b, err := req.GetModel().GetConfiguration().MarshalJSON()
+	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, err.Error())
@@ -321,28 +313,13 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 	}
 	modelConfig.HTMLURL = "https://huggingface.co/" + modelConfig.RepoID
 	modelConfig.Tag = "latest"
-
-	visibility := modelPB.Model_VISIBILITY_PRIVATE
-	if req.GetModel().Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		visibility = modelPB.Model_VISIBILITY_PUBLIC
-	}
 	bModelConfig, _ := json.Marshal(modelConfig)
-	description := ""
-	if req.GetModel().Description != nil {
-		description = *req.GetModel().Description
-	}
-	huggingfaceModel := datamodel.Model{
-		ID:                 req.GetModel().Id,
-		ModelDefinitionUID: modelDefinition.UID,
-		Owner:              ownerPermalink,
-		Visibility:         datamodel.ModelVisibility(visibility),
-		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-		Description: sql.NullString{
-			String: description,
-			Valid:  true,
-		},
-		Configuration: bModelConfig,
-	}
+
+	huggingfaceModel := s.PBToDBModel(ctx, model)
+	huggingfaceModel.State = datamodel.ModelState(modelPB.Model_STATE_OFFLINE)
+	huggingfaceModel.Configuration = bModelConfig
+	huggingfaceModel.ModelDefinitionUID = modelDefinition.UID
+
 	rdid, _ := uuid.NewV4()
 	configTmpDir := fmt.Sprintf("/tmp/%s", rdid.String())
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
@@ -372,7 +349,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 	}
 	rdid, _ = uuid.NewV4()
 	modelDir := fmt.Sprintf("/tmp/%s", rdid.String())
-	if err := utils.GenerateHuggingFaceModel(configTmpDir, modelDir, req.GetModel().Id); err != nil {
+	if err := utils.GenerateHuggingFaceModel(configTmpDir, modelDir, model.Id); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
@@ -390,7 +367,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 	}
 	_ = os.RemoveAll(configTmpDir)
 
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, ownerPermalink, &huggingfaceModel)
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel)
 
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
@@ -503,7 +480,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &huggingfaceModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, huggingfaceModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -549,7 +526,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, req CreateNa
 	}, nil
 }
 
-func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespaceModelRequestInterface, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
 
 	eventName := "CreateArtiVCModel"
 
@@ -564,7 +541,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespa
 	ownerPermalink := authUser.Permalink()
 
 	var modelConfig datamodel.ArtiVCModelConfiguration
-	b, err := req.GetModel().GetConfiguration().MarshalJSON()
+	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, err.Error())
@@ -577,28 +554,12 @@ func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespa
 		span.SetStatus(1, "Invalid GitHub URL")
 		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, "Invalid GitHub URL")
 	}
-
-	visibility := modelPB.Model_VISIBILITY_PRIVATE
-	if req.GetModel().Visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		visibility = modelPB.Model_VISIBILITY_PUBLIC
-	}
 	bModelConfig, _ := json.Marshal(modelConfig)
-	description := ""
-	if req.GetModel().Description != nil {
-		description = *req.GetModel().Description
-	}
-	artivcModel := datamodel.Model{
-		ID:                 req.GetModel().Id,
-		ModelDefinitionUID: modelDefinition.UID,
-		Owner:              ownerPermalink,
-		Visibility:         datamodel.ModelVisibility(visibility),
-		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-		Description: sql.NullString{
-			String: description,
-			Valid:  true,
-		},
-		Configuration: bModelConfig,
-	}
+
+	artivcModel := s.PBToDBModel(ctx, model)
+	artivcModel.State = datamodel.ModelState(modelPB.Model_STATE_OFFLINE)
+	artivcModel.Configuration = bModelConfig
+	artivcModel.ModelDefinitionUID = modelDefinition.UID
 
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String())
@@ -631,7 +592,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespa
 		utils.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
 	}
 
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ownerPermalink, &artivcModel)
+	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel)
 	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -733,7 +694,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, req CreateNamespa
 		return &longrunningpb.Operation{}, st.Err()
 	}
 
-	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &artivcModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, artivcModel)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,

@@ -383,7 +383,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), modelPB.Model_VISIBILITY_PUBLIC.Enum(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), nil, req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -430,88 +430,90 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	resp := &longrunningpb.Operation{}
+	modelToCreate := req.GetModel()
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
-	if err := checkfield.CheckCreateOutputOnlyFields(req.GetModel(), outputOnlyFields); err != nil {
+	if err := checkfield.CheckCreateOutputOnlyFields(modelToCreate, outputOnlyFields); err != nil {
 		span.SetStatus(1, ErrCheckOutputOnlyFields.Error())
-		return resp, ErrCheckOutputOnlyFields
+		return nil, ErrCheckOutputOnlyFields
 	}
 
 	// Return error if REQUIRED fields are not provided in the requested payload model resource
-	if err := checkfield.CheckRequiredFields(req.GetModel(), requiredFields); err != nil {
+	if err := checkfield.CheckRequiredFields(modelToCreate, requiredFields); err != nil {
 		span.SetStatus(1, ErrCheckRequiredFields.Error())
-		return resp, ErrCheckRequiredFields
+		return nil, ErrCheckRequiredFields
 	}
 
 	// Return error if resource ID does not follow RFC-1034
-	if err := checkfield.CheckResourceID(req.GetModel().GetId()); err != nil {
+	if err := checkfield.CheckResourceID(modelToCreate.GetId()); err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	// Validate ModelDefinition JSON Schema
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, req.GetModel(), false); err != nil {
+	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, modelToCreate, false); err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	ns, _, err := h.service.GetRscNamespaceAndNameID(req.GetParent())
+	modelToCreate.OwnerName = req.GetParent()
+
+	ns, _, err := h.service.GetRscNamespaceAndNameID(modelToCreate.GetOwnerName())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, err
+		return nil, err
 	}
 
 	authUser, err := h.service.AuthenticateUser(ctx, false)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, err
+		return nil, err
 	}
 
-	if model, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, req.GetModel().GetId(), modelPB.View_VIEW_FULL); err == nil {
+	if model, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
 		if utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), model.Id) {
 			span.SetStatus(1, "Model already existed")
-			return resp, status.Errorf(codes.AlreadyExists, "Model already existed")
+			return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
 		}
 	}
 
-	if req.GetModel().GetConfiguration() == nil {
+	if modelToCreate.GetConfiguration() == nil {
 		span.SetStatus(1, "Missing Configuration")
-		return resp, status.Errorf(codes.InvalidArgument, "Missing Configuration")
+		return nil, status.Errorf(codes.InvalidArgument, "Missing Configuration")
 	}
 
-	modelDefinitionID, err := resource.GetDefinitionID(req.GetModel().ModelDefinition)
+	modelDefinitionID, err := resource.GetDefinitionID(modelToCreate.GetModelDefinition())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, err
+		return nil, err
 	}
 
 	modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return resp, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model configuration
 	rs := &jsonschema.Schema{}
 	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
 		span.SetStatus(1, "Could not get model definition")
-		return resp, status.Errorf(codes.InvalidArgument, "Could not get model definition")
+		return nil, status.Errorf(codes.InvalidArgument, "Could not get model definition")
 	}
-	if err := datamodel.ValidateJSONSchema(rs, req.GetModel().GetConfiguration(), true); err != nil {
+	if err := datamodel.ValidateJSONSchema(rs, modelToCreate.GetConfiguration(), true); err != nil {
 		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 	}
 
 	switch modelDefinitionID {
 	case "github":
-		return createGitHubModel(h.service, ctx, req, ns, authUser, modelDefinition)
+		return createGitHubModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	case "artivc":
-		return createArtiVCModel(h.service, ctx, req, ns, authUser, modelDefinition)
+		return createArtiVCModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	case "huggingface":
-		return createHuggingFaceModel(h.service, ctx, req, ns, authUser, modelDefinition)
+		return createHuggingFaceModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
-		return resp, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 	}
 
 }

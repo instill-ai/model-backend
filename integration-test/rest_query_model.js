@@ -217,7 +217,7 @@ export function ListModels(header) {
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
-          r.json().models[0].visibility === "VISIBILITY_PUBLIC",
+          r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
@@ -252,7 +252,7 @@ export function ListModels(header) {
         [`GET /v1alpha/models task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration === null,
         [`GET /v1alpha/models task cls response models[0].visibility`]: (r) =>
-          r.json().models[0].visibility === "VISIBILITY_PUBLIC",
+          r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models task cls response models[0].create_time`]: (r) =>
@@ -290,7 +290,7 @@ export function ListModels(header) {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
           r.json().models[0].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].visibility`]: (r) =>
-          r.json().models[0].visibility === "VISIBILITY_PUBLIC",
+          r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
@@ -318,7 +318,7 @@ export function ListModels(header) {
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].configuration.html_url`]: (r) =>
           r.json().models[1].configuration.html_url === "https://github.com/admin/model-dummy-cls",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].visibility`]: (r) =>
-          r.json().models[1].visibility === "VISIBILITY_PUBLIC",
+          r.json().models[1].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].owner_name`]: (r) =>
           isValidOwner(r.json().models[1].owner_name),
         [`GET /v1alpha/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>

@@ -19,6 +19,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -82,34 +83,37 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	var userID string
-	var userUID uuid.UUID
+	var ownerName string
 	if pbModel.GetOwnerName() != "" {
-		userID = pbModel.GetOwnerName()
+		ownerName = pbModel.GetOwnerName()
 	} else {
 		return &modelPB.DeployModelAdminResponse{}, errors.New("model no owner")
 	}
 
-	ns, _, err := h.service.GetRscNamespaceAndNameID(userID)
+	ns, _, err := h.service.GetRscNamespaceAndNameID(ownerName)
 	if err != nil {
 		return nil, err
 	}
 
-	userPermalink, err := h.service.ConvertOwnerNameToPermalink(userID)
-	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
-	}
-
-	if userUID, err = resource.GetRscPermalinkUID(userPermalink); err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
+	if ns.NsType == resource.Organization {
+		resp, err := h.service.GetMgmtPrivateServiceClient().GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
+			Name: ownerName,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ns, _, err = h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	authUser := &service.AuthUser{
-		UID:       userUID,
+		UID:       ns.NsUID,
 		IsVisitor: false,
 	}
 
-	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, userPermalink, pbModel.Id) {
+	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ns.String(), pbModel.Id) {
 
 		modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 		if err != nil {
@@ -121,25 +125,20 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			return &modelPB.DeployModelAdminResponse{}, err
 		}
 
-		createReq := &modelPB.CreateUserModelRequest{
-			Model:  pbModel,
-			Parent: userID,
-		}
-
 		var operation *longrunningpb.Operation
 
 		switch modelDefinition.ID {
 		case "github":
-			operation, err = createGitHubModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
+			operation, err = createGitHubModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
 		case "artivc":
-			operation, err = createArtiVCModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
+			operation, err = createArtiVCModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
 		case "huggingface":
-			operation, err = createHuggingFaceModel(h.service, ctx, createReq, ns, authUser, modelDefinition)
+			operation, err = createHuggingFaceModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
 		default:
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
 		}
 		if err != nil {
-			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model creation error")
+			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("model creation error: %v", err))
 		}
 
 		done := false

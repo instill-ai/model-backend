@@ -95,7 +95,7 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 
 	if ns.NsType == resource.Organization {
 		resp, err := s.mgmtPublicServiceClient.GetOrganizationSubscription(
-			metadata.AppendToOutgoingContext(ctx, "Instill-User-Uid", resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)),
+			metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)),
 			&mgmtPB.GetOrganizationSubscriptionRequest{Parent: fmt.Sprintf("organizations/%s", ns.NsID)})
 		if err != nil {
 			s, ok := grpc_status.FromError(err)

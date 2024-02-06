@@ -22,6 +22,18 @@ import (
 func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *datamodel.Model {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
+	var owner string
+	var err error
+
+	owner, err = s.ConvertOwnerNameToPermalink(pbModel.GetOwnerName())
+	if err != nil {
+		return nil
+	}
+
+	if pbModel.Visibility == modelPB.Model_VISIBILITY_UNSPECIFIED {
+		pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
+	}
+
 	return &datamodel.Model{
 		BaseDynamic: datamodel.BaseDynamic{
 			UID: func() uuid.UUID {
@@ -48,11 +60,13 @@ func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *data
 				return time.Time{}
 			}(),
 		},
-		ID: pbModel.GetId(),
+		Owner: owner,
+		ID:    pbModel.GetId(),
 		Description: sql.NullString{
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
+		Visibility: datamodel.ModelVisibility(pbModel.Visibility),
 	}
 }
 

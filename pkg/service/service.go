@@ -269,11 +269,13 @@ func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, str
 	if len(splits) < 4 {
 		return resource.Namespace{
 			NsType: resource.NamespaceType(splits[0]),
+			NsID:   splits[1],
 			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 		}, "", nil
 	}
 	return resource.Namespace{
 		NsType: resource.NamespaceType(splits[0]),
+		NsID:   splits[1],
 		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 	}, splits[3], nil
 }
@@ -290,11 +292,13 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 	if len(splits) < 4 {
 		return resource.Namespace{
 			NsType: resource.NamespaceType(splits[0]),
+			NsID:   splits[1],
 			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 		}, uuid.Nil, nil
 	}
 	return resource.Namespace{
 		NsType: resource.NamespaceType(splits[0]),
+		NsID:   splits[1],
 		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
 	}, uuid.FromStringOrNil(splits[3]), nil
 }
