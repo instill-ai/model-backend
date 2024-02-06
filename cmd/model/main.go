@@ -146,7 +146,7 @@ func main() {
 		defer modelPublicServiceClientConn.Close()
 	}
 
-	var owner middleware.Owner
+	var owner *mgmtPB.User
 	name := fmt.Sprintf("%s/%s", config.Config.InitModel.OwnerType, config.Config.InitModel.OwnerID)
 	if config.Config.InitModel.OwnerType == string(resource.User) {
 		resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
@@ -163,7 +163,7 @@ func main() {
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		owner = resp.GetOrganization()
+		owner = resp.GetOrganization().GetOwner()
 	}
 
 	ctx = middleware.InjectOwnerToContext(ctx, owner)
@@ -247,7 +247,6 @@ func main() {
 						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
 						ModelDefinition: modelConfig.ModelDefinition,
 						Configuration:   configuration,
-						Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 					},
 					Parent: name,
 				})
@@ -259,7 +258,6 @@ func main() {
 						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
 						ModelDefinition: modelConfig.ModelDefinition,
 						Configuration:   configuration,
-						Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
 					},
 					Parent: name,
 				})
@@ -296,10 +294,22 @@ func main() {
 					return
 				} else {
 					if config.Config.InitModel.OwnerType == string(resource.User) {
+						if _, err = modelPublicServiceClient.PublishUserModel(ctx, &modelPB.PublishUserModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						}); err != nil {
+							logger.Error(fmt.Sprintf("publish model err: %v", err))
+							return
+						}
 						_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
 							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 						})
 					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+						if _, err = modelPublicServiceClient.PublishOrganizationModel(ctx, &modelPB.PublishOrganizationModelRequest{
+							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						}); err != nil {
+							logger.Error(fmt.Sprintf("publish model err: %v", err))
+							return
+						}
 						_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
 							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 						})

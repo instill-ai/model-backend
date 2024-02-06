@@ -190,7 +190,7 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	if result := queryBuilder.First(&model); result.Error != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.NotFound,
-			fmt.Sprintf("[db] getUserModel error: %s", result.Error.Error()),
+			fmt.Sprintf("[db] getNamespaceModel error: %s", result.Error.Error()),
 			"model",
 			"",
 			"",
