@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.temporal.io/sdk/client"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
 	openfgaClient "github.com/openfga/go-sdk/client"
+	temporalClient "go.temporal.io/sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
@@ -29,6 +33,50 @@ import (
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
+
+const namespace = "model-backend"
+
+func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	resp, err := client.WorkflowService().ListNamespaces(ctx, &workflowservice.ListNamespacesRequest{})
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("Unable to list namespaces: %s", err))
+	}
+
+	found := false
+	for _, n := range resp.GetNamespaces() {
+		if n.NamespaceInfo.Name == namespace {
+			found = true
+		}
+	}
+
+	if !found {
+		if _, err := client.WorkflowService().RegisterNamespace(ctx,
+			&workflowservice.RegisterNamespaceRequest{
+				Namespace: namespace,
+				WorkflowExecutionRetentionPeriod: func() *time.Duration {
+					// Check if the string ends with "d" for day.
+					s := config.Config.Temporal.Retention
+					if strings.HasSuffix(s, "d") {
+						// Parse the number of days.
+						days, err := strconv.Atoi(s[:len(s)-1])
+						if err != nil {
+							logger.Fatal(fmt.Sprintf("Unable to parse retention period in day: %s", err))
+						}
+						// Convert days to hours and then to a duration.
+						t := time.Hour * 24 * time.Duration(days)
+						return &t
+					}
+					logger.Fatal(fmt.Sprintf("Unable to parse retention period in day: %s", err))
+					return nil
+				}(),
+			},
+		); err != nil {
+			logger.Fatal(fmt.Sprintf("Unable to register namespace: %s", err))
+		}
+	}
+}
 
 func main() {
 
@@ -79,7 +127,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
 	}
-	var temporalClientOptions client.Options
+	var temporalClientOptions temporalClient.Options
 	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
 		if temporalClientOptions, err = temporal.GetTLSClientOption(
 			config.Config.Temporal.HostPort,
@@ -103,11 +151,13 @@ func main() {
 	}
 
 	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
-	temporalClient, err := client.Dial(temporalClientOptions)
+	tempClient, err := temporalClient.Dial(temporalClientOptions)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}
-	defer temporalClient.Close()
+	defer tempClient.Close()
+
+	initTemporalNamespace(ctx, tempClient)
 
 	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
 		ApiScheme: "http",
@@ -134,7 +184,7 @@ func main() {
 
 	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, tritonServer, controllerClient, rayService, &aclClient)
 
-	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
+	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(cw.DeployModelWorkflow)
 	w.RegisterActivity(cw.DeployModelActivity)

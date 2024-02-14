@@ -68,6 +68,7 @@ maxbatchsizelimitation:
 temporal:
   hostport: temporal:7233
   namespace: model-backend
+  retention: 1d
   ca:
   cert:
   key:
