@@ -21,6 +21,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -469,9 +470,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 }
 
 func (r *ray) DeployModel(modelPath string) error {
-	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(%q, %q, %q)", modelPath, config.Config.RayServer.GrpcURI, config.Config.RayServer.Vram))
-	cmd.Dir = modelPath
+	modelPythonPath := utils.FindModelPythonDir(filepath.Join(config.Config.RayServer.ModelStore, modelPath))
+	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(%q, %q, %q)", modelPythonPath, config.Config.RayServer.GrpcURI, config.Config.RayServer.Vram))
+	cmd.Dir = modelPythonPath
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -483,9 +484,9 @@ func (r *ray) DeployModel(modelPath string) error {
 }
 
 func (r *ray) UndeployModel(modelPath string) error {
-	modelPath = filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.undeploy(%q, %q)", modelPath, config.Config.RayServer.GrpcURI))
-	cmd.Dir = modelPath
+	modelPythonPath := utils.FindModelPythonDir(filepath.Join(config.Config.RayServer.ModelStore, modelPath))
+	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.undeploy(%q, %q)", modelPythonPath, config.Config.RayServer.GrpcURI))
+	cmd.Dir = modelPythonPath
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

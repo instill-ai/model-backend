@@ -297,14 +297,14 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 	readmeFilePath, err := utils.Unzip(tmpFile, config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		span.SetStatus(1, err.Error())
 		return "", status.Errorf(codes.Internal, err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 			span.SetStatus(1, err.Error())
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -314,7 +314,7 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 				span.SetStatus(1, "README.md contains unsupported task")
 				return "", status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
@@ -340,14 +340,14 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		span.SetStatus(1, st.String())
 		return "", st.Err()
 	}
 
 	wfID, err = h.service.CreateNamespaceModelAsync(ctx, ns, authUser, uploadedModel)
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		span.SetStatus(1, err.Error())
 		return "", err
 	}

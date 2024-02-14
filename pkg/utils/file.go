@@ -207,7 +207,7 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		if f.path == modelDir {
 			continue
 		}
-		var filePath = filepath.Join(modelRootDir, f.path)
+		var filePath = filepath.Join(modelRootDir, strings.ReplaceAll(f.path, modelDir, ""))
 
 		if f.fInfo.IsDir() { // create new folder
 			err = os.MkdirAll(filePath, os.ModePerm)

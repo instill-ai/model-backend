@@ -31,7 +31,7 @@ type Repository interface {
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
 	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
 	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
-	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, modelUID uuid.UUID, id string) error
+	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
@@ -272,8 +272,10 @@ func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPer
 	return nil
 }
 
-func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, modelUID uuid.UUID, id string) error {
-	result := r.db.Select("InferenceModels").Delete(&datamodel.Model{BaseDynamic: datamodel.BaseDynamic{UID: modelUID}})
+func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
+	result := r.db.Model(&datamodel.Model{}).
+		Where("(id = ? AND owner = ?)", id, ownerPermalink).
+		Delete(&datamodel.Model{})
 
 	if result.Error != nil {
 		return result.Error

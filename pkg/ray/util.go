@@ -281,18 +281,12 @@ func GetOutputFromInferResponse(name string, response *rayserver.RayServiceCallR
 	return nil, nil, fmt.Errorf("unable to find output named %v", name)
 }
 
-func GetApplicationMetadaValue(inferenceModelName string) (applicationMetadataValue string, err error) {
-	nameParts := strings.Split(inferenceModelName, "/")
+func GetApplicationMetadaValue(modelName string) (applicationMetadataValue string, err error) {
+	nameParts := strings.Split(modelName, "/")  // {owner_type}/{owner_uid}/{model_id}
 
-	if len(nameParts) != 2 {
-		return "", errors.New("inferenceModelName format error")
+	if len(nameParts) != 3 {
+		return "", errors.New("modelName format error")
 	}
 
-	applicationNameParts := strings.Split(nameParts[1], "#")
-
-	if len(applicationNameParts) != 4 {
-		return "", errors.New("inferenceModelName format error")
-	}
-
-	return strings.Join(applicationNameParts[:2], "_"), nil
+	return strings.Join(nameParts[1:], "_"), nil
 }

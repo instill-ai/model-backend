@@ -361,7 +361,7 @@ func (s *service) CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*mod
 		return nil, status.Errorf(codes.NotFound, "model not found")
 	}
 
-	name := filepath.Join(config.Config.RayServer.ModelStore, model.Owner, model.ID)
+	name := filepath.Join(model.Owner, model.ID)
 
 	// TODO: implement model instance
 	state, err := s.ray.ModelReady(ctx, name, "default")
@@ -393,7 +393,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNoPermission
 	}
 
-	name := filepath.Join(config.Config.RayServer.ModelStore, dbModel.Owner, dbModel.ID)
+	name := filepath.Join(dbModel.Owner, dbModel.ID)
 
 	var postprocessResponse any
 	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, "default")
@@ -1025,7 +1025,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return err
 	}
 
-	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.UID, dbModel.ID)
+	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }
 
 func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error) {

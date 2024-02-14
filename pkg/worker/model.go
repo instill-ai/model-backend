@@ -144,7 +144,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 		_ = os.RemoveAll(modelSrcDir)
 	}
 
-	name := filepath.Join(config.Config.RayServer.ModelStore, param.Model.Owner, param.Model.ID)
+	name := filepath.Join(param.Model.Owner, param.Model.ID)
 	if err = w.ray.DeployModel(name); err != nil {
 		logger.Error(fmt.Sprintf("ray model deployment failed: %v", err))
 		return err
@@ -185,7 +185,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 	logger := activity.GetLogger(ctx)
 	logger.Info("UnDeployModelActivity started")
 
-	name := filepath.Join(config.Config.RayServer.ModelStore, param.Model.Owner, param.Model.ID)
+	name := filepath.Join(param.Model.Owner, param.Model.ID)
 	if err := w.ray.UndeployModel(name); err != nil {
 		logger.Error(fmt.Sprintf("ray model undeployment failed: %v", err))
 	}

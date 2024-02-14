@@ -78,6 +78,17 @@ func findDVCPaths(dir string) []string {
 	return dvcPaths
 }
 
+func FindModelPythonDir(dir string) (modelPythonDir string) {
+	modelPythonDir = ""
+	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if !f.IsDir() && f.Name() == "model.py" {
+			modelPythonDir = filepath.Dir(path)
+		}
+		return nil
+	})
+	return modelPythonDir
+}
+
 // TODO: clean up this function.
 func findModelFiles(dir string) []string {
 	var modelPaths = []string{}
@@ -180,12 +191,11 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 // CopyModelFileToModelRepository copies model files to model repository.
 func CopyModelFileToModelRepository(modelRepository string, dir string, model *datamodel.Model) error {
 	modelDir := filepath.Join(modelRepository, model.Owner, model.ID)
-	modelPaths := findModelFiles(dir)
-	for _, modelPath := range modelPaths {
-		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s", modelPath, modelDir))
-		if err := cmd.Run(); err != nil {
-			return err
-		}
+	srcPath := fmt.Sprintf("%s/*", dir)
+
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp -ru %s %s", srcPath, modelDir))
+	if err := cmd.Run(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -265,38 +275,24 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	return &githubRepoInfo, nil
 }
 
-func HasModelInModelRepository(modelRepositoryRoot string, namespace string, modelName string) bool {
+func HasModelInModelRepository(modelRepositoryRoot string, owner string, modelID string) bool {
+	modelPath := filepath.Join(config.Config.RayServer.ModelStore, owner, modelID)
 
-	path := fmt.Sprintf("%v/%v#%v#*", modelRepositoryRoot, namespace, modelName)
-
-	if matches, _ := filepath.Glob(path); matches == nil {
+	if matches, _ := filepath.Glob(modelPath); matches == nil {
 		return false
 	}
 
 	return true
 }
 
-func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
-	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, instanceName)
-	if err := ValidateFilePath(path); err != nil {
+func RemoveModelRepository(modelRepositoryRoot string, owner string, modelID string) {
+	modelPath := filepath.Join(modelRepositoryRoot, owner, modelID)
+
+	if err := ValidateFilePath(modelPath); err != nil {
 		panic(err)
 	}
 
-	files, err := filepath.Glob(path)
-	if err != nil {
-		panic(err)
-	}
-	for _, f := range files {
-		if err := os.RemoveAll(f); err != nil {
-			panic(err)
-		}
-	}
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", modelRepositoryRoot, namespace, modelName, instanceName)
-	if err := ValidateFilePath(readmeFilePath); err != nil {
-		panic(err)
-	}
-
-	_ = os.Remove(readmeFilePath)
+	_ = os.RemoveAll(modelPath)
 }
 
 // ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.

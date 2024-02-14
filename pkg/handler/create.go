@@ -101,7 +101,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, err
@@ -120,7 +120,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, st.Err()
@@ -140,7 +140,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -159,7 +159,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
@@ -179,7 +179,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 				_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
@@ -208,7 +208,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -227,9 +227,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		for _, tag := range githubInfo.Tags {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID, tag.Name)
-		}
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -362,7 +360,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -380,7 +378,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -400,7 +398,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			}
@@ -455,7 +453,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -528,7 +526,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, err
 		}
@@ -547,7 +545,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				logger.Error(e.Error())
 			}
 			_ = os.RemoveAll(modelSrcDir)
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -568,7 +566,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -586,7 +584,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -605,7 +603,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			} else {
@@ -651,7 +649,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}

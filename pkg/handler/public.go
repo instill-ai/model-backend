@@ -253,7 +253,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	readmeFilePath, err := utils.Unzip(tmpFile, config.Config.RayServer.ModelStore, authUser.Permalink(), &uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 400, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -261,7 +261,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 			makeJSONResponse(w, 400, "Add Model Error", err.Error())
 			span.SetStatus(1, err.Error())
 			return
@@ -272,7 +272,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 				makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 				span.SetStatus(1, "README.md contains unsupported task")
 				return
@@ -299,7 +299,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 400, st.Message(), string(obj))
 		span.SetStatus(1, string(obj))
@@ -308,7 +308,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	wfID, err := s.CreateNamespaceModelAsync(req.Context(), ns, authUser, &uploadedModel)
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -326,7 +326,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		},
 	}})
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
