@@ -549,7 +549,6 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
-		utils.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
 	}
 
 	readmeFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.RayServer.ModelStore, ownerPermalink, artivcModel)

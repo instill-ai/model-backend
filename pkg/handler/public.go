@@ -283,7 +283,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	}
 
 	// TODO: properly support batch inference
-	maxBatchSize := 1
+	maxBatchSize := 0
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -1461,7 +1461,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
+			"ray server",
 			"",
 			"",
 			err.Error(),
@@ -1470,7 +1470,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] inference model error",
-				"Triton inference server OOM",
+				"ray server OOM",
 				"Out of memory for running the model, maybe try with smaller batch size",
 				"",
 				err.Error(),
@@ -1698,7 +1698,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
+			"Ray inference server",
 			"",
 			"",
 			err.Error(),
@@ -1707,7 +1707,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] inference model error",
-				"Triton inference server OOM",
+				"Ray inference server OOM",
 				"Out of memory for running the model, maybe try with smaller batch size",
 				"",
 				err.Error(),

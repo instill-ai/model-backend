@@ -189,9 +189,7 @@ export function ListModels(header) {
         sleep(1)
         currentTime = new Date().getTime();
       }
-      let resp = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, header)
-      console.log(resp.json().models[0].configuration)
-      check(resp, {
+      check(http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models?page_size=1`, header), {
         [`GET /v1alpha/models task cls response status`]: (r) =>
           r.status === 200,
         [`GET /v1alpha/models task cls response total_size`]: (r) =>

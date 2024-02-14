@@ -471,7 +471,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			for j := range batchedOutputDataBboxes[i] {
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Ray to be able to batch Tensors
 				if label != "0" {
 					bbObj := &modelPB.DetectionObject{
 						Category: label,
@@ -567,7 +567,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 				box := batchedOutputDataBboxes[i][j]
 				text := batchedOutputDataTexts[i][j]
 				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if text != "" && box[0] != -1 {
 					ocrOutput.GetOcr().Objects = append(ocrOutput.GetOcr().Objects, &modelPB.OcrObject{
 						BoundingBox: &modelPB.BoundingBox{
@@ -614,7 +614,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
 				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if label != "" && rle != "" {
 					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelPB.InstanceSegmentationObject{
 						Rle: rle,
@@ -658,7 +658,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			for j := range batchedOutputDataCategories[i] { // single image
 				rle := batchedOutputDataRles[i][j]
 				category := batchedOutputDataCategories[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if category != "" && rle != "" {
 					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelPB.SemanticSegmentationStuff{
 						Rle:      rle,

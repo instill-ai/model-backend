@@ -453,7 +453,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
+			"Ray inference server",
 			"",
 			"",
 			err.Error(),
@@ -462,7 +462,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] inference model error",
-				"Triton inference server OOM",
+				"Ray inference server OOM",
 				"Out of memory for running the model, maybe try with smaller batch size",
 				"",
 				err.Error(),

@@ -63,7 +63,7 @@ type ModelDefinition struct {
 	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
 }
 
-// Model combines several ensenble Triton model or ray model
+// Model
 type Model struct {
 	BaseDynamic
 

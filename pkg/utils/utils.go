@@ -27,7 +27,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
@@ -103,20 +102,6 @@ func findModelFiles(dir string) []string {
 		return nil
 	})
 	return modelPaths
-}
-
-func AddMissingTritonModelFolder(ctx context.Context, dir string) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
-	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if f.Name() == "config.pbtxt" {
-			if _, err := os.Stat(fmt.Sprintf("%s/1", filepath.Dir(path))); err != nil {
-				if err := os.MkdirAll(fmt.Sprintf("%s/1", filepath.Dir(path)), os.ModePerm); err != nil {
-					logger.Error(err.Error())
-				}
-			}
-		}
-		return nil
-	})
 }
 
 type CacheModel struct {
@@ -383,7 +368,7 @@ func GetMaxBatchSize(configFilePath string) (int, error) {
 
 // TODO: properly support batch inference
 func DoSupportBatch() (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 func writeCredential(credential datatypes.JSON) (string, error) {

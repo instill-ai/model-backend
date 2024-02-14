@@ -161,7 +161,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
-			"triton-inference-server",
+			"ray-server",
 			"deploy model",
 			"",
 			err.Error(),
@@ -170,8 +170,8 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] deploy model error",
-				"triton-inference-server",
-				"Out of memory for deploying the model to triton server, maybe try with smaller batch size",
+				"ray-server",
+				"Out of memory for deploying the model to ray server, maybe try with smaller batch size",
 				"",
 				err.Error(),
 			)
