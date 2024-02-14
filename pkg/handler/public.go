@@ -250,10 +250,10 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	readmeFilePath, ensembleFilePath, err := utils.Unzip(tmpFile, config.Config.TritonServer.ModelStore, authUser.Permalink(), &uploadedModel)
+	readmeFilePath, err := utils.Unzip(tmpFile, config.Config.RayServer.ModelStore, authUser.Permalink(), &uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 400, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -261,7 +261,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 			makeJSONResponse(w, 400, "Add Model Error", err.Error())
 			span.SetStatus(1, err.Error())
 			return
@@ -272,7 +272,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 				makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
 				span.SetStatus(1, "README.md contains unsupported task")
 				return
@@ -282,29 +282,8 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
+	// TODO: properly support batch inference
 	maxBatchSize := 0
-	if ensembleFilePath != "" {
-		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"Local model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			obj, _ := json.Marshal(st.Details())
-			makeJSONResponse(w, 400, st.Message(), string(obj))
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
-			span.SetStatus(1, err.Error())
-			return
-		}
-	}
-
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -320,7 +299,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 400, st.Message(), string(obj))
 		span.SetStatus(1, string(obj))
@@ -329,7 +308,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 
 	wfID, err := s.CreateNamespaceModelAsync(req.Context(), ns, authUser, &uploadedModel)
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -347,7 +326,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		},
 	}})
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, modelConfiguration.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
 		span.SetStatus(1, err.Error())
 		return
@@ -470,7 +449,7 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 	}
 
 	if model, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
-		if utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), model.Id) {
+		if utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), model.Id) {
 			span.SetStatus(1, "Model already existed")
 			return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
 		}
@@ -1123,12 +1102,6 @@ func (h *PublicHandler) deployNamespaceModel(ctx context.Context, req DeployName
 		return "", err
 	}
 
-	_, err = h.service.GetInferenceModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
 	// set user desired state to STATE_ONLINE
 	if _, err := h.service.UpdateNamespaceModelStateByID(ctx, ns, authUser, pbModel, modelPB.Model_STATE_ONLINE); err != nil {
 		return "", err
@@ -1471,26 +1444,16 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(ctx, uuid.FromStringOrNil(pbModel.Uid))
-		if tritonModelInDB.Platform == "ensemble" {
-			if err != nil {
-				span.SetStatus(1, err.Error())
-				usageData.Status = mgmtPB.Status_STATUS_ERRORED
-				_ = h.service.WriteNewDataPoint(ctx, usageData)
-				return commonPB.Task_TASK_UNSPECIFIED, nil, err
-			}
-			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-			if err != nil {
-				span.SetStatus(1, err.Error())
-				usageData.Status = mgmtPB.Status_STATUS_ERRORED
-				_ = h.service.WriteNewDataPoint(ctx, usageData)
-				return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-			}
-			if !doSupportBatch {
-				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-				return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
-			}
+		doSupportBatch, err := utils.DoSupportBatch()
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if !doSupportBatch {
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
 	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, pbModel.Task)
@@ -1498,7 +1461,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
+			"ray server",
 			"",
 			"",
 			err.Error(),
@@ -1507,7 +1470,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] inference model error",
-				"Triton inference server OOM",
+				"ray server OOM",
 				"Out of memory for running the model, maybe try with smaller batch size",
 				"",
 				err.Error(),
@@ -1712,31 +1675,20 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
-		tritonModelInDB, err := s.GetInferenceEnsembleModel(req.Context(), uuid.FromStringOrNil(pbModel.Uid))
-		if tritonModelInDB.Platform == "ensemble" {
-			if err != nil {
-				makeJSONResponse(w, 404, "Triton Model Error", fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
-				span.SetStatus(1, fmt.Sprintf("The triton model corresponding to model %v do not exist", pbModel.Id))
-				usageData.Status = mgmtPB.Status_STATUS_ERRORED
-				_ = s.WriteNewDataPoint(ctx, usageData)
-				return
-			}
-			configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-			doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
-			if err != nil {
-				makeJSONResponse(w, 400, "Batching Support Error", err.Error())
-				span.SetStatus(1, err.Error())
-				usageData.Status = mgmtPB.Status_STATUS_ERRORED
-				_ = s.WriteNewDataPoint(ctx, usageData)
-				return
-			}
-			if !doSupportBatch {
-				makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
-				span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-				usageData.Status = mgmtPB.Status_STATUS_ERRORED
-				_ = s.WriteNewDataPoint(ctx, usageData)
-				return
-			}
+		doSupportBatch, err := utils.DoSupportBatch()
+		if err != nil {
+			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
+			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		if !doSupportBatch {
+			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
 		}
 	}
 
@@ -1746,7 +1698,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Triton inference server",
+			"Ray inference server",
 			"",
 			"",
 			err.Error(),
@@ -1755,7 +1707,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			st, e = sterr.CreateErrorResourceInfo(
 				codes.ResourceExhausted,
 				"[handler] inference model error",
-				"Triton inference server OOM",
+				"Ray inference server OOM",
 				"Out of memory for running the model, maybe try with smaller batch size",
 				"",
 				err.Error(),
@@ -1855,7 +1807,7 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		return nil, err
 	}
 
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, authUser.Permalink(), modelID)
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.RayServer.ModelStore, authUser.Permalink(), modelID)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil { // return empty content base64
 		span.SetStatus(1, err.Error())

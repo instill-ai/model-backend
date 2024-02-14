@@ -2,7 +2,6 @@ package utils
 
 import (
 	"archive/zip"
-	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -14,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -73,19 +71,6 @@ type FileMeta struct {
 	fInfo os.FileInfo
 }
 
-func isEnsembleConfig(configPath string) bool {
-	fileData, _ := os.ReadFile(configPath)
-	fileString := string(fileData)
-	return strings.Contains(fileString, "platform: \"ensemble\"")
-}
-
-// TODO: should have other approach
-func couldBeEnsembleConfig(configPath string) bool {
-	fileData, _ := os.ReadFile(configPath)
-	fileString := string(fileData)
-	return strings.Contains(fileString, "instance_group") && strings.Contains(fileString, "backend: \"python\"")
-}
-
 // writeToFp takes in a file pointer and byte array and writes the byte array into the file
 // returns error if pointer is nil or error in writing to file
 func WriteToFp(fp *os.File, data []byte) error {
@@ -104,111 +89,29 @@ func WriteToFp(fp *os.File, data []byte) error {
 	}
 }
 
-func checkIsEnsembleProject(fPath string) (bool, error) {
-	fileInfo, err := os.Stat(fPath)
-	if err != nil {
-		return false, err
-	}
-
-	if fileInfo.IsDir() {
-		var result bool
-		err := filepath.Walk(fPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() && strings.HasSuffix(path, ".pbtxt") {
-				f, err := os.Open(path)
-				if err != nil {
-					return err
-				}
-
-				scanner := bufio.NewScanner(f)
-				for scanner.Scan() {
-					if strings.Contains(scanner.Text(), "ensemble") {
-						result = true
-						return nil
-					}
-				}
-
-				if err := scanner.Err(); err != nil {
-					result = false
-					return err
-				}
-				if err := f.Close(); err != nil {
-					return err
-				}
-			}
-			result = false
-			return nil
-		})
-		return result, err
-	} else {
-		archive, err := zip.OpenReader(fPath)
-		if err != nil {
-			return false, err
-		}
-		defer archive.Close()
-
-		for _, file := range archive.File {
-			// Check if the file has a .pbtxt suffix
-			if !strings.HasSuffix(file.Name, ".pbtxt") {
-				continue
-			}
-			f, err := file.Open()
-			if err != nil {
-				return false, err
-			}
-
-			scanner := bufio.NewScanner(f)
-			for scanner.Scan() {
-				if strings.Contains(scanner.Text(), "ensemble") {
-					return true, nil
-				}
-			}
-			if err := scanner.Err(); err != nil {
-				return false, err
-			}
-			if err := f.Close(); err != nil {
-				return false, err
-			}
-		}
-	}
-
-	return false, nil
-}
-
 // TODO: need to clean up this function
-func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, string, error) {
-	isEnsembleProject, err := checkIsEnsembleProject(fPath)
-	if err != nil {
-		fmt.Println("Error when open zip file ", err)
-		return "", "", err
-	}
-
+func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.Model) (string, error) {
 	archive, err := zip.OpenReader(fPath)
 	if err != nil {
 		fmt.Println("Error when open zip file ", err)
-		return "", "", err
+		return "", err
 	}
 	defer archive.Close()
 	var protoFilePath string
 	var readmeFilePath string
-	var createdModels []datamodel.InferenceModel
-	var currentNewModelName string
-	var currentOldModelName string
-	var ensembleFilePath string
-	var newModelNameMap = make(map[string]string)
-	var configFiles []string
+
+	modelRootDir := filepath.Join(dstDir, owner, uploadedModel.ID)
+
 	for _, f := range archive.File {
 		if strings.Contains(f.Name, "__MACOSX") || strings.Contains(f.Name, "__pycache__") { // ignore temp directory in macos
 			continue
 		}
-		fPath := filepath.Join(dstDir, f.Name)
+		fPath := filepath.Join(modelRootDir, f.Name)
 		fmt.Println("unzipping file ", fPath)
 
-		if !strings.HasPrefix(fPath, filepath.Clean(dstDir)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(fPath, filepath.Clean(modelRootDir)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
-			return "", "", fmt.Errorf("invalid file path")
+			return "", fmt.Errorf("invalid file path")
 		}
 
 		if f.FileInfo().IsDir() {
@@ -216,93 +119,46 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 			if string(dirName[len(dirName)-1]) == "/" {
 				dirName = dirName[:len(dirName)-1]
 			}
-			if !strings.Contains(dirName, "/") { // top directory model
-				currentOldModelName = dirName
-				dirName = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, dirName, "latest")
-				currentNewModelName = dirName
-				newModelNameMap[currentOldModelName] = currentNewModelName
-			} else { // version folder
-				dirName = strings.Replace(dirName, currentOldModelName, currentNewModelName, 1)
-				patternVersionFolder := fmt.Sprintf("^%v/[0-9]+$", currentNewModelName)
-				match, _ := regexp.MatchString(patternVersionFolder, dirName)
-				if match {
-					elems := strings.Split(dirName, "/")
-					sVersion := elems[len(elems)-1]
-					iVersion, err := strconv.ParseInt(sVersion, 10, 32)
-					if err == nil {
-						createdModels = append(createdModels, datamodel.InferenceModel{
-							Name:    currentNewModelName, // Triton model name
-							State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-							Version: int(iVersion),
-						})
-					}
-				}
-			}
-			fPath := filepath.Join(dstDir, dirName)
+			fPath := filepath.Join(modelRootDir, dirName)
 			if err := ValidateFilePath(fPath); err != nil {
-				return "", "", err
+				return "", err
 			}
 			err = os.MkdirAll(fPath, os.ModePerm)
 			if err != nil {
-				return "", "", err
+				return "", err
 			}
 			continue
 		}
 
-		// Update triton folder into format {model_name}#{task_name}#{task_version}
-		subStrs := strings.Split(f.Name, "/")
-		if len(subStrs) < 1 {
-			continue
-		}
-		// Triton modelname is folder name
-		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, uploadedModel.ID, subStrs[0], "latest")
-		newModelName := subStrs[0]
-		fPath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
 		if strings.Contains(f.Name, "README.md") {
 			readmeFilePath = fPath
 		}
-		if err := ValidateFilePath(fPath); err != nil {
-			return "", "", err
-		}
+
 		// ensure the parent folder existed
 		if _, err := os.Stat(filepath.Dir(fPath)); os.IsNotExist(err) {
 			if err := os.MkdirAll(filepath.Dir(fPath), os.ModePerm); err != nil {
-				return "", "", err
+				return "", err
 			}
 		}
 
 		dstFile, err := os.OpenFile(fPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		fileInArchive, err := f.Open()
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		reader := NewProgressReader(fileInArchive, f.Name)
 		if _, err := io.Copy(dstFile, reader); err != nil {
-			return "", "", err
+			return "", err
 		}
 
 		if err := dstFile.Close(); err != nil {
-			return "", "", err
+			return "", err
 		}
 		if err := fileInArchive.Close(); err != nil {
-			return "", "", err
-		}
-
-		// Update ModelName in config.pbtxt
-		fileExtension := filepath.Ext(fPath)
-		if fileExtension == ".pbtxt" {
-			configFiles = append(configFiles, fPath)
-			if isEnsembleConfig(fPath) {
-				ensembleFilePath = fPath
-			}
-			err = UpdateConfigModelName(fPath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
+			return "", err
 		}
 
 		if filepath.Base(fPath) == "model.py" {
@@ -310,74 +166,23 @@ func Unzip(fPath string, dstDir string, owner string, uploadedModel *datamodel.M
 		}
 	}
 
-	if ensembleFilePath == "" && len(configFiles) != 0 {
-		for _, filePath := range configFiles {
-			if couldBeEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
-				break
-			}
-		}
-		if isEnsembleProject {
-			for oldModelName, newModelName := range newModelNameMap {
-				err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
-				if err != nil {
-					return "", "", err
-				}
-			}
-		}
+	if err := copyRayProto(protoFilePath); err != nil {
+		return "", err
 	}
-	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" && len(configFiles) != 0 {
-		for oldModelName, newModelName := range newModelNameMap {
-			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
-		}
-		for i := 0; i < len(createdModels); i++ {
-			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
-				createdModels[i].Platform = "ensemble"
-				break
-			}
-		}
-	} else if len(configFiles) == 0 {
-		for i := 0; i < len(createdModels); i++ {
-			createdModels[i].Platform = "ray"
-		}
-		if err := copyRayProto(protoFilePath); err != nil {
-			return "", "", err
-		}
-	}
-	uploadedModel.InferenceModels = createdModels
 
 	_, err = filepath.Rel(config.Config.RayServer.ModelStore, readmeFilePath)
 	if err != nil {
-		return "", "", nil
+		return "", nil
 	}
 
-	_, err = filepath.Rel(config.Config.RayServer.ModelStore, ensembleFilePath)
-	if err != nil {
-		return "", "", nil
-	}
-
-	return readmeFilePath, ensembleFilePath, nil
+	return readmeFilePath, nil
 }
 
 // modelDir and dstDir are absolute path
-func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, string, error) {
-	isEnsembleProject, ensembleErr := checkIsEnsembleProject(modelDir)
-	if ensembleErr != nil {
-		fmt.Println("Error when UpdateModelPath checkIsEnsembleProject func", ensembleErr)
-		return "", "", ensembleErr
-	}
-
+func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamodel.Model) (string, error) {
 	var protoFilePath string
-	var createdModels []datamodel.InferenceModel
-	var ensembleFilePath string
-	var newModelNameMap = make(map[string]string)
 	var readmeFilePath string
 	files := []FileMeta{}
-	var configFiles []string
 	var fileRe = regexp.MustCompile(`/.git|/.dvc|/.dvcignore`)
 	err := filepath.Walk(modelDir, func(path string, f os.FileInfo, err error) error {
 		if !fileRe.MatchString(path) {
@@ -389,12 +194,12 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		return nil
 	})
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	modelRootDir := dstDir + "/" + owner
+	modelRootDir := filepath.Join(dstDir, owner, model.ID)
 	err = os.MkdirAll(modelRootDir, os.ModePerm)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	var modelConfiguration datamodel.GitHubModelConfiguration
 	_ = json.Unmarshal(model.Configuration, &modelConfiguration)
@@ -402,29 +207,12 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 		if f.path == modelDir {
 			continue
 		}
-		// Update triton folder into format {model_name}#{task_name}#{task_version}
-		subStrs := strings.Split(strings.Replace(f.path, modelDir+"/", "", 1), "/")
-		if len(subStrs) < 1 {
-			continue
-		}
-		// Triton modelname is folder name
-		oldModelName := subStrs[0]
-		subStrs[0] = fmt.Sprintf("%v#%v#%v#%v", owner, model.ID, oldModelName, modelConfiguration.Tag)
-		var filePath = filepath.Join(dstDir, strings.Join(subStrs, "/"))
+		var filePath = filepath.Join(modelRootDir, strings.ReplaceAll(f.path, modelDir, ""))
 
 		if f.fInfo.IsDir() { // create new folder
 			err = os.MkdirAll(filePath, os.ModePerm)
-
 			if err != nil {
-				return "", "", err
-			}
-			newModelNameMap[oldModelName] = subStrs[0]
-			if v, err := strconv.Atoi(subStrs[len(subStrs)-1]); err == nil {
-				createdModels = append(createdModels, datamodel.InferenceModel{
-					Name:    subStrs[0], // Triton model name
-					State:   datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-					Version: v,
-				})
+				return "", err
 			}
 			continue
 		}
@@ -434,79 +222,32 @@ func UpdateModelPath(modelDir string, dstDir string, owner string, model *datamo
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.fInfo.Mode())
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		srcFile, err := os.Open(f.path)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		reader := NewProgressReader(srcFile, f.fInfo.Name())
 		if _, err := io.Copy(dstFile, reader); err != nil {
-			return "", "", err
+			return "", err
 		}
 		if err := dstFile.Close(); err != nil {
-			return "", "", err
+			return "", err
 		}
 		if err := srcFile.Close(); err != nil {
-			return "", "", err
+			return "", err
 		}
-		// Update ModelName in config.pbtxt
-		fileExtension := filepath.Ext(filePath)
-		if fileExtension == ".pbtxt" {
-			configFiles = append(configFiles, filePath)
-			if isEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
-			}
-			err = UpdateConfigModelName(filePath, oldModelName, subStrs[0])
-			if err != nil {
-				return "", "", err
-			}
-		}
-
 		if filepath.Base(filePath) == "model.py" {
 			protoFilePath = filepath.Dir(filePath)
 		}
 	}
-	if ensembleFilePath == "" && len(configFiles) != 0 {
-		for _, filePath := range configFiles {
-			if couldBeEnsembleConfig(filePath) {
-				ensembleFilePath = filePath
-				break
-			}
-		}
-		if isEnsembleProject {
-			for oldModelName, newModelName := range newModelNameMap {
-				err = UpdateModelName(filepath.Dir(ensembleFilePath)+"/1/model.py", oldModelName, newModelName) // TODO: replace in all files.
-				if err != nil {
-					return "", "", err
-				}
-			}
-		}
+
+	if err := copyRayProto(protoFilePath); err != nil {
+		return "", err
 	}
-	// Update ModelName in ensemble model config file
-	if ensembleFilePath != "" && len(configFiles) != 0 {
-		for oldModelName, newModelName := range newModelNameMap {
-			err = UpdateConfigModelName(ensembleFilePath, oldModelName, newModelName)
-			if err != nil {
-				return "", "", err
-			}
-		}
-		for i := 0; i < len(createdModels); i++ {
-			if strings.Contains(ensembleFilePath, createdModels[i].Name) {
-				createdModels[i].Platform = "ensemble"
-				break
-			}
-		}
-	} else {
-		for i := 0; i < len(createdModels); i++ {
-			createdModels[i].Platform = "ray"
-		}
-		if err := copyRayProto(protoFilePath); err != nil {
-			return "", "", err
-		}
-	}
-	model.InferenceModels = createdModels
-	return readmeFilePath, ensembleFilePath, nil
+
+	return readmeFilePath, nil
 }
 
 type CreateNamespaceModelBinaryFileUploadRequestInterface interface {

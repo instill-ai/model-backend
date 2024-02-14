@@ -63,7 +63,7 @@ type ModelDefinition struct {
 	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
 }
 
-// Model combines several ensenble Triton model or ray model
+// Model
 type Model struct {
 	BaseDynamic
 
@@ -90,29 +90,6 @@ type Model struct {
 
 	// Model state
 	State ModelState `json:"state,omitempty"`
-
-	// Not stored in DB, only used for processing
-	InferenceModels []InferenceModel `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
-}
-
-// Inference model
-type InferenceModel struct {
-	BaseDynamic
-
-	// Inference Model name
-	Name string `json:"name,omitempty"`
-
-	// Inference Model version
-	Version int `json:"version,omitempty"`
-
-	// Inference Model status
-	State ModelState `json:"state,omitempty"`
-
-	// Model platform, only store ensemble model for triton, or ray
-	Platform string `json:"platform,omitempty"`
-
-	// Model uid
-	ModelUID uuid.UUID `json:"model_uid,omitempty"`
 }
 
 type ModelInferResult struct {

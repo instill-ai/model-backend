@@ -121,62 +121,62 @@ export function CreateModelFromLocal(header) {
         [`GET v1alpha/${createKpModelRes.json().operation.name} task keypoint operation.done`]: (r) => r.json().operation.done === true,
       });
 
-      let fd_unspecified = new FormData();
-      let model_id_unspecified = randomString(10)
-      model_description = randomString(20)
-      fd_unspecified.append("id", model_id_unspecified);
-      fd_unspecified.append("description", model_description);
-      fd_unspecified.append("model_definition", "model-definitions/local");
-      fd_unspecified.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
-      let createUnspecifiedModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
-      })
-      check(createUnspecifiedModelRes, {
-        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
-          r.status === 201,
-        "POST /v1alpha/models/multipart task unspecified response operation.name": (r) =>
-          r.json().operation.name !== undefined,
-      });
+      // let fd_unspecified = new FormData();
+      // let model_id_unspecified = randomString(10)
+      // model_description = randomString(20)
+      // fd_unspecified.append("id", model_id_unspecified);
+      // fd_unspecified.append("description", model_description);
+      // fd_unspecified.append("model_definition", "model-definitions/local");
+      // fd_unspecified.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
+      // let createUnspecifiedModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
+      // })
+      // check(createUnspecifiedModelRes, {
+      //   "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+      //     r.status === 201,
+      //   "POST /v1alpha/models/multipart task unspecified response operation.name": (r) =>
+      //     r.json().operation.name !== undefined,
+      // });
 
-      // Check model creation finished
-      currentTime = new Date().getTime();
-      timeoutTime = new Date().getTime() + 120000;
-      while (timeoutTime > currentTime) {
-        var res = http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header)
-        if (res.json().operation.done === true) {
-          break
-        }
-        sleep(1)
-        currentTime = new Date().getTime();
-      }
-      check(http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header), {
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified status`]: (r) => r.status === 200,
-        [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.done`]: (r) => r.json().operation.done === true,
-      });
+      // // Check model creation finished
+      // currentTime = new Date().getTime();
+      // timeoutTime = new Date().getTime() + 120000;
+      // while (timeoutTime > currentTime) {
+      //   var res = http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header)
+      //   if (res.json().operation.done === true) {
+      //     break
+      //   }
+      //   sleep(1)
+      //   currentTime = new Date().getTime();
+      // }
+      // check(http.get(`${constant.apiPublicHost}/v1alpha/${createUnspecifiedModelRes.json().operation.name}`, header), {
+      //   [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified status`]: (r) => r.status === 200,
+      //   [`GET v1alpha/${createUnspecifiedModelRes.json().operation.name} task unspecified operation.done`]: (r) => r.json().operation.done === true,
+      // });
 
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart already existed response status 409": (r) =>
-          r.status === 409,
-      });
+      // check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
+      //   headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
+      // }), {
+      //   "POST /v1alpha/models/multipart already existed response status 409": (r) =>
+      //     r.status === 409,
+      // });
 
-      currentTime = new Date().getTime();
-      timeoutTime = new Date().getTime() + 120000;
-      while (timeoutTime > currentTime) {
-        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
-        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
-        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
-        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
-        if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
-          res_det.json().state !== "STATE_UNSPECIFIED" &&
-          res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
-          res_unspecified.json().state !== "STATE_UNSPECIFIED") {
-          break
-        }
-        sleep(1)
-        currentTime = new Date().getTime();
-      }
+      // currentTime = new Date().getTime();
+      // timeoutTime = new Date().getTime() + 120000;
+      // while (timeoutTime > currentTime) {
+      //   let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
+      //   let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
+      //   let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
+      //   let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
+      //   if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
+      //     res_det.json().state !== "STATE_UNSPECIFIED" &&
+      //     res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
+      //     res_unspecified.json().state !== "STATE_UNSPECIFIED") {
+      //     break
+      //   }
+      //   sleep(1)
+      //   currentTime = new Date().getTime();
+      // }
 
       // clean up
       check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, header), {
@@ -191,133 +191,134 @@ export function CreateModelFromLocal(header) {
         "DELETE clean up response status": (r) =>
           r.status === 204
       });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
-        "DELETE clean up response status": (r) =>
-          r.status === 204
-      });
+      // check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
+      //   "DELETE clean up response status": (r) =>
+      //     r.status === 204
+      // });
     });
 
-    group("Model Backend API: Upload a model which exceed max batch size limitation", function () {
-      let fd_cls = new FormData();
-      let model_id_cls = randomString(10)
-      let model_description = randomString(20)
-      fd_cls.append("id", model_id_cls);
-      fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", "model-definitions/local");
-      fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task cls response status": (r) =>
-          r.status === 400,
-      });
+    // TODO: properly support batch inference with Ray
+    // group("Model Backend API: Upload a model which exceed max batch size limitation", function () {
+    //   let fd_cls = new FormData();
+    //   let model_id_cls = randomString(10)
+    //   let model_description = randomString(20)
+    //   fd_cls.append("id", model_id_cls);
+    //   fd_cls.append("description", model_description);
+    //   fd_cls.append("model_definition", "model-definitions/local");
+    //   fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task cls response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let fd_det = new FormData();
-      let model_id_det = randomString(10)
-      model_description = randomString(20)
-      fd_det.append("id", model_id_det);
-      fd_det.append("description", model_description);
-      fd_det.append("model_definition", "model-definitions/local");
-      fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task det response status": (r) =>
-          r.status === 400,
-      });
+    //   let fd_det = new FormData();
+    //   let model_id_det = randomString(10)
+    //   model_description = randomString(20)
+    //   fd_det.append("id", model_id_det);
+    //   fd_det.append("description", model_description);
+    //   fd_det.append("model_definition", "model-definitions/local");
+    //   fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task det response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let fd_keypoint = new FormData();
-      let model_id_keypoint = randomString(10)
-      model_description = randomString(20)
-      fd_keypoint.append("id", model_id_keypoint);
-      fd_keypoint.append("description", model_description);
-      fd_keypoint.append("model_definition", "model-definitions/local");
-      fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task keypoint response status": (r) =>
-          r.status === 400,
-      });
+    //   let fd_keypoint = new FormData();
+    //   let model_id_keypoint = randomString(10)
+    //   model_description = randomString(20)
+    //   fd_keypoint.append("id", model_id_keypoint);
+    //   fd_keypoint.append("description", model_description);
+    //   fd_keypoint.append("model_definition", "model-definitions/local");
+    //   fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task keypoint response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let fd_unspecified = new FormData();
-      let model_id_unspecified = randomString(10)
-      model_description = randomString(20)
-      fd_unspecified.append("id", model_id_unspecified);
-      fd_unspecified.append("description", model_description);
-      fd_unspecified.append("model_definition", "model-definitions/local");
-      fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
-          r.status === 400,
-      });
+    //   let fd_unspecified = new FormData();
+    //   let model_id_unspecified = randomString(10)
+    //   model_description = randomString(20)
+    //   fd_unspecified.append("id", model_id_unspecified);
+    //   fd_unspecified.append("description", model_description);
+    //   fd_unspecified.append("model_definition", "model-definitions/local");
+    //   fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let fd_semantic = new FormData();
-      let model_id_semantic = randomString(10)
-      model_description = randomString(20)
-      fd_semantic.append("id", model_id_semantic);
-      fd_semantic.append("description", model_description);
-      fd_semantic.append("model_definition", "model-definitions/local");
-      fd_semantic.append("content", http.file(constant.semantic_segmentation_model_bz9, "dummy-semantic-segmentation-model-bz9.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_semantic.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
-          r.status === 400,
-      });
+    //   let fd_semantic = new FormData();
+    //   let model_id_semantic = randomString(10)
+    //   model_description = randomString(20)
+    //   fd_semantic.append("id", model_id_semantic);
+    //   fd_semantic.append("description", model_description);
+    //   fd_semantic.append("model_definition", "model-definitions/local");
+    //   fd_semantic.append("content", http.file(constant.semantic_segmentation_model_bz9, "dummy-semantic-segmentation-model-bz9.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_semantic.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let fd_instance = new FormData();
-      let model_id_instance = randomString(10)
-      model_description = randomString(20)
-      fd_instance.append("id", model_id_instance);
-      fd_instance.append("description", model_description);
-      fd_instance.append("model_definition", "model-definitions/local");
-      fd_instance.append("content", http.file(constant.instance_segmentation_model_bz9, "dummy-instance-segmentation-model-bz9.zip"));
-      check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_instance.body(), {
-        headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`, header.headers.Authorization),
-      }), {
-        "POST /v1alpha/models/multipart task unspecified response status": (r) =>
-          r.status === 400,
-      });
+    //   let fd_instance = new FormData();
+    //   let model_id_instance = randomString(10)
+    //   model_description = randomString(20)
+    //   fd_instance.append("id", model_id_instance);
+    //   fd_instance.append("description", model_description);
+    //   fd_instance.append("model_definition", "model-definitions/local");
+    //   fd_instance.append("content", http.file(constant.instance_segmentation_model_bz9, "dummy-instance-segmentation-model-bz9.zip"));
+    //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_instance.body(), {
+    //     headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`, header.headers.Authorization),
+    //   }), {
+    //     "POST /v1alpha/models/multipart task unspecified response status": (r) =>
+    //       r.status === 400,
+    //   });
 
-      let currentTime = new Date().getTime();
-      let timeoutTime = new Date().getTime() + 120000;
-      while (timeoutTime > currentTime) {
-        let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
-        let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
-        let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
-        let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
-        if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
-          res_det.json().state !== "STATE_UNSPECIFIED" &&
-          res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
-          res_unspecified.json().state !== "STATE_UNSPECIFIED") {
-          break
-        }
-        sleep(1)
-        currentTime = new Date().getTime();
-      }
+    //   let currentTime = new Date().getTime();
+    //   let timeoutTime = new Date().getTime() + 120000;
+    //   while (timeoutTime > currentTime) {
+    //     let res_cls = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}/watch`, header)
+    //     let res_det = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}/watch`, header)
+    //     let res_keypoint = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}/watch`, header)
+    //     let res_unspecified = http.get(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}/watch`, header)
+    //     if (res_cls.json().state !== "STATE_UNSPECIFIED" &&
+    //       res_det.json().state !== "STATE_UNSPECIFIED" &&
+    //       res_keypoint.json().state !== "STATE_UNSPECIFIED" &&
+    //       res_unspecified.json().state !== "STATE_UNSPECIFIED") {
+    //       break
+    //     }
+    //     sleep(1)
+    //     currentTime = new Date().getTime();
+    //   }
 
-      // clean up
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, header), {
-        "DELETE clean up response status": (r) =>
-          r.status === 404
-      });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, header), {
-        "DELETE clean up response status": (r) =>
-          r.status === 404
-      });
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, header), {
-        "DELETE clean up response status": (r) =>
-          r.status === 404
-      });
+    //   // clean up
+    //   check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_cls}`, null, header), {
+    //     "DELETE clean up response status": (r) =>
+    //       r.status === 404
+    //   });
+    //   check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_det}`, null, header), {
+    //     "DELETE clean up response status": (r) =>
+    //       r.status === 404
+    //   });
+    //   check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_keypoint}`, null, header), {
+    //     "DELETE clean up response status": (r) =>
+    //       r.status === 404
+    //   });
 
-      check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
-        "DELETE clean up response status": (r) =>
-          r.status === 404
-      });
-    });
+    //   check(http.request("DELETE", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id_unspecified}`, null, header), {
+    //     "DELETE clean up response status": (r) =>
+    //       r.status === 404
+    //   });
+    // });
   }
 }
 

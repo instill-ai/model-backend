@@ -17,7 +17,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/triton"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
@@ -90,7 +90,7 @@ func parseImageFromBase64(ctx context.Context, encoded string) (image.Image, err
 	return img, nil
 }
 
-func parseImageInputToByte(ctx context.Context, imageInput triton.ImageInput) (encodedImg []byte, err error) {
+func parseImageInputToByte(ctx context.Context, imageInput ray.ImageInput) (encodedImg []byte, err error) {
 	var img image.Image
 	if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
 		logger, _ := custom_logger.GetZapLogger(ctx)
@@ -129,45 +129,45 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	for idx, taskInput := range req.GetTaskInputs() {
-		var imageInput triton.ImageInput
+		var imageInput ray.ImageInput
 		switch taskInput.Input.(type) {
 		case *modelPB.TaskInput_Classification:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetClassification().GetImageUrl(),
 				ImgBase64: taskInput.GetClassification().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Detection:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetDetection().GetImageUrl(),
 				ImgBase64: taskInput.GetDetection().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Ocr:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetOcr().GetImageUrl(),
 				ImgBase64: taskInput.GetOcr().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_Keypoint:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetKeypoint().GetImageUrl(),
 				ImgBase64: taskInput.GetKeypoint().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_InstanceSegmentation:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetInstanceSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetInstanceSegmentation().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_SemanticSegmentation:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
 		case *modelPB.TaskInput_TextToImage:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetTextToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetTextToImage().GetPromptImageBase64(),
 			}
 		case *modelPB.TaskInput_ImageToImage:
-			imageInput = triton.ImageInput{
+			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetImageToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetImageToImage().GetPromptImageBase64(),
 			}
@@ -219,7 +219,7 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 	return inputBytes, nil
 }
 
-func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textToImageInput *triton.TextToImageInput, err error) {
+func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textToImageInput *ray.TextToImageInput, err error) {
 	if len(req.GetTaskInputs()) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
@@ -260,7 +260,7 @@ func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModel
 		if parsedImageErr == nil {
 			inputBytes = pargedImages[idx]
 		}
-		textToImageInput = &triton.TextToImageInput{
+		textToImageInput = &ray.TextToImageInput{
 			Prompt:      taskInput.GetTextToImage().Prompt,
 			PromptImage: string(inputBytes),
 			Steps:       steps,
@@ -273,7 +273,7 @@ func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModel
 	return textToImageInput, nil
 }
 
-func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (imageToImageInput *triton.ImageToImageInput, err error) {
+func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (imageToImageInput *ray.ImageToImageInput, err error) {
 	if len(req.GetTaskInputs()) > 1 {
 		return nil, fmt.Errorf("text to image only support single batch")
 	}
@@ -318,7 +318,7 @@ func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceMod
 		if parsedImageErr == nil {
 			inputBytes = pargedImages[idx]
 		}
-		imageToImageInput = &triton.ImageToImageInput{
+		imageToImageInput = &ray.ImageToImageInput{
 			Prompt:      prompt,
 			PromptImage: string(inputBytes),
 			Steps:       steps,
@@ -331,7 +331,7 @@ func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceMod
 	return imageToImageInput, nil
 }
 
-func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationInput *triton.TextGenerationInput, err error) {
+func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationInput *ray.TextGenerationInput, err error) {
 	for _, taskInput := range req.GetTaskInputs() {
 
 		maxNewTokens := utils.TextGenerationMaxNewTokens
@@ -379,7 +379,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 		if taskInput.GetTextGeneration().PromptImages != nil {
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetTextGeneration().PromptImages {
-				imageInput := triton.ImageInput{
+				imageInput := ray.ImageInput{
 					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
@@ -397,7 +397,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 			}
 		}
 
-		textGenerationInput = &triton.TextGenerationInput{
+		textGenerationInput = &ray.TextGenerationInput{
 			Prompt:        taskInput.GetTextGeneration().Prompt,
 			PromptImages:  promptImages,
 			ChatHistory:   chatHistory,
@@ -412,7 +412,7 @@ func parseTexGenerationRequestInputs(ctx context.Context, req TriggerNamespaceMo
 	return textGenerationInput, nil
 }
 
-func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationChatInput *triton.TextGenerationChatInput, err error) {
+func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (textGenerationChatInput *ray.TextGenerationChatInput, err error) {
 	for _, taskInput := range req.GetTaskInputs() {
 		maxNewTokens := utils.TextGenerationMaxNewTokens
 		if taskInput.GetTextGenerationChat().MaxNewTokens != nil {
@@ -459,7 +459,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 		if taskInput.GetTextGenerationChat().PromptImages != nil {
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetTextGenerationChat().PromptImages {
-				imageInput := triton.ImageInput{
+				imageInput := ray.ImageInput{
 					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
@@ -476,7 +476,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 				promptImages = string(jsonData)
 			}
 		}
-		textGenerationChatInput = &triton.TextGenerationChatInput{
+		textGenerationChatInput = &ray.TextGenerationChatInput{
 			Prompt:        taskInput.GetTextGenerationChat().Prompt,
 			PromptImages:  promptImages,
 			ChatHistory:   chatHistory,
@@ -491,7 +491,7 @@ func parseTexGenerationChatRequestInputs(ctx context.Context, req TriggerNamespa
 	return textGenerationChatInput, nil
 }
 
-func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (visualQuestionAnsweringInput *triton.VisualQuestionAnsweringInput, err error) {
+func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerNamespaceModelRequestInterface) (visualQuestionAnsweringInput *ray.VisualQuestionAnsweringInput, err error) {
 	for _, taskInput := range req.GetTaskInputs() {
 
 		maxNewTokens := utils.TextGenerationMaxNewTokens
@@ -539,7 +539,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 		if taskInput.GetVisualQuestionAnswering().PromptImages != nil {
 			var promptImagesArr [][]byte
 			for _, promptImageStruct := range taskInput.GetVisualQuestionAnswering().PromptImages {
-				imageInput := triton.ImageInput{
+				imageInput := ray.ImageInput{
 					ImgURL:    promptImageStruct.GetPromptImageUrl(),
 					ImgBase64: promptImageStruct.GetPromptImageBase64(),
 				}
@@ -557,7 +557,7 @@ func parseVisualQuestionAnsweringRequestInputs(ctx context.Context, req TriggerN
 			}
 		}
 
-		visualQuestionAnsweringInput = &triton.VisualQuestionAnsweringInput{
+		visualQuestionAnsweringInput = &ray.VisualQuestionAnsweringInput{
 			Prompt:        taskInput.GetVisualQuestionAnswering().Prompt,
 			PromptImages:  promptImages,
 			ChatHistory:   chatHistory,
@@ -631,7 +631,7 @@ func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err
 	return imgsBytes, nil
 }
 
-func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *triton.TextToImageInput, err error) {
+func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *ray.TextToImageInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) == 0 {
 		return nil, fmt.Errorf("missing prompt input")
@@ -708,7 +708,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 		promptImage = string(parsedImages[0])
 	}
 
-	return &triton.TextToImageInput{
+	return &ray.TextToImageInput{
 		Prompt:      prompts[0],
 		PromptImage: promptImage,
 		Steps:       step,
@@ -719,7 +719,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *t
 	}, nil
 }
 
-func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput *triton.ImageToImageInput, err error) {
+func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput *ray.ImageToImageInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) == 0 {
 		return nil, fmt.Errorf("missing prompt input")
@@ -796,7 +796,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		promptImage = string(parsedImages[0])
 	}
 
-	return &triton.ImageToImageInput{
+	return &ray.ImageToImageInput{
 		Prompt:      prompts[0],
 		PromptImage: promptImage,
 		Steps:       step,
@@ -807,7 +807,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 	}, nil
 }
 
-func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *triton.TextGenerationInput, err error) {
+func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *ray.TextGenerationInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
@@ -880,7 +880,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 		}
 	}
 
-	return &triton.TextGenerationInput{
+	return &ray.TextGenerationInput{
 		Prompt:        prompts[0],
 		PromptImages:  promptImages,
 		ChatHistory:   chatHistory,
@@ -893,7 +893,7 @@ func parseTextFormDataTextGenerationInputs(req *http.Request) (textGeneration *t
 	}, nil
 }
 
-func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGenerationChat *triton.TextGenerationChatInput, err error) {
+func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGenerationChat *ray.TextGenerationChatInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
@@ -965,7 +965,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 		}
 	}
 
-	return &triton.TextGenerationChatInput{
+	return &ray.TextGenerationChatInput{
 		Prompt:        prompts[0],
 		PromptImages:  promptImages,
 		ChatHistory:   chatHistory,
@@ -978,7 +978,7 @@ func parseTextFormDataTextGenerationChatInputs(req *http.Request) (textGeneratio
 	}, nil
 }
 
-func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQuestionAnswering *triton.VisualQuestionAnsweringInput, err error) {
+func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQuestionAnswering *ray.VisualQuestionAnsweringInput, err error) {
 	prompts := req.MultipartForm.Value["prompt"]
 	if len(prompts) != 1 {
 		return nil, fmt.Errorf("only support batchsize 1")
@@ -1051,7 +1051,7 @@ func parseTextFormDataVisualQuestionAnsweringInputs(req *http.Request) (visualQu
 		}
 	}
 
-	return &triton.VisualQuestionAnsweringInput{
+	return &ray.VisualQuestionAnsweringInput{
 		Prompt:        prompts[0],
 		PromptImages:  promptImages,
 		ChatHistory:   chatHistory,

@@ -37,20 +37,6 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateInferenceModel mocks base method.
-func (m *MockRepository) CreateInferenceModel(arg0 context.Context, arg1 string, arg2 *datamodel.InferenceModel) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInferenceModel", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateInferenceModel indicates an expected call of CreateInferenceModel.
-func (mr *MockRepositoryMockRecorder) CreateInferenceModel(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInferenceModel", reflect.TypeOf((*MockRepository)(nil).CreateInferenceModel), arg0, arg1, arg2)
-}
-
 // CreateNamespaceModel mocks base method.
 func (m *MockRepository) CreateNamespaceModel(arg0 context.Context, arg1 string, arg2 *datamodel.Model) error {
 	m.ctrl.T.Helper()
@@ -66,47 +52,17 @@ func (mr *MockRepositoryMockRecorder) CreateNamespaceModel(arg0, arg1, arg2 inte
 }
 
 // DeleteNamespaceModelByID mocks base method.
-func (m *MockRepository) DeleteNamespaceModelByID(arg0 context.Context, arg1 string, arg2 uuid.UUID, arg3 string) error {
+func (m *MockRepository) DeleteNamespaceModelByID(arg0 context.Context, arg1, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNamespaceModelByID", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "DeleteNamespaceModelByID", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteNamespaceModelByID indicates an expected call of DeleteNamespaceModelByID.
-func (mr *MockRepositoryMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2, arg3)
-}
-
-// GetInferenceEnsembleModel mocks base method.
-func (m *MockRepository) GetInferenceEnsembleModel(arg0 context.Context, arg1 uuid.UUID) (*datamodel.InferenceModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInferenceEnsembleModel", arg0, arg1)
-	ret0, _ := ret[0].(*datamodel.InferenceModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetInferenceEnsembleModel indicates an expected call of GetInferenceEnsembleModel.
-func (mr *MockRepositoryMockRecorder) GetInferenceEnsembleModel(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInferenceEnsembleModel", reflect.TypeOf((*MockRepository)(nil).GetInferenceEnsembleModel), arg0, arg1)
-}
-
-// GetInferenceModels mocks base method.
-func (m *MockRepository) GetInferenceModels(arg0 context.Context, arg1 uuid.UUID) ([]*datamodel.InferenceModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInferenceModels", arg0, arg1)
-	ret0, _ := ret[0].([]*datamodel.InferenceModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetInferenceModels indicates an expected call of GetInferenceModels.
-func (mr *MockRepositoryMockRecorder) GetInferenceModels(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInferenceModels", reflect.TypeOf((*MockRepository)(nil).GetInferenceModels), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2)
 }
 
 // GetModelByIDAdmin mocks base method.

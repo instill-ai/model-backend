@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +27,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
@@ -79,6 +77,17 @@ func findDVCPaths(dir string) []string {
 	return dvcPaths
 }
 
+func FindModelPythonDir(dir string) (modelPythonDir string) {
+	modelPythonDir = ""
+	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if !f.IsDir() && f.Name() == "model.py" {
+			modelPythonDir = filepath.Dir(path)
+		}
+		return nil
+	})
+	return modelPythonDir
+}
+
 // TODO: clean up this function.
 func findModelFiles(dir string) []string {
 	var modelPaths = []string{}
@@ -93,39 +102,6 @@ func findModelFiles(dir string) []string {
 		return nil
 	})
 	return modelPaths
-}
-
-func AddMissingTritonModelFolder(ctx context.Context, dir string) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
-	_ = filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if f.Name() == "config.pbtxt" {
-			if _, err := os.Stat(fmt.Sprintf("%s/1", filepath.Dir(path))); err != nil {
-				if err := os.MkdirAll(fmt.Sprintf("%s/1", filepath.Dir(path)), os.ModePerm); err != nil {
-					logger.Error(err.Error())
-				}
-			}
-		}
-		return nil
-	})
-}
-
-func getPreModelConfigPath(modelRepository string, tritonModels []*datamodel.InferenceModel) string {
-	modelPath := ""
-	for _, triton := range tritonModels {
-		if strings.Contains(triton.Name, "#pre#") {
-			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
-		}
-	}
-	return modelPath
-}
-func getInferModelConfigPath(modelRepository string, tritonModels []*datamodel.InferenceModel) string {
-	modelPath := ""
-	for _, triton := range tritonModels {
-		if strings.Contains(triton.Name, "-infer#") {
-			return fmt.Sprintf("%s/%s", modelRepository, triton.Name)
-		}
-	}
-	return modelPath
 }
 
 type CacheModel struct {
@@ -198,72 +174,13 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 }
 
 // CopyModelFileToModelRepository copies model files to model repository.
-func CopyModelFileToModelRepository(modelRepository string, dir string, tritonModels []*datamodel.InferenceModel) error {
-	modelPaths := findModelFiles(dir)
-	for _, modelPath := range modelPaths {
-		folderModelDir := filepath.Dir(modelPath)
-		modelSubNames := strings.Split(folderModelDir, "/")
-		if len(modelSubNames) < 2 {
-			continue
-		}
-		modelNamesToCheck := map[string]bool{
-			"fastertransformer": true,
-			"llava_13b":         true,
-			"llava_7b":          true,
-			"llama2_7b":         true,
-			"codellama":         true,
-			"llama2_13b_chat":   true,
-			"llama2_7b_chat":    true,
-			"mistral_7b":        true,
-			"fuyu_8b":           true,
-			"controlnet":        true,
-			"sdxl":              true,
-			"zephyr_7b":         true,
-			"mpt_7b":            true,
-		}
+func CopyModelFileToModelRepository(modelRepository string, dir string, model *datamodel.Model) error {
+	modelDir := filepath.Join(modelRepository, model.Owner, model.ID)
+	srcPath := fmt.Sprintf("%s/*", dir)
 
-		for _, tritonModel := range tritonModels {
-			tritonModelName := tritonModel.Name
-			tritonSubNames := strings.Split(tritonModelName, "#")
-			if len(tritonSubNames) < 4 {
-				continue
-			}
-			startIdx := 2
-			contains := false
-
-			for idx, name := range modelSubNames {
-				if _, found := modelNamesToCheck[name]; found {
-					contains = true
-					if name == tritonSubNames[len(tritonSubNames)-2] {
-						startIdx = idx
-						break
-					}
-				}
-			}
-
-			if tritonSubNames[len(tritonSubNames)-2] == modelSubNames[len(modelSubNames)-2] {
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s/%s/1", modelPath, modelRepository, tritonModelName))
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-			} else if contains {
-				// TODO: add general function to check if backend use fastertransformer, which has different model file structure
-				var modelSubNamesPath string
-				for idx, subName := range modelSubNames {
-					if idx > startIdx {
-						modelSubNamesPath += subName + "/"
-					}
-				}
-				targetPath := fmt.Sprintf("%s/%s/%s", modelRepository, tritonModelName, modelSubNamesPath)
-				if err := os.MkdirAll(targetPath, os.ModePerm); err != nil {
-					return err
-				}
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp %s %s", modelPath, targetPath))
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-			}
-		}
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cp -ru %s %s", srcPath, modelDir))
+	if err := cmd.Run(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -343,38 +260,24 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	return &githubRepoInfo, nil
 }
 
-func HasModelInModelRepository(modelRepositoryRoot string, namespace string, modelName string) bool {
+func HasModelInModelRepository(modelRepositoryRoot string, owner string, modelID string) bool {
+	modelPath := filepath.Join(config.Config.RayServer.ModelStore, owner, modelID)
 
-	path := fmt.Sprintf("%v/%v#%v#*", modelRepositoryRoot, namespace, modelName)
-
-	if matches, _ := filepath.Glob(path); matches == nil {
+	if matches, _ := filepath.Glob(modelPath); matches == nil {
 		return false
 	}
 
 	return true
 }
 
-func RemoveModelRepository(modelRepositoryRoot string, namespace string, modelName string, instanceName string) {
-	path := fmt.Sprintf("%v/%v#%v#*#%v", modelRepositoryRoot, namespace, modelName, instanceName)
-	if err := ValidateFilePath(path); err != nil {
+func RemoveModelRepository(modelRepositoryRoot string, owner string, modelID string) {
+	modelPath := filepath.Join(modelRepositoryRoot, owner, modelID)
+
+	if err := ValidateFilePath(modelPath); err != nil {
 		panic(err)
 	}
 
-	files, err := filepath.Glob(path)
-	if err != nil {
-		panic(err)
-	}
-	for _, f := range files {
-		if err := os.RemoveAll(f); err != nil {
-			panic(err)
-		}
-	}
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md#%v", modelRepositoryRoot, namespace, modelName, instanceName)
-	if err := ValidateFilePath(readmeFilePath); err != nil {
-		panic(err)
-	}
-
-	_ = os.Remove(readmeFilePath)
+	_ = os.RemoveAll(modelPath)
 }
 
 // ConvertAllJSONKeySnakeCase traverses a JSON object to replace all keys to snake_case.
@@ -463,25 +366,8 @@ func GetMaxBatchSize(configFilePath string) (int, error) {
 	return -1, errors.New("not found")
 }
 
-func DoSupportBatch(configFilePath string) (bool, error) {
-	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
-		return false, err
-	}
-	file, err := os.Open(configFilePath)
-	if err != nil {
-		return false, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	r := regexp.MustCompile(`max_batch_size:\s0`) // this can also be a regex
-
-	for scanner.Scan() {
-		if r.MatchString(scanner.Text()) {
-			return false, nil
-		}
-	}
-
+// TODO: properly support batch inference
+func DoSupportBatch() (bool, error) {
 	return true, nil
 }
 
@@ -721,149 +607,36 @@ func GenerateHuggingFaceModel(confDir string, dest string, modelID string) error
 	return nil
 }
 
-func HasModelWeightFile(modelRepository string, inferenceModels []*datamodel.InferenceModel) bool {
-	for _, inferenceModel := range inferenceModels {
-		modelDir := fmt.Sprintf("%s/%s", modelRepository, inferenceModel.Name)
-		modelFiles := findModelFiles(modelDir)
-		if len(modelFiles) > 0 {
-			for _, modelFile := range modelFiles {
-				fi, _ := os.Stat(modelFile)
-				if !strings.HasSuffix(fi.Name(), ".json") &&
-					!strings.HasSuffix(fi.Name(), ".txt") &&
-					!strings.HasSuffix(fi.Name(), ".xml") &&
-					fi.Size() < 200 { // 200b
-					return false
-				}
+func HasModelWeightFile(modelRepository string, model *datamodel.Model) bool {
+	modelDir := filepath.Join(modelRepository, model.Owner, model.ID)
+	modelFiles := findModelFiles(modelDir)
+	if len(modelFiles) > 0 {
+		for _, modelFile := range modelFiles {
+			fi, _ := os.Stat(modelFile)
+			if !strings.HasSuffix(fi.Name(), ".json") &&
+				!strings.HasSuffix(fi.Name(), ".txt") &&
+				!strings.HasSuffix(fi.Name(), ".xml") &&
+				fi.Size() < 200 { // 200b
+				return false
 			}
-			return true
 		}
+		return true
 	}
 	return false
 }
 
-func HasDVCWeightFile(modelRepository string, inferenceModels []*datamodel.InferenceModel) bool {
-	for _, inferenceModel := range inferenceModels {
-		modelDir := fmt.Sprintf("%s/%s", modelRepository, inferenceModel.Name)
-		dvcFiles := findDVCPaths(modelDir)
-		if len(dvcFiles) > 0 {
-			for _, dvcFile := range dvcFiles {
-				if _, err := os.Stat(strings.TrimSuffix(dvcFile, ".dvc")); err != nil {
-					return false
-				}
+func HasDVCWeightFile(modelRepository string, model *datamodel.Model) bool {
+	modelDir := filepath.Join(modelRepository, model.Owner, model.ID)
+	dvcFiles := findDVCPaths(modelDir)
+	if len(dvcFiles) > 0 {
+		for _, dvcFile := range dvcFiles {
+			if _, err := os.Stat(strings.TrimSuffix(dvcFile, ".dvc")); err != nil {
+				return false
 			}
-			return true
 		}
+		return true
 	}
 	return false
-}
-
-func updateModelConfigModel(configFilePath string, oldStr string, newStr string) error {
-	if _, err := os.Stat(configFilePath); err != nil {
-		return err
-	}
-	fileData, _ := os.ReadFile(configFilePath)
-	fileString := string(fileData)
-	fileString = strings.ReplaceAll(fileString, oldStr, newStr)
-	fileData = []byte(fileString)
-	return os.WriteFile(configFilePath, fileData, 0o600)
-}
-
-func UpdateModelConfig(modelRepository string, tritonModels []*datamodel.InferenceModel) error {
-	modelPathDir := getInferModelConfigPath(modelRepository, tritonModels)
-	if modelPathDir == "" {
-		return errors.New("there is no model")
-	}
-	modelFilePath := fmt.Sprintf("%s/1/model.onnx", modelPathDir)
-	if _, err := os.Stat(modelFilePath); err != nil {
-		return err
-	}
-
-	out, err := exec.Command("/ray-conda/bin/python",
-		"assets/scripts/query_model_onnx.py",
-		"-f", modelFilePath,
-	).Output()
-	if err != nil {
-		return err
-	}
-
-	elems := strings.Split(string(out), ",")
-	if len(elems) != 5 {
-		return errors.New("wrong output format")
-	}
-	inputDim1, err := strconv.Atoi(elems[1])
-	if err != nil {
-		return err
-	}
-	inputDim2, err := strconv.Atoi(elems[2])
-	if err != nil {
-		return err
-	}
-	outputDim, err := strconv.Atoi(strings.TrimSuffix(elems[4], "\n"))
-	if err != nil {
-		return err
-	}
-
-	inferConfigFilePath := fmt.Sprintf("%s/config.pbtxt", modelPathDir)
-	err = updateModelConfigModel(inferConfigFilePath,
-		"dims: [ 3, 224, 224 ]",
-		fmt.Sprintf("dims: [ 3, %v, %v ]", inputDim1, inputDim2))
-	if err != nil {
-		return err
-	}
-
-	err = updateModelConfigModel(inferConfigFilePath,
-		"dims: [ -1 ]",
-		fmt.Sprintf("dims: [ %v ]", outputDim))
-	if err != nil {
-		return err
-	}
-
-	preModelPathDir := getPreModelConfigPath(modelRepository, tritonModels)
-	preConfigFilePath := fmt.Sprintf("%s/config.pbtxt", preModelPathDir)
-	err = updateModelConfigModel(preConfigFilePath,
-		"dims: [ 3, 224, 224 ]",
-		fmt.Sprintf("dims: [ 3, %v, %v ]", inputDim1, inputDim2))
-	if err != nil {
-		return err
-	}
-
-	file, err := os.ReadFile(fmt.Sprintf("%s/1/config.json", preModelPathDir))
-	if err != nil {
-		return err
-	}
-	var data map[string]any
-	if err := json.Unmarshal(file, &data); err != nil {
-		return err
-	}
-	if id2label, ok := data["id2label"]; ok {
-		mID2label := id2label.(map[string]any)
-
-		keys := make([]int, 0, len(mID2label))
-		for k := range mID2label {
-			i, _ := strconv.Atoi(k)
-			keys = append(keys, i)
-		}
-		sort.Ints(keys)
-
-		f, err := os.Create(fmt.Sprintf("%s/label.txt", modelPathDir))
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		for _, k := range keys {
-			if _, err := fmt.Fprintf(f, "%s\n", mID2label[fmt.Sprintf("%v", k)]); err != nil {
-				return err
-			}
-		}
-		if err := updateModelConfigModel(inferConfigFilePath,
-			fmt.Sprintf("dims: [ %v ]", outputDim),
-			fmt.Sprintf("dims: [ %v ] \n label_filename: \"label.txt\"", outputDim)); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func GetSupportedBatchSize(task datamodel.ModelTask) int {

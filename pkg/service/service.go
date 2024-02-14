@@ -27,7 +27,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
@@ -76,9 +75,6 @@ type Service interface {
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
 
-	GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error)
-	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
-
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
 	// Private
@@ -99,7 +95,6 @@ type Service interface {
 
 type service struct {
 	repository               repository.Repository
-	triton                   triton.Triton
 	redisClient              *redis.Client
 	mgmtPublicServiceClient  mgmtPB.MgmtPublicServiceClient
 	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
@@ -112,7 +107,6 @@ type service struct {
 // NewService returns a new service instance
 func NewService(
 	r repository.Repository,
-	t triton.Triton,
 	mp mgmtPB.MgmtPublicServiceClient,
 	m mgmtPB.MgmtPrivateServiceClient,
 	rc *redis.Client,
@@ -123,7 +117,6 @@ func NewService(
 	return &service{
 		repository:               r,
 		ray:                      ra,
-		triton:                   t,
 		mgmtPublicServiceClient:  mp,
 		mgmtPrivateServiceClient: m,
 		redisClient:              rc,
@@ -363,29 +356,17 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 }
 
 func (s *service) CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
-	inferenceModel, err := s.repository.GetInferenceEnsembleModel(ctx, modelUID)
+	model, err := s.repository.GetModelByUID(ctx, modelUID, true)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "model not found")
 	}
 
-	inferenceModelName := inferenceModel.Name
-	inferenceModelVersion := inferenceModel.Version
-	state := modelPB.Model_STATE_UNSPECIFIED.Enum()
-	switch inferenceModel.Platform {
-	case "ensemble":
-		modelReadyResponse := s.triton.ModelReadyRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if modelReadyResponse == nil {
-			state = modelPB.Model_STATE_ERROR.Enum()
-		} else if modelReadyResponse.Ready {
-			state = modelPB.Model_STATE_ONLINE.Enum()
-		} else {
-			state = modelPB.Model_STATE_OFFLINE.Enum()
-		}
-	case "ray":
-		state, err = s.ray.ModelReady(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if err != nil {
-			return nil, err
-		}
+	name := filepath.Join(model.Owner, model.ID)
+
+	// TODO: implement model instance
+	state, err := s.ray.ModelReady(ctx, name, "default")
+	if err != nil {
+		return nil, err
 	}
 
 	return state, nil
@@ -412,52 +393,20 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNoPermission
 	}
 
-	inferenceModel, err := s.repository.GetInferenceEnsembleModel(ctx, dbModel.UID)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "model not found")
-	}
+	name := filepath.Join(dbModel.Owner, dbModel.ID)
 
-	inferenceModelName := inferenceModel.Name
-	inferenceModelVersion := inferenceModel.Version
 	var postprocessResponse any
-	switch inferenceModel.Platform {
-	case "ensemble":
-		modelMetadataResponse := s.triton.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if modelMetadataResponse == nil {
-			return nil, fmt.Errorf("model is offline")
-		}
-		modelConfigResponse := s.triton.ModelConfigRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if modelConfigResponse == nil {
-			return nil, err
-		}
-		// We use a simple model that takes 2 input tensors of 16 integers
-		// each and returns 2 output tensors of 16 integers each. One
-		// output tensor is the element-wise sum of the inputs and one
-		// output is the element-wise difference.
-		inferResponse, err := s.triton.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse, modelConfigResponse)
-		if err != nil {
-			return nil, err
-		}
-		// We expect there to be 2 results (each with batch-size 1). Walk
-		// over all 16 result elements and print the sum and difference
-		// calculated by the modelPB.
-		postprocessResponse, err = triton.PostProcess(inferResponse, modelMetadataResponse, task)
-		if err != nil {
-			return nil, err
-		}
-	case "ray":
-		modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, inferenceModelName, fmt.Sprint(inferenceModelVersion))
-		if modelMetadataResponse == nil {
-			return nil, fmt.Errorf("model is offline")
-		}
-		inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, inferenceModelName, fmt.Sprint(inferenceModelVersion), modelMetadataResponse)
-		if err != nil {
-			return nil, err
-		}
-		postprocessResponse, err = ray.PostProcess(inferResponse, modelMetadataResponse, task)
-		if err != nil {
-			return nil, err
-		}
+	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, "default")
+	if modelMetadataResponse == nil {
+		return nil, fmt.Errorf("model is offline")
+	}
+	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, name, "default", modelMetadataResponse)
+	if err != nil {
+		return nil, err
+	}
+	postprocessResponse, err = ray.PostProcess(inferResponse, modelMetadataResponse, task)
+	if err != nil {
+		return nil, err
 	}
 
 	switch task {
@@ -507,7 +456,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return clsOutputs, nil
 	case commonPB.Task_TASK_DETECTION:
-		detResponses := postprocessResponse.(triton.DetectionOutput)
+		detResponses := postprocessResponse.(ray.DetectionOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataLabels := detResponses.Labels
 		var detOutputs []*modelPB.TaskOutput
@@ -522,7 +471,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			for j := range batchedOutputDataBboxes[i] {
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Ray to be able to batch Tensors
 				if label != "0" {
 					bbObj := &modelPB.DetectionObject{
 						Category: label,
@@ -551,7 +500,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return detOutputs, nil
 	case commonPB.Task_TASK_KEYPOINT:
-		keypointResponse := postprocessResponse.(triton.KeypointOutput)
+		keypointResponse := postprocessResponse.(ray.KeypointOutput)
 		var keypointOutputs []*modelPB.TaskOutput
 		for i := range keypointResponse.Keypoints { // batch size
 			var keypointObjects []*modelPB.KeypointObject
@@ -601,7 +550,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return keypointOutputs, nil
 	case commonPB.Task_TASK_OCR:
-		ocrResponses := postprocessResponse.(triton.OcrOutput)
+		ocrResponses := postprocessResponse.(ray.OcrOutput)
 		batchedOutputDataBboxes := ocrResponses.Boxes
 		batchedOutputDataTexts := ocrResponses.Texts
 		batchedOutputDataScores := ocrResponses.Scores
@@ -618,7 +567,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 				box := batchedOutputDataBboxes[i][j]
 				text := batchedOutputDataTexts[i][j]
 				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if text != "" && box[0] != -1 {
 					ocrOutput.GetOcr().Objects = append(ocrOutput.GetOcr().Objects, &modelPB.OcrObject{
 						BoundingBox: &modelPB.BoundingBox{
@@ -646,7 +595,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return ocrOutputs, nil
 
 	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
-		instanceSegmentationResponses := postprocessResponse.(triton.InstanceSegmentationOutput)
+		instanceSegmentationResponses := postprocessResponse.(ray.InstanceSegmentationOutput)
 		batchedOutputDataRles := instanceSegmentationResponses.Rles
 		batchedOutputDataBboxes := instanceSegmentationResponses.Boxes
 		batchedOutputDataLabels := instanceSegmentationResponses.Labels
@@ -665,7 +614,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 				box := batchedOutputDataBboxes[i][j]
 				label := batchedOutputDataLabels[i][j]
 				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if label != "" && rle != "" {
 					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelPB.InstanceSegmentationObject{
 						Rle: rle,
@@ -694,7 +643,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return instanceSegmentationOutputs, nil
 
 	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
-		semanticSegmentationResponses := postprocessResponse.(triton.SemanticSegmentationOutput)
+		semanticSegmentationResponses := postprocessResponse.(ray.SemanticSegmentationOutput)
 		batchedOutputDataRles := semanticSegmentationResponses.Rles
 		batchedOutputDataCategories := semanticSegmentationResponses.Categories
 		var semanticSegmentationOutputs []*modelPB.TaskOutput
@@ -709,7 +658,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			for j := range batchedOutputDataCategories[i] { // single image
 				rle := batchedOutputDataRles[i][j]
 				category := batchedOutputDataCategories[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Triton to be able to batch Tensors
+				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if category != "" && rle != "" {
 					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelPB.SemanticSegmentationStuff{
 						Rle:      rle,
@@ -730,7 +679,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return semanticSegmentationOutputs, nil
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImageResponses := postprocessResponse.(triton.TextToImageOutput)
+		textToImageResponses := postprocessResponse.(ray.TextToImageOutput)
 		batchedOutputDataImages := textToImageResponses.Images
 		var textToImageOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataImages { // loop over images
@@ -755,7 +704,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return textToImageOutputs, nil
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImageResponses := postprocessResponse.(triton.ImageToImageOutput)
+		imageToImageResponses := postprocessResponse.(ray.ImageToImageOutput)
 		batchedOutputDataImages := imageToImageResponses.Images
 		var imageToImageOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataImages { // loop over images
@@ -780,7 +729,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return imageToImageOutputs, nil
 	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGenerationResponses := postprocessResponse.(triton.TextGenerationOutput)
+		textGenerationResponses := postprocessResponse.(ray.TextGenerationOutput)
 		batchedOutputDataTexts := textGenerationResponses.Text
 		var textGenerationOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataTexts {
@@ -805,7 +754,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return textGenerationOutputs, nil
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnsweringResponses := postprocessResponse.(triton.VisualQuestionAnsweringOutput)
+		visualQuestionAnsweringResponses := postprocessResponse.(ray.VisualQuestionAnsweringOutput)
 		batchedOutputDataTexts := visualQuestionAnsweringResponses.Text
 		var visualQuestionAnsweringOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataTexts {
@@ -830,7 +779,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return visualQuestionAnsweringOutputs, nil
 	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChatResponses := postprocessResponse.(triton.TextGenerationChatOutput)
+		textGenerationChatResponses := postprocessResponse.(ray.TextGenerationChatOutput)
 		batchedOutputDataTexts := textGenerationChatResponses.Text
 		var textGenerationChatOutputs []*modelPB.TaskOutput
 		for i := range batchedOutputDataTexts {
@@ -855,7 +804,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		}
 		return textGenerationChatOutputs, nil
 	default:
-		outputs := postprocessResponse.([]triton.BatchUnspecifiedTaskOutputs)
+		outputs := postprocessResponse.([]ray.BatchUnspecifiedTaskOutputs)
 		var rawOutputs []*modelPB.TaskOutput
 		if len(outputs) == 0 {
 			return []*modelPB.TaskOutput{}, nil
@@ -865,7 +814,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			var singleImageOutput []*structpb.Struct
 
 			for _, output := range outputs {
-				unspecifiedOutput := triton.SingleOutputUnspecifiedTaskOutput{
+				unspecifiedOutput := ray.SingleOutputUnspecifiedTaskOutput{
 					Name:     output.Name,
 					Shape:    output.Shape,
 					DataType: output.DataType,
@@ -1064,16 +1013,8 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// remove README.md
-	_ = os.RemoveAll(fmt.Sprintf("%v/%v#%v#README.md", config.Config.TritonServer.ModelStore, ownerPermalink, dbModel.ID))
-	tritonModels, err := s.repository.GetInferenceModels(ctx, dbModel.UID)
-	if err == nil {
-		// remove model folders
-		for i := 0; i < len(tritonModels); i++ {
-			modelDir := filepath.Join(config.Config.TritonServer.ModelStore, tritonModels[i].Name)
-			_ = os.RemoveAll(modelDir)
-		}
-	}
+	modelPath := filepath.Join(config.Config.RayServer.ModelStore, dbModel.Owner, dbModel.ID)
+	_ = os.RemoveAll(modelPath)
 
 	if err := s.DeleteResourceState(ctx, dbModel.UID); err != nil {
 		return err
@@ -1084,7 +1025,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return err
 	}
 
-	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.UID, dbModel.ID)
+	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }
 
 func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error) {
@@ -1225,12 +1166,4 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, p
 	pbModelDefs, err := s.DBToPBModelDefinitions(ctx, dbModelDefs)
 
 	return pbModelDefs, int32(totalSize), nextPageToken, err
-}
-
-func (s *service) GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
-	return s.repository.GetInferenceEnsembleModel(ctx, modelUID)
-}
-
-func (s *service) GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
-	return s.repository.GetInferenceModels(ctx, modelUID)
 }

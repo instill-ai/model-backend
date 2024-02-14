@@ -101,7 +101,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, err
@@ -120,13 +120,13 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
 	}
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ns.String(), githubModel)
+	readmeFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.RayServer.ModelStore, ns.String(), githubModel)
 
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -140,7 +140,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -159,7 +159,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
@@ -179,7 +179,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 				_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
@@ -191,28 +191,8 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		githubModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize := 0
-	if ensembleFilePath != "" {
-		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"GitHub model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
-			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
-			span.SetStatus(1, st.Err().Error())
-			return &longrunningpb.Operation{}, st.Err()
-		}
-	}
-
+	// TODO: properly support batch inference
+	maxBatchSize := 1
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(githubModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -228,7 +208,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -247,9 +227,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		for _, tag := range githubInfo.Tags {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ns.String(), githubModel.ID, tag.Name)
-		}
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.String(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
@@ -367,7 +345,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 	}
 	_ = os.RemoveAll(configTmpDir)
 
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelDir, config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel)
+	readmeFilePath, err := utils.UpdateModelPath(modelDir, config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel)
 
 	_ = os.RemoveAll(modelDir) // remove uploaded temporary files
 	if err != nil {
@@ -382,7 +360,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -400,7 +378,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -420,7 +398,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			}
@@ -441,26 +419,8 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 		huggingfaceModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize := 0
-	if ensembleFilePath != "" {
-		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"HuggingFace model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			span.SetStatus(1, st.Err().Error())
-			return &longrunningpb.Operation{}, st.Err()
-		}
-	}
-
+	// TODO: properly support batch inference
+	maxBatchSize := 1
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(huggingfaceModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -493,7 +453,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, huggingfaceModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, huggingfaceModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -566,7 +526,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	if config.Config.Server.ItMode.Enabled { // use local model for testing to remove internet connection issue while testing
 		cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s > /dev/null; cp -rf assets/model-dummy-cls/* %s", modelSrcDir, modelSrcDir))
 		if err := cmd.Run(); err != nil {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, err
 		}
@@ -585,14 +545,13 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				logger.Error(e.Error())
 			}
 			_ = os.RemoveAll(modelSrcDir)
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
-		utils.AddMissingTritonModelFolder(ctx, modelSrcDir) // large files not pull then need to create triton model folder
 	}
 
-	readmeFilePath, ensembleFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel)
+	readmeFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.RayServer.ModelStore, ownerPermalink, artivcModel)
 	_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
 	if err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
@@ -606,7 +565,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -624,7 +583,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			if e != nil {
 				logger.Error(e.Error())
 			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -643,7 +602,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				if err != nil {
 					logger.Error(err.Error())
 				}
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			} else {
@@ -654,26 +613,8 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		artivcModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize := 0
-	if ensembleFilePath != "" {
-		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				fmt.Sprintf("[handler] create a model error: %s", err.Error()),
-				"ArtiVC model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			span.SetStatus(1, st.Err().Error())
-			return &longrunningpb.Operation{}, st.Err()
-		}
-	}
-
+	// TODO: properly support batch inference
+	maxBatchSize := 1
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(artivcModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -707,7 +648,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, ownerPermalink, artivcModel.ID, modelConfig.Tag)
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ownerPermalink, artivcModel.ID)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
