@@ -8,7 +8,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/triton"
 
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -19,15 +18,13 @@ var tracer = otel.Tracer("model-backend.public-handler.tracer")
 type PublicHandler struct {
 	modelPB.UnimplementedModelPublicServiceServer
 	service service.Service
-	triton  triton.Triton
 	ray     ray.Ray
 }
 
-func NewPublicHandler(ctx context.Context, s service.Service, t triton.Triton, r ray.Ray) modelPB.ModelPublicServiceServer {
+func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray) modelPB.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PublicHandler{
 		service: s,
-		triton:  t,
 		ray:     r,
 	}
 }
@@ -43,13 +40,6 @@ func (h *PublicHandler) SetService(s service.Service) {
 }
 
 func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
-	if !h.triton.IsTritonServerReady(ctx) {
-		return &modelPB.LivenessResponse{
-			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
-				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
-			},
-		}, nil
-	}
 	if !h.ray.IsRayServerReady(ctx) {
 		return &modelPB.LivenessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
@@ -62,13 +52,6 @@ func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessReques
 }
 
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
-	if !h.triton.IsTritonServerReady(ctx) {
-		return &modelPB.ReadinessResponse{
-			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
-				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
-			},
-		}, nil
-	}
 	if !h.ray.IsRayServerReady(ctx) {
 		return &modelPB.ReadinessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
@@ -83,14 +66,12 @@ func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequ
 type PrivateHandler struct {
 	modelPB.UnimplementedModelPrivateServiceServer
 	service service.Service
-	triton  triton.Triton
 }
 
-func NewPrivateHandler(ctx context.Context, s service.Service, t triton.Triton) modelPB.ModelPrivateServiceServer {
+func NewPrivateHandler(ctx context.Context, s service.Service) modelPB.ModelPrivateServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PrivateHandler{
 		service: s,
-		triton:  t,
 	}
 }
 

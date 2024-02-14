@@ -33,10 +33,6 @@ type Repository interface {
 	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
 	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, modelUID uuid.UUID, id string) error
 
-	CreateInferenceModel(ctx context.Context, ownerPermalink string, model *datamodel.InferenceModel) error
-	GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error)
-	GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error)
-
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
@@ -288,33 +284,6 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 	}
 
 	return nil
-}
-
-func (r *repository) CreateInferenceModel(ctx context.Context, ownerPermalink string, model *datamodel.InferenceModel) error {
-	if result := r.db.Model(&datamodel.InferenceModel{}).Create(&model); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-func (r *repository) GetInferenceModels(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.InferenceModel, error) {
-	var models []*datamodel.InferenceModel
-	if result := r.db.Model(&datamodel.InferenceModel{}).Where("model_uid", modelUID).Find(&models); result.Error != nil {
-		return []*datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton model belongs to model id %v not found", modelUID)
-	}
-	return models, nil
-}
-
-func (r *repository) GetInferenceEnsembleModel(ctx context.Context, modelUID uuid.UUID) (*datamodel.InferenceModel, error) {
-	var ensembleModel *datamodel.InferenceModel
-	result := r.db.Model(&datamodel.InferenceModel{}).
-		Where("(model_uid = ? AND (platform = ? OR platform = ?))", modelUID, "ensemble", "ray").
-		First(&ensembleModel)
-	if result.Error != nil {
-		return &datamodel.InferenceModel{}, status.Errorf(codes.NotFound, "The Triton ensemble model belongs to model id %v not found", modelUID)
-	}
-	return ensembleModel, nil
 }
 
 func (r *repository) GetModelDefinition(id string) (*datamodel.ModelDefinition, error) {

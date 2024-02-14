@@ -1,6 +1,5 @@
 package handler_test
 
-//go:generate mockgen -destination mock_triton_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/triton Triton
 //go:generate mockgen -destination mock_service_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/service Service
 
 const NAMESPACE = "instill-ai"

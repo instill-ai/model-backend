@@ -26,8 +26,8 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
@@ -47,8 +47,8 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 	var allContentFiles []byte
 	var fileLengths []uint32
 
-	var textToImageInput *triton.TextToImageInput
-	var textGeneration *triton.TextGenerationInput
+	var textToImageInput *ray.TextToImageInput
+	var textGeneration *ray.TextGenerationInput
 
 	var task *modelPB.TaskInputStream
 	for {
@@ -97,7 +97,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 						extraParams = string(jsonData)
 					}
 				}
-				textToImageInput = &triton.TextToImageInput{
+				textToImageInput = &ray.TextToImageInput{
 					Prompt:      fileData.TaskInput.GetTextToImage().Prompt,
 					PromptImage: "", // TODO: support streaming image generation
 					Steps:       *fileData.TaskInput.GetTextToImage().Steps,
@@ -116,7 +116,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 						extraParams = string(jsonData)
 					}
 				}
-				textGeneration = &triton.TextGenerationInput{
+				textGeneration = &ray.TextGenerationInput{
 					Prompt: fileData.TaskInput.GetTextGeneration().Prompt,
 					// PromptImage:  "", // TODO: support streaming image generation
 					MaxNewTokens: *fileData.TaskInput.GetTextGeneration().MaxNewTokens,
@@ -294,17 +294,17 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 	uploadedModel.Configuration = bModelConfig
 
 	// extract zip file from tmp to models directory
-	readmeFilePath, ensembleFilePath, err := utils.Unzip(tmpFile, config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel)
+	readmeFilePath, err := utils.Unzip(tmpFile, config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel)
 	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
 		return "", status.Errorf(codes.Internal, err.Error())
 	}
 	if _, err := os.Stat(readmeFilePath); err == nil {
 		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
 		if err != nil {
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
 			span.SetStatus(1, err.Error())
 			return "", status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -314,7 +314,7 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
 				uploadedModel.Task = datamodel.ModelTask(val)
 			} else {
-				utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
 				span.SetStatus(1, "README.md contains unsupported task")
 				return "", status.Errorf(codes.InvalidArgument, "README.md contains unsupported task")
 			}
@@ -323,27 +323,8 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
 	}
 
-	maxBatchSize := 0
-	if ensembleFilePath != "" {
-		maxBatchSize, err = utils.GetMaxBatchSize(ensembleFilePath)
-		if err != nil {
-			st, e := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error",
-				"Local model",
-				"Missing ensemble model",
-				"",
-				err.Error(),
-			)
-			if e != nil {
-				logger.Error(e.Error())
-			}
-			utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
-			span.SetStatus(1, err.Error())
-			return "", st.Err()
-		}
-	}
-
+	// TODO: properly support batch inference
+	maxBatchSize := 1
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -359,14 +340,14 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 		if e != nil {
 			logger.Error(e.Error())
 		}
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
 		span.SetStatus(1, st.String())
 		return "", st.Err()
 	}
 
 	wfID, err = h.service.CreateNamespaceModelAsync(ctx, ns, authUser, uploadedModel)
 	if err != nil {
-		utils.RemoveModelRepository(config.Config.TritonServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID, "latest")
 		span.SetStatus(1, err.Error())
 		return "", err
 	}
@@ -454,15 +435,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
-		tritonModelInDB, err := h.service.GetInferenceEnsembleModel(stream.Context(), uuid.FromStringOrNil(pbModel.Uid))
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
-			return err
-		}
-		configPbFilePath := fmt.Sprintf("%v/%v/config.pbtxt", config.Config.TritonServer.ModelStore, tritonModelInDB.Name)
-		doSupportBatch, err := utils.DoSupportBatch(configPbFilePath)
+		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED

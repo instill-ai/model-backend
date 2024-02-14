@@ -35,9 +35,6 @@ database:
     idleconnections: 5
     maxconnections: 30
     connlifetime: 30m # In minutes, e.g., '60m'
-tritonserver:
-  grpcuri: triton-server:8001
-  modelstore: /model-repository
 rayserver:
   grpcuri: ray-server:9000
   modelstore: /model-repository

@@ -1,4 +1,67 @@
-package triton
+package ray
+
+type InferInput any
+
+type TextToImageInput struct {
+	Prompt      string
+	PromptImage string
+	Steps       int32
+	CfgScale    float32
+	Seed        int32
+	Samples     int32
+	ExtraParams string
+}
+
+type ImageToImageInput struct {
+	Prompt      string
+	PromptImage string
+	Steps       int32
+	CfgScale    float32
+	Seed        int32
+	Samples     int32
+	ExtraParams string
+}
+
+type TextGenerationInput struct {
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
+}
+
+type TextGenerationChatInput struct {
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
+}
+
+type VisualQuestionAnsweringInput struct {
+	Prompt        string
+	PromptImages  string
+	ChatHistory   string
+	SystemMessage string
+	MaxNewTokens  int32
+	Temperature   float32
+	TopK          int32
+	Seed          int32
+	ExtraParams   string
+}
+
+type ImageInput struct {
+	ImgURL    string
+	ImgBase64 string
+}
 
 type DetectionOutput struct {
 	Boxes  [][][]float32

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -113,7 +112,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		IsVisitor: false,
 	}
 
-	if !utils.HasModelInModelRepository(config.Config.TritonServer.ModelStore, ns.String(), pbModel.Id) {
+	if !utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, ns.String(), pbModel.Id) {
 
 		modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 		if err != nil {
@@ -155,11 +154,6 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model create operation error")
 		}
 
-	}
-
-	_, err = h.service.GetInferenceModels(ctx, uuid.FromStringOrNil(pbModel.Uid))
-	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
 	wfID, err := h.service.DeployNamespaceModelAsyncAdmin(ctx, modelUID)

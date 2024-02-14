@@ -20,7 +20,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
@@ -59,9 +58,6 @@ func main() {
 
 	db := database.GetSharedConnection()
 	defer database.Close(db)
-
-	tritonServer := triton.NewTriton()
-	defer tritonServer.Close()
 
 	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
 	defer controllerClientConn.Close()
@@ -132,7 +128,7 @@ func main() {
 		panic(err)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, tritonServer, controllerClient, rayService, &aclClient)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, controllerClient, rayService, &aclClient)
 
 	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
 

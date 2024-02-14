@@ -64,12 +64,6 @@ type DatabaseConfig struct {
 	}
 }
 
-// TritonServerConfig related to Triton server
-type TritonServerConfig struct {
-	GrpcURI    string `koanf:"grpcuri"`
-	ModelStore string `koanf:"modelstore"`
-}
-
 // RayServerConfig related to Ray server
 type RayServerConfig struct {
 	GrpcURI    string `koanf:"grpcuri"`
@@ -158,7 +152,6 @@ type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
 	Github                 Github             `koanf:"github"`
 	Database               DatabaseConfig     `koanf:"database"`
-	TritonServer           TritonServerConfig `koanf:"tritonserver"`
 	RayServer              RayServerConfig    `koanf:"rayserver"`
 	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`
 	Cache                  CacheConfig        `koanf:"cache"`

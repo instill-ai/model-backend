@@ -41,7 +41,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/triton"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/temporal"
@@ -159,9 +158,6 @@ func main() {
 	publicGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(publicGrpcS)
 
-	tritonServer := triton.NewTriton()
-	defer tritonServer.Close()
-
 	rayService := ray.NewRay()
 	defer rayService.Close()
 
@@ -239,15 +235,15 @@ func main() {
 
 	repo := repository.NewRepository(db)
 
-	serv := service.NewService(repo, tritonServer, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
-		handler.NewPublicHandler(ctx, serv, tritonServer, rayService))
+		handler.NewPublicHandler(ctx, serv, rayService))
 
 	modelPB.RegisterModelPrivateServiceServer(
 		privateGrpcS,
-		handler.NewPrivateHandler(ctx, serv, tritonServer))
+		handler.NewPrivateHandler(ctx, serv))
 
 	privateGwS := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(middleware.HTTPResponseModifier),

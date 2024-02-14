@@ -21,14 +21,11 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
-	"github.com/instill-ai/model-backend/pkg/triton"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
-
-type InferInput any
 
 type Ray interface {
 	// grpc
@@ -253,7 +250,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 
 	switch task {
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImageInput := inferInput.(*triton.TextToImageInput)
+		textToImageInput := inferInput.(*TextToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
 		steps := make([]byte, 4)
@@ -264,18 +261,18 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(textToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(
 			modelInferRequest.RawInputContents,
-			triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}),
-			triton.SerializeBytesTensor([][]byte{[]byte("NONE")}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.PromptImage)}),
+			SerializeBytesTensor([][]byte{[]byte(textToImageInput.Prompt)}),
+			SerializeBytesTensor([][]byte{[]byte("NONE")}),
+			SerializeBytesTensor([][]byte{[]byte(textToImageInput.PromptImage)}),
 			samples,
-			triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")}), // Fixed value
+			SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")}), // Fixed value
 			steps,
 			guidanceScale,
 			seed,
-			triton.SerializeBytesTensor([][]byte{[]byte(textToImageInput.ExtraParams)}),
+			SerializeBytesTensor([][]byte{[]byte(textToImageInput.ExtraParams)}),
 		)
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImageInput := inferInput.(*triton.ImageToImageInput)
+		imageToImageInput := inferInput.(*ImageToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(imageToImageInput.Samples))
 		steps := make([]byte, 4)
@@ -286,18 +283,18 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(imageToImageInput.Seed))
 		modelInferRequest.RawInputContents = append(
 			modelInferRequest.RawInputContents,
-			triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.Prompt)}),
-			triton.SerializeBytesTensor([][]byte{[]byte("NONE")}),
-			triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.PromptImage)}),
+			SerializeBytesTensor([][]byte{[]byte(imageToImageInput.Prompt)}),
+			SerializeBytesTensor([][]byte{[]byte("NONE")}),
+			SerializeBytesTensor([][]byte{[]byte(imageToImageInput.PromptImage)}),
 			samples,
-			triton.SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")}), // Fixed value,
+			SerializeBytesTensor([][]byte{[]byte("DPMSolverMultistepScheduler")}), // Fixed value,
 			steps,
 			guidanceScale,
 			seed,
-			triton.SerializeBytesTensor([][]byte{[]byte(imageToImageInput.ExtraParams)}),
+			SerializeBytesTensor([][]byte{[]byte(imageToImageInput.ExtraParams)}),
 		)
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQUestionAnsweringInput := inferInput.(*triton.VisualQuestionAnsweringInput)
+		visualQUestionAnsweringInput := inferInput.(*VisualQuestionAnsweringInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(visualQUestionAnsweringInput.MaxNewTokens))
 		temperature := make([]byte, 4)
@@ -308,18 +305,18 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(visualQUestionAnsweringInput.Seed))
 		modelInferRequest.RawInputContents = append(
 			modelInferRequest.RawInputContents,
-			triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.Prompt)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.PromptImages)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ChatHistory)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.SystemMessage)}),
+			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.Prompt)}),
+			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.PromptImages)}),
+			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ChatHistory)}),
+			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.SystemMessage)}),
 			maxNewToken,
 			temperature,
 			topK,
 			seed,
-			triton.SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ExtraParams)}),
+			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ExtraParams)}),
 		)
 	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChatInput := inferInput.(*triton.TextGenerationChatInput)
+		textGenerationChatInput := inferInput.(*TextGenerationChatInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationChatInput.MaxNewTokens))
 		temperature := make([]byte, 4)
@@ -330,18 +327,18 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationChatInput.Seed))
 		modelInferRequest.RawInputContents = append(
 			modelInferRequest.RawInputContents,
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.Prompt)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.PromptImages)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ChatHistory)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.SystemMessage)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.Prompt)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.PromptImages)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ChatHistory)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.SystemMessage)}),
 			maxNewToken,
 			temperature,
 			topK,
 			seed,
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ExtraParams)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ExtraParams)}),
 		)
 	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGenerationInput := inferInput.(*triton.TextGenerationInput)
+		textGenerationInput := inferInput.(*TextGenerationInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationInput.MaxNewTokens))
 		temperature := make([]byte, 4)
@@ -352,15 +349,15 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		binary.LittleEndian.PutUint64(seed, uint64(textGenerationInput.Seed))
 		modelInferRequest.RawInputContents = append(
 			modelInferRequest.RawInputContents,
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImages)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ChatHistory)}),
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.SystemMessage)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.Prompt)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.PromptImages)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ChatHistory)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.SystemMessage)}),
 			maxNewToken,
 			temperature,
 			topK,
 			seed,
-			triton.SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ExtraParams)}),
+			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ExtraParams)}),
 		)
 	case commonPB.Task_TASK_CLASSIFICATION,
 		commonPB.Task_TASK_DETECTION,
@@ -368,9 +365,9 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 		commonPB.Task_TASK_OCR,
 		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
 		commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor(inferInput.([][]byte)))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
 	default:
-		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, triton.SerializeBytesTensor(inferInput.([][]byte)))
+		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
 	}
 
 	// Submit inference request to server
