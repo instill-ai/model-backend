@@ -13,7 +13,7 @@ if (__ENV.API_GATEWAY_PROTOCOL) {
 
 export const defaultUserId = "admin"
 export const namespace = "users/admin"
-export const defaultPassword = "123123123"
+export const defaultPassword = "password"
 
 
 export const gRPCPrivateHost = "model-backend:3083"
