@@ -400,7 +400,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("model is offline")
 	}
-	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput,  name, "default", modelMetadataResponse)
+	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, name, "default", modelMetadataResponse)
 	if err != nil {
 		return nil, err
 	}

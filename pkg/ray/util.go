@@ -282,7 +282,7 @@ func GetOutputFromInferResponse(name string, response *rayserver.RayServiceCallR
 }
 
 func GetApplicationMetadaValue(modelName string) (applicationMetadataValue string, err error) {
-	nameParts := strings.Split(modelName, "/")  // {owner_type}/{owner_uid}/{model_id}
+	nameParts := strings.Split(modelName, "/") // {owner_type}/{owner_uid}/{model_id}
 
 	if len(nameParts) != 3 {
 		return "", errors.New("modelName format error")
