@@ -265,13 +265,23 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /v1alpha/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
+	// Register custom route for  POST /v1alpha/users/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
 	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
 	}
 
-	// Register custom route for  POST /models/multipart which uploads model for REST multiple-part form-data
+	// Register custom route for  POST /v1alpha/organizations/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
+		panic(err)
+	}
+
+	// Register custom route for  POST /v1alpha/users/*/models/multipart which uploads model for REST multiple-part form-data
 	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=users/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleCreateModelByMultiPartFormData)); err != nil {
+		panic(err)
+	}
+
+	// Register custom route for  POST /v1alpha/organizations/*/models/multipart which uploads model for REST multiple-part form-data
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=organizations/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 

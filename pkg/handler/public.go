@@ -243,7 +243,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	_, err = s.GetNamespaceModelByID(req.Context(), ns, authUser, uploadedModel.ID, modelPB.View_VIEW_FULL)
+	_, err = s.GetNamespaceModelByID(ctx, ns, authUser, uploadedModel.ID, modelPB.View_VIEW_FULL)
 	if err == nil {
 		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
 		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
@@ -306,7 +306,7 @@ func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWrit
 		return
 	}
 
-	wfID, err := s.CreateNamespaceModelAsync(req.Context(), ns, authUser, &uploadedModel)
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &uploadedModel)
 	if err != nil {
 		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
 		makeJSONResponse(w, 500, "Add Model Error", err.Error())
@@ -1533,6 +1533,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	authUser, err := s.AuthenticateUser(ctx, false)
 	if err != nil {
+		logger.Error(fmt.Sprintf("AuthenticatedUser Error: %s", err.Error()))
 		sta := status.Convert(err)
 		switch sta.Code() {
 		case codes.NotFound:
@@ -1553,8 +1554,9 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	pbModel, err := s.GetNamespaceModelByID(req.Context(), ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := s.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
+		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		span.SetStatus(1, "The model not found in server")
 		return
@@ -1568,6 +1570,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 	modelDef, err := s.GetRepository().GetModelDefinition(modelDefID)
 	if err != nil {
+		logger.Error(fmt.Sprintf("GetModelDefinition Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model definition not found", "The model definition not found in server")
 		span.SetStatus(1, "The model definition not found in server")
 		return
@@ -1685,7 +1688,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(req.Context(), ns, authUser, modelID, inputInfer, pbModel.Task)
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
