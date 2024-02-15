@@ -153,7 +153,10 @@ func main() {
 	}
 	defer tempClient.Close()
 
-	initTemporalNamespace(ctx, tempClient)
+	// for only local temporal cluster
+	if config.Config.Temporal.Ca == "" && config.Config.Temporal.Cert == "" && config.Config.Temporal.Key == "" {
+		initTemporalNamespace(ctx, tempClient)
+	}
 
 	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
 		ApiScheme: "http",
