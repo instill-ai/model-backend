@@ -11,20 +11,14 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
 	"google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/anypb"
-
-	grpc_status "google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/worker"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
 func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error) {
@@ -94,21 +88,6 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	if ns.NsType == resource.Organization {
-		resp, err := s.mgmtPublicServiceClient.GetOrganizationSubscription(
-			metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)),
-			&mgmtPB.GetOrganizationSubscriptionRequest{Parent: fmt.Sprintf("organizations/%s", ns.NsID)})
-		if err != nil {
-			s, ok := grpc_status.FromError(err)
-			if !ok {
-				return "", err
-			}
-			if s.Code() != codes.Unimplemented {
-				return "", err
-			}
-		} else if resp.Subscription.Plan == "inactive" {
-			return "", grpc_status.Errorf(codes.FailedPrecondition, "the organization subscription is not active")
-		}
-
 		granted, err := s.aclClient.CheckPermission("organization", ns.NsUID, authUser.GetACLType(), authUser.UID, "member")
 		if err != nil {
 			return "", err

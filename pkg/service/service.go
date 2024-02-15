@@ -16,6 +16,7 @@ import (
 	"github.com/gofrs/uuid"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -124,6 +125,12 @@ func NewService(
 		controllerClient:         cs,
 		aclClient:                a,
 	}
+}
+
+func InjectAuthUserToContext(ctx context.Context, authUser *AuthUser) context.Context {
+	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderAuthTypeKey, authUser.GetACLType())
+	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, authUser.UID.String())
+	return ctx
 }
 
 type AuthUser struct {
