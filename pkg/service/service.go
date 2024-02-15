@@ -971,25 +971,8 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	}
 
 	if *state == modelPB.Model_STATE_UNSPECIFIED {
-		err := s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received")
-		if err != nil {
+		if err := s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received"); err != nil {
 			return err
-		}
-		if config.Config.Cache.Model.Enabled {
-			var existedModelConfig datamodel.GitHubModelConfiguration
-			b, err := dbModel.Configuration.MarshalJSON()
-			if err != nil {
-				logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
-				return err
-			}
-			if err := json.Unmarshal(b, &existedModelConfig); err != nil {
-				logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
-				return err
-			}
-			modelSrcDir := config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", existedModelConfig.Repository, existedModelConfig.Tag)
-			redisRepoKey := fmt.Sprintf("model_cache:%s:%s", existedModelConfig.Repository, existedModelConfig.Tag)
-			_ = os.RemoveAll(modelSrcDir)
-			s.redisClient.Del(ctx, redisRepoKey)
 		}
 		// TODO: add private delete for workflow termination
 		// st, err := sterr.CreateErrorPreconditionFailure(
@@ -1018,6 +1001,23 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 			return err
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+
+	if config.Config.Cache.Model.Enabled {
+		var existedModelConfig datamodel.GitHubModelConfiguration
+		b, err := dbModel.Configuration.MarshalJSON()
+		if err != nil {
+			logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
+			return err
+		}
+		if err := json.Unmarshal(b, &existedModelConfig); err != nil {
+			logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
+			return err
+		}
+		modelSrcDir := config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", existedModelConfig.Repository, existedModelConfig.Tag)
+		redisRepoKey := fmt.Sprintf("model_cache:%s:%s", existedModelConfig.Repository, existedModelConfig.Tag)
+		_ = os.RemoveAll(modelSrcDir)
+		s.redisClient.Del(ctx, redisRepoKey)
 	}
 
 	modelPath := filepath.Join(config.Config.RayServer.ModelStore, dbModel.Owner, dbModel.ID)
