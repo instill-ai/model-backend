@@ -324,7 +324,7 @@ func (h *PublicHandler) createNamespaceModelBinaryFileUpload(ctx context.Context
 	}
 
 	// TODO: properly support batch inference
-	maxBatchSize := 1
+	maxBatchSize := 0
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {

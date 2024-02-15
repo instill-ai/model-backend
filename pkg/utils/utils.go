@@ -119,7 +119,7 @@ func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, 
 	// Check in the cache first.
 	if config.Config.Cache.Model.Enabled {
 		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)
-		if state, err := redisClient.Get(ctx, redisRepoKey).Result(); err != nil && errors.Is(err, redis.Nil) {
+		if state, err := redisClient.Get(ctx, redisRepoKey).Result(); err != nil && !errors.Is(err, redis.Nil) {
 			return err
 		} else if err == nil {
 			if state == "done" {

@@ -77,6 +77,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, "There is no tag in GitHub repository")
 		}
 	}
+
 	bModelConfig, _ := json.Marshal(datamodel.GitHubModelConfiguration{
 		Repository: modelConfig.Repository,
 		HTMLURL:    "https://github.com/" + modelConfig.Repository,
@@ -126,6 +127,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			return &longrunningpb.Operation{}, st.Err()
 		}
 	}
+
 	readmeFilePath, err := utils.UpdateModelPath(modelSrcDir, config.Config.RayServer.ModelStore, ns.String(), githubModel)
 
 	if err != nil {
@@ -192,7 +194,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	}
 
 	// TODO: properly support batch inference
-	maxBatchSize := 1
+	maxBatchSize := 0
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(githubModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -420,7 +422,7 @@ func createHuggingFaceModel(s service.Service, ctx context.Context, model *model
 	}
 
 	// TODO: properly support batch inference
-	maxBatchSize := 1
+	maxBatchSize := 0
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(huggingfaceModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
@@ -614,7 +616,7 @@ func createArtiVCModel(s service.Service, ctx context.Context, model *modelPB.Mo
 	}
 
 	// TODO: properly support batch inference
-	maxBatchSize := 1
+	maxBatchSize := 0
 	allowedMaxBatchSize := utils.GetSupportedBatchSize(artivcModel.Task)
 
 	if maxBatchSize > allowedMaxBatchSize {
