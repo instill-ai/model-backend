@@ -28,6 +28,14 @@ export let options = {
   thresholds: {
     checks: ["rate == 1.0"],
   },
+  scenarios: {
+    contacts: {
+      executor: 'per-vu-iterations',
+      vus: 1,
+      iterations: 1,
+      maxDuration: '20m',
+    },
+  },
 };
 
 export function setup() {
