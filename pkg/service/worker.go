@@ -12,14 +12,12 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	grpc_status "google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/worker"
 
@@ -95,7 +93,7 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 
 	if ns.NsType == resource.Organization {
 		resp, err := s.mgmtPublicServiceClient.GetOrganizationSubscription(
-			metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)),
+			injectAuthUserToContext(ctx, authUser),
 			&mgmtPB.GetOrganizationSubscriptionRequest{Parent: fmt.Sprintf("organizations/%s", ns.NsID)})
 		if err != nil {
 			s, ok := grpc_status.FromError(err)
