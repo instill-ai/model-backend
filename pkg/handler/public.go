@@ -1073,10 +1073,6 @@ func (h *PublicHandler) deployNamespaceModel(ctx context.Context, req DeployName
 
 	eventName := "DeployNamespaceModel"
 
-	// block for controller to update the state
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
-
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
@@ -1148,10 +1144,6 @@ func (h *PublicHandler) UndeployOrganizationModel(ctx context.Context, req *mode
 func (h *PublicHandler) undeployNamespaceModel(ctx context.Context, req UndeployNamespaceModelRequestInterface) (string, error) {
 
 	eventName := "UndeployNamespaceModel"
-
-	// block for controller to update the state
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
