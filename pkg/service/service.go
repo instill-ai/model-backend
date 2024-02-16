@@ -240,7 +240,7 @@ func (s *service) FetchOwnerWithPermalink(permalink string) (*structpb.Struct, e
 			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
 		}
 		owner := &structpb.Struct{Fields: map[string]*structpb.Value{}}
-		owner.Fields["profile_data"] = structpb.NewStructValue(resp.GetUser().GetProfileData())
+		owner.Fields["profile_avatar"] = structpb.NewStringValue(resp.GetUser().GetProfile().GetAvatar())
 
 		return owner, nil
 	} else {
@@ -249,7 +249,7 @@ func (s *service) FetchOwnerWithPermalink(permalink string) (*structpb.Struct, e
 			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
 		}
 		owner := &structpb.Struct{Fields: map[string]*structpb.Value{}}
-		owner.Fields["profile_data"] = structpb.NewStructValue(resp.GetOrganization().GetProfileData())
+		owner.Fields["profile_avatar"] = structpb.NewStringValue(resp.GetOrganization().GetProfile().GetAvatar())
 
 		return owner, nil
 	}
