@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.22.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.3-alpha...v0.22.0-alpha) (2024-02-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **triton:** deprecate triton inference server ([#512](https://github.com/instill-ai/model-backend/issues/512))
+
+### Features
+
+* **acl,org:** adopt ACL and add organization endpoints ([#504](https://github.com/instill-ai/model-backend/issues/504)) ([13a1650](https://github.com/instill-ai/model-backend/commit/13a165031544206ed6c6b6b9bb1ac19fc22e6749))
+
+
+### Bug Fixes
+
+* **cmd,pkg:** refactor codebase to align with `golanci-linter` checks ([#506](https://github.com/instill-ai/model-backend/issues/506)) ([b213812](https://github.com/instill-ai/model-backend/commit/b213812b7e4da8d00fd45261d35cf9ab6a59eafc))
+* **handler:** fix multipart request ([352a4ae](https://github.com/instill-ai/model-backend/commit/352a4ae857088c446afb7213b550630d366d3d44))
+* **pkg:** fix isError and set maxBatchSize to 0 ([2adfe5b](https://github.com/instill-ai/model-backend/commit/2adfe5bdf185b0e32a39184746bbebf66658af7b))
+* **pkg:** fix org model namespace ([#510](https://github.com/instill-ai/model-backend/issues/510)) ([f4be09c](https://github.com/instill-ai/model-backend/commit/f4be09ccb5a1d1d8c122cde61016507294858dfc))
+* **service:** fix workflow retry when deleting ([adcbde5](https://github.com/instill-ai/model-backend/commit/adcbde5047d119429981cceaed7f24483e5aa516))
+* **service:** remove org subscription check ([76cd66f](https://github.com/instill-ai/model-backend/commit/76cd66feab876ea08ad375298c7657bae2fdca29))
+* **worker:** fix temporal cloud namespace init ([#513](https://github.com/instill-ai/model-backend/issues/513)) ([17c5d68](https://github.com/instill-ai/model-backend/commit/17c5d68a48d9bdb5497e72638ad41aea07eeef16))
+
+
+### Code Refactoring
+
+* **triton:** deprecate triton inference server ([#512](https://github.com/instill-ai/model-backend/issues/512)) ([f8a277d](https://github.com/instill-ai/model-backend/commit/f8a277d2dc96033672a799f81dd0b09cc4530f30))
+
 ## [0.21.3-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.2-alpha...v0.21.3-alpha) (2024-01-30)
 
 
