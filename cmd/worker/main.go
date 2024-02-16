@@ -33,8 +33,6 @@ import (
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 
-const namespace = "model-backend"
-
 func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -45,7 +43,7 @@ func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
 
 	found := false
 	for _, n := range resp.GetNamespaces() {
-		if n.NamespaceInfo.Name == namespace {
+		if n.NamespaceInfo.Name == config.Config.Temporal.Namespace {
 			found = true
 		}
 	}
@@ -53,7 +51,7 @@ func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
 	if !found {
 		if _, err := client.WorkflowService().RegisterNamespace(ctx,
 			&workflowservice.RegisterNamespaceRequest{
-				Namespace: namespace,
+				Namespace: config.Config.Temporal.Namespace,
 				WorkflowExecutionRetentionPeriod: func() *time.Duration {
 					// Check if the string ends with "d" for day.
 					s := config.Config.Temporal.Retention
