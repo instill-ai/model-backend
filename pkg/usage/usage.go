@@ -74,10 +74,10 @@ func (u *usage) RetrieveUsageData() any {
 
 	// Roll over all users and update the metrics with the cached uuid
 	userPageToken := ""
-	userPageSizeMax := int32(repository.MaxPageSize)
+	pageSizeMax := int32(repository.MaxPageSize)
 	for {
 		userResp, err := u.mgmtPrivateServiceClient.ListUsersAdmin(ctx, &mgmtPB.ListUsersAdminRequest{
-			PageSize:  &userPageSizeMax,
+			PageSize:  &pageSizeMax,
 			PageToken: &userPageToken,
 		})
 		if err != nil {
@@ -86,16 +86,16 @@ func (u *usage) RetrieveUsageData() any {
 		}
 
 		// Roll all model resources on a user
-		for _, user := range userResp.Users {
+		for _, user := range userResp.GetUsers() {
 
 			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
 
-			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("user:%s:model.trigger_data", user.GetUid())).Val() // O(1)
+			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("owner:%s:model.trigger_data", user.GetUid())).Val() // O(1)
 
 			if triggerCount != 0 {
 				for i := int64(0); i < triggerCount; i++ {
 
-					strData := u.redisClient.LPop(ctx, fmt.Sprintf("user:%s:model.trigger_data", user.GetUid())).Val()
+					strData := u.redisClient.LPop(ctx, fmt.Sprintf("owner:%s:model.trigger_data", user.GetUid())).Val()
 
 					triggerData := &utils.UsageMetricData{}
 					if err := json.Unmarshal([]byte(strData), triggerData); err != nil {
@@ -118,19 +118,78 @@ func (u *usage) RetrieveUsageData() any {
 						},
 					)
 				}
+				pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
+					OwnerUid:         user.GetUid(),
+					OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_USER,
+					ModelTriggerData: triggerDataList,
+				})
 			}
-
-			pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
-				OwnerUid:         user.GetUid(),
-				OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_USER,
-				ModelTriggerData: triggerDataList,
-			})
 		}
 
 		if userResp.NextPageToken == "" {
 			break
 		} else {
 			userPageToken = userResp.NextPageToken
+		}
+	}
+
+	// Roll over all orgs and update the metrics with the cached uuid
+	orgPageToken := ""
+	for {
+		orgResp, err := u.mgmtPrivateServiceClient.ListOrganizationsAdmin(ctx, &mgmtPB.ListOrganizationsAdminRequest{
+			PageSize:  &pageSizeMax,
+			PageToken: &orgPageToken,
+		})
+		if err != nil {
+			logger.Error(fmt.Sprintf("[mgmt-backend: ListOrganizationsAdmin] %s", err))
+			break
+		}
+
+		// Roll all model resources on an org
+		for _, org := range orgResp.GetOrganizations() {
+
+			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
+
+			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("owner:%s:model.trigger_data", org.GetUid())).Val() // O(1)
+
+			if triggerCount != 0 {
+				for i := int64(0); i < triggerCount; i++ {
+
+					strData := u.redisClient.LPop(ctx, fmt.Sprintf("owner:%s:model.trigger_data", org.GetUid())).Val()
+
+					triggerData := &utils.UsageMetricData{}
+					if err := json.Unmarshal([]byte(strData), triggerData); err != nil {
+						logger.Warn("Usage data might be corrupted")
+					}
+
+					triggerTime, _ := time.Parse(time.RFC3339Nano, triggerData.TriggerTime)
+
+					triggerDataList = append(
+						triggerDataList,
+						&usagePB.ModelUsageData_UserUsageData_ModelTriggerData{
+							TriggerUid:         triggerData.TriggerUID,
+							TriggerTime:        timestamppb.New(triggerTime),
+							ModelUid:           triggerData.ModelUID,
+							ModelDefinitionUid: triggerData.ModelDefinitionUID,
+							ModelTask:          triggerData.ModelTask,
+							Status:             triggerData.Status,
+							UserUid:            triggerData.UserUID,
+							UserType:           triggerData.UserType,
+						},
+					)
+				}
+				pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
+					OwnerUid:         org.GetUid(),
+					OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_ORGANIZATION,
+					ModelTriggerData: triggerDataList,
+				})
+			}
+		}
+
+		if orgResp.NextPageToken == "" {
+			break
+		} else {
+			orgPageToken = orgResp.NextPageToken
 		}
 	}
 

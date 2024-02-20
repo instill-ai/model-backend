@@ -17,7 +17,7 @@ func (s *service) WriteNewDataPoint(ctx context.Context, data *utils.UsageMetric
 			return err
 		}
 
-		s.redisClient.RPush(ctx, fmt.Sprintf("user:%s:model.trigger_data", data.OwnerUID), string(bData))
+		s.redisClient.RPush(ctx, fmt.Sprintf("owner:%s:model.trigger_data", data.OwnerUID), string(bData))
 	}
 
 	return nil
