@@ -3,16 +3,14 @@ package external
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -68,43 +66,29 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
-// InitUsageServiceClient initializes a UsageServiceClient instance
+// InitUsageServiceClient initializes a UsageServiceClient instance (no mTLS)
 func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
+	var err error
 	if config.Config.Server.Usage.TLSEnabled {
-		roots, err := x509.SystemCertPool()
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-
-		tlsConfig := tls.Config{
-			RootCAs:            roots,
-			InsecureSkipVerify: true,
-			NextProtos:         []string{"h2"},
-		}
-		clientDialOpts = grpc.WithTransportCredentials(credentials.NewTLS(&tlsConfig))
+		tlsConfig := &tls.Config{}
+		clientDialOpts = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	} else {
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
 	clientConn, err := grpc.Dial(
 		fmt.Sprintf("%v:%v", config.Config.Server.Usage.Host, config.Config.Server.Usage.Port),
-		clientDialOpts,
-		grpc.WithConnectParams(grpc.ConnectParams{
-			Backoff: backoff.Config{
-				BaseDelay:  500 * time.Millisecond,
-				Multiplier: 1.5,
-				Jitter:     0.2,
-				MaxDelay:   19 * time.Second,
-			},
-			MinConnectTimeout: 5 * time.Second,
-		}),
+		clientDialOpts, grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+			grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+		),
 	)
-
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err.Error())
+		return nil, nil
 	}
 
 	return usagePB.NewUsageServiceClient(clientConn), clientConn
