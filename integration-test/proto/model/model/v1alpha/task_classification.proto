@@ -5,30 +5,30 @@ package model.model.v1alpha;
 // Google api
 import "google/api/field_behavior.proto";
 
-// ClassificationInput represents the input of classification task
+// ClassificationInput is the input of an image classification task.
 message ClassificationInput {
-  // Input type
+  // Content of the input.
   oneof type {
-    // Image type URL
+    // Image URL.
     string image_url = 1;
-    // Image type base64
+    // Base64-encoded image.
     string image_base64 = 2;
   }
 }
 
-// ClassificationInputStream represents the input of classification task when
-// using stream method
+// ClassificationInputStream represents the input of an image classification
+// task when the input is streamed as a binary files.
 message ClassificationInputStream {
-  // The list of file length for each uploaded binary file
-  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // File length for each uploaded binary file.
+  repeated uint32 file_lengths = 1 [(google.api.field_behavior) = REQUIRED];
+  // Byte representation of the images.
+  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// ClassificationOutput represents the output of classification task
+// ClassificationOutput contains the result of an image classification task.
 message ClassificationOutput {
-  // Classification category
-  string category = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Classification score
-  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Category.
+  string category = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Score.
+  float score = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

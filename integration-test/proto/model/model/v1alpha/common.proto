@@ -2,47 +2,65 @@ syntax = "proto3";
 
 package model.model.v1alpha;
 
-// Google api
+// Google API
 import "google/api/field_behavior.proto";
 
-// BoundingBox represents the bounding box data structure
+// BoundingBox represents a frame in an image that can be drawn when detecting
+// patterns in objects.
 message BoundingBox {
-  // Bounding box top y-axis value
+  // Top Y-axis.
   float top = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Bounding box left x-axis value
+  // Left X-axis.
   float left = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Bounding box width value
+  // Width.
   float width = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Bounding box height value
+  // Height.
   float height = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// Additional hyperparameters for model inferences
-// or other configuration not listsed in protobuf
-message ExtraParamObject {
-  // Name of the hyperparameter
-  string param_name = 1;
-  // Value of the hyperparameter
-  string param_value = 2;
-}
-
-// Prompt Image for text generation model
+// PromptImage is an image input for model inference.
 message PromptImage {
-  // Image could be either a url or base64 encoded string
+  // Image could be either a URL or base64 encoded string.
   oneof type {
-    // Image URL
+    // Image URL.
     string prompt_image_url = 1;
-    // Base64 encoded Image
+    // Base64-encoded image.
     string prompt_image_base64 = 2;
   }
 }
 
-// Content used for chat history in text generation model
-message Content {
-  // Type of Content
+// ImageContent holds an image with some details in plain text.
+message ImageContent {
+  // Image as URL or base64 code.
+  //
+  // NOTE: the `image_url` name comes from a convention from OpenAI, it doesn't
+  // determine the format of the image.
+  PromptImage image_url = 1;
+  // Additional information.
+  optional string detail = 2;
+}
+
+// MessageContent is a message in a chat history message, used in text
+// generation models.
+message MessageContent {
+  // Content type.
   string type = 1;
-  // Content of Text Message
-  string content = 2;
-  // Content of Image
-  PromptImage prompt_image = 3;
+  // Text message content.
+  oneof content {
+    // Image content.
+    //
+    // NOTE: the `image_url` name comes from a convention from OpenAI, it doesn't
+    // determine the format of the image.
+    ImageContent image_url = 2;
+    // Text content.
+    string text = 3;
+  }
+}
+
+// Message is used in chat history in text generation models.
+message Message {
+  // The Role of a message, e.g. `system`, `user`, etc. Defines the way the model answers questions.
+  string role = 1;
+  // Message content.
+  repeated MessageContent content = 2;
 }
