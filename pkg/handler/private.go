@@ -112,7 +112,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		IsVisitor: false,
 	}
 
-	if !utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, ns.String(), pbModel.Id) {
+	if !utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), pbModel.Id) {
 
 		modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 		if err != nil {
