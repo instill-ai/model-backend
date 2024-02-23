@@ -24,7 +24,7 @@ import (
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModelsAdmin(ctx, req.GetPageSize(), req.GetPageToken(), req.GetView(), req.GetShowDeleted())
+	pbModels, totalSize, nextPageToken, err := h.service.ListModelsAdmin(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), req.GetShowDeleted())
 	if err != nil {
 		return &modelPB.ListModelsAdminResponse{}, err
 	}
@@ -45,7 +45,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
 
-	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, req.GetView())
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, parseView(req.GetView()))
 	if err != nil {
 		return &modelPB.LookUpModelAdminResponse{}, err
 	}
