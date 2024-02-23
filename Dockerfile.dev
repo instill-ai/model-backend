@@ -14,7 +14,7 @@ COPY --from=docker:dind-rootless --chown=nobody:nogroup /usr/local/bin/docker /u
 ARG TARGETOS TARGETARCH K6_VERSION ARTIVC_VERSION
 
 # air
-RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go install github.com/cosmtrek/air@latest
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go install github.com/cosmtrek/air@v1.49
 
 # k6
 ARG K6_VERSION
