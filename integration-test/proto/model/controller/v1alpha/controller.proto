@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package model.controller.v1alpha;
 
-import "common/healthcheck/v1beta/healthcheck.proto";
+import "../../../common/healthcheck/v1beta/healthcheck.proto";
 // Google api
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";

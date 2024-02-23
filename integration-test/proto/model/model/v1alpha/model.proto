@@ -3,10 +3,10 @@ syntax = "proto3";
 package model.model.v1alpha;
 
 // Model definitions
-import "common/healthcheck/v1beta/healthcheck.proto";
-import "common/task/v1alpha/task.proto";
+import "../../../common/healthcheck/v1beta/healthcheck.proto";
+import "../../../common/task/v1alpha/task.proto";
 // Core definitions
-import "core/mgmt/v1beta/mgmt.proto";
+import "../../../core/mgmt/v1beta/mgmt.proto";
 // Google API
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
