@@ -26,7 +26,6 @@ export const options = {
 };
 
 const client = new grpc.Client();
-client.load(['proto/common'], 'healthcheck.proto');
 client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
 client.load(['proto/model/model/v1alpha'], 'model.proto');
 client.load(['proto/model/model/v1alpha'], 'model_private_service.proto');

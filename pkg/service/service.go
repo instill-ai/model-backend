@@ -53,7 +53,7 @@ type Service interface {
 	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
 	ConvertOwnerNameToPermalink(name string) (string, error)
-	PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *datamodel.Model
+	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model
 	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error)
 	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model) ([]*modelPB.Model, error)
 	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error)
@@ -233,25 +233,21 @@ func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) 
 	}
 }
 
-func (s *service) FetchOwnerWithPermalink(permalink string) (*structpb.Struct, error) {
+func (s *service) FetchOwnerWithPermalink(permalink string) (*mgmtPB.Owner, error) {
 	if strings.HasPrefix(permalink, "users") {
 		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
 		if err != nil {
 			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
 		}
-		owner := &structpb.Struct{Fields: map[string]*structpb.Value{}}
-		owner.Fields["profile_avatar"] = structpb.NewStringValue(resp.GetUser().GetProfile().GetAvatar())
 
-		return owner, nil
+		return &mgmtPB.Owner{Owner: &mgmtPB.Owner_User{User: resp.User}}, nil
 	} else {
 		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtPB.LookUpOrganizationAdminRequest{Permalink: permalink})
 		if err != nil {
 			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
 		}
-		owner := &structpb.Struct{Fields: map[string]*structpb.Value{}}
-		owner.Fields["profile_avatar"] = structpb.NewStringValue(resp.GetOrganization().GetProfile().GetAvatar())
 
-		return owner, nil
+		return &mgmtPB.Owner{Owner: &mgmtPB.Owner_Organization{Organization: resp.Organization}}, nil
 	}
 }
 
@@ -341,7 +337,7 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 
 func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, view modelPB.View) (*modelPB.Model, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelPB.View_VIEW_BASIC)
 	if err != nil {
@@ -381,7 +377,7 @@ func (s *service) CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*mod
 
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false)
 	if err != nil {
@@ -914,7 +910,7 @@ func (s *service) ListModels(ctx context.Context, authUser *AuthUser, pageSize i
 
 func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	uidAllowList, err := s.aclClient.ListPermissions("model_", authUser.GetACLType(), authUser.UID, "reader")
 	if err != nil {
@@ -946,7 +942,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false)
 	if err != nil {
@@ -1037,7 +1033,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
 	if err != nil {
@@ -1075,9 +1071,9 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 
 func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, toUpdateModel *modelPB.Model) (*modelPB.Model, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
-	dbToUpdateModel := s.PBToDBModel(ctx, toUpdateModel)
+	dbToUpdateModel := s.PBToDBModel(ctx, ns, toUpdateModel)
 
 	if granted, err := s.aclClient.CheckPermission("model_", dbToUpdateModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
 		return nil, err
@@ -1117,7 +1113,7 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 // TODO: gorm do not update the zero value with struct, so we need to update the state manually.
 func (s *service) UpdateNamespaceModelStateByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, state modelPB.Model_State) (*modelPB.Model, error) {
 
-	ownerPermalink := ns.String()
+	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, model.Id, false)
 	if err != nil {

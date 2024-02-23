@@ -5,47 +5,38 @@ package model.model.v1alpha;
 // Google API
 import "google/api/annotations.proto";
 import "google/api/client.proto";
-
+import "google/api/visibility.proto";
 import "../../../model/model/v1alpha/model.proto";
 
 // Model service responds to internal access
 service ModelPrivateService {
-
   // ========== Private API ==========
 
   // ListModelsAdmin method receives a ListModelsAdminRequest message and
   // returns a ListModelsAdminResponse
-  rpc ListModelsAdmin(ListModelsAdminRequest)
-      returns (ListModelsAdminResponse) {
-    option (google.api.http) = {
-      get : "/v1alpha/admin/models"
-    };
+  rpc ListModelsAdmin(ListModelsAdminRequest) returns (ListModelsAdminResponse) {
+    option (google.api.http) = {get: "/v1alpha/admin/models"};
   }
 
   // LookUpModelAdmin method receives a LookUpModelAdminRequest message and
   // returns a LookUpModelAdminResponse
-  rpc LookUpModelAdmin(LookUpModelAdminRequest)
-      returns (LookUpModelAdminResponse) {
-    option (google.api.http) = {
-      get : "/v1alpha/admin/{permalink=models/*}/lookUp"
-    };
+  rpc LookUpModelAdmin(LookUpModelAdminRequest) returns (LookUpModelAdminResponse) {
+    option (google.api.http) = {get: "/v1alpha/admin/{permalink=models/*}/lookUp"};
     option (google.api.method_signature) = "permalink";
   }
 
   // CheckModelAdmin method receives a CheckModelAdminRequest message and returns a
   // CheckModelAdminResponse
   rpc CheckModelAdmin(CheckModelAdminRequest) returns (CheckModelAdminResponse) {
-    option (google.api.http) = {
-      get : "/v1alpha/admin/{model_permalink=models/*}/check"
-    };
+    option (google.api.http) = {get: "/v1alpha/admin/{model_permalink=models/*}/check"};
     option (google.api.method_signature) = "model_permalink";
-  };
+  }
 
   // DeployModelAdmin deploy a model to online state
   rpc DeployModelAdmin(DeployModelAdminRequest) returns (DeployModelAdminResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/admin/{model_permalink=models/*}/deploy"
-      body : "*"
+      post: "/v1alpha/admin/{model_permalink=models/*}/deploy"
+      body: "*"
     };
     option (google.api.method_signature) = "model_permalink";
   }
@@ -53,9 +44,11 @@ service ModelPrivateService {
   // UndeployModelAdmin undeploy a model to offline state
   rpc UndeployModelAdmin(UndeployModelAdminRequest) returns (UndeployModelAdminResponse) {
     option (google.api.http) = {
-      post : "/v1alpha/admin/{model_permalink=models/*}/undeploy"
-      body : "*"
+      post: "/v1alpha/admin/{model_permalink=models/*}/undeploy"
+      body: "*"
     };
     option (google.api.method_signature) = "model_permalink";
   }
+
+  option (google.api.api_visibility).restriction = "INTERNAL";
 }

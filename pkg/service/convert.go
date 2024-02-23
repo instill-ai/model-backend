@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
@@ -19,16 +20,8 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *datamodel.Model {
+func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model {
 	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	var owner string
-	var err error
-
-	owner, err = s.ConvertOwnerNameToPermalink(pbModel.GetOwnerName())
-	if err != nil {
-		return nil
-	}
 
 	if pbModel.Visibility == modelPB.Model_VISIBILITY_UNSPECIFIED {
 		pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
@@ -60,7 +53,7 @@ func (s *service) PBToDBModel(ctx context.Context, pbModel *modelPB.Model) *data
 				return time.Time{}
 			}(),
 		},
-		Owner: owner,
+		Owner: ns.Permalink(),
 		ID:    pbModel.GetId(),
 		Description: sql.NullString{
 			String: pbModel.GetDescription(),

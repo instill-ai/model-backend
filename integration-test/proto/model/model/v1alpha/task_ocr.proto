@@ -4,40 +4,41 @@ package model.model.v1alpha;
 
 // Google api
 import "google/api/field_behavior.proto";
-
 import "../../../model/model/v1alpha/common.proto";
 
-// OcrObject represents a predicted ocr object
+// OcrObject is a text object within an image. OCR stands for Optical Character
+// Recognition.
 message OcrObject {
-  // OCR text
-  string text = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // OCR text score
-  float score = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // OCR bounding box
-  BoundingBox bounding_box = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // Text.
+  string text = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Score.
+  float score = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Bounding box.
+  BoundingBox bounding_box = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// OcrInput represents the input of ocr task
+// OcrInput represents the input of an OCR task.
 message OcrInput {
-  // Input type
+  // Content of the input.
   oneof type {
-    // Image type URL
+    // Image URL.
     string image_url = 1;
-    // Image type base64
+    // Base64-encoded image.
     string image_base64 = 2;
   }
 }
 
-// OcrInputStream represents the input of ocr task when using stream method
+// OcrInputStream represents the input of an OCR task when the input is
+// streamed as binary files.
 message OcrInputStream {
-  // The list of file length for each uploaded binary file
-  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // File length for each uploaded binary file.
+  repeated uint32 file_lengths = 1 [(google.api.field_behavior) = REQUIRED];
+  // Byte representation of the images.
+  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// OcrOutput represents the output of ocr task
+// OcrOutput contains the result of an OCR task.
 message OcrOutput {
-  // A list of OCR objects
-  repeated OcrObject objects = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // A list of text objects.
+  repeated OcrObject objects = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

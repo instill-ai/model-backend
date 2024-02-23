@@ -4,45 +4,45 @@ package model.model.v1alpha;
 
 // Google api
 import "google/api/field_behavior.proto";
-
 import "../../../model/model/v1alpha/common.proto";
 
-// InstanceSegmentationObject corresponding to a instance segmentation object
+// InstanceSegmentationObject is an object in an image, localized and
+// delineated.
 message InstanceSegmentationObject {
-  // Instance RLE segmentation mask
-  string rle = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Instance category
-  string category = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Instance score
-  float score = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
-  // Instance bounding box
-  BoundingBox bounding_box = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // RLE segmentation mask.
+  string rle = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Category.
+  string category = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Score.
+  float score = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Bounding box.
+  BoundingBox bounding_box = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// InstanceSegmentationInput represents the input of instance segmentation task
+// InstanceSegmentationInput represents the input of an instance segmentation
+// task.
 message InstanceSegmentationInput {
-  // Input type
+  // Content of the input.
   oneof type {
-    // Image type URL
+    // Image URL.
     string image_url = 1;
-    // Image type base64
+    // Base64-encoded image.
     string image_base64 = 2;
   }
 }
 
-// InstanceSegmentationInputStream represents the input of instance segmentation
-// task when using stream method
+// InstanceSegmentationInputStream represents the input of an instance
+// segmentation task when the input is streamed as binary files.
 message InstanceSegmentationInputStream {
-  // The list of file length for each uploaded binary file
-  repeated uint64 file_lengths = 1 [ (google.api.field_behavior) = REQUIRED ];
-  // Content of images in bytes
-  bytes content = 2 [ (google.api.field_behavior) = REQUIRED ];
+  // File length for each uploaded binary file.
+  repeated uint32 file_lengths = 1 [(google.api.field_behavior) = REQUIRED];
+  // Byte representation of the images.
+  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// InstanceSegmentationOutput represents the output of instance segmentation
-// task
+// InstanceSegmentationOutput contains the result of an instance segmentation
+// task.
 message InstanceSegmentationOutput {
-  // A list of instance segmentation objects
-  repeated InstanceSegmentationObject objects = 1
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  // A list of instance segmentation objects.
+  repeated InstanceSegmentationObject objects = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

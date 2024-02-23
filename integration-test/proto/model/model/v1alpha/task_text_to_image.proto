@@ -6,31 +6,31 @@ package model.model.v1alpha;
 import "google/api/field_behavior.proto";
 import "google/protobuf/struct.proto";
 
-// TextToImageInput represents the input of text to image task
+// TextToImageInput represents the input of a text-to-image task.
 message TextToImageInput {
-  // The prompt text
+  // Prompt text.
   string prompt = 1 [(google.api.field_behavior) = REQUIRED];
-  // The Prompt Image, only for multimodal input
+  // Prompt image, only for multimodal input.
   oneof type {
-    // Image type URL
+    // Image URL.
     string prompt_image_url = 2;
-    // Image type base64
+    // Base64-encoded image.
     string prompt_image_base64 = 3;
-  };
-  // The steps, default is 5
+  }
+  // Steps, defaults to 5.
   optional int32 steps = 4 [(google.api.field_behavior) = OPTIONAL];
-  // The guidance scale, default is 7.5
+  // Guidance scale, defaults to 7.5.
   optional float cfg_scale = 5 [(google.api.field_behavior) = OPTIONAL];
-  // The seed, default is 0
+  // Seed, defaults to 0.
   optional int32 seed = 6 [(google.api.field_behavior) = OPTIONAL];
-  // The number of generated samples, default is 1
+  // Number of generated samples, default is 1.
   optional int32 samples = 7 [(google.api.field_behavior) = OPTIONAL];
-  // The extra parameters
+  // Extra parameters.
   google.protobuf.Struct extra_params = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// TextToImageOutput represents the output of text to image task
+// TextToImageOutput contains the result of a text-to-image task.
 message TextToImageOutput {
-  // List of generated images
+  // A list of generated images, encoded in base64.
   repeated string images = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
