@@ -18,7 +18,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -82,29 +81,9 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	var ownerName string
-	if pbModel.GetOwnerName() != "" {
-		ownerName = pbModel.GetOwnerName()
-	} else {
-		return &modelPB.DeployModelAdminResponse{}, errors.New("model no owner")
-	}
-
-	ns, _, err := h.service.GetRscNamespaceAndNameID(ownerName)
+	ns, _, err := h.service.GetRscNamespaceAndNameID(pbModel.GetOwnerName())
 	if err != nil {
 		return nil, err
-	}
-
-	if ns.NsType == resource.Organization {
-		resp, err := h.service.GetMgmtPrivateServiceClient().GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
-			Name: ownerName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ns, _, err = h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	authUser := &service.AuthUser{
