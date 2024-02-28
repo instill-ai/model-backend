@@ -82,34 +82,33 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	var ownerName string
-	if pbModel.GetOwnerName() != "" {
-		ownerName = pbModel.GetOwnerName()
-	} else {
-		return &modelPB.DeployModelAdminResponse{}, errors.New("model no owner")
-	}
-
-	ns, _, err := h.service.GetRscNamespaceAndNameID(ownerName)
+	ns, _, err := h.service.GetRscNamespaceAndNameID(pbModel.GetOwnerName())
 	if err != nil {
 		return nil, err
 	}
 
+	var authUser *service.AuthUser
 	if ns.NsType == resource.Organization {
 		resp, err := h.service.GetMgmtPrivateServiceClient().GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
-			Name: ownerName,
+			Name: ns.Name(),
 		})
 		if err != nil {
 			return nil, err
 		}
-		ns, _, err = h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
+		orgOwnerNS, _, err := h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	authUser := &service.AuthUser{
-		UID:       ns.NsUID,
-		IsVisitor: false,
+		authUser = &service.AuthUser{
+			UID:       orgOwnerNS.NsUID,
+			IsVisitor: false,
+		}
+	} else {
+		authUser = &service.AuthUser{
+			UID:       ns.NsUID,
+			IsVisitor: false,
+		}
 	}
 
 	if !utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), pbModel.Id) {

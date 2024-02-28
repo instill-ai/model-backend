@@ -122,16 +122,22 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		return nil, err
 	}
 
-	deployment, ok := applicationStatus.Applications[applicationMetadatValue]
+	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
 		return modelPB.Model_STATE_OFFLINE.Enum(), nil
 	}
 
-	switch deployment.Status {
+	// TODO: currently we assume only one deployment per application, need to account for multiple deployments in the future
+	switch application.Status {
 	case "RUNNING":
 		return modelPB.Model_STATE_ONLINE.Enum(), nil
 	case "DEPLOY_FAILED":
 	case "UNHEALTHY":
+		for i := range application.Deployments {
+			if application.Deployments[i].Status == "STARTING" {
+				return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
+			}
+		}
 		return modelPB.Model_STATE_ERROR.Enum(), nil
 	case "DEPLOYING":
 	case "DELETING":
