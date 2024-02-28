@@ -110,12 +110,11 @@ type CacheModel struct {
 }
 
 // GitHubClone clones a repository from GitHub.
-func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, isWithLargeFile bool, redisClient *redis.Client) error {
+func GitHubClone(dir string, instanceConfig datamodel.GitHubModelConfiguration, isWithLargeFile bool, redisClient *redis.Client, redisRepoKey string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	urlRepo := instanceConfig.Repository
-	redisRepoKey := fmt.Sprintf("model_cache:%s:%s", instanceConfig.Repository, instanceConfig.Tag)
 	// Check in the cache first.
 	if config.Config.Cache.Model.Enabled {
 		_ = os.MkdirAll(config.Config.Cache.Model.CacheDir, os.ModePerm)

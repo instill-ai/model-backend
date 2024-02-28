@@ -77,16 +77,19 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				return err
 			}
 
+			redisRepoKey := fmt.Sprintf("model_cache:%s:%s", modelConfig.Repository, modelConfig.Tag)
 			if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
 				modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", modelConfig.Repository, modelConfig.Tag)
 			}
 
-			if err := utils.GitHubClone(modelSrcDir, modelConfig, true, w.redisClient); err != nil {
+			if err := utils.GitHubClone(modelSrcDir, modelConfig, true, w.redisClient, redisRepoKey); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
+				w.redisClient.Del(ctx, redisRepoKey)
 				return err
 			}
 			if err := utils.CopyModelFileToModelRepository(config.Config.RayServer.ModelStore, modelSrcDir, param.Model); err != nil {
 				_ = os.RemoveAll(modelSrcDir)
+				w.redisClient.Del(ctx, redisRepoKey)
 				return err
 			}
 		}

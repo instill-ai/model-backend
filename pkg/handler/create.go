@@ -91,6 +91,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 
 	rdid, _ := uuid.NewV4()
 	modelSrcDir := fmt.Sprintf("/tmp/%v", rdid.String()) + ""
+	redisRepoKey := fmt.Sprintf("model_cache:%s:%s", modelConfig.Repository, modelConfig.Tag)
 	if config.Config.Cache.Model.Enabled { // cache model into ~/.cache/instill/models
 		modelSrcDir = config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", modelConfig.Repository, modelConfig.Tag)
 	} else {
@@ -108,7 +109,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			return &longrunningpb.Operation{}, err
 		}
 	} else {
-		err = utils.GitHubClone(modelSrcDir, modelConfig, false, s.GetRedisClient())
+		err = utils.GitHubClone(modelSrcDir, modelConfig, false, s.GetRedisClient(), redisRepoKey)
 		if err != nil {
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
@@ -123,6 +124,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			}
 			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+			s.GetRedisClient().Del(ctx, redisRepoKey)
 			span.SetStatus(1, err.Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -144,6 +146,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		}
 		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		s.GetRedisClient().Del(ctx, redisRepoKey)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -163,6 +166,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 			}
 			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 			_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+			s.GetRedisClient().Del(ctx, redisRepoKey)
 			span.SetStatus(1, st.Err().Error())
 			return &longrunningpb.Operation{}, st.Err()
 		}
@@ -183,6 +187,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 				}
 				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 				_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+				s.GetRedisClient().Del(ctx, redisRepoKey)
 				span.SetStatus(1, st.Err().Error())
 				return &longrunningpb.Operation{}, st.Err()
 			} else {
@@ -212,6 +217,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		}
 		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		s.GetRedisClient().Del(ctx, redisRepoKey)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
@@ -231,6 +237,7 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		}
 		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), githubModel.ID)
 		_ = os.RemoveAll(modelSrcDir) // remove uploaded temporary files
+		s.GetRedisClient().Del(ctx, redisRepoKey)
 		span.SetStatus(1, st.Err().Error())
 		return &longrunningpb.Operation{}, st.Err()
 	}
