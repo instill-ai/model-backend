@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.23.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.22.0-alpha...v0.23.0-alpha) (2024-02-28)
+
+
+### Features
+
+* **pkg:** use mgmtPB.Owner to embed the owner information ([#523](https://github.com/instill-ai/model-backend/issues/523)) ([37d5708](https://github.com/instill-ai/model-backend/commit/37d57087ab93570399b799ddb6264c4da18f5025))
+
+
+### Bug Fixes
+
+* **handler,ray:** fix reconciliation model status and namespace ([#525](https://github.com/instill-ai/model-backend/issues/525)) ([62a30b6](https://github.com/instill-ai/model-backend/commit/62a30b64509d5e22820a1480a1c0fa8019e2372a))
+* **redis:** delete redis key when errored ([#526](https://github.com/instill-ai/model-backend/issues/526)) ([bb4e18d](https://github.com/instill-ai/model-backend/commit/bb4e18d35e1564282cc5e6f64f3630003a74bc2a))
+
 ## [0.22.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.21.3-alpha...v0.22.0-alpha) (2024-02-20)
 
 
