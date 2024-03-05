@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         component: [model-backend]
-    uses: instill-ai/model/.github/workflows/integration-test-backend.yml@main
+    uses: instill-ai/instill-core/.github/workflows/integration-test-backend.yml@main
     with:
       component: ${{ matrix.component }}
       target: latest
@@ -61,7 +61,7 @@ jobs:
           swap-storage: true
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -71,10 +71,10 @@ jobs:
           envFile: .env
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           load: true
@@ -85,12 +85,12 @@ jobs:
             ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
-      - name: Checkout repo (core)
-        uses: actions/checkout@v3
+      - name: Checkout repo (instill-core)
+        uses: actions/checkout@v4
         with:
-          repository: instill-ai/core
+          repository: instill-ai/instill-core
 
-      - name: Load .env file (core)
+      - name: Load .env file (instill-core)
         uses: cardinalby/export-env-action@v2
         with:
           envFile: .env
@@ -99,38 +99,19 @@ jobs:
         run: |
           COMPOSE_PROFILES=all \
           EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose.latest.yml up -d --quiet-pull
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose.latest.yml rm -f
-
-      - name: Checkout repo (model)
-        uses: actions/checkout@v3
-        with:
-          repository: instill-ai/model
-
-      - name: Load .env file (model)
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
-      - name: Launch Instill Model (latest)
-        run: |
-          EDITION=local-ce:test \
+          RAY_LATEST_TAG=latest \
           ITMODE_ENABLED=true \
-          RAY_PLATFORM=cpu \
+          docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull
           COMPOSE_PROFILES=all \
-          docker compose -f docker-compose.yml -f docker-compose.latest.yml up -d --quiet-pull
-          RAY_PLATFORM=cpu \
           EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose.latest.yml rm -f
+          docker compose -f docker-compose.yml -f docker-compose-latest.yml rm -f
 
       - name: Install k6
         run: |
           curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
 
-      - name: Checkout (model)
-        uses: actions/checkout@v3
+      - name: Checkout (model-backend)
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -143,8 +124,8 @@ jobs:
         run: |
           make integration-test API_GATEWAY_URL=localhost:8080
 
-      - name: Checkout (controller)
-        uses: actions/checkout@v3
+      - name: Checkout (controller-model)
+        uses: actions/checkout@v4
         with:
           repository: instill-ai/controller-model
 
