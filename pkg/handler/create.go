@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -254,6 +255,157 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(githubModel),
+		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
+			Response: &anypb.Any{
+				Value: []byte(wfID),
+			},
+		}),
+	)))
+
+	return &longrunningpb.Operation{
+		Name: fmt.Sprintf("operations/%s", wfID),
+		Done: false,
+		Result: &longrunningpb.Operation_Response{
+			Response: &anypb.Any{},
+		},
+	}, nil
+}
+
+func createContainerizedModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+
+	eventName := "CreateContainerizedModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var modelConfig datamodel.ContainerizedModelConfiguration
+	b, err := model.GetConfiguration().MarshalJSON()
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		span.SetStatus(1, err.Error())
+		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if modelConfig.Task == "" {
+		span.SetStatus(1, "Invalid task")
+		return &longrunningpb.Operation{}, status.Errorf(codes.InvalidArgument, "Invalid Task")
+	}
+
+	modelConfig.Tag = "latest"
+
+	bModelConfig, _ := json.Marshal(modelConfig)
+
+	containerizedModel := s.PBToDBModel(ctx, ns, model)
+	containerizedModel.State = datamodel.ModelState(modelPB.Model_STATE_OFFLINE)
+	containerizedModel.Configuration = bModelConfig
+	containerizedModel.ModelDefinitionUID = modelDefinition.UID
+
+	modelRootDir := filepath.Join(config.Config.RayServer.ModelStore, ns.Permalink(), containerizedModel.ID)
+	err = os.MkdirAll(modelRootDir, os.ModePerm)
+	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"Model folder structure",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), containerizedModel.ID)
+		span.SetStatus(1, st.Err().Error())
+		return &longrunningpb.Operation{}, st.Err()
+	}
+
+	modelMeta := utils.ModelMeta{
+		Tags: []string{"Containerized", "Experimental"},
+		Task: modelConfig.Task,
+	}
+
+	if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+		containerizedModel.Task = datamodel.ModelTask(val)
+	} else {
+		if modelMeta.Task != "" {
+			st, err := sterr.CreateErrorResourceInfo(
+				codes.FailedPrecondition,
+				"[handler] create a model error: unsupported task",
+				"README.md file",
+				"README.md contains unsupported task",
+				"",
+				"",
+			)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), containerizedModel.ID)
+			span.SetStatus(1, st.Err().Error())
+			return &longrunningpb.Operation{}, st.Err()
+		} else {
+			containerizedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
+		}
+	}
+
+	// TODO: properly support batch inference
+	maxBatchSize := 0
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(containerizedModel.Task)
+
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), containerizedModel.ID)
+		span.SetStatus(1, st.Err().Error())
+		return &longrunningpb.Operation{}, st.Err()
+	}
+
+	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, containerizedModel)
+	if err != nil {
+		st, err := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
+			"Model service",
+			"",
+			"",
+			err.Error(),
+		)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), containerizedModel.ID)
+		span.SetStatus(1, st.Err().Error())
+		return &longrunningpb.Operation{}, st.Err()
+	}
+
+	// Manually set the custom header to have a StatusCreated http response for REST endpoint
+	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		span,
+		logUUID.String(),
+		authUser.UID,
+		eventName,
+		custom_otel.SetEventResource(containerizedModel),
 		custom_otel.SetEventResult(&longrunningpb.Operation_Response{
 			Response: &anypb.Any{
 				Value: []byte(wfID),

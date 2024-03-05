@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -38,6 +40,8 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
+	DeployContainerizedModel(modelPath string, imageName string) error
+	UndeployContainerizedModel(modelPath string) error
 	Init()
 	Close()
 }
@@ -56,10 +60,9 @@ func NewRay() Ray {
 }
 
 func (r *ray) Init() {
-	grpcURI := config.Config.RayServer.GrpcURI
 	// Connect to gRPC server
 	conn, err := grpc.Dial(
-		grpcURI,
+		config.Config.RayServer.GrpcURI,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
@@ -68,7 +71,7 @@ func (r *ray) Init() {
 	)
 
 	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcURI, err)
+		log.Fatalf("Couldn't connect to endpoint %s: %v", config.Config.RayServer.GrpcURI, err)
 	}
 
 	// Create client from gRPC server connection
@@ -132,6 +135,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 	case "RUNNING":
 		return modelPB.Model_STATE_ONLINE.Enum(), nil
 	case "DEPLOY_FAILED":
+		return modelPB.Model_STATE_ERROR.Enum(), nil
 	case "UNHEALTHY":
 		for i := range application.Deployments {
 			if application.Deployments[i].Status == "STARTING" {
@@ -140,6 +144,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		}
 		return modelPB.Model_STATE_ERROR.Enum(), nil
 	case "DEPLOYING":
+		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
 	case "DELETING":
 		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
 	case "NOT_STARTED":
@@ -493,6 +498,67 @@ func (r *ray) UndeployModel(modelPath string) error {
 	modelPythonPath := utils.FindModelPythonDir(filepath.Join(config.Config.RayServer.ModelStore, modelPath))
 	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.undeploy(%q, %q)", modelPythonPath, config.Config.RayServer.GrpcURI))
 	cmd.Dir = modelPythonPath
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+
+	return err
+}
+
+func (r *ray) DeployContainerizedModel(modelPath string, imageName string) error {
+	modelPythonPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	applicationName := strings.Join(strings.Split(modelPythonPath, "/")[3:], "_")
+
+	modelDeploymentConfig := ModelDeploymentConfig{
+		Applications: []Application{
+			{
+				Name:        applicationName,
+				ImportPath:  "model:entrypoint",
+				RoutePrefix: "/" + applicationName,
+				RuntimeEnv: RuntimeEnv{
+					Container: Container{
+						Image: fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
+						RunOptions: []string{
+							"--tls-verify=false",
+							"--pull=always",
+							"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+							"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+							"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
+						},
+					},
+				},
+			},
+		},
+	}
+	configData, err := yaml.Marshal(&modelDeploymentConfig)
+	if err != nil {
+		return fmt.Errorf("error while Marshaling deployment config: %w", err)
+	}
+
+	if err := os.WriteFile(path.Join(modelPythonPath, "deploy.yaml"), configData, 0666); err != nil {
+		return fmt.Errorf("error creating deployment config: %w", err)
+	}
+
+	cmd := exec.Command("serve", "run", "deploy.yaml", "--non-blocking", "-a", strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001"))
+	cmd.Dir = modelPythonPath
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+
+	return err
+}
+
+func (r *ray) UndeployContainerizedModel(modelPath string) error {
+	modelPythonPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	applicationName := strings.Join(strings.Split(modelPythonPath, "/")[3:], "_")
+
+	cmd := exec.Command("python", "-c", fmt.Sprintf("from undeploy import undeploy; undeploy(%q, %q)", applicationName, strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001")))
+	cmd.Dir = "./pkg/ray"
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

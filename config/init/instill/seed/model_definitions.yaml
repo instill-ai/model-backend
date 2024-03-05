@@ -63,3 +63,28 @@
         instillUIOrder: 0
         minLength: 0
         maxLength: 1023
+- id: "container"
+  uid: "3b4265b7-7d8c-42f7-b5a9-13737d7dee1d"
+  title: "Container"
+  documentationUrl: "https://www.instill.tech/docs/import-models/local"
+  icon: "local.svg"
+  releaseStage: alpha
+  modelSpec:
+    $schema: "http://json-schema.org/draft-07/schema#"
+    title: "Containerized Model"
+    type: "object"
+    required:
+      - "task"
+    instillShortDescription: ""
+    additionalProperties: false
+    minProperties: 1
+    maxProperties: 1
+    properties:
+      task:
+        type: "string"
+        instillUIComponent: "textfield"
+        title: "Enter your model's Instill Task"
+        description: "Create and upload a containerized model which uses this Instill Task."
+        instillUIOrder: 0
+        minLength: 0
+        maxLength: 1023

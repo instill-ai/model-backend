@@ -100,6 +100,6 @@ require (
 	google.golang.org/genproto v0.0.0-20230725213213-b022f6e96895 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230725213213-b022f6e96895 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.4.4 // indirect
 )

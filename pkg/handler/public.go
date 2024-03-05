@@ -490,6 +490,8 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return createArtiVCModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	case "huggingface":
 		return createHuggingFaceModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
+	case "container":
+		return createContainerizedModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
@@ -1240,11 +1242,6 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 	authUser, err := h.service.AuthenticateUser(ctx, false)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return modelPB.Model_STATE_ERROR, err
-	}
-
-	if err != nil {
-		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
 			logUUID.String(),
@@ -1272,7 +1269,6 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 	}
 
 	state, _, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
-
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
