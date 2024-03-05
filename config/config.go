@@ -148,6 +148,12 @@ type OpenFGAConfig struct {
 	Port int    `koanf:"port"`
 }
 
+// Registry config
+type RegistryConfig struct {
+	Host string `koanf:"host"`
+	Port int    `koanf:"port"`
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
@@ -160,6 +166,7 @@ type AppConfig struct {
 	Temporal               TemporalConfig     `koanf:"temporal"`
 	Controller             ControllerConfig   `koanf:"controller"`
 	OpenFGA                OpenFGAConfig      `koanf:"openfga"`
+	Registry               RegistryConfig     `koanf:"registry"`
 	InitModel              InitModelConfig    `koanf:"initmodel"`
 	Log                    LogConfig          `koanf:"log"`
 }
