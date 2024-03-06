@@ -51,6 +51,8 @@ type ray struct {
 	rayServeClient rayserver.RayServeAPIServiceClient
 	rayHTTPClient  *http.Client
 	connection     *grpc.ClientConn
+	configChan     chan ApplicationWithAction
+	doneChan       chan bool
 }
 
 func NewRay() Ray {
@@ -79,6 +81,77 @@ func (r *ray) Init() {
 	r.rayClient = rayserver.NewRayServiceClient(conn)
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
 	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
+	r.configChan = make(chan ApplicationWithAction, 10000)
+	r.doneChan = make(chan bool, 10000)
+
+	configFilePath := path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
+
+	var modelDeploymentConfig ModelDeploymentConfig
+	isCorrupted := false
+	currentConfigFile, err := os.ReadFile(configFilePath)
+	if err != nil {
+		isCorrupted = true
+	}
+	err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
+	if err != nil {
+		isCorrupted = true
+	}
+
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) || isCorrupted {
+		initDeployConfig := ModelDeploymentConfig{
+			Applications: []Application{},
+		}
+		initConfigData, err := yaml.Marshal(&initDeployConfig)
+		if err != nil {
+			fmt.Printf("error while Marshaling deployment config: %v", err)
+		}
+		if err := os.WriteFile(configFilePath, initConfigData, 0666); err != nil {
+			fmt.Printf("error creating deployment config: %v", err)
+		}
+	}
+
+	// avoid race condition with file writing
+	// add/remove application entries
+	go func(configChan chan ApplicationWithAction, doneChan chan bool) {
+		for {
+			applicationWithAction := <-configChan
+
+			var modelDeploymentConfig ModelDeploymentConfig
+
+			currentConfigFile, err := os.ReadFile(configFilePath)
+			if err != nil {
+				fmt.Printf("error while reading deployment config: %v", err)
+			}
+			err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
+			if err != nil {
+				fmt.Printf("error while Unmarshaling deployment config: %v", err)
+			}
+
+			switch applicationWithAction.IsDeploy {
+			case true:
+				modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
+			case false:
+				var newApplications []Application
+				for _, app := range modelDeploymentConfig.Applications {
+					if app.Name != applicationWithAction.Application.Name {
+						newApplications = append(newApplications, app)
+					}
+				}
+				modelDeploymentConfig.Applications = newApplications
+			}
+
+			modelDeploymentConfigData, err := yaml.Marshal(modelDeploymentConfig)
+			if err != nil {
+				fmt.Printf("error while Marshaling deployment config: %v", err)
+			}
+
+			if err := os.WriteFile(configFilePath, modelDeploymentConfigData, 0666); err != nil {
+				fmt.Printf("error creating deployment config: %v", err)
+			}
+
+			doneChan <- true
+		}
+	}(r.configChan, r.doneChan)
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
@@ -509,57 +582,62 @@ func (r *ray) UndeployModel(modelPath string) error {
 }
 
 func (r *ray) DeployContainerizedModel(modelPath string, imageName string) error {
-	modelPythonPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	applicationName := strings.Join(strings.Split(modelPythonPath, "/")[3:], "_")
+	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
 
-	modelDeploymentConfig := ModelDeploymentConfig{
-		Applications: []Application{
-			{
-				Name:        applicationName,
-				ImportPath:  "model:entrypoint",
-				RoutePrefix: "/" + applicationName,
-				RuntimeEnv: RuntimeEnv{
-					Container: Container{
-						Image: fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
-						RunOptions: []string{
-							"--tls-verify=false",
-							"--pull=always",
-							"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
-							"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
-							"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
-						},
-					},
+	applicationConfig := Application{
+		Name:        applicationName,
+		ImportPath:  "model:entrypoint",
+		RoutePrefix: "/" + applicationName,
+		RuntimeEnv: RuntimeEnv{
+			Container: Container{
+				Image: fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
+				RunOptions: []string{
+					"--tls-verify=false",
+					"--pull=always",
+					"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+					"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+					"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
 				},
 			},
 		},
 	}
-	configData, err := yaml.Marshal(&modelDeploymentConfig)
-	if err != nil {
-		return fmt.Errorf("error while Marshaling deployment config: %w", err)
+
+	r.configChan <- ApplicationWithAction{
+		Application: applicationConfig,
+		IsDeploy:    true,
 	}
 
-	if err := os.WriteFile(path.Join(modelPythonPath, "deploy.yaml"), configData, 0666); err != nil {
-		return fmt.Errorf("error creating deployment config: %w", err)
-	}
+	<-r.doneChan
 
 	cmd := exec.Command("serve", "run", "deploy.yaml", "--non-blocking", "-a", strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001"))
-	cmd.Dir = modelPythonPath
+	cmd.Dir = config.Config.RayServer.ModelStore
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
+	err := cmd.Run()
 
 	return err
 }
 
 func (r *ray) UndeployContainerizedModel(modelPath string) error {
-	modelPythonPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	applicationName := strings.Join(strings.Split(modelPythonPath, "/")[3:], "_")
+	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
 
-	cmd := exec.Command("python", "-c", fmt.Sprintf("from undeploy import undeploy; undeploy(%q, %q)", applicationName, strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001")))
-	cmd.Dir = "./pkg/ray"
+	applicationConfig := Application{
+		Name: applicationName,
+	}
 
+	r.configChan <- ApplicationWithAction{
+		Application: applicationConfig,
+		IsDeploy:    false,
+	}
+
+	<-r.doneChan
+
+	cmd := exec.Command("serve", "run", "deploy.yaml", "--non-blocking", "-a", strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001"))
+	cmd.Dir = config.Config.RayServer.ModelStore
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -134,6 +134,11 @@ type ModelDeploymentConfig struct {
 	Applications []Application `yaml:"applications"`
 }
 
+type ApplicationWithAction struct {
+	Application Application
+	IsDeploy    bool
+}
+
 type Application struct {
 	Name        string     `yaml:"name"`
 	ImportPath  string     `yaml:"import_path"`
