@@ -590,9 +590,9 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error while Unmarshaling deployment config: %v", err))
 		}
 
+		newApplications := []Application{}
 		switch applicationWithAction.IsDeploy {
 		case true:
-			var newApplications []Application
 			for _, app := range modelDeploymentConfig.Applications {
 				if app.Name != applicationWithAction.Application.Name {
 					newApplications = append(newApplications, app)
@@ -601,7 +601,6 @@ func (r *ray) sync() {
 			modelDeploymentConfig.Applications = newApplications
 			modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
 		case false:
-			var newApplications []Application
 			for _, app := range modelDeploymentConfig.Applications {
 				if app.Name != applicationWithAction.Application.Name {
 					newApplications = append(newApplications, app)
