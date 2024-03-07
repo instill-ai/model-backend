@@ -1,10 +1,12 @@
 package ray
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -40,8 +42,7 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
-	DeployContainerizedModel(modelPath string, imageName string) error
-	UndeployContainerizedModel(modelPath string) error
+	UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error
 	Init()
 	Close()
 }
@@ -51,6 +52,7 @@ type ray struct {
 	rayServeClient rayserver.RayServeAPIServiceClient
 	rayHTTPClient  *http.Client
 	connection     *grpc.ClientConn
+	configFilePath string
 	configChan     chan ApplicationWithAction
 	doneChan       chan bool
 }
@@ -83,12 +85,11 @@ func (r *ray) Init() {
 	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan bool, 10000)
-
-	configFilePath := path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
+	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
 
 	var modelDeploymentConfig ModelDeploymentConfig
 	isCorrupted := false
-	currentConfigFile, err := os.ReadFile(configFilePath)
+	currentConfigFile, err := os.ReadFile(r.configFilePath)
 	if err != nil {
 		isCorrupted = true
 	}
@@ -97,7 +98,7 @@ func (r *ray) Init() {
 		isCorrupted = true
 	}
 
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) || isCorrupted {
+	if _, err := os.Stat(r.configFilePath); os.IsNotExist(err) || isCorrupted {
 		initDeployConfig := ModelDeploymentConfig{
 			Applications: []Application{},
 		}
@@ -105,53 +106,14 @@ func (r *ray) Init() {
 		if err != nil {
 			fmt.Printf("error while Marshaling deployment config: %v", err)
 		}
-		if err := os.WriteFile(configFilePath, initConfigData, 0666); err != nil {
+		if err := os.WriteFile(r.configFilePath, initConfigData, 0666); err != nil {
 			fmt.Printf("error creating deployment config: %v", err)
 		}
 	}
 
 	// avoid race condition with file writing
 	// add/remove application entries
-	go func(configChan chan ApplicationWithAction, doneChan chan bool) {
-		for {
-			applicationWithAction := <-configChan
-
-			var modelDeploymentConfig ModelDeploymentConfig
-
-			currentConfigFile, err := os.ReadFile(configFilePath)
-			if err != nil {
-				fmt.Printf("error while reading deployment config: %v", err)
-			}
-			err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
-			if err != nil {
-				fmt.Printf("error while Unmarshaling deployment config: %v", err)
-			}
-
-			switch applicationWithAction.IsDeploy {
-			case true:
-				modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
-			case false:
-				var newApplications []Application
-				for _, app := range modelDeploymentConfig.Applications {
-					if app.Name != applicationWithAction.Application.Name {
-						newApplications = append(newApplications, app)
-					}
-				}
-				modelDeploymentConfig.Applications = newApplications
-			}
-
-			modelDeploymentConfigData, err := yaml.Marshal(modelDeploymentConfig)
-			if err != nil {
-				fmt.Printf("error while Marshaling deployment config: %v", err)
-			}
-
-			if err := os.WriteFile(configFilePath, modelDeploymentConfigData, 0666); err != nil {
-				fmt.Printf("error creating deployment config: %v", err)
-			}
-
-			doneChan <- true
-		}
-	}(r.configChan, r.doneChan)
+	go r.sync()
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
@@ -184,7 +146,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		logger.Error(err.Error())
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := r.rayHTTPClient.Do(req)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -581,7 +543,7 @@ func (r *ray) UndeployModel(modelPath string) error {
 	return err
 }
 
-func (r *ray) DeployContainerizedModel(modelPath string, imageName string) error {
+func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error {
 	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
 
@@ -605,46 +567,87 @@ func (r *ray) DeployContainerizedModel(modelPath string, imageName string) error
 
 	r.configChan <- ApplicationWithAction{
 		Application: applicationConfig,
-		IsDeploy:    true,
+		IsDeploy:    isDeploy,
 	}
 
 	<-r.doneChan
 
-	cmd := exec.Command("serve", "run", "deploy.yaml", "--non-blocking", "-a", strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001"))
-	cmd.Dir = config.Config.RayServer.ModelStore
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-
-	return err
+	return nil
 }
 
-func (r *ray) UndeployContainerizedModel(modelPath string) error {
-	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
-	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
+func (r *ray) sync() {
+	for {
+		applicationWithAction := <-r.configChan
 
-	applicationConfig := Application{
-		Name: applicationName,
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		logger, _ := custom_logger.GetZapLogger(ctx)
+		var modelDeploymentConfig ModelDeploymentConfig
+
+		currentConfigFile, err := os.ReadFile(r.configFilePath)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
+		}
+		err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Unmarshaling deployment config: %v", err))
+		}
+
+		switch applicationWithAction.IsDeploy {
+		case true:
+			var newApplications []Application
+			for _, app := range modelDeploymentConfig.Applications {
+				if app.Name != applicationWithAction.Application.Name {
+					newApplications = append(newApplications, app)
+				}
+			}
+			modelDeploymentConfig.Applications = newApplications
+			modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
+		case false:
+			var newApplications []Application
+			for _, app := range modelDeploymentConfig.Applications {
+				if app.Name != applicationWithAction.Application.Name {
+					newApplications = append(newApplications, app)
+				}
+			}
+			modelDeploymentConfig.Applications = newApplications
+		}
+
+		modelDeploymentConfigData, err := yaml.Marshal(modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Marshaling YAML deployment config: %v", err))
+		}
+
+		if err := os.WriteFile(r.configFilePath, modelDeploymentConfigData, 0666); err != nil {
+			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+		}
+
+		modelDeploymentConfigJson, err := json.Marshal(modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Marshaling JSON deployment config: %v", err))
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJson))
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while creating deployment request: %v", err))
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := r.rayHTTPClient.Do(req)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while sending deployment request: %v", err))
+		}
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		bodyString := string(bodyBytes)
+		logger.Info(bodyString)
+
+		resp.Body.Close()
+		cancel()
+
+		r.doneChan <- true
 	}
-
-	r.configChan <- ApplicationWithAction{
-		Application: applicationConfig,
-		IsDeploy:    false,
-	}
-
-	<-r.doneChan
-
-	cmd := exec.Command("serve", "run", "deploy.yaml", "--non-blocking", "-a", strings.ReplaceAll(fmt.Sprintf("ray://%s", config.Config.RayServer.GrpcURI), "9000", "10001"))
-	cmd.Dir = config.Config.RayServer.ModelStore
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-
-	return err
 }
 
 func (r *ray) Close() {

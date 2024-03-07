@@ -131,7 +131,7 @@ type VisualQuestionAnsweringOutput struct {
 }
 
 type ModelDeploymentConfig struct {
-	Applications []Application `yaml:"applications"`
+	Applications []Application `yaml:"applications" json:"applications"`
 }
 
 type ApplicationWithAction struct {
@@ -140,17 +140,17 @@ type ApplicationWithAction struct {
 }
 
 type Application struct {
-	Name        string     `yaml:"name"`
-	ImportPath  string     `yaml:"import_path"`
-	RoutePrefix string     `yaml:"route_prefix"`
-	RuntimeEnv  RuntimeEnv `yaml:"runtime_env"`
+	Name        string     `yaml:"name" json:"name"`
+	ImportPath  string     `yaml:"import_path" json:"import_path"`
+	RoutePrefix string     `yaml:"route_prefix" json:"route_prefix"`
+	RuntimeEnv  RuntimeEnv `yaml:"runtime_env" json:"runtime_env"`
 }
 
 type RuntimeEnv struct {
-	Container Container `yaml:"container"`
+	Container Container `yaml:"container" json:"container"`
 }
 
 type Container struct {
-	Image      string   `yaml:"image"`
-	RunOptions []string `yaml:"run_options"`
+	Image      string   `yaml:"image" json:"image"`
+	RunOptions []string `yaml:"run_options" json:"run_options"`
 }

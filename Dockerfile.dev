@@ -43,7 +43,6 @@ ENV PATH="$VENV/bin:$PATH"
 # RUN export PIP_DEFAULT_TIMEOUT=10000
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install dvc[gs]==2.34.2
-RUN pip install ray[serve]==2.9.3
 
 # -- set up Go
 COPY go.mod go.sum ./
