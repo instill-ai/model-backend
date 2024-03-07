@@ -54,7 +54,7 @@ type ray struct {
 	connection     *grpc.ClientConn
 	configFilePath string
 	configChan     chan ApplicationWithAction
-	doneChan       chan bool
+	doneChan       chan error
 }
 
 func NewRay() Ray {
@@ -84,7 +84,7 @@ func (r *ray) Init() {
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
 	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
 	r.configChan = make(chan ApplicationWithAction, 10000)
-	r.doneChan = make(chan bool, 10000)
+	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
 
 	var modelDeploymentConfig ModelDeploymentConfig
@@ -570,9 +570,7 @@ func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDep
 		IsDeploy:    isDeploy,
 	}
 
-	<-r.doneChan
-
-	return nil
+	return <-r.doneChan
 }
 
 func (r *ray) sync() {
@@ -640,13 +638,14 @@ func (r *ray) sync() {
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		bodyString := string(bodyBytes)
-		logger.Info(bodyString)
+		if resp.StatusCode != http.StatusOK {
+			err = fmt.Errorf("error while sending deployment request, status code: %v, description: %v", resp.StatusCode, string(bodyBytes))
+		}
 
 		resp.Body.Close()
 		cancel()
 
-		r.doneChan <- true
+		r.doneChan <- err
 	}
 }
 
