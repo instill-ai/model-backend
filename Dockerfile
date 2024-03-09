@@ -27,7 +27,7 @@ RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /usr/l
 RUN mkdir /model-repository
 RUN mkdir /.cache
 
-FROM --platform=$BUILDPLATFORM golang:${GOLANG_VERSION}
+FROM golang:${GOLANG_VERSION}
 
 ENV DEBIAN_FRONTEND noninteractive
 
