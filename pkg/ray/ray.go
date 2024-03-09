@@ -620,12 +620,12 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
 		}
 
-		modelDeploymentConfigJson, err := json.Marshal(modelDeploymentConfig)
+		modelDeploymentConfigJSON, err := json.Marshal(modelDeploymentConfig)
 		if err != nil {
 			logger.Error(fmt.Sprintf("error while Marshaling JSON deployment config: %v", err))
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJson))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJSON))
 		if err != nil {
 			logger.Error(fmt.Sprintf("error while creating deployment request: %v", err))
 		}
