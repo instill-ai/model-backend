@@ -338,8 +338,8 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 			st, err := sterr.CreateErrorResourceInfo(
 				codes.FailedPrecondition,
 				"[handler] create a model error: unsupported task",
-				"README.md file",
-				"README.md contains unsupported task",
+				"request body",
+				"request body contains unsupported task",
 				"",
 				"",
 			)
