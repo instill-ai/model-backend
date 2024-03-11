@@ -24,7 +24,7 @@ export function ListModelDefinitions(header) {
         [`GET /v1alpha/model-definitions response total_size`]: (r) =>
           r.json().total_size == 3,
         [`GET /v1alpha/model-definitions response model_definitions.length`]: (r) =>
-          r.json().model_definitions.length === 2,
+          r.json().model_definitions.length === 3,
         [`GET /v1alpha/model-definitions response model_definitions[0].name`]: (r) =>
           r.json().model_definitions[0].name === "model-definitions/container",
         [`GET /v1alpha/model-definitions response model_definitions[0].uid`]: (r) =>
@@ -50,7 +50,7 @@ export function ListModelDefinitions(header) {
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response total_size`]: (r) =>
         r.json().total_size == 3,
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions.length`]: (r) =>
-        r.json().model_definitions.length === 2,
+        r.json().model_definitions.length === 3,
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].name`]: (r) =>
         r.json().model_definitions[0].name === "model-definitions/container",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response model_definitions[0].uid`]: (r) =>
