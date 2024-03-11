@@ -93,6 +93,15 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 				return err
 			}
 		}
+	case "container":
+		name := filepath.Join(param.Model.Owner, param.Model.ID)
+		if err = w.ray.UpdateContainerizedModel(name, param.Model.ID, true); err != nil {
+			logger.Error(fmt.Sprintf("containerized ray model deployment failed: %v", err))
+			return err
+		}
+
+		logger.Info("DeployModelActivity completed")
+		return nil
 	case "huggingface":
 		if !utils.HasModelWeightFile(config.Config.RayServer.ModelStore, param.Model) {
 			var modelConfig datamodel.HuggingFaceModelConfiguration
@@ -187,6 +196,20 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	logger := activity.GetLogger(ctx)
 	logger.Info("UnDeployModelActivity started")
+
+	modelDef, err := w.repository.GetModelDefinitionByUID(param.Model.ModelDefinitionUID)
+	if err != nil {
+		return err
+	}
+
+	if modelDef.ID == "container" {
+		name := filepath.Join(param.Model.Owner, param.Model.ID)
+		if err := w.ray.UpdateContainerizedModel(name, param.Model.ID, false); err != nil {
+			logger.Error(fmt.Sprintf("containerized ray model undeployment failed: %v", err))
+		}
+		logger.Info("UnDeployModelActivity completed")
+		return nil
+	}
 
 	name := filepath.Join(param.Model.Owner, param.Model.ID)
 	if err := w.ray.UndeployModel(name); err != nil {

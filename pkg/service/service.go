@@ -966,7 +966,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return err
 	}
 
-	if *state == modelPB.Model_STATE_UNSPECIFIED {
+	if *state == modelPB.Model_STATE_UNSPECIFIED && workflowID != nil {
 		if err := s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received"); err != nil {
 			return err
 		}
@@ -984,6 +984,10 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		// 	logger.Error(err.Error())
 		// }
 		// return st.Err()
+	}
+
+	if _, err = s.UndeployNamespaceModelAsyncAdmin(ctx, dbModel.UID); err != nil {
+		return err
 	}
 
 	offlineState := datamodel.ModelState(modelPB.Model_STATE_OFFLINE)

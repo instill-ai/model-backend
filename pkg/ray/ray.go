@@ -1,15 +1,18 @@
 package ray
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -38,6 +42,7 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
+	UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error
 	Init()
 	Close()
 }
@@ -47,6 +52,9 @@ type ray struct {
 	rayServeClient rayserver.RayServeAPIServiceClient
 	rayHTTPClient  *http.Client
 	connection     *grpc.ClientConn
+	configFilePath string
+	configChan     chan ApplicationWithAction
+	doneChan       chan error
 }
 
 func NewRay() Ray {
@@ -56,10 +64,9 @@ func NewRay() Ray {
 }
 
 func (r *ray) Init() {
-	grpcURI := config.Config.RayServer.GrpcURI
 	// Connect to gRPC server
 	conn, err := grpc.Dial(
-		grpcURI,
+		config.Config.RayServer.GrpcURI,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
@@ -68,7 +75,7 @@ func (r *ray) Init() {
 	)
 
 	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint %s: %v", grpcURI, err)
+		log.Fatalf("Couldn't connect to endpoint %s: %v", config.Config.RayServer.GrpcURI, err)
 	}
 
 	// Create client from gRPC server connection
@@ -76,6 +83,37 @@ func (r *ray) Init() {
 	r.rayClient = rayserver.NewRayServiceClient(conn)
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
 	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
+	r.configChan = make(chan ApplicationWithAction, 10000)
+	r.doneChan = make(chan error, 10000)
+	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
+
+	var modelDeploymentConfig ModelDeploymentConfig
+	isCorrupted := false
+	currentConfigFile, err := os.ReadFile(r.configFilePath)
+	if err != nil {
+		isCorrupted = true
+	}
+	err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
+	if err != nil {
+		isCorrupted = true
+	}
+
+	if _, err := os.Stat(r.configFilePath); os.IsNotExist(err) || isCorrupted {
+		initDeployConfig := ModelDeploymentConfig{
+			Applications: []Application{},
+		}
+		initConfigData, err := yaml.Marshal(&initDeployConfig)
+		if err != nil {
+			fmt.Printf("error while Marshaling deployment config: %v", err)
+		}
+		if err := os.WriteFile(r.configFilePath, initConfigData, 0666); err != nil {
+			fmt.Printf("error creating deployment config: %v", err)
+		}
+	}
+
+	// avoid race condition with file writing
+	// add/remove application entries
+	go r.sync()
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
@@ -108,7 +146,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		logger.Error(err.Error())
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := r.rayHTTPClient.Do(req)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -132,6 +170,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 	case "RUNNING":
 		return modelPB.Model_STATE_ONLINE.Enum(), nil
 	case "DEPLOY_FAILED":
+		return modelPB.Model_STATE_ERROR.Enum(), nil
 	case "UNHEALTHY":
 		for i := range application.Deployments {
 			if application.Deployments[i].Status == "STARTING" {
@@ -140,6 +179,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 		}
 		return modelPB.Model_STATE_ERROR.Enum(), nil
 	case "DEPLOYING":
+		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
 	case "DELETING":
 		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
 	case "NOT_STARTED":
@@ -501,6 +541,112 @@ func (r *ray) UndeployModel(modelPath string) error {
 	err := cmd.Run()
 
 	return err
+}
+
+func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error {
+	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
+	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
+
+	applicationConfig := Application{
+		Name:        applicationName,
+		ImportPath:  "model:entrypoint",
+		RoutePrefix: "/" + applicationName,
+		RuntimeEnv: RuntimeEnv{
+			Container: Container{
+				Image: fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
+				RunOptions: []string{
+					"--tls-verify=false",
+					"--pull=always",
+					"--rm",
+					"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+					"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+					"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
+				},
+			},
+		},
+	}
+
+	r.configChan <- ApplicationWithAction{
+		Application: applicationConfig,
+		IsDeploy:    isDeploy,
+	}
+
+	return <-r.doneChan
+}
+
+func (r *ray) sync() {
+	for {
+		applicationWithAction := <-r.configChan
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		logger, _ := custom_logger.GetZapLogger(ctx)
+		var modelDeploymentConfig ModelDeploymentConfig
+
+		currentConfigFile, err := os.ReadFile(r.configFilePath)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
+		}
+		err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Unmarshaling deployment config: %v", err))
+		}
+
+		newApplications := []Application{}
+		switch applicationWithAction.IsDeploy {
+		case true:
+			for _, app := range modelDeploymentConfig.Applications {
+				if app.Name != applicationWithAction.Application.Name {
+					newApplications = append(newApplications, app)
+				}
+			}
+			modelDeploymentConfig.Applications = newApplications
+			modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
+		case false:
+			for _, app := range modelDeploymentConfig.Applications {
+				if app.Name != applicationWithAction.Application.Name {
+					newApplications = append(newApplications, app)
+				}
+			}
+			modelDeploymentConfig.Applications = newApplications
+		}
+
+		modelDeploymentConfigData, err := yaml.Marshal(modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Marshaling YAML deployment config: %v", err))
+		}
+
+		if err := os.WriteFile(r.configFilePath, modelDeploymentConfigData, 0666); err != nil {
+			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+		}
+
+		modelDeploymentConfigJSON, err := json.Marshal(modelDeploymentConfig)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while Marshaling JSON deployment config: %v", err))
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJSON))
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while creating deployment request: %v", err))
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := r.rayHTTPClient.Do(req)
+		if err != nil {
+			logger.Error(fmt.Sprintf("error while sending deployment request: %v", err))
+		}
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		if resp.StatusCode != http.StatusOK {
+			err = fmt.Errorf("error while sending deployment request, status code: %v, description: %v", resp.StatusCode, string(bodyBytes))
+		}
+
+		resp.Body.Close()
+		cancel()
+
+		r.doneChan <- err
+	}
 }
 
 func (r *ray) Close() {
