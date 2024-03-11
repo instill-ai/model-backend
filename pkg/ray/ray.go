@@ -558,7 +558,6 @@ func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDep
 					"--tls-verify=false",
 					"--pull=always",
 					"--rm",
-					"--retry=5",
 					"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
 					"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
 					"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
