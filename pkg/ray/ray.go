@@ -557,7 +557,8 @@ func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDep
 				RunOptions: []string{
 					"--tls-verify=false",
 					"--pull=always",
-					"--gpus all",
+					"--device nvidia.com/gpu=all",
+					"--security-opt=label=disable",
 					"--rm",
 					"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
 					"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
