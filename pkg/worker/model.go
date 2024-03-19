@@ -94,8 +94,12 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			}
 		}
 	case "container":
+		var modelConfig datamodel.ContainerizedModelConfiguration
+		if err := json.Unmarshal(param.Model.Configuration, &modelConfig); err != nil {
+			return err
+		}
 		name := filepath.Join(param.Model.Owner, param.Model.ID)
-		if err = w.ray.UpdateContainerizedModel(name, param.Model.ID, true); err != nil {
+		if err = w.ray.UpdateContainerizedModel(name, param.Model.ID, modelConfig.GPU, true); err != nil {
 			logger.Error(fmt.Sprintf("containerized ray model deployment failed: %v", err))
 			return err
 		}
@@ -204,7 +208,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 
 	if modelDef.ID == "container" {
 		name := filepath.Join(param.Model.Owner, param.Model.ID)
-		if err := w.ray.UpdateContainerizedModel(name, param.Model.ID, false); err != nil {
+		if err := w.ray.UpdateContainerizedModel(name, param.Model.ID, false, false); err != nil {
 			logger.Error(fmt.Sprintf("containerized ray model undeployment failed: %v", err))
 		}
 		logger.Info("UnDeployModelActivity completed")

@@ -42,7 +42,7 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
-	UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error
+	UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool) error
 	Init()
 	Close()
 }
@@ -543,9 +543,22 @@ func (r *ray) UndeployModel(modelPath string) error {
 	return err
 }
 
-func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool) error {
 	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
+
+	runOptions := []string{
+		"--tls-verify=false",
+		"--pull=always",
+		"--rm",
+		"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+		"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+		"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
+	}
+
+	if useGPU {
+		runOptions = append(runOptions, "--device nvidia.com/gpu=all")
+	}
 
 	applicationConfig := Application{
 		Name:        applicationName,
@@ -553,16 +566,8 @@ func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, isDep
 		RoutePrefix: "/" + applicationName,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{
-				Image: fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
-				RunOptions: []string{
-					"--tls-verify=false",
-					"--pull=always",
-					"--device nvidia.com/gpu=all",
-					"--rm",
-					"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
-					"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
-					"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
-				},
+				Image:      fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
+				RunOptions: runOptions,
 			},
 		},
 	}
