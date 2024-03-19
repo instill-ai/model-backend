@@ -75,10 +75,11 @@
     type: "object"
     required:
       - "task"
+      - "gpu"
     instillShortDescription: ""
     additionalProperties: false
-    minProperties: 1
-    maxProperties: 1
+    minProperties: 2
+    maxProperties: 2
     properties:
       task:
         type: "string"
@@ -86,5 +87,13 @@
         title: "Enter your model's Instill Task"
         description: "Create and upload a containerized model which uses this Instill Task."
         instillUIOrder: 0
+        minLength: 0
+        maxLength: 1023
+      gpu:
+        type: "boolean"
+        instillUIComponent: "boolean"
+        title: "If your model needs to run on GPU"
+        description: "Select whether your model needs to run on GPU or not"
+        instillUIOrder: 1
         minLength: 0
         maxLength: 1023
