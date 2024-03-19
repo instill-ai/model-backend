@@ -132,6 +132,7 @@ type LocalModelConfiguration struct {
 type ContainerizedModelConfiguration struct {
 	Task string `json:"task,omitempty"`
 	Tag  string `json:"tag,omitempty"`
+	GPU  bool   `json:"gpu,omitempty"`
 }
 
 type ListModelQuery struct {
