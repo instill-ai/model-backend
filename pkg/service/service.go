@@ -81,8 +81,8 @@ type Service interface {
 	// Private
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
-	DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error)
-	UndeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error)
+	DeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error)
+	UndeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error)
 	CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
 
 	// Controller
@@ -986,7 +986,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		// return st.Err()
 	}
 
-	if _, err = s.UndeployNamespaceModelAsyncAdmin(ctx, dbModel.UID); err != nil {
+	if _, err = s.UndeployNamespaceModelAsyncAdmin(ctx, ns.NsID, dbModel.UID); err != nil {
 		return err
 	}
 
@@ -1122,6 +1122,18 @@ func (s *service) UpdateNamespaceModelStateByID(ctx context.Context, ns resource
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, model.Id, false)
 	if err != nil {
 		return nil, err
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "admin"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNoPermission
 	}
 
 	dbState := datamodel.ModelState(state)

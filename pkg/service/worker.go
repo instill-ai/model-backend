@@ -126,7 +126,7 @@ func (s *service) CreateNamespaceModelAsync(ctx context.Context, ns resource.Nam
 	return id.String(), nil
 }
 
-func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error) {
+func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
@@ -149,7 +149,8 @@ func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID u
 		workflowOptions,
 		"DeployModelWorkflow",
 		&worker.ModelParams{
-			Model: model,
+			UserID: userID,
+			Model:  model,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -161,7 +162,7 @@ func (s *service) DeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID u
 	return id.String(), nil
 }
 
-func (s *service) UndeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID uuid.UUID) (string, error) {
+func (s *service) UndeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	id, _ := uuid.NewV4()
@@ -184,7 +185,8 @@ func (s *service) UndeployNamespaceModelAsyncAdmin(ctx context.Context, modelUID
 		workflowOptions,
 		"UnDeployModelWorkflow",
 		&worker.ModelParams{
-			Model: model,
+			UserID: userID,
+			Model:  model,
 		})
 
 	if err != nil {
