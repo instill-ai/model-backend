@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.24.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.23.0-alpha...v0.24.0-alpha) (2024-03-21)
+
+
+### Features
+
+* **ray:** support containerized model deployment ([#529](https://github.com/instill-ai/model-backend/issues/529)) ([4dcab05](https://github.com/instill-ai/model-backend/commit/4dcab059f1be5ad14242982b19c5cbfd1d0fb822))
+
+
+### Bug Fixes
+
+* **ray:** check CDI availability for model container ([#538](https://github.com/instill-ai/model-backend/issues/538)) ([28bad42](https://github.com/instill-ai/model-backend/commit/28bad42948b4de2859e7856735d2ca58b194eff7))
+
 ## [0.23.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.22.0-alpha...v0.23.0-alpha) (2024-03-09)
 
 
