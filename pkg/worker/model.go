@@ -24,7 +24,8 @@ import (
 )
 
 type ModelParams struct {
-	Model *datamodel.Model
+	UserID string
+	Model  *datamodel.Model
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -103,7 +104,7 @@ func (w *worker) DeployModelActivity(ctx context.Context, param *ModelParams) er
 			return err
 		}
 		name := filepath.Join(param.Model.Owner, param.Model.ID)
-		if err = w.ray.UpdateContainerizedModel(name, param.Model.ID, modelConfig.GPU, true, model_digest); err != nil {
+		if err = w.ray.UpdateContainerizedModel(name, param.UserID, param.Model.ID, modelConfig.GPU, true, model_digest); err != nil {
 			logger.Error(fmt.Sprintf("containerized ray model deployment failed: %v", err))
 			return err
 		}
@@ -219,7 +220,7 @@ func (w *worker) UnDeployModelActivity(ctx context.Context, param *ModelParams) 
 		if model_digest == "" {
 			model_digest = "latest"
 		}
-		if err := w.ray.UpdateContainerizedModel(name, param.Model.ID, false, false, model_digest); err != nil {
+		if err := w.ray.UpdateContainerizedModel(name, param.UserID, param.Model.ID, false, false, model_digest); err != nil {
 			logger.Error(fmt.Sprintf("containerized ray model undeployment failed: %v", err))
 		}
 		logger.Info("UnDeployModelActivity completed")

@@ -159,7 +159,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 	}
 
-	wfID, err := h.service.DeployNamespaceModelAsyncAdmin(ctx, modelUID)
+	wfID, err := h.service.DeployNamespaceModelAsyncAdmin(ctx, ns.NsID, modelUID)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -202,7 +202,17 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	wfID, err := h.service.UndeployNamespaceModelAsyncAdmin(ctx, modelUID)
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+
+	ns, _, err := h.service.GetRscNamespaceAndNameID(pbModel.GetOwnerName())
+	if err != nil {
+		return nil, err
+	}
+
+	wfID, err := h.service.UndeployNamespaceModelAsyncAdmin(ctx, ns.NsID, modelUID)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
