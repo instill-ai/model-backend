@@ -68,6 +68,7 @@ type Service interface {
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
 	UpdateNamespaceModelStateByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, state modelPB.Model_State) (*modelPB.Model, error)
+	UpdateNamespaceModelVersion(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, version string) (*modelPB.Model, error)
 
 	CreateNamespaceModelAsync(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) (string, error)
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
@@ -1127,6 +1128,31 @@ func (s *service) UpdateNamespaceModelStateByID(ctx context.Context, ns resource
 	dbState := datamodel.ModelState(state)
 
 	if err := s.repository.UpdateNamespaceModelStateByID(ctx, ownerPermalink, dbModel.ID, &dbState); err != nil {
+		return nil, err
+	}
+
+	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, dbModel.ID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
+}
+
+func (s *service) UpdateNamespaceModelVersion(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, version string) (*modelPB.Model, error) {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, model.Id, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repository.UpdateNamespaceModelVersionByID(ctx, ownerPermalink, dbModel.ID, version); err != nil {
 		return nil, err
 	}
 

@@ -90,6 +90,27 @@ type Model struct {
 
 	// Model state
 	State ModelState `json:"state,omitempty"`
+
+	// Model Region
+	Region sql.NullString
+
+	// Model Hardware Spec
+	HardwareSpec sql.NullString
+
+	// Model Github Link
+	GithubLink sql.NullString
+
+	// Model Link
+	Link sql.NullString
+
+	// Model License
+	License sql.NullString
+
+	// Model Namespace
+	Namespace sql.NullString
+
+	// Model Version, the latest digest sha256 hash of the model
+	Version sql.NullString
 }
 
 type ModelInferResult struct {
@@ -103,6 +124,35 @@ type ModelInferResult struct {
 
 	// Model uid
 	ModelUID uuid.UUID `json:"model_uid,omitempty"`
+}
+
+type ModelVerion struct {
+	BaseDynamic
+
+	Version int `json:"version,omitempty"`
+
+	Digest string `json:"digest,omitempty"`
+
+	SyncTime time.Time `gorm:"autoUpdateTime:nano"`
+
+	ModelUID uuid.UUID `json:"model_uid,omitempty"`
+}
+
+type Prediction struct {
+	// TODO: add fields: `Requests`, `Logs`, `Metrics`
+	ModelInferResult
+
+	Source string `json:"source,omitempty"`
+
+	Status string `json:"status,omitempty"`
+
+	RunTime string `json:"run_time,omitempty"`
+
+	BlobLink string `json:"blob_link,omitempty"`
+
+	Result string `json:"result,omitempty"`
+
+	ModelVersionUID uuid.UUID `json:"model_version_uuid,omitempty"`
 }
 
 // Model configuration

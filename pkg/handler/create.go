@@ -272,6 +272,8 @@ func createGitHubModel(s service.Service, ctx context.Context, model *modelPB.Mo
 }
 
 func createContainerizedModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*longrunningpb.Operation, error) {
+	model_namespace := ns.NsID + "/" + model.GetId()
+	model.Namespace = model_namespace
 
 	eventName := "CreateContainerizedModel"
 

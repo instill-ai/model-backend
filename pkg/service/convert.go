@@ -60,6 +60,34 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			Valid:  true,
 		},
 		Visibility: datamodel.ModelVisibility(pbModel.Visibility),
+		Region: sql.NullString{
+			String: pbModel.GetRegion(),
+			Valid:  true,
+		},
+		HardwareSpec: sql.NullString{
+			String: pbModel.GetHardwareSpec(),
+			Valid:  true,
+		},
+		GithubLink: sql.NullString{
+			String: pbModel.GetGithubLink(),
+			Valid:  true,
+		},
+		Link: sql.NullString{
+			String: pbModel.GetLink(),
+			Valid:  true,
+		},
+		License: sql.NullString{
+			String: pbModel.GetLicense(),
+			Valid:  true,
+		},
+		Namespace: sql.NullString{
+			String: pbModel.GetNamespace(),
+			Valid:  true,
+		},
+		Version: sql.NullString{
+			String: pbModel.GetVersion(),
+			Valid:  true,
+		},
 	}
 }
 
@@ -122,8 +150,15 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 			}
 			return nil
 		}(),
-		OwnerName: ownerName,
-		Owner:     owner,
+		OwnerName:    ownerName,
+		Owner:        owner,
+		Region:       dbModel.Region.String,
+		HardwareSpec: dbModel.HardwareSpec.String,
+		GithubLink:   dbModel.GithubLink.String,
+		Link:         dbModel.Link.String,
+		License:      dbModel.License.String,
+		Namespace:    fmt.Sprintf("%s/%s", ownerName, modelDef.ID),
+		Version:      dbModel.Version.String,
 	}
 
 	return &pbModel, nil

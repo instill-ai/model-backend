@@ -8,12 +8,16 @@ import (
 	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
@@ -210,4 +214,86 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 			Response: &anypb.Any{},
 		},
 	}}, nil
+}
+
+func (h *PrivateHandler) CheckModelNamespaceExist(ctx context.Context, req *modelPB.CheckModelNamespaceExistRequest) (*modelPB.CheckModelNamespaceExistResponse, error) {
+
+	modelNamespace, err := resource.GetModelNamespace(req.ModelNamespace)
+	if err != nil {
+		return &modelPB.CheckModelNamespaceExistResponse{IsNamespaceExisted: false}, err
+	}
+	pbModel, err := h.service.GetRepository().GetModelByModelNamespace(ctx, modelNamespace, true)
+
+	fmt.Println("[Tony DEBUG] CheckModelNamespaceExist, pbModel: ", pbModel)
+	if err != nil {
+		return &modelPB.CheckModelNamespaceExistResponse{IsNamespaceExisted: false}, nil
+	}
+	return &modelPB.CheckModelNamespaceExistResponse{IsNamespaceExisted: true}, err
+}
+
+// Private: Update Admin Model Namepsace Admin
+// Update DB State, Write DB
+// Set, Unset,
+// Remove ACL
+// SetModelDeployState(SetModelDeployStateRequest) returns (SetModelDeployStateResponse) {
+
+func (h *PrivateHandler) SetModelDeployState(ctx context.Context, req *modelPB.SetModelDeployStateRequest) (*modelPB.SetModelDeployStateResponse, error) {
+
+	eventName := "SetModelDeployState"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	// TODO: Remove ACL Part
+	authUser, err := h.service.AuthenticateUser(ctx, false)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	// set model version
+	if _, err := h.service.UpdateNamespaceModelVersion(ctx, ns, authUser, pbModel, req.GetVersion()); err != nil {
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	// set user desired state to STATE_ONLINE
+	if _, err := h.service.UpdateNamespaceModelStateByID(ctx, ns, authUser, pbModel, modelPB.Model_STATE_ONLINE); err != nil {
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	state := modelPB.Model_STATE_OFFLINE.Enum()
+	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
+		if state, _, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
+			return &modelPB.SetModelDeployStateResponse{}, err
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		span,
+		logUUID.String(),
+		authUser.UID,
+		eventName,
+		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+	)))
+
+	return &modelPB.SetModelDeployStateResponse{ModelNamespace: modelID}, nil
 }

@@ -42,7 +42,7 @@ type Ray interface {
 	IsRayServerReady(ctx context.Context) bool
 	DeployModel(modelPath string) error
 	UndeployModel(modelPath string) error
-	UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool) error
+	UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool, modelTag string) error
 	Init()
 	Close()
 }
@@ -543,7 +543,8 @@ func (r *ray) UndeployModel(modelPath string) error {
 	return err
 }
 
-func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, useGPU bool, isDeploy bool, modelTag string) error {
+	userID := "" // TODO: Remove after pulling
 	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
 
@@ -566,7 +567,7 @@ func (r *ray) UpdateContainerizedModel(modelPath string, imageName string, useGP
 		RoutePrefix: "/" + applicationName,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{
-				Image:      fmt.Sprintf("%s:%v/%s", config.Config.Registry.Host, config.Config.Registry.Port, imageName),
+				Image:      fmt.Sprintf("%s:%v/%s/%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName, modelTag),
 				RunOptions: runOptions,
 			},
 		},
