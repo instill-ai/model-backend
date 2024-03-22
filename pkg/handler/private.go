@@ -259,7 +259,13 @@ func (h *PrivateHandler) SetModelDeployState(ctx context.Context, req *modelPB.S
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	dmModel, err := h.service.GetRepository().GetModelByModelNamespace(ctx, req.GetName(), true)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.SetModelDeployStateResponse{}, err
+	}
+
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(dmModel.Owner) // 還是要區分 user or organizatoin
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.SetModelDeployStateResponse{}, err
