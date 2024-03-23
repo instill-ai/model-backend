@@ -271,14 +271,33 @@ func (h *PrivateHandler) SetModelDeployState(ctx context.Context, req *modelPB.S
 		return &modelPB.SetModelDeployStateResponse{}, err
 	}
 
-	// TODO: Remove ACL Part
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return &modelPB.SetModelDeployStateResponse{}, err
+	var authUser *service.AuthUser
+	if ns.NsType == resource.Organization {
+		resp, err := h.service.GetMgmtPrivateServiceClient().GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
+			Name: ns.Name(),
+		})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.SetModelDeployStateResponse{}, err
+		}
+		orgOwnerNS, _, err := h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return &modelPB.SetModelDeployStateResponse{}, err
+		}
+
+		authUser = &service.AuthUser{
+			UID:       orgOwnerNS.NsUID,
+			IsVisitor: false,
+		}
+	} else {
+		authUser = &service.AuthUser{
+			UID:       ns.NsUID,
+			IsVisitor: false,
+		}
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByUIDAdmin(ctx, dmModel.UID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.SetModelDeployStateResponse{}, err
