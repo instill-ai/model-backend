@@ -29,7 +29,7 @@ database:
   host: pg-sql
   port: 5432
   name: model
-  version: 4
+  version: 5
   timezone: Etc/UTC
   pool:
     idleconnections: 5

@@ -31,14 +31,25 @@ type Repository interface {
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
 	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
 	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
+	UpdateNamespaceModelVersionByID(ctx context.Context, ownerPermalink string, id string, version string) error
 	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
+	CreateModelVersion(ctx context.Context, ownerPermalink string, modelVersion *datamodel.ModelVerion) error
+	ListModelVersions(view modelPB.View, pageSize int64, pageToken string) (versions []*datamodel.ModelVerion, nextPageToken string, totalSize int64, err error)
+	// GetLatestModelVersions(id string) (*datamodel.ModelVerion, error)
+	// GetModelVersionByUID(id string) (*datamodel.ModelVerion, error)
+
+	// CreatePrediction(ctx context.Context, ownerPermalink string, prediction *datamodel.Prediction) error
+	// ListPredictions(view modelPB.View, pageSize int64, pageToken string) (versions []*datamodel.Prediction, nextPageToken string, totalSize int64, err error)
+	// GetPredictionByUID(id string) (*datamodel.Prediction, error)
+
 	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
+	GetModelByModelNamespace(ctx context.Context, namespace string, isBasicView bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 }
 
@@ -230,6 +241,14 @@ func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBa
 	)
 }
 
+func (r *repository) GetModelByModelNamespace(ctx context.Context, namespace string, isBasicView bool) (*datamodel.Model, error) {
+	return r.getNamespaceModel(ctx,
+		"(namespace = ?)",
+		[]any{namespace},
+		isBasicView,
+	)
+}
+
 func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {
 	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
 		return result.Error
@@ -264,6 +283,18 @@ func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPer
 	if result := r.db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
 		Updates(map[string]any{"state": state}); result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return ErrNoDataUpdated
+	}
+
+	return nil
+}
+
+func (r *repository) UpdateNamespaceModelVersionByID(ctx context.Context, ownerPermalink string, id string, version string) error {
+	if result := r.db.Model(&datamodel.Model{}).
+		Where("(id = ? AND owner = ?)", id, ownerPermalink).
+		Updates(map[string]any{"version": version}); result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
 		return ErrNoDataUpdated
@@ -361,4 +392,70 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pag
 	}
 
 	return definitions, nextPageToken, totalSize, nil
+}
+
+func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink string, modelVersion *datamodel.ModelVerion) error {
+	if result := r.db.Model(&datamodel.ModelVerion{}).Create(modelVersion); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (r *repository) ListModelVersions(view modelPB.View, pageSize int64, pageToken string) (versions []*datamodel.ModelVerion, nextPageToken string, totalSize int64, err error) {
+	if result := r.db.Model(&datamodel.ModelVerion{}).Count(&totalSize); result.Error != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+	}
+
+	queryBuilder := r.db.Model(&datamodel.ModelVerion{}).Order("create_time DESC, digest DESC")
+
+	if pageSize == 0 {
+		pageSize = DefaultPageSize
+	} else if pageSize > MaxPageSize {
+		pageSize = MaxPageSize
+	}
+	queryBuilder = queryBuilder.Limit(int(pageSize))
+
+	if pageToken != "" {
+		createTime, digest, err := paginate.DecodeToken(pageToken)
+		if err != nil {
+			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
+		}
+		queryBuilder = queryBuilder.Where("(create_time,digest) < (?::timestamp, ?)", createTime, digest)
+	}
+
+	if view != modelPB.View_VIEW_FULL {
+		queryBuilder.Omit("model_spec")
+	}
+
+	var createTime time.Time
+	rows, err := queryBuilder.Rows()
+	if err != nil {
+		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item *datamodel.ModelVerion
+		if err = r.db.ScanRows(rows, &item); err != nil {
+			return nil, "", 0, status.Error(codes.Internal, err.Error())
+		}
+		createTime = item.CreateTime
+		versions = append(versions, item)
+	}
+
+	if len(versions) > 0 {
+		lastDigest := (versions)[len(versions)-1].Digest
+		lastItem := &datamodel.ModelVerion{}
+		if result := r.db.Model(&datamodel.ModelVerion{}).
+			Order("create_time ASC, digest ASC").
+			Limit(1).Find(lastItem); result.Error != nil {
+			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+		}
+		if lastItem.Digest == lastDigest {
+			nextPageToken = ""
+		} else {
+			nextPageToken = paginate.EncodeToken(createTime, lastDigest)
+		}
+	}
+
+	return versions, nextPageToken, totalSize, nil
 }
