@@ -70,12 +70,6 @@ temporal:
   cert:
   key:
   servername:
-controller:
-  host: controller-model
-  privateport: 3086
-  https:
-    cert:
-    key:
 initmodel:
   ownertype: users
   ownerid: admin

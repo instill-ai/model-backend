@@ -4,21 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/x/sterr"
 
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -53,110 +45,37 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *PrivateHandler) CheckModelAdmin(ctx context.Context, req *modelPB.CheckModelAdminRequest) (*modelPB.CheckModelAdminResponse, error) {
-
-	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
-	if err != nil {
-		return &modelPB.CheckModelAdminResponse{}, err
-	}
-
-	state, err := h.service.CheckModelAdmin(ctx, modelUID)
-	if err != nil {
-		return &modelPB.CheckModelAdminResponse{}, err
-	}
-
-	return &modelPB.CheckModelAdminResponse{
-		State: *state,
-	}, nil
-}
-
 func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.DeployModelAdminRequest) (*modelPB.DeployModelAdminResponse, error) {
 
-	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
-	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
-	}
-
-	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
-	}
-
-	ns, _, err := h.service.GetRscNamespaceAndNameID(pbModel.GetOwnerName())
+	rscName, err := h.service.ConvertRepositoryNameToRscName(req.GetRepositoryName())
 	if err != nil {
 		return nil, err
 	}
 
-	var authUser *service.AuthUser
-	if ns.NsType == resource.Organization {
-		resp, err := h.service.GetMgmtPrivateServiceClient().GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
-			Name: ns.Name(),
-		})
-		if err != nil {
-			return nil, err
-		}
-		orgOwnerNS, _, err := h.service.GetRscNamespaceAndNameID(resp.GetOrganization().GetOwner().GetName())
-		if err != nil {
-			return nil, err
-		}
-
-		authUser = &service.AuthUser{
-			UID:       orgOwnerNS.NsUID,
-			IsVisitor: false,
-		}
-	} else {
-		authUser = &service.AuthUser{
-			UID:       ns.NsUID,
-			IsVisitor: false,
-		}
-	}
-
-	if !utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, ns.Permalink(), pbModel.Id) {
-
-		modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
-		if err != nil {
-			return &modelPB.DeployModelAdminResponse{}, err
-		}
-
-		modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefID)
-		if err != nil {
-			return &modelPB.DeployModelAdminResponse{}, err
-		}
-
-		var operation *longrunningpb.Operation
-
-		switch modelDefinition.ID {
-		case "github":
-			operation, err = createGitHubModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
-		case "artivc":
-			operation, err = createArtiVCModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
-		case "huggingface":
-			operation, err = createHuggingFaceModel(h.service, ctx, pbModel, ns, authUser, modelDefinition)
-		default:
-			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinition.ID))
-		}
-		if err != nil {
-			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, fmt.Sprintf("model creation error: %v", err))
-		}
-
-		done := false
-		for !done {
-			time.Sleep(time.Second)
-			operation, err = h.service.GetOperation(ctx, strings.Split(operation.Name, "/")[1])
-			if err != nil {
-				return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "get model create operation error")
-			}
-			done = operation.Done
-		}
-
-		if operation.GetError() != nil {
-			return &modelPB.DeployModelAdminResponse{}, status.Errorf(codes.Internal, "model create operation error")
-		}
-
-	}
-
-	wfID, err := h.service.DeployNamespaceModelAsyncAdmin(ctx, ns.NsID, modelUID)
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(rscName)
 	if err != nil {
+		return nil, err
+	}
+
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, modelID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	dbModel := h.service.PBToDBModel(ctx, ns, pbModel)
+
+	version := &datamodel.ModelVersion{
+		Name:     req.GetRepositoryName(),
+		ID:       req.GetTag(),
+		Digest:   req.GetDigest(),
+		ModelUID: dbModel.UID,
+	}
+
+	if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
+		return &modelPB.DeployModelAdminResponse{}, err
+	}
+
+	if err := h.service.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, req.GetTag(), true); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
@@ -165,16 +84,6 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 			"",
 			err.Error(),
 		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] deploy model error",
-				"ray-server",
-				"Out of memory for deploying the model to ray server, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
 
 		if e != nil {
 			return &modelPB.DeployModelAdminResponse{}, errors.New(e.Error())
@@ -182,42 +91,53 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, st.Err()
 	}
 
-	return &modelPB.DeployModelAdminResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfID),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}}, nil
+	return &modelPB.DeployModelAdminResponse{}, nil
 }
 
 func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.UndeployModelAdminRequest) (*modelPB.UndeployModelAdminResponse, error) {
 
-	modelUID, err := resource.GetRscPermalinkUID(req.ModelPermalink)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-
-	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
-	}
-
-	ns, _, err := h.service.GetRscNamespaceAndNameID(pbModel.GetOwnerName())
+	rscName, err := h.service.ConvertRepositoryNameToRscName(req.GetRepositoryName())
 	if err != nil {
 		return nil, err
 	}
 
-	wfID, err := h.service.UndeployNamespaceModelAsyncAdmin(ctx, ns.NsID, modelUID)
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(rscName)
+	if err != nil {
+		return nil, err
+	}
+
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	return &modelPB.UndeployModelAdminResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfID),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}}, nil
+	dbModel := h.service.PBToDBModel(ctx, ns, pbModel)
+
+	version := &datamodel.ModelVersion{
+		Name:     req.GetRepositoryName(),
+		ID:       req.GetTag(),
+		Digest:   req.GetDigest(),
+		ModelUID: dbModel.UID,
+	}
+
+	if err := h.service.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, req.GetTag(), false); err != nil {
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.Internal,
+			fmt.Sprintf("[handler] undeploy a model error: %s", err.Error()),
+			"ray-server",
+			"undeploy model",
+			"",
+			err.Error(),
+		)
+
+		if e != nil {
+			return &modelPB.UndeployModelAdminResponse{}, errors.New(e.Error())
+		}
+		return &modelPB.UndeployModelAdminResponse{}, st.Err()
+	}
+
+	if err := h.service.DeleteModelVersionAdmin(ctx, version); err != nil {
+		return &modelPB.UndeployModelAdminResponse{}, err
+	}
+	return &modelPB.UndeployModelAdminResponse{}, nil
 }

@@ -9,8 +9,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
-
-	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 )
 
 // Namespace is the Temporal namespace for model-backend
@@ -34,17 +32,15 @@ type worker struct {
 	repository       repository.Repository
 	ray              ray.Ray
 	aclClient        *acl.ACLClient
-	controllerClient controllerPB.ControllerPrivateServiceClient
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, rc *redis.Client, c controllerPB.ControllerPrivateServiceClient, ra ray.Ray, a *acl.ACLClient) Worker {
+func NewWorker(r repository.Repository, rc *redis.Client, ra ray.Ray, a *acl.ACLClient) Worker {
 
 	return &worker{
 		repository:       r,
 		redisClient:      rc,
 		ray:              ra,
-		controllerClient: c,
 		aclClient:        a,
 	}
 }

@@ -21,28 +21,10 @@ ARG K6_VERSION
 ADD https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-${TARGETARCH}.tar.gz k6-v${K6_VERSION}-linux-${TARGETARCH}.tar.gz
 RUN tar -xf k6-v${K6_VERSION}-linux-$TARGETARCH.tar.gz --strip-components 1 -C /usr/bin
 
-# ArtiVC to work with cloud storage
-ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
-RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /bin
-
 # tools to work with versatile model import
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-setuptools \
-    python3-pip \
-    python3-venv \
-    git \
-    git-lfs \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
-ENV VENV=/opt/venv
-RUN python3 -m venv $VENV
-ENV PATH="$VENV/bin:$PATH"
-
-# RUN export PIP_DEFAULT_TIMEOUT=10000
-RUN pip install --upgrade pip setuptools wheel
-RUN pip install dvc[gs]==2.34.2
 
 # -- set up Go
 COPY go.mod go.sum ./

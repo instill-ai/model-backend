@@ -1,34 +1,24 @@
 package handler
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	fieldmask_utils "github.com/mennanov/fieldmask-utils"
@@ -57,291 +47,6 @@ func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string
 		Detail: detail,
 	})
 	_, _ = w.Write(obj)
-}
-
-// HandleCreateModelByMultiPartFormData is a custom handler
-func HandleCreateModelByMultiPartFormData(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-
-	eventName := "HandleCreateModelByMultiPartFormData"
-
-	ctx, span := tracer.Start(req.Context(), eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	headers := map[string]string{}
-	// inject header into ctx
-	for key, value := range req.Header {
-		if len(value) > 0 {
-			headers[key] = value[0]
-		}
-	}
-	md := metadata.New(headers)
-	ctx = metadata.NewIncomingContext(ctx, md)
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	contentType := req.Header.Get("Content-Type")
-	if !strings.Contains(contentType, "multipart/form-data") {
-		w.Header().Add("Content-Type", "application/json+problem")
-		w.WriteHeader(405)
-		span.SetStatus(1, "")
-		return
-	}
-
-	authUser, err := s.AuthenticateUser(ctx, false)
-	if err != nil {
-		sta := status.Convert(err)
-		switch sta.Code() {
-		case codes.NotFound:
-			makeJSONResponse(w, 404, "Not found", "User not found")
-			span.SetStatus(1, "User not found")
-			return
-		default:
-			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
-			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
-			return
-		}
-	}
-
-	parent := pathParams["parent"]
-
-	ns, _, err := s.GetRscNamespaceAndNameID(parent)
-	if err != nil {
-		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
-		span.SetStatus(1, "Model path format error")
-		return
-	}
-
-	modelID := req.FormValue("id")
-	if modelID == "" {
-		makeJSONResponse(w, 400, "Missing parameter", "Model Id need to be specified")
-		span.SetStatus(1, "Model Id need to be specified")
-		return
-	}
-
-	modelDefinitionName := req.FormValue("model_definition")
-	if modelDefinitionName == "" {
-		makeJSONResponse(w, 400, "Missing parameter", "modelDefinitionName need to be specified")
-		span.SetStatus(1, "modelDefinitionName need to be specified")
-		return
-	}
-	modelDefinitionID, err := resource.GetDefinitionID(modelDefinitionName)
-	if err != nil {
-		makeJSONResponse(w, 400, "Invalid parameter", err.Error())
-		span.SetStatus(1, err.Error())
-		return
-	}
-
-	viz := req.FormValue("visibility")
-	var visibility modelPB.Model_Visibility
-	if viz != "" {
-		if utils.Visibility[viz] == modelPB.Model_VISIBILITY_UNSPECIFIED {
-			makeJSONResponse(w, 400, "Invalid parameter", "Visibility is invalid")
-			span.SetStatus(1, "Visibility is invalid")
-			return
-		} else {
-			visibility = utils.Visibility[viz]
-		}
-	} else {
-		visibility = modelPB.Model_VISIBILITY_PRIVATE
-	}
-
-	err = req.ParseMultipartForm(4 << 20)
-	if err != nil {
-		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
-		return
-	}
-	file, fileHeader, err := req.FormFile("content")
-	if err != nil {
-		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
-		return
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	buf := bytes.NewBuffer(make([]byte, 0))
-	part := make([]byte, 1024)
-	count := 0
-	for {
-		if count, err = reader.Read(part); err != nil {
-			if !errors.Is(err, io.EOF) {
-				makeJSONResponse(w, 400, "File Error", "Error reading input file")
-				span.SetStatus(1, "Error reading input file")
-				return
-			}
-			break
-		}
-		buf.Write(part[:count])
-	}
-
-	rdid, _ := uuid.NewV4()
-	tmpFile := path.Join("/tmp", rdid.String())
-	fp, err := os.Create(tmpFile)
-	if err != nil {
-		makeJSONResponse(w, 400, "File Error", "Error reading input file")
-		span.SetStatus(1, "Error reading input file")
-		return
-	}
-	err = utils.WriteToFp(fp, buf.Bytes())
-	if err != nil {
-		makeJSONResponse(w, 400, "File Error", "Error reading input file")
-		span.SetStatus(1, "Error reading input file")
-		return
-	}
-
-	// validate model configuration
-	localModelDefinition, err := s.GetRepository().GetModelDefinition(modelDefinitionID)
-	if err != nil {
-		makeJSONResponse(w, 400, "Parameter invalid", "ModelDefinitionId not found")
-		span.SetStatus(1, "ModelDefinitionId not found")
-		return
-	}
-	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(localModelDefinition.ModelSpec.String()), rs); err != nil {
-		makeJSONResponse(w, 500, "Add Model Error", "Could not get model definition")
-		span.SetStatus(1, "Could not get model definition")
-		return
-	}
-	modelConfiguration := datamodel.LocalModelConfiguration{
-		Content: fileHeader.Filename,
-	}
-
-	if err := datamodel.ValidateJSONSchema(rs, modelConfiguration, true); err != nil {
-		makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-		return
-	}
-	modelConfiguration.Tag = "latest" // Set after validation. Because the model definition do not contain tag.
-
-	bModelConfig, _ := json.Marshal(modelConfiguration)
-	var uploadedModel = datamodel.Model{
-		ID:                 modelID,
-		ModelDefinitionUID: localModelDefinition.UID,
-		Owner:              authUser.Permalink(),
-		Visibility:         datamodel.ModelVisibility(visibility),
-		State:              datamodel.ModelState(modelPB.Model_STATE_OFFLINE),
-		Description: sql.NullString{
-			String: req.FormValue("description"),
-			Valid:  true,
-		},
-		Configuration: bModelConfig,
-	}
-
-	// Validate ModelDefinition JSON Schema
-	pbModel, err := s.DBToPBModel(ctx, localModelDefinition, &uploadedModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return
-	}
-	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, pbModel, true); err != nil {
-		makeJSONResponse(w, 400, "Add Model Error", fmt.Sprintf("Model definition is invalid %v", err.Error()))
-		span.SetStatus(1, fmt.Sprintf("Model definition is invalid %v", err.Error()))
-		return
-	}
-
-	_, err = s.GetNamespaceModelByID(ctx, ns, authUser, uploadedModel.ID, modelPB.View_VIEW_FULL)
-	if err == nil {
-		makeJSONResponse(w, 409, "Add Model Error", fmt.Sprintf("The model %v already existed", uploadedModel.ID))
-		span.SetStatus(1, fmt.Sprintf("The model %v already existed", uploadedModel.ID))
-		return
-	}
-
-	readmeFilePath, err := utils.Unzip(tmpFile, config.Config.RayServer.ModelStore, authUser.Permalink(), &uploadedModel)
-	_ = os.Remove(tmpFile) // remove uploaded temporary zip file
-	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-		makeJSONResponse(w, 400, "Add Model Error", err.Error())
-		span.SetStatus(1, err.Error())
-		return
-	}
-	if _, err := os.Stat(readmeFilePath); err == nil {
-		modelMeta, err := utils.GetModelMetaFromReadme(readmeFilePath)
-		if err != nil {
-			utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-			makeJSONResponse(w, 400, "Add Model Error", err.Error())
-			span.SetStatus(1, err.Error())
-			return
-		}
-		if modelMeta.Task == "" {
-			uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
-		} else {
-			if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-				uploadedModel.Task = datamodel.ModelTask(val)
-			} else {
-				utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-				makeJSONResponse(w, 400, "Add Model Error", "README.md contains unsupported task")
-				span.SetStatus(1, "README.md contains unsupported task")
-				return
-			}
-		}
-	} else {
-		uploadedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
-	}
-
-	// TODO: properly support batch inference
-	maxBatchSize := 0
-	allowedMaxBatchSize := utils.GetSupportedBatchSize(uploadedModel.Task)
-
-	if maxBatchSize > allowedMaxBatchSize {
-		st, e := sterr.CreateErrorPreconditionFailure(
-			"[handler] create a model",
-			[]*errdetails.PreconditionFailure_Violation{
-				{
-					Type:        "MAX BATCH SIZE LIMITATION",
-					Subject:     "Create a model error",
-					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
-				},
-			})
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-		obj, _ := json.Marshal(st.Details())
-		makeJSONResponse(w, 400, st.Message(), string(obj))
-		span.SetStatus(1, string(obj))
-		return
-	}
-
-	wfID, err := s.CreateNamespaceModelAsync(ctx, ns, authUser, &uploadedModel)
-	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-		makeJSONResponse(w, 500, "Add Model Error", err.Error())
-		span.SetStatus(1, err.Error())
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json+problem")
-	w.WriteHeader(201)
-
-	m := protojson.MarshalOptions{UseProtoNames: true, UseEnumNumbers: false, EmitUnpopulated: true}
-	b, err := m.Marshal(&modelPB.CreateUserModelResponse{Operation: &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", wfID),
-		Done: false,
-		Result: &longrunningpb.Operation_Response{
-			Response: &anypb.Any{},
-		},
-	}})
-	if err != nil {
-		utils.RemoveModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), uploadedModel.ID)
-		makeJSONResponse(w, 500, "Add Model Error", err.Error())
-		span.SetStatus(1, err.Error())
-		return
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		span,
-		logUUID.String(),
-		authUser.UID,
-		eventName,
-		custom_otel.SetEventResource(uploadedModel),
-	)))
-
-	_, _ = w.Write(b)
-
 }
 
 func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsRequest) (*modelPB.ListModelsResponse, error) {
@@ -393,17 +98,17 @@ type CreateNamespaceModelRequestInterface interface {
 
 func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelPB.CreateUserModelRequest) (resp *modelPB.CreateUserModelResponse, err error) {
 	resp = &modelPB.CreateUserModelResponse{}
-	resp.Operation, err = h.createNamespaceModel(ctx, req)
+	resp.Model, err = h.createNamespaceModel(ctx, req)
 	return resp, err
 }
 
 func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelPB.CreateOrganizationModelRequest) (resp *modelPB.CreateOrganizationModelResponse, err error) {
 	resp = &modelPB.CreateOrganizationModelResponse{}
-	resp.Operation, err = h.createNamespaceModel(ctx, req)
+	resp.Model, err = h.createNamespaceModel(ctx, req)
 	return resp, err
 }
 
-func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateNamespaceModelRequestInterface) (*longrunningpb.Operation, error) {
+func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateNamespaceModelRequestInterface) (*modelPB.Model, error) {
 
 	ctx, span := tracer.Start(ctx, "CreateNamespaceModel",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -448,11 +153,9 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return nil, err
 	}
 
-	if model, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
-		if utils.HasModelInModelRepository(config.Config.RayServer.ModelStore, authUser.Permalink(), model.Id) {
-			span.SetStatus(1, "Model already existed")
-			return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
-		}
+	if _, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
+		span.SetStatus(1, "Model already existed")
+		return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
 
 	if modelToCreate.GetConfiguration() == nil {
@@ -484,12 +187,6 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 	}
 
 	switch modelDefinitionID {
-	case "github":
-		return createGitHubModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
-	case "artivc":
-		return createArtiVCModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
-	case "huggingface":
-		return createHuggingFaceModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	case "container":
 		return createContainerizedModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
 	default:
@@ -1053,156 +750,6 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 	return pbModel, nil
 }
 
-type DeployNamespaceModelRequestInterface interface {
-	GetName() string
-}
-
-func (h *PublicHandler) DeployUserModel(ctx context.Context, req *modelPB.DeployUserModelRequest) (resp *modelPB.DeployUserModelResponse, err error) {
-	resp = &modelPB.DeployUserModelResponse{}
-	resp.ModelId, err = h.deployNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) DeployOrganizationModel(ctx context.Context, req *modelPB.DeployOrganizationModelRequest) (resp *modelPB.DeployOrganizationModelResponse, err error) {
-	resp = &modelPB.DeployOrganizationModelResponse{}
-	resp.ModelId, err = h.deployNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) deployNamespaceModel(ctx context.Context, req DeployNamespaceModelRequestInterface) (string, error) {
-
-	eventName := "DeployNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	// set user desired state to STATE_ONLINE
-	if _, err := h.service.UpdateNamespaceModelStateByID(ctx, ns, authUser, pbModel, modelPB.Model_STATE_ONLINE); err != nil {
-		return "", err
-	}
-
-	state := modelPB.Model_STATE_OFFLINE.Enum()
-	for state.String() == modelPB.Model_STATE_OFFLINE.String() {
-		if state, _, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
-			return "", err
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		span,
-		logUUID.String(),
-		authUser.UID,
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return modelID, nil
-}
-
-type UndeployNamespaceModelRequestInterface interface {
-	GetName() string
-}
-
-func (h *PublicHandler) UndeployUserModel(ctx context.Context, req *modelPB.UndeployUserModelRequest) (resp *modelPB.UndeployUserModelResponse, err error) {
-	resp = &modelPB.UndeployUserModelResponse{}
-	resp.ModelId, err = h.undeployNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) UndeployOrganizationModel(ctx context.Context, req *modelPB.UndeployOrganizationModelRequest) (resp *modelPB.UndeployOrganizationModelResponse, err error) {
-	resp = &modelPB.UndeployOrganizationModelResponse{}
-	resp.ModelId, err = h.undeployNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) undeployNamespaceModel(ctx context.Context, req UndeployNamespaceModelRequestInterface) (string, error) {
-
-	eventName := "UndeployNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	// set user desired state to STATE_OFFLINE
-	if _, err := h.service.UpdateNamespaceModelStateByID(ctx, ns, authUser, pbModel, modelPB.Model_STATE_OFFLINE); err != nil {
-		span.SetStatus(1, err.Error())
-		return "", err
-	}
-
-	state := modelPB.Model_STATE_ONLINE.Enum()
-	for state.String() == modelPB.Model_STATE_ONLINE.String() {
-		if state, _, err = h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
-			return "", err
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		span,
-		logUUID.String(),
-		authUser.UID,
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return modelID, nil
-}
-
 type WatchNamespaceModelRequestInterface interface {
 	GetName() string
 }
@@ -1221,7 +768,7 @@ func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelPB
 	return resp, err
 }
 
-func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.Model_State, error) {
+func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.State, error) {
 
 	eventName := "WatchNamespaceModel"
 
@@ -1236,7 +783,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return modelPB.Model_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, err
 	}
 
 	authUser, err := h.service.AuthenticateUser(ctx, false)
@@ -1250,11 +797,10 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.Model_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, err
 	}
 
-	// check permission
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_BASIC)
+	state, err := h.service.WatchModel(ctx, ns, authUser, modelID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -1265,21 +811,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.Model_STATE_ERROR, err
-	}
-
-	state, _, err := h.service.GetResourceState(ctx, uuid.FromStringOrNil(pbModel.Uid))
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		logger.Info(string(custom_otel.NewLogMessage(
-			span,
-			logUUID.String(),
-			authUser.UID,
-			eventName,
-			custom_otel.SetEventResource(req.GetName()),
-			custom_otel.SetErrorMessage(err.Error()),
-		)))
-		return modelPB.Model_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, err
 	}
 
 	return *state, nil

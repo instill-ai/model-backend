@@ -93,16 +93,6 @@ type CacheConfig struct {
 	}
 }
 
-// ControllerConfig related to controller
-type ControllerConfig struct {
-	Host        string `koanf:"host"`
-	PrivatePort int    `koanf:"privateport"`
-	HTTPS       struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
-}
-
 type InitModelConfig struct {
 	OwnerType string `koanf:"ownertype"`
 	OwnerID   string `koanf:"ownerid"`
@@ -164,7 +154,6 @@ type AppConfig struct {
 	Cache                  CacheConfig        `koanf:"cache"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig     `koanf:"temporal"`
-	Controller             ControllerConfig   `koanf:"controller"`
 	OpenFGA                OpenFGAConfig      `koanf:"openfga"`
 	Registry               RegistryConfig     `koanf:"registry"`
 	InitModel              InitModelConfig    `koanf:"initmodel"`

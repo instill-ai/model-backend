@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gogo/status"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -43,10 +42,6 @@ type ModelConfig struct {
 
 type GetNamespaceModelResponseInterface interface {
 	GetModel() *modelPB.Model
-}
-
-type CreateNamespaceModelResponseInterface interface {
-	GetOperation() *longrunningpb.Operation
 }
 
 // InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
@@ -238,9 +233,8 @@ func main() {
 			}
 
 			logger.Info("Creating model: " + modelConfig.ID)
-			var createResp CreateNamespaceModelResponseInterface
 			if config.Config.InitModel.OwnerType == string(resource.User) {
-				createResp, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
+				_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
 					Model: &modelPB.Model{
 						Id:              modelConfig.ID,
 						Description:     &modelConfig.Description,
@@ -251,7 +245,7 @@ func main() {
 					Parent: name,
 				})
 			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				createResp, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
+				_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
 					Model: &modelPB.Model{
 						Id:              modelConfig.ID,
 						Description:     &modelConfig.Description,
@@ -273,61 +267,40 @@ func main() {
 				}
 				return
 			} else {
-				isCreated := false
-				startTime := time.Now()
-				for {
-					if isCreated || time.Since(startTime) > 5*time.Minute {
-						break
-					}
-					operation, err := modelPublicServiceClient.GetModelOperation(ctx, &modelPB.GetModelOperationRequest{
-						Name: createResp.GetOperation().GetName(),
-					})
-					if err != nil {
-						logger.Fatal("handler.GetModelOperation: " + err.Error())
-						return
-					}
-					isCreated = operation.Operation.Done
-					time.Sleep(1 * time.Second)
-				}
-				if !isCreated {
-					logger.Fatal("handler.CreateModel: " + err.Error())
-					return
-				} else {
-					if config.Config.InitModel.OwnerType == string(resource.User) {
-						if _, err = modelPublicServiceClient.PublishUserModel(ctx, &modelPB.PublishUserModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						}); err != nil {
-							logger.Error(fmt.Sprintf("publish model err: %v", err))
-							return
-						}
-						_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						})
-					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-						if _, err = modelPublicServiceClient.PublishOrganizationModel(ctx, &modelPB.PublishOrganizationModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						}); err != nil {
-							logger.Error(fmt.Sprintf("publish model err: %v", err))
-							return
-						}
-						_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						})
-					}
-					if err != nil {
-						logger.Error(fmt.Sprintf("deploy model err: %v", err))
-						if e, ok := status.FromError(err); ok {
-							if e.Code() == codes.FailedPrecondition {
-								logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
-								return
-							}
-							logger.Error(fmt.Sprintf("deploy model err: %v", e))
-							return
-						}
-						logger.Error("handler.DeployModel: " + err.Error())
-						return
-					}
-				}
+				// if config.Config.InitModel.OwnerType == string(resource.User) {
+				// 	if _, err = modelPublicServiceClient.PublishUserModel(ctx, &modelPB.PublishUserModelRequest{
+				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				// 	}); err != nil {
+				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
+				// 		return
+				// 	}
+				// 	_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
+				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				// 	})
+				// } else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+				// 	if _, err = modelPublicServiceClient.PublishOrganizationModel(ctx, &modelPB.PublishOrganizationModelRequest{
+				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				// 	}); err != nil {
+				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
+				// 		return
+				// 	}
+				// 	_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
+				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				// 	})
+				// }
+				// if err != nil {
+				// 	logger.Error(fmt.Sprintf("deploy model err: %v", err))
+				// 	if e, ok := status.FromError(err); ok {
+				// 		if e.Code() == codes.FailedPrecondition {
+				// 			logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+				// 			return
+				// 		}
+				// 		logger.Error(fmt.Sprintf("deploy model err: %v", e))
+				// 		return
+				// 	}
+				// 	logger.Error("handler.DeployModel: " + err.Error())
+				// 	return
+				// }
 				return
 			}
 		}(modelConfig)

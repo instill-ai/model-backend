@@ -170,9 +170,6 @@ func main() {
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
-	defer controllerClientConn.Close()
-
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),
 		TextMapPropagator: propagator,
@@ -235,7 +232,7 @@ func main() {
 
 	repo := repository.NewRepository(db)
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, controllerClient, rayService, &aclClient)
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
@@ -272,16 +269,6 @@ func main() {
 
 	// Register custom route for  POST /v1alpha/organizations/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
 	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
-		panic(err)
-	}
-
-	// Register custom route for  POST /v1alpha/users/*/models/multipart which uploads model for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=users/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleCreateModelByMultiPartFormData)); err != nil {
-		panic(err)
-	}
-
-	// Register custom route for  POST /v1alpha/organizations/*/models/multipart which uploads model for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{parent=organizations/*}/models/multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleCreateModelByMultiPartFormData)); err != nil {
 		panic(err)
 	}
 

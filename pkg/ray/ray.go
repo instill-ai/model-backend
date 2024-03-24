@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -25,7 +24,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
-	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -34,15 +32,13 @@ import (
 
 type Ray interface {
 	// grpc
-	ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.Model_State, error)
+	ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.State, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse
 	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, modelInstance string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	DeployModel(modelPath string) error
-	UndeployModel(modelPath string) error
-	UpdateContainerizedModel(modelPath string, userID string, imageName string, useGPU bool, isDeploy bool) error
+	UpdateContainerizedModel(modelPath string, userID string, imageName string, version string, useGPU bool, isDeploy bool) error
 	Init()
 	Close()
 }
@@ -132,7 +128,7 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	}
 }
 
-func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.Model_State, error) {
+func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance string) (*modelPB.State, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName)
@@ -162,31 +158,31 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, modelInstance st
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelPB.Model_STATE_OFFLINE.Enum(), nil
+		return modelPB.State_STATE_OFFLINE.Enum(), nil
 	}
 
 	// TODO: currently we assume only one deployment per application, need to account for multiple deployments in the future
 	switch application.Status {
 	case "RUNNING":
-		return modelPB.Model_STATE_ONLINE.Enum(), nil
+		return modelPB.State_STATE_ACTIVE.Enum(), nil
 	case "DEPLOY_FAILED":
-		return modelPB.Model_STATE_ERROR.Enum(), nil
+		return modelPB.State_STATE_ERROR.Enum(), nil
 	case "UNHEALTHY":
 		for i := range application.Deployments {
 			if application.Deployments[i].Status == "STARTING" {
-				return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
+				return modelPB.State_STATE_SCALING.Enum(), nil
 			}
 		}
-		return modelPB.Model_STATE_ERROR.Enum(), nil
+		return modelPB.State_STATE_ERROR.Enum(), nil
 	case "DEPLOYING":
-		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
+		return modelPB.State_STATE_SCALING.Enum(), nil
 	case "DELETING":
-		return modelPB.Model_STATE_UNSPECIFIED.Enum(), nil
+		return modelPB.State_STATE_SCALING.Enum(), nil
 	case "NOT_STARTED":
-		return modelPB.Model_STATE_OFFLINE.Enum(), nil
+		return modelPB.State_STATE_OFFLINE.Enum(), nil
 	}
 
-	return modelPB.Model_STATE_ERROR.Enum(), nil
+	return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, modelInstance string) *rayserver.ModelMetadataResponse {
@@ -515,35 +511,7 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 	return outputs, nil
 }
 
-func (r *ray) DeployModel(modelPath string) error {
-	modelPythonPath := utils.FindModelPythonDir(filepath.Join(config.Config.RayServer.ModelStore, modelPath))
-	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.deploy(%q, %q, %q)", modelPythonPath, config.Config.RayServer.GrpcURI, config.Config.RayServer.Vram))
-	cmd.Dir = modelPythonPath
-
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-
-	return err
-}
-
-func (r *ray) UndeployModel(modelPath string) error {
-	modelPythonPath := utils.FindModelPythonDir(filepath.Join(config.Config.RayServer.ModelStore, modelPath))
-	cmd := exec.Command("/ray-conda/bin/python", "-c", fmt.Sprintf("from model import deployable; deployable.undeploy(%q, %q)", modelPythonPath, config.Config.RayServer.GrpcURI))
-	cmd.Dir = modelPythonPath
-
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-
-	return err
-}
-
-func (r *ray) UpdateContainerizedModel(modelPath string, userID string, imageName string, useGPU bool, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(modelPath string, userID string, imageName string, version string, useGPU bool, isDeploy bool) error {
 	absModelPath := filepath.Join(config.Config.RayServer.ModelStore, modelPath)
 	applicationName := strings.Join(strings.Split(absModelPath, "/")[3:], "_")
 
@@ -566,7 +534,7 @@ func (r *ray) UpdateContainerizedModel(modelPath string, userID string, imageNam
 		RoutePrefix: "/" + applicationName,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{
-				Image:      fmt.Sprintf("%s:%v/%s/%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName),
+				Image:      fmt.Sprintf("%s:%v/%s/%s:%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName, version),
 				RunOptions: runOptions,
 			},
 		},
