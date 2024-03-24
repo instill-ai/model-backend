@@ -4,11 +4,9 @@ go 1.21
 
 require (
 	cloud.google.com/go/longrunning v0.5.1
-	github.com/gernest/front v0.0.0-20210301115436-8a0b0a782d0a
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/gofrs/uuid v4.3.1+incompatible
-	github.com/gogo/status v1.1.1
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -19,7 +17,6 @@ require (
 	github.com/instill-ai/x v0.3.0-alpha
 	github.com/knadh/koanf v1.4.4
 	github.com/mennanov/fieldmask-utils v1.1.0
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/openfga/go-sdk v0.3.3
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
@@ -45,7 +42,11 @@ require (
 	gorm.io/gorm v1.24.2
 )
 
-require golang.org/x/sync v0.5.0 // indirect
+require (
+	github.com/gogo/status v1.1.1 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+)
 
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
@@ -103,3 +104,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.4.4 // indirect
 )
+
+replace github.com/instill-ai/protogen-go => ./protogen-go

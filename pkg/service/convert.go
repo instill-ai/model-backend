@@ -23,10 +23,6 @@ import (
 func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	if pbModel.Visibility == modelPB.Model_VISIBILITY_UNSPECIFIED {
-		pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
-	}
-
 	return &datamodel.Model{
 		BaseDynamic: datamodel.BaseDynamic{
 			UID: func() uuid.UUID {
@@ -59,7 +55,14 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
-		Visibility: datamodel.ModelVisibility(pbModel.Visibility),
+		Visibility: datamodel.ModelVisibility(pbModel.GetVisibility()),
+		Provider:   datamodel.Provider(pbModel.GetProvider()),
+		Region:     pbModel.GetRegion(),
+		Hardware:   pbModel.GetHardware(),
+		Readme:     pbModel.GetReadme(),
+		Github:     pbModel.GetGithub(),
+		Link:       pbModel.GetLink(),
+		License:    pbModel.GetLicense(),
 	}
 }
 
@@ -91,7 +94,6 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
 		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		State:           modelPB.Model_State(dbModel.State),
 		Task:            commonPB.Task(dbModel.Task),
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
@@ -124,6 +126,12 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		}(),
 		OwnerName: ownerName,
 		Owner:     owner,
+		Provider:  modelPB.Provider(dbModel.Provider),
+		Region:    dbModel.Region,
+		Hardware:  dbModel.Hardware,
+		Github:    dbModel.Github,
+		Link:      dbModel.Link,
+		License:   dbModel.License,
 	}
 
 	return &pbModel, nil

@@ -13,9 +13,9 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-type ModelState modelPB.Model_State
 type ModelVisibility modelPB.Model_Visibility
 type ModelTask commonPB.Task
+type Provider modelPB.Provider
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -88,8 +88,45 @@ type Model struct {
 	// Model task
 	Task ModelTask `json:"task,omitempty"`
 
-	// Model state
-	State ModelState `json:"state,omitempty"`
+	// Model provider
+	Provider Provider `json:"provider,omitempty"`
+
+	// Model region
+	Region string
+
+	// Model hardware
+	Hardware string
+
+	// Model readme
+	Readme string
+
+	// Model github
+	Github string
+
+	// Model link
+	Link string
+
+	// Model license
+	License string
+
+	ModelVersions []ModelVersion `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+}
+
+// Model version
+type ModelVersion struct {
+	BaseDynamic
+
+	// Repository name
+	Name string `json:"name,omitempty"`
+
+	// Version tag
+	ID string `json:"id,omitempty"`
+
+	// Unique identifier, computed from the manifest the tag refers to
+	Digest string `json:"digest,omitempty"`
+
+	// Model uid
+	ModelUID uuid.UUID `json:"model_uid,omitempty"`
 }
 
 type ModelInferResult struct {
@@ -131,17 +168,10 @@ type LocalModelConfiguration struct {
 
 type ContainerizedModelConfiguration struct {
 	Task string `json:"task,omitempty"`
-	Tag  string `json:"tag,omitempty"`
-	GPU  bool   `json:"gpu,omitempty"`
 }
 
 type ListModelQuery struct {
 	Owner string
-}
-
-func (s *ModelState) Scan(value any) error {
-	*s = ModelState(modelPB.Model_State_value[value.(string)])
-	return nil
 }
 
 func (s ModelTask) Value() (driver.Value, error) {
@@ -151,10 +181,6 @@ func (s ModelTask) Value() (driver.Value, error) {
 func (s *ModelTask) Scan(value any) error {
 	*s = ModelTask(commonPB.Task_value[value.(string)])
 	return nil
-}
-
-func (s ModelState) Value() (driver.Value, error) {
-	return modelPB.Model_State(s).String(), nil
 }
 
 func (v *ModelVisibility) Scan(value any) error {

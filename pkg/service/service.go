@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
@@ -21,7 +19,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -30,10 +27,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	controllerPB "github.com/instill-ai/protogen-go/model/controller/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -53,6 +48,7 @@ type Service interface {
 	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
 	ConvertOwnerNameToPermalink(name string) (string, error)
+	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
 	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model
 	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error)
 	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model) ([]*modelPB.Model, error)
@@ -64,12 +60,12 @@ type Service interface {
 	GetModelByUID(ctx context.Context, authUser *AuthUser, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
 	ListNamespaceModels(ctx context.Context, ns resource.Namespace, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
 	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, view modelPB.View) (*modelPB.Model, error)
+	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) error
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	UpdateNamespaceModelStateByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, state modelPB.Model_State) (*modelPB.Model, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) (*modelPB.State, error)
 
-	CreateNamespaceModelAsync(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) (string, error)
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
@@ -79,16 +75,12 @@ type Service interface {
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
 	// Private
+	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*modelPB.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
-	DeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error)
-	UndeployNamespaceModelAsyncAdmin(ctx context.Context, userID string, modelUID uuid.UUID) (string, error)
-	CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error)
-
-	// Controller
-	GetResourceState(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, *string, error)
-	UpdateResourceState(ctx context.Context, modelUID uuid.UUID, state modelPB.Model_State, progress *int32, workflowID *string) error
-	DeleteResourceState(ctx context.Context, modelUID uuid.UUID) error
+	UpdateNamespaceModelAdmin(ctx context.Context, userID string, model *datamodel.Model, version string, isDeploy bool) error
+	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
+	DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
@@ -100,7 +92,6 @@ type service struct {
 	mgmtPublicServiceClient  mgmtPB.MgmtPublicServiceClient
 	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
 	temporalClient           client.Client
-	controllerClient         controllerPB.ControllerPrivateServiceClient
 	ray                      ray.Ray
 	aclClient                *acl.ACLClient
 }
@@ -112,7 +103,6 @@ func NewService(
 	m mgmtPB.MgmtPrivateServiceClient,
 	rc *redis.Client,
 	tc client.Client,
-	cs controllerPB.ControllerPrivateServiceClient,
 	ra ray.Ray,
 	a *acl.ACLClient) Service {
 	return &service{
@@ -122,7 +112,6 @@ func NewService(
 		mgmtPrivateServiceClient: m,
 		redisClient:              rc,
 		temporalClient:           tc,
-		controllerClient:         cs,
 		aclClient:                a,
 	}
 }
@@ -251,6 +240,16 @@ func (s *service) FetchOwnerWithPermalink(permalink string) (*mgmtPB.Owner, erro
 	}
 }
 
+func (s *service) ConvertRepositoryNameToRscName(repositoryName string) (string, error) {
+	// repository/flaming-wombat/llava-34b
+	splits := strings.Split(repositoryName, "/")
+	if len(splits) != 3 {
+		return "", status.Errorf(codes.InvalidArgument, "Repository name format error")
+	}
+	// TODO: how to tell if is user or org
+	return fmt.Sprintf("users/%s/models/%s", splits[1], splits[2]), nil
+}
+
 func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, string, error) {
 
 	splits := strings.Split(path, "/")
@@ -320,6 +319,21 @@ func (s *service) GetModelByUID(ctx context.Context, authUser *AuthUser, modelUI
 	return s.DBToPBModel(ctx, modelDef, dbModel)
 }
 
+func (s *service) GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*modelPB.Model, error) {
+
+	dbModel, err := s.repository.GetModelByIDAdmin(ctx, modelID, view == modelPB.View_VIEW_BASIC)
+	if err != nil {
+		return nil, err
+	}
+
+	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.DBToPBModel(ctx, modelDef, dbModel)
+}
+
 func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
 	dbModel, err := s.repository.GetModelByUIDAdmin(ctx, modelUID, view == modelPB.View_VIEW_BASIC)
@@ -358,13 +372,58 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 	return s.DBToPBModel(ctx, modelDef, dbModel)
 }
 
-func (s *service) CheckModelAdmin(ctx context.Context, modelUID uuid.UUID) (*modelPB.Model_State, error) {
-	model, err := s.repository.GetModelByUID(ctx, modelUID, true)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "model not found")
+func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) error {
+
+	if ns.NsType == resource.Organization {
+		granted, err := s.aclClient.CheckPermission("organization", ns.NsUID, authUser.GetACLType(), authUser.UID, "member")
+		if err != nil {
+			return err
+		}
+		if !granted {
+			return ErrNoPermission
+		}
+	} else if ns.NsUID != authUser.UID {
+		return ErrNoPermission
 	}
 
-	name := filepath.Join(model.Owner, model.ID)
+	if err := s.repository.CreateNamespaceModel(ctx, model.Owner, model); err != nil {
+		return err
+	}
+
+	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, model.Owner, model.ID, false)
+	if err != nil {
+		return err
+	}
+
+	nsType, ownerUID, err := resource.GetNamespaceTypeAndUID(model.Owner)
+	if err != nil {
+		return err
+	}
+	ownerType := nsType[0 : len(nsType)-1]
+
+	err = s.aclClient.SetOwner("model_", dbCreatedModel.UID, ownerType, ownerUID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) (*modelPB.State, error) {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNotFound
+	}
+
+	name := filepath.Join(dbModel.Owner, dbModel.ID)
 
 	// TODO: implement model instance
 	state, err := s.ray.ModelReady(ctx, name, "default")
@@ -940,8 +999,6 @@ func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken
 
 func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false)
@@ -961,70 +1018,15 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNoPermission
 	}
 
-	state, workflowID, err := s.GetResourceState(ctx, dbModel.UID)
+	versions, err := s.repository.ListModelVerions(ctx, dbModel.UID)
 	if err != nil {
 		return err
 	}
 
-	if *state == modelPB.Model_STATE_UNSPECIFIED && workflowID != nil {
-		if err := s.temporalClient.TerminateWorkflow(ctx, *workflowID, "", "model delete signal received"); err != nil {
+	for _, version := range(versions) {
+		if err = s.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, version.ID, false); err != nil {
 			return err
 		}
-		// TODO: add private delete for workflow termination
-		// st, err := sterr.CreateErrorPreconditionFailure(
-		// 	"[service] delete model",
-		// 	[]*errdetails.PreconditionFailure_Violation{
-		// 		{
-		// 			Type:        "DELETE",
-		// 			Subject:     fmt.Sprintf("id %s", modelInDB.ID),
-		// 			Description: "The model is still in operations, please wait the operation finish and try it again",
-		// 		},
-		// 	})
-		// if err != nil {
-		// 	logger.Error(err.Error())
-		// }
-		// return st.Err()
-	}
-
-	if _, err = s.UndeployNamespaceModelAsyncAdmin(ctx, ns.NsID, dbModel.UID); err != nil {
-		return err
-	}
-
-	offlineState := datamodel.ModelState(modelPB.Model_STATE_OFFLINE)
-	if err := s.repository.UpdateNamespaceModelStateByID(ctx, ownerPermalink, dbModel.ID, &offlineState); err != nil {
-		return err
-	}
-
-	for *state != modelPB.Model_STATE_OFFLINE {
-		state, _, err = s.GetResourceState(ctx, dbModel.UID)
-		if err != nil {
-			return err
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	if config.Config.Cache.Model.Enabled {
-		var existedModelConfig datamodel.GitHubModelConfiguration
-		b, err := dbModel.Configuration.MarshalJSON()
-		if err != nil {
-			logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
-			return err
-		}
-		if err := json.Unmarshal(b, &existedModelConfig); err != nil {
-			logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
-			return err
-		}
-		modelSrcDir := config.Config.Cache.Model.CacheDir + "/" + fmt.Sprintf("%s_%s", existedModelConfig.Repository, existedModelConfig.Tag)
-		redisRepoKey := fmt.Sprintf("model_cache:%s:%s", existedModelConfig.Repository, existedModelConfig.Tag)
-		_ = os.RemoveAll(modelSrcDir)
-		s.redisClient.Del(ctx, redisRepoKey)
-	}
-
-	modelPath := filepath.Join(config.Config.RayServer.ModelStore, dbModel.Owner, dbModel.ID)
-	_ = os.RemoveAll(modelPath)
-
-	if err := s.DeleteResourceState(ctx, dbModel.UID); err != nil {
-		return err
 	}
 
 	err = s.aclClient.Purge("model_", dbModel.UID)
@@ -1114,47 +1116,6 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
-// TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-func (s *service) UpdateNamespaceModelStateByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *modelPB.Model, state modelPB.Model_State) (*modelPB.Model, error) {
-
-	ownerPermalink := ns.Permalink()
-
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, model.Id, false)
-	if err != nil {
-		return nil, err
-	}
-
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
-		return nil, err
-	} else if !granted {
-		return nil, ErrNotFound
-	}
-
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "admin"); err != nil {
-		return nil, err
-	} else if !granted {
-		return nil, ErrNoPermission
-	}
-
-	dbState := datamodel.ModelState(state)
-
-	if err := s.repository.UpdateNamespaceModelStateByID(ctx, ownerPermalink, dbModel.ID, &dbState); err != nil {
-		return nil, err
-	}
-
-	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, dbModel.ID, true)
-	if err != nil {
-		return nil, err
-	}
-
-	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
-}
-
 func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error) {
 
 	dbModelDef, err := s.repository.GetModelDefinition(id)
@@ -1185,4 +1146,29 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, p
 	pbModelDefs, err := s.DBToPBModelDefinitions(ctx, dbModelDefs)
 
 	return pbModelDefs, int32(totalSize), nextPageToken, err
+}
+
+func (s *service) UpdateNamespaceModelAdmin(ctx context.Context, userID string, model *datamodel.Model, version string, isDeploy bool) error {
+	modelDef, err := s.repository.GetModelDefinitionByUID(model.ModelDefinitionUID)
+	if err != nil {
+		return err
+	}
+
+	switch modelDef.ID {
+	case "container":
+		name := filepath.Join(model.Owner, model.ID)
+		if err = s.ray.UpdateContainerizedModel(name, userID, model.ID, version, model.Hardware != "cpu", isDeploy); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
+	return s.repository.CreateModelVersionAdmin(ctx, "", version)
+}
+
+func (s *service) DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
+	return s.repository.DeleteModelVersionAdmin(ctx, "", version)
 }
