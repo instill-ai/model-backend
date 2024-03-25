@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -64,7 +63,7 @@ type Service interface {
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) (*modelPB.State, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, error)
 
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
 
@@ -78,7 +77,7 @@ type Service interface {
 	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*modelPB.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
-	UpdateNamespaceModelAdmin(ctx context.Context, userID string, model *datamodel.Model, version string, isDeploy bool) error
+	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 
@@ -409,7 +408,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	return nil
 }
 
-func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) (*modelPB.State, error) {
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
@@ -423,10 +422,10 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 		return nil, ErrNotFound
 	}
 
-	name := filepath.Join(dbModel.Owner, dbModel.ID)
+	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
 
 	// TODO: implement model instance
-	state, err := s.ray.ModelReady(ctx, name, "default")
+	state, err := s.ray.ModelReady(ctx, name, versionTag)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +454,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNoPermission
 	}
 
-	name := filepath.Join(dbModel.Owner, dbModel.ID)
+	name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
 
 	var postprocessResponse any
 	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, "default")
@@ -1023,8 +1022,11 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return err
 	}
 
-	for _, version := range(versions) {
-		if err = s.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, version.ID, false); err != nil {
+	for _, version := range versions {
+		if err = s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
+			return err
+		}
+		if err = s.DeleteModelVersionAdmin(ctx, version); err != nil {
 			return err
 		}
 	}
@@ -1148,20 +1150,13 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, p
 	return pbModelDefs, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) UpdateNamespaceModelAdmin(ctx context.Context, userID string, model *datamodel.Model, version string, isDeploy bool) error {
-	modelDef, err := s.repository.GetModelDefinitionByUID(model.ModelDefinitionUID)
-	if err != nil {
+func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error {
+
+	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
+	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware != "cpu", isDeploy); err != nil {
 		return err
 	}
 
-	switch modelDef.ID {
-	case "container":
-		name := filepath.Join(model.Owner, model.ID)
-		if err = s.ray.UpdateContainerizedModel(name, userID, model.ID, version, model.Hardware != "cpu", isDeploy); err != nil {
-			return err
-		}
-
-	}
 	return nil
 }
 

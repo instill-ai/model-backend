@@ -125,6 +125,8 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 		return &modelPB.Model{}, st.Err()
 	}
 
+	model, _ = s.GetNamespaceModelByID(ctx, ns, authUser, model.Id, modelPB.View_VIEW_FULL)
+
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		span.SetStatus(1, err.Error())

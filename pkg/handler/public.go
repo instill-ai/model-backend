@@ -752,6 +752,7 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 
 type WatchNamespaceModelRequestInterface interface {
 	GetName() string
+	GetVersion() string
 }
 
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUserModelRequest) (resp *modelPB.WatchUserModelResponse, err error) {
@@ -800,7 +801,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelPB.State_STATE_ERROR, err
 	}
 
-	state, err := h.service.WatchModel(ctx, ns, authUser, modelID)
+	state, err := h.service.WatchModel(ctx, ns, authUser, modelID, req.GetVersion())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -1324,7 +1325,7 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		return nil, err
 	}
 
-	dbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -1350,7 +1351,7 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		logUUID.String(),
 		authUser.UID,
 		eventName,
-		custom_otel.SetEventResource(dbModel),
+		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 

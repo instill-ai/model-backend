@@ -10,7 +10,6 @@
     "model_definition",
     "configuration",
     "visibility",
-    "provider",
     "region",
     "hardware"
   ],
@@ -113,22 +112,6 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
-    "provider": {
-      "type": "string",
-      "title": "Provider",
-      "enum": [
-        "PROVIDER_UNSPECIFIED",
-        "PROVIDER_GCP",
-        "PROVIDER_AWS",
-        "PROVIDER_AZURE"
-      ],
-      "description": "The cloud provider that a model is hosted on",
-      "readOnly": true,
-      "ui_order": 7,
-      "ui_hidden": true,
-      "ui_disabled": true,
-      "ui_component": "text"
-    },
     "region": {
       "type": "string",
       "title": "Region",
@@ -143,6 +126,46 @@
       "type": "string",
       "title": "Region",
       "description": "The region of the cloud provider that a model is hosted on",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "readme": {
+      "type": "string",
+      "title": "Region",
+      "description": "The readme of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "source_url": {
+      "type": "string",
+      "title": "Region",
+      "description": "The source code url of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "documentation_url": {
+      "type": "string",
+      "title": "Region",
+      "description": "The documentation url of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "license": {
+      "type": "string",
+      "title": "Region",
+      "description": "The license of the model",
       "readOnly": true,
       "ui_order": 7,
       "ui_hidden": true,

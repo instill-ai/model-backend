@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 
+	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/x/sterr"
@@ -47,12 +48,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 
 func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.DeployModelAdminRequest) (*modelPB.DeployModelAdminResponse, error) {
 
-	rscName, err := h.service.ConvertRepositoryNameToRscName(req.GetRepositoryName())
-	if err != nil {
-		return nil, err
-	}
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(rscName)
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -62,20 +58,18 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	dbModel := h.service.PBToDBModel(ctx, ns, pbModel)
-
 	version := &datamodel.ModelVersion{
-		Name:     req.GetRepositoryName(),
-		ID:       req.GetTag(),
+		Name:     req.GetName(),
+		Version:  req.GetVersion(),
 		Digest:   req.GetDigest(),
-		ModelUID: dbModel.UID,
+		ModelUID: uuid.FromStringOrNil(pbModel.Uid),
 	}
 
 	if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
 
-	if err := h.service.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, req.GetTag(), true); err != nil {
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), true); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
@@ -96,12 +90,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 
 func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.UndeployModelAdminRequest) (*modelPB.UndeployModelAdminResponse, error) {
 
-	rscName, err := h.service.ConvertRepositoryNameToRscName(req.GetRepositoryName())
-	if err != nil {
-		return nil, err
-	}
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(rscName)
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -111,16 +100,14 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 
-	dbModel := h.service.PBToDBModel(ctx, ns, pbModel)
-
 	version := &datamodel.ModelVersion{
-		Name:     req.GetRepositoryName(),
-		ID:       req.GetTag(),
+		Name:     req.GetName(),
+		Version:  req.GetVersion(),
 		Digest:   req.GetDigest(),
-		ModelUID: dbModel.UID,
+		ModelUID: uuid.FromStringOrNil(pbModel.Uid),
 	}
 
-	if err := h.service.UpdateNamespaceModelAdmin(ctx, ns.NsID, dbModel, req.GetTag(), false); err != nil {
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), false); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] undeploy a model error: %s", err.Error()),

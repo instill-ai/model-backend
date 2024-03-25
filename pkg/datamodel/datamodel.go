@@ -15,7 +15,6 @@ import (
 
 type ModelVisibility modelPB.Model_Visibility
 type ModelTask commonPB.Task
-type Provider modelPB.Provider
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -88,26 +87,23 @@ type Model struct {
 	// Model task
 	Task ModelTask `json:"task,omitempty"`
 
-	// Model provider
-	Provider Provider `json:"provider,omitempty"`
-
 	// Model region
-	Region string
+	Region string `gorm:"region,omitempty"`
 
 	// Model hardware
-	Hardware string
+	Hardware string `gorm:"hardware,omitempty"`
 
 	// Model readme
-	Readme string
+	Readme string `gorm:"readme,omitempty"`
 
-	// Model github
-	Github string
+	// Model source code url
+	SourceURL string `gorm:"source_url,omitempty"`
 
-	// Model link
-	Link string
+	// Model documentation url
+	DocumentationURL string `gorm:"documentation_url,omitempty"`
 
 	// Model license
-	License string
+	License string `gorm:"license,omitempty"`
 
 	ModelVersions []ModelVersion `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
 }
@@ -116,11 +112,11 @@ type Model struct {
 type ModelVersion struct {
 	BaseDynamic
 
-	// Repository name
+	// Model resource name
 	Name string `json:"name,omitempty"`
 
 	// Version tag
-	ID string `json:"id,omitempty"`
+	Version string `json:"version,omitempty"`
 
 	// Unique identifier, computed from the manifest the tag refers to
 	Digest string `json:"digest,omitempty"`

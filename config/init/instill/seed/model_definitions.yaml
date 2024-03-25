@@ -77,8 +77,8 @@
       - "task"
     instillShortDescription: ""
     additionalProperties: false
-    minProperties: 2
-    maxProperties: 2
+    minProperties: 1
+    maxProperties: 1
     properties:
       task:
         type: "string"

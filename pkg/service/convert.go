@@ -55,14 +55,13 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
-		Visibility: datamodel.ModelVisibility(pbModel.GetVisibility()),
-		Provider:   datamodel.Provider(pbModel.GetProvider()),
-		Region:     pbModel.GetRegion(),
-		Hardware:   pbModel.GetHardware(),
-		Readme:     pbModel.GetReadme(),
-		Github:     pbModel.GetGithub(),
-		Link:       pbModel.GetLink(),
-		License:    pbModel.GetLicense(),
+		Visibility:       datamodel.ModelVisibility(pbModel.GetVisibility()),
+		Region:           pbModel.GetRegion(),
+		Hardware:         pbModel.GetHardware(),
+		Readme:           pbModel.GetReadme(),
+		SourceURL:        pbModel.GetSourceUrl(),
+		DocumentationURL: pbModel.GetDocumentationUrl(),
+		License:          pbModel.GetLicense(),
 	}
 }
 
@@ -124,14 +123,13 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 			}
 			return nil
 		}(),
-		OwnerName: ownerName,
-		Owner:     owner,
-		Provider:  modelPB.Provider(dbModel.Provider),
-		Region:    dbModel.Region,
-		Hardware:  dbModel.Hardware,
-		Github:    dbModel.Github,
-		Link:      dbModel.Link,
-		License:   dbModel.License,
+		OwnerName:        ownerName,
+		Owner:            owner,
+		Region:           dbModel.Region,
+		Hardware:         dbModel.Hardware,
+		SourceUrl:        dbModel.SourceURL,
+		DocumentationUrl: dbModel.DocumentationURL,
+		License:          dbModel.License,
 	}
 
 	return &pbModel, nil
