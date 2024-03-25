@@ -60,9 +60,6 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	if err != nil {
 		return &GitHubInfo{}, err
 	}
-	if config.Config.Github.PatEnabled {
-		repoRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.Config.Github.Pat))
-	}
 	repoResp, err := http.DefaultClient.Do(repoRequest)
 	if err != nil {
 		return &GitHubInfo{}, err
@@ -85,9 +82,6 @@ func GetGitHubRepoInfo(repo string) (*GitHubInfo, error) {
 	tagRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%v/tags", repo), http.NoBody)
 	if err != nil {
 		return &GitHubInfo{}, err
-	}
-	if config.Config.Github.PatEnabled {
-		tagRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.Config.Github.Pat))
 	}
 	tagResp, err := http.DefaultClient.Do(tagRequest)
 	if err != nil {

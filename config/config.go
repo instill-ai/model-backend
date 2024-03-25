@@ -40,12 +40,6 @@ type ServerConfig struct {
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
 	}
-	InferenceBackend string `koanf:"inferencebackend"`
-}
-
-type Github struct {
-	PatEnabled bool   `koanf:"patenabled"`
-	Pat        string `koanf:"pat"`
 }
 
 // DatabaseConfig related to database
@@ -147,7 +141,6 @@ type RegistryConfig struct {
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
-	Github                 Github             `koanf:"github"`
 	Database               DatabaseConfig     `koanf:"database"`
 	RayServer              RayServerConfig    `koanf:"rayserver"`
 	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`

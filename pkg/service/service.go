@@ -457,7 +457,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
 
 	var postprocessResponse any
-	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, "default")
+	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, version)
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("model is offline")
 	}

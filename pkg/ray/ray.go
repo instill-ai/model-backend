@@ -160,25 +160,27 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 		return modelPB.State_STATE_OFFLINE.Enum(), nil
 	}
 
-	// TODO: currently we assume only one deployment per application, need to account for multiple deployments in the future
 	switch application.Status {
-	case "RUNNING":
-		return modelPB.State_STATE_ACTIVE.Enum(), nil
-	case "DEPLOY_FAILED":
-		return modelPB.State_STATE_ERROR.Enum(), nil
-	case "UNHEALTHY":
-		for i := range application.Deployments {
-			if application.Deployments[i].Status == "STARTING" {
+	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
+		for i := range application.Deployments{
+			switch application.Deployments[i].Status {
+			case rayserver.DeploymentStatusStrHealthy:
+				return modelPB.State_STATE_ACTIVE.Enum(), nil
+			case rayserver.DeploymentStatusStrUpdating:
+				return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
+			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
 				return modelPB.State_STATE_SCALING.Enum(), nil
+			case rayserver.DeploymentStatusStrUnhealthy:
+				return modelPB.State_STATE_ERROR.Enum(), nil
 			}
 		}
 		return modelPB.State_STATE_ERROR.Enum(), nil
-	case "DEPLOYING":
-		return modelPB.State_STATE_SCALING.Enum(), nil
-	case "DELETING":
-		return modelPB.State_STATE_SCALING.Enum(), nil
-	case "NOT_STARTED":
+	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
+		return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
+	case rayserver.ApplicationStatusStrNotStarted:
 		return modelPB.State_STATE_OFFLINE.Enum(), nil
+	case rayserver.ApplicationStatusStrDeployFailed:
+		return modelPB.State_STATE_ERROR.Enum(), nil
 	}
 
 	return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
