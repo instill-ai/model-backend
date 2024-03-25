@@ -289,7 +289,7 @@ func (r *repository) CreateModelVersionAdmin(ctx context.Context, ownerPermalink
 
 func (r *repository) DeleteModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
 	result := r.db.Model(&datamodel.ModelVersion{}).
-		Where("(name = ? AND id = ?)", version.Name, version.ID).
+		Where("(name = ? AND version = ?)", version.Name, version.Version).
 		Delete(&datamodel.ModelVersion{})
 
 	if result.Error != nil {
