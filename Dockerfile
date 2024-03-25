@@ -16,19 +16,15 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-migrate ./cmd/migration
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init ./cmd/init
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
-
-# Mounting points
-RUN mkdir /model-repository
-RUN mkdir /.cache
+RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
 
 FROM golang:${GOLANG_VERSION}
 
-ENV DEBIAN_FRONTEND noninteractive
+# ENV DEBIAN_FRONTEND noninteractive
 
-# tools to work with versatile model import
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
@@ -52,6 +48,4 @@ COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-migrate ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
-
-COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
-COPY --from=build --chown=nobody:nogroup /.cache /.cache
+COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init-model ./
