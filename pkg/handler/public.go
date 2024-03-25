@@ -820,6 +820,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 
 type TriggerNamespaceModelRequestInterface interface {
 	GetName() string
+	GetVersion() string
 	GetTaskInputs() []*modelPB.TaskInput
 }
 
@@ -977,7 +978,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, pbModel.Task)
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1217,7 +1218,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, inputInfer, pbModel.Task)
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, pathParams["version"], inputInfer, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,

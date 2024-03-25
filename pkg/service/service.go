@@ -65,7 +65,7 @@ type Service interface {
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
 	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
@@ -433,7 +433,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 	return state, nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -461,7 +461,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if modelMetadataResponse == nil {
 		return nil, fmt.Errorf("model is offline")
 	}
-	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, name, "default", modelMetadataResponse)
+	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, name, version, modelMetadataResponse)
 	if err != nil {
 		return nil, err
 	}

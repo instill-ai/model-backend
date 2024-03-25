@@ -29,7 +29,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) (triggerInput any, modelID string, err error) {
+func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) (triggerInput any, modelID string, version string, err error) {
 
 	var firstChunk = true
 
@@ -49,15 +49,16 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 		} else if err != nil {
 			err = errors.Wrapf(err,
 				"failed while reading chunks from stream")
-			return nil, "", err
+			return nil, "", "", err
 		}
 
 		if firstChunk { // first chunk contains model instance name
 			firstChunk = false
 			modelID, err = resource.GetRscNameID(fileData.Name) // format "users/{user}/models/{model}"
 			if err != nil {
-				return nil, "", err
+				return nil, "", "", err
 			}
+			version = fileData.Version
 			task = fileData.TaskInput
 			switch fileData.TaskInput.Input.(type) {
 			case *modelPB.TaskInputStream_Classification:
@@ -118,7 +119,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 					ExtraParams: extraParams, // *fileData.TaskInput.GetTextGeneration().ExtraParams,
 				}
 			default:
-				return nil, "", errors.New("unsupported task input type")
+				return nil, "", "", errors.New("unsupported task input type")
 			}
 		} else {
 			switch fileData.TaskInput.Input.(type) {
@@ -135,7 +136,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			case *modelPB.TaskInputStream_SemanticSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			default:
-				return nil, "", errors.New("unsupported task input type")
+				return nil, "", "", errors.New("unsupported task input type")
 			}
 		}
 	}
@@ -148,7 +149,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 		*modelPB.TaskInputStream_InstanceSegmentation,
 		*modelPB.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
-			return nil, "", errors.New("wrong parameter length of files")
+			return nil, "", "", errors.New("wrong parameter length of files")
 		}
 		imageBytes := make([][]byte, len(fileLengths))
 		start := uint32(0)
@@ -156,22 +157,22 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			buff := new(bytes.Buffer)
 			img, _, err := image.Decode(bytes.NewReader(allContentFiles[start : start+fileLengths[i]]))
 			if err != nil {
-				return nil, "", err
+				return nil, "", "", err
 			}
 			err = jpeg.Encode(buff, img, &jpeg.Options{Quality: 100})
 			if err != nil {
-				return nil, "", err
+				return nil, "", "", err
 			}
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, nil
+		return imageBytes, modelID, "", nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, nil
+		return textToImageInput, modelID, "", nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, nil
+		return textGeneration, modelID, "", nil
 	}
-	return nil, "", errors.New("unsupported task input type")
+	return nil, "", "", errors.New("unsupported task input type")
 }
 
 func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) error {
@@ -187,7 +188,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	triggerInput, path, err := savePredictInputsTriggerMode(stream)
+	triggerInput, path, version, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return status.Error(codes.Internal, err.Error())
@@ -259,7 +260,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		}
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, triggerInput, pbModel.Task)
+	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, triggerInput, pbModel.Task)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
