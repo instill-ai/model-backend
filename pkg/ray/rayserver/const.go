@@ -46,7 +46,7 @@ type Application struct {
 	Name              string                           `json:"name,omitempty"`
 	RoutePrefix       string                           `json:"route_prefix,omitempty"`
 	DocsPath          string                           `json:"docs_path,omitempty"`
-	Status            string                           `json:"status,omitempty"`
+	Status            ApplicationStatusStr             `json:"status,omitempty"`
 	Message           string                           `json:"message,omitempty"`
 	LastDeployedTimeS float64                          `json:"last_deployed_time_s,omitempty"`
 	DeployedAppConfig DeployedAppConfig                `json:"deployed_app_config,omitempty"`
@@ -65,11 +65,13 @@ type DeployedAppDeployment struct {
 	UserConfig  map[string]any `json:"user_config,omitempty"`
 }
 type ApplicationDeployment struct {
-	Name                 string               `json:"name,omitempty"`
-	Status               string               `json:"status,omitempty"`
-	Message              string               `json:"message,omitempty"`
-	HTTPDeploymentConfig HTTPDeploymentConfig `json:"deployment_config,omitempty"`
-	Replicas             []Replica            `json:"replicas,omitempty"`
+	Name                 string                     `json:"name,omitempty"`
+	Status               DeploymentStatusStr        `json:"status,omitempty"`
+	StatusTrigger        DeploymentStatusTriggerStr `json:"status_trigger,omitempty"`
+	Message              string                     `json:"message,omitempty"`
+	HTTPDeploymentConfig HTTPDeploymentConfig       `json:"deployment_config,omitempty"`
+	TargetNumReplicas    int                        `json:"target_num_replicas,omitempty"`
+	Replicas             []Replica                  `json:"replicas,omitempty"`
 }
 
 type HTTPDeploymentConfig struct {
@@ -86,14 +88,61 @@ type HTTPDeploymentConfig struct {
 }
 
 type Replica struct {
-	NodeID      string  `json:"node_id,omitempty"`
-	NodeIP      string  `json:"node_ip,omitempty"`
-	ActorID     string  `json:"actor_id,omitempty"`
-	ActorName   string  `json:"actor_name,omitempty"`
-	WorkerID    string  `json:"worker_id,omitempty"`
-	LogFilePath string  `json:"log_file_path,omitempty"`
-	ReplicaID   string  `json:"replica_id,omitempty"`
-	State       string  `json:"state,omitempty"`
-	PID         float64 `json:"pid,omitempty"`
-	StartTimeS  float64 `json:"start_time_s,omitempty"`
+	NodeID      string          `json:"node_id,omitempty"`
+	NodeIP      string          `json:"node_ip,omitempty"`
+	ActorID     string          `json:"actor_id,omitempty"`
+	ActorName   string          `json:"actor_name,omitempty"`
+	WorkerID    string          `json:"worker_id,omitempty"`
+	LogFilePath string          `json:"log_file_path,omitempty"`
+	ReplicaID   string          `json:"replica_id,omitempty"`
+	State       ReplicaStateStr `json:"state,omitempty"`
+	PID         float64         `json:"pid,omitempty"`
+	StartTimeS  float64         `json:"start_time_s,omitempty"`
 }
+
+type ApplicationStatusStr string
+
+const (
+	ApplicationStatusStrNotStarted    ApplicationStatusStr = "NOT_STARTED"
+	ApplicationStatusStrDeploying     ApplicationStatusStr = "DEPLOYING"
+	ApplicationStatusStrDeployFailed ApplicationStatusStr = "DEPLOY_FAILED"
+	ApplicationStatusStrRunning       ApplicationStatusStr = "RUNNING"
+	ApplicationStatusStrUnhealthy     ApplicationStatusStr = "UNHEALTHY"
+	ApplicationStatusStrDeleting      ApplicationStatusStr = "DELETING"
+)
+
+type DeploymentStatusStr string
+
+const (
+	DeploymentStatusStrUpdating    DeploymentStatusStr = "UPDATING"
+	DeploymentStatusStrHealthy     DeploymentStatusStr = "HEALTHY"
+	DeploymentStatusStrUnhealthy   DeploymentStatusStr = "UNHEALTHY"
+	DeploymentStatusStrUpscaling   DeploymentStatusStr = "UPSCALING"
+	DeploymentStatusStrDownscaling DeploymentStatusStr = "DOWNSCALING"
+)
+
+type DeploymentStatusTriggerStr string
+
+const (
+	DeploymentStatusTriggerStrUnspecified           DeploymentStatusTriggerStr = "UNSPECIFIED"
+	DeploymentStatusTriggerStrConfigUpdateStarted   DeploymentStatusTriggerStr = "CONFIG_UPDATE_STARTED"
+	DeploymentStatusTriggerStrConfigUpdateCompleted DeploymentStatusTriggerStr = "CONFIG_UPDATE_COMPLETED"
+	DeploymentStatusTriggerStrUpscaleCompleted      DeploymentStatusTriggerStr = "UPSCALE_COMPLETED"
+	DeploymentStatusTriggerStrDownscaleCompleted    DeploymentStatusTriggerStr = "DOWNSCALE_COMPLETED"
+	DeploymentStatusTriggerStrAutoscaling           DeploymentStatusTriggerStr = "AUTOSCALING"
+	DeploymentStatusTriggerStrReplicaStartupFailed  DeploymentStatusTriggerStr = "REPLICA_STARTUP_FAILED"
+	DeploymentStatusTriggerStrHealthCheckFailed     DeploymentStatusTriggerStr = "HEALTH_CHECK_FAILED"
+	DeploymentStatusTriggerStrInternalError         DeploymentStatusTriggerStr = "INTERNAL_ERROR"
+	DeploymentStatusTriggerStrDeleting              DeploymentStatusTriggerStr = "DELETING"
+)
+
+type ReplicaStateStr string
+
+const (
+	ReplicaStateStrStarting         ReplicaStateStr = "STARTING"
+	ReplicaStateStrUpdating         ReplicaStateStr = "UPDATING"
+	ReplicaStateStrRecovering       ReplicaStateStr = "RECOVERING"
+	ReplicaStateStrRunning          ReplicaStateStr = "RUNNING"
+	ReplicaStateStrStopping         ReplicaStateStr = "STOPPING"
+	ReplicaStateStrPendingMigration ReplicaStateStr = "PENDING_MIGRATION"
+)

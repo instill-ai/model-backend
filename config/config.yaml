@@ -19,10 +19,6 @@ server:
     maxworkflowtimeout: 7200 # in seconds
     maxworkflowretry: 3
     maxactivityretry: 1
-  inferencebackend: ray
-github:
-  patenabled: false
-  pat:
 database:
   username: postgres
   password: password
@@ -37,7 +33,7 @@ database:
     connlifetime: 30m # In minutes, e.g., '60m'
 rayserver:
   grpcuri: ray-server:9000
-  modelstore: /model-repository
+  modelstore: /
   vram:
 mgmtbackend:
   host: mgmt-backend
@@ -50,9 +46,6 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-  model:
-    enabled: false
-    cache_dir: /model-repository/.cache/models
 maxbatchsizelimitation:
   unspecified: 2
   classification: 16
