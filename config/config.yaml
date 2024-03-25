@@ -33,7 +33,7 @@ database:
     connlifetime: 30m # In minutes, e.g., '60m'
 rayserver:
   grpcuri: ray-server:9000
-  modelstore: /
+  modelstore: /model-backend
   vram:
 mgmtbackend:
   host: mgmt-backend
