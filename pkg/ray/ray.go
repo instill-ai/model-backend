@@ -37,7 +37,7 @@ type Ray interface {
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, useGPU bool, isDeploy bool) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error
 	Init()
 	Close()
 }
@@ -162,7 +162,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 
 	switch application.Status {
 	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
-		for i := range application.Deployments{
+		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
 				return modelPB.State_STATE_ACTIVE.Enum(), nil
@@ -512,7 +512,7 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 	return outputs, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, useGPU bool, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -520,6 +520,11 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	if err != nil {
 		logger.Error(err.Error())
 		return err
+	}
+
+	val, ok := SupportedAcceleratorType[hardware]
+	if !ok {
+		return fmt.Errorf("accelerator type(hardware) not supported")
 	}
 
 	runOptions := []string{
@@ -531,8 +536,11 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
 	}
 
-	if useGPU {
+	if val != SupportedAcceleratorType["CPU"] {
 		runOptions = append(runOptions, "--device nvidia.com/gpu=all")
+		if val != SupportedAcceleratorType["GPU"] {
+			runOptions = append(runOptions, fmt.Sprintf("-e RAY_ACCELERATOR_TYPE=%s", val))
+		}
 	}
 
 	applicationConfig := Application{
