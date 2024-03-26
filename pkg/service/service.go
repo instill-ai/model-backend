@@ -154,7 +154,7 @@ func (s *service) AuthenticateUser(ctx context.Context, allowVisitor bool) (auth
 			UID:       uuid.FromStringOrNil(headerCtxUserUID),
 			IsVisitor: false,
 		}, nil
-	} else {
+	} else if authType == "visitor" {
 		if !allowVisitor {
 			return nil, ErrUnauthenticated
 		}
@@ -167,6 +167,8 @@ func (s *service) AuthenticateUser(ctx context.Context, allowVisitor bool) (auth
 			UID:       uuid.FromStringOrNil(headerCtxVisitorUID),
 			IsVisitor: true,
 		}, nil
+	} else {
+		return nil, fmt.Errorf("auth type header error")
 	}
 }
 
