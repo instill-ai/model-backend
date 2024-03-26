@@ -103,12 +103,12 @@ type Replica struct {
 type ApplicationStatusStr string
 
 const (
-	ApplicationStatusStrNotStarted    ApplicationStatusStr = "NOT_STARTED"
-	ApplicationStatusStrDeploying     ApplicationStatusStr = "DEPLOYING"
+	ApplicationStatusStrNotStarted   ApplicationStatusStr = "NOT_STARTED"
+	ApplicationStatusStrDeploying    ApplicationStatusStr = "DEPLOYING"
 	ApplicationStatusStrDeployFailed ApplicationStatusStr = "DEPLOY_FAILED"
-	ApplicationStatusStrRunning       ApplicationStatusStr = "RUNNING"
-	ApplicationStatusStrUnhealthy     ApplicationStatusStr = "UNHEALTHY"
-	ApplicationStatusStrDeleting      ApplicationStatusStr = "DELETING"
+	ApplicationStatusStrRunning      ApplicationStatusStr = "RUNNING"
+	ApplicationStatusStrUnhealthy    ApplicationStatusStr = "UNHEALTHY"
+	ApplicationStatusStrDeleting     ApplicationStatusStr = "DELETING"
 )
 
 type DeploymentStatusStr string

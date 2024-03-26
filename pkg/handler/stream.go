@@ -166,11 +166,11 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			imageBytes[i] = buff.Bytes()
 			start += fileLengths[i]
 		}
-		return imageBytes, modelID, "", nil
+		return imageBytes, modelID, version, nil
 	case *modelPB.TaskInputStream_TextToImage:
-		return textToImageInput, modelID, "", nil
+		return textToImageInput, modelID, version, nil
 	case *modelPB.TaskInputStream_TextGeneration:
-		return textGeneration, modelID, "", nil
+		return textGeneration, modelID, version, nil
 	}
 	return nil, "", "", errors.New("unsupported task input type")
 }
