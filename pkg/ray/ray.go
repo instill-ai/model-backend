@@ -31,7 +31,7 @@ import (
 
 type Ray interface {
 	// grpc
-	ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, error)
+	ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, string, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse
 	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
@@ -127,24 +127,24 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	}
 }
 
-func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, error) {
+func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, string, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, "", err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1), http.NoBody)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, "", err
 	}
 	resp, err := r.rayHTTPClient.Do(req)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, "", err
 	}
 	defer resp.Body.Close()
 
@@ -152,38 +152,39 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	err = json.NewDecoder(resp.Body).Decode(&applicationStatus)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
+		return nil, "", err
 	}
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelPB.State_STATE_OFFLINE.Enum(), nil
+		return modelPB.State_STATE_OFFLINE.Enum(), "", nil
 	}
 
 	switch application.Status {
 	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
 		for i := range application.Deployments {
+			message := fmt.Sprintf("application message: %s\ndeployment message: %s", application.Message, application.Deployments[i].Message)
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
-				return modelPB.State_STATE_ACTIVE.Enum(), nil
+				return modelPB.State_STATE_ACTIVE.Enum(), message, nil
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
+				return modelPB.State_STATE_UNSPECIFIED.Enum(), message, nil
 			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
-				return modelPB.State_STATE_SCALING.Enum(), nil
+				return modelPB.State_STATE_SCALING.Enum(), message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelPB.State_STATE_ERROR.Enum(), nil
+				return modelPB.State_STATE_ERROR.Enum(), message, nil
 			}
 		}
-		return modelPB.State_STATE_ERROR.Enum(), nil
+		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
-		return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
+		return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrNotStarted:
-		return modelPB.State_STATE_OFFLINE.Enum(), nil
+		return modelPB.State_STATE_OFFLINE.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeployFailed:
-		return modelPB.State_STATE_ERROR.Enum(), nil
+		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 	}
 
-	return modelPB.State_STATE_UNSPECIFIED.Enum(), nil
+	return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Message, nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
