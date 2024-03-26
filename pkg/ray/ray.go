@@ -522,11 +522,6 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		return err
 	}
 
-	val, ok := SupportedAcceleratorType[hardware]
-	if !ok {
-		return fmt.Errorf("accelerator type(hardware) not supported")
-	}
-
 	runOptions := []string{
 		"--tls-verify=false",
 		"--pull=always",
@@ -536,10 +531,17 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
 	}
 
-	if val != SupportedAcceleratorType["CPU"] {
-		runOptions = append(runOptions, "--device nvidia.com/gpu=all")
-		if val != SupportedAcceleratorType["GPU"] {
-			runOptions = append(runOptions, fmt.Sprintf("-e RAY_ACCELERATOR_TYPE=%s", val))
+	if isDeploy {
+		val, ok := SupportedAcceleratorType[hardware]
+		if !ok {
+			return fmt.Errorf("accelerator type(hardware) not supported")
+		}
+
+		if val != SupportedAcceleratorType["CPU"] {
+			runOptions = append(runOptions, "--device nvidia.com/gpu=all")
+			if val != SupportedAcceleratorType["GPU"] {
+				runOptions = append(runOptions, fmt.Sprintf("-e RAY_ACCELERATOR_TYPE=%s", val))
+			}
 		}
 	}
 
