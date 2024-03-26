@@ -8,8 +8,6 @@ import (
 	"go.temporal.io/api/enums/v1"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
-
-
 )
 
 func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error) {

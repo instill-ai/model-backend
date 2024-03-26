@@ -1,8 +1,5 @@
 package utils
 
-import (
-)
-
 // func TestGitHubClone(t *testing.T) {
 // 	tmpDir := fmt.Sprintf("/tmp/%v", uuid.New().String())
 // 	assert.Nil(t, GitHubClone(tmpDir, datamodel.GitHub{

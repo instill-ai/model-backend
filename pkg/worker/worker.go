@@ -28,19 +28,19 @@ type Worker interface {
 
 // worker represents resources required to run Temporal workflow and activity
 type worker struct {
-	redisClient      *redis.Client
-	repository       repository.Repository
-	ray              ray.Ray
-	aclClient        *acl.ACLClient
+	redisClient *redis.Client
+	repository  repository.Repository
+	ray         ray.Ray
+	aclClient   *acl.ACLClient
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
 func NewWorker(r repository.Repository, rc *redis.Client, ra ray.Ray, a *acl.ACLClient) Worker {
 
 	return &worker{
-		repository:       r,
-		redisClient:      rc,
-		ray:              ra,
-		aclClient:        a,
+		repository:  r,
+		redisClient: rc,
+		ray:         ra,
+		aclClient:   a,
 	}
 }

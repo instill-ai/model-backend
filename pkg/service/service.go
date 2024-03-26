@@ -1022,10 +1022,10 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	}
 
 	for _, version := range versions {
-		if err = s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
+		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
 			return err
 		}
-		if err = s.DeleteModelVersionAdmin(ctx, version); err != nil {
+		if err := s.DeleteModelVersionAdmin(ctx, version); err != nil {
 			return err
 		}
 	}
