@@ -757,19 +757,19 @@ type WatchNamespaceModelRequestInterface interface {
 
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelPB.WatchUserModelRequest) (resp *modelPB.WatchUserModelResponse, err error) {
 	resp = &modelPB.WatchUserModelResponse{}
-	resp.State, err = h.watchNamespaceModel(ctx, req)
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelPB.WatchOrganizationModelRequest) (resp *modelPB.WatchOrganizationModelResponse, err error) {
 	resp = &modelPB.WatchOrganizationModelResponse{}
-	resp.State, err = h.watchNamespaceModel(ctx, req)
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
-func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.State, error) {
+func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.State, string, error) {
 
 	eventName := "WatchNamespaceModel"
 
@@ -784,7 +784,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return modelPB.State_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, "", err
 	}
 
 	authUser, err := h.service.AuthenticateUser(ctx, false)
@@ -798,10 +798,10 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.State_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, "", err
 	}
 
-	state, err := h.service.WatchModel(ctx, ns, authUser, modelID, req.GetVersion())
+	state, message, err := h.service.WatchModel(ctx, ns, authUser, modelID, req.GetVersion())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -812,10 +812,10 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
-		return modelPB.State_STATE_ERROR, err
+		return modelPB.State_STATE_ERROR, "", err
 	}
 
-	return *state, nil
+	return *state, message, nil
 }
 
 type TriggerNamespaceModelRequestInterface interface {

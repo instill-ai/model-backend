@@ -63,7 +63,7 @@ type Service interface {
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, string, error)
 
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
 
@@ -408,29 +408,28 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	return nil
 }
 
-func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, error) {
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, string, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, "", ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
-		return nil, err
+		return nil, "", err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, "", ErrNotFound
 	}
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
 
-	// TODO: implement model instance
-	state, err := s.ray.ModelReady(ctx, name, versionTag)
+	state, message, err := s.ray.ModelReady(ctx, name, versionTag)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return state, nil
+	return state, message, nil
 }
 
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
