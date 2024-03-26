@@ -163,16 +163,15 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	switch application.Status {
 	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
 		for i := range application.Deployments {
-			message := fmt.Sprintf("application message: %s\ndeployment message: %s", application.Message, application.Deployments[i].Message)
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
-				return modelPB.State_STATE_ACTIVE.Enum(), message, nil
+				return modelPB.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelPB.State_STATE_UNSPECIFIED.Enum(), message, nil
+				return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
-				return modelPB.State_STATE_SCALING.Enum(), message, nil
+				return modelPB.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelPB.State_STATE_ERROR.Enum(), message, nil
+				return modelPB.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
 			}
 		}
 		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil

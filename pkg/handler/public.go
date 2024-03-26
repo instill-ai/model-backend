@@ -793,7 +793,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		logger.Info(string(custom_otel.NewLogMessage(
 			span,
 			logUUID.String(),
-			authUser.UID,
+			uuid.Nil,
 			eventName,
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
