@@ -20,12 +20,6 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 
 FROM golang:${GOLANG_VERSION}
 
-# ENV DEBIAN_FRONTEND noninteractive
-
-# RUN apt-get update && apt-get install -y \
-#     curl \
-#     && rm -rf /var/lib/apt/lists/*
-
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
 # Need permission of /nonexistent folder for HuggingFace internal process.
