@@ -324,14 +324,16 @@ func IsBillableEvent(_ string) bool {
 }
 
 type UsageMetricData struct {
-	OwnerUID           string
-	OwnerType          mgmtPB.OwnerType
-	UserUID            string
-	UserType           mgmtPB.OwnerType
-	ModelUID           string
-	Status             mgmtPB.Status
-	TriggerUID         string
-	ModelDefinitionUID string
-	TriggerTime        string
-	ModelTask          commonPB.Task
+	OwnerUID            string
+	OwnerType           mgmtPB.OwnerType
+	UserUID             string
+	UserType            mgmtPB.OwnerType
+	ModelUID            string
+	Status              mgmtPB.Status
+	Mode                mgmtPB.Mode
+	TriggerUID          string
+	ModelDefinitionUID  string
+	TriggerTime         string
+	ComputeTimeDuration float64
+	ModelTask           commonPB.Task
 }

@@ -3,21 +3,25 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -25,6 +29,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/model-backend/pkg/worker"
+	"github.com/instill-ai/x/errmsg"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -65,7 +71,8 @@ type Service interface {
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
 	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
@@ -434,7 +441,9 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 	return state, message, nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task) ([]*modelPB.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
@@ -455,476 +464,156 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNoPermission
 	}
 
-	name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
-
-	var postprocessResponse any
-	modelMetadataResponse := s.ray.ModelMetadataRequest(ctx, name, version)
-	if modelMetadataResponse == nil {
-		return nil, fmt.Errorf("model is offline")
-	}
-	inferResponse, err := s.ray.ModelInferRequest(ctx, task, inferInput, name, version, modelMetadataResponse)
-	if err != nil {
-		return nil, err
-	}
-	postprocessResponse, err = ray.PostProcess(inferResponse, modelMetadataResponse, task)
+	inputJSON, err := json.Marshal(inferInput)
 	if err != nil {
 		return nil, err
 	}
 
-	switch task {
-	case commonPB.Task_TASK_CLASSIFICATION:
-		clsResponses := postprocessResponse.([]string)
-		var clsOutputs []*modelPB.TaskOutput
-		for _, clsRes := range clsResponses {
-			clsResSplit := strings.Split(clsRes, ":")
-			if len(clsResSplit) == 2 {
-				score, err := strconv.ParseFloat(clsResSplit[0], 32)
-				if err != nil {
-					return nil, fmt.Errorf("unable to decode inference output")
-				}
-				clsOutput := modelPB.TaskOutput{
-					Output: &modelPB.TaskOutput_Classification{
-						Classification: &modelPB.ClassificationOutput{
-							Category: clsResSplit[1],
-							Score:    float32(score),
-						},
-					},
-				}
-				clsOutputs = append(clsOutputs, &clsOutput)
-			} else if len(clsResSplit) == 3 {
-				score, err := strconv.ParseFloat(clsResSplit[0], 32)
-				if err != nil {
-					return nil, fmt.Errorf("unable to decode inference output")
-				}
-				clsOutput := modelPB.TaskOutput{
-					Output: &modelPB.TaskOutput_Classification{
-						Classification: &modelPB.ClassificationOutput{
-							Category: clsResSplit[2],
-							Score:    float32(score),
-						},
-					},
-				}
-				clsOutputs = append(clsOutputs, &clsOutput)
-			} else {
-				return nil, fmt.Errorf("unable to decode inference output")
-			}
-		}
-		if len(clsOutputs) == 0 {
-			clsOutputs = append(clsOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Classification{
-					Classification: &modelPB.ClassificationOutput{},
-				},
-			})
-		}
-		return clsOutputs, nil
-	case commonPB.Task_TASK_DETECTION:
-		detResponses := postprocessResponse.(ray.DetectionOutput)
-		batchedOutputDataBboxes := detResponses.Boxes
-		batchedOutputDataLabels := detResponses.Labels
-		var detOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataBboxes {
-			var detOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Detection{
-					Detection: &modelPB.DetectionOutput{
-						Objects: []*modelPB.DetectionObject{},
-					},
-				},
-			}
-			for j := range batchedOutputDataBboxes[i] {
-				box := batchedOutputDataBboxes[i][j]
-				label := batchedOutputDataLabels[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Ray to be able to batch Tensors
-				if label != "0" {
-					bbObj := &modelPB.DetectionObject{
-						Category: label,
-						Score:    box[4],
-						// Convert x1y1x2y2 to xywh where xy is top-left corner
-						BoundingBox: &modelPB.BoundingBox{
-							Left:   box[0],
-							Top:    box[1],
-							Width:  box[2] - box[0],
-							Height: box[3] - box[1],
-						},
-					}
-					detOutput.GetDetection().Objects = append(detOutput.GetDetection().Objects, bbObj)
-				}
-			}
-			detOutputs = append(detOutputs, &detOutput)
-		}
-		if len(detOutputs) == 0 {
-			detOutputs = append(detOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Detection{
-					Detection: &modelPB.DetectionOutput{
-						Objects: []*modelPB.DetectionObject{},
-					},
-				},
-			})
-		}
-		return detOutputs, nil
-	case commonPB.Task_TASK_KEYPOINT:
-		keypointResponse := postprocessResponse.(ray.KeypointOutput)
-		var keypointOutputs []*modelPB.TaskOutput
-		for i := range keypointResponse.Keypoints { // batch size
-			var keypointObjects []*modelPB.KeypointObject
-			for j := range keypointResponse.Keypoints[i] { // n keypoints in one image
-				if keypointResponse.Scores[i][j] == -1 { // dummy object for batching to make sure every images have same output shape
-					continue
-				}
-				var keypoints []*modelPB.Keypoint
-				points := keypointResponse.Keypoints[i][j]
-				for k := range points { // 17 point for each keypoint
-					if points[k][0] == -1 && points[k][1] == -1 && points[k][2] == -1 { // dummy output for batching to make sure every images have same output shape
-						continue
-					}
-					keypoints = append(keypoints, &modelPB.Keypoint{
-						X: points[k][0],
-						Y: points[k][1],
-						V: points[k][2],
-					})
-				}
-				keypointObjects = append(keypointObjects, &modelPB.KeypointObject{
-					Keypoints: keypoints,
-					BoundingBox: &modelPB.BoundingBox{
-						Left:   keypointResponse.Boxes[i][j][0],
-						Top:    keypointResponse.Boxes[i][j][1],
-						Width:  keypointResponse.Boxes[i][j][2],
-						Height: keypointResponse.Boxes[i][j][3],
-					},
-					Score: keypointResponse.Scores[i][j],
-				})
-			}
-			keypointOutputs = append(keypointOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Keypoint{
-					Keypoint: &modelPB.KeypointOutput{
-						Objects: keypointObjects,
-					},
-				},
-			})
-		}
-		if len(keypointOutputs) == 0 {
-			keypointOutputs = append(keypointOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Keypoint{
-					Keypoint: &modelPB.KeypointOutput{
-						Objects: []*modelPB.KeypointObject{},
-					},
-				},
-			})
-		}
-		return keypointOutputs, nil
-	case commonPB.Task_TASK_OCR:
-		ocrResponses := postprocessResponse.(ray.OcrOutput)
-		batchedOutputDataBboxes := ocrResponses.Boxes
-		batchedOutputDataTexts := ocrResponses.Texts
-		batchedOutputDataScores := ocrResponses.Scores
-		var ocrOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataBboxes {
-			var ocrOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Ocr{
-					Ocr: &modelPB.OcrOutput{
-						Objects: []*modelPB.OcrObject{},
-					},
-				},
-			}
-			for j := range batchedOutputDataBboxes[i] {
-				box := batchedOutputDataBboxes[i][j]
-				text := batchedOutputDataTexts[i][j]
-				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
-				if text != "" && box[0] != -1 {
-					ocrOutput.GetOcr().Objects = append(ocrOutput.GetOcr().Objects, &modelPB.OcrObject{
-						BoundingBox: &modelPB.BoundingBox{
-							Left:   box[0],
-							Top:    box[1],
-							Width:  box[2],
-							Height: box[3],
-						},
-						Score: score,
-						Text:  text,
-					})
-				}
-			}
-			ocrOutputs = append(ocrOutputs, &ocrOutput)
-		}
-		if len(ocrOutputs) == 0 {
-			ocrOutputs = append(ocrOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Ocr{
-					Ocr: &modelPB.OcrOutput{
-						Objects: []*modelPB.OcrObject{},
-					},
-				},
-			})
-		}
-		return ocrOutputs, nil
+	inputBlobRedisKey := fmt.Sprintf("async_model_request:%s", triggerUID)
+	s.redisClient.Set(
+		ctx,
+		inputBlobRedisKey,
+		inputJSON,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
 
-	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
-		instanceSegmentationResponses := postprocessResponse.(ray.InstanceSegmentationOutput)
-		batchedOutputDataRles := instanceSegmentationResponses.Rles
-		batchedOutputDataBboxes := instanceSegmentationResponses.Boxes
-		batchedOutputDataLabels := instanceSegmentationResponses.Labels
-		batchedOutputDataScores := instanceSegmentationResponses.Scores
-		var instanceSegmentationOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataBboxes {
-			var instanceSegmentationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_InstanceSegmentation{
-					InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
-						Objects: []*modelPB.InstanceSegmentationObject{},
-					},
-				},
-			}
-			for j := range batchedOutputDataBboxes[i] {
-				rle := batchedOutputDataRles[i][j]
-				box := batchedOutputDataBboxes[i][j]
-				label := batchedOutputDataLabels[i][j]
-				score := batchedOutputDataScores[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
-				if label != "" && rle != "" {
-					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelPB.InstanceSegmentationObject{
-						Rle: rle,
-						BoundingBox: &modelPB.BoundingBox{
-							Left:   box[0],
-							Top:    box[1],
-							Width:  box[2],
-							Height: box[3],
-						},
-						Score:    score,
-						Category: label,
-					})
-				}
-			}
-			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &instanceSegmentationOutput)
-		}
-		if len(instanceSegmentationOutputs) == 0 {
-			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_InstanceSegmentation{
-					InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
-						Objects: []*modelPB.InstanceSegmentationObject{},
-					},
-				},
-			})
-		}
-		return instanceSegmentationOutputs, nil
-
-	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
-		semanticSegmentationResponses := postprocessResponse.(ray.SemanticSegmentationOutput)
-		batchedOutputDataRles := semanticSegmentationResponses.Rles
-		batchedOutputDataCategories := semanticSegmentationResponses.Categories
-		var semanticSegmentationOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataCategories { // loop over images
-			var semanticSegmentationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_SemanticSegmentation{
-					SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
-						Stuffs: []*modelPB.SemanticSegmentationStuff{},
-					},
-				},
-			}
-			for j := range batchedOutputDataCategories[i] { // single image
-				rle := batchedOutputDataRles[i][j]
-				category := batchedOutputDataCategories[i][j]
-				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
-				if category != "" && rle != "" {
-					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelPB.SemanticSegmentationStuff{
-						Rle:      rle,
-						Category: category,
-					})
-				}
-			}
-			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &semanticSegmentationOutput)
-		}
-		if len(semanticSegmentationOutputs) == 0 {
-			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_SemanticSegmentation{
-					SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
-						Stuffs: []*modelPB.SemanticSegmentationStuff{},
-					},
-				},
-			})
-		}
-		return semanticSegmentationOutputs, nil
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
-		textToImageResponses := postprocessResponse.(ray.TextToImageOutput)
-		batchedOutputDataImages := textToImageResponses.Images
-		var textToImageOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataImages { // loop over images
-			var textToImageOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextToImage{
-					TextToImage: &modelPB.TextToImageOutput{
-						Images: batchedOutputDataImages[i],
-					},
-				},
-			}
-
-			textToImageOutputs = append(textToImageOutputs, &textToImageOutput)
-		}
-		if len(textToImageOutputs) == 0 {
-			textToImageOutputs = append(textToImageOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextToImage{
-					TextToImage: &modelPB.TextToImageOutput{
-						Images: []string{},
-					},
-				},
-			})
-		}
-		return textToImageOutputs, nil
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImageResponses := postprocessResponse.(ray.ImageToImageOutput)
-		batchedOutputDataImages := imageToImageResponses.Images
-		var imageToImageOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataImages { // loop over images
-			var imageToImageOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_ImageToImage{
-					ImageToImage: &modelPB.ImageToImageOutput{
-						Images: batchedOutputDataImages[i],
-					},
-				},
-			}
-
-			imageToImageOutputs = append(imageToImageOutputs, &imageToImageOutput)
-		}
-		if len(imageToImageOutputs) == 0 {
-			imageToImageOutputs = append(imageToImageOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_ImageToImage{
-					ImageToImage: &modelPB.ImageToImageOutput{
-						Images: []string{},
-					},
-				},
-			})
-		}
-		return imageToImageOutputs, nil
-	case commonPB.Task_TASK_TEXT_GENERATION:
-		textGenerationResponses := postprocessResponse.(ray.TextGenerationOutput)
-		batchedOutputDataTexts := textGenerationResponses.Text
-		var textGenerationOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataTexts {
-			var textGenerationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGeneration{
-					TextGeneration: &modelPB.TextGenerationOutput{
-						Text: batchedOutputDataTexts[i],
-					},
-				},
-			}
-
-			textGenerationOutputs = append(textGenerationOutputs, &textGenerationOutput)
-		}
-		if len(textGenerationOutputs) == 0 {
-			textGenerationOutputs = append(textGenerationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGeneration{
-					TextGeneration: &modelPB.TextGenerationOutput{
-						Text: "",
-					},
-				},
-			})
-		}
-		return textGenerationOutputs, nil
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnsweringResponses := postprocessResponse.(ray.VisualQuestionAnsweringOutput)
-		batchedOutputDataTexts := visualQuestionAnsweringResponses.Text
-		var visualQuestionAnsweringOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataTexts {
-			var visualQuestionAnsweringOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
-					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
-						Text: batchedOutputDataTexts[i],
-					},
-				},
-			}
-
-			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &visualQuestionAnsweringOutput)
-		}
-		if len(visualQuestionAnsweringOutputs) == 0 {
-			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
-					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
-						Text: "",
-					},
-				},
-			})
-		}
-		return visualQuestionAnsweringOutputs, nil
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChatResponses := postprocessResponse.(ray.TextGenerationChatOutput)
-		batchedOutputDataTexts := textGenerationChatResponses.Text
-		var textGenerationChatOutputs []*modelPB.TaskOutput
-		for i := range batchedOutputDataTexts {
-			var textGenerationChatOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGenerationChat{
-					TextGenerationChat: &modelPB.TextGenerationChatOutput{
-						Text: batchedOutputDataTexts[i],
-					},
-				},
-			}
-
-			textGenerationChatOutputs = append(textGenerationChatOutputs, &textGenerationChatOutput)
-		}
-		if len(textGenerationChatOutputs) == 0 {
-			textGenerationChatOutputs = append(textGenerationChatOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGenerationChat{
-					TextGenerationChat: &modelPB.TextGenerationChatOutput{
-						Text: "",
-					},
-				},
-			})
-		}
-		return textGenerationChatOutputs, nil
-	default:
-		outputs := postprocessResponse.([]ray.BatchUnspecifiedTaskOutputs)
-		var rawOutputs []*modelPB.TaskOutput
-		if len(outputs) == 0 {
-			return []*modelPB.TaskOutput{}, nil
-		}
-		deserializedOutputs := outputs[0].SerializedOutputs
-		for i := range deserializedOutputs {
-			var singleImageOutput []*structpb.Struct
-
-			for _, output := range outputs {
-				unspecifiedOutput := ray.SingleOutputUnspecifiedTaskOutput{
-					Name:     output.Name,
-					Shape:    output.Shape,
-					DataType: output.DataType,
-					Data:     output.SerializedOutputs[i],
-				}
-
-				var mapOutput map[string]any
-				b, err := json.Marshal(unspecifiedOutput)
-				if err != nil {
-					return nil, err
-				}
-				if err := json.Unmarshal(b, &mapOutput); err != nil {
-					return nil, err
-				}
-				utils.ConvertAllJSONKeySnakeCase(mapOutput)
-
-				b, err = json.Marshal(mapOutput)
-				if err != nil {
-					return nil, err
-				}
-				var structData = &structpb.Struct{}
-				err = protojson.Unmarshal(b, structData)
-
-				if err != nil {
-					return nil, err
-				}
-				singleImageOutput = append(singleImageOutput, structData)
-			}
-
-			rawOutputs = append(rawOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Unspecified{
-					Unspecified: &modelPB.UnspecifiedOutput{
-						RawOutputs: singleImageOutput,
-					},
-				},
-			})
-		}
-		if len(rawOutputs) == 0 {
-			rawOutputs = append(rawOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Unspecified{
-					Unspecified: &modelPB.UnspecifiedOutput{
-						RawOutputs: []*structpb.Struct{},
-					},
-				},
-			})
-		}
-		return rawOutputs, nil
+	workflowOptions := client.StartWorkflowOptions{
+		ID:                       triggerUID,
+		TaskQueue:                worker.TaskQueue,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+		},
 	}
+
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+
+	we, err := s.temporalClient.ExecuteWorkflow(
+		ctx,
+		workflowOptions,
+		"TriggerModelWorkflow",
+		&worker.TriggerModelWorkflowRequest{
+			ModelID:                  dbModel.ID,
+			ModelUID:                 dbModel.UID,
+			ModelVersion:             version,
+			OwnerUID:                 ns.NsUID,
+			OwnerType:                string(ns.NsType),
+			UserUID:                  userUID,
+			UserType:                 mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			ModelDefinitionUID:       dbModel.ModelDefinitionUID,
+			Task:                     task,
+			TriggerInputBlobRedisKey: inputBlobRedisKey,
+			Mode:                     mgmtPB.Mode_MODE_SYNC,
+		})
+	if err != nil {
+		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
+		return nil, err
+	}
+
+	var triggerResult *worker.TriggerModelWorkflowResponse
+	err = we.Get(ctx, &triggerResult)
+	if err != nil {
+		var applicationErr *temporal.ApplicationError
+		if errors.As(err, &applicationErr) {
+			var details worker.EndUserErrorDetails
+			if dErr := applicationErr.Details(&details); dErr == nil && details.Message != "" {
+				err = errmsg.AddMessage(err, details.Message)
+			}
+		}
+
+		return nil, err
+	}
+
+	triggerModelResponse := &modelPB.TriggerUserModelResponse{}
+
+	blob, err := s.redisClient.GetDel(ctx, triggerResult.OutputBlobRedisKey).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	err = protojson.Unmarshal(blob, triggerModelResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return triggerModelResponse.TaskOutputs, nil
+}
+
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "executor"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNoPermission
+	}
+
+	inputJSON, err := json.Marshal(inferInput)
+	if err != nil {
+		return nil, err
+	}
+
+	inputBlobRedisKey := fmt.Sprintf("async_model_request:%s", triggerUID)
+	s.redisClient.Set(
+		ctx,
+		inputBlobRedisKey,
+		inputJSON,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
+
+	workflowOptions := client.StartWorkflowOptions{
+		ID:                       triggerUID,
+		TaskQueue:                worker.TaskQueue,
+		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
+		},
+	}
+
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+
+	we, err := s.temporalClient.ExecuteWorkflow(
+		ctx,
+		workflowOptions,
+		"TriggerModelWorkflow",
+		&worker.TriggerModelWorkflowRequest{
+			ModelID:                  dbModel.ID,
+			ModelUID:                 dbModel.UID,
+			ModelVersion:             version,
+			OwnerUID:                 ns.NsUID,
+			OwnerType:                string(ns.NsType),
+			UserUID:                  userUID,
+			UserType:                 mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			ModelDefinitionUID:       dbModel.ModelDefinitionUID,
+			Task:                     task,
+			TriggerInputBlobRedisKey: inputBlobRedisKey,
+			Mode:                     mgmtPB.Mode_MODE_ASYNC,
+		})
+	if err != nil {
+		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
+		return nil, err
+	}
+
+	logger.Info(fmt.Sprintf("started workflow with workflowID %s and RunID %s", we.GetID(), we.GetRunID()))
+
+	return &longrunningpb.Operation{
+		Name: fmt.Sprintf("operations/%s", triggerUID),
+		Done: false,
+	}, nil
 }
 
 func (s *service) ListModels(ctx context.Context, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, showDeleted bool) ([]*modelPB.Model, int32, string, error) {

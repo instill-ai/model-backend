@@ -260,7 +260,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		}
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, triggerInput, pbModel.Task)
+	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, triggerInput, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,

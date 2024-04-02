@@ -16,9 +16,9 @@ server:
     enabled: false
   maxdatasize: 100 # MB in unit
   workflow:
-    maxworkflowtimeout: 7200 # in seconds
-    maxworkflowretry: 3
-    maxactivityretry: 1
+    maxworkflowtimeout: 3600 # in seconds
+    maxworkflowretry: 1
+    maxactivityretry: 3
 database:
   username: postgres
   password: password
