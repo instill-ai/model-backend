@@ -39,7 +39,7 @@ require (
 	golang.org/x/net v0.21.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230725213213-b022f6e96895
 	google.golang.org/grpc v1.56.3
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.24.2
