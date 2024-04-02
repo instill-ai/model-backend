@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
@@ -978,7 +979,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task)
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1023,6 +1024,149 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	)))
 
 	return pbModel.Task, response, nil
+}
+
+type TriggerAsyncNamespaceModelRequestInterface interface {
+	GetName() string
+	GetVersion() string
+	GetTaskInputs() []*modelPB.TaskInput
+}
+
+func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelPB.TriggerAsyncUserModelRequest) (resp *modelPB.TriggerAsyncUserModelResponse, err error) {
+	resp = &modelPB.TriggerAsyncUserModelResponse{}
+	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *modelPB.TriggerAsyncOrganizationModelRequest) (resp *modelPB.TriggerAsyncOrganizationModelResponse, err error) {
+	resp = &modelPB.TriggerAsyncOrganizationModelResponse{}
+	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req TriggerAsyncNamespaceModelRequestInterface) (operation *longrunningpb.Operation, err error) {
+
+	eventName := "TriggerAsyncNamespaceModel"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+	authUser, err := h.service.AuthenticateUser(ctx, false)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	var inputInfer any
+	var lenInputs = 1
+	switch pbModel.Task {
+	case commonPB.Task_TASK_CLASSIFICATION,
+		commonPB.Task_TASK_DETECTION,
+		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
+		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonPB.Task_TASK_OCR,
+		commonPB.Task_TASK_KEYPOINT,
+		commonPB.Task_TASK_UNSPECIFIED:
+		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = len(imageInput)
+		inputInfer = imageInput
+	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+		textToImage, err := parseTexToImageRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = textToImage
+	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = imageToImage
+	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
+			ctx,
+			&modelPB.TriggerUserModelRequest{
+				Name:       req.GetName(),
+				TaskInputs: req.GetTaskInputs(),
+			})
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		inputInfer = visualQuestionAnswering
+	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = textGenerationChat
+	case commonPB.Task_TASK_TEXT_GENERATION:
+		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		lenInputs = 1
+		inputInfer = textGeneration
+	}
+	// check whether model support batching or not. If not, raise an error
+	if lenInputs > 1 {
+		doSupportBatch, err := utils.DoSupportBatch()
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if !doSupportBatch {
+			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			return nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task, logUUID.String())
+	if err != nil {
+		if err != nil {
+			span.SetStatus(1, err.Error())
+			return nil, err
+		}
+	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		span,
+		logUUID.String(),
+		authUser.UID,
+		eventName,
+		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+	)))
+
+	return operation, nil
 }
 
 func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -1218,7 +1362,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, pathParams["version"], inputInfer, pbModel.Task)
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, pathParams["version"], inputInfer, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,

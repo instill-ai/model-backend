@@ -179,11 +179,8 @@ func main() {
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 
-	w.RegisterWorkflow(cw.DeployModelWorkflow)
-	w.RegisterActivity(cw.DeployModelActivity)
-	w.RegisterWorkflow(cw.UnDeployModelWorkflow)
-	w.RegisterActivity(cw.UnDeployModelActivity)
-	w.RegisterWorkflow(cw.CreateModelWorkflow)
+	w.RegisterWorkflow(cw.TriggerModelWorkflow)
+	w.RegisterActivity(cw.TriggerModelActivity)
 
 	span.End()
 	if err := w.Run(worker.InterruptCh()); err != nil {
