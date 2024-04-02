@@ -19,12 +19,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -442,7 +443,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
@@ -540,7 +541,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 

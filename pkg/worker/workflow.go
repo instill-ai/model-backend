@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
@@ -13,10 +14,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/gofrs/uuid"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
@@ -66,7 +67,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	logger, _ := logger.GetZapLogger(sCtx)
+	logger, _ := custom_logger.GetZapLogger(sCtx)
 	logger.Info("TriggerModelWorkflow started")
 
 	var ownerType mgmtPB.OwnerType
@@ -131,7 +132,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	logger, _ := logger.GetZapLogger(ctx)
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
