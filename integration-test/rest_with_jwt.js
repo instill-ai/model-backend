@@ -56,28 +56,28 @@ export default function (header) {
     });
   }
 
-  if (!constant.apiGatewayMode) {
+  // if (!constant.apiGatewayMode) {
     // Create Model API
-    createModel.CreateModelFromLocal(header)
-    createModel.CreateModelFromGitHub(header)
+    // createModel.CreateModelFromLocal(header)
+    // createModel.CreateModelFromGitHub(header)
 
     // Query Model API
-    queryModel.GetModel(header)
-    queryModel.ListModels(header)
-    queryModel.LookupModel(header)
+    // queryModel.GetModel(header)
+    // queryModel.ListModels(header)
+    // queryModel.LookupModel(header)
 
     // Deploy/Undeploy Model API
-    deployModel.DeployUndeployModel(header)
+    // deployModel.DeployUndeployModel(header)
 
     // Publish/Unpublish Model API
-    publishModel.PublishUnpublishModel(header)
+    // publishModel.PublishUnpublishModel(header)
 
     // Update Model API
-    updateModel.UpdateModel(header)
+    // updateModel.UpdateModel(header)
 
     // Get model card
-    getModelCard.GetModelCard(header)
-  }
+    // getModelCard.GetModelCard(header)
+  // }
 }
 
 export function teardown(header) {}

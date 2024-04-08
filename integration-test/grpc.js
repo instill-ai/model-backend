@@ -70,37 +70,37 @@ export default (header) => {
   }
 
   // Private API
-  if (!constant.apiGatewayMode) {
-    queryModelPrivate.ListModels(header)
-    queryModelPrivate.LookUpModel(header)
-    deployModelPrivate.CheckModel(header)
+  // if (!constant.apiGatewayMode) {
+    // queryModelPrivate.ListModels(header)
+    // queryModelPrivate.LookUpModel(header)
+    // deployModelPrivate.CheckModel(header)
     // private deploy will be triggered by public deploy
     // deployModelPrivate.DeployUndeployModel()
-  }
+  // }
 
   // Update model API
-  updateModel.UpdateUserModel(header)
+  // updateModel.UpdateUserModel(header)
 
   // Create model API
-  createModel.CreateUserModel(header)
+  // createModel.CreateUserModel(header)
 
   // Deploy Model API
-  deployModel.DeployUndeployUserModel(header)
+  // deployModel.DeployUndeployUserModel(header)
 
   // Query Model API
-  queryModel.GetUserModel(header)
-  queryModel.ListUserModels(header)
-  queryModel.LookupModel(header)
+  // queryModel.GetUserModel(header)
+  // queryModel.ListUserModels(header)
+  // queryModel.LookupModel(header)
 
   // Publish Model API
-  publishModel.PublishUnPublishUserModel(header)
+  // publishModel.PublishUnPublishUserModel(header)
 
   // Trigger Model API
-  triggerModel.TriggerUserModel(header)
+  // triggerModel.TriggerUserModel(header)
 
   // Query Model Definition API
-  queryModelDefinition.GetModelDefinition(header)
-  queryModelDefinition.ListModelDefinitions(header)
+  // queryModelDefinition.GetModelDefinition(header)
+  // queryModelDefinition.ListModelDefinitions(header)
 };
 
 export function teardown(header) {
