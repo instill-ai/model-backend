@@ -42,6 +42,13 @@ mgmtbackend:
   https:
     cert:
     key:
+artifactbackend:
+  host: artifact-backend
+  publicport: 8085
+  privateport: 3085
+  https:
+    cert:
+    key:
 cache:
   redis:
     redisoptions:
