@@ -13,6 +13,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
+	artifactPB "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagePB "github.com/instill-ai/protogen-go/core/usage/v1beta"
 )
@@ -63,6 +64,31 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 	}
 
 	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
+}
+
+// InitArtifactPrivateServiceClient initializes a ArtifactPrivateServiceClient instance
+func InitArtifactPrivateServiceClient(ctx context.Context) (artifactPB.ArtifactPrivateServiceClient, *grpc.ClientConn) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var clientDialOpts grpc.DialOption
+	var creds credentials.TransportCredentials
+	var err error
+	if config.Config.ArtifactBackend.HTTPS.Cert != "" && config.Config.ArtifactBackend.HTTPS.Key != "" {
+		creds, err = credentials.NewServerTLSFromFile(config.Config.ArtifactBackend.HTTPS.Cert, config.Config.ArtifactBackend.HTTPS.Key)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		clientDialOpts = grpc.WithTransportCredentials(creds)
+	} else {
+		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.ArtifactBackend.Host, config.Config.ArtifactBackend.PrivatePort), clientDialOpts)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	return artifactPB.NewArtifactPrivateServiceClient(clientConn), clientConn
 }
 
 // InitUsageServiceClient initializes a UsageServiceClient instance (no mTLS)

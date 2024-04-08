@@ -167,6 +167,9 @@ func main() {
 	mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
 	defer mgmtPrivateServiceClientConn.Close()
 
+	artifactPrivateServiceClient, artifactPrivateServiceCLientConn := external.InitArtifactPrivateServiceClient(ctx)
+	defer artifactPrivateServiceCLientConn.Close()
+
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
@@ -232,7 +235,7 @@ func main() {
 
 	repo := repository.NewRepository(db)
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient)
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
@@ -263,12 +266,12 @@ func main() {
 	)
 
 	// Register custom route for  POST /v1alpha/users/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /v1alpha/organizations/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
 	}
 

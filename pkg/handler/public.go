@@ -261,6 +261,67 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 	return pbModels, nextPageToken, totalSize, nil
 }
 
+type ListNamespaceModelVersionRequestInterface interface {
+	GetPage() int32
+	GetPageSize() int32
+	GetName() string
+}
+
+func (h *PublicHandler) ListUserModelVersions(ctx context.Context, req *modelPB.ListUserModelVersionsRequest) (resp *modelPB.ListUserModelVersionsResponse, err error) {
+	resp = &modelPB.ListUserModelVersionsResponse{}
+	resp.Versions, resp.TotalSize, resp.PageSize, resp.Page, err = h.listNamespaceModelVersions(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *modelPB.ListOrganizationModelVersionsRequest) (resp *modelPB.ListOrganizationModelVersionsResponse, err error) {
+	resp = &modelPB.ListOrganizationModelVersionsResponse{}
+	resp.Versions, resp.TotalSize, resp.PageSize, resp.Page, err = h.listNamespaceModelVersions(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req ListNamespaceModelVersionRequestInterface) (versions []*modelPB.ModelVersion, totalSize int32, pageSize int32, page int32, err error) {
+
+	eventName := "ListNamespaceModelVersions"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, 0, 0, 0, err
+	}
+
+	authUser, err := h.service.AuthenticateUser(ctx, false)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, 0, 0, 0, err
+	}
+
+	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, authUser, req.GetPage(), req.GetPageSize(), modelID)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, 0, 0, 0, err
+	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		span,
+		logUUID.String(),
+		authUser.UID,
+		eventName,
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+	)))
+
+	return pbModelVersions, totalSize, pageSize, page, nil
+}
+
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpModelRequest) (*modelPB.LookUpModelResponse, error) {
 
 	eventName := "LookUpModel"

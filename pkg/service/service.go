@@ -32,6 +32,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/errmsg"
 
+	artifactPB "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -69,7 +70,8 @@ type Service interface {
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, string, error)
+	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, authUser *AuthUser, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, version string) (*modelPB.State, string, error)
 
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
 	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
@@ -93,13 +95,14 @@ type Service interface {
 }
 
 type service struct {
-	repository               repository.Repository
-	redisClient              *redis.Client
-	mgmtPublicServiceClient  mgmtPB.MgmtPublicServiceClient
-	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
-	temporalClient           client.Client
-	ray                      ray.Ray
-	aclClient                *acl.ACLClient
+	repository                   repository.Repository
+	redisClient                  *redis.Client
+	mgmtPublicServiceClient      mgmtPB.MgmtPublicServiceClient
+	mgmtPrivateServiceClient     mgmtPB.MgmtPrivateServiceClient
+	artifactPrivateServiceClient artifactPB.ArtifactPrivateServiceClient
+	temporalClient               client.Client
+	ray                          ray.Ray
+	aclClient                    *acl.ACLClient
 }
 
 // NewService returns a new service instance
@@ -107,18 +110,20 @@ func NewService(
 	r repository.Repository,
 	mp mgmtPB.MgmtPublicServiceClient,
 	m mgmtPB.MgmtPrivateServiceClient,
+	ar artifactPB.ArtifactPrivateServiceClient,
 	rc *redis.Client,
 	tc client.Client,
 	ra ray.Ray,
 	a *acl.ACLClient) Service {
 	return &service{
-		repository:               r,
-		ray:                      ra,
-		mgmtPublicServiceClient:  mp,
-		mgmtPrivateServiceClient: m,
-		redisClient:              rc,
-		temporalClient:           tc,
-		aclClient:                a,
+		repository:                   r,
+		ray:                          ra,
+		mgmtPublicServiceClient:      mp,
+		mgmtPrivateServiceClient:     m,
+		artifactPrivateServiceClient: ar,
+		redisClient:                  rc,
+		temporalClient:               tc,
+		aclClient:                    a,
 	}
 }
 
@@ -417,7 +422,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	return nil
 }
 
-func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, versionTag string) (*modelPB.State, string, error) {
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, version string) (*modelPB.State, string, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
@@ -433,7 +438,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
 
-	state, message, err := s.ray.ModelReady(ctx, name, versionTag)
+	state, message, err := s.ray.ModelReady(ctx, name, version)
 	if err != nil {
 		return nil, "", err
 	}
@@ -672,6 +677,48 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 
 	pbModels, err := s.DBToPBModels(ctx, dbModels)
 	return pbModels, int32(ps), pt, err
+}
+
+func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, authUser *AuthUser, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error) {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
+	if err != nil {
+		return nil, 0, 0, 0, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+		return nil, 0, 0, 0, err
+	} else if !granted {
+		return nil, 0, 0, 0, ErrNotFound
+	}
+
+	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactPB.ListRepositoryTagsRequest{
+		Parent: fmt.Sprintf("repositories/%s/%s", ns.NsID, modelID),
+		Page: &page,
+		PageSize: &pageSize,
+	})
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	versions := make([]*modelPB.ModelVersion, resp.GetPageSize())
+
+	for _, tag := range resp.GetTags() {
+		state, _, err := s.WatchModel(ctx, ns, authUser, modelID, tag.GetId())
+		if err != nil {
+			return nil, 0, 0, 0, err
+		}
+		versions = append(versions, &modelPB.ModelVersion{
+			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
+			Id:         tag.GetId(),
+			Digest:     tag.GetDigest(),
+			State:      *state,
+			UpdateTime: tag.GetUpdateTime(),
+		})
+	}
+
+	return versions, resp.GetTotalSize(), resp.GetPageSize(), resp.GetPage(), nil
 }
 
 func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error) {

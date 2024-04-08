@@ -76,6 +76,17 @@ type MgmtBackendConfig struct {
 	}
 }
 
+// ArtifactBackendConfig related to artifact-backend
+type ArtifactBackendConfig struct {
+	Host        string `koanf:"host"`
+	PrivatePort int    `koanf:"privateport"`
+	PublicPort  int    `koanf:"publicport"`
+	HTTPS       struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
+}
+
 // CacheConfig related to Redis
 type CacheConfig struct {
 	Redis struct {
@@ -140,17 +151,18 @@ type RegistryConfig struct {
 
 // AppConfig defines
 type AppConfig struct {
-	Server                 ServerConfig       `koanf:"server"`
-	Database               DatabaseConfig     `koanf:"database"`
-	RayServer              RayServerConfig    `koanf:"rayserver"`
-	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`
-	Cache                  CacheConfig        `koanf:"cache"`
-	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`
-	Temporal               TemporalConfig     `koanf:"temporal"`
-	OpenFGA                OpenFGAConfig      `koanf:"openfga"`
-	Registry               RegistryConfig     `koanf:"registry"`
-	InitModel              InitModelConfig    `koanf:"initmodel"`
-	Log                    LogConfig          `koanf:"log"`
+	Server                 ServerConfig          `koanf:"server"`
+	Database               DatabaseConfig        `koanf:"database"`
+	RayServer              RayServerConfig       `koanf:"rayserver"`
+	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
+	ArtifactBackend        ArtifactBackendConfig `koanf:"artifactbackend"`
+	Cache                  CacheConfig           `koanf:"cache"`
+	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
+	Temporal               TemporalConfig        `koanf:"temporal"`
+	OpenFGA                OpenFGAConfig         `koanf:"openfga"`
+	Registry               RegistryConfig        `koanf:"registry"`
+	InitModel              InitModelConfig       `koanf:"initmodel"`
+	Log                    LogConfig             `koanf:"log"`
 }
 
 // Config - Global variable to export
