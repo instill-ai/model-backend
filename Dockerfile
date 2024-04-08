@@ -18,41 +18,7 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
 
-# ArtiVC to work with cloud storage
-ARG TARGETOS TARGETARCH ARTIVC_VERSION
-ADD https://github.com/InfuseAI/ArtiVC/releases/download/v${ARTIVC_VERSION}/ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz
-RUN tar -xf ArtiVC-v${ARTIVC_VERSION}-${TARGETOS}-${TARGETARCH}.tar.gz -C /usr/local/bin
-
-# Mounting points
-RUN mkdir /model-repository
-RUN mkdir /.cache
-
 FROM golang:${GOLANG_VERSION}
-
-ENV DEBIAN_FRONTEND noninteractive
-
-# tools to work with versatile model import
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-setuptools \
-    python3-pip \
-    python3-venv \
-    git \
-    git-lfs \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV VENV=/opt/venv
-RUN python3 -m venv $VENV
-ENV PATH="$VENV/bin:$PATH"
-
-# RUN export PIP_DEFAULT_TIMEOUT=10000
-RUN pip install --upgrade pip setuptools wheel
-RUN pip install dvc[gs]==2.34.2
-# RUN pip install jsonschema pyyaml
-# RUN pip install --no-cache-dir opencv-contrib-python-headless transformers pillow torch torchvision onnxruntime dvc[gs]==2.34.2
-# RUN pip install --no-cache-dir ray[serve] scikit-image
-# RUN pip install --no-cache-dir instill-sdk==0.3.2rc7
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
@@ -77,7 +43,3 @@ COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init-model ./
-COPY --from=build --chown=nobody:nogroup /usr/local/bin/avc /usr/local/bin/avc
-
-COPY --from=build --chown=nobody:nogroup /model-repository /model-repository
-COPY --from=build --chown=nobody:nogroup /.cache /.cache

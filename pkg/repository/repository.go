@@ -30,7 +30,6 @@ type Repository interface {
 
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
 	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
-	UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error
 	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
@@ -40,6 +39,11 @@ type Repository interface {
 	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+
+	CreateModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
+	GetModelVersionByNameAdmin(ctx context.Context, name string) (version *datamodel.ModelVersion, err error)
+	DeleteModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
+	ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -259,19 +263,6 @@ func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermal
 	return nil
 }
 
-// TODO: gorm do not update the zero value with struct, so we need to update the state manually.
-func (r *repository) UpdateNamespaceModelStateByID(ctx context.Context, ownerPermalink string, id string, state *datamodel.ModelState) error {
-	if result := r.db.Model(&datamodel.Model{}).
-		Where("(id = ? AND owner = ?)", id, ownerPermalink).
-		Updates(map[string]any{"state": state}); result.Error != nil {
-		return result.Error
-	} else if result.RowsAffected == 0 {
-		return ErrNoDataUpdated
-	}
-
-	return nil
-}
-
 func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
 	result := r.db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
@@ -286,6 +277,54 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 	}
 
 	return nil
+}
+
+func (r *repository) CreateModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
+	if result := r.db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (r *repository) DeleteModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
+	result := r.db.Model(&datamodel.ModelVersion{}).
+		Where("(name = ? AND version = ?)", version.Name, version.Version).
+		Delete(&datamodel.ModelVersion{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrNoDataDeleted
+	}
+
+	return nil
+}
+
+func (r *repository) GetModelVersionByNameAdmin(ctx context.Context, name string) (version *datamodel.ModelVersion, err error) {
+	queryBuilder := r.db.Model(&datamodel.ModelVersion{}).Where("(name = ?)", []any{name})
+
+	if result := queryBuilder.First(version); result.Error != nil {
+		st, _ := sterr.CreateErrorResourceInfo(
+			codes.NotFound,
+			fmt.Sprintf("[db] GetModelVersionByName error: %s", result.Error.Error()),
+			"model",
+			"",
+			"",
+			result.Error.Error(),
+		)
+		return nil, st.Err()
+	}
+	return version, nil
+}
+
+func (r *repository) ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
+	if result := r.db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
+		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v not found", modelUID)
+	}
+	return versions, nil
 }
 
 func (r *repository) GetModelDefinition(id string) (*datamodel.ModelDefinition, error) {

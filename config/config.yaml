@@ -16,20 +16,16 @@ server:
     enabled: false
   maxdatasize: 100 # MB in unit
   workflow:
-    maxworkflowtimeout: 7200 # in seconds
-    maxworkflowretry: 3
-    maxactivityretry: 1
-  inferencebackend: ray
-github:
-  patenabled: false
-  pat:
+    maxworkflowtimeout: 3600 # in seconds
+    maxworkflowretry: 1
+    maxactivityretry: 3
 database:
   username: postgres
   password: password
   host: pg-sql
   port: 5432
   name: model
-  version: 4
+  version: 5
   timezone: Etc/UTC
   pool:
     idleconnections: 5
@@ -37,7 +33,7 @@ database:
     connlifetime: 30m # In minutes, e.g., '60m'
 rayserver:
   grpcuri: ray-server:9000
-  modelstore: /model-repository
+  modelstore: /model-backend
   vram:
 mgmtbackend:
   host: mgmt-backend
@@ -50,9 +46,6 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-  model:
-    enabled: false
-    cache_dir: /model-repository/.cache/models
 maxbatchsizelimitation:
   unspecified: 2
   classification: 16
@@ -70,12 +63,6 @@ temporal:
   cert:
   key:
   servername:
-controller:
-  host: controller-model
-  privateport: 3086
-  https:
-    cert:
-    key:
 initmodel:
   ownertype: users
   ownerid: admin

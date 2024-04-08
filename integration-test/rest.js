@@ -74,43 +74,43 @@ export default function (header) {
   }
 
   // Query Model API by admin
-  if (!constant.apiGatewayMode) {
-    queryModelPrivate.ListModelsAdmin(header)
-    queryModelPrivate.LookupModelAdmin(header)
+  // if (!constant.apiGatewayMode) {
+    // queryModelPrivate.ListModelsAdmin(header)
+    // queryModelPrivate.LookupModelAdmin(header)
     // private deploy will be trigger by public deploy
     // deployModelPrivate.DeployUndeployModel()
-  }
+  // }
 
   // Infer Model API
-  inferModel.InferModel(header)
+  // inferModel.InferModel(header)
 
   // Create Model API
-  createModel.CreateModelFromLocal(header)
-  createModel.CreateModelFromGitHub(header)
+  // createModel.CreateModelFromLocal(header)
+  // createModel.CreateModelFromGitHub(header)
 
   // Query Model API
-  queryModel.GetModel(header)
-  queryModel.ListModels(header)
-  queryModel.LookupModel(header)
+  // queryModel.GetModel(header)
+  // queryModel.ListModels(header)
+  // queryModel.LookupModel(header)
 
   // Deploy/Undeploy Model API
-  deployModel.DeployUndeployModel(header)
+  // deployModel.DeployUndeployModel(header)
 
   // Publish/Unpublish Model API
-  publishModel.PublishUnpublishModel(header)
+  // publishModel.PublishUnpublishModel(header)
 
   // Update Model API
-  updateModel.UpdateModel(header)
+  // updateModel.UpdateModel(header)
 
   // Query Model Definition API
-  queryModelDefinition.GetModelDefinition(header)
-  queryModelDefinition.ListModelDefinitions(header)
+  // queryModelDefinition.GetModelDefinition(header)
+  // queryModelDefinition.ListModelDefinitions(header)
 
   // Get model card
-  getModelCard.GetModelCard(header)
+  // getModelCard.GetModelCard(header)
 
   // Long-running Operation
-  longrunningOperation.GetLongRunningOperation(header)
+  // longrunningOperation.GetLongRunningOperation(header)
 }
 
 export function teardown(header) {

@@ -8,7 +8,10 @@
   "required": [
     "id",
     "model_definition",
-    "configuration"
+    "configuration",
+    "visibility",
+    "region",
+    "hardware"
   ],
   "properties": {
     "name": {
@@ -80,16 +83,11 @@
         "VISIBILITY_PUBLIC"
       ],
       "default": "VISIBILITY_UNSPECIFIED",
-      "readOnly": true,
       "ui_order": 6,
       "ui_hidden": true,
       "ui_disabled": true,
       "ui_component": "select",
-      "ui_enum": [
-        "",
-        "Private",
-        "Public"
-      ]
+      "ui_enum": ["", "Private", "Public"]
     },
     "owner_name": {
       "type": "string",
@@ -101,20 +99,11 @@
       "ui_component": "text"
     },
     "owner": {
-      "type": [
-        "object",
-        "null"
-      ],
+      "type": ["object", "null"],
       "title": "Owner",
-      "description": "The resource obeject of a user",
+      "description": "The resource object of a user",
       "additionalProperties": {
-        "type": [
-          "string",
-          "number",
-          "boolean",
-          "object",
-          "null"
-        ],
+        "type": ["string", "number", "boolean", "object", "null"],
         "description": "Value can be a string, number, boolean, object, or null"
       },
       "readOnly": true,
@@ -123,28 +112,65 @@
       "ui_disabled": true,
       "ui_component": "text"
     },
-    "state": {
+    "region": {
       "type": "string",
-      "title": "State",
-      "description": "The model state",
-      "enum": [
-        "STATE_UNSPECIFIED",
-        "STATE_OFFLINE",
-        "STATE_ONLINE",
-        "STATE_ERROR"
-      ],
-      "default": "STATE_UNSPECIFIED",
+      "title": "Region",
+      "description": "The region of the cloud provider that a model is hosted on",
       "readOnly": true,
-      "ui_order": 3,
+      "ui_order": 7,
       "ui_hidden": true,
       "ui_disabled": true,
-      "ui_component": "select",
-      "ui_enum": [
-        "",
-        "Offline",
-        "Online",
-        "Error"
-      ]
+      "ui_component": "text"
+    },
+    "hardware": {
+      "type": "string",
+      "title": "Region",
+      "description": "The region of the cloud provider that a model is hosted on",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "readme": {
+      "type": "string",
+      "title": "Region",
+      "description": "The readme of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "source_url": {
+      "type": "string",
+      "title": "Region",
+      "description": "The source code url of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "documentation_url": {
+      "type": "string",
+      "title": "Region",
+      "description": "The documentation url of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
+    },
+    "license": {
+      "type": "string",
+      "title": "Region",
+      "description": "The license of the model",
+      "readOnly": true,
+      "ui_order": 7,
+      "ui_hidden": true,
+      "ui_disabled": true,
+      "ui_component": "text"
     },
     "task": {
       "type": "string",
@@ -190,9 +216,7 @@
       "format": "date-time",
       "title": "Create time",
       "description": "The date when the model is created in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": [
-        "2022-04-29T00:20:06.703547Z"
-      ],
+      "examples": ["2022-04-29T00:20:06.703547Z"],
       "readOnly": true,
       "ui_order": 8,
       "ui_hidden": true,
@@ -204,9 +228,7 @@
       "format": "date-time",
       "title": "Update time",
       "description": "The date when the model is updated in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": [
-        "2022-04-29T01:33:34.910865Z"
-      ],
+      "examples": ["2022-04-29T01:33:34.910865Z"],
       "readOnly": true,
       "ui_order": 9,
       "ui_hidden": true,
@@ -214,16 +236,11 @@
       "ui_component": "text"
     },
     "delete_time": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time",
       "title": "Delete time",
       "description": "The date when the model is deleted in the format YYYY-MM-DDTHH:MM::SS.",
-      "examples": [
-        "2022-04-29T01:33:34.910865Z"
-      ],
+      "examples": ["2022-04-29T01:33:34.910865Z"],
       "readOnly": true,
       "ui_order": 9,
       "ui_hidden": true,

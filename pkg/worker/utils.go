@@ -1,4 +1,4 @@
-package service
+package worker
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 )
 
-func (s *service) WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error {
+func (w *worker) writeNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error {
 
 	if config.Config.Server.Usage.Enabled {
 
@@ -18,7 +18,7 @@ func (s *service) WriteNewDataPoint(ctx context.Context, data *utils.UsageMetric
 			return err
 		}
 
-		s.redisClient.RPush(ctx, fmt.Sprintf("owner:%s:model.trigger_data", data.OwnerUID), string(bData))
+		w.redisClient.RPush(ctx, fmt.Sprintf("owner:%s:model.trigger_data", data.OwnerUID), string(bData))
 	}
 
 	return nil

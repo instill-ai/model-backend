@@ -21,7 +21,6 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
-	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/temporal"
@@ -105,9 +104,6 @@ func main() {
 	db := database.GetSharedConnection()
 	defer database.Close(db)
 
-	controllerClient, controllerClientConn := external.InitControllerPrivateServiceClient(ctx)
-	defer controllerClientConn.Close()
-
 	rayService := ray.NewRay()
 	defer rayService.Close()
 
@@ -179,15 +175,12 @@ func main() {
 		panic(err)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, controllerClient, rayService, &aclClient)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, rayService, &aclClient)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 
-	w.RegisterWorkflow(cw.DeployModelWorkflow)
-	w.RegisterActivity(cw.DeployModelActivity)
-	w.RegisterWorkflow(cw.UnDeployModelWorkflow)
-	w.RegisterActivity(cw.UnDeployModelActivity)
-	w.RegisterWorkflow(cw.CreateModelWorkflow)
+	w.RegisterWorkflow(cw.TriggerModelWorkflow)
+	w.RegisterActivity(cw.TriggerModelActivity)
 
 	span.End()
 	if err := w.Run(worker.InterruptCh()); err != nil {

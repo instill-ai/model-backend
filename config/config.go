@@ -40,12 +40,6 @@ type ServerConfig struct {
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
 	}
-	InferenceBackend string `koanf:"inferencebackend"`
-}
-
-type Github struct {
-	PatEnabled bool   `koanf:"patenabled"`
-	Pat        string `koanf:"pat"`
 }
 
 // DatabaseConfig related to database
@@ -90,16 +84,6 @@ type CacheConfig struct {
 	Model struct {
 		Enabled  bool   `koanf:"enabled"`
 		CacheDir string `koanf:"cache_dir"`
-	}
-}
-
-// ControllerConfig related to controller
-type ControllerConfig struct {
-	Host        string `koanf:"host"`
-	PrivatePort int    `koanf:"privateport"`
-	HTTPS       struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
 	}
 }
 
@@ -157,14 +141,12 @@ type RegistryConfig struct {
 // AppConfig defines
 type AppConfig struct {
 	Server                 ServerConfig       `koanf:"server"`
-	Github                 Github             `koanf:"github"`
 	Database               DatabaseConfig     `koanf:"database"`
 	RayServer              RayServerConfig    `koanf:"rayserver"`
 	MgmtBackend            MgmtBackendConfig  `koanf:"mgmtbackend"`
 	Cache                  CacheConfig        `koanf:"cache"`
 	MaxBatchSizeLimitation MaxBatchSizeConfig `koanf:"maxbatchsizelimitation"`
 	Temporal               TemporalConfig     `koanf:"temporal"`
-	Controller             ControllerConfig   `koanf:"controller"`
 	OpenFGA                OpenFGAConfig      `koanf:"openfga"`
 	Registry               RegistryConfig     `koanf:"registry"`
 	InitModel              InitModelConfig    `koanf:"initmodel"`
