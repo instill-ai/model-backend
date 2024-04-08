@@ -694,8 +694,8 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	}
 
 	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactPB.ListRepositoryTagsRequest{
-		Parent: fmt.Sprintf("repositories/%s/%s", ns.NsID, modelID),
-		Page: &page,
+		Parent:   fmt.Sprintf("repositories/%s/%s", ns.NsID, modelID),
+		Page:     &page,
 		PageSize: &pageSize,
 	})
 	if err != nil {
