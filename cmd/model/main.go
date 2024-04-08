@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -22,7 +21,6 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
@@ -38,6 +36,7 @@ type ModelConfig struct {
 	Task            string         `json:"task"`
 	ModelDefinition string         `json:"model_definition"`
 	Configuration   map[string]any `json:"configuration"`
+	Version         string         `json:"version"`
 }
 
 type GetNamespaceModelResponseInterface interface {
@@ -183,53 +182,20 @@ func main() {
 				return
 			}
 
-			var getResp GetNamespaceModelResponseInterface
 			if config.Config.InitModel.OwnerType == string(resource.User) {
-				getResp, err = modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
+				_, err = modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelPB.View_VIEW_FULL.Enum(),
 				})
 			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				getResp, err = modelPublicServiceClient.GetOrganizationModel(ctx, &modelPB.GetOrganizationModelRequest{
+				_, err = modelPublicServiceClient.GetOrganizationModel(ctx, &modelPB.GetOrganizationModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelPB.View_VIEW_FULL.Enum(),
 				})
 			}
-
 			if err == nil {
-				var existedModelConfig datamodel.GitHubModelConfiguration
-				b, err := getResp.GetModel().GetConfiguration().MarshalJSON()
-				if err != nil {
-					logger.Error(fmt.Sprintf("marshal existing model config json err: %v", err))
-					return
-				}
-				if err := json.Unmarshal(b, &existedModelConfig); err != nil {
-					logger.Error(fmt.Sprintf("unmarshal existing model config err: %v", err))
-					return
-				}
-				if existedModelConfig.Repository != modelConfig.Configuration["repository"] || existedModelConfig.Tag != modelConfig.Configuration["tag"] {
-					logger.Info(fmt.Sprintf("requested repo: %s or tag: %s does not match the existing repo: %v or tag: %v, redeploying...",
-						modelConfig.Configuration["repository"],
-						modelConfig.Configuration["tag"],
-						existedModelConfig.Repository,
-						existedModelConfig.Tag))
-					if config.Config.InitModel.OwnerType == string(resource.User) {
-						_, err = modelPublicServiceClient.DeleteUserModel(ctx, &modelPB.DeleteUserModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						})
-					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-						_, err = modelPublicServiceClient.DeleteOrganizationModel(ctx, &modelPB.DeleteOrganizationModelRequest{
-							Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						})
-					}
-					if err != nil {
-						logger.Error(fmt.Sprintf("delete existing model err: %v", err))
-						return
-					}
-				} else {
-					logger.Info("model already existed")
-					return
-				}
+				logger.Info("model namespace already existed")
+				return
 			}
 
 			logger.Info("Creating model: " + modelConfig.ID)
