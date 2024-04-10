@@ -212,11 +212,11 @@ var SupportedAcceleratorTypeMemory = map[string]int{
 }
 
 const (
-	ENV_MEMORY               = "RAY_MEMORY"
-	ENV_TOTAL_VRAM           = "RAY_TOTAL_VRAM"
-	ENV_RAY_ACCELERATOR_TYPE = "RAY_ACCELERATOR_TYPE"
-	ENV_NUM_OF_GPUS          = "RAY_NUM_OF_GPUS"
-	ENV_NUM_OF_CPUS          = "RAY_NUM_OF_CPUS"
-	ENV_NUM_OF_MIN_REPLICAS  = "RAY_NUM_OF_MIN_REPLICAS"
-	ENV_NUM_OF_MAX_REPLICAS  = "RAY_NUM_OF_MAX_REPLICAS"
+	EnvMemory             = "RAY_MEMORY"
+	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
+	EnvRayAcceleratorType = "RAY_ACCELERATOR_TYPE"
+	EnvNumOfGPUs          = "RAY_NUM_OF_GPUS"
+	EnvNumOfCPUs          = "RAY_NUM_OF_CPUS"
+	EnvNumOfMinReplicas   = "RAY_NUM_OF_MIN_REPLICAS"
+	EnvNumOfMaxReplicas   = "RAY_NUM_OF_MAX_REPLICAS"
 )
