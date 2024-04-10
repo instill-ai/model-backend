@@ -250,23 +250,22 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	if isDeploy {
-		val, ok := SupportedAcceleratorType[hardware]
+		accelerator, ok := SupportedAcceleratorType[hardware]
 		if !ok {
 			return fmt.Errorf("accelerator type(hardware) not supported")
 		}
 
-		if val == SupportedAcceleratorType["CPU"] {
+		if accelerator == SupportedAcceleratorType["CPU"] {
 			runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 2))
 		} else {
 			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1),
 				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 0.5),
 				"--device nvidia.com/gpu=all",
 			)
-			if val != SupportedAcceleratorType["GPU"] {
+			if accelerator != SupportedAcceleratorType["GPU"] {
 				runOptions = append(runOptions,
-					fmt.Sprintf("-e %s=%s", EnvRayAcceleratorType, val),
-					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, SupportedAcceleratorTypeMemory[val]),
+					fmt.Sprintf("-e %s=%s", EnvRayAcceleratorType, accelerator),
+					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, SupportedAcceleratorTypeMemory[hardware]),
 				)
 			}
 		}
