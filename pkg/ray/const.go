@@ -215,6 +215,7 @@ const (
 	EnvMemory             = "RAY_MEMORY"
 	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
 	EnvRayAcceleratorType = "RAY_ACCELERATOR_TYPE"
+	EnvRayCustomResource  = "RAY_CUSTOM_RESOURCE"
 	EnvNumOfGPUs          = "RAY_NUM_OF_GPUS"
 	EnvNumOfCPUs          = "RAY_NUM_OF_CPUS"
 	EnvNumOfMinReplicas   = "RAY_NUM_OF_MIN_REPLICAS"
