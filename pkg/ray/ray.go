@@ -259,7 +259,6 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 2))
 		} else {
 			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1),
 				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 0.5),
 				"--device nvidia.com/gpu=all",
 			)
