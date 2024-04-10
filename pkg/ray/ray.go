@@ -255,13 +255,28 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			return fmt.Errorf("accelerator type(hardware) not supported")
 		}
 
-		if val != SupportedAcceleratorType["CPU"] {
-			runOptions = append(runOptions, "--device nvidia.com/gpu=all")
+		if val == SupportedAcceleratorType["CPU"] {
+			runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 2))
+		} else {
+			runOptions = append(runOptions,
+				fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1),
+				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 0.5),
+				"--device nvidia.com/gpu=all",
+			)
 			if val != SupportedAcceleratorType["GPU"] {
-				runOptions = append(runOptions, fmt.Sprintf("-e RAY_ACCELERATOR_TYPE=%s", val))
+				runOptions = append(runOptions,
+					fmt.Sprintf("-e %s=%s", EnvRayAcceleratorType, val),
+					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, SupportedAcceleratorTypeMemory[val]),
+				)
 			}
 		}
 	}
+
+	// TODO: Support custom resource configs for deployment in the future
+	runOptions = append(runOptions,
+		fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
+		fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 5),
+	)
 
 	applicationConfig := Application{
 		Name:        applicationMetadatValue,

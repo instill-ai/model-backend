@@ -183,3 +183,40 @@ var SupportedAcceleratorType = map[string]string{
 	"NVIDIA_A100_40G":           "A100-40G",
 	"NVIDIA_A100_80G":           "A100-80G",
 }
+
+var SupportedAcceleratorTypeMemory = map[string]int{
+	"NVIDIA_TESLA_V100":         16,
+	"NVIDIA_TESLA_P100":         16,
+	"NVIDIA_TESLA_T4":           16,
+	"NVIDIA_TESLA_P4":           8,
+	"NVIDIA_TESLA_K80":          24,
+	"NVIDIA_TESLA_A10G":         24,
+	"NVIDIA_L4":                 24,
+	"NVIDIA_A100":               40,
+	"INTEL_MAX_1550":            128,
+	"INTEL_MAX_1100":            48,
+	"INTEL_GAUDI":               128,
+	"AMD_INSTINCT_MI100":        32,
+	"AMD_INSTINCT_MI250X":       128,
+	"AMD_INSTINCT_MI250":        128,
+	"AMD_INSTINCT_MI210":        64,
+	"AMD_INSTINCT_MI300X":       192,
+	"AMD_RADEON_R9_200_HD_7900": 3,
+	"AMD_RADEON_HD_7900":        3,
+	"AWS_NEURON_CORE":           32,
+	"GOOGLE_TPU_V2":             8,
+	"GOOGLE_TPU_V3":             16,
+	"GOOGLE_TPU_V4":             32,
+	"NVIDIA_A100_40G":           40,
+	"NVIDIA_A100_80G":           80,
+}
+
+const (
+	EnvMemory             = "RAY_MEMORY"
+	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
+	EnvRayAcceleratorType = "RAY_ACCELERATOR_TYPE"
+	EnvNumOfGPUs          = "RAY_NUM_OF_GPUS"
+	EnvNumOfCPUs          = "RAY_NUM_OF_CPUS"
+	EnvNumOfMinReplicas   = "RAY_NUM_OF_MIN_REPLICAS"
+	EnvNumOfMaxReplicas   = "RAY_NUM_OF_MAX_REPLICAS"
+)
