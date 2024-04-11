@@ -12,10 +12,11 @@ const client = new grpc.Client();
 client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
 client.load(['proto/model/model/v1alpha'], 'model.proto');
 client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+
 const privateClient = new grpc.Client();
-client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/model/model/v1alpha'], 'model.proto');
-client.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model.proto');
+privateClient.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
 
 
 import * as constant from "./const.js"
@@ -33,7 +34,7 @@ export function CreateUserModel(header) {
       model: {
         id: constant.cls_model,
         model_definition: constant.model_def_name,
-        vivsibility: "VISIBILITY_PUBLIC",
+        visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         hardware: "CPU",
         configuration: {
