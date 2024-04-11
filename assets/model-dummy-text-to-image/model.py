@@ -11,7 +11,7 @@ import torch
 
 @instill_deployment
 class TextToImage:
-    def __init__(self, _):
+    def __init__(self):
         pass
 
     def ModelMetadata(self, req):
