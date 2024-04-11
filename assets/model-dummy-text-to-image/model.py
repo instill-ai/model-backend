@@ -104,4 +104,4 @@ class TextToImage:
         )
 
 
-deployable = InstillDeployable(TextToImage, "/", False)
+entrypoint = InstillDeployable(TextToImage).get_deployment_handle()

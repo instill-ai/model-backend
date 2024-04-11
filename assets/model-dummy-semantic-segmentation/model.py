@@ -89,4 +89,4 @@ class SemanticSegmentation:
         )
 
 
-deployable = InstillDeployable(SemanticSegmentation, "/", False)
+entrypoint = InstillDeployable(SemanticSegmentation).get_deployment_handle()

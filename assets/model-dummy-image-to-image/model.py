@@ -104,4 +104,4 @@ class ImageToImage:
         )
 
 
-deployable = InstillDeployable(ImageToImage, "/", False)
+entrypoint = InstillDeployable(ImageToImage).get_deployment_handle()

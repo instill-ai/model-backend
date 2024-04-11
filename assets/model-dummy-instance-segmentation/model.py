@@ -10,7 +10,7 @@ from instill.helpers import (
 
 
 @instill_deployment
-class Det:
+class InstanceSegmentation:
     def __init__(self, _):
         pass
 
@@ -116,4 +116,4 @@ class Det:
         )
 
 
-deployable = InstillDeployable(Det, "/", False)
+entrypoint = InstillDeployable(InstanceSegmentation).get_deployment_handle()
