@@ -123,36 +123,36 @@ jobs:
 
       - name: Pull Test Models
         run: |
-          docker pull instill/model-dummy-cls:test
-          docker pull instill/model-dummy-det:test
-          docker pull instill/model-dummy-image-to-image:test
-          docker pull instill/model-dummy-instance-segmentation:test
-          docker pull instill/model-dummy-keypoint:test
-          docker pull instill/model-dummy-semantic-segmentation:test
-          docker pull instill/model-dummy-text-generation:test
-          docker pull instill/model-dummy-text-generation-chat:test
-          docker pull instill/model-dummy-text-to-image:test
-          docker pull instill/model-dummy-visual-question-answering:test
-          docker tag instill/model-dummy-cls:test localhost:5001/admin/model-dummy-cls:test
-          docker tag instill/model-dummy-det:test localhost:5001/admin/model-dummy-det:test
-          docker tag instill/model-dummy-image-to-image:test localhost:5001/admin/model-dummy-image-to-image:test
-          docker tag instill/model-dummy-instance-segmentation:test localhost:5001/admin/model-dummy-instance-segmentation:test
-          docker tag instill/model-dummy-keypoint:test localhost:5001/admin/model-dummy-keypoint:test
-          docker tag instill/model-dummy-semantic-segmentation:test localhost:5001/admin/model-dummy-semantic-segmentation:test
-          docker tag instill/model-dummy-text-generation:test localhost:5001/admin/model-dummy-text-generation:test
-          docker tag instill/model-dummy-text-generation-chat:test localhost:5001/admin/model-dummy-text-generation-chat:test
-          docker tag instill/model-dummy-text-to-image:test localhost:5001/admin/model-dummy-text-to-image:test
-          docker tag instill/model-dummy-visual-question-answering:test localhost:5001/admin/model-dummy-visual-question-answering:test
-          docker push localhost:5001/admin/model-dummy-cls:test
-          docker push localhost:5001/admin/model-dummy-det:test
-          docker push localhost:5001/admin/model-dummy-image-to-image:test
-          docker push localhost:5001/admin/model-dummy-instance-segmentation:test
-          docker push localhost:5001/admin/model-dummy-keypoint:test
-          docker push localhost:5001/admin/model-dummy-semantic-segmentation:test
-          docker push localhost:5001/admin/model-dummy-text-generation:test
-          docker push localhost:5001/admin/model-dummy-text-generation-chat:test
-          docker push localhost:5001/admin/model-dummy-text-to-image:test
-          docker push localhost:5001/admin/model-dummy-visual-question-answering:test
+          docker pull instill/dummy-cls:test
+          docker pull instill/dummy-det:test
+          docker pull instill/dummy-image-to-image:test
+          docker pull instill/dummy-instance-segmentation:test
+          docker pull instill/dummy-keypoint:test
+          docker pull instill/dummy-semantic-segmentation:test
+          docker pull instill/dummy-text-generation:test
+          docker pull instill/dummy-text-generation-chat:test
+          docker pull instill/dummy-text-to-image:test
+          docker pull instill/dummy-visual-question-answering:test
+          docker tag instill/dummy-cls:test localhost:5001/admin/dummy-cls:test
+          docker tag instill/dummy-det:test localhost:5001/admin/dummy-det:test
+          docker tag instill/dummy-image-to-image:test localhost:5001/admin/dummy-image-to-image:test
+          docker tag instill/dummy-instance-segmentation:test localhost:5001/admin/dummy-instance-segmentation:test
+          docker tag instill/dummy-keypoint:test localhost:5001/admin/dummy-keypoint:test
+          docker tag instill/dummy-semantic-segmentation:test localhost:5001/admin/dummy-semantic-segmentation:test
+          docker tag instill/dummy-text-generation:test localhost:5001/admin/dummy-text-generation:test
+          docker tag instill/dummy-text-generation-chat:test localhost:5001/admin/dummy-text-generation-chat:test
+          docker tag instill/dummy-text-to-image:test localhost:5001/admin/dummy-text-to-image:test
+          docker tag instill/dummy-visual-question-answering:test localhost:5001/admin/dummy-visual-question-answering:test
+          docker push localhost:5001/admin/dummy-cls:test
+          docker push localhost:5001/admin/dummy-det:test
+          docker push localhost:5001/admin/dummy-image-to-image:test
+          docker push localhost:5001/admin/dummy-instance-segmentation:test
+          docker push localhost:5001/admin/dummy-keypoint:test
+          docker push localhost:5001/admin/dummy-semantic-segmentation:test
+          docker push localhost:5001/admin/dummy-text-generation:test
+          docker push localhost:5001/admin/dummy-text-generation-chat:test
+          docker push localhost:5001/admin/dummy-text-to-image:test
+          docker push localhost:5001/admin/dummy-visual-question-answering:test
 
       - name: Load .env file
         uses: cardinalby/export-env-action@v2
