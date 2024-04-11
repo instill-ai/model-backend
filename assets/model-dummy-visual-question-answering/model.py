@@ -12,7 +12,7 @@ from instill.helpers import (
 
 @instill_deployment
 class VisualQuestionAnswering:
-    def __init__(self, _):
+    def __init__(self):
         pass
 
     def ModelMetadata(self, req):

@@ -12,7 +12,7 @@ from instill.helpers import (
 
 @instill_deployment
 class TextGenerationChat:
-    def __init__(self, _):
+    def __init__(self):
         pass
 
     def ModelMetadata(self, req):
