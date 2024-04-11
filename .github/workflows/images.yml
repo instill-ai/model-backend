@@ -6,7 +6,7 @@ on:
     types: [published]
 
 jobs:
-  docker-hub:
+  build-push-image:
     runs-on: ubuntu-latest
     steps:
       - name: Free disk space

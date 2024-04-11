@@ -82,7 +82,7 @@ export default (header) => {
   // updateModel.UpdateUserModel(header)
 
   // Create model API
-  // createModel.CreateUserModel(header)
+  createModel.CreateUserModel(header)
 
   // Deploy Model API
   // deployModel.DeployUndeployUserModel(header)

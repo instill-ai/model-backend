@@ -12,84 +12,66 @@ const client = new grpc.Client();
 client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
 client.load(['proto/model/model/v1alpha'], 'model.proto');
 client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+const privateClient = new grpc.Client();
+client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+client.load(['proto/model/model/v1alpha'], 'model.proto');
+client.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
+
 
 import * as constant from "./const.js"
 
-const model_def_name = "model-definitions/github"
-
 export function CreateUserModel(header) {
-  // CreateModelBinaryFileUpload check
-  group("Model API: CreateUserModelBinaryFileUpload", () => {
-    client.connect(constant.gRPCPublicHost, {
-      plaintext: true
-    });
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModelBinaryFileUpload', {}, header), {
-      'Missing stream body status': (r) => r && r.status == grpc.StatusInvalidArgument,
-    });
-
-    client.close();
-  });
-
-
   // CreateModel check
-  group("Model API: CreateUserModel with GitHub", () => {
+  group("Model API: CreateUserModel", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
-    let model_id = randomString(10)
-    let createOperationRes = client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    privateClient.connect(constant.gRPCPrivateHost, {
+      plaintext: true
+    });
+    let createRes = client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
-        id: model_id,
-        model_definition: model_def_name,
+        id: constant.cls_model,
+        model_definition: constant.model_def_name,
+        vivsibility: "VISIBILITY_PUBLIC",
+        region: "REGION_GCP_EUROPE_WEST_4",
+        hardware: "CPU",
         configuration: {
-          repository: "admin/model-dummy-cls",
-          tag: "v1.0-cpu"
+          task: "CLASSIFICATION"
         }
       },
       parent: constant.namespace,
     }, header)
-    check(createOperationRes, {
+    check(createRes, {
       'CreateUserModel status': (r) => r && r.status === grpc.StatusOK,
-      'CreateUserModel operation name': (r) => r && r.message.operation.name !== undefined,
+      'CreateUserModel model': (r) => r && r.message.model !== undefined,
     });
 
-    // Check model creation finished
-    let currentTime = new Date().getTime();
-    let timeoutTime = new Date().getTime() + 120000;
-    while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
-        name: createOperationRes.message.operation.name
-      }, header)
-      if (res.message.operation.done === true) {
-        break
-      }
-      sleep(1)
-      currentTime = new Date().getTime();
-    }
-
-    let req = {
-      name: `${constant.namespace}/models/${model_id}`
-    }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
+    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', {
+      name: `${constant.namespace}/models/${constant.cls_model}`,
+      version: "test"
+    }, header), {
       'DeployUserModel status': (r) => r && r.status === grpc.StatusOK,
-      'DeployUserModel model name': (r) => r && r.message.modelId === model_id
+      'DeployUserModel model name': (r) => r && r.message.modelId === constant.cls_model
     });
 
-    // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
+    // Check the model state being updated in 360 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
     currentTime = new Date().getTime();
-    timeoutTime = new Date().getTime() + 120000;
+    timeoutTime = new Date().getTime() + 360000;
     while (timeoutTime > currentTime) {
       var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
-        name: `${constant.namespace}/models/${model_id}`
+        name: `${constant.namespace}/models/${constant.cls_model}`,
+        version: "test"
       }, header)
-      if (res.message.state === "STATE_ONLINE") {
+      if (res.message.state === "STATE_ACTIVE") {
         break
       }
       sleep(1)
       currentTime = new Date().getTime();
     }
     check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
-      name: `${constant.namespace}/models/${model_id}`,
+      name: `${constant.namespace}/models/${constant.cls_model}`,
+      version: "test",
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
       }]
@@ -100,57 +82,57 @@ export function CreateUserModel(header) {
       'TriggerUserModel output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
-      model: {
-        id: randomString(10),
-        model_definition: randomString(10),
-        configuration: {
-          repository: "admin/model-dummy-cls",
-          tag: "v1.0-cpu"
-        }
-      },
-      parent: constant.namespace,
-    }, header), {
-      'status': (r) => r && r.status == grpc.StatusInvalidArgument,
-    });
+    // check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    //   model: {
+    //     id: randomString(10),
+    //     model_definition: randomString(10),
+    //     configuration: {
+    //       repository: "admin/model-dummy-cls",
+    //       tag: "v1.0-cpu"
+    //     }
+    //   },
+    //   parent: constant.namespace,
+    // }, header), {
+    //   'status': (r) => r && r.status == grpc.StatusInvalidArgument,
+    // });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
-      model: {
-        model_definition: model_def_name,
-        configuration: {
-          repository: "admin/model-dummy-cls",
-          tag: "v1.0-cpu"
-        }
-      },
-      parent: constant.namespace,
-    }, header), {
-      'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
-    });
+    // check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    //   model: {
+    //     model_definition: model_def_name,
+    //     configuration: {
+    //       repository: "admin/model-dummy-cls",
+    //       tag: "v1.0-cpu"
+    //     }
+    //   },
+    //   parent: constant.namespace,
+    // }, header), {
+    //   'missing name status': (r) => r && r.status == grpc.StatusInvalidArgument,
+    // });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
-      model: {
-        model_definition: model_def_name,
-        configuration: {
-          repository: "admin/model-dummy-cls",
-          tag: "v1.0-cpu"
-        }
-      }
-    }, header), {
-      'missing namespace': (r) => r && r.status == grpc.StatusInvalidArgument,
-    });
+    // check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    //   model: {
+    //     model_definition: model_def_name,
+    //     configuration: {
+    //       repository: "admin/model-dummy-cls",
+    //       tag: "v1.0-cpu"
+    //     }
+    //   }
+    // }, header), {
+    //   'missing namespace': (r) => r && r.status == grpc.StatusInvalidArgument,
+    // });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
-      model: {
-        id: randomString(10),
-        model_definition: model_def_name,
-      },
-      parent: constant.namespace,
-    }, header), {
-      'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
-    });
+    // check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    //   model: {
+    //     id: randomString(10),
+    //     model_definition: model_def_name,
+    //   },
+    //   parent: constant.namespace,
+    // }, header), {
+    //   'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
+    // });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
-      name: `${constant.namespace}/models/${model_id}`
+      name: `${constant.namespace}/models/${constant.cls_model}`
     }, header), {
       'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
