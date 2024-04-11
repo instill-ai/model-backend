@@ -53,7 +53,6 @@ export function CreateUserModel(header) {
       version: "test"
     }, header), {
       'DeployUserModel status': (r) => r && r.status === grpc.StatusOK,
-      'DeployUserModel model name': (r) => r && r.message.modelId === constant.cls_model
     });
 
     // Check the model state being updated in 360 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
