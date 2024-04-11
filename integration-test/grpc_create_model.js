@@ -8,10 +8,10 @@ import {
   randomString
 } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
-const client = new grpc.Client();
-client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/model/model/v1alpha'], 'model.proto');
-client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+const publicClient = new grpc.Client();
+publicClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
+publicClient.load(['proto/model/model/v1alpha'], 'model.proto');
+publicClient.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
 
 const privateClient = new grpc.Client();
 privateClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
@@ -24,13 +24,13 @@ import * as constant from "./const.js"
 export function CreateUserModel(header) {
   // CreateModel check
   group("Model API: CreateUserModel", () => {
-    client.connect(constant.gRPCPublicHost, {
+    publicClient.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
     privateClient.connect(constant.gRPCPrivateHost, {
       plaintext: true
     });
-    let createRes = client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
+    let createRes = publicClient.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: constant.cls_model,
         model_definition: constant.model_def_name,
@@ -57,10 +57,10 @@ export function CreateUserModel(header) {
     });
 
     // Check the model state being updated in 360 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
-    currentTime = new Date().getTime();
-    timeoutTime = new Date().getTime() + 360000;
+    let currentTime = new Date().getTime();
+    let timeoutTime = new Date().getTime() + 360000;
     while (timeoutTime > currentTime) {
-      var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      var res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${constant.cls_model}`,
         version: "test"
       }, header)
@@ -70,7 +70,7 @@ export function CreateUserModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
@@ -132,12 +132,13 @@ export function CreateUserModel(header) {
     //   'missing github url status': (r) => r && r.status == grpc.StatusInvalidArgument,
     // });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`
     }, header), {
       'DeleteModel model status is OK': (r) => r && r.status === grpc.StatusOK,
     });
 
-    client.close();
+    publicClient.close();
+    privateClient.close();
   });
 };
