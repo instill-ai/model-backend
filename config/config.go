@@ -31,9 +31,6 @@ type ServerConfig struct {
 		Port               int    `koanf:"port"`
 	}
 	Debug  bool `koanf:"debug"`
-	ItMode struct {
-		Enabled bool `koanf:"enabled"`
-	}
 	MaxDataSize int `koanf:"maxdatasize"`
 	Workflow    struct {
 		MaxWorkflowTimeout int32 `koanf:"maxworkflowtimeout"`

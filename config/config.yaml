@@ -12,8 +12,6 @@ server:
     host: usage.instill.tech
     port: 443
   debug: true
-  itmode:
-    enabled: false
   maxdatasize: 100 # MB in unit
   workflow:
     maxworkflowtimeout: 3600 # in seconds
