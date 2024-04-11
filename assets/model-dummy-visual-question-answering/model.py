@@ -62,4 +62,4 @@ class VisualQuestionAnswering:
         )
 
 
-deployable = InstillDeployable(VisualQuestionAnswering, "/", False)
+entrypoint = InstillDeployable(VisualQuestionAnswering).get_deployment_handle()

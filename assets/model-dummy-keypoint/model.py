@@ -10,7 +10,7 @@ from instill.helpers import (
 
 
 @instill_deployment
-class Det:
+class Keypoint:
     def __init__(self, _):
         pass
 
@@ -93,4 +93,4 @@ class Det:
         )
 
 
-deployable = InstillDeployable(Det, "/", False)
+entrypoint = InstillDeployable(Keypoint).get_deployment_handle()

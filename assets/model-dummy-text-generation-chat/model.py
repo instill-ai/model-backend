@@ -62,4 +62,4 @@ class TextGenerationChat:
         )
 
 
-deployable = InstillDeployable(TextGenerationChat, "/", False)
+entrypoint = InstillDeployable(TextGenerationChat).get_deployment_handle()

@@ -73,4 +73,4 @@ class Det:
         )
 
 
-deployable = InstillDeployable(Det, "/", False)
+entrypoint = InstillDeployable(Det).get_deployment_handle()

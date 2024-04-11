@@ -38,10 +38,7 @@ class MobileNet:
         b_tensors = req.raw_input_contents[0]
         input_tensors = deserialize_bytes_tensor(b_tensors)
 
-        out = [
-            bytes("1:match", "utf-8")
-            for _ in range(len(input_tensors))
-        ]
+        out = [bytes("1:match", "utf-8") for _ in range(len(input_tensors))]
 
         out = serialize_byte_tensor(np.asarray(out))
         out = np.expand_dims(out, axis=0)
@@ -50,13 +47,13 @@ class MobileNet:
             req=req,
             outputs=[
                 Metadata(
-                name="output",
-                datatype=str(DataType.TYPE_STRING.name),
-                shape=[len(input_tensors), 1],
-            )
+                    name="output",
+                    datatype=str(DataType.TYPE_STRING.name),
+                    shape=[len(input_tensors), 1],
+                )
             ],
             raw_outputs=out,
         )
 
 
-deployable = InstillDeployable(MobileNet, "/", False)
+entrypoint = InstillDeployable(MobileNet).get_deployment_handle()

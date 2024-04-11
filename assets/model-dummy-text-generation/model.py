@@ -62,4 +62,4 @@ class TextGeneration:
         )
 
 
-deployable = InstillDeployable(TextGeneration, "/", False)
+entrypoint = InstillDeployable(TextGeneration).get_deployment_handle()
