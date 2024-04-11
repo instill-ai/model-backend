@@ -64,6 +64,8 @@ export function CreateUserModel(header) {
         name: `${constant.namespace}/models/${constant.cls_model}`,
         version: "test"
       }, header)
+      console.log(res.message.state)
+      console.log(res.message.message)
       if (res.message.state === "STATE_ACTIVE") {
         break
       }
