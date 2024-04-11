@@ -55,6 +55,24 @@ message ReadinessResponse {
   common.healthcheck.v1beta.HealthCheckResponse health_check_response = 1;
 }
 
+// State describes the state of a model. See [Deploy
+// Models](https://www.instill.tech/docs/latest/model/deploy) for more
+// information.
+enum State {
+  // Unspecified. This state can occur while a model is under operation.
+  STATE_UNSPECIFIED = 0;
+  // Offline is the state when the model instance number is 0.
+  STATE_OFFLINE = 1;
+  // Scaling is the transition state when a model instance is scaling up or down.
+  STATE_SCALING = 2;
+  // Active is the state when a model is processing requests.
+  STATE_ACTIVE = 3;
+  // Idle is the state when a model is alive but not processing requests.
+  STATE_IDLE = 4;
+  // Error is the state when the model is undeployable.
+  STATE_ERROR = 5;
+}
+
 // Model represents an AI model, i.e. a program that performs tasks as decision
 // making or or pattern recognition based on its training data
 message Model {
@@ -72,23 +90,6 @@ message Model {
     VISIBILITY_PRIVATE = 1;
     // Other users can see the model.
     VISIBILITY_PUBLIC = 2;
-  }
-
-  // State describes the state of a model. See [Deploy
-  // Models](https://www.instill.tech/docs/latest/model/deploy) for more
-  // information.
-  enum State {
-    // Unspecified. This state can occur while a model is being deployed.
-    STATE_UNSPECIFIED = 0;
-    // Offline is the default state when a model is initially created. A model
-    // can be switched from ONLINE to this state by using the `undeploy`
-    // method.
-    STATE_OFFLINE = 1;
-    // Online is the state of a model when it has been deployed (i.e. when the
-    // `deploy` method has been used on an OFFLINE model).
-    STATE_ONLINE = 2;
-    // Error is the state when the model is undeployable on Instill Model.
-    STATE_ERROR = 3;
   }
 
   // The resource name of the model, which allows its access by owner and ID.
@@ -119,10 +120,10 @@ message Model {
   google.protobuf.Struct configuration = 6 [(google.api.field_behavior) = IMMUTABLE];
   // Model task.
   common.task.v1alpha.Task task = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Model state.
-  State state = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deprecated Model state.
+  reserved 8;
   // Model visibility.
-  Visibility visibility = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Visibility visibility = 9 [(google.api.field_behavior) = REQUIRED];
   // Model creation time.
   google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Model update time.
@@ -138,6 +139,18 @@ message Model {
     (google.api.field_behavior) = OPTIONAL,
     (google.api.field_behavior) = OUTPUT_ONLY
   ];
+  // Region of choice for the particular provider to host the model.
+  string region = 18 [(google.api.field_behavior) = REQUIRED];
+  // Hardware of choice to serve the model.
+  string hardware = 19 [(google.api.field_behavior) = REQUIRED];
+  // README holds the model documentation.
+  string readme = 20 [(google.api.field_behavior) = OPTIONAL];
+  // A link to the source code of the model (e.g. to a GitHub repository).
+  string source_url = 21 [(google.api.field_behavior) = OPTIONAL];
+  // A link to any extra information.
+  string documentation_url = 22 [(google.api.field_behavior) = OPTIONAL];
+  // License under which the model is distributed.
+  string license = 23 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ModelCard represents a README.md file that accompanies the model to describe
@@ -220,36 +233,10 @@ message CreateUserModelRequest {
   ];
 }
 
-// CreateUserModelResponse contains the information to access the status of the
-// model creation operation.
+// CreateUserModelResponse contains the created model.
 message CreateUserModelResponse {
-  // Long-running operation information.
-  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-// CreateUserModelBinaryFileUploadRequest represents a request to create a
-// model by uploading its content in bytes.
-message CreateUserModelBinaryFileUploadRequest {
-  // The properties of the model to be created.
-  Model model = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model content in bytes.
-  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
-  // The parent resource, i.e., the user that creates the model.
-  // Format: `users/{user.id}`.
-  string parent = 3 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_name"}
-    }
-  ];
-}
-
-// CreateUserModelBinaryFileUploadResponse contains the information to access
-// the status of the model creation operation.
-message CreateUserModelBinaryFileUploadResponse {
-  // Long-running operation information.
-  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The created model resource.
+  Model model = 1;
 }
 
 // ListUserModelsRequest represents a request to list the models of a user.
@@ -408,48 +395,6 @@ message UnpublishUserModelResponse {
   Model model = 1;
 }
 
-// DeployUserModelRequest represents a request to set a model to an ONLINE
-// state.
-message DeployUserModelRequest {
-  // The resource name of the model, which allows its access by parent user
-  // and ID.
-  // - Format: `users/{user.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_model_name"}
-    }
-  ];
-}
-
-// DeployUserModelResponse contains the ID of the deployed model.
-message DeployUserModelResponse {
-  // ID of the deployed model, e.g. `llava-7b`.
-  string model_id = 1;
-}
-
-// UndeployUserModelRequest represents a request to set a model to an OFFLINE
-// state.
-message UndeployUserModelRequest {
-  // The resource name of the model, which allows its access by parent user
-  // and ID.
-  // - Format: `users/{user.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_model_name"}
-    }
-  ];
-}
-
-// UndeployUserModelResponse contains the ID of the undeployed model.
-message UndeployUserModelResponse {
-  // ID of the undeployed model, e.g. `llava-7b`.
-  string model_id = 1;
-}
-
 // GetUserModelCardRequest represents a request to fetch the README card of a
 // model.
 message GetUserModelCardRequest {
@@ -472,7 +417,6 @@ message GetUserModelCardResponse {
 }
 
 // WatchUserModelRequest represents a request to fetch current state of a model
-// and its long-running operation progress.
 message WatchUserModelRequest {
   // The resource name of the model, which allows its access by parent user
   // and ID.
@@ -484,15 +428,18 @@ message WatchUserModelRequest {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
+  // Model version tag
+  string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// WatchUserModelResponse contains the state and progress of a model.
+// WatchUserModelResponse contains the state of a model.
 message WatchUserModelResponse {
   // State.
-  Model.State state = 1;
-  // Long-running operation progress. If there are no ongoing operations, the
-  // value will be 0.
-  int32 progress = 2;
+  State state = 1;
+  // Deprecated field `progress`
+  reserved 2;
+  // Detail description of the state
+  string message = 3;
 }
 
 ////////////////////////////////////
@@ -604,9 +551,10 @@ message TriggerUserModelRequest {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-
   // Inference input parameters.
   repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerUserModelResponse contains the model inference results.
@@ -615,6 +563,32 @@ message TriggerUserModelResponse {
   common.task.v1alpha.Task task = 1;
   // Model inference outputs.
   repeated TaskOutput task_outputs = 2;
+}
+
+// TriggerAsyncUserModelRequest represents a request to trigger a model inference
+// asynchronously.
+message TriggerAsyncUserModelRequest {
+  // The resource name of the model , which allows its access by parent user
+  // and ID.
+  // - Format: `users/{user.id}/models/{model.id}`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration: {path_param_name: "user_model_name"}
+    }
+  ];
+  // Inference input parameters.
+  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// TriggerAsyncUserModelResponse contains the information to access the
+// status of an asynchronous model inference.
+message TriggerAsyncUserModelResponse {
+  // Long-running operation information.
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // TriggerUserModelBinaryFileUploadRequest represents a request trigger a model
@@ -630,9 +604,10 @@ message TriggerUserModelBinaryFileUploadRequest {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-
   // Inference input as a binary file.
   TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerUserModelBinaryFileUploadResponse contains the model inference results.
@@ -641,6 +616,8 @@ message TriggerUserModelBinaryFileUploadResponse {
   common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
   // Model inference outputs.
   repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 ////////////////////////////////////
@@ -662,36 +639,10 @@ message CreateOrganizationModelRequest {
   ];
 }
 
-// CreateOrganizationModelResponse contains the information to access the status of the
-// model creation operation.
+// CreateOrganizationModelResponse contains the created model.
 message CreateOrganizationModelResponse {
-  // Long-running operation information.
-  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-// CreateOrganizationModelBinaryFileUploadRequest represents a request to create a
-// model by uploading its content in bytes.
-message CreateOrganizationModelBinaryFileUploadRequest {
-  // The properties of the model to be created.
-  Model model = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model content in bytes.
-  bytes content = 2 [(google.api.field_behavior) = REQUIRED];
-  // The parent resource, i.e., the organization that creates the model.
-  // Format: `organizations/{organization.id}`.
-  string parent = 3 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_name"}
-    }
-  ];
-}
-
-// CreateOrganizationModelBinaryFileUploadResponse contains the information to access
-// the status of the model creation operation.
-message CreateOrganizationModelBinaryFileUploadResponse {
-  // Long-running operation information.
-  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The created model resource.
+  Model model = 1;
 }
 
 // ListOrganizationModelsRequest represents a request to list the models
@@ -851,48 +802,6 @@ message UnpublishOrganizationModelResponse {
   Model model = 1;
 }
 
-// DeployOrganizationModelRequest represents a request to set a model to an ONLINE
-// state.
-message DeployOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
-  // - Format: `organizations/{organization.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_model_name"}
-    }
-  ];
-}
-
-// DeployOrganizationModelResponse contains the ID of the deployed model.
-message DeployOrganizationModelResponse {
-  // ID of the deployed model, e.g. `llava-7b`.
-  string model_id = 1;
-}
-
-// UndeployOrganizationModelRequest represents a request to set a model to an OFFLINE
-// state.
-message UndeployOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
-  // - Format: `organizations/{organization.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_model_name"}
-    }
-  ];
-}
-
-// UndeployOrganizationModelResponse contains the ID of the undeployed model.
-message UndeployOrganizationModelResponse {
-  // ID of the undeployed model, e.g. `llava-7b`.
-  string model_id = 1;
-}
-
 // GetOrganizationModelCardRequest represents a request to fetch the README card of a
 // model.
 message GetOrganizationModelCardRequest {
@@ -914,8 +823,7 @@ message GetOrganizationModelCardResponse {
   ModelCard readme = 1;
 }
 
-// WatchOrganizationModelRequest represents a request to fetch current state of a model
-// and its long-running operation progress.
+// WatchOrganizationModelRequest represents a request to fetch current state of a model.
 message WatchOrganizationModelRequest {
   // The resource name of the model, which allows its access by parent organization
   // and ID.
@@ -927,15 +835,18 @@ message WatchOrganizationModelRequest {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
+  // Model version tag
+  string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// WatchOrganizationModelResponse contains the state and progress of a model.
+// WatchOrganizationModelResponse contains the state of a model.
 message WatchOrganizationModelResponse {
   // State.
-  Model.State state = 1;
-  // Long-running operation progress. If there are no ongoing operations, the
-  // value will be 0.
-  int32 progress = 2;
+  State state = 1;
+  // Deprecated field `progress`
+  reserved 2;
+  // Detail description of the state
+  string message = 3;
 }
 
 // TriggerOrganizationModelRequest represents a request to trigger a model inference.
@@ -950,9 +861,10 @@ message TriggerOrganizationModelRequest {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-
   // Inference input parameters.
   repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerOrganizationModelResponse contains the model inference results.
@@ -961,6 +873,32 @@ message TriggerOrganizationModelResponse {
   common.task.v1alpha.Task task = 1;
   // Model inference outputs.
   repeated TaskOutput task_outputs = 2;
+}
+
+// TriggerAsyncOrganizationModelRequest represents a request to trigger a model inference
+// asynchronously
+message TriggerAsyncOrganizationModelRequest {
+  // The resource name of the model , which allows its access by parent organization
+  // and ID.
+  // - Format: `organizations/{organization.id}/models/{model.id}`.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration: {path_param_name: "organization_model_name"}
+    }
+  ];
+  // Inference input parameters.
+  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// TriggerAsyncOrganizationModelResponse contains the information to access the
+// status of an asynchronous model inference.
+message TriggerAsyncOrganizationModelResponse {
+  // Long-running operation information.
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // TriggerOrganizationModelBinaryFileUploadRequest represents a request trigger a model
@@ -976,9 +914,10 @@ message TriggerOrganizationModelBinaryFileUploadRequest {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-
   // Inference input as a binary file.
   TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerOrganizationModelBinaryFileUploadResponse contains the model inference results.
@@ -1057,44 +996,53 @@ message LookUpModelAdminResponse {
   Model model = 1;
 }
 
-// CheckModelAdminRequest represents a private request to query
-// a model current state and longrunning progress
-message CheckModelAdminRequest {
-  // Permalink of a model. For example:
-  // "models/{uid}"
-  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-// CheckModelAdminResponse represents a response to fetch a model's
-// current state and longrunning progress
-message CheckModelAdminResponse {
-  // Retrieved model state
-  Model.State state = 1;
-}
-
 // DeployModelAdminRequest represents a request to deploy a model to online state
 message DeployModelAdminRequest {
-  // Permalink for the model to be deployed.
-  // Format: "models/{uid}"
-  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
+  reserved 1;
+  // The resource name of the model, which allows its access by parent user
+  // and ID.
+  // - Format: `users/{user.id}/models/{model.id}`.
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration: {path_param_name: "user_model_name"}
+    }
+  ];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model image digest
+  string digest = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // DeployModelAdminResponse represents a response for a deployed model
 message DeployModelAdminResponse {
-  // Deploy operation message
-  google.longrunning.Operation operation = 1;
+  // Deprecated operation
+  reserved 1;
 }
 
 // UndeployModelAdminRequest represents a request to undeploy a model to offline
 // state
 message UndeployModelAdminRequest {
-  // Permalink for the model to be undeployed.
-  // Format: "models/{uid}"
-  string model_permalink = 1 [(google.api.field_behavior) = REQUIRED];
+  reserved 1;
+  // The resource name of the model, which allows its access by parent user
+  // and ID.
+  // - Format: `users/{user.id}/models/{model.id}`.
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      field_configuration: {path_param_name: "user_model_name"}
+    }
+  ];
+  // Model version tag
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model image digest
+  string digest = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // UndeployModelAdminResponse represents a response for a undeployed model
 message UndeployModelAdminResponse {
-  // Undeploy operation message
-  google.longrunning.Operation operation = 1;
+  // Deprecated operation
+  reserved 1;
 }

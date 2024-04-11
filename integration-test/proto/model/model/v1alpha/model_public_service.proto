@@ -98,13 +98,6 @@ service ModelPublicService {
     option (google.api.method_signature) = "parent,model";
   }
 
-  // Upload model binary
-  //
-  // Creates a new model by upploading its binary content.
-  rpc CreateUserModelBinaryFileUpload(stream CreateUserModelBinaryFileUploadRequest) returns (CreateUserModelBinaryFileUploadResponse) {
-    option (google.api.method_signature) = "id,model_definition,content,parent";
-  }
-
   // Get a model
   //
   // Returns the detail of a model, accessing it by the model ID and its parent user.
@@ -173,42 +166,6 @@ service ModelPublicService {
     option (google.api.method_signature) = "name";
   }
 
-  // Deploy a model
-  //
-  // Transitions the model into an ONLINE state. The model is accessed by its
-  // resource name, defined by the model ID and its parent user.
-  //
-  // While this operation is being performed, the state of the model will
-  // transition to UNSPECIFIED. As completing the deployment might take time,
-  // the server will not wait to complete the operation to return a response.
-  // The state of the model can be used to track the completion of the
-  // operation. This can be done by using the `watch` operation on the model.
-  rpc DeployUserModel(DeployUserModelRequest) returns (DeployUserModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/deploy"
-      body: "*"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
-  // Undeploy a model
-  //
-  // Transitions the model into an OFFLINE state. The model is accessed by its
-  // resource name, defined by the model ID and its parent user.
-  //
-  // While this operation is being performed, the state of the model will
-  // transition to UNSPECIFIED. As completing the teardown might take time,
-  // the server will not wait to complete the operation to return a response.
-  // The state of the model can be used to track the completion of the
-  // operation. This can be done by using the `watch` operation on the model.
-  rpc UndeployUserModel(UndeployUserModelRequest) returns (UndeployUserModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/undeploy"
-      body: "*"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
   // Get a model card
   //
   // Returns the README file that accompanies a model, describing it and
@@ -224,7 +181,7 @@ service ModelPublicService {
   // time, during which a model will be in an UNSPECIFIED state. This endpoint
   // allows clients to track the state and progress of the model.
   rpc WatchUserModel(WatchUserModelRequest) returns (WatchUserModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/watch"};
+    option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/{version=*}/watch"};
     option (google.api.method_signature) = "name";
   }
 
@@ -236,7 +193,19 @@ service ModelPublicService {
   // questions.
   rpc TriggerUserModel(TriggerUserModelRequest) returns (TriggerUserModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/trigger"
+      post: "/v1alpha/{name=users/*/models/*}/{version=*}/trigger"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,inputs";
+  }
+
+  // Trigger model inference asynchronously
+  //
+  // Triggers a deployed model to infer the result of a set of task or
+  // questions.
+  rpc TriggerAsyncUserModel(TriggerAsyncUserModelRequest) returns (TriggerAsyncUserModelResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha/{name=users/*/models/*}/{version=*}/triggerAsync"
       body: "*"
     };
     option (google.api.method_signature) = "name,inputs";
@@ -273,13 +242,6 @@ service ModelPublicService {
       body: "model"
     };
     option (google.api.method_signature) = "parent,model";
-  }
-
-  // Upload model binary
-  //
-  // Creates a new model by upploading its binary content.
-  rpc CreateOrganizationModelBinaryFileUpload(stream CreateOrganizationModelBinaryFileUploadRequest) returns (CreateOrganizationModelBinaryFileUploadResponse) {
-    option (google.api.method_signature) = "id,model_definition,content,parent";
   }
 
   // Get a model
@@ -350,42 +312,6 @@ service ModelPublicService {
     option (google.api.method_signature) = "name";
   }
 
-  // Deploy a model
-  //
-  // Transitions the model into an ONLINE state. The model is accessed by its
-  // resource name, defined by the model ID and its parent organization.
-  //
-  // While this operation is being performed, the state of the model will
-  // transition to UNSPECIFIED. As completing the deployment might take time,
-  // the server will not wait to complete the operation to return a response.
-  // The state of the model can be used to track the completion of the
-  // operation. This can be done by using the `watch` operation on the model.
-  rpc DeployOrganizationModel(DeployOrganizationModelRequest) returns (DeployOrganizationModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/deploy"
-      body: "*"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
-  // Undeploy a model
-  //
-  // Transitions the model into an OFFLINE state. The model is accessed by its
-  // resource name, defined by the model ID and its parent organization.
-  //
-  // While this operation is being performed, the state of the model will
-  // transition to UNSPECIFIED. As completing the teardown might take time,
-  // the server will not wait to complete the operation to return a response.
-  // The state of the model can be used to track the completion of the
-  // operation. This can be done by using the `watch` operation on the model.
-  rpc UndeployOrganizationModel(UndeployOrganizationModelRequest) returns (UndeployOrganizationModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/undeploy"
-      body: "*"
-    };
-    option (google.api.method_signature) = "name";
-  }
-
   // Get a model card
   //
   // Returns the README file that accompanies a model, describing it and
@@ -401,7 +327,7 @@ service ModelPublicService {
   // time, during which a model will be in an UNSPECIFIED state. This endpoint
   // allows clients to track the state and progress of the model.
   rpc WatchOrganizationModel(WatchOrganizationModelRequest) returns (WatchOrganizationModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/watch"};
+    option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/{version=*}/watch"};
     option (google.api.method_signature) = "name";
   }
 
@@ -413,7 +339,19 @@ service ModelPublicService {
   // questions.
   rpc TriggerOrganizationModel(TriggerOrganizationModelRequest) returns (TriggerOrganizationModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/trigger"
+      post: "/v1alpha/{name=organizations/*/models/*}/{version=*}/trigger"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,inputs";
+  }
+
+  // Trigger model inference asynchronously
+  //
+  // Triggers a deployed model to infer the result of a set of task or
+  // questions.
+  rpc TriggerAsyncOrganizationModel(TriggerAsyncOrganizationModelRequest) returns (TriggerAsyncOrganizationModelResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha/{name=organizations/*/models/*}/{version=*}/triggerAsync"
       body: "*"
     };
     option (google.api.method_signature) = "name,inputs";
