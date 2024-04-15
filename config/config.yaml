@@ -42,8 +42,8 @@ mgmtbackend:
     key:
 artifactbackend:
   host: artifact-backend
-  publicport: 8085
-  privateport: 3085
+  publicport: 8082
+  privateport: 3082
   https:
     cert:
     key:
