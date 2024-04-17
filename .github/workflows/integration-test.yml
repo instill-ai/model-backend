@@ -63,36 +63,6 @@ jobs:
             ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
-      - name: Checkout repo (instill-core)
-        uses: actions/checkout@v4
-        with:
-          repository: instill-ai/instill-core
-
-      - name: Load .env file (instill-core)
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
-      - name: Launch Instill Core (latest)
-        run: |
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          RAY_LATEST_TAG=latest \
-          ITMODE_ENABLED=true \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml rm -f
-
-      - name: Install k6
-        run: |
-          curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
-
-      - name: Checkout (model-backend)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
@@ -131,6 +101,46 @@ jobs:
           docker push localhost:5001/admin/dummy-text-generation-chat:test
           docker push localhost:5001/admin/dummy-text-to-image:test
           docker push localhost:5001/admin/dummy-visual-question-answering:test
+
+      - name: Checkout repo (instill-core)
+        uses: actions/checkout@v4
+        with:
+          repository: instill-ai/instill-core
+
+      - name: Load .env file (instill-core)
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: .env
+
+      - name: Launch Instill Core (latest)
+        run: |
+          COMPOSE_PROFILES=all \
+          EDITION=local-ce:test \
+          RAY_LATEST_TAG=latest \
+          INITMODEL_ENABLED=true \
+          docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull
+          COMPOSE_PROFILES=all \
+          EDITION=local-ce:test \
+          docker compose -f docker-compose.yml -f docker-compose-latest.yml rm -f
+
+      - name: Wait for model initialization
+        run: |
+          for i in {1..100}; do \
+            echo "waiting the model initialization finish ..."; \
+            if [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" == "exited" ]]; then \
+              break; \
+            fi; \
+            sleep 3; \
+          done
+
+      - name: Install k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
+
+      - name: Checkout (model-backend)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Load .env file
         uses: cardinalby/export-env-action@v2

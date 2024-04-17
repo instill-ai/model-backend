@@ -15,8 +15,6 @@ export const defaultUserId = "admin"
 export const namespace = "users/admin"
 export const defaultPassword = "password"
 
-
-export const gRPCPrivateHost = "localhost:3083"
 export const apiPrivateHost = "http://model-backend:3083"
 
 export const gRPCPublicHost = apiGatewayMode ? `${__ENV.API_GATEWAY_URL}` : `api-gateway:8080`

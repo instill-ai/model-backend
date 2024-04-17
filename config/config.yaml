@@ -72,7 +72,7 @@ initmodel:
   ownertype: users
   ownerid: admin
   enabled: false
-  path: https://raw.githubusercontent.com/instill-ai/model/main/model-hub/model_hub_cpu.json
+  path: https://raw.githubusercontent.com/instill-ai/instill-core/main/model-hub/model_hub_test.json
 log:
   external: false
   otelcollector:

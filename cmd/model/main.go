@@ -275,6 +275,36 @@ func main() {
 					logger.Error("handler.DeployModel: " + err.Error())
 					return
 				}
+				state := modelPB.State_STATE_OFFLINE
+				for state != modelPB.State_STATE_ACTIVE {
+					time.Sleep(1000)
+					if config.Config.InitModel.OwnerType == string(resource.User) {
+						var resp *modelPB.WatchUserModelResponse
+						resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
+							Name:    model.Name,
+							Version: "test",
+						})
+						state = resp.GetState()
+					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+						var resp *modelPB.WatchOrganizationModelResponse
+						resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
+							Name:    model.Name,
+							Version: "test",
+						})
+						state = resp.GetState()
+					}
+					if err != nil {
+						logger.Info(fmt.Sprintf("Deploy model err: %v", err))
+						if e, ok := status.FromError(err); ok {
+							if e.Code() != codes.AlreadyExists {
+								logger.Fatal("handler.DeployModelAdmin: " + err.Error())
+								return
+							}
+							return
+						}
+						return
+					}
+				}
 				return
 			}
 		}(modelConfig)
