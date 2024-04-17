@@ -267,6 +267,7 @@ func main() {
 				}
 				return
 			} else {
+				logger.Info("Deploying model: " + model.Id)
 				_, err := modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
 					Name:    model.Name,
 					Version: "test",
@@ -285,8 +286,9 @@ func main() {
 					return
 				}
 				state := modelPB.State_STATE_OFFLINE
+				var message string
 				for state != modelPB.State_STATE_ACTIVE {
-					time.Sleep(1000)
+					time.Sleep(2 * time.Second)
 					if config.Config.InitModel.OwnerType == string(resource.User) {
 						var resp *modelPB.WatchUserModelResponse
 						resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
@@ -294,6 +296,7 @@ func main() {
 							Version: "test",
 						})
 						state = resp.GetState()
+						message = resp.GetMessage()
 					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
 						var resp *modelPB.WatchOrganizationModelResponse
 						resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
@@ -301,6 +304,7 @@ func main() {
 							Version: "test",
 						})
 						state = resp.GetState()
+						message = resp.GetMessage()
 					}
 					if err != nil {
 						logger.Info(fmt.Sprintf("Deploy model err: %v", err))
@@ -313,6 +317,7 @@ func main() {
 						}
 						return
 					}
+					logger.Info(fmt.Sprintf("%s: %v, message: %s", model.Id, state, message))
 				}
 				return
 			}

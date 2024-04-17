@@ -43,7 +43,7 @@ export function CreateUserModel(header) {
       name: `${constant.namespace}/models/${constant.cls_model}`,
     }, header), {
       'GetUserModel status': (r) => r && r.status === grpc.StatusOK,
-      'GetUserModel output model id': (r) => r && r.message.Model.id === model_id,
+      'GetUserModel output model id': (r) => r && r.message.model.id === constant.cls_model,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {

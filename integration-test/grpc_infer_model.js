@@ -20,7 +20,7 @@ export function TriggerUserModel(header) {
       plaintext: true
     });
 
-    res = client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    let res = client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
