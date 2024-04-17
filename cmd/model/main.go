@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -83,17 +81,37 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	host := os.Getenv("MODEL_BACKEND_HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PublicPort), clientDialOpts)
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", "localhost", config.Config.Server.PublicPort), clientDialOpts)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
 	}
 
 	return modelPB.NewModelPublicServiceClient(clientConn), clientConn
+}
+
+// InitModelPrivateServiceClient initializes a ModelServiceClient instance
+func InitModelPrivateServiceClient(ctx context.Context) (modelPB.ModelPrivateServiceClient, *grpc.ClientConn) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var clientDialOpts grpc.DialOption
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
+		creds, err := credentials.NewServerTLSFromFile(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		clientDialOpts = grpc.WithTransportCredentials(creds)
+	} else {
+		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", "localhost", config.Config.Server.PrivatePort), clientDialOpts)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, nil
+	}
+
+	return modelPB.NewModelPrivateServiceClient(clientConn), clientConn
 }
 
 func main() {
@@ -138,6 +156,11 @@ func main() {
 	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient(ctx)
 	if modelPublicServiceClientConn != nil {
 		defer modelPublicServiceClientConn.Close()
+	}
+
+	modelPrivateServiceClient, modelPrivateServiceClientConn := InitModelPrivateServiceClient(ctx)
+	if modelPrivateServiceClientConn != nil {
+		defer modelPrivateServiceClientConn.Close()
 	}
 
 	var owner *mgmtPB.User
@@ -199,28 +222,30 @@ func main() {
 			}
 
 			logger.Info("Creating model: " + modelConfig.ID)
+
+			model := &modelPB.Model{
+				Id:              modelConfig.ID,
+				Description:     &modelConfig.Description,
+				ModelDefinition: modelConfig.ModelDefinition,
+				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+				Region:          "REGION_GCP_EUROPE_WEST_4",
+				Hardware:        "CPU",
+				Configuration:   configuration,
+			}
 			if config.Config.InitModel.OwnerType == string(resource.User) {
-				_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
-					Model: &modelPB.Model{
-						Id:              modelConfig.ID,
-						Description:     &modelConfig.Description,
-						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
-						ModelDefinition: modelConfig.ModelDefinition,
-						Configuration:   configuration,
-					},
+				var resp *modelPB.CreateUserModelResponse
+				resp, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
+					Model:  model,
 					Parent: name,
 				})
+				model = resp.GetModel()
 			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
-					Model: &modelPB.Model{
-						Id:              modelConfig.ID,
-						Description:     &modelConfig.Description,
-						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
-						ModelDefinition: modelConfig.ModelDefinition,
-						Configuration:   configuration,
-					},
+				var resp *modelPB.CreateOrganizationModelResponse
+				resp, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
+					Model:  model,
 					Parent: name,
 				})
+				model = resp.GetModel()
 			}
 			if err != nil {
 				logger.Info(fmt.Sprintf("Created model err: %v", err))
@@ -233,40 +258,23 @@ func main() {
 				}
 				return
 			} else {
-				// if config.Config.InitModel.OwnerType == string(resource.User) {
-				// 	if _, err = modelPublicServiceClient.PublishUserModel(ctx, &modelPB.PublishUserModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	}); err != nil {
-				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
-				// 		return
-				// 	}
-				// 	_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	})
-				// } else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				// 	if _, err = modelPublicServiceClient.PublishOrganizationModel(ctx, &modelPB.PublishOrganizationModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	}); err != nil {
-				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
-				// 		return
-				// 	}
-				// 	_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	})
-				// }
-				// if err != nil {
-				// 	logger.Error(fmt.Sprintf("deploy model err: %v", err))
-				// 	if e, ok := status.FromError(err); ok {
-				// 		if e.Code() == codes.FailedPrecondition {
-				// 			logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
-				// 			return
-				// 		}
-				// 		logger.Error(fmt.Sprintf("deploy model err: %v", e))
-				// 		return
-				// 	}
-				// 	logger.Error("handler.DeployModel: " + err.Error())
-				// 	return
-				// }
+				_, err := modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
+					Name:    model.Name,
+					Version: "test",
+				})
+				if err != nil {
+					logger.Error(fmt.Sprintf("deploy model err: %v", err))
+					if e, ok := status.FromError(err); ok {
+						if e.Code() == codes.FailedPrecondition {
+							logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+							return
+						}
+						logger.Error(fmt.Sprintf("deploy model err: %v", e))
+						return
+					}
+					logger.Error("handler.DeployModel: " + err.Error())
+					return
+				}
 				return
 			}
 		}(modelConfig)

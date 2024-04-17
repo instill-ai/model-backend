@@ -83,7 +83,7 @@ type Service interface {
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
 	// Private
-	GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*modelPB.Model, error)
+	GetModelByIDAdmin(ctx context.Context,ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
@@ -332,9 +332,9 @@ func (s *service) GetModelByUID(ctx context.Context, authUser *AuthUser, modelUI
 	return s.DBToPBModel(ctx, modelDef, dbModel)
 }
 
-func (s *service) GetModelByIDAdmin(ctx context.Context, modelID string, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
 
-	dbModel, err := s.repository.GetModelByIDAdmin(ctx, modelID, view == modelPB.View_VIEW_BASIC)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, view == modelPB.View_VIEW_BASIC)
 	if err != nil {
 		return nil, err
 	}
