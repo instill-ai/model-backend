@@ -38,6 +38,28 @@ jobs:
           sudo kill -9 `sudo lsof -t -i:8084`
           sudo lsof -i -P -n | grep LISTEN
 
+      - name: Pre Free disk space (Ubuntu)
+        run: |
+          df --human-readable
+          sudo apt clean
+          rm --recursive --force "$AGENT_TOOLSDIRECTORY"
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: true
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -135,12 +157,9 @@ jobs:
 
       - name: Wait for model initialization
         run: |
-          for i in {1..100}; do \
-            echo "waiting the model initialization finish ..."; \
-            if [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" == "exited" ]]; then \
-              break; \
-            fi; \
-            sleep 3; \
+          while [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" != "exited" ]]; do \
+            echo $(docker inspect -f {{.State.Status}} model-backend-init-model); \
+            sleep 5; \
           done
 
       - name: Install k6

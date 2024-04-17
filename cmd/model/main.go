@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -81,7 +82,11 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", "localhost", config.Config.Server.PublicPort), clientDialOpts)
+	host := os.Getenv("MODEL_BACKEND_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PublicPort), clientDialOpts)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
@@ -105,7 +110,11 @@ func InitModelPrivateServiceClient(ctx context.Context) (modelPB.ModelPrivateSer
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", "localhost", config.Config.Server.PrivatePort), clientDialOpts)
+	host := os.Getenv("MODEL_BACKEND_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PrivatePort), clientDialOpts)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
