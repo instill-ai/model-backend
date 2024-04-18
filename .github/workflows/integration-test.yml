@@ -150,17 +150,14 @@ jobs:
           EDITION=local-ce:test \
           RAY_LATEST_TAG=latest \
           INITMODEL_ENABLED=true \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull model_backend_init_model
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml rm -f
+          docker compose -f docker-compose.yml -f docker-compose-latest.yml up --quiet-pull model_backend_init_model
 
-      - name: Wait for model initialization
-        run: |
-          while [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" != "exited" ]]; do \
-            echo $(docker inspect -f {{.State.Status}} model-backend-init-model); \
-            sleep 5; \
-          done
+      # - name: Wait for model initialization
+      #   run: |
+      #     while [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" != "exited" ]]; do \
+      #       echo $(docker inspect -f {{.State.Status}} model-backend-init-model); \
+      #       sleep 5; \
+      #     done
 
       - name: Install k6
         run: |

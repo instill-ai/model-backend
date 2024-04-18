@@ -14,8 +14,10 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
@@ -155,7 +157,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelPB.State_STATE_OFFLINE.Enum(), "", nil
+		return modelPB.State_STATE_ERROR.Enum(), "", status.New(codes.NotFound, "Model version not found").Err()
 	}
 
 	switch application.Status {
