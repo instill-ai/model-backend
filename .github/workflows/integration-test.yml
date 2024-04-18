@@ -89,6 +89,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: instill-ai/instill-core
+          ref: update-ray-infra
 
       - name: Load .env file (instill-core)
         uses: cardinalby/export-env-action@v2
@@ -151,13 +152,6 @@ jobs:
           RAY_LATEST_TAG=latest \
           INITMODEL_ENABLED=true \
           docker compose -f docker-compose.yml -f docker-compose-latest.yml up --quiet-pull model_backend_init_model
-
-      # - name: Wait for model initialization
-      #   run: |
-      #     while [[ "$(docker inspect -f {{.State.Status}} model-backend-init-model)" != "exited" ]]; do \
-      #       echo $(docker inspect -f {{.State.Status}} model-backend-init-model); \
-      #       sleep 5; \
-      #     done
 
       - name: Install k6
         run: |
