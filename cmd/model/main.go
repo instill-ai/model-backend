@@ -225,101 +225,92 @@ func main() {
 					View: modelPB.View_VIEW_FULL.Enum(),
 				})
 			}
-			if err == nil {
-				logger.Info("model namespace already existed")
-				return
-			}
-
-			logger.Info("Creating model: " + modelConfig.ID)
-
-			model := &modelPB.Model{
-				Id:              modelConfig.ID,
-				Description:     &modelConfig.Description,
-				ModelDefinition: modelConfig.ModelDefinition,
-				Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
-				Region:          "REGION_GCP_EUROPE_WEST_4",
-				Hardware:        "CPU",
-				Configuration:   configuration,
-			}
-			if config.Config.InitModel.OwnerType == string(resource.User) {
-				var resp *modelPB.CreateUserModelResponse
-				resp, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
-					Model:  model,
-					Parent: name,
-				})
-				model = resp.GetModel()
-			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				var resp *modelPB.CreateOrganizationModelResponse
-				resp, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
-					Model:  model,
-					Parent: name,
-				})
-				model = resp.GetModel()
-			}
 			if err != nil {
-				logger.Info(fmt.Sprintf("Created model err: %v", err))
-				if e, ok := status.FromError(err); ok {
-					if e.Code() != codes.AlreadyExists {
-						logger.Fatal("handler.CreateModel: " + err.Error())
-						return
-					}
-					return
+				logger.Info("Creating model: " + modelConfig.ID)
+
+				model := &modelPB.Model{
+					Id:              modelConfig.ID,
+					Description:     &modelConfig.Description,
+					ModelDefinition: modelConfig.ModelDefinition,
+					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+					Region:          "REGION_GCP_EUROPE_WEST_4",
+					Hardware:        "CPU",
+					Configuration:   configuration,
 				}
-				return
-			} else {
-				logger.Info("Deploying model: " + model.Id)
-				_, err := modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
-					Name:    model.Name,
-					Version: "test",
-				})
+				if config.Config.InitModel.OwnerType == string(resource.User) {
+					_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
+						Model:  model,
+						Parent: name,
+					})
+				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+					_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
+						Model:  model,
+						Parent: name,
+					})
+				}
 				if err != nil {
-					logger.Error(fmt.Sprintf("deploy model err: %v", err))
+					logger.Info(fmt.Sprintf("Created model err: %v", err))
 					if e, ok := status.FromError(err); ok {
-						if e.Code() == codes.FailedPrecondition {
-							logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+						if e.Code() != codes.AlreadyExists {
+							logger.Fatal("handler.CreateModel: " + err.Error())
 							return
 						}
-						logger.Error(fmt.Sprintf("deploy model err: %v", e))
 						return
 					}
-					logger.Error("handler.DeployModel: " + err.Error())
 					return
 				}
-				state := modelPB.State_STATE_OFFLINE
-				var message string
-				for state != modelPB.State_STATE_ACTIVE {
-					time.Sleep(2 * time.Second)
-					if config.Config.InitModel.OwnerType == string(resource.User) {
-						var resp *modelPB.WatchUserModelResponse
-						resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
-							Name:    model.Name,
-							Version: "test",
-						})
-						state = resp.GetState()
-						message = resp.GetMessage()
-					} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-						var resp *modelPB.WatchOrganizationModelResponse
-						resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
-							Name:    model.Name,
-							Version: "test",
-						})
-						state = resp.GetState()
-						message = resp.GetMessage()
+			}
+			logger.Info("Deploying model: " + modelConfig.ID)
+			_, err = modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
+				Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				Version: "test",
+			})
+			if err != nil {
+				logger.Error(fmt.Sprintf("deploy model err: %v", err))
+				if e, ok := status.FromError(err); ok {
+					if e.Code() == codes.FailedPrecondition {
+						logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+						return
 					}
-					if err != nil {
-						logger.Info(fmt.Sprintf("Deploy model err: %v", err))
-						if e, ok := status.FromError(err); ok {
-							if e.Code() != codes.AlreadyExists {
-								logger.Fatal("handler.DeployModelAdmin: " + err.Error())
-								return
-							}
+					logger.Error(fmt.Sprintf("deploy model err: %v", e))
+					return
+				}
+				logger.Error("handler.DeployModel: " + err.Error())
+				return
+			}
+			state := modelPB.State_STATE_OFFLINE
+			var message string
+			for state != modelPB.State_STATE_ACTIVE {
+				time.Sleep(2 * time.Second)
+				if config.Config.InitModel.OwnerType == string(resource.User) {
+					var resp *modelPB.WatchUserModelResponse
+					resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
+						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						Version: "test",
+					})
+					state = resp.GetState()
+					message = resp.GetMessage()
+				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+					var resp *modelPB.WatchOrganizationModelResponse
+					resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
+						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						Version: "test",
+					})
+					state = resp.GetState()
+					message = resp.GetMessage()
+				}
+				if err != nil {
+					logger.Info(fmt.Sprintf("Deploy model err: %v", err))
+					if e, ok := status.FromError(err); ok {
+						if e.Code() != codes.AlreadyExists {
+							logger.Fatal("handler.DeployModelAdmin: " + err.Error())
 							return
 						}
 						return
 					}
-					logger.Info(fmt.Sprintf("%s: %v, message: %s", model.Id, state, message))
+					return
 				}
-				return
+				logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
 			}
 		}(modelConfig)
 	}
