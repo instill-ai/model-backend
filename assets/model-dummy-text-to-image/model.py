@@ -6,7 +6,7 @@ from instill.helpers import (
     Metadata,
 )
 
-import torch
+import numpy as np
 
 
 @instill_deployment
@@ -78,15 +78,8 @@ class TextToImage:
         resp_outputs = []
         resp_raw_outputs = []
         for _ in req.raw_input_contents:
-            generator = torch.Generator(device="cpu").manual_seed(0)
-            image: torch.Tensor = torch.randn(
-                (1, 3, 5, 5), generator=generator, device="cpu"
-            )
-            image = image.type(dtype=torch.float32)
-            image = (image / 2 + 0.5).clamp(0, 1)
-            image = image.cpu().permute(0, 2, 3, 1).numpy().tobytes()
+            image = np.zeros([1, 5, 5, 3], dtype=np.float32).tobytes()
 
-            # rles
             resp_outputs.append(
                 Metadata(
                     name="images",
