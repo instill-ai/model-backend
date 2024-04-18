@@ -77,7 +77,7 @@ func (r *ray) Init() {
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
-	r.rayHTTPClient = &http.Client{Timeout: time.Second * 5}
+	r.rayHTTPClient = &http.Client{Timeout: 60 * time.Second}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
@@ -308,7 +308,7 @@ func (r *ray) sync() {
 	for {
 		applicationWithAction := <-r.configChan
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		logger, _ := custom_logger.GetZapLogger(ctx)
 		var modelDeploymentConfig ModelDeploymentConfig
 
