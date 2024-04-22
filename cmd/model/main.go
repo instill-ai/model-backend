@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -96,6 +95,34 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 	return modelPB.NewModelPublicServiceClient(clientConn), clientConn
 }
 
+// InitModelPrivateServiceClient initializes a ModelServiceClient instance
+func InitModelPrivateServiceClient(ctx context.Context) (modelPB.ModelPrivateServiceClient, *grpc.ClientConn) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var clientDialOpts grpc.DialOption
+	if config.Config.Server.HTTPS.Cert != "" && config.Config.Server.HTTPS.Key != "" {
+		creds, err := credentials.NewServerTLSFromFile(config.Config.Server.HTTPS.Cert, config.Config.Server.HTTPS.Key)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		clientDialOpts = grpc.WithTransportCredentials(creds)
+	} else {
+		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	host := os.Getenv("MODEL_BACKEND_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PrivatePort), clientDialOpts)
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, nil
+	}
+
+	return modelPB.NewModelPrivateServiceClient(clientConn), clientConn
+}
+
 func main() {
 
 	// setup tracing
@@ -138,6 +165,11 @@ func main() {
 	modelPublicServiceClient, modelPublicServiceClientConn := InitModelPublicServiceClient(ctx)
 	if modelPublicServiceClientConn != nil {
 		defer modelPublicServiceClientConn.Close()
+	}
+
+	modelPrivateServiceClient, modelPrivateServiceClientConn := InitModelPrivateServiceClient(ctx)
+	if modelPrivateServiceClientConn != nil {
+		defer modelPrivateServiceClientConn.Close()
 	}
 
 	var owner *mgmtPB.User
@@ -193,81 +225,92 @@ func main() {
 					View: modelPB.View_VIEW_FULL.Enum(),
 				})
 			}
-			if err == nil {
-				logger.Info("model namespace already existed")
-				return
-			}
-
-			logger.Info("Creating model: " + modelConfig.ID)
-			if config.Config.InitModel.OwnerType == string(resource.User) {
-				_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
-					Model: &modelPB.Model{
-						Id:              modelConfig.ID,
-						Description:     &modelConfig.Description,
-						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
-						ModelDefinition: modelConfig.ModelDefinition,
-						Configuration:   configuration,
-					},
-					Parent: name,
-				})
-			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
-					Model: &modelPB.Model{
-						Id:              modelConfig.ID,
-						Description:     &modelConfig.Description,
-						Task:            utils.Tasks[strings.ToUpper(modelConfig.Task)],
-						ModelDefinition: modelConfig.ModelDefinition,
-						Configuration:   configuration,
-					},
-					Parent: name,
-				})
-			}
 			if err != nil {
-				logger.Info(fmt.Sprintf("Created model err: %v", err))
-				if e, ok := status.FromError(err); ok {
-					if e.Code() != codes.AlreadyExists {
-						logger.Fatal("handler.CreateModel: " + err.Error())
+				logger.Info("Creating model: " + modelConfig.ID)
+
+				model := &modelPB.Model{
+					Id:              modelConfig.ID,
+					Description:     &modelConfig.Description,
+					ModelDefinition: modelConfig.ModelDefinition,
+					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
+					Region:          "REGION_GCP_EUROPE_WEST_4",
+					Hardware:        "CPU",
+					Configuration:   configuration,
+				}
+				if config.Config.InitModel.OwnerType == string(resource.User) {
+					_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
+						Model:  model,
+						Parent: name,
+					})
+				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+					_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
+						Model:  model,
+						Parent: name,
+					})
+				}
+				if err != nil {
+					logger.Info(fmt.Sprintf("Created model err: %v", err))
+					if e, ok := status.FromError(err); ok {
+						if e.Code() != codes.AlreadyExists {
+							logger.Fatal("handler.CreateModel: " + err.Error())
+							return
+						}
 						return
 					}
 					return
 				}
+			}
+			logger.Info("Deploying model: " + modelConfig.ID)
+			_, err = modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
+				Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+				Version: "test",
+			})
+			if err != nil {
+				logger.Error(fmt.Sprintf("deploy model err: %v", err))
+				if e, ok := status.FromError(err); ok {
+					if e.Code() == codes.FailedPrecondition {
+						logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
+						return
+					}
+					logger.Error(fmt.Sprintf("deploy model err: %v", e))
+					return
+				}
+				logger.Error("handler.DeployModel: " + err.Error())
 				return
-			} else {
-				// if config.Config.InitModel.OwnerType == string(resource.User) {
-				// 	if _, err = modelPublicServiceClient.PublishUserModel(ctx, &modelPB.PublishUserModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	}); err != nil {
-				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
-				// 		return
-				// 	}
-				// 	_, err = modelPublicServiceClient.DeployUserModel(ctx, &modelPB.DeployUserModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	})
-				// } else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-				// 	if _, err = modelPublicServiceClient.PublishOrganizationModel(ctx, &modelPB.PublishOrganizationModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	}); err != nil {
-				// 		logger.Error(fmt.Sprintf("publish model err: %v", err))
-				// 		return
-				// 	}
-				// 	_, err = modelPublicServiceClient.DeployOrganizationModel(ctx, &modelPB.DeployOrganizationModelRequest{
-				// 		Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				// 	})
-				// }
-				// if err != nil {
-				// 	logger.Error(fmt.Sprintf("deploy model err: %v", err))
-				// 	if e, ok := status.FromError(err); ok {
-				// 		if e.Code() == codes.FailedPrecondition {
-				// 			logger.Error(fmt.Sprintf("FailedPrecondition deploy err: %v", e))
-				// 			return
-				// 		}
-				// 		logger.Error(fmt.Sprintf("deploy model err: %v", e))
-				// 		return
-				// 	}
-				// 	logger.Error("handler.DeployModel: " + err.Error())
-				// 	return
-				// }
-				return
+			}
+			state := modelPB.State_STATE_OFFLINE
+			var message string
+			for state != modelPB.State_STATE_ACTIVE {
+				time.Sleep(2 * time.Second)
+				if config.Config.InitModel.OwnerType == string(resource.User) {
+					var resp *modelPB.WatchUserModelResponse
+					resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
+						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						Version: "test",
+					})
+					state = resp.GetState()
+					message = resp.GetMessage()
+				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+					var resp *modelPB.WatchOrganizationModelResponse
+					resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
+						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+						Version: "test",
+					})
+					state = resp.GetState()
+					message = resp.GetMessage()
+				}
+				if err != nil {
+					logger.Info(fmt.Sprintf("Deploy model err: %v", err))
+					if e, ok := status.FromError(err); ok {
+						if e.Code() != codes.AlreadyExists {
+							logger.Fatal("handler.DeployModelAdmin: " + err.Error())
+							return
+						}
+						return
+					}
+					return
+				}
+				logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
 			}
 		}(modelConfig)
 	}

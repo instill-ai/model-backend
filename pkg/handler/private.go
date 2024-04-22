@@ -53,7 +53,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.DeployModelAdminResponse{}, err
 	}
@@ -95,7 +95,7 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}

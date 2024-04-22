@@ -8,7 +8,7 @@ on:
       - "assets/model-**"
 
 jobs:
-  docker-hub:
+  build-push-test-image:
     runs-on: ubuntu-latest
     strategy:
       matrix:
