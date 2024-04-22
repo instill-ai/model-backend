@@ -96,7 +96,7 @@ export default (header) => {
   // publishModel.PublishUnPublishUserModel(header)
 
   // Trigger Model API
-  triggerModel.TriggerUserModel(header)
+  // triggerModel.TriggerUserModel(header)
 
   // Query Model Definition API
   // queryModelDefinition.GetModelDefinition(header)
