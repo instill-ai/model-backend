@@ -80,6 +80,8 @@ type Service interface {
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
 
+	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
+
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
 	// Private
@@ -88,6 +90,7 @@ type Service interface {
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
+	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
 	DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 
 	// Usage collection
@@ -897,10 +900,18 @@ func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Name
 	return nil
 }
 
+func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error) {
+	return s.repository.GetModelVersionByID(ctx, modelUID, versionID)
+}
+
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
-	return s.repository.CreateModelVersionAdmin(ctx, "", version)
+	return s.repository.CreateModelVersion(ctx, "", version)
 }
 
 func (s *service) DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
-	return s.repository.DeleteModelVersionAdmin(ctx, "", version)
+	return s.repository.DeleteModelVersion(ctx, "", version)
+}
+
+func (s *service) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
+	return s.repository.CreateModelPrediction(ctx, prediction)
 }

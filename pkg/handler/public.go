@@ -942,12 +942,18 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	version, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion())
+	if err != nil {
+		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
+	}
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            authUser.UID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
+		Mode:               mgmtPB.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
@@ -994,12 +1000,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		lenInputs = 1
 		inputInfer = imageToImage
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
-			ctx,
-			&modelPB.TriggerUserModelRequest{
-				Name:       req.GetName(),
-				TaskInputs: req.GetTaskInputs(),
-			})
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1075,6 +1076,39 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		logger.Warn("usage and metric data write fail")
 	}
 
+	jsonInput, err := json.Marshal(req.GetTaskInputs())
+	if err != nil {
+		logger.Warn("json marshal error for task inputs")
+	}
+
+	jsonOutput, err := json.Marshal(response)
+	if err != nil {
+		logger.Warn("json marshal error for task inputs")
+	}
+
+	modelPrediction := &datamodel.ModelPrediction{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
+			UID: logUUID,
+		},
+		OwnerUID:            ns.NsUID,
+		OwnerType:           datamodel.UserType(usageData.OwnerType),
+		UserUID:             authUser.UID,
+		UserType:            datamodel.UserType(usageData.UserType),
+		Mode:                datamodel.Mode(usageData.Mode),
+		ModelDefinitionUID:  modelDef.UID,
+		TriggerTime:         startTime,
+		ComputeTimeDuration: usageData.ComputeTimeDuration,
+		ModelTask:           datamodel.ModelTask(usageData.ModelTask),
+		ModelUID:            uuid.FromStringOrNil(pbModel.GetUid()),
+		ModelVersionUID:     version.UID,
+		Input:               jsonInput,
+		Output:              jsonOutput,
+	}
+
+	if err := h.service.CreateModelPrediction(ctx, modelPrediction); err != nil {
+		logger.Warn("model prediction creation failed")
+	}
+
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
@@ -1134,6 +1168,10 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
+	}
+
+	if _, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion()); err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	var inputInfer any
