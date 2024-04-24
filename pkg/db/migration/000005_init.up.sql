@@ -34,6 +34,11 @@ CREATE TYPE valid_mode AS ENUM (
     'MODE_ASYNC'
 );
 
+CREATE TYPE valid_status AS ENUM (
+    'STATUS_COMPLETED',
+    'STATUS_ERRORED'
+);
+
 CREATE TABLE IF NOT EXISTS "model_prediction" (
     "uid" UUID PRIMARY KEY,
     "owner_uid" UUID NOT NULL,
@@ -45,8 +50,9 @@ CREATE TABLE IF NOT EXISTS "model_prediction" (
     "trigger_time" TIMESTAMPTZ NOT NULL,
     "compute_time_duration" FLOAT(24) NOT NULL,
     "model_task" VALID_TASK NOT NULL,
+    "status" VALID_STATUS NOT NULL,
     "input" JSONB NOT NULL,
-    "output" JSONB NOT NULL,
+    "output" JSONB NULL,
     "create_time" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_time" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "model_uid" UUID NOT NULL,

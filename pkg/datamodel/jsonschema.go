@@ -122,6 +122,11 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg any, emitUnpopulated bool
 		if err != nil {
 			return err
 		}
+	default:
+		data, err = json.Marshal(msg)
+		if err != nil {
+			return err
+		}
 	}
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err

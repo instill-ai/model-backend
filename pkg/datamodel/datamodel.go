@@ -18,6 +18,7 @@ type ModelVisibility modelPB.Model_Visibility
 type ModelTask commonPB.Task
 type UserType mgmtPB.OwnerType
 type Mode mgmtPB.Mode
+type Status mgmtPB.Status
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -104,6 +105,7 @@ type ModelPrediction struct {
 	TriggerTime         time.Time      `json:"trigger_time,omitempty"`
 	ComputeTimeDuration float64        `json:"compute_time_duration,omitempty"`
 	ModelTask           ModelTask      `json:"model_task,omitempty"`
+	Status              Status         `json:"status,omitempty"`
 	Input               datatypes.JSON `json:"input,omitempty"`
 	Output              datatypes.JSON `json:"output,omitempty"`
 	ModelUID            uuid.UUID      `json:"model_uid,omitempty"`
@@ -148,6 +150,15 @@ func (v *Mode) Scan(value any) error {
 
 func (v Mode) Value() (driver.Value, error) {
 	return mgmtPB.Mode(v).String(), nil
+}
+
+func (v *Status) Scan(value any) error {
+	*v = Status(mgmtPB.Status_value[value.(string)])
+	return nil
+}
+
+func (v Status) Value() (driver.Value, error) {
+	return mgmtPB.Status(v).String(), nil
 }
 
 // ReleaseStage is an alias type for Protobuf enum ReleaseStage
