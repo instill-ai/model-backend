@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -97,27 +96,9 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
 				str := structpb.Struct{}
-				// remove credential in ArtiVC model configuration
-				if modelDef.ID == "artivc" {
-					var modelConfig datamodel.ArtiVCModelConfiguration
-					if err := json.Unmarshal([]byte(dbModel.Configuration.String()), &modelConfig); err != nil {
-						logger.Fatal(err.Error())
-					}
-					b, err := json.Marshal(&datamodel.ArtiVCModelConfiguration{
-						URL: modelConfig.URL,
-						Tag: modelConfig.Tag,
-					})
-					if err != nil {
-						logger.Fatal(err.Error())
-					}
-					if err := str.UnmarshalJSON(b); err != nil {
-						logger.Fatal(err.Error())
-					}
-				} else {
-					err := str.UnmarshalJSON(dbModel.Configuration)
-					if err != nil {
-						logger.Fatal(err.Error())
-					}
+				err := str.UnmarshalJSON(dbModel.Configuration)
+				if err != nil {
+					logger.Fatal(err.Error())
 				}
 				return &str
 			}

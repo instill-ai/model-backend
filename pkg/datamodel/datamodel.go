@@ -10,17 +10,28 @@ import (
 	"gorm.io/gorm"
 
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelVisibility modelPB.Model_Visibility
 type ModelTask commonPB.Task
+type UserType mgmtPB.OwnerType
+type Mode mgmtPB.Mode
+type Status mgmtPB.Status
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
 	CreateTime time.Time      `gorm:"autoCreateTime:nano"`
 	UpdateTime time.Time      `gorm:"autoUpdateTime:nano"`
 	DeleteTime gorm.DeletedAt `sql:"index"`
+}
+
+// BaseStaticHardDelete contains common columns for all tables with static UUID as primary key
+type BaseStaticHardDelete struct {
+	UID        uuid.UUID `gorm:"type:uuid;primary_key;"`
+	CreateTime time.Time `gorm:"autoCreateTime:nano"`
+	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`
 }
 
 // BaseDynamic contains common columns for all tables with dynamic UUID as primary key generated when creating
@@ -43,131 +54,66 @@ func (base *BaseDynamic) BeforeCreate(db *gorm.DB) error {
 
 type ModelDefinition struct {
 	BaseStatic
-
 	// ModelDefinition id
 	ID string `json:"id,omitempty"`
-
 	// ModelDefinition title
 	Title string `json:"title,omitempty"`
-
 	// ModelDefinition documentation_url
 	DocumentationURL string `json:"documentation_url,omitempty"`
-
 	// ModelDefinition icon
 	Icon string `json:"icon,omitempty"`
-
 	// ModelDefinition model spec
-	ModelSpec datatypes.JSON `json:"model_spec,omitempty"`
-
-	ReleaseStage ReleaseStage `sql:"type:valid_release_stage"`
+	ModelSpec    datatypes.JSON `json:"model_spec,omitempty"`
+	ReleaseStage ReleaseStage   `sql:"type:valid_release_stage"`
 }
 
 // Model
 type Model struct {
 	BaseDynamic
-
-	// Model id
-	ID string `json:"id,omitempty"`
-
-	// Model description
-	Description sql.NullString
-
-	// Model definition
-	ModelDefinitionUID uuid.UUID `gorm:"model_definition_uid,omitempty"`
-
-	// Model definition configuration
-	Configuration datatypes.JSON `json:"configuration,omitempty"`
-
-	// Model visibility
-	Visibility ModelVisibility `json:"visibility,omitempty"`
-
-	// Model owner
-	Owner string `json:"owner,omitempty"`
-
-	// Model task
-	Task ModelTask `json:"task,omitempty"`
-
-	// Model region
-	Region string `gorm:"region,omitempty"`
-
-	// Model hardware
-	Hardware string `gorm:"hardware,omitempty"`
-
-	// Model readme
-	Readme string `gorm:"readme,omitempty"`
-
-	// Model source code url
-	SourceURL string `gorm:"source_url,omitempty"`
-
-	// Model documentation url
-	DocumentationURL string `gorm:"documentation_url,omitempty"`
-
-	// Model license
-	License string `gorm:"license,omitempty"`
-
-	ModelVersions []ModelVersion `gorm:"foreignKey:ModelUID;references:UID;constraint:OnDelete:CASCADE;"`
+	ID                 string
+	Description        sql.NullString
+	ModelDefinitionUID uuid.UUID
+	Configuration      datatypes.JSON `gorm:"type:jsonb"`
+	Visibility         ModelVisibility
+	Owner              string
+	Task               ModelTask
+	Region             string
+	Hardware           string
+	Readme             string
+	SourceURL          string
+	DocumentationURL   string
+	License            string
 }
 
 // Model version
 type ModelVersion struct {
 	BaseDynamic
-
-	// Model resource name
-	Name string `json:"name,omitempty"`
-
-	// Version tag
-	Version string `json:"version,omitempty"`
-
-	// Unique identifier, computed from the manifest the tag refers to
-	Digest string `json:"digest,omitempty"`
-
-	// Model uid
-	ModelUID uuid.UUID `json:"model_uid,omitempty"`
+	Name     string
+	Version  string
+	Digest   string
+	ModelUID uuid.UUID
 }
 
-type ModelInferResult struct {
-	BaseDynamic
-
-	// Inference id: `model id.{datetime}.infer` created by temporal
-	ID string `json:"id,omitempty"`
-
-	// Inference result
-	Result datatypes.JSON `json:"result,omitempty"`
-
-	// Model uid
-	ModelUID uuid.UUID `json:"model_uid,omitempty"`
-}
-
-// Model configuration
-type GitHubModelConfiguration struct {
-	Repository string `json:"repository,omitempty"`
-	Tag        string `json:"tag,omitempty"`
-	HTMLURL    string `json:"html_url,omitempty"`
-}
-
-type ArtiVCModelConfiguration struct {
-	URL        string         `json:"url,omitempty"`
-	Tag        string         `json:"tag,omitempty"`
-	Credential datatypes.JSON `json:"credential,omitempty"`
-}
-
-type HuggingFaceModelConfiguration struct {
-	RepoID  string `json:"repo_id,omitempty"`
-	Tag     string `json:"tag,omitempty"`
-	HTMLURL string `json:"html_url,omitempty"`
-}
-
-type LocalModelConfiguration struct {
-	Content string `json:"content,omitempty"`
-	Tag     string `json:"tag,omitempty"`
+type ModelPrediction struct {
+	BaseStaticHardDelete
+	OwnerUID            uuid.UUID      `json:"owner_uid,omitempty"`
+	OwnerType           UserType       `json:"owner_type,omitempty"`
+	UserUID             uuid.UUID      `json:"user_uid,omitempty"`
+	UserType            UserType       `json:"user_type,omitempty"`
+	Mode                Mode           `json:"mode,omitempty"`
+	ModelDefinitionUID  uuid.UUID      `json:"model_definition_uid,omitempty"`
+	TriggerTime         time.Time      `json:"trigger_time,omitempty"`
+	ComputeTimeDuration float64        `json:"compute_time_duration,omitempty"`
+	ModelTask           ModelTask      `json:"model_task,omitempty"`
+	Status              Status         `json:"status,omitempty"`
+	Input               datatypes.JSON `json:"input,omitempty"`
+	Output              datatypes.JSON `json:"output,omitempty"`
+	ModelUID            uuid.UUID      `json:"model_uid,omitempty"`
+	ModelVersionUID     uuid.UUID      `json:"model_version,omitempty"`
 }
 
 type ContainerizedModelConfiguration struct {
 	Task string `json:"task,omitempty"`
-}
-
-type ListModelQuery struct {
-	Owner string
 }
 
 func (s ModelTask) Value() (driver.Value, error) {
@@ -186,6 +132,33 @@ func (v *ModelVisibility) Scan(value any) error {
 
 func (v ModelVisibility) Value() (driver.Value, error) {
 	return modelPB.Model_Visibility(v).String(), nil
+}
+
+func (v *UserType) Scan(value any) error {
+	*v = UserType(mgmtPB.OwnerType_value[value.(string)])
+	return nil
+}
+
+func (v UserType) Value() (driver.Value, error) {
+	return mgmtPB.OwnerType(v).String(), nil
+}
+
+func (v *Mode) Scan(value any) error {
+	*v = Mode(mgmtPB.Mode_value[value.(string)])
+	return nil
+}
+
+func (v Mode) Value() (driver.Value, error) {
+	return mgmtPB.Mode(v).String(), nil
+}
+
+func (v *Status) Scan(value any) error {
+	*v = Status(mgmtPB.Status_value[value.(string)])
+	return nil
+}
+
+func (v Status) Value() (driver.Value, error) {
+	return mgmtPB.Status(v).String(), nil
 }
 
 // ReleaseStage is an alias type for Protobuf enum ReleaseStage

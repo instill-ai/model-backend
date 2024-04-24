@@ -18,6 +18,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
@@ -30,17 +31,19 @@ import (
 type InferInput any
 
 type TriggerModelWorkflowRequest struct {
-	ModelID                  string
-	ModelUID                 uuid.UUID
-	ModelVersion             string
-	OwnerUID                 uuid.UUID
-	OwnerType                string
-	UserUID                  uuid.UUID
-	UserType                 string
-	ModelDefinitionUID       uuid.UUID
-	Task                     commonPB.Task
-	TriggerInputBlobRedisKey string
-	Mode                     mgmtPB.Mode
+	TriggerUID         uuid.UUID
+	ModelID            string
+	ModelUID           uuid.UUID
+	ModelVersion       datamodel.ModelVersion
+	OwnerUID           uuid.UUID
+	OwnerType          string
+	UserUID            uuid.UUID
+	UserType           string
+	ModelDefinitionUID uuid.UUID
+	Task               commonPB.Task
+	InputKey           string
+	ParsedInputKey     string
+	Mode               mgmtPB.Mode
 }
 
 type TriggerModelActivityRequest struct {
@@ -53,7 +56,8 @@ type TriggerModelWorkflowResponse struct {
 }
 
 type TriggerModelActivityResponse struct {
-	OutputBlobRedisKey string
+	TaskOutputBytes []byte
+	OutputKey       string
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -80,15 +84,43 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		ownerType = mgmtPB.OwnerType_OWNER_TYPE_UNSPECIFIED
 	}
 
-	dataPoint := utils.UsageMetricData{
-		OwnerUID:           param.OwnerUID.String(),
-		OwnerType:          ownerType,
-		UserUID:            param.UserUID.String(),
-		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
-		Mode:               param.Mode,
-		ModelDefinitionUID: param.ModelDefinitionUID.String(),
-		ModelTask:          param.Task,
-		TriggerTime:        startTime.Format(time.RFC3339Nano),
+	var usageData *utils.UsageMetricData
+	var modelPrediction *datamodel.ModelPrediction
+	if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+		inputBlob, err := w.redisClient.Get(sCtx, param.InputKey).Bytes()
+		if err != nil {
+			return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
+		}
+		usageData = &utils.UsageMetricData{
+			TriggerUID:         param.TriggerUID.String(),
+			OwnerUID:           param.OwnerUID.String(),
+			OwnerType:          ownerType,
+			UserUID:            param.UserUID.String(),
+			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
+			ModelUID:           param.ModelUID.String(),
+			Version:            param.ModelVersion.Version,
+			Mode:               param.Mode,
+			ModelDefinitionUID: param.ModelDefinitionUID.String(),
+			ModelTask:          param.Task,
+			TriggerTime:        startTime.Format(time.RFC3339Nano),
+		}
+		modelPrediction = &datamodel.ModelPrediction{
+			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
+				UID: param.TriggerUID,
+			},
+			OwnerUID:            param.OwnerUID,
+			OwnerType:           datamodel.UserType(usageData.OwnerType),
+			UserUID:             param.UserUID,
+			UserType:            datamodel.UserType(usageData.UserType),
+			Mode:                datamodel.Mode(usageData.Mode),
+			ModelDefinitionUID:  param.ModelDefinitionUID,
+			TriggerTime:         startTime,
+			ComputeTimeDuration: usageData.ComputeTimeDuration,
+			ModelTask:           datamodel.ModelTask(usageData.ModelTask),
+			ModelUID:            param.ModelUID,
+			ModelVersionUID:     param.ModelVersion.UID,
+			Input:               inputBlob,
+		}
 	}
 
 	ao := workflow.ActivityOptions{
@@ -105,15 +137,26 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
 	}).Get(ctx, &triggerResult); err != nil {
-		w.writeErrorDataPoint(sCtx, err, span, startTime, &dataPoint)
+		if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
+			w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
+		}
+		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
 	}
 
-	dataPoint.ComputeTimeDuration = time.Since(startTime).Seconds()
-	dataPoint.Status = mgmtPB.Status_STATUS_COMPLETED
-
-	if err := w.writeNewDataPoint(sCtx, &dataPoint); err != nil {
-		logger.Warn(err.Error())
+	if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+		usageData.ComputeTimeDuration = time.Since(startTime).Seconds()
+		usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+		modelPrediction.ComputeTimeDuration = time.Since(startTime).Seconds()
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_COMPLETED)
+		modelPrediction.Output = triggerResult.TaskOutputBytes
+		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
+			logger.Warn(err.Error())
+		}
+		if err := w.writePrediction(sCtx, modelPrediction); err != nil {
+			logger.Warn(err.Error())
+		}
 	}
 
 	logger.Info("TriggerModelWorkflow completed")
@@ -137,12 +180,12 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion)
+	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
 	if modelMetadataResponse == nil {
 		return nil, w.toApplicationError(fmt.Errorf("model is offline"), param.ModelID, ModelActivityError)
 	}
 
-	blob, err := w.redisClient.Get(ctx, param.TriggerInputBlobRedisKey).Bytes()
+	blob, err := w.redisClient.Get(ctx, param.ParsedInputKey).Bytes()
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -199,7 +242,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		inferInput = input
 	}
 
-	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion, modelMetadataResponse)
+	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -219,20 +262,27 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	blobRedisKey := fmt.Sprintf("async_model_response:%s", param.WorkflowExecutionID)
+	outputKey := fmt.Sprintf("async_model_response:%s", param.WorkflowExecutionID)
 	w.redisClient.Set(
 		ctx,
-		blobRedisKey,
+		outputKey,
 		outputJSON,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
+	jsonOutput, err := json.Marshal(outputs)
+	if err != nil {
+		logger.Warn("json marshal error for task inputs")
+	}
+
 	logger.Info("TriggerModelActivity completed")
 
-	w.redisClient.Del(ctx, param.TriggerInputBlobRedisKey)
+	w.redisClient.Del(ctx, param.ParsedInputKey)
+	w.redisClient.Del(ctx, param.InputKey)
 
 	return &TriggerModelActivityResponse{
-		OutputBlobRedisKey: blobRedisKey,
+		TaskOutputBytes: jsonOutput,
+		OutputKey:       outputKey,
 	}, nil
 }
 
@@ -241,6 +291,13 @@ func (w *worker) writeErrorDataPoint(ctx context.Context, err error, span trace.
 	dataPoint.ComputeTimeDuration = time.Since(startTime).Seconds()
 	dataPoint.Status = mgmtPB.Status_STATUS_ERRORED
 	_ = w.writeNewDataPoint(ctx, dataPoint)
+}
+
+func (w *worker) writeErrorPrediction(ctx context.Context, err error, span trace.Span, startTime time.Time, pred *datamodel.ModelPrediction) {
+	span.SetStatus(1, err.Error())
+	pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+	pred.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+	_ = w.writePrediction(ctx, pred)
 }
 
 // toApplicationError wraps a temporal task error in a temporal.Application

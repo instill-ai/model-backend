@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -38,9 +37,6 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-// InferInput is the interface for the input to the model
-type InferInput any
-
 // Service is the interface for the service layer
 type Service interface {
 
@@ -73,12 +69,14 @@ type Service interface {
 	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, authUser *AuthUser, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
 	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, version string) (*modelPB.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
-	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
+
+	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
 
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 
@@ -88,6 +86,7 @@ type Service interface {
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
+	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
 	DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 
 	// Usage collection
@@ -446,7 +445,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 	return state, message, nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -469,16 +468,11 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNoPermission
 	}
 
-	inputJSON, err := json.Marshal(inferInput)
-	if err != nil {
-		return nil, err
-	}
-
-	inputBlobRedisKey := fmt.Sprintf("async_model_request:%s", triggerUID)
+	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
-		inputBlobRedisKey,
-		inputJSON,
+		parsedInputKey,
+		parsedInferInput,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
@@ -491,24 +485,22 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
 		"TriggerModelWorkflow",
 		&worker.TriggerModelWorkflowRequest{
-			ModelID:                  dbModel.ID,
-			ModelUID:                 dbModel.UID,
-			ModelVersion:             version,
-			OwnerUID:                 ns.NsUID,
-			OwnerType:                string(ns.NsType),
-			UserUID:                  userUID,
-			UserType:                 mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
-			ModelDefinitionUID:       dbModel.ModelDefinitionUID,
-			Task:                     task,
-			TriggerInputBlobRedisKey: inputBlobRedisKey,
-			Mode:                     mgmtPB.Mode_MODE_SYNC,
+			ModelID:            dbModel.ID,
+			ModelUID:           dbModel.UID,
+			ModelVersion:       *version,
+			OwnerUID:           ns.NsUID,
+			OwnerType:          string(ns.NsType),
+			UserUID:            authUser.UID,
+			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			ModelDefinitionUID: dbModel.ModelDefinitionUID,
+			Task:               task,
+			ParsedInputKey:     parsedInputKey,
+			Mode:               mgmtPB.Mode_MODE_SYNC,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -531,7 +523,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	triggerModelResponse := &modelPB.TriggerUserModelResponse{}
 
-	blob, err := s.redisClient.GetDel(ctx, triggerResult.OutputBlobRedisKey).Bytes()
+	blob, err := s.redisClient.GetDel(ctx, triggerResult.OutputKey).Bytes()
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +536,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version string, inferInput InferInput, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -567,16 +559,19 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, ErrNoPermission
 	}
 
-	inputJSON, err := json.Marshal(inferInput)
-	if err != nil {
-		return nil, err
-	}
-
-	inputBlobRedisKey := fmt.Sprintf("async_model_request:%s", triggerUID)
+	inputKey := fmt.Sprintf("model_trigger_input:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
-		inputBlobRedisKey,
-		inputJSON,
+		inputKey,
+		inferInput,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
+
+	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
+	s.redisClient.Set(
+		ctx,
+		parsedInputKey,
+		parsedInferInput,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
@@ -589,24 +584,24 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		},
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
 		"TriggerModelWorkflow",
 		&worker.TriggerModelWorkflowRequest{
-			ModelID:                  dbModel.ID,
-			ModelUID:                 dbModel.UID,
-			ModelVersion:             version,
-			OwnerUID:                 ns.NsUID,
-			OwnerType:                string(ns.NsType),
-			UserUID:                  userUID,
-			UserType:                 mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
-			ModelDefinitionUID:       dbModel.ModelDefinitionUID,
-			Task:                     task,
-			TriggerInputBlobRedisKey: inputBlobRedisKey,
-			Mode:                     mgmtPB.Mode_MODE_ASYNC,
+			TriggerUID:         uuid.FromStringOrNil(triggerUID),
+			ModelID:            dbModel.ID,
+			ModelUID:           dbModel.UID,
+			ModelVersion:       *version,
+			OwnerUID:           ns.NsUID,
+			OwnerType:          string(ns.NsType),
+			UserUID:            authUser.UID,
+			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			ModelDefinitionUID: dbModel.ModelDefinitionUID,
+			Task:               task,
+			InputKey:           inputKey,
+			ParsedInputKey:     parsedInputKey,
+			Mode:               mgmtPB.Mode_MODE_ASYNC,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -897,10 +892,18 @@ func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Name
 	return nil
 }
 
+func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error) {
+	return s.repository.GetModelVersionByID(ctx, modelUID, versionID)
+}
+
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
-	return s.repository.CreateModelVersionAdmin(ctx, "", version)
+	return s.repository.CreateModelVersion(ctx, "", version)
 }
 
 func (s *service) DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
-	return s.repository.DeleteModelVersionAdmin(ctx, "", version)
+	return s.repository.DeleteModelVersion(ctx, "", version)
+}
+
+func (s *service) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
+	return s.repository.CreateModelPrediction(ctx, prediction)
 }

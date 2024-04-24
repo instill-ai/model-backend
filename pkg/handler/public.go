@@ -942,19 +942,59 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	version, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion())
+	if err != nil {
+		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	inputJSON, err := json.Marshal(req.GetTaskInputs())
+	if err != nil {
+		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            authUser.UID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
+		Mode:               mgmtPB.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
 		ModelTask:          pbModel.Task,
 	}
 
-	var inputInfer any
+	modelPrediction := &datamodel.ModelPrediction{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
+			UID: logUUID,
+		},
+		OwnerUID:           ns.NsUID,
+		OwnerType:          datamodel.UserType(usageData.OwnerType),
+		UserUID:            authUser.UID,
+		UserType:           datamodel.UserType(usageData.UserType),
+		Mode:               datamodel.Mode(usageData.Mode),
+		ModelDefinitionUID: modelDef.UID,
+		TriggerTime:        startTime,
+		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
+		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
+		ModelVersionUID:    version.UID,
+		Input:              inputJSON,
+	}
+
+	// write usage/metric datapoint and prediction record
+	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+		pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+			logger.Warn("model prediction write failed")
+		}
+		u.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
+			logger.Warn("usage/metric write failed")
+		}
+	}(modelPrediction, usageData, startTime)
+
+	var parsedInput any
 	var lenInputs = 1
 	switch pbModel.Task {
 	case commonPB.Task_TASK_CLASSIFICATION,
@@ -968,63 +1008,60 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
-		inputInfer = imageInput
+		parsedInput = imageInput
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textToImage
+		parsedInput = textToImage
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
 		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = imageToImage
+		parsedInput = imageToImage
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
-			ctx,
-			&modelPB.TriggerUserModelRequest{
-				Name:       req.GetName(),
-				TaskInputs: req.GetTaskInputs(),
-			})
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		inputInfer = visualQuestionAnswering
+		parsedInput = visualQuestionAnswering
 	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
 		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textGenerationChat
+		parsedInput = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textGeneration
+		parsedInput = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
@@ -1032,15 +1069,25 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task, logUUID.String())
+
+	parsedInputJSON, err := json.Marshal(parsedInput)
+	if err != nil {
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1066,21 +1113,25 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		_ = h.service.WriteNewDataPoint(ctx, usageData)
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 		return commonPB.Task_TASK_UNSPECIFIED, nil, st.Err()
 	}
 
 	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
-	if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
-		logger.Warn("usage and metric data write fail")
+
+	jsonOutput, err := json.Marshal(response)
+	if err != nil {
+		logger.Warn("json marshal error for task inputs")
 	}
+	modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_COMPLETED)
+	modelPrediction.Output = jsonOutput
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
 		authUser.UID,
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Name),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -1115,6 +1166,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
+	startTime := time.Now()
 	logUUID, _ := uuid.NewV4()
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
@@ -1136,7 +1188,74 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
-	var inputInfer any
+	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	version, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	inputJSON, err := json.Marshal(req.GetTaskInputs())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	usageData := &utils.UsageMetricData{
+		OwnerUID:           ns.NsUID.String(),
+		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
+		UserUID:            authUser.UID.String(),
+		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
+		ModelUID:           pbModel.Uid,
+		Mode:               mgmtPB.Mode_MODE_ASYNC,
+		TriggerUID:         logUUID.String(),
+		TriggerTime:        startTime.Format(time.RFC3339Nano),
+		ModelDefinitionUID: modelDef.UID.String(),
+		ModelTask:          pbModel.Task,
+	}
+
+	modelPrediction := &datamodel.ModelPrediction{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
+			UID: logUUID,
+		},
+		OwnerUID:            ns.NsUID,
+		OwnerType:           datamodel.UserType(usageData.OwnerType),
+		UserUID:             authUser.UID,
+		UserType:            datamodel.UserType(usageData.UserType),
+		Mode:                datamodel.Mode(usageData.Mode),
+		ModelDefinitionUID:  modelDef.UID,
+		TriggerTime:         startTime,
+		ComputeTimeDuration: usageData.ComputeTimeDuration,
+		ModelTask:           datamodel.ModelTask(usageData.ModelTask),
+		ModelUID:            uuid.FromStringOrNil(pbModel.GetUid()),
+		ModelVersionUID:     version.UID,
+		Input:               inputJSON,
+	}
+
+	// write usage/metric datapoint and prediction record
+	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+		if u.Status == mgmtPB.Status_STATUS_ERRORED {
+			pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+			if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+				logger.Warn("model prediction write failed")
+			}
+			u.ComputeTimeDuration = time.Since(startTime).Seconds()
+			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
+				logger.Warn("usage/metric write failed")
+			}
+		}
+	}(modelPrediction, usageData, startTime)
+
+	var parsedInput any
 	var lenInputs = 1
 	switch pbModel.Task {
 	case commonPB.Task_TASK_CLASSIFICATION,
@@ -1149,26 +1268,32 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
-		inputInfer = imageInput
+		parsedInput = imageInput
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseTexToImageRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textToImage
+		parsedInput = textToImage
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
 		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = imageToImage
+		parsedInput = imageToImage
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
 			ctx,
@@ -1178,42 +1303,62 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 			})
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		inputInfer = visualQuestionAnswering
+		parsedInput = visualQuestionAnswering
 	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
 		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textGenerationChat
+		parsedInput = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
-		inputInfer = textGeneration
+		parsedInput = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, authUser, modelID, req.GetVersion(), inputInfer, pbModel.Task, logUUID.String())
+
+	parsedInputJSON, err := json.Marshal(parsedInput)
+	if err != nil {
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, authUser, modelID, version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		if err != nil {
 			span.SetStatus(1, err.Error())
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return nil, err
 		}
 	}
@@ -1311,6 +1456,14 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	version, err := s.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), pathParams["version"])
+	if err != nil {
+		logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
+		makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
+		span.SetStatus(1, "The model version not found in server")
+		return
+	}
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
@@ -1332,7 +1485,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	var inputInfer any
+	var parsedInput any
 	var lenInputs = 1
 	switch pbModel.Task {
 	case commonPB.Task_TASK_CLASSIFICATION,
@@ -1351,7 +1504,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			return
 		}
 		lenInputs = len(imageInput)
-		inputInfer = imageInput
+		parsedInput = imageInput
 	case commonPB.Task_TASK_TEXT_TO_IMAGE:
 		textToImage, err := parseImageFormDataTextToImageInputs(req)
 		if err != nil {
@@ -1361,7 +1514,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		inputInfer = textToImage
+		parsedInput = textToImage
 	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
 		imageToImage, err := parseImageFormDataImageToImageInputs(req)
 		if err != nil {
@@ -1371,7 +1524,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		inputInfer = imageToImage
+		parsedInput = imageToImage
 	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		visualQuestionAnswering, err := parseTextFormDataVisualQuestionAnsweringInputs(req)
 		if err != nil {
@@ -1381,7 +1534,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		inputInfer = visualQuestionAnswering
+		parsedInput = visualQuestionAnswering
 	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
 		textGenerationChat, err := parseTextFormDataTextGenerationChatInputs(req)
 		if err != nil {
@@ -1391,7 +1544,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		inputInfer = textGenerationChat
+		parsedInput = textGenerationChat
 	case commonPB.Task_TASK_TEXT_GENERATION:
 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
 		if err != nil {
@@ -1401,7 +1554,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		inputInfer = textGeneration
+		parsedInput = textGeneration
 	}
 	// check whether model support batching or not. If not, raise an error
 	if lenInputs > 1 {
@@ -1422,8 +1575,17 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		}
 	}
 
+	parsedInputJSON, err := json.Marshal(parsedInput)
+	if err != nil {
+		makeJSONResponse(w, 400, "Parser input error", err.Error())
+		span.SetStatus(1, err.Error())
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		_ = s.WriteNewDataPoint(ctx, usageData)
+		return
+	}
+
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, pathParams["version"], inputInfer, pbModel.Task, logUUID.String())
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,

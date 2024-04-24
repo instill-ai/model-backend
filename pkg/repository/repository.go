@@ -40,10 +40,12 @@ type Repository interface {
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 
-	CreateModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
-	GetModelVersionByNameAdmin(ctx context.Context, name string) (version *datamodel.ModelVersion, err error)
-	DeleteModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
+	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
+	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
+	DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
+
+	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -279,7 +281,15 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 	return nil
 }
 
-func (r *repository) CreateModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
+func (r *repository) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
+	if result := r.db.Model(&datamodel.ModelPrediction{}).Create(&prediction); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
 	if result := r.db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
 		return result.Error
 	}
@@ -287,7 +297,7 @@ func (r *repository) CreateModelVersionAdmin(ctx context.Context, ownerPermalink
 	return nil
 }
 
-func (r *repository) DeleteModelVersionAdmin(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
+func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
 	result := r.db.Model(&datamodel.ModelVersion{}).
 		Where("(name = ? AND version = ?)", version.Name, version.Version).
 		Delete(&datamodel.ModelVersion{})
@@ -303,10 +313,10 @@ func (r *repository) DeleteModelVersionAdmin(ctx context.Context, ownerPermalink
 	return nil
 }
 
-func (r *repository) GetModelVersionByNameAdmin(ctx context.Context, name string) (version *datamodel.ModelVersion, err error) {
-	queryBuilder := r.db.Model(&datamodel.ModelVersion{}).Where("(name = ?)", []any{name})
+func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error) {
+	queryBuilder := r.db.Model(&datamodel.ModelVersion{}).Where("(version = ? AND model_uid = ?)", versionID, modelUID)
 
-	if result := queryBuilder.First(version); result.Error != nil {
+	if result := queryBuilder.First(&version); result.Error != nil {
 		st, _ := sterr.CreateErrorResourceInfo(
 			codes.NotFound,
 			fmt.Sprintf("[db] GetModelVersionByName error: %s", result.Error.Error()),

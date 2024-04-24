@@ -122,7 +122,7 @@ func ValidateJSONSchema(schema *jsonschema.Schema, msg any, emitUnpopulated bool
 		if err != nil {
 			return err
 		}
-	case LocalModelConfiguration:
+	default:
 		data, err = json.Marshal(msg)
 		if err != nil {
 			return err

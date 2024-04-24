@@ -329,6 +329,7 @@ type UsageMetricData struct {
 	UserUID             string
 	UserType            mgmtPB.OwnerType
 	ModelUID            string
+	Version             string
 	Status              mgmtPB.Status
 	Mode                mgmtPB.Mode
 	TriggerUID          string

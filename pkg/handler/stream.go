@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
@@ -188,7 +189,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	triggerInput, path, version, err := savePredictInputsTriggerMode(stream)
+	triggerInput, path, versionID, err := savePredictInputsTriggerMode(stream)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return status.Error(codes.Internal, err.Error())
@@ -223,17 +224,51 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	version, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionID)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
 		UserUID:            authUser.UID.String(),
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
+		Mode:               mgmtPB.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
 		ModelTask:          pbModel.Task,
 	}
+
+	modelPrediction := &datamodel.ModelPrediction{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
+			UID: logUUID,
+		},
+		OwnerUID:           ns.NsUID,
+		OwnerType:          datamodel.UserType(usageData.OwnerType),
+		UserUID:            authUser.UID,
+		UserType:           datamodel.UserType(usageData.UserType),
+		Mode:               datamodel.Mode(usageData.Mode),
+		ModelDefinitionUID: modelDef.UID,
+		TriggerTime:        startTime,
+		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
+		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
+		ModelVersionUID:    version.UID,
+	}
+
+	// write usage/metric datapoint and prediction record
+	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+		pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+			logger.Warn("model prediction write failed")
+		}
+		u.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
+			logger.Warn("usage/metric write failed")
+		}
+	}(modelPrediction, usageData, startTime)
 
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
@@ -251,16 +286,26 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			_ = h.service.WriteNewDataPoint(ctx, usageData)
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+			usageData.Status = mgmtPB.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, triggerInput, pbModel.Task, logUUID.String())
+	parsedInputJSON, err := json.Marshal(triggerInput)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		usageData.Status = mgmtPB.Status_STATUS_ERRORED
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -286,26 +331,30 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		_ = h.service.WriteNewDataPoint(ctx, usageData)
+		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
 		return st.Err()
 	}
+
+	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+
+	jsonOutput, err := json.Marshal(response)
+	if err != nil {
+		logger.Warn("json marshal error for task inputs")
+	}
+	modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_COMPLETED)
+	modelPrediction.Output = jsonOutput
 
 	err = stream.SendAndClose(&modelPB.TriggerUserModelBinaryFileUploadResponse{
 		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})
 
-	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
-	if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
-		logger.Warn("usage and metric data write fail")
-	}
-
 	logger.Info(string(custom_otel.NewLogMessage(
 		span,
 		logUUID.String(),
 		authUser.UID,
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Name),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
