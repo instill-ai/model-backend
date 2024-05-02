@@ -697,20 +697,20 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, err
 	}
 
-	versions := make([]*modelPB.ModelVersion, resp.GetPageSize())
+	versions := make([]*modelPB.ModelVersion, resp.GetTotalSize())
 
-	for _, tag := range resp.GetTags() {
+	for i, tag := range resp.GetTags() {
 		state, _, err := s.WatchModel(ctx, ns, authUser, modelID, tag.GetId())
 		if err != nil {
 			return nil, 0, 0, 0, err
 		}
-		versions = append(versions, &modelPB.ModelVersion{
+		versions[i] = &modelPB.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
 			Id:         tag.GetId(),
 			Digest:     tag.GetDigest(),
 			State:      *state,
 			UpdateTime: tag.GetUpdateTime(),
-		})
+		}
 	}
 
 	return versions, resp.GetTotalSize(), resp.GetPageSize(), resp.GetPage(), nil
