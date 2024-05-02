@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/ghodss/yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -45,18 +44,13 @@ func unmarshalModelPB(jsonSliceMap any, pb any) error {
 
 func processJSONSliceMap(filename string) ([]map[string]any, error) {
 
-	yamlFile, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	b, err := yaml.YAMLToJSON(yamlFile)
+	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
 	var jsonSliceMap []map[string]any
-	if err := json.Unmarshal(b, &jsonSliceMap); err != nil {
+	if err := json.Unmarshal(file, &jsonSliceMap); err != nil {
 		return nil, err
 	}
 

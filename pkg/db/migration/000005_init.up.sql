@@ -9,6 +9,9 @@ ADD COLUMN IF NOT EXISTS "license" VARCHAR(255),
 ADD COLUMN "readme" TEXT DEFAULT '',
 DROP COLUMN "state";
 
+ALTER TABLE "model_definition"
+ADD COLUMN IF NOT EXISTS "resource_spec" JSONB NOT NULL;
+
 CREATE TABLE IF NOT EXISTS "model_version" (
     "uid" UUID PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,

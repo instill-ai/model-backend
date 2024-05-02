@@ -1,0 +1,77 @@
+[
+  {
+    "id": "container",
+    "uid": "3b4265b7-7d8c-42f7-b5a9-13737d7dee1d",
+    "title": "Container",
+    "documentationUrl": "https://www.instill.tech/docs/import-models/container",
+    "icon": "container.svg",
+    "releaseStage": "alpha",
+    "resourceSpec": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Model resource spec",
+      "type": "object",
+      "required": ["region", "hardware"],
+      "instillShortDescription": "",
+      "additionalProperties": false,
+      "minProperties": 2,
+      "maxProperties": 2,
+      "oneOf": [
+        {
+          "properties": {
+            "region": {
+              "const": "REGION_GCP_EUROPE_WEST4",
+              "instillShortDescription": "Deploy model onto GCP in Europe West4 region",
+              "title": "GCP europe-west4"
+            },
+            "hardware": {
+              "oneOf": [
+                {
+                  "const": "CPU",
+                  "instillShortDescription": "Deploy model that runs on CPU",
+                  "title": "CPU"
+                },
+                {
+                  "const": "NVIDIA_TESLA_T4",
+                  "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
+                  "title": "Nvidia Tesla T4"
+                },
+                {
+                  "const": "NVIDIA_L4",
+                  "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
+                  "title": "Nvidia L4"
+                },
+                {
+                  "const": "NVIDIA_A100",
+                  "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
+                  "title": "NVIDIA A100"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "modelSpec": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Containerized Model",
+      "type": "object",
+      "required": ["task"],
+      "instillShortDescription": "",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "task": {
+          "type": "string",
+          "instillUIComponent": "textfield",
+          "title": "Enter your model's Instill Task",
+          "description": "Create and upload a containerized model which uses this Instill Task.",
+          "instillUIOrder": 0,
+          "minLength": 0,
+          "maxLength": 1023
+        }
+      }
+    }
+  }
+]

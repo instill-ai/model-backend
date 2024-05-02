@@ -124,7 +124,7 @@
     },
     "hardware": {
       "type": "string",
-      "title": "Region",
+      "title": "Hardware",
       "description": "The region of the cloud provider that a model is hosted on",
       "readOnly": true,
       "ui_order": 7,
@@ -134,7 +134,7 @@
     },
     "readme": {
       "type": "string",
-      "title": "Region",
+      "title": "Readme",
       "description": "The readme of the model",
       "readOnly": true,
       "ui_order": 7,
@@ -144,7 +144,7 @@
     },
     "source_url": {
       "type": "string",
-      "title": "Region",
+      "title": "Source URL",
       "description": "The source code url of the model",
       "readOnly": true,
       "ui_order": 7,
@@ -154,7 +154,7 @@
     },
     "documentation_url": {
       "type": "string",
-      "title": "Region",
+      "title": "Documentation URL",
       "description": "The documentation url of the model",
       "readOnly": true,
       "ui_order": 7,
@@ -164,7 +164,7 @@
     },
     "license": {
       "type": "string",
-      "title": "Region",
+      "title": "License",
       "description": "The license of the model",
       "readOnly": true,
       "ui_order": 7,

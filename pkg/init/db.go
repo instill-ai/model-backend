@@ -15,6 +15,7 @@ func CreateModelDefinitionRecord(
 	documentationURL string,
 	icon string,
 	modelSpec []byte,
+	resourceSpec []byte,
 	releaseStage datamodel.ReleaseStage,
 ) error {
 	uid_, _ := uuid.FromString(uid)
@@ -24,6 +25,7 @@ func CreateModelDefinitionRecord(
 		DocumentationURL: documentationURL,
 		Icon:             icon,
 		ModelSpec:        modelSpec,
+		ResourceSpec:     resourceSpec,
 		Title:            title,
 		ReleaseStage:     releaseStage,
 	}

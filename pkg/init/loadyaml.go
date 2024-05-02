@@ -13,7 +13,7 @@ const (
 func LoadDefinitions(modelDefs *[]*modelPB.ModelDefinition) error {
 
 	modelDefsFiles := []string{
-		fmt.Sprintf(seedDir, "instill", "model_definitions.yaml"),
+		fmt.Sprintf(seedDir, "instill", "model_definitions.json"),
 	}
 
 	for _, filename := range modelDefsFiles {

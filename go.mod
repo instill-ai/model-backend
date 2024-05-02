@@ -4,7 +4,6 @@ go 1.21.3
 
 require (
 	cloud.google.com/go/longrunning v0.5.4
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
@@ -105,7 +104,6 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.4.4 // indirect
 )

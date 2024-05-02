@@ -163,6 +163,17 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 				return nil
 			}
 		}(),
+		ResourceSpec: func() *structpb.Struct {
+			if dbModelDefinition.ResourceSpec != nil {
+				var specification = &structpb.Struct{}
+				if err := protojson.Unmarshal([]byte(dbModelDefinition.ResourceSpec.String()), specification); err != nil {
+					logger.Fatal(err.Error())
+				}
+				return specification
+			} else {
+				return nil
+			}
+		}(),
 	}
 
 	return &pbModelDefinition, nil
