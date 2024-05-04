@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -26,6 +27,11 @@ import (
 type ModelMeta struct {
 	Tags []string
 	Task string
+}
+
+type ModelSpec struct {
+	ModelSpecSchema          *jsonschema.Schema `json:"model_schema,omitempty"`
+	ModelConfigurationSchema *jsonschema.Schema `json:"configuration_schema,omitempty"`
 }
 
 // validate to prevent security issue as https://codeql.github.com/codeql-query-help/go/go-path-injection/

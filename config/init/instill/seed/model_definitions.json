@@ -6,71 +6,200 @@
     "documentationUrl": "https://www.instill.tech/docs/import-models/container",
     "icon": "container.svg",
     "releaseStage": "alpha",
-    "resourceSpec": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Model resource spec",
-      "type": "object",
-      "required": ["region", "hardware"],
-      "instillShortDescription": "",
-      "additionalProperties": false,
-      "minProperties": 2,
-      "maxProperties": 2,
-      "oneOf": [
-        {
-          "properties": {
-            "region": {
-              "const": "REGION_GCP_EUROPE_WEST4",
-              "instillShortDescription": "Deploy model onto GCP in Europe West4 region",
-              "title": "GCP europe-west4"
-            },
-            "hardware": {
-              "oneOf": [
-                {
-                  "const": "CPU",
-                  "instillShortDescription": "Deploy model that runs on CPU",
-                  "title": "CPU"
-                },
-                {
-                  "const": "NVIDIA_TESLA_T4",
-                  "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
-                  "title": "Nvidia Tesla T4"
-                },
-                {
-                  "const": "NVIDIA_L4",
-                  "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
-                  "title": "Nvidia L4"
-                },
-                {
-                  "const": "NVIDIA_A100",
-                  "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
-                  "title": "NVIDIA A100"
-                }
-              ]
-            }
-          },
-          "type": "object"
-        }
-      ]
-    },
     "modelSpec": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Containerized Model",
-      "type": "object",
-      "required": ["task"],
-      "instillShortDescription": "",
-      "additionalProperties": false,
-      "minProperties": 1,
-      "maxProperties": 1,
-      "properties": {
-        "task": {
-          "type": "string",
-          "instillUIComponent": "textfield",
-          "title": "Enter your model's Instill Task",
-          "description": "Create and upload a containerized model which uses this Instill Task.",
-          "instillUIOrder": 0,
-          "minLength": 0,
-          "maxLength": 1023
+      "modelSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Containerized Model Specification",
+        "type": "object",
+        "required": [
+          "id",
+          "model_definition",
+          "configuration",
+          "visibility",
+          "task",
+          "region",
+          "hardware"
+        ],
+        "instillShortDescription": "",
+        "additionalProperties": false,
+        "minProperties": 7,
+        "maxProperties": 12,
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Name",
+            "minLength": 1,
+            "maxLength": 63,
+            "description": "The model name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "maxLength": 1023,
+            "description": "Fill with a short description of your model."
+          },
+          "model_definition": {
+            "type": "string",
+            "const": "model-definitions/container",
+            "title": "Model definition resource name",
+            "description": "The resource name of the model definition"
+          },
+          "configuration": {
+            "type": "object",
+            "title": "Configuration",
+            "description": "Model configuration JSON that has been validated using the `model_spec` JSON schema of a ModelDefinition"
+          },
+          "task": {
+            "oneOf": [
+              {
+                "const": "TASK_CLASSIFICATION",
+                "instillShortDescription": "Classify images into predefined categories.",
+                "title": "Classification"
+              },
+              {
+                "const": "TASK_DETECTION",
+                "instillShortDescription": "Detect and localize multiple objects in images.",
+                "title": "Detection"
+              },
+              {
+                "const": "TASK_KEYPOINT",
+                "instillShortDescription": "Detect and localize multiple keypoints of objects in images.",
+                "title": "Keypoint"
+              },
+              {
+                "const": "TASK_OCR",
+                "instillShortDescription": "Detect and recognize text in images.",
+                "title": "Ocr"
+              },
+              {
+                "const": "TASK_INSTANCE_SEGMENTATION",
+                "instillShortDescription": "Detect, localize and delineate multiple objects in images.",
+                "title": "Instance Segmentation"
+              },
+              {
+                "const": "TASK_SEMANTIC_SEGMENTATION",
+                "instillShortDescription": "Classify image pixels into predefined categories.",
+                "title": "Semantic Segmentation"
+              },
+              {
+                "const": "TASK_TEXT_GENERATION",
+                "instillShortDescription": "Generate texts from input text prompts.",
+                "title": "Text Generation"
+              },
+              {
+                "const": "TASK_TEXT_GENERATION_CHAT",
+                "instillShortDescription": "Generate texts from input text prompts and chat history.",
+                "title": "Text Generation Chat"
+              },
+              {
+                "const": "TASK_TEXT_TO_IMAGE",
+                "instillShortDescription": "Generate images from input text prompts.",
+                "title": "Text To Image"
+              },
+              {
+                "const": "TASK_IMAGE_TO_IMAGE",
+                "instillShortDescription": "Generate image from input text prompt and image.",
+                "title": "Image To Image"
+              },
+              {
+                "const": "TASK_VISUAL_QUESTION_ANSWERING",
+                "instillShortDescription": "Answer questions based on a prompt and an image.",
+                "title": "Visual Question Answering"
+              }
+            ]
+          },
+          "visibility": {
+            "oneOf": [
+              {
+                "const": "VISIBILITY_PRIVATE",
+                "instillShortDescription": "The model is only accessible by you.",
+                "title": "Private"
+              },
+              {
+                "const": "VISIBILITY_PUBLIC",
+                "instillShortDescription": "The model is viewable by all Instill user.",
+                "title": "Public"
+              }
+            ]
+          },
+          "region": {
+            "oneOf": [
+              {
+                "const": "REGION_GCP_EUROPE_WEST4",
+                "instillShortDescription": "Deploy model onto GCP in Europe West4 region",
+                "title": "GCP europe-west4"
+              }
+            ]
+          },
+          "hardware": {
+            "oneOf": [
+              {
+                "if": {
+                  "properties": {
+                    "region": {
+                      "const": "REGION_GCP_EUROPE_WEST4"
+                    }
+                  }
+                },
+                "then": {
+                  "oneOf": [
+                    {
+                      "const": "CPU",
+                      "instillShortDescription": "Deploy model that runs on CPU",
+                      "title": "CPU"
+                    },
+                    {
+                      "const": "NVIDIA_TESLA_T4",
+                      "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
+                      "title": "Nvidia Tesla T4"
+                    },
+                    {
+                      "const": "NVIDIA_L4",
+                      "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
+                      "title": "Nvidia L4"
+                    },
+                    {
+                      "const": "NVIDIA_A100",
+                      "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
+                      "title": "NVIDIA A100"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "readme": {
+            "type": "string",
+            "title": "Readme",
+            "description": "The readme of the model"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source URL",
+            "maxLength": 63,
+            "description": "The source code url of the model"
+          },
+          "documentation_url": {
+            "type": "string",
+            "title": "Documentation URL",
+            "maxLength": 63,
+            "description": "The documentation url of the model"
+          },
+          "license": {
+            "type": "string",
+            "title": "License",
+            "description": "The license of the model"
+          }
         }
+      },
+      "configurationSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Containerized Model Specification",
+        "type": "object",
+        "required": [],
+        "minProperties": 0,
+        "maxProperties": 0,
+        "properties": {}
       }
     }
   }

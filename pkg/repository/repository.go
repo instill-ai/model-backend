@@ -376,7 +376,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pag
 	}
 
 	if view != modelPB.View_VIEW_FULL {
-		queryBuilder.Omit("model_spec", "resource_spec")
+		queryBuilder.Omit("model_spec")
 	}
 
 	var createTime time.Time

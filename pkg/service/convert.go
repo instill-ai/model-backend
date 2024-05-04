@@ -54,6 +54,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
+		Task:             datamodel.ModelTask(pbModel.GetTask()),
 		Visibility:       datamodel.ModelVisibility(pbModel.GetVisibility()),
 		Region:           pbModel.GetRegion(),
 		Hardware:         pbModel.GetHardware(),
@@ -156,17 +157,6 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
 				if err := protojson.Unmarshal([]byte(dbModelDefinition.ModelSpec.String()), specification); err != nil {
-					logger.Fatal(err.Error())
-				}
-				return specification
-			} else {
-				return nil
-			}
-		}(),
-		ResourceSpec: func() *structpb.Struct {
-			if dbModelDefinition.ResourceSpec != nil {
-				var specification = &structpb.Struct{}
-				if err := protojson.Unmarshal([]byte(dbModelDefinition.ResourceSpec.String()), specification); err != nil {
 					logger.Fatal(err.Error())
 				}
 				return specification

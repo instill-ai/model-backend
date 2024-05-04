@@ -64,7 +64,6 @@ type ModelDefinition struct {
 	Icon string `json:"icon,omitempty"`
 	// ModelDefinition model spec
 	ModelSpec    datatypes.JSON `json:"model_spec,omitempty"`
-	ResourceSpec datatypes.JSON `json:"resource_spec,omitempty"`
 	ReleaseStage ReleaseStage   `sql:"type:valid_release_stage"`
 }
 
@@ -114,7 +113,6 @@ type ModelPrediction struct {
 }
 
 type ContainerizedModelConfiguration struct {
-	Task string `json:"task,omitempty"`
 }
 
 func (s ModelTask) Value() (driver.Value, error) {

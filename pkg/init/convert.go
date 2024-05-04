@@ -12,7 +12,9 @@ func convertAllJSONKeySnakeCase(i any) {
 	switch v := i.(type) {
 	case map[string]any:
 		for k, vv := range v {
-			if k == "minLength" || k == "maxLength" || k == "minProperties" || k == "maxProperties" { // TODO: json schema validator failed with snake_case, need further check
+			if k == "minLength" || k == "maxLength" || k == "minProperties" ||
+				k == "maxProperties" || k == "oneOf" || k == "instillShortDescription" ||
+				k == "additionalProperties" { // TODO: json schema validator failed with snake_case, need further check
 				continue
 			}
 			sc := strcase.ToSnake(k)

@@ -10,7 +10,6 @@
     "documentation_url",
     "icon",
     "model_spec",
-    "resource_spec",
     "release_stage"
   ],
   "properties": {
@@ -142,15 +141,6 @@
       "title": "Model specification",
       "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model",
       "additionalProperties": true,
-      "ui_order": 6,
-      "ui_hidden": true,
-      "ui_disabled": true
-    },
-    "resource_spec": {
-      "type": "object",
-      "title": "Resource specification",
-      "description": "Model resource specification blob. Must be a valid JSON that includes what fields are needed for a model resource",
-      "additionalProperties": false,
       "ui_order": 6,
       "ui_hidden": true,
       "ui_disabled": true
