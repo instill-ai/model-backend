@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
+	// "github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/utils"
 )
 
@@ -25,6 +25,6 @@ func (w *worker) writeNewDataPoint(ctx context.Context, data *utils.UsageMetricD
 	return nil
 }
 
-func (w *worker) writePrediction(ctx context.Context, pred *datamodel.ModelPrediction) error {
-	return w.repository.CreateModelPrediction(ctx, pred)
-}
+// func (w *worker) writePrediction(ctx context.Context, pred *datamodel.ModelPrediction) error {
+// 	return w.repository.CreateModelPrediction(ctx, pred)
+// }

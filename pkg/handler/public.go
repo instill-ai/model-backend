@@ -978,11 +978,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	// write usage/metric datapoint and prediction record
-	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
-		pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-		if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-			logger.Warn("model prediction write failed")
-		}
+	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+		// TODO: prediction feature not ready
+		// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+		// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+		// 	logger.Warn("model prediction write failed")
+		// }
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
@@ -1237,12 +1238,13 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	// write usage/metric datapoint and prediction record
-	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
 		if u.Status == mgmtPB.Status_STATUS_ERRORED {
-			pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-			if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-				logger.Warn("model prediction write failed")
-			}
+			// TODO: prediction feature not ready
+			// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+			// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+			// 	logger.Warn("model prediction write failed")
+			// }
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
 			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 				logger.Warn("usage/metric write failed")

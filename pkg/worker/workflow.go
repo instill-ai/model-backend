@@ -139,7 +139,8 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}).Get(ctx, &triggerResult); err != nil {
 		if param.Mode == mgmtPB.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
-			w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
+			// TODO: prediction feature not ready
+			// w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
 		}
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
@@ -154,9 +155,10 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
 			logger.Warn(err.Error())
 		}
-		if err := w.writePrediction(sCtx, modelPrediction); err != nil {
-			logger.Warn(err.Error())
-		}
+		// TODO: prediction feature not ready
+		// if err := w.writePrediction(sCtx, modelPrediction); err != nil {
+		// 	logger.Warn(err.Error())
+		// }
 	}
 
 	logger.Info("TriggerModelWorkflow completed")
@@ -293,12 +295,12 @@ func (w *worker) writeErrorDataPoint(ctx context.Context, err error, span trace.
 	_ = w.writeNewDataPoint(ctx, dataPoint)
 }
 
-func (w *worker) writeErrorPrediction(ctx context.Context, err error, span trace.Span, startTime time.Time, pred *datamodel.ModelPrediction) {
-	span.SetStatus(1, err.Error())
-	pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-	pred.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
-	_ = w.writePrediction(ctx, pred)
-}
+// func (w *worker) writeErrorPrediction(ctx context.Context, err error, span trace.Span, startTime time.Time, pred *datamodel.ModelPrediction) {
+// 	span.SetStatus(1, err.Error())
+// 	pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+// 	pred.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+// 	_ = w.writePrediction(ctx, pred)
+// }
 
 // toApplicationError wraps a temporal task error in a temporal.Application
 // error, adding end-user information that can be extracted by the temporal
