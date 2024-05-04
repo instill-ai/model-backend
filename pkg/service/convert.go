@@ -54,6 +54,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
+		Task:             datamodel.ModelTask(pbModel.GetTask()),
 		Visibility:       datamodel.ModelVisibility(pbModel.GetVisibility()),
 		Region:           pbModel.GetRegion(),
 		Hardware:         pbModel.GetHardware(),

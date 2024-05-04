@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gofrs/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +23,6 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -50,10 +48,6 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 		span.SetStatus(1, err.Error())
 		return &modelPB.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if modelConfig.Task == "" {
-		span.SetStatus(1, "Invalid task")
-		return &modelPB.Model{}, status.Errorf(codes.InvalidArgument, "Invalid Task")
-	}
 
 	bModelConfig, _ := json.Marshal(modelConfig)
 
@@ -61,32 +55,33 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 	containerizedModel.Configuration = bModelConfig
 	containerizedModel.ModelDefinitionUID = modelDefinition.UID
 
-	modelMeta := utils.ModelMeta{
-		Tags: []string{"Containerized", "Experimental"},
-		Task: modelConfig.Task,
-	}
+	// modelMeta := utils.ModelMeta{
+	// 	Tags: []string{"Containerized", "Experimental"},
+	// 	Task: model.Task.String(),
+	// }
 
-	if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
-		containerizedModel.Task = datamodel.ModelTask(val)
-	} else {
-		if modelMeta.Task != "" {
-			st, err := sterr.CreateErrorResourceInfo(
-				codes.FailedPrecondition,
-				"[handler] create a model error: unsupported task",
-				"request body",
-				"request body contains unsupported task",
-				"",
-				"",
-			)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-			span.SetStatus(1, st.Err().Error())
-			return &modelPB.Model{}, st.Err()
-		} else {
-			containerizedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
-		}
-	}
+	containerizedModel.Task = datamodel.ModelTask(utils.Tasks[model.Task.String()])
+	// if val, ok := utils.Tasks[fmt.Sprintf("TASK_%v", strings.ToUpper(modelMeta.Task))]; ok {
+	// 	containerizedModel.Task = datamodel.ModelTask(val)
+	// } else {
+	// 	if modelMeta.Task != "" {
+	// 		st, err := sterr.CreateErrorResourceInfo(
+	// 			codes.FailedPrecondition,
+	// 			"[handler] create a model error: unsupported task",
+	// 			"request body",
+	// 			"request body contains unsupported task",
+	// 			"",
+	// 			"",
+	// 		)
+	// 		if err != nil {
+	// 			logger.Error(err.Error())
+	// 		}
+	// 		span.SetStatus(1, st.Err().Error())
+	// 		return &modelPB.Model{}, st.Err()
+	// 	} else {
+	// 		containerizedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
+	// 	}
+	// }
 
 	// TODO: properly support batch inference
 	maxBatchSize := 0

@@ -86,8 +86,7 @@ func main() {
 		fgaClient.SetStoreId(stores.Stores[0].Id)
 		if models, err := fgaClient.ReadAuthorizationModels(context.Background()).Execute(); err == nil {
 			aclClient = acl.NewACLClient(fgaClient, &models.AuthorizationModels[0].Id)
-		}
-		if err != nil {
+		} else {
 			panic(err)
 		}
 

@@ -113,7 +113,6 @@ type ModelPrediction struct {
 }
 
 type ContainerizedModelConfiguration struct {
-	Task string `json:"task,omitempty"`
 }
 
 func (s ModelTask) Value() (driver.Value, error) {

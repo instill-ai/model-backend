@@ -138,7 +138,7 @@
     },
     "model_spec": {
       "type": "object",
-      "title": "Specification",
+      "title": "Model specification",
       "description": "Model definition specification blob. Must be a valid JSON that includes what fields are needed for a model",
       "additionalProperties": true,
       "ui_order": 6,

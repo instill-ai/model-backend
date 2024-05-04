@@ -14,7 +14,6 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -123,21 +122,16 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return nil, ErrCheckOutputOnlyFields
 	}
 
-	// Return error if REQUIRED fields are not provided in the requested payload model resource
-	if err := checkfield.CheckRequiredFields(modelToCreate, requiredFields); err != nil {
-		span.SetStatus(1, ErrCheckRequiredFields.Error())
-		return nil, ErrCheckRequiredFields
-	}
-
 	// Return error if resource ID does not follow RFC-1034
 	if err := checkfield.CheckResourceID(modelToCreate.GetId()); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	// Validate ModelDefinition JSON Schema
+
+	// validate model spec
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, modelToCreate, false); err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		span.SetStatus(1, fmt.Sprintf("Model spec is invalid %v", err.Error()))
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 	}
 
 	modelToCreate.OwnerName = req.GetParent()
@@ -176,13 +170,14 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	// validate model configuration
-	rs := &jsonschema.Schema{}
-	if err := json.Unmarshal([]byte(modelDefinition.ModelSpec.String()), rs); err != nil {
-		span.SetStatus(1, "Could not get model definition")
-		return nil, status.Errorf(codes.InvalidArgument, "Could not get model definition")
+	modelSpec := utils.ModelSpec{}
+	if err := json.Unmarshal(modelDefinition.ModelSpec, &modelSpec); err != nil {
+		span.SetStatus(1, "Could not get model schema")
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if err := datamodel.ValidateJSONSchema(rs, modelToCreate.GetConfiguration(), true); err != nil {
+
+	// validate model configuration
+	if err := datamodel.ValidateJSONSchema(modelSpec.ModelConfigurationSchema, modelToCreate.GetConfiguration(), true); err != nil {
 		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 	}
@@ -983,11 +978,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	// write usage/metric datapoint and prediction record
-	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
-		pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-		if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-			logger.Warn("model prediction write failed")
-		}
+	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+		// TODO: prediction feature not ready
+		// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+		// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+		// 	logger.Warn("model prediction write failed")
+		// }
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
@@ -1242,12 +1238,13 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	// write usage/metric datapoint and prediction record
-	defer func(pred *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
 		if u.Status == mgmtPB.Status_STATUS_ERRORED {
-			pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-			if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-				logger.Warn("model prediction write failed")
-			}
+			// TODO: prediction feature not ready
+			// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
+			// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
+			// 	logger.Warn("model prediction write failed")
+			// }
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
 			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 				logger.Warn("usage/metric write failed")
