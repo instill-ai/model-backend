@@ -114,9 +114,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		License:          dbModel.License,
 	}
 
-	if err := appendSampleInputOutput(&pbModel); err != nil {
-		return nil, err
-	}
+	appendSampleInputOutput(&pbModel)
 
 	return &pbModel, nil
 }
@@ -191,7 +189,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 	return pbModelDefinitions, nil
 }
 
-func appendSampleInputOutput(pbModel *modelPB.Model) error {
+func appendSampleInputOutput(pbModel *modelPB.Model) {
 	steps := int32(10)
 	cfgScale := float32(7)
 	samples := int32(1)
@@ -479,6 +477,4 @@ func appendSampleInputOutput(pbModel *modelPB.Model) error {
 	}
 	pbModel.SampleInput = &sampleInput
 	pbModel.SampleOutput = &sampleOutput
-
-	return nil
 }
