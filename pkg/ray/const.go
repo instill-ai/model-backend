@@ -12,6 +12,16 @@ type TextToImageInput struct {
 	ExtraParams string
 }
 
+func NewTextToImageInput() *TextToImageInput {
+	return &TextToImageInput{
+		Prompt:   "A cute cat, sleeping.",
+		Steps:    10,
+		CfgScale: 7,
+		Seed:     1024,
+		Samples:  1,
+	}
+}
+
 type ImageToImageInput struct {
 	Prompt      string
 	PromptImage string
@@ -20,6 +30,17 @@ type ImageToImageInput struct {
 	Seed        int32
 	Samples     int32
 	ExtraParams string
+}
+
+func NewImageToImageInput() *ImageToImageInput {
+	return &ImageToImageInput{
+		Prompt:      "cute dog",
+		PromptImage: "https://artifacts.instill.tech/imgs/dog.jpg",
+		Steps:       10,
+		CfgScale:    7,
+		Seed:        1024,
+		Samples:     1,
+	}
 }
 
 type TextGenerationInput struct {
@@ -34,6 +55,17 @@ type TextGenerationInput struct {
 	ExtraParams   string
 }
 
+func NewTextGenerationInput() *TextGenerationInput {
+	return &TextGenerationInput{
+		Prompt:        "Simply put, the theory of relativity states that",
+		SystemMessage: "You are a helpful assistant.",
+		MaxNewTokens:  50,
+		TopK:          10,
+		Temperature:   0.7,
+		Seed:          1024,
+	}
+}
+
 type TextGenerationChatInput struct {
 	Prompt        string
 	PromptImages  string
@@ -44,6 +76,17 @@ type TextGenerationChatInput struct {
 	TopK          int32
 	Seed          int32
 	ExtraParams   string
+}
+
+func NewTextGenerationChatInput() *TextGenerationChatInput {
+	return &TextGenerationChatInput{
+		Prompt:        "Who are you?",
+		SystemMessage: "You are a lovely cat, named Penguin.",
+		MaxNewTokens:  512,
+		TopK:          10,
+		Temperature:   0.7,
+		Seed:          1024,
+	}
 }
 
 type VisualQuestionAnsweringInput struct {
@@ -58,9 +101,27 @@ type VisualQuestionAnsweringInput struct {
 	ExtraParams   string
 }
 
+func NewVisualQuestionAnsweringInput() *VisualQuestionAnsweringInput {
+	return &VisualQuestionAnsweringInput{
+		Prompt:        "What is in the picture?",
+		PromptImages:  "https://artifacts.instill.tech/imgs/dog.jpg",
+		SystemMessage: "You are a helpful assistant.",
+		MaxNewTokens:  512,
+		Temperature:   0.7,
+		TopK:          10,
+		Seed:          1024,
+	}
+}
+
 type ImageInput struct {
 	ImgURL    string
 	ImgBase64 string
+}
+
+func NewImageInput() *ImageInput {
+	return &ImageInput{
+		ImgURL: "https://artifacts.instill.tech/imgs/dog.jpg",
+	}
 }
 
 type DetectionOutput struct {
