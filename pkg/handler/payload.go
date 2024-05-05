@@ -225,19 +225,19 @@ func parseTexToImageRequestInputs(ctx context.Context, req TriggerNamespaceModel
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
 	for idx, taskInput := range req.GetTaskInputs() {
-		steps := utils.TextToImageSteps
+		steps := utils.ToImageSteps
 		if taskInput.GetTextToImage().Steps != nil {
 			steps = *taskInput.GetTextToImage().Steps
 		}
-		cfgScale := utils.ImageToTextCFGScale
+		cfgScale := utils.ToImageCFGScale
 		if taskInput.GetTextToImage().CfgScale != nil {
 			cfgScale = *taskInput.GetTextToImage().CfgScale
 		}
-		seed := utils.ImageToTextSeed
+		seed := utils.ToImageSeed
 		if taskInput.GetTextToImage().Seed != nil {
 			seed = *taskInput.GetTextToImage().Seed
 		}
-		samples := utils.ImageToTextSamples
+		samples := utils.ToImageSamples
 		if taskInput.GetTextToImage().Samples != nil {
 			samples = *taskInput.GetTextToImage().Samples
 		}
@@ -279,19 +279,19 @@ func parseImageToImageRequestInputs(ctx context.Context, req TriggerNamespaceMod
 	}
 	pargedImages, parsedImageErr := parseImageRequestInputsToBytes(ctx, req)
 	for idx, taskInput := range req.GetTaskInputs() {
-		steps := utils.TextToImageSteps
+		steps := utils.ToImageSteps
 		if taskInput.GetImageToImage().Steps != nil {
 			steps = *taskInput.GetImageToImage().Steps
 		}
-		cfgScale := utils.ImageToTextCFGScale
+		cfgScale := utils.ToImageCFGScale
 		if taskInput.GetImageToImage().CfgScale != nil {
 			cfgScale = *taskInput.GetImageToImage().CfgScale
 		}
-		seed := utils.ImageToTextSeed
+		seed := utils.ToImageSeed
 		if taskInput.GetImageToImage().Seed != nil {
 			seed = *taskInput.GetImageToImage().Seed
 		}
-		samples := utils.ImageToTextSamples
+		samples := utils.ToImageSamples
 		if taskInput.GetImageToImage().Samples != nil {
 			samples = *taskInput.GetImageToImage().Samples
 		}
@@ -658,7 +658,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *r
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := utils.TextToImageSteps
+	step := utils.ToImageSteps
 	if len(stepStr) > 0 {
 		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
 		if err != nil {
@@ -667,7 +667,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *r
 		step = int32(parseStep)
 	}
 
-	cfgScale := float64(utils.ImageToTextCFGScale)
+	cfgScale := float64(utils.ToImageCFGScale)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -675,7 +675,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *r
 		}
 	}
 
-	seed := utils.ImageToTextSeed
+	seed := utils.ToImageSeed
 	if len(seedStr) > 0 {
 		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
 		if err != nil {
@@ -684,7 +684,7 @@ func parseImageFormDataTextToImageInputs(req *http.Request) (textToImageInput *r
 		seed = int32(parseSeed)
 	}
 
-	samples := utils.ImageToTextSamples
+	samples := utils.ToImageSamples
 	if len(samplesStr) > 0 {
 		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
 		if err != nil {
@@ -746,7 +746,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		return nil, fmt.Errorf("invalid samples input, only support a single samples")
 	}
 
-	step := utils.TextToImageSteps
+	step := utils.ToImageSteps
 	if len(stepStr) > 0 {
 		parseStep, err := strconv.ParseInt(stepStr[0], 10, 32)
 		if err != nil {
@@ -755,7 +755,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		step = int32(parseStep)
 	}
 
-	cfgScale := float64(utils.ImageToTextCFGScale)
+	cfgScale := float64(utils.ToImageCFGScale)
 	if len(cfgScaleStr) > 0 {
 		cfgScale, err = strconv.ParseFloat(cfgScaleStr[0], 32)
 		if err != nil {
@@ -763,7 +763,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		}
 	}
 
-	seed := utils.ImageToTextSeed
+	seed := utils.ToImageSeed
 	if len(seedStr) > 0 {
 		parseSeed, err := strconv.ParseInt(seedStr[0], 10, 32)
 		if err != nil {
@@ -772,7 +772,7 @@ func parseImageFormDataImageToImageInputs(req *http.Request) (imageToImageInput 
 		seed = int32(parseSeed)
 	}
 
-	samples := utils.ImageToTextSamples
+	samples := utils.ToImageSamples
 	if len(samplesStr) > 0 {
 		parseSamples, err := strconv.ParseInt(samplesStr[0], 10, 32)
 		if err != nil {

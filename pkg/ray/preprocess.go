@@ -24,13 +24,10 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 		case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
 			commonPB.Task_TASK_TEXT_GENERATION_CHAT,
 			commonPB.Task_TASK_TEXT_GENERATION:
-			var inputShape []int64
-			inputShape = []int64{1}
-
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
-				Shape:    inputShape,
+				Shape:    []int64{1},
 			})
 		case commonPB.Task_TASK_CLASSIFICATION,
 			commonPB.Task_TASK_DETECTION,

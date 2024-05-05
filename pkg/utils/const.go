@@ -71,10 +71,10 @@ var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
 const DefaultPageSize = 10
 
 const (
-	TextToImageSteps    = int32(10)
-	ImageToTextCFGScale = float32(7)
-	ImageToTextSeed     = int32(1024)
-	ImageToTextSamples  = int32(1)
+	ToImageSteps    = int32(10)
+	ToImageCFGScale = float32(7)
+	ToImageSeed     = int32(1024)
+	ToImageSamples  = int32(1)
 )
 
 const (
