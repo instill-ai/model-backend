@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	openfga "github.com/openfga/api/proto/openfga/v1"
 
@@ -315,7 +317,13 @@ func (c *ACLClient) ListPermissions(ctx context.Context, objectType string, role
 		Relation:             role,
 		Type:                 objectType,
 	})
+	//  TODO: handle error when no model is created
 	if err != nil {
+		if statusErr, ok := status.FromError(err); ok {
+			if statusErr.Code() == codes.Code(openfga.ErrorCode_type_not_found) {
+				return []uuid.UUID{}, nil
+			}
+		}
 		return nil, err
 	}
 

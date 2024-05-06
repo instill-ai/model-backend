@@ -254,15 +254,15 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 
 func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
+	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelPB.View_VIEW_BASIC)
+	if err != nil {
+		return nil, err
+	}
+
 	if granted, err := s.aclClient.CheckPermission(ctx, "model", modelUID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
-	}
-
-	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelPB.View_VIEW_BASIC)
-	if err != nil {
-		return nil, err
 	}
 
 	modelDef, err := s.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
