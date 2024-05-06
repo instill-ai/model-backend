@@ -80,7 +80,7 @@ log:
     port: 8095
 openfga:
   host: openfga
-  port: 8080
+  port: 8081
 registry:
   host: registry
   port: 5000

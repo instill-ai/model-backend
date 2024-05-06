@@ -7,15 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	openfga "github.com/openfga/api/proto/openfga/v1"
+
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	openfga "github.com/openfga/api/proto/openfga/v1"
 )
 
 type ACLClient struct {
@@ -68,7 +69,14 @@ func NewACLClient(wc openfga.OpenFGAServiceClient, rc openfga.OpenFGAServiceClie
 func InitOpenFGAClient(ctx context.Context, host string, port int) (openfga.OpenFGAServiceClient, *grpc.ClientConn) {
 	clientDialOpts := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, port), clientDialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB), grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB)))
+	clientConn, err := grpc.Dial(
+		fmt.Sprintf("%v:%v", host, port),
+		clientDialOpts,
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+			grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+		),
+	)
 	if err != nil {
 		panic(err)
 	}
