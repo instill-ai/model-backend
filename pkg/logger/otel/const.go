@@ -38,9 +38,9 @@ type logMessage struct {
 	Metadata     any
 }
 
-func SetEventResource(resource any) Option {
+func SetEventResource(res any) Option {
 	return func(l logMessage) logMessage {
-		l.Event.EventResource = resource
+		l.Event.EventResource = res
 		return l
 	}
 }

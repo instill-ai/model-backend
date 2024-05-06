@@ -29,11 +29,11 @@ func (t *Transpiler) Transpile() (*clause.Expr, error) {
 	if t.filter.CheckedExpr == nil {
 		return nil, nil
 	}
-	expr, err := t.transpileExpr(t.filter.CheckedExpr.Expr)
+	exp, err := t.transpileExpr(t.filter.CheckedExpr.Expr)
 	if err != nil {
 		return nil, err
 	}
-	return expr, nil
+	return exp, nil
 }
 
 func (t *Transpiler) transpileExpr(e *expr.Expr) (*clause.Expr, error) {
@@ -54,15 +54,15 @@ func (t *Transpiler) transpileExpr(e *expr.Expr) (*clause.Expr, error) {
 func (t *Transpiler) transpileConstExpr(e *expr.Expr) (*clause.Expr, error) {
 	switch kind := e.GetConstExpr().ConstantKind.(type) {
 	case *expr.Constant_BoolValue:
-		return &clause.Expr{Vars: []interface{}{kind.BoolValue}}, nil
+		return &clause.Expr{Vars: []any{kind.BoolValue}}, nil
 	case *expr.Constant_DoubleValue:
-		return &clause.Expr{Vars: []interface{}{kind.DoubleValue}}, nil
+		return &clause.Expr{Vars: []any{kind.DoubleValue}}, nil
 	case *expr.Constant_Int64Value:
-		return &clause.Expr{Vars: []interface{}{kind.Int64Value}}, nil
+		return &clause.Expr{Vars: []any{kind.Int64Value}}, nil
 	case *expr.Constant_StringValue:
-		return &clause.Expr{Vars: []interface{}{kind.StringValue}}, nil
+		return &clause.Expr{Vars: []any{kind.StringValue}}, nil
 	case *expr.Constant_Uint64Value:
-		return &clause.Expr{Vars: []interface{}{kind.Uint64Value}}, nil
+		return &clause.Expr{Vars: []any{kind.Uint64Value}}, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported const expr: %v", kind)
@@ -110,7 +110,7 @@ func (t *Transpiler) transpileIdentExpr(e *expr.Expr) (*clause.Expr, error) {
 			if enumValue := enumType.Descriptor().Values().ByName(protoreflect.Name(identExpr.Name)); enumValue != nil {
 				// TODO: Configurable support for string literals.
 				return &clause.Expr{
-					Vars:               []interface{}{enumValue.Name()},
+					Vars:               []any{enumValue.Name()},
 					WithoutParentheses: true,
 				}, nil
 			}
@@ -155,7 +155,7 @@ func (t *Transpiler) transpileNotCallExpr(e *expr.Expr) (*clause.Expr, error) {
 	}, nil
 }
 
-func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op interface{}) (*clause.Expr, error) {
+func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op any) (*clause.Expr, error) {
 	callExpr := e.GetCallExpr()
 	if len(callExpr.Args) != 2 {
 		return nil, fmt.Errorf(
@@ -176,7 +176,7 @@ func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op interface{}) (
 	}
 
 	var sql string
-	var vars []interface{}
+	var vars []any
 	switch op.(type) {
 	case clause.Eq:
 		switch ident.SQL {
@@ -360,7 +360,7 @@ func (t *Transpiler) transpileTimestampCallExpr(e *expr.Expr) (*clause.Expr, err
 		return nil, fmt.Errorf("invalid string arg to %s: %w", callExpr.Function, err)
 	}
 	return &clause.Expr{
-		Vars:               []interface{}{timeArg},
+		Vars:               []any{timeArg},
 		WithoutParentheses: true,
 	}, nil
 }

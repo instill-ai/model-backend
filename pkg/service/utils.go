@@ -18,10 +18,8 @@ func (s *service) checkNamespacePermission(ctx context.Context, ns resource.Name
 		if !granted {
 			return ErrNoPermission
 		}
-	} else {
-		if ns.NsUID != uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)) {
-			return ErrNoPermission
-		}
+	} else if ns.NsUID != uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)) {
+		return ErrNoPermission
 	}
 	return nil
 }

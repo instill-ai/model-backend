@@ -176,7 +176,7 @@ func Init(filePath string) error {
 	k := koanf.New(".")
 	parser := yaml.Parser()
 
-	if err := k.Load(confmap.Provider(map[string]interface{}{
+	if err := k.Load(confmap.Provider(map[string]any{
 		"database.replica.replicationtimeframe": 60,
 		"openfga.replica.replicationtimeframe":  60,
 	}, "."), nil); err != nil {
