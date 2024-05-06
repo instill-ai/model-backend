@@ -12,6 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	filtering "go.einride.tech/aip/filtering"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -245,9 +246,9 @@ func (mr *MockRepositoryMockRecorder) ListModelVerions(arg0, arg1 interface{}) *
 }
 
 // ListModels mocks base method.
-func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 []uuid.UUID, arg5 bool) ([]*datamodel.Model, int64, string, error) {
+func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 filtering.Filter, arg5 []uuid.UUID, arg6 bool) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModels", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "ListModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]*datamodel.Model)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(string)
@@ -256,15 +257,15 @@ func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 strin
 }
 
 // ListModels indicates an expected call of ListModels.
-func (mr *MockRepositoryMockRecorder) ListModels(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockRepository)(nil).ListModels), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockRepository)(nil).ListModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // ListModelsAdmin mocks base method.
-func (m *MockRepository) ListModelsAdmin(arg0 context.Context, arg1 int64, arg2 string, arg3, arg4 bool) ([]*datamodel.Model, int64, string, error) {
+func (m *MockRepository) ListModelsAdmin(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 filtering.Filter, arg5 bool) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelsAdmin", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "ListModelsAdmin", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].([]*datamodel.Model)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(string)
@@ -273,15 +274,15 @@ func (m *MockRepository) ListModelsAdmin(arg0 context.Context, arg1 int64, arg2 
 }
 
 // ListModelsAdmin indicates an expected call of ListModelsAdmin.
-func (mr *MockRepositoryMockRecorder) ListModelsAdmin(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListModelsAdmin(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsAdmin", reflect.TypeOf((*MockRepository)(nil).ListModelsAdmin), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsAdmin", reflect.TypeOf((*MockRepository)(nil).ListModelsAdmin), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // ListNamespaceModels mocks base method.
-func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, arg2 int64, arg3 string, arg4 bool, arg5 []uuid.UUID, arg6 bool) ([]*datamodel.Model, int64, string, error) {
+func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, arg2 int64, arg3 string, arg4 bool, arg5 filtering.Filter, arg6 []uuid.UUID, arg7 bool) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].([]*datamodel.Model)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(string)
@@ -290,9 +291,9 @@ func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, 
 }
 
 // ListNamespaceModels indicates an expected call of ListNamespaceModels.
-func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // UpdateNamespaceModelByID mocks base method.

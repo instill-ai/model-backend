@@ -1,11 +1,13 @@
 package otel
 
 import (
+	"context"
 	"encoding/json"
 
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/gofrs/uuid"
+	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/utils"
 )
 
@@ -36,9 +38,9 @@ type logMessage struct {
 	Metadata     any
 }
 
-func SetEventResource(resource any) Option {
+func SetEventResource(res any) Option {
 	return func(l logMessage) logMessage {
-		l.Event.EventResource = resource
+		l.Event.EventResource = res
 		return l
 	}
 }
@@ -72,9 +74,9 @@ func SetMetadata(m string) Option {
 }
 
 func NewLogMessage(
+	ctx context.Context,
 	span trace.Span,
 	logID string,
-	userUID uuid.UUID,
 	eventName string,
 	options ...Option,
 ) []byte {
@@ -92,7 +94,7 @@ func NewLogMessage(
 		UserID   string "json:\"userID\""
 		UserUUID string "json:\"userUUID\""
 	}{
-		UserUUID: userUID.String(),
+		UserUUID: resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey),
 	}
 	logMessage.Event = struct {
 		IsAuditEvent bool "json:\"isAuditEvent\""

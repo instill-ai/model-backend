@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"go.einride.tech/aip/filtering"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/x/paginate"
@@ -21,11 +23,11 @@ import (
 const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
-	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
 
 	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
-	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error)
 
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
@@ -38,7 +40,7 @@ type Repository interface {
 
 	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
-	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error)
+	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 
 	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
@@ -64,13 +66,27 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
-func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	db := r.db
 	if showDeleted {
 		db = db.Unscoped()
+	}
+
+	var expr *clause.Expr
+	if expr, err = r.transpileFilter(filter); err != nil {
+		return nil, 0, "", err
+	}
+	if expr != nil {
+		if len(whereArgs) == 0 {
+			where = "(?)"
+			whereArgs = append(whereArgs, expr)
+		} else {
+			where = fmt.Sprintf("((%s) AND ?)", where)
+			whereArgs = append(whereArgs, expr)
+		}
 	}
 
 	if uidAllowList != nil {
@@ -155,26 +171,26 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	return models, totalSize, nextPageToken, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"",
 		[]any{},
-		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
+		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted)
 
 	return models, totalSize, nextPageToken, err
 }
 
-func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"(owner = ?)",
 		[]any{ownerPermalink},
-		pageSize, pageToken, isBasicView, uidAllowList, showDeleted)
+		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted)
 
 	return models, totalSize, nextPageToken, err
 }
 
-func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
-	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, nil, showDeleted)
+func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
+	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, filter, nil, showDeleted)
 }
 
 func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool) (*datamodel.Model, error) {
@@ -410,4 +426,11 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pag
 	}
 
 	return definitions, nextPageToken, totalSize, nil
+}
+
+// TranspileFilter transpiles a parsed AIP filter expression to GORM DB clauses
+func (r *repository) transpileFilter(filter filtering.Filter) (*clause.Expr, error) {
+	return (&Transpiler{
+		filter: filter,
+	}).Transpile()
 }

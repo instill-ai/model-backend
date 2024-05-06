@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -200,13 +201,12 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		span.SetStatus(1, err.Error())
 		return err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(stream.Context(), ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(stream.Context(), ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -229,10 +229,12 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
-		UserUID:            authUser.UID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtPB.Mode_MODE_SYNC,
@@ -248,7 +250,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		},
 		OwnerUID:           ns.NsUID,
 		OwnerType:          datamodel.UserType(usageData.OwnerType),
-		UserUID:            authUser.UID,
+		UserUID:            uuid.FromStringOrNil(userUID),
 		UserType:           datamodel.UserType(usageData.UserType),
 		Mode:               datamodel.Mode(usageData.Mode),
 		ModelDefinitionUID: modelDef.UID,
@@ -306,7 +308,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(stream.Context(), ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -351,9 +353,9 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 	})
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel.Name),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
