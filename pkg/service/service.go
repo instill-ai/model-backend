@@ -11,10 +11,10 @@ import (
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"go.einride.tech/aip/filtering"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -41,7 +41,6 @@ import (
 type Service interface {
 
 	// Utils
-	AuthenticateUser(ctx context.Context, allowVisitor bool) (authUser *AuthUser, err error)
 	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
@@ -58,19 +57,19 @@ type Service interface {
 	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error)
 
 	// Public
-	ListModels(ctx context.Context, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, showDeleted bool) ([]*modelPB.Model, int32, string, error)
-	GetModelByUID(ctx context.Context, authUser *AuthUser, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListNamespaceModels(ctx context.Context, ns resource.Namespace, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
-	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, view modelPB.View) (*modelPB.Model, error)
-	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) error
-	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error
-	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error)
-	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, authUser *AuthUser, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
-	WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, version string) (*modelPB.State, string, error)
+	ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
+	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
+	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error
+	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
+	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelPB.Model, error)
+	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelPB.Model) (*modelPB.Model, error)
+	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
-	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
@@ -83,7 +82,7 @@ type Service interface {
 	// Private
 	GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
@@ -123,63 +122,6 @@ func NewService(
 		redisClient:                  rc,
 		temporalClient:               tc,
 		aclClient:                    a,
-	}
-}
-
-func InjectAuthUserToContext(ctx context.Context, authUser *AuthUser) context.Context {
-	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderAuthTypeKey, authUser.GetACLType())
-	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, authUser.UID.String())
-	return ctx
-}
-
-type AuthUser struct {
-	IsVisitor bool
-	UID       uuid.UUID
-}
-
-func (a AuthUser) GetACLType() string {
-	if a.IsVisitor {
-		return "visitor"
-	} else {
-		return "user"
-	}
-}
-
-func (a AuthUser) Permalink() string {
-	if a.IsVisitor {
-		return fmt.Sprintf("visitors/%s", a.UID)
-	} else {
-		return fmt.Sprintf("users/%s", a.UID)
-	}
-}
-
-func (s *service) AuthenticateUser(ctx context.Context, allowVisitor bool) (authUser *AuthUser, err error) {
-	// Verify if "Instill-User-Uid" is in the header
-	authType := resource.GetRequestSingleHeader(ctx, constant.HeaderAuthTypeKey)
-	if authType == "user" {
-		headerCtxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
-		if headerCtxUserUID == "" {
-			return nil, ErrUnauthenticated
-		}
-		return &AuthUser{
-			UID:       uuid.FromStringOrNil(headerCtxUserUID),
-			IsVisitor: false,
-		}, nil
-	} else if authType == "visitor" {
-		if !allowVisitor {
-			return nil, ErrUnauthenticated
-		}
-		headerCtxVisitorUID := resource.GetRequestSingleHeader(ctx, constant.HeaderVisitorUIDKey)
-		if headerCtxVisitorUID == "" {
-			return nil, ErrUnauthenticated
-		}
-
-		return &AuthUser{
-			UID:       uuid.FromStringOrNil(headerCtxVisitorUID),
-			IsVisitor: true,
-		}, nil
-	} else {
-		return nil, fmt.Errorf("auth type header error")
 	}
 }
 
@@ -310,9 +252,9 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 	}, uuid.FromStringOrNil(splits[3]), nil
 }
 
-func (s *service) GetModelByUID(ctx context.Context, authUser *AuthUser, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
-	if granted, err := s.aclClient.CheckPermission("model_", modelUID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", modelUID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
@@ -361,7 +303,7 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 	return s.DBToPBModel(ctx, modelDef, dbModel)
 }
 
-func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -370,7 +312,7 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
@@ -384,18 +326,10 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 	return s.DBToPBModel(ctx, modelDef, dbModel)
 }
 
-func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, model *datamodel.Model) error {
+func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error {
 
-	if ns.NsType == resource.Organization {
-		granted, err := s.aclClient.CheckPermission("organization", ns.NsUID, authUser.GetACLType(), authUser.UID, "member")
-		if err != nil {
-			return err
-		}
-		if !granted {
-			return ErrNoPermission
-		}
-	} else if ns.NsUID != authUser.UID {
-		return ErrNoPermission
+	if err := s.checkNamespacePermission(ctx, ns); err != nil {
+		return err
 	}
 
 	if err := s.repository.CreateNamespaceModel(ctx, model.Owner, model); err != nil {
@@ -413,15 +347,20 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	}
 	ownerType := nsType[0 : len(nsType)-1]
 
-	err = s.aclClient.SetOwner("model_", dbCreatedModel.UID, ownerType, ownerUID)
-	if err != nil {
+	if err := s.aclClient.SetOwner(ctx, "model", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
 		return err
+	}
+
+	if model.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+		if err := s.aclClient.SetPublicModelPermission(ctx, dbCreatedModel.UID); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, version string) (*modelPB.State, string, error) {
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
@@ -429,7 +368,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 		return nil, "", ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, "", err
 	} else if !granted {
 		return nil, "", ErrNotFound
@@ -445,7 +384,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, authUse
 	return state, message, nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -456,13 +395,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -485,6 +424,8 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
@@ -495,7 +436,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			ModelVersion:       *version,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
-			UserUID:            authUser.UID,
+			UserUID:            userUID,
 			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
@@ -536,7 +477,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -547,13 +488,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -584,6 +525,8 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		},
 	}
 
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
@@ -595,7 +538,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			ModelVersion:       *version,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
-			UserUID:            authUser.UID,
+			UserUID:            userUID,
 			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
@@ -616,23 +559,23 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	}, nil
 }
 
-func (s *service) ListModels(ctx context.Context, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
 
 	var uidAllowList []uuid.UUID
 	var err error
 	role := "reader"
 
 	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions("model_", authUser.GetACLType(), uuid.Nil, role)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions("model_", authUser.GetACLType(), authUser.UID, role)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions("model_", authUser.GetACLType(), uuid.Nil, role)
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -642,13 +585,13 @@ func (s *service) ListModels(ctx context.Context, authUser *AuthUser, pageSize i
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions("model_", authUser.GetACLType(), authUser.UID, role)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	}
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, uidAllowList, showDeleted)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -656,16 +599,40 @@ func (s *service) ListModels(ctx context.Context, authUser *AuthUser, pageSize i
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, authUser *AuthUser, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
 
 	ownerPermalink := ns.Permalink()
+	var uidAllowList []uuid.UUID
+	var err error
+	role := "reader"
 
-	uidAllowList, err := s.aclClient.ListPermissions("model_", authUser.GetACLType(), authUser.UID, "reader")
-	if err != nil {
-		return nil, 0, "", err
+	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, true)
+		if err != nil {
+			return nil, 0, "", err
+		}
+	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, false)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, true)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		for _, uid := range allUIDAllowList {
+			if !slices.Contains(publicUIDAllowList, uid) {
+				uidAllowList = append(uidAllowList, uid)
+			}
+		}
+	} else {
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, false)
+		if err != nil {
+			return nil, 0, "", err
+		}
 	}
 
-	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, uidAllowList, showDeleted)
+	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -674,7 +641,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 	return pbModels, int32(ps), pt, err
 }
 
-func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, authUser *AuthUser, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error) {
+func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
@@ -682,7 +649,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, 0, 0, 0, err
 	} else if !granted {
 		return nil, 0, 0, 0, ErrNotFound
@@ -700,7 +667,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	versions := make([]*modelPB.ModelVersion, resp.GetTotalSize())
 
 	for i, tag := range resp.GetTags() {
-		state, _, err := s.WatchModel(ctx, ns, authUser, modelID, tag.GetId())
+		state, _, err := s.WatchModel(ctx, ns, modelID, tag.GetId())
 		if err != nil {
 			return nil, 0, 0, 0, err
 		}
@@ -716,9 +683,9 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	return versions, resp.GetTotalSize(), resp.GetPageSize(), resp.GetPage(), nil
 }
 
-func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModelsAdmin(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, showDeleted)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModelsAdmin(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, showDeleted)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -728,7 +695,7 @@ func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string) error {
+func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error {
 
 	ownerPermalink := ns.Permalink()
 
@@ -737,13 +704,13 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
 		return ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
 		return ErrNoPermission
@@ -763,7 +730,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 	}
 
-	err = s.aclClient.Purge("model_", dbModel.UID)
+	err = s.aclClient.Purge(ctx, "model", dbModel.UID)
 	if err != nil {
 		return err
 	}
@@ -771,7 +738,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }
 
-func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, newModelID string) (*modelPB.Model, error) {
+func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -780,13 +747,13 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbModel.UID, authUser.GetACLType(), authUser.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -809,19 +776,19 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
-func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, authUser *AuthUser, modelID string, toUpdateModel *modelPB.Model) (*modelPB.Model, error) {
+func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelPB.Model) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
 	dbToUpdateModel := s.PBToDBModel(ctx, ns, toUpdateModel)
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbToUpdateModel.UID, authUser.GetACLType(), authUser.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbToUpdateModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission("model_", dbToUpdateModel.UID, authUser.GetACLType(), authUser.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbToUpdateModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission

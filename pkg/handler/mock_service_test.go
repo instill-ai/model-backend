@@ -16,11 +16,11 @@ import (
 	acl "github.com/instill-ai/model-backend/pkg/acl"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	repository "github.com/instill-ai/model-backend/pkg/repository"
-	service "github.com/instill-ai/model-backend/pkg/service"
 	utils "github.com/instill-ai/model-backend/pkg/utils"
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtv1beta "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	filtering "go.einride.tech/aip/filtering"
 )
 
 // MockService is a mock of Service interface.
@@ -44,21 +44,6 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
-}
-
-// AuthenticateUser mocks base method.
-func (m *MockService) AuthenticateUser(arg0 context.Context, arg1 bool) (*service.AuthUser, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AuthenticateUser", arg0, arg1)
-	ret0, _ := ret[0].(*service.AuthUser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AuthenticateUser indicates an expected call of AuthenticateUser.
-func (mr *MockServiceMockRecorder) AuthenticateUser(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthenticateUser", reflect.TypeOf((*MockService)(nil).AuthenticateUser), arg0, arg1)
 }
 
 // ConvertOwnerNameToPermalink mocks base method.
@@ -135,17 +120,17 @@ func (mr *MockServiceMockRecorder) CreateModelVersionAdmin(arg0, arg1 interface{
 }
 
 // CreateNamespaceModel mocks base method.
-func (m *MockService) CreateNamespaceModel(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3 *datamodel.Model) error {
+func (m *MockService) CreateNamespaceModel(arg0 context.Context, arg1 resource.Namespace, arg2 *datamodel.Model) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNamespaceModel", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreateNamespaceModel", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateNamespaceModel indicates an expected call of CreateNamespaceModel.
-func (mr *MockServiceMockRecorder) CreateNamespaceModel(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) CreateNamespaceModel(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespaceModel", reflect.TypeOf((*MockService)(nil).CreateNamespaceModel), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespaceModel", reflect.TypeOf((*MockService)(nil).CreateNamespaceModel), arg0, arg1, arg2)
 }
 
 // DBToPBModel mocks base method.
@@ -223,17 +208,17 @@ func (mr *MockServiceMockRecorder) DeleteModelVersionAdmin(arg0, arg1 interface{
 }
 
 // DeleteNamespaceModelByID mocks base method.
-func (m *MockService) DeleteNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3 string) error {
+func (m *MockService) DeleteNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNamespaceModelByID", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "DeleteNamespaceModelByID", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteNamespaceModelByID indicates an expected call of DeleteNamespaceModelByID.
-func (mr *MockServiceMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockService)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockService)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2)
 }
 
 // GetACLClient mocks base method.
@@ -280,18 +265,18 @@ func (mr *MockServiceMockRecorder) GetModelByIDAdmin(arg0, arg1, arg2, arg3 inte
 }
 
 // GetModelByUID mocks base method.
-func (m *MockService) GetModelByUID(arg0 context.Context, arg1 *service.AuthUser, arg2 uuid.UUID, arg3 modelv1alpha.View) (*modelv1alpha.Model, error) {
+func (m *MockService) GetModelByUID(arg0 context.Context, arg1 uuid.UUID, arg2 modelv1alpha.View) (*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByUID", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetModelByUID", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*modelv1alpha.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModelByUID indicates an expected call of GetModelByUID.
-func (mr *MockServiceMockRecorder) GetModelByUID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetModelByUID(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUID", reflect.TypeOf((*MockService)(nil).GetModelByUID), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUID", reflect.TypeOf((*MockService)(nil).GetModelByUID), arg0, arg1, arg2)
 }
 
 // GetModelByUIDAdmin mocks base method.
@@ -355,18 +340,18 @@ func (mr *MockServiceMockRecorder) GetModelVersionAdmin(arg0, arg1, arg2 interfa
 }
 
 // GetNamespaceModelByID mocks base method.
-func (m *MockService) GetNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3 string, arg4 modelv1alpha.View) (*modelv1alpha.Model, error) {
+func (m *MockService) GetNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 modelv1alpha.View) (*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespaceModelByID", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "GetNamespaceModelByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*modelv1alpha.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNamespaceModelByID indicates an expected call of GetNamespaceModelByID.
-func (mr *MockServiceMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelByID", reflect.TypeOf((*MockService)(nil).GetNamespaceModelByID), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelByID", reflect.TypeOf((*MockService)(nil).GetNamespaceModelByID), arg0, arg1, arg2, arg3)
 }
 
 // GetOperation mocks base method.
@@ -462,7 +447,7 @@ func (mr *MockServiceMockRecorder) ListModelDefinitions(arg0, arg1, arg2, arg3 i
 }
 
 // ListModels mocks base method.
-func (m *MockService) ListModels(arg0 context.Context, arg1 *service.AuthUser, arg2 int32, arg3 string, arg4 modelv1alpha.View, arg5 *modelv1alpha.Model_Visibility, arg6 bool) ([]*modelv1alpha.Model, int32, string, error) {
+func (m *MockService) ListModels(arg0 context.Context, arg1 int32, arg2 string, arg3 modelv1alpha.View, arg4 *modelv1alpha.Model_Visibility, arg5 filtering.Filter, arg6 bool) ([]*modelv1alpha.Model, int32, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]*modelv1alpha.Model)
@@ -479,9 +464,9 @@ func (mr *MockServiceMockRecorder) ListModels(arg0, arg1, arg2, arg3, arg4, arg5
 }
 
 // ListModelsAdmin mocks base method.
-func (m *MockService) ListModelsAdmin(arg0 context.Context, arg1 int32, arg2 string, arg3 modelv1alpha.View, arg4 bool) ([]*modelv1alpha.Model, int32, string, error) {
+func (m *MockService) ListModelsAdmin(arg0 context.Context, arg1 int32, arg2 string, arg3 modelv1alpha.View, arg4 filtering.Filter, arg5 bool) ([]*modelv1alpha.Model, int32, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelsAdmin", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "ListModelsAdmin", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].([]*modelv1alpha.Model)
 	ret1, _ := ret[1].(int32)
 	ret2, _ := ret[2].(string)
@@ -490,15 +475,15 @@ func (m *MockService) ListModelsAdmin(arg0 context.Context, arg1 int32, arg2 str
 }
 
 // ListModelsAdmin indicates an expected call of ListModelsAdmin.
-func (mr *MockServiceMockRecorder) ListModelsAdmin(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) ListModelsAdmin(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsAdmin", reflect.TypeOf((*MockService)(nil).ListModelsAdmin), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelsAdmin", reflect.TypeOf((*MockService)(nil).ListModelsAdmin), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // ListNamespaceModelVersions mocks base method.
-func (m *MockService) ListNamespaceModelVersions(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3, arg4 int32, arg5 string) ([]*modelv1alpha.ModelVersion, int32, int32, int32, error) {
+func (m *MockService) ListNamespaceModelVersions(arg0 context.Context, arg1 resource.Namespace, arg2, arg3 int32, arg4 string) ([]*modelv1alpha.ModelVersion, int32, int32, int32, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListNamespaceModelVersions", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "ListNamespaceModelVersions", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].([]*modelv1alpha.ModelVersion)
 	ret1, _ := ret[1].(int32)
 	ret2, _ := ret[2].(int32)
@@ -508,15 +493,15 @@ func (m *MockService) ListNamespaceModelVersions(arg0 context.Context, arg1 reso
 }
 
 // ListNamespaceModelVersions indicates an expected call of ListNamespaceModelVersions.
-func (mr *MockServiceMockRecorder) ListNamespaceModelVersions(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) ListNamespaceModelVersions(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModelVersions", reflect.TypeOf((*MockService)(nil).ListNamespaceModelVersions), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModelVersions", reflect.TypeOf((*MockService)(nil).ListNamespaceModelVersions), arg0, arg1, arg2, arg3, arg4)
 }
 
 // ListNamespaceModels mocks base method.
-func (m *MockService) ListNamespaceModels(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3 int32, arg4 string, arg5 modelv1alpha.View, arg6 bool) ([]*modelv1alpha.Model, int32, string, error) {
+func (m *MockService) ListNamespaceModels(arg0 context.Context, arg1 resource.Namespace, arg2 int32, arg3 string, arg4 modelv1alpha.View, arg5 *modelv1alpha.Model_Visibility, arg6 filtering.Filter, arg7 bool) ([]*modelv1alpha.Model, int32, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].([]*modelv1alpha.Model)
 	ret1, _ := ret[1].(int32)
 	ret2, _ := ret[2].(string)
@@ -525,9 +510,9 @@ func (m *MockService) ListNamespaceModels(arg0 context.Context, arg1 resource.Na
 }
 
 // ListNamespaceModels indicates an expected call of ListNamespaceModels.
-func (mr *MockServiceMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockService)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockService)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // PBToDBModel mocks base method.
@@ -545,22 +530,22 @@ func (mr *MockServiceMockRecorder) PBToDBModel(arg0, arg1, arg2 interface{}) *go
 }
 
 // RenameNamespaceModelByID mocks base method.
-func (m *MockService) RenameNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3, arg4 string) (*modelv1alpha.Model, error) {
+func (m *MockService) RenameNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2, arg3 string) (*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenameNamespaceModelByID", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "RenameNamespaceModelByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*modelv1alpha.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RenameNamespaceModelByID indicates an expected call of RenameNamespaceModelByID.
-func (mr *MockServiceMockRecorder) RenameNamespaceModelByID(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) RenameNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameNamespaceModelByID", reflect.TypeOf((*MockService)(nil).RenameNamespaceModelByID), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameNamespaceModelByID", reflect.TypeOf((*MockService)(nil).RenameNamespaceModelByID), arg0, arg1, arg2, arg3)
 }
 
 // TriggerAsyncNamespaceModelByID mocks base method.
-func (m *MockService) TriggerAsyncNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3, arg4 string, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) (*longrunningpb.Operation, error) {
+func (m *MockService) TriggerAsyncNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) (*longrunningpb.Operation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerAsyncNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].(*longrunningpb.Operation)
@@ -575,18 +560,18 @@ func (mr *MockServiceMockRecorder) TriggerAsyncNamespaceModelByID(arg0, arg1, ar
 }
 
 // TriggerNamespaceModelByID mocks base method.
-func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3, arg4 string, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) ([]*modelv1alpha.TaskOutput, error) {
+func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4 []byte, arg5 taskv1alpha.Task, arg6 string) ([]*modelv1alpha.TaskOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].([]*modelv1alpha.TaskOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // TriggerNamespaceModelByID indicates an expected call of TriggerNamespaceModelByID.
-func (mr *MockServiceMockRecorder) TriggerNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) TriggerNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // UpdateModelInstanceAdmin mocks base method.
@@ -604,24 +589,24 @@ func (mr *MockServiceMockRecorder) UpdateModelInstanceAdmin(arg0, arg1, arg2, ar
 }
 
 // UpdateNamespaceModelByID mocks base method.
-func (m *MockService) UpdateNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3 string, arg4 *modelv1alpha.Model) (*modelv1alpha.Model, error) {
+func (m *MockService) UpdateNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *modelv1alpha.Model) (*modelv1alpha.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateNamespaceModelByID", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "UpdateNamespaceModelByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*modelv1alpha.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateNamespaceModelByID indicates an expected call of UpdateNamespaceModelByID.
-func (mr *MockServiceMockRecorder) UpdateNamespaceModelByID(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) UpdateNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNamespaceModelByID", reflect.TypeOf((*MockService)(nil).UpdateNamespaceModelByID), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNamespaceModelByID", reflect.TypeOf((*MockService)(nil).UpdateNamespaceModelByID), arg0, arg1, arg2, arg3)
 }
 
 // WatchModel mocks base method.
-func (m *MockService) WatchModel(arg0 context.Context, arg1 resource.Namespace, arg2 *service.AuthUser, arg3, arg4 string) (*modelv1alpha.State, string, error) {
+func (m *MockService) WatchModel(arg0 context.Context, arg1 resource.Namespace, arg2, arg3 string) (*modelv1alpha.State, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchModel", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "WatchModel", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*modelv1alpha.State)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(error)
@@ -629,9 +614,9 @@ func (m *MockService) WatchModel(arg0 context.Context, arg1 resource.Namespace, 
 }
 
 // WatchModel indicates an expected call of WatchModel.
-func (mr *MockServiceMockRecorder) WatchModel(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) WatchModel(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchModel", reflect.TypeOf((*MockService)(nil).WatchModel), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchModel", reflect.TypeOf((*MockService)(nil).WatchModel), arg0, arg1, arg2, arg3)
 }
 
 // WriteNewDataPoint mocks base method.

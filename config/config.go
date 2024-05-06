@@ -10,6 +10,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 )
@@ -136,8 +137,13 @@ type LogConfig struct {
 
 // OpenFGA config
 type OpenFGAConfig struct {
-	Host string `koanf:"host"`
-	Port int    `koanf:"port"`
+	Host    string `koanf:"host"`
+	Port    int    `koanf:"port"`
+	Replica struct {
+		Host                 string `koanf:"host"`
+		Port                 int    `koanf:"port"`
+		ReplicationTimeFrame int    `koanf:"replicationtimeframe"` // in seconds
+	} `koanf:"replica"`
 }
 
 // Registry config
@@ -166,15 +172,18 @@ type AppConfig struct {
 var Config AppConfig
 
 // Init - Assign global config to decoded config struct
-func Init() error {
+func Init(filePath string) error {
 	k := koanf.New(".")
 	parser := yaml.Parser()
 
-	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	fileRelativePath := fs.String("file", "config/config.yaml", "configuration file")
-	flag.Parse()
+	if err := k.Load(confmap.Provider(map[string]interface{}{
+		"database.replica.replicationtimeframe": 60,
+		"openfga.replica.replicationtimeframe":  60,
+	}, "."), nil); err != nil {
+		log.Fatal(err.Error())
+	}
 
-	if err := k.Load(file.Provider(*fileRelativePath), parser); err != nil {
+	if err := k.Load(file.Provider(filePath), parser); err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -199,4 +208,16 @@ func Init() error {
 // for future use
 func ValidateConfig(_ *AppConfig) error {
 	return nil
+}
+
+var defaultConfigPath = "config/config.yaml"
+
+// ParseConfigFlag allows clients to specify the relative path to the file from
+// which the configuration will be loaded.
+func ParseConfigFlag() string {
+	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	configPath := fs.String("file", defaultConfigPath, "configuration file")
+	flag.Parse()
+
+	return *configPath
 }

@@ -30,7 +30,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	openfgaClient "github.com/openfga/go-sdk/client"
+	openfga "github.com/openfga/api/proto/openfga/v1"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
@@ -75,7 +75,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handl
 
 func main() {
 
-	if err := config.Init(); err != nil {
+	if err := config.Init(config.ParseConfigFlag()); err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -210,28 +210,20 @@ func main() {
 	}
 	defer temporalClient.Close()
 
-	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
-		ApiScheme: "http",
-		ApiHost:   fmt.Sprintf("%s:%d", config.Config.OpenFGA.Host, config.Config.OpenFGA.Port),
-	})
-
-	if err != nil {
-		panic(err)
+	fgaClient, fgaClientConn := acl.InitOpenFGAClient(ctx, config.Config.OpenFGA.Host, config.Config.OpenFGA.Port)
+	if fgaClientConn != nil {
+		defer fgaClientConn.Close()
 	}
+	var fgaReplicaClient openfga.OpenFGAServiceClient
+	var fgaReplicaClientConn *grpc.ClientConn
+	if config.Config.OpenFGA.Replica.Host != "" {
 
-	var aclClient acl.ACLClient
-	if stores, err := fgaClient.ListStores(context.Background()).Execute(); err == nil {
-		fgaClient.SetStoreId(stores.Stores[0].Id)
-		if models, err := fgaClient.ReadAuthorizationModels(context.Background()).Execute(); err == nil {
-			aclClient = acl.NewACLClient(fgaClient, &models.AuthorizationModels[0].Id)
+		fgaReplicaClient, fgaReplicaClientConn = acl.InitOpenFGAClient(ctx, config.Config.OpenFGA.Replica.Host, config.Config.OpenFGA.Replica.Port)
+		if fgaReplicaClientConn != nil {
+			defer fgaReplicaClientConn.Close()
 		}
-		if err != nil {
-			panic(err)
-		}
-
-	} else {
-		panic(err)
 	}
+	aclClient := acl.NewACLClient(fgaClient, fgaReplicaClient, redisClient)
 
 	repo := repository.NewRepository(db)
 

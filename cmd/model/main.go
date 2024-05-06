@@ -149,7 +149,7 @@ func main() {
 	}()
 	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
-	if err := config.Init(); err != nil {
+	if err := config.Init(config.ParseConfigFlag()); err != nil {
 		logger.Fatal(err.Error())
 	}
 

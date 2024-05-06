@@ -16,11 +16,9 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
-	openfgaClient "github.com/openfga/go-sdk/client"
 	temporalClient "go.temporal.io/sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/x/temporal"
@@ -76,7 +74,7 @@ func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
 
 func main() {
 
-	if err := config.Init(); err != nil {
+	if err := config.Init(config.ParseConfigFlag()); err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -152,30 +150,7 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	fgaClient, err := openfgaClient.NewSdkClient(&openfgaClient.ClientConfiguration{
-		ApiScheme: "http",
-		ApiHost:   fmt.Sprintf("%s:%d", config.Config.OpenFGA.Host, config.Config.OpenFGA.Port),
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	var aclClient acl.ACLClient
-	if stores, err := fgaClient.ListStores(context.Background()).Execute(); err == nil {
-		fgaClient.SetStoreId(stores.Stores[0].Id)
-		if models, err := fgaClient.ReadAuthorizationModels(context.Background()).Execute(); err == nil {
-			aclClient = acl.NewACLClient(fgaClient, &models.AuthorizationModels[0].Id)
-		}
-		if err != nil {
-			panic(err)
-		}
-
-	} else {
-		panic(err)
-	}
-
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, rayService, &aclClient)
+	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, rayService)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

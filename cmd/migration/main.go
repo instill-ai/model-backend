@@ -74,7 +74,7 @@ func checkExist(databaseConfig *config.DatabaseConfig) error {
 func main() {
 	migrateFolder, _ := os.Getwd()
 
-	_ = config.Init()
+	_ = config.Init(config.ParseConfigFlag())
 	databaseConfig := config.Config.Database
 	if err := checkExist(&databaseConfig); err != nil {
 		panic(err)

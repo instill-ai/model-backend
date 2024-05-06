@@ -14,6 +14,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
+	"go.einride.tech/aip/filtering"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -61,22 +63,44 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	authUser, err := h.service.AuthenticateUser(ctx, true)
-	if err != nil {
+	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), nil, req.GetShowDeleted())
+	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
+		filtering.DeclareStandardFunctions(),
+		filtering.DeclareFunction("time.now", filtering.NewFunctionOverload("time.now", filtering.TypeTimestamp)),
+		filtering.DeclareIdent("q", filtering.TypeString),
+		filtering.DeclareIdent("uid", filtering.TypeString),
+		filtering.DeclareIdent("id", filtering.TypeString),
+		filtering.DeclareIdent("description", filtering.TypeString),
+		filtering.DeclareIdent("owner", filtering.TypeString),
+		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
+		filtering.DeclareIdent("update_time", filtering.TypeTimestamp),
+	}...)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	filter, err := filtering.ParseFilter(req, declarations)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+	visibility := req.GetVisibility()
+
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -142,13 +166,12 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return nil, err
 	}
 
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	if _, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
+	if _, err := h.service.GetNamespaceModelByID(ctx, ns, modelToCreate.GetId(), modelPB.View_VIEW_FULL); err == nil {
 		span.SetStatus(1, "Model already existed")
 		return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
 	}
@@ -184,7 +207,7 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 
 	switch modelDefinitionID {
 	case "container":
-		return createContainerizedModel(h.service, ctx, modelToCreate, ns, authUser, modelDefinition)
+		return createContainerizedModel(h.service, ctx, modelToCreate, ns, modelDefinition)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
@@ -197,6 +220,8 @@ type ListNamespaceModelRequestInterface interface {
 	GetPageToken() string
 	GetView() modelPB.View
 	GetParent() string
+	GetFilter() string
+	GetVisibility() modelPB.Model_Visibility
 	GetShowDeleted() bool
 }
 
@@ -232,22 +257,44 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		return nil, "", 0, err
 	}
 
-	authUser, err := h.service.AuthenticateUser(ctx, false)
+	if err := authenticateUser(ctx, false); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, "", 0, err
+	}
+
+	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
+		filtering.DeclareStandardFunctions(),
+		filtering.DeclareFunction("time.now", filtering.NewFunctionOverload("time.now", filtering.TypeTimestamp)),
+		filtering.DeclareIdent("q", filtering.TypeString),
+		filtering.DeclareIdent("uid", filtering.TypeString),
+		filtering.DeclareIdent("id", filtering.TypeString),
+		filtering.DeclareIdent("description", filtering.TypeString),
+		filtering.DeclareIdent("owner", filtering.TypeString),
+		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
+		filtering.DeclareIdent("update_time", filtering.TypeTimestamp),
+	}...)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, "", 0, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, authUser, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), req.GetShowDeleted())
+	filter, err := filtering.ParseFilter(req, declarations)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, "", 0, err
+	}
+	visibility := req.GetVisibility()
+
+	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, "", 0, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -294,22 +341,21 @@ func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req List
 		return nil, 0, 0, 0, err
 	}
 
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, 0, 0, 0, err
 	}
 
-	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, authUser, req.GetPage(), req.GetPageSize(), modelID)
+	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, req.GetPage(), req.GetPageSize(), modelID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, 0, 0, 0, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
@@ -334,22 +380,21 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelPB.LookUpMode
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
 
-	pbModel, err := h.service.GetModelByUID(ctx, authUser, modelUID, parseView(req.GetView()))
+	pbModel, err := h.service.GetModelByUID(ctx, modelUID, parseView(req.GetView()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.LookUpModelResponse{}, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -394,22 +439,21 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, parseView(req.GetView()))
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, parseView(req.GetView()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -454,8 +498,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
@@ -520,16 +563,16 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, ErrFieldMask
 	}
 
-	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, authUser, modelID, pbModelToUpdate)
+	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModelToUpdate)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModelResp),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -573,8 +616,7 @@ func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteName
 		span.SetStatus(1, err.Error())
 		return err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
@@ -585,15 +627,15 @@ func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteName
 		return err
 	}
 
-	if err := h.service.DeleteNamespaceModelByID(ctx, ns, authUser, modelID); err != nil {
+	if err := h.service.DeleteNamespaceModelByID(ctx, ns, modelID); err != nil {
 		span.SetStatus(1, err.Error())
 		return err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, modelID)),
 	)))
@@ -637,22 +679,21 @@ func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameName
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, authUser, modelID, req.GetNewModelId())
+	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, modelID, req.GetNewModelId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -696,13 +737,12 @@ func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNa
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -710,22 +750,21 @@ func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNa
 
 	pbModel.Visibility = modelPB.Model_VISIBILITY_PUBLIC
 
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, authUser, modelID, pbModel)
+	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	err = h.service.GetACLClient().SetPublicModelPermission(uuid.FromStringOrNil(pbModel.GetUid()))
-	if err != nil {
+	if err := h.service.GetACLClient().SetPublicModelPermission(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -769,13 +808,12 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -783,22 +821,21 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 
 	pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
 
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, authUser, modelID, pbModel)
+	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	err = h.service.GetACLClient().DeletePublicModelPermission(uuid.FromStringOrNil(pbModel.GetUid()))
-	if err != nil {
+	if err := h.service.GetACLClient().DeletePublicModelPermission(ctx, uuid.FromStringOrNil(pbModel.GetUid())); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -844,13 +881,12 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelPB.State_STATE_ERROR, "", err
 	}
 
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
+			ctx,
 			span,
 			logUUID.String(),
-			uuid.Nil,
 			eventName,
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
@@ -858,13 +894,13 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelPB.State_STATE_ERROR, "", err
 	}
 
-	state, message, err := h.service.WatchModel(ctx, ns, authUser, modelID, req.GetVersion())
+	state, message, err := h.service.WatchModel(ctx, ns, modelID, req.GetVersion())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
+			ctx,
 			span,
 			logUUID.String(),
-			authUser.UID,
 			eventName,
 			custom_otel.SetEventResource(req.GetName()),
 			custom_otel.SetErrorMessage(err.Error()),
@@ -913,13 +949,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		span.SetStatus(1, err.Error())
 		return commonPB.Task_TASK_UNSPECIFIED, nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return commonPB.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return commonPB.Task_TASK_UNSPECIFIED, nil, err
@@ -947,10 +982,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
-		UserUID:            authUser.UID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtPB.Mode_MODE_SYNC,
@@ -966,7 +1003,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		},
 		OwnerUID:           ns.NsUID,
 		OwnerType:          datamodel.UserType(usageData.OwnerType),
-		UserUID:            authUser.UID,
+		UserUID:            uuid.FromStringOrNil(userUID),
 		UserType:           datamodel.UserType(usageData.UserType),
 		Mode:               datamodel.Mode(usageData.Mode),
 		ModelDefinitionUID: modelDef.UID,
@@ -1083,7 +1120,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1123,9 +1160,9 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	modelPrediction.Output = jsonOutput
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel.Name),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -1172,13 +1209,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -1206,10 +1242,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
-		UserUID:            authUser.UID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtPB.Mode_MODE_ASYNC,
@@ -1225,7 +1263,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		},
 		OwnerUID:            ns.NsUID,
 		OwnerType:           datamodel.UserType(usageData.OwnerType),
-		UserUID:             authUser.UID,
+		UserUID:             uuid.FromStringOrNil(userUID),
 		UserType:            datamodel.UserType(usageData.UserType),
 		Mode:                datamodel.Mode(usageData.Mode),
 		ModelDefinitionUID:  modelDef.UID,
@@ -1350,7 +1388,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, authUser, modelID, version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, modelID, version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -1361,9 +1399,9 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -1408,8 +1446,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
 
-	authUser, err := s.AuthenticateUser(ctx, false)
-	if err != nil {
+	if err := authenticateUser(ctx, false); err != nil {
 		logger.Error(fmt.Sprintf("AuthenticatedUser Error: %s", err.Error()))
 		sta := status.Convert(err)
 		switch sta.Code() {
@@ -1431,7 +1468,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	pbModel, err := s.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := s.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
@@ -1461,10 +1498,12 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
-		UserUID:            authUser.UID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
@@ -1582,7 +1621,7 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	var response []*modelPB.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, authUser, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -1632,9 +1671,9 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
@@ -1684,19 +1723,18 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	authUser, err := h.service.AuthenticateUser(ctx, false)
+	if err := authenticateUser(ctx, false); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, authUser, modelID, modelPB.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.RayServer.ModelStore, authUser.Permalink(), modelID)
+	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.RayServer.ModelStore, ns.Permalink(), modelID)
 	stat, err := os.Stat(readmeFilePath)
 	if err != nil { // return empty content base64
 		span.SetStatus(1, err.Error())
@@ -1709,12 +1747,15 @@ func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamesp
 		}, nil
 	}
 
-	content, _ := os.ReadFile(readmeFilePath)
+	content, err := os.ReadFile(readmeFilePath)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),

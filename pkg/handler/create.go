@@ -26,7 +26,7 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createContainerizedModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, authUser *service.AuthUser, modelDefinition *datamodel.ModelDefinition) (*modelPB.Model, error) {
+func createContainerizedModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition) (*modelPB.Model, error) {
 
 	eventName := "CreateContainerizedModel"
 
@@ -104,7 +104,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 		return &modelPB.Model{}, st.Err()
 	}
 
-	if err := s.CreateNamespaceModel(ctx, ns, authUser, containerizedModel); err != nil {
+	if err := s.CreateNamespaceModel(ctx, ns, containerizedModel); err != nil {
 		st, err := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] create a model error: %s", err.Error()),
@@ -120,7 +120,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 		return &modelPB.Model{}, st.Err()
 	}
 
-	model, _ = s.GetNamespaceModelByID(ctx, ns, authUser, model.Id, modelPB.View_VIEW_FULL)
+	model, _ = s.GetNamespaceModelByID(ctx, ns, model.Id, modelPB.View_VIEW_FULL)
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
@@ -129,9 +129,9 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
 		span,
 		logUUID.String(),
-		authUser.UID,
 		eventName,
 		custom_otel.SetEventResource(containerizedModel),
 	)))
