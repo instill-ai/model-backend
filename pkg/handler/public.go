@@ -102,7 +102,6 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -296,7 +295,6 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModels),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 

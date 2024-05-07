@@ -2,16 +2,22 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"go.einride.tech/aip/filtering"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/plugin/dbresolver"
 
+	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/x/paginate"
 	"github.com/instill-ai/x/sterr"
@@ -57,13 +63,32 @@ const DefaultPageSize = 10
 const MaxPageSize = 100
 
 type repository struct {
-	db *gorm.DB
+	db          *gorm.DB
+	redisClient *redis.Client
 }
 
-func NewRepository(db *gorm.DB) Repository {
+// NewRepository initiates a repository instance
+func NewRepository(db *gorm.DB, redisClient *redis.Client) Repository {
 	return &repository{
-		db: db,
+		db:          db,
+		redisClient: redisClient,
 	}
+}
+func (r *repository) checkPinnedUser(ctx context.Context, db *gorm.DB, _ string) *gorm.DB {
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	// If the user is pinned, we will use the primary database for querying.
+	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model")).Err(), redis.Nil) {
+		db = db.Clauses(dbresolver.Write)
+	}
+	return db
+}
+
+func (r *repository) pinUser(ctx context.Context, _ string) {
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	// To solve the read-after-write inconsistency problem,
+	// we will direct the user to read from the primary database for a certain time frame
+	// to ensure that the data is synchronized from the primary DB to the replica DB.
+	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model"), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
 }
 
 func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
@@ -253,14 +278,22 @@ func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBa
 }
 
 func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.Model{}).Create(model); result.Error != nil {
 		return result.Error
 	}
 	return nil
 }
 
 func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error {
-	if result := r.db.Model(&datamodel.Model{}).
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
 		Updates(model); result.Error != nil {
 		return result.Error
@@ -271,7 +304,11 @@ func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalin
 }
 
 func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error {
-	if result := r.db.Model(&datamodel.Model{}).
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
 		Update("id", newID); result.Error != nil {
 		return result.Error
@@ -282,7 +319,11 @@ func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermal
 }
 
 func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
-	result := r.db.Model(&datamodel.Model{}).
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	result := db.Model(&datamodel.Model{}).
 		Where("(id = ? AND owner = ?)", id, ownerPermalink).
 		Delete(&datamodel.Model{})
 
@@ -298,7 +339,11 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 }
 
 func (r *repository) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
-	if result := r.db.Model(&datamodel.ModelPrediction{}).Create(&prediction); result.Error != nil {
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.ModelPrediction{}).Create(&prediction); result.Error != nil {
 		return result.Error
 	}
 
@@ -306,7 +351,11 @@ func (r *repository) CreateModelPrediction(ctx context.Context, prediction *data
 }
 
 func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
-	if result := r.db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
 		return result.Error
 	}
 
@@ -314,7 +363,11 @@ func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink stri
 }
 
 func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
-	result := r.db.Model(&datamodel.ModelVersion{}).
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	result := db.Model(&datamodel.ModelVersion{}).
 		Where("(name = ? AND version = ?)", version.Name, version.Version).
 		Delete(&datamodel.ModelVersion{})
 

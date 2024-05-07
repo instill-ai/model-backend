@@ -225,7 +225,7 @@ func main() {
 	}
 	aclClient := acl.NewACLClient(fgaClient, fgaReplicaClient, redisClient)
 
-	repo := repository.NewRepository(db)
+	repo := repository.NewRepository(db, redisClient)
 
 	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient)
 
