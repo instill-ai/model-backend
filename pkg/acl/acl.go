@@ -156,7 +156,7 @@ func (c *ACLClient) SetModelPermission(ctx context.Context, modelUID uuid.UUID, 
 					{
 						User:     user,
 						Relation: role,
-						Object:   fmt.Sprintf("model:%s", modelUID.String()),
+						Object:   fmt.Sprintf("model_:%s", modelUID.String()),
 					},
 				},
 			},
@@ -180,7 +180,7 @@ func (c *ACLClient) DeleteModelPermission(ctx context.Context, modelUID uuid.UUI
 					{
 						User:     user,
 						Relation: role,
-						Object:   fmt.Sprintf("model:%s", modelUID.String()),
+						Object:   fmt.Sprintf("model_:%s", modelUID.String()),
 					},
 				},
 			},

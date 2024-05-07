@@ -150,7 +150,7 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db), redisClient, rayService)
+	cw := modelWorker.NewWorker(repository.NewRepository(db, redisClient), redisClient, rayService)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

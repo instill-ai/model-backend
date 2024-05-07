@@ -259,7 +259,7 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 		return nil, err
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", modelUID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", modelUID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
@@ -312,7 +312,7 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
@@ -347,7 +347,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	}
 	ownerType := nsType[0 : len(nsType)-1]
 
-	if err := s.aclClient.SetOwner(ctx, "model", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
+	if err := s.aclClient.SetOwner(ctx, "model_", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
 		return err
 	}
 
@@ -368,7 +368,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 		return nil, "", ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, "", err
 	} else if !granted {
 		return nil, "", ErrNotFound
@@ -395,13 +395,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -488,13 +488,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -566,16 +566,16 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	role := "reader"
 
 	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, true)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -585,7 +585,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -607,16 +607,16 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 	role := "reader"
 
 	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, true)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -626,7 +626,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -649,7 +649,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, 0, 0, 0, err
 	} else if !granted {
 		return nil, 0, 0, 0, ErrNotFound
@@ -704,13 +704,13 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
 		return ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
 		return ErrNoPermission
@@ -730,7 +730,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 	}
 
-	err = s.aclClient.Purge(ctx, "model", dbModel.UID)
+	err = s.aclClient.Purge(ctx, "model_", dbModel.UID)
 	if err != nil {
 		return err
 	}
@@ -747,13 +747,13 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
@@ -782,13 +782,13 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	dbToUpdateModel := s.PBToDBModel(ctx, ns, toUpdateModel)
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbToUpdateModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model", dbToUpdateModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
