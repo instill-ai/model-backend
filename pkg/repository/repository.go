@@ -74,21 +74,21 @@ func NewRepository(db *gorm.DB, redisClient *redis.Client) Repository {
 		redisClient: redisClient,
 	}
 }
-func (r *repository) checkPinnedUser(ctx context.Context, db *gorm.DB, table string) *gorm.DB {
+func (r *repository) checkPinnedUser(ctx context.Context, db *gorm.DB, _ string) *gorm.DB {
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// If the user is pinned, we will use the primary database for querying.
-	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, table)).Err(), redis.Nil) {
+	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model")).Err(), redis.Nil) {
 		db = db.Clauses(dbresolver.Write)
 	}
 	return db
 }
 
-func (r *repository) pinUser(ctx context.Context, table string) {
+func (r *repository) pinUser(ctx context.Context, _ string) {
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// To solve the read-after-write inconsistency problem,
 	// we will direct the user to read from the primary database for a certain time frame
 	// to ensure that the data is synchronized from the primary DB to the replica DB.
-	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, table), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
+	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model"), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
 }
 
 func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
