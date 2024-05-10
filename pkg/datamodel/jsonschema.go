@@ -29,6 +29,36 @@ var GCSUserAccountJSONSchema *jsonschema.Schema
 // GCSServiceAccountJSONSchema represents the GCS Service Account JSON Schema for validating the payload
 var GCSServiceAccountJSONSchema *jsonschema.Schema
 
+var RegionHardwareJSON RegionHardware
+
+type RegionHardware struct {
+	Properties struct {
+		Region struct {
+			OneOf []struct {
+				Const string `json:"const"`
+				Title string `json:"title"`
+			}
+		}
+		Hardware struct {
+			OneOf []struct {
+				If struct {
+					Properties struct {
+						Region struct {
+							Const string `json:"const"`
+						}
+					}
+				}
+				Then struct {
+					OneOf []struct {
+						Const string `json:"const"`
+						Title string `json:"title"`
+					}
+				}
+			}
+		}
+	}
+}
+
 // InitJSONSchema initializes JSON Schema instances with the given files
 func InitJSONSchema(ctx context.Context) {
 
@@ -92,6 +122,13 @@ func InitJSONSchema(ctx context.Context) {
 
 	ModelJSONSchema, err = compiler.Compile("config/model/model.json")
 	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	modelJSONFile, err := os.ReadFile("config/model/model.json")
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	if err := json.Unmarshal(modelJSONFile, &RegionHardwareJSON); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
