@@ -1806,3 +1806,34 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelPB.L
 
 	return &resp, nil
 }
+
+func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelPB.ListAvailableRegionsRequest) (*modelPB.ListAvailableRegionsResponse, error) {
+
+	_, span := tracer.Start(ctx, "ListAvailableRegions",
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	regionsStruct := datamodel.RegionHardwareJSON.Properties.Region.OneOf
+	hardwaresStruct := datamodel.RegionHardwareJSON.Properties.Hardware.OneOf
+
+	var regions []*modelPB.Region
+
+	for _, r := range regionsStruct {
+		subRegion := &modelPB.Region{
+			RegionName: r.Const,
+			Hardware:   []string{},
+		}
+		for _, h := range hardwaresStruct {
+			if h.If.Properties.Region.Const == r.Const {
+				for _, hardware := range h.Then.OneOf {
+					subRegion.Hardware = append(subRegion.Hardware, hardware.Const)
+				}
+			}
+		}
+		regions = append(regions, subRegion)
+	}
+
+	return &modelPB.ListAvailableRegionsResponse{
+		Regions: regions,
+	}, nil
+}
