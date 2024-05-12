@@ -12,7 +12,7 @@
     "hardware"
   ],
   "instillShortDescription": "",
-  "additionalProperties": false,
+  "additionalProperties": true,
   "minProperties": 7,
   "maxProperties": 12,
   "properties": {
@@ -119,43 +119,11 @@
           "const": "REGION_GCP_EUROPE_WEST4",
           "instillShortDescription": "Deploy model onto GCP in Europe West4 region",
           "title": "GCP europe-west4"
-        }
-      ]
-    },
-    "hardware": {
-      "anyOf": [
+        },
         {
-          "if": {
-            "properties": {
-              "region": {
-                "const": "REGION_GCP_EUROPE_WEST4"
-              }
-            }
-          },
-          "then": {
-            "oneOf": [
-              {
-                "const": "CPU",
-                "instillShortDescription": "Deploy model that runs on CPU",
-                "title": "CPU"
-              },
-              {
-                "const": "NVIDIA_TESLA_T4",
-                "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
-                "title": "Nvidia Tesla T4"
-              },
-              {
-                "const": "NVIDIA_L4",
-                "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
-                "title": "Nvidia L4"
-              },
-              {
-                "const": "NVIDIA_A100",
-                "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
-                "title": "NVIDIA A100"
-              }
-            ]
-          }
+          "const": "REGION_LOCAL",
+          "instillShortDescription": "Deploy model on self-hosted instill-core",
+          "title": "Self-host Instill Core"
         }
       ]
     },
@@ -181,5 +149,63 @@
       "title": "License",
       "description": "The license of the model"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "region": {
+            "const": "REGION_GCP_EUROPE_WEST4"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "hardware": {
+            "oneOf": [
+              {
+                "const": "CPU",
+                "instillShortDescription": "Deploy model that runs on CPU",
+                "title": "CPU"
+              },
+              {
+                "const": "NVIDIA_TESLA_T4",
+                "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
+                "title": "Nvidia Tesla T4"
+              },
+              {
+                "const": "NVIDIA_L4",
+                "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
+                "title": "Nvidia L4"
+              },
+              {
+                "const": "NVIDIA_A100",
+                "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
+                "title": "NVIDIA A100"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "region": {
+            "const": "REGION_LOCAL"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "hardware": {
+            "type": "string",
+            "title": "Hardware type",
+            "maxLength": 63,
+            "description": "Fill with the desire hardware type to deploy your model on. If you are not sure, use `CPU` or `GPU`"
+          }
+        }
+      }
+    }
+  ]
 }

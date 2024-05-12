@@ -279,10 +279,17 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	// TODO: Support custom resource configs for deployment in the future
-	runOptions = append(runOptions,
-		fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
-		fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 5),
-	)
+	if userID == "instill-ai" {
+		runOptions = append(runOptions,
+			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 1),
+			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
+		)
+	} else {
+		runOptions = append(runOptions,
+			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
+			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
+		)
+	}
 
 	applicationConfig := Application{
 		Name:        applicationMetadatValue,
