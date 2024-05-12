@@ -107,6 +107,9 @@ model-backend
 # local protogen-go
 protogen-go
 
+# deploy config file
+deploy.yaml
+
 # air related files and folders
 .air.toml
 tmp

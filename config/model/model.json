@@ -119,6 +119,11 @@
           "const": "REGION_GCP_EUROPE_WEST4",
           "instillShortDescription": "Deploy model onto GCP in Europe West4 region",
           "title": "GCP europe-west4"
+        },
+        {
+          "const": "REGION_LOCAL",
+          "instillShortDescription": "Deploy model on self-hosted instill-core",
+          "title": "Self-host Instill Core"
         }
       ]
     },
@@ -140,6 +145,11 @@
                 "title": "CPU"
               },
               {
+                "const": "GPU",
+                "instillShortDescription": "Deploy model that runs on CPU",
+                "title": "GPU"
+              },
+              {
                 "const": "NVIDIA_TESLA_T4",
                 "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
                 "title": "Nvidia Tesla T4"
@@ -155,6 +165,21 @@
                 "title": "NVIDIA A100"
               }
             ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "region": {
+                "const": "REGION_LOCAL"
+              }
+            }
+          },
+          "then": {
+            "type": "string",
+            "title": "Hardware type",
+            "maxLength": 63,
+            "description": "Fill with the desire hardware type to deploy your model on. If you are not sure, use `CPU` or `GPU`"
           }
         }
       ]
