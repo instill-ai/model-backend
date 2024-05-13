@@ -1814,7 +1814,7 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelPB.L
 	defer span.End()
 
 	regionsStruct := datamodel.RegionHardwareJSON.Properties.Region.OneOf
-	hardwaresStruct := datamodel.RegionHardwareJSON.Properties.Hardware.OneOf
+	hardwaresStruct := datamodel.RegionHardwareJSON.AllOf
 
 	var regions []*modelPB.Region
 
@@ -1825,7 +1825,7 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelPB.L
 		}
 		for _, h := range hardwaresStruct {
 			if h.If.Properties.Region.Const == r.Const {
-				for _, hardware := range h.Then.OneOf {
+				for _, hardware := range h.Then.Properties.Hardware.OneOf {
 					subRegion.Hardware = append(subRegion.Hardware, hardware.Const)
 				}
 			}
