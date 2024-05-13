@@ -256,7 +256,8 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		if !ok {
 			logger.Warn("accelerator type(hardware) not supported, setting it as custom resource")
 			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 0.5),
+				fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
+				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 1),
 				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 				"--device nvidia.com/gpu=all",
 			)
@@ -265,7 +266,8 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 				runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 2))
 			} else if accelerator == SupportedAcceleratorType["GPU"] {
 				runOptions = append(runOptions,
-					fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 0.5),
+					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
+					fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 1),
 					"--device nvidia.com/gpu=all",
 				)
 			} else {
