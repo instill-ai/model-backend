@@ -39,16 +39,18 @@ type RegionHardware struct {
 				Title string `json:"title"`
 			}
 		}
-		Hardware struct {
-			OneOf []struct {
-				If struct {
-					Properties struct {
-						Region struct {
-							Const string `json:"const"`
-						}
-					}
+	}
+	AllOf []struct {
+		If struct {
+			Properties struct {
+				Region struct {
+					Const string `json:"const"`
 				}
-				Then struct {
+			}
+		}
+		Then struct {
+			Properties struct {
+				Hardware struct {
 					OneOf []struct {
 						Const string `json:"const"`
 						Title string `json:"title"`
