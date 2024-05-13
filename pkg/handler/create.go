@@ -51,7 +51,10 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 
 	bModelConfig, _ := json.Marshal(modelConfig)
 
-	containerizedModel := s.PBToDBModel(ctx, ns, model)
+	containerizedModel, err := s.PBToDBModel(ctx, ns, model)
+	if err != nil {
+		return nil, err
+	}
 	containerizedModel.Configuration = bModelConfig
 	containerizedModel.ModelDefinitionUID = modelDefinition.UID
 

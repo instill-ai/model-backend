@@ -83,6 +83,7 @@ type Model struct {
 	SourceURL          string
 	DocumentationURL   string
 	License            string
+	ProfileImage       sql.NullString
 }
 
 // Model version

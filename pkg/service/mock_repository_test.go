@@ -109,48 +109,48 @@ func (mr *MockRepositoryMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2 
 }
 
 // GetModelByIDAdmin mocks base method.
-func (m *MockRepository) GetModelByIDAdmin(arg0 context.Context, arg1 string, arg2 bool) (*datamodel.Model, error) {
+func (m *MockRepository) GetModelByIDAdmin(arg0 context.Context, arg1 string, arg2, arg3 bool) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByIDAdmin", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetModelByIDAdmin", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModelByIDAdmin indicates an expected call of GetModelByIDAdmin.
-func (mr *MockRepositoryMockRecorder) GetModelByIDAdmin(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetModelByIDAdmin(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByIDAdmin", reflect.TypeOf((*MockRepository)(nil).GetModelByIDAdmin), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByIDAdmin", reflect.TypeOf((*MockRepository)(nil).GetModelByIDAdmin), arg0, arg1, arg2, arg3)
 }
 
 // GetModelByUID mocks base method.
-func (m *MockRepository) GetModelByUID(arg0 context.Context, arg1 uuid.UUID, arg2 bool) (*datamodel.Model, error) {
+func (m *MockRepository) GetModelByUID(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 bool) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByUID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetModelByUID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModelByUID indicates an expected call of GetModelByUID.
-func (mr *MockRepositoryMockRecorder) GetModelByUID(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetModelByUID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUID", reflect.TypeOf((*MockRepository)(nil).GetModelByUID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUID", reflect.TypeOf((*MockRepository)(nil).GetModelByUID), arg0, arg1, arg2, arg3)
 }
 
 // GetModelByUIDAdmin mocks base method.
-func (m *MockRepository) GetModelByUIDAdmin(arg0 context.Context, arg1 uuid.UUID, arg2 bool) (*datamodel.Model, error) {
+func (m *MockRepository) GetModelByUIDAdmin(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 bool) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByUIDAdmin", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetModelByUIDAdmin", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModelByUIDAdmin indicates an expected call of GetModelByUIDAdmin.
-func (mr *MockRepositoryMockRecorder) GetModelByUIDAdmin(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetModelByUIDAdmin(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUIDAdmin", reflect.TypeOf((*MockRepository)(nil).GetModelByUIDAdmin), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByUIDAdmin", reflect.TypeOf((*MockRepository)(nil).GetModelByUIDAdmin), arg0, arg1, arg2, arg3)
 }
 
 // GetModelDefinition mocks base method.
@@ -199,18 +199,18 @@ func (mr *MockRepositoryMockRecorder) GetModelVersionByID(arg0, arg1, arg2 inter
 }
 
 // GetNamespaceModelByID mocks base method.
-func (m *MockRepository) GetNamespaceModelByID(arg0 context.Context, arg1, arg2 string, arg3 bool) (*datamodel.Model, error) {
+func (m *MockRepository) GetNamespaceModelByID(arg0 context.Context, arg1, arg2 string, arg3, arg4 bool) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespaceModelByID", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetNamespaceModelByID", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*datamodel.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNamespaceModelByID indicates an expected call of GetNamespaceModelByID.
-func (mr *MockRepositoryMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).GetNamespaceModelByID), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).GetNamespaceModelByID), arg0, arg1, arg2, arg3, arg4)
 }
 
 // ListModelDefinitions mocks base method.

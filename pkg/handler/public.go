@@ -28,6 +28,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/checkfield"
@@ -1408,7 +1409,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	return operation, nil
 }
 
-func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+func inferModelByUpload(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
 	startTime := time.Now()
 	eventName := "InferModelByUpload"
@@ -1681,8 +1682,8 @@ func inferModelByUpload(s service.Service, w http.ResponseWriter, req *http.Requ
 
 }
 
-func HandleTriggerModelByUpload(s service.Service, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(s, w, r, pathParams)
+func HandleTriggerModelByUpload(s service.Service, repo repository.Repository, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+	inferModelByUpload(s, repo, w, r, pathParams)
 }
 
 type GetNamespaceModelCardRequestInterface interface {

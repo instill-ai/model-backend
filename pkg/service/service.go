@@ -50,7 +50,7 @@ type Service interface {
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
 	ConvertOwnerNameToPermalink(name string) (string, error)
 	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
-	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model
+	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) (*datamodel.Model, error)
 	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error)
 	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model) ([]*modelPB.Model, error)
 	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error)
@@ -101,6 +101,7 @@ type service struct {
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    *acl.ACLClient
+	instillCoreHost              string
 }
 
 // NewService returns a new service instance
@@ -112,7 +113,8 @@ func NewService(
 	rc *redis.Client,
 	tc client.Client,
 	ra ray.Ray,
-	a *acl.ACLClient) Service {
+	a *acl.ACLClient,
+	h string) Service {
 	return &service{
 		repository:                   r,
 		ray:                          ra,
@@ -122,6 +124,7 @@ func NewService(
 		redisClient:                  rc,
 		temporalClient:               tc,
 		aclClient:                    a,
+		instillCoreHost:              h,
 	}
 }
 
@@ -254,7 +257,7 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 
 func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
-	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelPB.View_VIEW_BASIC)
+	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelPB.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +278,7 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 
 func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, view == modelPB.View_VIEW_BASIC)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, view == modelPB.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +293,7 @@ func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, 
 
 func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
 
-	dbModel, err := s.repository.GetModelByUIDAdmin(ctx, modelUID, view == modelPB.View_VIEW_BASIC)
+	dbModel, err := s.repository.GetModelByUIDAdmin(ctx, modelUID, view == modelPB.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +310,7 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelPB.View_VIEW_BASIC)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelPB.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -336,7 +339,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 		return err
 	}
 
-	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, model.Owner, model.ID, false)
+	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, model.Owner, model.ID, false, false)
 	if err != nil {
 		return err
 	}
@@ -363,7 +366,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error) {
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
 		return nil, "", ErrNotFound
 	}
@@ -390,7 +393,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false, false)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -483,7 +486,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false, false)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -644,7 +647,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error) {
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
 		return nil, 0, 0, 0, ErrNotFound
 	}
@@ -699,7 +702,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -742,7 +745,7 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -763,7 +766,7 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, newModelID, false)
+	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, newModelID, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -780,7 +783,10 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
-	dbToUpdateModel := s.PBToDBModel(ctx, ns, toUpdateModel)
+	dbToUpdateModel, err := s.PBToDBModel(ctx, ns, toUpdateModel)
+	if err != nil {
+		return nil, err
+	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "reader"); err != nil {
 		return nil, err
@@ -794,9 +800,8 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, ErrNoPermission
 	}
 
-	var err error
 	var dbModel *datamodel.Model
-	if dbModel, err = s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false); dbModel == nil {
+	if dbModel, err = s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false); dbModel == nil {
 		return nil, err
 	}
 
@@ -804,7 +809,7 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, dbModel.ID, false)
+	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, dbModel.ID, false, false)
 	if err != nil {
 		return nil, err
 	}

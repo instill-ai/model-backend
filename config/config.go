@@ -38,6 +38,7 @@ type ServerConfig struct {
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
 	}
+	InstillCoreHost string `koanf:"instillcorehost"`
 }
 
 // DatabaseConfig related to database
