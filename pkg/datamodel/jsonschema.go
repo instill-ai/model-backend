@@ -55,6 +55,10 @@ type RegionHardware struct {
 						Const string `json:"const"`
 						Title string `json:"title"`
 					}
+					AnyOf []struct {
+						Const string `json:"const"`
+						Title string `json:"title"`
+					}
 				}
 			}
 		}

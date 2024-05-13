@@ -166,21 +166,25 @@
               {
                 "const": "CPU",
                 "instillShortDescription": "Deploy model that runs on CPU",
+                "description": "Deploy model that runs on CPU",
                 "title": "CPU"
               },
               {
                 "const": "NVIDIA_TESLA_T4",
                 "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
+                "description": "Deploy model that runs on Nvidia T4 GPU",
                 "title": "Nvidia Tesla T4"
               },
               {
                 "const": "NVIDIA_L4",
                 "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
+                "description": "Deploy model that runs on Nvidia L4 GPU",
                 "title": "Nvidia L4"
               },
               {
                 "const": "NVIDIA_A100",
                 "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
+                "description": "Deploy model that runs on Nvidia A100 40G GPU",
                 "title": "NVIDIA A100"
               }
             ]
@@ -199,10 +203,27 @@
       "then": {
         "properties": {
           "hardware": {
-            "type": "string",
-            "title": "Hardware type",
-            "maxLength": 63,
-            "description": "Fill with the desire hardware type to deploy your model on. If you are not sure, use `CPU` or `GPU`"
+            "anyOf": [
+              {
+                "const": "CPU",
+                "instillShortDescription": "Deploy model that runs on CPU",
+                "description": "Deploy model that runs on CPU",
+                "title": "CPU"
+              },
+              {
+                "const": "GPU",
+                "instillShortDescription": "Deploy model that runs on GPU",
+                "description": "Deploy model that runs on GPU",
+                "title": "GPU"
+              },
+              {
+                "type": "string",
+                "title": "Custom",
+                "maxLength": 63,
+                "description": "Deploy the model that runs on the custom resource type you've setup",
+                "instillShortDescription": "Deploy the model that runs on the custom resource type you've setup"
+              }
+            ]
           }
         }
       }
