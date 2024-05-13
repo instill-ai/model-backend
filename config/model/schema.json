@@ -1,0 +1,334 @@
+{
+  "$defs": {
+    "instill_types": {
+      "bounding_box": {
+        "additionalProperties": false,
+        "description": "The detected bounding box in (left, top, width, height) format.",
+        "properties": {
+          "height": {
+            "description": "Bounding box height value",
+            "instillUIOrder": 3,
+            "title": "Height",
+            "type": "number"
+          },
+          "left": {
+            "description": "Bounding box left x-axis value",
+            "instillUIOrder": 0,
+            "title": "Left",
+            "type": "number"
+          },
+          "top": {
+            "description": "Bounding box top y-axis value",
+            "instillUIOrder": 1,
+            "title": "Top",
+            "type": "number"
+          },
+          "width": {
+            "description": "Bounding box width value",
+            "instillUIOrder": 2,
+            "title": "Width",
+            "type": "number"
+          }
+        },
+        "required": ["left", "top", "width", "height"],
+        "title": "Bounding Box",
+        "type": "object"
+      },
+      "chat_messages": {
+        "items": {
+          "properties": {
+            "content": {
+              "$ref": "#/$defs/instill_types/multi_modal_content",
+              "description": "The message content",
+              "instillUIOrder": 1,
+              "title": "Content"
+            },
+            "metadata": {
+              "additionalProperties": true,
+              "description": "The message metadata",
+              "instillUIOrder": 2,
+              "required": [],
+              "title": "Metadata",
+              "type": "object"
+            },
+            "role": {
+              "description": "The message role, i.e. 'system', 'user' or 'assistant'",
+              "instillUIOrder": 0,
+              "title": "Role",
+              "type": "string"
+            }
+          },
+          "required": ["role", "content"],
+          "type": "object"
+        },
+        "title": "Chat Message",
+        "type": "array"
+      },
+      "classification": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "The predicted category of the input.",
+            "instillUIOrder": 0,
+            "title": "Category",
+            "type": "string"
+          },
+          "score": {
+            "description": "The confidence score of the predicted category of the input.",
+            "instillUIOrder": 1,
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": ["category", "score"],
+        "type": "object"
+      },
+      "detection": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "description": "A list of detected objects.",
+            "instillUIOrder": 0,
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "bounding_box": {
+                  "$ref": "#/$defs/instill_types/bounding_box",
+                  "instillUIOrder": 1,
+                  "title": "Bounding box"
+                },
+                "category": {
+                  "description": "The predicted category of the bounding box.",
+                  "instillUIOrder": 2,
+                  "title": "Category",
+                  "type": "string"
+                },
+                "score": {
+                  "description": "The confidence score of the predicted category of the bounding box.",
+                  "instillUIOrder": 3,
+                  "title": "Score",
+                  "type": "number"
+                }
+              },
+              "required": ["bounding_box", "category", "score"],
+              "title": "Object",
+              "type": "object"
+            },
+            "title": "Objects",
+            "type": "array"
+          }
+        },
+        "required": ["objects"],
+        "type": "object"
+      },
+      "embedding": {
+        "items": {
+          "title": "Embedding",
+          "type": "number"
+        },
+        "title": "Embedding",
+        "type": "array"
+      },
+      "instance_segmentation": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "description": "A list of detected instance bounding boxes.",
+            "instillUIOrder": 0,
+            "items": {
+              "properties": {
+                "bounding_box": {
+                  "$ref": "#/$defs/instill_types/bounding_box",
+                  "instillUIOrder": 1,
+                  "title": "Bounding Box"
+                },
+                "category": {
+                  "description": "The predicted category of the bounding box.",
+                  "instillUIOrder": 2,
+                  "title": "Category",
+                  "type": "string"
+                },
+                "rle": {
+                  "description": "Run Length Encoding (RLE) of instance mask within the bounding box.",
+                  "instillUIOrder": 0,
+                  "title": "RLE",
+                  "type": "string"
+                },
+                "score": {
+                  "description": "The confidence score of the predicted instance object.",
+                  "instillUIOrder": 3,
+                  "title": "Score",
+                  "type": "number"
+                }
+              },
+              "required": ["rle", "bounding_box", "category", "score"],
+              "title": "Object",
+              "type": "object"
+            },
+            "title": "Objects",
+            "type": "array"
+          }
+        },
+        "required": ["objects"],
+        "type": "object"
+      },
+      "keypoint": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "description": "A list of keypoint objects, a keypoint object includes all the pre-defined keypoints of a detected object.",
+            "instillUIOrder": 0,
+            "items": {
+              "properties": {
+                "bounding_box": {
+                  "$ref": "#/$defs/instill_types/bounding_box",
+                  "instillUIOrder": 2,
+                  "title": "Bounding Box"
+                },
+                "keypoints": {
+                  "description": "A keypoint group is composed of a list of pre-defined keypoints of a detected object.",
+                  "instillUIOrder": 0,
+                  "items": {
+                    "instillUIOrder": 0,
+                    "properties": {
+                      "v": {
+                        "description": "visibility score of the keypoint.",
+                        "instillUIOrder": 2,
+                        "type": "number"
+                      },
+                      "x": {
+                        "description": "x coordinate of the keypoint.",
+                        "instillUIOrder": 0,
+                        "type": "number"
+                      },
+                      "y": {
+                        "description": "y coordinate of the keypoint.",
+                        "instillUIOrder": 1,
+                        "type": "number"
+                      }
+                    },
+                    "required": ["x", "y", "v"],
+                    "title": "Keypoints",
+                    "type": "object"
+                  },
+                  "title": "Keypoints",
+                  "type": "array"
+                },
+                "score": {
+                  "description": "The confidence score of the predicted object.",
+                  "instillUIOrder": 1,
+                  "title": "Score",
+                  "type": "number"
+                }
+              },
+              "required": ["keypoints", "score", "bounding_box"],
+              "title": "Object",
+              "type": "object"
+            },
+            "title": "Objects",
+            "type": "array"
+          }
+        },
+        "required": ["objects"],
+        "type": "object"
+      },
+      "multi_modal_content": {
+        "items": {
+          "properties": {
+            "image_url": {
+              "properties": {
+                "url": {
+                  "description": "Either a URL of the image or the base64 encoded image data.",
+                  "type": "string"
+                }
+              },
+              "required": ["url"],
+              "type": "object"
+            },
+            "text": {
+              "description": "The text content.",
+              "type": "string"
+            },
+            "type": {
+              "description": "The type of the content part.",
+              "enum": ["text", "image_url"],
+              "type": "string"
+            }
+          },
+          "required": ["type"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "ocr": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "description": "A list of detected bounding boxes.",
+            "instillUIOrder": 0,
+            "items": {
+              "properties": {
+                "bounding_box": {
+                  "$ref": "#/$defs/instill_types/bounding_box",
+                  "instillUIOrder": 0,
+                  "title": "Bounding Box"
+                },
+                "score": {
+                  "description": "The confidence score of the predicted object.",
+                  "instillUIOrder": 2,
+                  "title": "Score",
+                  "type": "number"
+                },
+                "text": {
+                  "description": "Text string recognised per bounding box.",
+                  "instillUIOrder": 1,
+                  "title": "Text",
+                  "type": "string"
+                }
+              },
+              "required": ["bounding_box", "text", "score"],
+              "title": "Object",
+              "type": "object"
+            },
+            "title": "Objects",
+            "type": "array"
+          }
+        },
+        "required": ["objects"],
+        "type": "object"
+      },
+      "semantic_segmentation": {
+        "additionalProperties": false,
+        "properties": {
+          "stuffs": {
+            "description": "A list of RLE binary masks.",
+            "instillUIOrder": 0,
+            "items": {
+              "properties": {
+                "category": {
+                  "description": "Category text string corresponding to each stuff mask.",
+                  "instillUIOrder": 1,
+                  "title": "Category",
+                  "type": "string"
+                },
+                "rle": {
+                  "description": "Run Length Encoding (RLE) of each stuff mask within the image.",
+                  "instillUIOrder": 0,
+                  "title": "RLE",
+                  "type": "string"
+                }
+              },
+              "required": ["rle", "category"],
+              "title": "Object",
+              "type": "object"
+            },
+            "title": "Stuffs",
+            "type": "array"
+          }
+        },
+        "required": ["stuffs"],
+        "type": "object"
+      }
+    }
+  }
+}
