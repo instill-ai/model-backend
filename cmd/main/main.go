@@ -227,7 +227,7 @@ func main() {
 
 	repo := repository.NewRepository(db, redisClient)
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient)
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, config.Config.Server.InstillCoreHost)
 
 	modelPB.RegisterModelPublicServiceServer(
 		publicGrpcS,
@@ -258,13 +258,20 @@ func main() {
 	)
 
 	// Register custom route for  POST /v1alpha/users/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
 	}
 
 	// Register custom route for  POST /v1alpha/organizations/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
 		panic(err)
+	}
+
+	if err := publicGwS.HandlePath("GET", "/v1alpha/{path=users/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(serv, repo, middleware.HandleProfileImage)); err != nil {
+		logger.Fatal(err.Error())
+	}
+	if err := publicGwS.HandlePath("GET", "/v1alpha/{path=organizations/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(serv, repo, middleware.HandleProfileImage)); err != nil {
+		logger.Fatal(err.Error())
 	}
 
 	// Start usage reporter

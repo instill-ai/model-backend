@@ -30,11 +30,11 @@ const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBL
 
 type Repository interface {
 	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
-	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
+	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
 	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
 	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
-	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error)
+	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
 	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
@@ -44,8 +44,8 @@ type Repository interface {
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
-	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error)
-	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error)
+	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
+	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 
 	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
@@ -115,9 +115,14 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 
 	if uidAllowList != nil {
-		db.Model(&datamodel.Model{}).Where(where, whereArgs...).Where("uid in ?", uidAllowList).Count(&totalSize)
+		db.Model(&datamodel.Model{}).
+			Where(where, whereArgs...).
+			Where("uid in ?", uidAllowList).
+			Count(&totalSize)
 	} else {
-		db.Model(&datamodel.Model{}).Where(where, whereArgs...).Count(&totalSize)
+		db.Model(&datamodel.Model{}).
+			Where(where, whereArgs...).
+			Count(&totalSize)
 	}
 
 	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC").Where(where, whereArgs...)
@@ -147,6 +152,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	if isBasicView {
 		queryBuilder.Omit("configuration")
 	}
+	queryBuilder.Omit("profile_image")
 
 	var createTime time.Time // only using one for all loops, we only need the latest one in the end
 	rows, err := queryBuilder.Rows()
@@ -171,6 +177,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 		if uidAllowList != nil {
 			if result := db.Model(&datamodel.Model{}).
+				Omit("profile_image").
 				Where(where, whereArgs...).
 				Where("uid in ?", uidAllowList).
 				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
@@ -179,6 +186,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 			}
 		} else {
 			if result := db.Model(&datamodel.Model{}).
+				Omit("profile_image").
 				Where(where, whereArgs...).
 				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
 				logger.Error(err.Error())
@@ -218,7 +226,7 @@ func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageTo
 	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, filter, nil, showDeleted)
 }
 
-func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -227,6 +235,9 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	queryBuilder := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...)
 
 	if isBasicView {
+		queryBuilder.Omit("configuration")
+	}
+	if !includeAvatar {
 		queryBuilder.Omit("configuration")
 	}
 
@@ -247,34 +258,37 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	return &model, nil
 }
 
-func (r *repository) GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	// TODO: ACL
 	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
 		[]any{uid},
-		isBasicView)
+		isBasicView,
+		includeAvatar)
 }
 
-func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(id = ? AND owner = ? )",
 		[]any{id, ownerPermalink},
-		isBasicView)
+		isBasicView,
+		includeAvatar)
 }
 
-func (r *repository) GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(id = ?)",
 		[]any{id},
-		isBasicView)
+		isBasicView,
+		includeAvatar)
 }
 
-func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool) (*datamodel.Model, error) {
+func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
 		[]any{uid},
 		isBasicView,
-	)
+		includeAvatar)
 }
 
 func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {

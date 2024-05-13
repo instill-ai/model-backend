@@ -1,16 +1,62 @@
 package middleware
 
 import (
+	"context"
+	"encoding/base64"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 )
 
-type fn func(service.Service, http.ResponseWriter, *http.Request, map[string]string)
+type fn func(service.Service, repository.Repository, http.ResponseWriter, *http.Request, map[string]string)
 
-func AppendCustomHeaderMiddleware(s service.Service, next fn) runtime.HandlerFunc {
+func AppendCustomHeaderMiddleware(s service.Service, repo repository.Repository, next fn) runtime.HandlerFunc {
 	return runtime.HandlerFunc(func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		next(s, w, r, pathParams)
+		next(s, repo, w, r, pathParams)
 	})
+}
+
+func HandleProfileImage(s service.Service, r repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
+	defer cancel()
+	if v, ok := pathParams["path"]; !ok || len(strings.Split(v, "/")) < 4 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	ns, modelID, err := s.GetRscNamespaceAndNameID(pathParams["path"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	profileImageBase64 := ""
+	dbModel, err := r.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, true, true)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if dbModel.ProfileImage.String == "" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	profileImageBase64 = dbModel.ProfileImage.String
+
+	b, err := base64.StdEncoding.DecodeString(strings.Split(profileImageBase64, ",")[1])
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	_, err = w.Write(b)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 }

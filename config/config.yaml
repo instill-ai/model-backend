@@ -17,6 +17,7 @@ server:
     maxworkflowtimeout: 3600 # in seconds
     maxworkflowretry: 1
     maxactivityretry: 3
+  instillcorehost: http://localhost:8080
 database:
   username: postgres
   password: password

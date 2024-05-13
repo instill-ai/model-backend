@@ -1,12 +1,23 @@
 package service
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"strings"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofrs/uuid"
+	"golang.org/x/image/draw"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -19,8 +30,50 @@ import (
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) *datamodel.Model {
+func (s *service) compressProfileImage(profileImage string) (string, error) {
+
+	profileImageStr := strings.Split(profileImage, ",")
+	b, err := base64.StdEncoding.DecodeString(profileImageStr[len(profileImageStr)-1])
+	if err != nil {
+		return "", err
+	}
+	if len(b) > 200*1024 {
+		mimeType := strings.Split(mimetype.Detect(b).String(), ";")[0]
+
+		var src image.Image
+		switch mimeType {
+		case "image/png":
+			src, _ = png.Decode(bytes.NewReader(b))
+		case "image/jpeg":
+			src, _ = jpeg.Decode(bytes.NewReader(b))
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "only support profile image in jpeg and png formats")
+		}
+
+		// Set the expected size that you want:
+		dst := image.NewRGBA(image.Rect(0, 0, 256, 256*src.Bounds().Max.Y/src.Bounds().Max.X))
+
+		// Resize:
+		draw.NearestNeighbor.Scale(dst, dst.Rect, src, src.Bounds(), draw.Over, nil)
+
+		var buf bytes.Buffer
+		encoder := png.Encoder{CompressionLevel: png.BestCompression}
+		err = encoder.Encode(bufio.NewWriter(&buf), dst)
+		if err != nil {
+			return "", status.Errorf(codes.InvalidArgument, "profile image error")
+		}
+		profileImage = fmt.Sprintf("data:%s;base64,%s", "image/png", base64.StdEncoding.EncodeToString(buf.Bytes()))
+	}
+	return profileImage, nil
+}
+
+func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) (*datamodel.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	profileImage, err := s.compressProfileImage(pbModel.GetProfileImage())
+	if err != nil {
+		return nil, err
+	}
 
 	return &datamodel.Model{
 		BaseDynamic: datamodel.BaseDynamic{
@@ -62,7 +115,11 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 		SourceURL:        pbModel.GetSourceUrl(),
 		DocumentationURL: pbModel.GetDocumentationUrl(),
 		License:          pbModel.GetLicense(),
-	}
+		ProfileImage: sql.NullString{
+			String: profileImage,
+			Valid:  len(profileImage) > 0,
+		},
+	}, nil
 }
 
 func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
@@ -77,6 +134,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		return nil, err
 	}
 
+	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 	pbModel := modelPB.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
@@ -112,6 +170,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		SourceUrl:        dbModel.SourceURL,
 		DocumentationUrl: dbModel.DocumentationURL,
 		License:          dbModel.License,
+		ProfileImage:     &profileImage,
 	}
 
 	appendSampleInputOutput(&pbModel)
