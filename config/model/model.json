@@ -134,18 +134,21 @@
     },
     "source_url": {
       "type": "string",
+      "format": "uri",
       "title": "Source URL",
       "maxLength": 63,
       "description": "The source code url of the model"
     },
     "documentation_url": {
       "type": "string",
+      "format": "uri",
       "title": "Documentation URL",
       "maxLength": 63,
       "description": "The documentation url of the model"
     },
     "license": {
       "type": "string",
+      "format": "uri",
       "title": "License",
       "description": "The license of the model"
     }
