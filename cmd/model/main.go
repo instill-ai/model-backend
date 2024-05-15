@@ -34,6 +34,8 @@ type ModelConfig struct {
 	Description     string         `json:"description"`
 	Task            string         `json:"task"`
 	ModelDefinition string         `json:"model_definition"`
+	Region          string         `json:"region"`
+	Hardwdare       string         `json:"hardware"`
 	Configuration   map[string]any `json:"configuration"`
 	Version         string         `json:"version"`
 }
@@ -233,8 +235,8 @@ func main() {
 					Description:     &modelConfig.Description,
 					ModelDefinition: modelConfig.ModelDefinition,
 					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
-					Region:          "REGION_GCP_EUROPE_WEST_4",
-					Hardware:        "CPU",
+					Region:          modelConfig.Region,
+					Hardware:        modelConfig.Hardwdare,
 					Configuration:   configuration,
 				}
 				if config.Config.InitModel.OwnerType == string(resource.User) {
@@ -263,7 +265,7 @@ func main() {
 			logger.Info("Deploying model: " + modelConfig.ID)
 			_, err = modelPrivateServiceClient.DeployModelAdmin(ctx, &modelPB.DeployModelAdminRequest{
 				Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				Version: "test",
+				Version: modelConfig.Version,
 			})
 			if err != nil {
 				logger.Error(fmt.Sprintf("deploy model err: %v", err))
@@ -286,7 +288,7 @@ func main() {
 					var resp *modelPB.WatchUserModelResponse
 					resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						Version: "test",
+						Version: modelConfig.Version,
 					})
 					state = resp.GetState()
 					message = resp.GetMessage()
@@ -294,7 +296,7 @@ func main() {
 					var resp *modelPB.WatchOrganizationModelResponse
 					resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						Version: "test",
+						Version: modelConfig.Version,
 					})
 					state = resp.GetState()
 					message = resp.GetMessage()
