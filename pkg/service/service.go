@@ -667,9 +667,11 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, err
 	}
 
-	versions := make([]*modelPB.ModelVersion, resp.GetTotalSize())
+	tags := resp.GetTags()
 
-	for i, tag := range resp.GetTags() {
+	versions := make([]*modelPB.ModelVersion, len(tags))
+
+	for i, tag := range tags {
 		state, _, err := s.WatchModel(ctx, ns, modelID, tag.GetId())
 		if err != nil {
 			return nil, 0, 0, 0, err
