@@ -64,7 +64,7 @@ type Service interface {
 	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelPB.Model, error)
-	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelPB.Model) (*modelPB.Model, error)
+	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelPB.Model, reDeploy bool) (*modelPB.Model, error)
 	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error)
 
@@ -781,7 +781,7 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
 }
 
-func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelPB.Model) (*modelPB.Model, error) {
+func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelPB.Model, reDeploy bool) (*modelPB.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -819,6 +819,30 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
+	}
+
+	if reDeploy {
+		versions, totalSize, _, page, err := s.ListNamespaceModelVersions(ctx, ns, 0, 10, updatedDBModel.ID)
+		if err != nil {
+			return nil, err
+		}
+		for len(versions) < int(totalSize) {
+			page += 1
+			v, _, _, _, err := s.ListNamespaceModelVersions(ctx, ns, page, 10, updatedDBModel.ID)
+			if err != nil {
+				return nil, err
+			}
+			versions = append(versions, v...)
+		}
+
+		for _, v := range versions {
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, "", v.Id, false); err != nil {
+				return nil, err
+			}
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, updatedDBModel.Hardware, v.Id, true); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return s.DBToPBModel(ctx, modelDef, updatedDBModel)
