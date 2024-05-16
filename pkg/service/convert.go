@@ -113,14 +113,26 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 			String: pbModel.GetDescription(),
 			Valid:  true,
 		},
-		Task:             datamodel.ModelTask(pbModel.GetTask()),
-		Visibility:       datamodel.ModelVisibility(pbModel.GetVisibility()),
-		Region:           pbModel.GetRegion(),
-		Hardware:         pbModel.GetHardware(),
-		Readme:           pbModel.GetReadme(),
-		SourceURL:        pbModel.GetSourceUrl(),
-		DocumentationURL: pbModel.GetDocumentationUrl(),
-		License:          pbModel.GetLicense(),
+		Task:       datamodel.ModelTask(pbModel.GetTask()),
+		Visibility: datamodel.ModelVisibility(pbModel.GetVisibility()),
+		Region:     pbModel.GetRegion(),
+		Hardware:   pbModel.GetHardware(),
+		Readme: sql.NullString{
+			String: pbModel.GetReadme(),
+			Valid:  true,
+		},
+		SourceURL: sql.NullString{
+			String: pbModel.GetSourceUrl(),
+			Valid:  true,
+		},
+		DocumentationURL: sql.NullString{
+			String: pbModel.GetDocumentationUrl(),
+			Valid:  true,
+		},
+		License: sql.NullString{
+			String: pbModel.GetLicense(),
+			Valid:  true,
+		},
 		ProfileImage: sql.NullString{
 			String: profileImage,
 			Valid:  len(profileImage) > 0,
@@ -173,9 +185,9 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		Owner:            owner,
 		Region:           dbModel.Region,
 		Hardware:         dbModel.Hardware,
-		SourceUrl:        dbModel.SourceURL,
-		DocumentationUrl: dbModel.DocumentationURL,
-		License:          dbModel.License,
+		SourceUrl:        &dbModel.SourceURL.String,
+		DocumentationUrl: &dbModel.DocumentationURL.String,
+		License:          &dbModel.License.String,
 		ProfileImage:     &profileImage,
 	}
 

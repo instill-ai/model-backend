@@ -79,10 +79,10 @@ type Model struct {
 	Task               ModelTask
 	Region             string
 	Hardware           string
-	Readme             string
-	SourceURL          string
-	DocumentationURL   string
-	License            string
+	Readme             sql.NullString
+	SourceURL          sql.NullString
+	DocumentationURL   sql.NullString
+	License            sql.NullString
 	ProfileImage       sql.NullString
 }
 
