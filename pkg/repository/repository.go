@@ -230,9 +230,11 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
 	var model datamodel.Model
 
-	queryBuilder := r.db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	queryBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
 
 	if isBasicView {
 		queryBuilder.Omit("configuration")
@@ -397,7 +399,9 @@ func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink stri
 }
 
 func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error) {
-	queryBuilder := r.db.Model(&datamodel.ModelVersion{}).Where("(version = ? AND model_uid = ?)", versionID, modelUID)
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(version = ? AND model_uid = ?)", versionID, modelUID)
 
 	if result := queryBuilder.First(&version); result.Error != nil {
 		st, _ := sterr.CreateErrorResourceInfo(
@@ -414,7 +418,9 @@ func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID
 }
 
 func (r *repository) ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
-	if result := r.db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if result := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
 		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v not found", modelUID)
 	}
 	return versions, nil
