@@ -89,7 +89,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: instill-ai/instill-core
-          ref: update-ray-infra
 
       - name: Load .env file (instill-core)
         uses: cardinalby/export-env-action@v2
