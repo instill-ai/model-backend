@@ -11,6 +11,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -23,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
@@ -140,7 +142,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 	}, nil
 }
 
-func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model) (*modelPB.Model, error) {
+func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, checkPermission bool) (*modelPB.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
@@ -151,6 +153,8 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	if err != nil {
 		return nil, err
 	}
+
+	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
 	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 	pbModel := modelPB.Model{
@@ -191,12 +195,50 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		ProfileImage:     &profileImage,
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+	pbModel.Permission = &modelPB.Permission{}
+	go func() {
+		defer wg.Done()
+		if !checkPermission {
+			return
+		}
+		if strings.Split(dbModel.Owner, "/")[1] == ctxUserUID {
+			pbModel.Permission.CanEdit = true
+			return
+		}
+
+		canEdit, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "writer")
+		if err != nil {
+			return
+		}
+		pbModel.Permission.CanEdit = canEdit
+	}()
+	go func() {
+		defer wg.Done()
+		if !checkPermission {
+			return
+		}
+		if strings.Split(dbModel.Owner, "/")[1] == ctxUserUID {
+			pbModel.Permission.CanTrigger = true
+			return
+		}
+
+		canTrigger, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor")
+		if err != nil {
+			return
+		}
+		pbModel.Permission.CanTrigger = canTrigger
+	}()
+
+	wg.Wait()
+
 	appendSampleInputOutput(&pbModel)
 
 	return &pbModel, nil
 }
 
-func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model) ([]*modelPB.Model, error) {
+func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, checkPermission bool) ([]*modelPB.Model, error) {
 
 	pbModels := make([]*modelPB.Model, len(dbModels))
 
@@ -210,6 +252,7 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model)
 			ctx,
 			modelDef,
 			dbModels[idx],
+			checkPermission,
 		)
 		if err != nil {
 			return nil, err
