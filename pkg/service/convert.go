@@ -29,6 +29,7 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -142,14 +143,10 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 	}, nil
 }
 
-func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, checkPermission bool) (*modelPB.Model, error) {
+func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelPB.View, checkPermission bool) (*modelPB.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
-	if err != nil {
-		return nil, err
-	}
-	owner, err := s.FetchOwnerWithPermalink(dbModel.Owner)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +183,6 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 			return nil
 		}(),
 		OwnerName:        ownerName,
-		Owner:            owner,
 		Region:           dbModel.Region,
 		Hardware:         dbModel.Hardware,
 		SourceUrl:        &dbModel.SourceURL.String,
@@ -197,7 +193,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	pbModel.Permission = &modelPB.Permission{}
 	go func() {
 		defer wg.Done()
@@ -231,15 +227,48 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		}
 		pbModel.Permission.CanTrigger = canTrigger
 	}()
+	go func() {
+		defer wg.Done()
+		var owner *mgmtPB.Owner
+		if view > modelPB.View_VIEW_BASIC {
+			owner, err = s.FetchOwnerWithPermalink(dbModel.Owner)
+			if err != nil {
+				return
+			}
+			pbModel.Owner = owner
+		}
+	}()
+
+	if view > modelPB.View_VIEW_BASIC {
+
+		inputTaskSchema, ok := datamodel.TaskInputJSON[pbModel.Task.String()].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("value for key %s is not a JSON object", pbModel.Task.String())
+		}
+		outputTaskSchema, ok := datamodel.TaskOutputJSON[pbModel.Task.String()].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("value for key %s is not a JSON object", pbModel.Task.String())
+		}
+		inputStruct, err := structpb.NewStruct(inputTaskSchema)
+		if err != nil {
+			return nil, err
+		}
+		outputStruct, err := structpb.NewStruct(outputTaskSchema)
+		if err != nil {
+			return nil, err
+		}
+		pbModel.InputSchema = inputStruct
+		pbModel.OutputSchema = outputStruct
+
+		appendSampleInputOutput(&pbModel)
+	}
 
 	wg.Wait()
-
-	appendSampleInputOutput(&pbModel)
 
 	return &pbModel, nil
 }
 
-func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, checkPermission bool) ([]*modelPB.Model, error) {
+func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelPB.View, checkPermission bool) ([]*modelPB.Model, error) {
 
 	pbModels := make([]*modelPB.Model, len(dbModels))
 
@@ -253,6 +282,7 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model,
 			ctx,
 			modelDef,
 			dbModels[idx],
+			view,
 			checkPermission,
 		)
 		if err != nil {
@@ -512,7 +542,6 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 			TextToImage: &modelPB.TextToImageOutput{
 				Images: []string{
 					"/9j/4AAQSkZJRgABAQAAAQABAAD/...",
-					"/9j/2wCEAAEBAQEBAQEFKEPOFAFD...",
 				},
 			},
 		}

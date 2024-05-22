@@ -1,0 +1,631 @@
+{
+  "TASK_CLASSIFICATION": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Classification",
+    "instillShortDescription": "Classify images into predefined categories.",
+    "instillUIOrder": 0,
+    "properties": {
+      "category": {
+        "description": "The predicted category of the input.",
+        "instillFormat": "string",
+        "instillShortDescription": "The predicted category of the input.",
+        "instillUIOrder": 0,
+        "title": "Category",
+        "type": "string"
+      },
+      "score": {
+        "description": "The confidence score of the predicted category of the input.",
+        "instillFormat": "number",
+        "instillShortDescription": "The confidence score of the predicted category of the input.",
+        "instillUIOrder": 1,
+        "title": "Score",
+        "type": "number"
+      }
+    },
+    "required": [
+      "category",
+      "score"
+    ],
+    "type": "object"
+  },
+  "TASK_DETECTION": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Detection",
+    "instillShortDescription": "Detect and localize multiple objects in images.",
+    "instillUIOrder": 0,
+    "properties": {
+      "objects": {
+        "description": "A list of detected objects.",
+        "instillFormat": "array:structured/detection_object",
+        "instillUIOrder": 0,
+        "items": {
+          "additionalProperties": false,
+          "instillFormat": "structured/detection_object",
+          "instillUIOrder": 0,
+          "properties": {
+            "bounding_box": {
+              "additionalProperties": false,
+              "description": "The detected bounding box in (left, top, width, height) format.",
+              "instillFormat": "structured/bounding_box",
+              "instillUIOrder": 1,
+              "properties": {
+                "height": {
+                  "description": "Bounding box height value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box height value",
+                  "instillUIOrder": 3,
+                  "title": "Height",
+                  "type": "number"
+                },
+                "left": {
+                  "description": "Bounding box left x-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box left x-axis value",
+                  "instillUIOrder": 0,
+                  "title": "Left",
+                  "type": "number"
+                },
+                "top": {
+                  "description": "Bounding box top y-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box top y-axis value",
+                  "instillUIOrder": 1,
+                  "title": "Top",
+                  "type": "number"
+                },
+                "width": {
+                  "description": "Bounding box width value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box width value",
+                  "instillUIOrder": 2,
+                  "title": "Width",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "title": "Bounding box",
+              "type": "object"
+            },
+            "category": {
+              "description": "The predicted category of the bounding box.",
+              "instillFormat": "string",
+              "instillShortDescription": "The predicted category of the bounding box.",
+              "instillUIOrder": 2,
+              "title": "Category",
+              "type": "string"
+            },
+            "score": {
+              "description": "The confidence score of the predicted category of the bounding box.",
+              "instillFormat": "number",
+              "instillShortDescription": "The confidence score of the predicted category of the bounding box.",
+              "instillUIOrder": 3,
+              "title": "Score",
+              "type": "number"
+            }
+          },
+          "required": [
+            "bounding_box",
+            "category",
+            "score"
+          ],
+          "title": "Object",
+          "type": "object"
+        },
+        "title": "Objects",
+        "type": "array"
+      }
+    },
+    "required": [
+      "objects"
+    ],
+    "type": "object"
+  },
+  "TASK_OCR": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Ocr",
+    "instillShortDescription": "Detect and recognize text in images.",
+    "instillUIOrder": 0,
+    "properties": {
+      "objects": {
+        "description": "A list of detected bounding boxes.",
+        "instillFormat": "array:structured/ocr_object",
+        "instillUIOrder": 0,
+        "items": {
+          "instillFormat": "structured/ocr_object",
+          "instillUIOrder": 0,
+          "properties": {
+            "bounding_box": {
+              "additionalProperties": false,
+              "description": "The detected bounding box in (left, top, width, height) format.",
+              "instillFormat": "structured/bounding_box",
+              "instillUIOrder": 0,
+              "properties": {
+                "height": {
+                  "description": "Bounding box height value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box height value",
+                  "instillUIOrder": 3,
+                  "title": "Height",
+                  "type": "number"
+                },
+                "left": {
+                  "description": "Bounding box left x-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box left x-axis value",
+                  "instillUIOrder": 0,
+                  "title": "Left",
+                  "type": "number"
+                },
+                "top": {
+                  "description": "Bounding box top y-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box top y-axis value",
+                  "instillUIOrder": 1,
+                  "title": "Top",
+                  "type": "number"
+                },
+                "width": {
+                  "description": "Bounding box width value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box width value",
+                  "instillUIOrder": 2,
+                  "title": "Width",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "title": "Bounding Box",
+              "type": "object"
+            },
+            "score": {
+              "description": "The confidence score of the predicted object.",
+              "instillFormat": "number",
+              "instillShortDescription": "The confidence score of the predicted object.",
+              "instillUIOrder": 2,
+              "title": "Score",
+              "type": "number"
+            },
+            "text": {
+              "description": "Text string recognised per bounding box.",
+              "instillFormat": "string",
+              "instillShortDescription": "Text string recognised per bounding box.",
+              "instillUIOrder": 1,
+              "title": "Text",
+              "type": "string"
+            }
+          },
+          "required": [
+            "bounding_box",
+            "text",
+            "score"
+          ],
+          "title": "Object",
+          "type": "object"
+        },
+        "title": "Objects",
+        "type": "array"
+      }
+    },
+    "required": [
+      "objects"
+    ],
+    "type": "object"
+  },
+  "TASK_SEMANTIC_SEGMENTATION": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Semantic Segmentation",
+    "instillShortDescription": "Classify image pixels into predefined categories.",
+    "instillUIOrder": 0,
+    "properties": {
+      "stuffs": {
+        "description": "A list of RLE binary masks.",
+        "instillFormat": "array:structured/semantic_segmentation_stuff",
+        "instillUIOrder": 0,
+        "items": {
+          "instillFormat": "structured/semantic_segmentation_stuff",
+          "instillUIOrder": 0,
+          "properties": {
+            "category": {
+              "description": "Category text string corresponding to each stuff mask.",
+              "instillFormat": "string",
+              "instillShortDescription": "Category text string corresponding to each stuff mask.",
+              "instillUIOrder": 1,
+              "title": "Category",
+              "type": "string"
+            },
+            "rle": {
+              "description": "Run Length Encoding (RLE) of each stuff mask within the image.",
+              "instillFormat": "string",
+              "instillShortDescription": "Run Length Encoding (RLE) of each stuff mask within the image.",
+              "instillUIOrder": 0,
+              "title": "RLE",
+              "type": "string"
+            }
+          },
+          "required": [
+            "rle",
+            "category"
+          ],
+          "title": "Object",
+          "type": "object"
+        },
+        "title": "Stuffs",
+        "type": "array"
+      }
+    },
+    "required": [
+      "stuffs"
+    ],
+    "type": "object"
+  },
+  "TASK_KEYPOINT": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Keypoint",
+    "instillShortDescription": "Detect and localize multiple keypoints of objects in images.",
+    "instillUIOrder": 0,
+    "properties": {
+      "objects": {
+        "description": "A list of keypoint objects, a keypoint object includes all the pre-defined keypoints of a detected object.",
+        "instillFormat": "array:structured/keypoint_object",
+        "instillUIOrder": 0,
+        "items": {
+          "instillFormat": "structured/keypoint_object",
+          "instillUIOrder": 0,
+          "properties": {
+            "bounding_box": {
+              "additionalProperties": false,
+              "description": "The detected bounding box in (left, top, width, height) format.",
+              "instillFormat": "structured/bounding_box",
+              "instillUIOrder": 2,
+              "properties": {
+                "height": {
+                  "description": "Bounding box height value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box height value",
+                  "instillUIOrder": 3,
+                  "title": "Height",
+                  "type": "number"
+                },
+                "left": {
+                  "description": "Bounding box left x-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box left x-axis value",
+                  "instillUIOrder": 0,
+                  "title": "Left",
+                  "type": "number"
+                },
+                "top": {
+                  "description": "Bounding box top y-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box top y-axis value",
+                  "instillUIOrder": 1,
+                  "title": "Top",
+                  "type": "number"
+                },
+                "width": {
+                  "description": "Bounding box width value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box width value",
+                  "instillUIOrder": 2,
+                  "title": "Width",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "title": "Bounding Box",
+              "type": "object"
+            },
+            "keypoints": {
+              "description": "A keypoint group is composed of a list of pre-defined keypoints of a detected object.",
+              "instillUIOrder": 0,
+              "items": {
+                "instillUIOrder": 0,
+                "properties": {
+                  "v": {
+                    "description": "visibility score of the keypoint.",
+                    "instillFormat": "number",
+                    "instillShortDescription": "visibility score of the keypoint.",
+                    "instillUIOrder": 2,
+                    "title": "",
+                    "type": "number"
+                  },
+                  "x": {
+                    "description": "x coordinate of the keypoint.",
+                    "instillFormat": "number",
+                    "instillShortDescription": "x coordinate of the keypoint.",
+                    "instillUIOrder": 0,
+                    "title": "",
+                    "type": "number"
+                  },
+                  "y": {
+                    "description": "y coordinate of the keypoint.",
+                    "instillFormat": "number",
+                    "instillShortDescription": "y coordinate of the keypoint.",
+                    "instillUIOrder": 1,
+                    "title": "",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "v"
+                ],
+                "title": "Keypoints",
+                "type": "object"
+              },
+              "title": "Keypoints",
+              "type": "array"
+            },
+            "score": {
+              "description": "The confidence score of the predicted object.",
+              "instillFormat": "number",
+              "instillShortDescription": "The confidence score of the predicted object.",
+              "instillUIOrder": 1,
+              "title": "Score",
+              "type": "number"
+            }
+          },
+          "required": [
+            "keypoints",
+            "score",
+            "bounding_box"
+          ],
+          "title": "Object",
+          "type": "object"
+        },
+        "title": "Objects",
+        "type": "array"
+      }
+    },
+    "required": [
+      "objects"
+    ],
+    "type": "object"
+  },
+  "TASK_INSTANCE_SEGMENTATION": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Instance Segmentation",
+    "instillShortDescription": "Detect, localize and delineate multiple objects in images.",
+    "instillUIOrder": 0,
+    "properties": {
+      "objects": {
+        "description": "A list of detected instance bounding boxes.",
+        "instillFormat": "array:structured/instance_segmentation_object",
+        "instillUIOrder": 0,
+        "items": {
+          "instillEditOnNodeFields": [
+            "rle",
+            "bounding_box",
+            "category",
+            "score"
+          ],
+          "instillFormat": "structured/instance_segmentation_object",
+          "instillUIOrder": 0,
+          "properties": {
+            "bounding_box": {
+              "additionalProperties": false,
+              "description": "The detected bounding box in (left, top, width, height) format.",
+              "instillEditOnNodeFields": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "instillFormat": "structured/bounding_box",
+              "instillUIOrder": 1,
+              "properties": {
+                "height": {
+                  "description": "Bounding box height value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box height value",
+                  "instillUIOrder": 3,
+                  "title": "Height",
+                  "type": "number"
+                },
+                "left": {
+                  "description": "Bounding box left x-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box left x-axis value",
+                  "instillUIOrder": 0,
+                  "title": "Left",
+                  "type": "number"
+                },
+                "top": {
+                  "description": "Bounding box top y-axis value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box top y-axis value",
+                  "instillUIOrder": 1,
+                  "title": "Top",
+                  "type": "number"
+                },
+                "width": {
+                  "description": "Bounding box width value",
+                  "instillFormat": "number",
+                  "instillShortDescription": "Bounding box width value",
+                  "instillUIOrder": 2,
+                  "title": "Width",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "title": "Bounding Box",
+              "type": "object"
+            },
+            "category": {
+              "description": "The predicted category of the bounding box.",
+              "instillFormat": "string",
+              "instillShortDescription": "The predicted category of the bounding box.",
+              "instillUIOrder": 2,
+              "title": "Category",
+              "type": "string"
+            },
+            "rle": {
+              "description": "Run Length Encoding (RLE) of instance mask within the bounding box.",
+              "instillFormat": "string",
+              "instillShortDescription": "Run Length Encoding (RLE) of instance mask within the bounding box.",
+              "instillUIOrder": 0,
+              "title": "RLE",
+              "type": "string"
+            },
+            "score": {
+              "description": "The confidence score of the predicted instance object.",
+              "instillFormat": "number",
+              "instillShortDescription": "The confidence score of the predicted instance object.",
+              "instillUIOrder": 3,
+              "title": "Score",
+              "type": "number"
+            }
+          },
+          "required": [
+            "rle",
+            "bounding_box",
+            "category",
+            "score"
+          ],
+          "title": "Object",
+          "type": "object"
+        },
+        "title": "Objects",
+        "type": "array"
+      }
+    },
+    "required": [
+      "objects"
+    ],
+    "type": "object"
+  },
+  "TASK_TEXT_TO_IMAGE": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Text To Image",
+    "instillShortDescription": "Generate images from input text prompts.",
+    "instillUIOrder": 0,
+    "properties": {
+      "images": {
+        "description": "Images",
+        "instillFormat": "array:image/jpeg",
+        "instillUIOrder": 0,
+        "items": {
+          "description": "",
+          "instillFormat": "image/jpeg",
+          "instillShortDescription": "",
+          "instillUIOrder": 0,
+          "title": "Image",
+          "type": "string"
+        },
+        "title": "Images",
+        "type": "array"
+      }
+    },
+    "required": [
+      "images"
+    ],
+    "type": "object"
+  },
+  "TASK_IMAGE_TO_IMAGE": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Image To Image",
+    "instillShortDescription": "Generate image from input text prompt and image.",
+    "instillUIOrder": 0,
+    "properties": {
+      "images": {
+        "description": "Images",
+        "instillFormat": "array:image/jpeg",
+        "instillUIOrder": 0,
+        "items": {
+          "description": "",
+          "instillFormat": "image/jpeg",
+          "instillShortDescription": "",
+          "instillUIOrder": 0,
+          "title": "Image",
+          "type": "string"
+        },
+        "title": "Images",
+        "type": "array"
+      }
+    },
+    "required": [
+      "images"
+    ],
+    "type": "object"
+  },
+  "TASK_TEXT_GENERATION": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Text Generation",
+    "instillShortDescription": "Generate texts from input text prompts.",
+    "instillUIOrder": 0,
+    "properties": {
+      "text": {
+        "description": "Text",
+        "instillFormat": "string",
+        "instillShortDescription": "Text",
+        "instillUIOrder": 0,
+        "title": "Text",
+        "type": "string"
+      }
+    },
+    "required": [
+      "text"
+    ],
+    "type": "object"
+  },
+  "TASK_TEXT_GENERATION_CHAT": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Text Generation Chat",
+    "instillShortDescription": "Generate texts from input text prompts and chat history.",
+    "instillUIOrder": 0,
+    "properties": {
+      "text": {
+        "description": "Text",
+        "instillFormat": "string",
+        "instillShortDescription": "Text",
+        "instillUIOrder": 0,
+        "title": "Text",
+        "type": "string"
+      }
+    },
+    "required": [
+      "text"
+    ],
+    "type": "object"
+  },
+  "TASK_VISUAL_QUESTION_ANSWERING": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Visual Question Answering",
+    "instillShortDescription": "Answer questions based on a prompt and an image.",
+    "properties": {
+      "text": {
+        "description": "Text",
+        "instillFormat": "string",
+        "instillUIMultiline": true,
+        "instillUIOrder": 0,
+        "title": "Text",
+        "type": "string"
+      }
+    },
+    "required": [
+      "text"
+    ],
+    "type": "object"
+  }
+}
