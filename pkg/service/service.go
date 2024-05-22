@@ -51,8 +51,8 @@ type Service interface {
 	ConvertOwnerNameToPermalink(name string) (string, error)
 	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
 	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) (*datamodel.Model, error)
-	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, checkPermission bool) (*modelPB.Model, error)
-	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, checkPermission bool) ([]*modelPB.Model, error)
+	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelPB.View, checkPermission bool) (*modelPB.Model, error)
+	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelPB.View, checkPermission bool) ([]*modelPB.Model, error)
 	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error)
 	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error)
 
@@ -273,7 +273,7 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
 func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
@@ -288,7 +288,7 @@ func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, 
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
 func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
@@ -303,7 +303,7 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
 func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
@@ -326,7 +326,7 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
 func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error {
@@ -598,7 +598,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	if err != nil {
 		return nil, 0, "", err
 	}
-	pbModels, err := s.DBToPBModels(ctx, dbModels, true)
+	pbModels, err := s.DBToPBModels(ctx, dbModels, view, true)
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
@@ -640,7 +640,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 		return nil, 0, "", err
 	}
 
-	pbModels, err := s.DBToPBModels(ctx, dbModels, true)
+	pbModels, err := s.DBToPBModels(ctx, dbModels, view, true)
 	return pbModels, int32(ps), pt, err
 }
 
@@ -695,7 +695,7 @@ func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken
 		return nil, 0, "", err
 	}
 
-	pbModels, err := s.DBToPBModels(ctx, dbModels, true)
+	pbModels, err := s.DBToPBModels(ctx, dbModels, view, true)
 
 	return pbModels, int32(totalSize), nextPageToken, err
 }
@@ -778,7 +778,7 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDBModel, true)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelPB.View_VIEW_BASIC, true)
 }
 
 func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelPB.Model, reDeploy bool) (*modelPB.Model, error) {
@@ -845,7 +845,7 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDBModel, true)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelPB.View_VIEW_BASIC, true)
 }
 
 func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error) {

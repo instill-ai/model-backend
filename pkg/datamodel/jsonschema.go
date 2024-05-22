@@ -31,6 +31,9 @@ var GCSServiceAccountJSONSchema *jsonschema.Schema
 
 var RegionHardwareJSON RegionHardware
 
+var TaskInputJSON map[string]any
+var TaskOutputJSON map[string]any
+
 type RegionHardware struct {
 	Properties struct {
 		Region struct {
@@ -150,6 +153,22 @@ func InitJSONSchema(ctx context.Context) {
 
 	GCSServiceAccountJSONSchema, err = compiler.Compile("config/credential/gcs_service_account.json")
 	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+
+	taskInputJSONFile, err := os.ReadFile("config/model/task_input.json")
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	if err := json.Unmarshal(taskInputJSONFile, &TaskInputJSON); err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+
+	taskOutputJSONFile, err := os.ReadFile("config/model/task_output.json")
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	if err := json.Unmarshal(taskOutputJSONFile, &TaskOutputJSON); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 }

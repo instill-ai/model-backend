@@ -1,0 +1,493 @@
+{
+  "$defs": {
+    "chat_message": {
+      "properties": {
+        "content": {
+          "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json#/$defs/instill_types/multi_modal_content",
+          "description": "The message content",
+          "instillUIOrder": 1,
+          "title": "Content"
+        },
+        "role": {
+          "description": "The message role, i.e. 'system', 'user' or 'assistant'",
+          "instillFormat": "string",
+          "instillUIOrder": 0,
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": ["role", "content"],
+      "title": "Chat Message",
+      "type": "object"
+    },
+    "common": {
+      "description": "Input",
+      "instillUIOrder": 0,
+      "properties": {
+        "image_base64": {
+          "description": "Image base64",
+          "instillUIOrder": 2,
+          "title": "Image",
+          "type": "string"
+        },
+        "model_name": {
+          "description": "The Instill Model model to be used.",
+          "instillUIOrder": 0,
+          "title": "Model Name",
+          "type": "string"
+        }
+      },
+      "required": ["image_base64", "model_name"],
+      "title": "Input",
+      "type": "object"
+    },
+    "extra_params": {
+      "description": "Extra Parameters",
+      "instillUIOrder": 3,
+      "required": [],
+      "title": "Extra Parameters",
+      "type": "object"
+    }
+  },
+  "TASK_CLASSIFICATION": {
+    "instillShortDescription": "Classify images into predefined categories.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/classification",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_DETECTION": {
+    "instillShortDescription": "Detect and localize multiple objects in images.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/detection",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_IMAGE_TO_IMAGE": {
+    "instillShortDescription": "Generate image from input text prompt and image.",
+    "input": {
+      "description": "Input",
+      "instillUIOrder": 0,
+      "properties": {
+        "cfg_scale": {
+          "description": "The guidance scale, default is 7.5",
+          "instillUIOrder": 4,
+          "title": "CFG Scale",
+          "type": "number"
+        },
+        "extra_params": {
+          "$ref": "#/$defs/extra_params"
+        },
+        "image_base64": {
+          "description": "The prompt image",
+          "instillUIOrder": 3,
+          "title": "Prompt Image",
+          "type": "string"
+        },
+        "model_name": {
+          "description": "The Instill Model model to be used.",
+          "instillUIOrder": 0,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt text",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "samples": {
+          "description": "The number of generated samples, default is 1",
+          "instillUIOrder": 5,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "description": "The seed",
+          "instillUIOrder": 4,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "top_k": {
+          "default": 10,
+          "description": "Top k for sampling",
+          "instillUIOrder": 5,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": ["prompt", "image_base64", "model_name"],
+      "title": "Input",
+      "type": "object"
+    },
+    "output": {
+      "description": "Output",
+      "instillUIOrder": 0,
+      "properties": {
+        "images": {
+          "description": "Images",
+          "instillUIOrder": 0,
+          "instillFormat": "array:image/jpeg",
+          "items": {
+            "instillFormat": "image/jpeg",
+            "title": "Image",
+            "type": "string"
+          },
+          "title": "Images",
+          "type": "array"
+        }
+      },
+      "required": ["images"],
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_INSTANCE_SEGMENTATION": {
+    "instillShortDescription": "Detect, localize and delineate multiple objects in images.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/instance_segmentation",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_KEYPOINT": {
+    "instillShortDescription": "Detect and localize multiple keypoints of objects in images.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/keypoint",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_OCR": {
+    "instillShortDescription": "Detect and recognize text in images.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/ocr",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_SEMANTIC_SEGMENTATION": {
+    "instillShortDescription": "Classify image pixels into predefined categories.",
+    "input": {
+      "$ref": "#/$defs/common",
+      "type": "object"
+    },
+    "output": {
+      "$ref": "https://raw.githubusercontent.com/instill-ai/model-backend/5f3aa3e/config/model/schema.json##/$defs/instill_types/semantic_segmentation",
+      "description": "Output",
+      "instillUIOrder": 0,
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_TEXT_GENERATION": {
+    "instillShortDescription": "Generate texts from input text prompts.",
+    "input": {
+      "description": "Input",
+      "instillUIOrder": 0,
+      "properties": {
+        "chat_history": {
+          "description": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
+          "instillShortDescription": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
+          "instillUIOrder": 4,
+          "items": {
+            "$ref": "#/$defs/chat_message"
+          },
+          "title": "Chat history",
+          "type": "array"
+        },
+        "extra_params": {
+          "$ref": "#/$defs/extra_params"
+        },
+        "max_new_tokens": {
+          "default": 50,
+          "description": "The maximum number of tokens for model to generate",
+          "instillUIOrder": 6,
+          "title": "Max new tokens",
+          "type": "integer"
+        },
+        "model_name": {
+          "description": "The Instill Model model to be used.",
+          "instillUIOrder": 0,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt text",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "prompt_images": {
+          "description": "The prompt images",
+          "instillUIOrder": 3,
+          "items": {
+            "type": "string"
+          },
+          "title": "Prompt Images",
+          "type": "array"
+        },
+        "seed": {
+          "description": "The seed",
+          "instillUIOrder": 4,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "system_message": {
+          "default": "You are a helpful assistant.",
+          "description": "The system message helps set the behavior of the assistant. For example, you can modify the personality of the assistant or provide specific instructions about how it should behave throughout the conversation. By default, the model’s behavior is using a generic message as \"You are a helpful assistant.\"",
+          "instillShortDescription": "The system message helps set the behavior of the assistant",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "System message",
+          "type": "string"
+        },
+        "temperature": {
+          "default": 0.7,
+          "description": "The temperature for sampling",
+          "instillUIOrder": 5,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "top_k": {
+          "default": 10,
+          "description": "Top k for sampling",
+          "instillUIOrder": 5,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": ["prompt", "model_name"],
+      "title": "Input",
+      "type": "object"
+    },
+    "output": {
+      "description": "Output",
+      "instillUIOrder": 0,
+      "properties": {
+        "text": {
+          "description": "Text",
+          "instillFormat": "string",
+          "instillUIMultiline": true,
+          "instillUIOrder": 0,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": ["text"],
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_TEXT_GENERATION_CHAT": {
+    "instillShortDescription": "Generate texts from input text prompts and chat history.",
+    "$ref": "#/TASK_TEXT_GENERATION"
+  },
+  "TASK_TEXT_TO_IMAGE": {
+    "instillShortDescription": "Generate images from input text prompts.",
+    "input": {
+      "description": "Input",
+      "instillUIOrder": 0,
+      "properties": {
+        "cfg_scale": {
+          "description": "The guidance scale, default is 7.5",
+          "instillUIOrder": 4,
+          "title": "CFG Scale",
+          "type": "number"
+        },
+        "extra_params": {
+          "$ref": "#/$defs/extra_params"
+        },
+        "model_name": {
+          "description": "The Instill Model model to be used.",
+          "instillUIOrder": 0,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt text",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "samples": {
+          "description": "The number of generated samples, default is 1",
+          "instillUIOrder": 5,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "description": "The seed, default is 0",
+          "instillUIOrder": 6,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "steps": {
+          "description": "The steps, default is 5",
+          "instillUIOrder": 7,
+          "title": "Steps",
+          "type": "integer"
+        }
+      },
+      "required": ["prompt", "model_name"],
+      "title": "Input",
+      "type": "object"
+    },
+    "output": {
+      "description": "Output",
+      "instillUIOrder": 0,
+      "properties": {
+        "images": {
+          "description": "Images",
+          "instillUIOrder": 0,
+          "instillFormat": "array:image/jpeg",
+          "items": {
+            "instillFormat": "image/jpeg",
+            "title": "Image",
+            "type": "string"
+          },
+          "title": "Images",
+          "type": "array"
+        }
+      },
+      "required": ["images"],
+      "title": "Output",
+      "type": "object"
+    }
+  },
+  "TASK_VISUAL_QUESTION_ANSWERING": {
+    "instillShortDescription": "Answer questions based on a prompt and an image.",
+    "input": {
+      "description": "Input",
+      "instillUIOrder": 0,
+      "properties": {
+        "chat_history": {
+          "description": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
+          "instillShortDescription": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
+          "instillUIOrder": 4,
+          "items": {
+            "$ref": "#/$defs/chat_message"
+          },
+          "title": "Chat history",
+          "type": "array"
+        },
+        "extra_params": {
+          "$ref": "#/$defs/extra_params"
+        },
+        "max_new_tokens": {
+          "default": 50,
+          "description": "The maximum number of tokens for model to generate",
+          "instillUIOrder": 6,
+          "title": "Max new tokens",
+          "type": "integer"
+        },
+        "model_name": {
+          "description": "The Instill Model model to be used.",
+          "instillUIOrder": 0,
+          "title": "Model Name",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The prompt text",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "prompt_images": {
+          "description": "The prompt images",
+          "instillUIOrder": 3,
+          "items": {
+            "type": "string"
+          },
+          "title": "Prompt Images",
+          "type": "array"
+        },
+        "seed": {
+          "description": "The seed",
+          "instillUIOrder": 4,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "system_message": {
+          "default": "You are a helpful assistant.",
+          "description": "The system message helps set the behavior of the assistant. For example, you can modify the personality of the assistant or provide specific instructions about how it should behave throughout the conversation. By default, the model’s behavior is using a generic message as \"You are a helpful assistant.\"",
+          "instillShortDescription": "The system message helps set the behavior of the assistant",
+          "instillUIMultiline": true,
+          "instillUIOrder": 2,
+          "title": "System message",
+          "type": "string"
+        },
+        "temperature": {
+          "default": 0.7,
+          "description": "The temperature for sampling",
+          "instillUIOrder": 5,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "top_k": {
+          "default": 10,
+          "description": "Top k for sampling",
+          "instillUIOrder": 5,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": ["prompt", "prompt_images", "model_name"],
+      "title": "Input",
+      "type": "object"
+    },
+    "output": {
+      "description": "Output",
+      "instillUIOrder": 0,
+      "properties": {
+        "text": {
+          "description": "Text",
+          "instillFormat": "string",
+          "instillUIMultiline": true,
+          "instillUIOrder": 0,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": ["text"],
+      "title": "Output",
+      "type": "object"
+    }
+  }
+}
