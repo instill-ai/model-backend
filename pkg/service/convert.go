@@ -192,6 +192,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		SourceUrl:        &dbModel.SourceURL.String,
 		DocumentationUrl: &dbModel.DocumentationURL.String,
 		License:          &dbModel.License.String,
+		Readme:           &dbModel.Readme.String,
 		ProfileImage:     &profileImage,
 	}
 
