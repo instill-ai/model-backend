@@ -108,6 +108,21 @@ func (mr *MockRepositoryMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2)
 }
 
+// GetLatestModelVersionByModelUID mocks base method.
+func (m *MockRepository) GetLatestModelVersionByModelUID(arg0 context.Context, arg1 uuid.UUID) (*datamodel.ModelVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestModelVersionByModelUID", arg0, arg1)
+	ret0, _ := ret[0].(*datamodel.ModelVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestModelVersionByModelUID indicates an expected call of GetLatestModelVersionByModelUID.
+func (mr *MockRepositoryMockRecorder) GetLatestModelVersionByModelUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestModelVersionByModelUID", reflect.TypeOf((*MockRepository)(nil).GetLatestModelVersionByModelUID), arg0, arg1)
+}
+
 // GetModelByIDAdmin mocks base method.
 func (m *MockRepository) GetModelByIDAdmin(arg0 context.Context, arg1 string, arg2, arg3 bool) (*datamodel.Model, error) {
 	m.ctrl.T.Helper()

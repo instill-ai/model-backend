@@ -50,6 +50,7 @@ type Repository interface {
 
 	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
+	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
 	DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 
@@ -396,6 +397,25 @@ func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink stri
 	}
 
 	return nil
+}
+
+func (r *repository) GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error) {
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(model_uid = ?)", modelUID)
+
+	if result := queryBuilder.Order("update_time DESC").First(&version); result.Error != nil {
+		st, _ := sterr.CreateErrorResourceInfo(
+			codes.NotFound,
+			fmt.Sprintf("[db] GetModelVersionByName error: %s", result.Error.Error()),
+			"model",
+			"",
+			"",
+			result.Error.Error(),
+		)
+		return nil, st.Err()
+	}
+	return version, nil
 }
 
 func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error) {
