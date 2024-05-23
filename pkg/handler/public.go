@@ -23,8 +23,8 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
-	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/checkfield"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
