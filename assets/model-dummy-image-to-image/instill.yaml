@@ -3,4 +3,3 @@ build:
   python_version: "3.11"  # support only 3.11
   python_packages:
 repo: instill/dummy-image-to-image
-tag: test
