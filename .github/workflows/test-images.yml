@@ -52,8 +52,8 @@ jobs:
 
       - name: Build test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: python -m instill.helpers.build
+        run: instill_build -t test
 
       - name: Push test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: python -m instill.helpers.push -u docker.io
+        run: instill_push -t test -u docker.io
