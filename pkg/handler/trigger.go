@@ -120,14 +120,14 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	var version *datamodel.ModelVersion
-	version_id := req.GetVersion()
-	if version_id == "" {
+	versionId := req.GetVersion()
+	if versionId == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
 		}
 	} else {
-		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion())
+		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionId)
 		if err != nil {
 			return commonPB.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
 		}
@@ -415,14 +415,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	var version *datamodel.ModelVersion
-	version_id := req.GetVersion()
-	if version_id == "" {
+	versionId := req.GetVersion()
+	if versionId == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	} else {
-		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), req.GetVersion())
+		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionId)
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
