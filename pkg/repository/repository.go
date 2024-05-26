@@ -52,7 +52,7 @@ type Repository interface {
 	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
 	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
 	DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
-	ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
+	ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 
 	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
 }
@@ -426,7 +426,7 @@ func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID
 	return version, nil
 }
 
-func (r *repository) ListModelVerions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
+func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
 	db := r.checkPinnedUser(ctx, r.db, "model")
 
 	if result := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
