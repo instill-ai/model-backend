@@ -288,7 +288,7 @@ func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, 
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, false)
 }
 
 func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
@@ -303,7 +303,7 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
+	return s.DBToPBModel(ctx, modelDef, dbModel, view, false)
 }
 
 func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
@@ -354,7 +354,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 		return err
 	}
 
-	if model.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if dbCreatedModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
 		if err := s.aclClient.SetPublicModelPermission(ctx, dbCreatedModel.UID); err != nil {
 			return err
 		}
@@ -695,7 +695,7 @@ func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken
 		return nil, 0, "", err
 	}
 
-	pbModels, err := s.DBToPBModels(ctx, dbModels, view, true)
+	pbModels, err := s.DBToPBModels(ctx, dbModels, view, false)
 
 	return pbModels, int32(totalSize), nextPageToken, err
 }
@@ -819,6 +819,16 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
 	if err != nil {
 		return nil, err
+	}
+
+	if updatedDBModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+		if err := s.aclClient.SetPublicModelPermission(ctx, updatedDBModel.UID); err != nil {
+			return nil, err
+		}
+	} else if updatedDBModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE) {
+		if err := s.aclClient.DeletePublicModelPermission(ctx, updatedDBModel.UID); err != nil {
+			return nil, err
+		}
 	}
 
 	if reDeploy {

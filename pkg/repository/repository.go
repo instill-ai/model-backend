@@ -115,17 +115,6 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 	}
 
-	if uidAllowList != nil {
-		db.Model(&datamodel.Model{}).
-			Where(where, whereArgs...).
-			Where("uid in ?", uidAllowList).
-			Count(&totalSize)
-	} else {
-		db.Model(&datamodel.Model{}).
-			Where(where, whereArgs...).
-			Count(&totalSize)
-	}
-
 	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC").Where(where, whereArgs...)
 
 	if uidAllowList != nil {
