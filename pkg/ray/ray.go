@@ -272,7 +272,8 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 				)
 			} else {
 				runOptions = append(runOptions,
-					fmt.Sprintf("-e %s=%s", EnvRayAcceleratorType, accelerator),
+					// fmt.Sprintf("-e %s=%s", EnvRayAcceleratorType, accelerator),
+					fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, SupportedAcceleratorTypeMemory[hardware]),
 					"--device nvidia.com/gpu=all",
 				)
