@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -550,8 +551,6 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, status.Errorf(codes.InvalidArgument, "unallowed update with field `visibility`, please use publish/unpublish")
 	}
 
-	_, reDeploy := mask.Get("Hardware")
-
 	// Only the fields mentioned in the field mask will be copied to `pbModelToUpdate`, other fields are left intact
 	err = fieldmask_utils.StructToStruct(mask, pbModel, pbModelToUpdate)
 	if err != nil {
@@ -559,6 +558,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, ErrFieldMask
 	}
 
+	reDeploy := slices.Contains(pbUpdateMask.GetPaths(), "hardware")
 	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModelToUpdate, reDeploy)
 	if err != nil {
 		span.SetStatus(1, err.Error())
