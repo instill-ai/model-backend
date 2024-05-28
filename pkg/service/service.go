@@ -672,9 +672,9 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	versions := make([]*modelPB.ModelVersion, len(tags))
 
 	for i, tag := range tags {
-		state, _, err := s.WatchModel(ctx, ns, modelID, tag.GetId())
+		state, _, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
 		if err != nil {
-			return nil, 0, 0, 0, err
+			state = modelPB.State_STATE_ERROR.Enum()
 		}
 		versions[i] = &modelPB.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
