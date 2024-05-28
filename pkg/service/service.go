@@ -12,6 +12,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"go.einride.tech/aip/filtering"
+	"go.einride.tech/aip/ordering"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
 	"google.golang.org/grpc/codes"
@@ -57,9 +58,9 @@ type Service interface {
 	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error)
 
 	// Public
-	ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error)
 	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error)
 	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
 	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
@@ -562,7 +563,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	}, nil
 }
 
-func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error) {
 
 	var uidAllowList []uuid.UUID
 	var err error
@@ -594,7 +595,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 		}
 	}
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -602,7 +603,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error) {
 
 	ownerPermalink := ns.Permalink()
 	var uidAllowList []uuid.UUID
@@ -635,7 +636,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 		}
 	}
 
-	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted)
+	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
 	if err != nil {
 		return nil, 0, "", err
 	}

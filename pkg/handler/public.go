@@ -13,6 +13,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"go.einride.tech/aip/filtering"
+	"go.einride.tech/aip/ordering"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -74,17 +75,23 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 	}...)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, err
+		return &modelPB.ListModelsResponse{}, err
 	}
 
 	filter, err := filtering.ParseFilter(req, declarations)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, err
+		return &modelPB.ListModelsResponse{}, err
 	}
 	visibility := req.GetVisibility()
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted())
+	orderBy, err := ordering.ParseOrderBy(req)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return &modelPB.ListModelsResponse{}, err
+	}
+
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return &modelPB.ListModelsResponse{}, err
@@ -214,6 +221,7 @@ type ListNamespaceModelRequestInterface interface {
 	GetParent() string
 	GetFilter() string
 	GetVisibility() modelPB.Model_Visibility
+	GetOrderBy() string
 	GetShowDeleted() bool
 }
 
@@ -277,7 +285,13 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 	}
 	visibility := req.GetVisibility()
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted())
+	orderBy, err := ordering.ParseOrderBy(req)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, "", 0, err
+	}
+
+	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, "", 0, err
@@ -859,6 +873,30 @@ func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelPB
 	return resp, err
 }
 
+func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelPB.WatchUserLatestModelRequest) (resp *modelPB.WatchUserLatestModelResponse, err error) {
+	resp = &modelPB.WatchUserLatestModelResponse{}
+
+	r := &modelPB.WatchUserModelRequest{
+		Name: req.GetName(),
+	}
+
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
+
+	return resp, err
+}
+
+func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *modelPB.WatchOrganizationLatestModelRequest) (resp *modelPB.WatchOrganizationLatestModelResponse, err error) {
+	resp = &modelPB.WatchOrganizationLatestModelResponse{}
+
+	r := &modelPB.WatchOrganizationModelRequest{
+		Name: req.GetName(),
+	}
+
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
+
+	return resp, err
+}
+
 func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelPB.State, string, error) {
 
 	eventName := "WatchNamespaceModel"
@@ -890,7 +928,22 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelPB.State_STATE_ERROR, "", err
 	}
 
-	state, message, err := h.service.WatchModel(ctx, ns, modelID, req.GetVersion())
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelPB.View_VIEW_BASIC)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return modelPB.State_STATE_ERROR, "", err
+	}
+
+	versionID := req.GetVersion()
+	if versionID == "" {
+		version, err := h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		if err != nil {
+			return modelPB.State_STATE_ERROR, "", err
+		}
+		versionID = version.Version
+	}
+
+	state, message, err := h.service.WatchModel(ctx, ns, modelID, versionID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
