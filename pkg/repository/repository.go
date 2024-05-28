@@ -9,6 +9,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"go.einride.tech/aip/filtering"
+	"go.einride.tech/aip/ordering"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -29,11 +30,11 @@ import (
 const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
-	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
 	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
-	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
 	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
@@ -92,7 +93,7 @@ func (r *repository) pinUser(ctx context.Context, _ string) {
 	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model"), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
 }
 
-func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -115,7 +116,25 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 	}
 
-	queryBuilder := db.Model(&datamodel.Model{}).Order("create_time DESC, uid DESC").Where(where, whereArgs...)
+	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	if uidAllowList != nil {
+		countBuilder = countBuilder.Where("uid in ?", uidAllowList).Count(&totalSize)
+	}
+
+	countBuilder.Count(&totalSize)
+
+	queryBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	if order.Fields == nil || len(order.Fields) == 0 {
+		order.Fields = append(order.Fields, ordering.Field{
+			Path: "create_time",
+			Desc: true,
+		})
+	}
+	for _, field := range order.Fields {
+		orderString := field.Path + transformBoolToDescString(field.Desc)
+		queryBuilder.Order(orderString)
+	}
+	queryBuilder.Order("uid DESC")
 
 	if uidAllowList != nil {
 		queryBuilder = queryBuilder.Where("uid in ?", uidAllowList)
@@ -130,13 +149,31 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	queryBuilder = queryBuilder.Limit(int(pageSize))
 
 	if pageToken != "" {
-		createdAt, uid, err := paginate.DecodeToken(pageToken)
+		tokens, err := DecodeToken(pageToken)
 		if err != nil {
 			logger.Error(err.Error())
 			return nil, 0, "", ErrPageTokenDecode
 		}
 
-		queryBuilder = queryBuilder.Where("(create_time,uid) < (?::timestamp, ?)", createdAt, uid)
+		for _, o := range order.Fields {
+
+			if v, ok := tokens[o.Path]; ok {
+				switch o.Path {
+				case "create_time", "update_time":
+					if o.Desc {
+						queryBuilder = queryBuilder.Where(o.Path+" < ?::timestamp", v)
+					} else {
+						queryBuilder = queryBuilder.Where(o.Path+" > ?::timestamp", v)
+					}
+				default:
+					if o.Desc {
+						queryBuilder = queryBuilder.Where(o.Path+" < ?", v)
+					} else {
+						queryBuilder = queryBuilder.Where(o.Path+" > ?", v)
+					}
+				}
+			}
+		}
 	}
 
 	if isBasicView {
@@ -144,7 +181,6 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 	queryBuilder.Omit("profile_image")
 
-	var createTime time.Time // only using one for all loops, we only need the latest one in the end
 	rows, err := queryBuilder.Rows()
 	if err != nil {
 		logger.Error(err.Error())
@@ -157,63 +193,77 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 			logger.Error(err.Error())
 			return nil, 0, "", err
 		}
-		createTime = item.CreateTime
 		models = append(models, &item)
 	}
 
 	if len(models) > 0 {
+		lastID := (models)[len(models)-1].ID
 		lastUID := (models)[len(models)-1].UID
+		lastCreateTime := (models)[len(models)-1].CreateTime
+		lastUpdateTime := (models)[len(models)-1].UpdateTime
 		lastItem := &datamodel.Model{}
 
+		tokens := map[string]string{}
+
+		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Omit("profile_image").Where(where, whereArgs...)
 		if uidAllowList != nil {
-			if result := db.Model(&datamodel.Model{}).
-				Omit("profile_image").
-				Where(where, whereArgs...).
-				Where("uid in ?", uidAllowList).
-				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
-				logger.Error(err.Error())
-				return nil, 0, "", err
+			lastItemQueryBuilder = lastItemQueryBuilder.Where("uid in ?", uidAllowList)
+
+		}
+
+		for _, field := range order.Fields {
+			orderString := field.Path + transformBoolToDescString(!field.Desc)
+			lastItemQueryBuilder.Order(orderString)
+			switch field.Path {
+			case "id":
+				tokens[field.Path] = lastID
+			case "create_time":
+				tokens[field.Path] = lastCreateTime.Format(time.RFC3339Nano)
+			case "update_time":
+				tokens[field.Path] = lastUpdateTime.Format(time.RFC3339Nano)
 			}
-		} else {
-			if result := db.Model(&datamodel.Model{}).
-				Omit("profile_image").
-				Where(where, whereArgs...).
-				Order("create_time ASC, uid ASC").Limit(1).Find(lastItem); result.Error != nil {
-				logger.Error(err.Error())
-				return nil, 0, "", err
-			}
+
+		}
+		lastItemQueryBuilder.Order("uid ASC")
+		tokens["uid"] = lastUID.String()
+
+		if result := lastItemQueryBuilder.Limit(1).Find(lastItem); result.Error != nil {
+			return nil, 0, "", err
 		}
 
 		if lastItem.UID.String() == lastUID.String() {
 			nextPageToken = ""
 		} else {
-			nextPageToken = paginate.EncodeToken(createTime, lastUID.String())
+			nextPageToken, err = EncodeToken(tokens)
+			if err != nil {
+				return nil, 0, "", err
+			}
 		}
 	}
 
 	return models, totalSize, nextPageToken, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"",
 		[]any{},
-		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted)
+		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted, order)
 
 	return models, totalSize, nextPageToken, err
 }
 
-func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	models, totalSize, nextPageToken, err = r.listModels(ctx,
 		"(owner = ?)",
 		[]any{ownerPermalink},
-		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted)
+		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted, order)
 
 	return models, totalSize, nextPageToken, err
 }
 
 func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error) {
-	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, filter, nil, showDeleted)
+	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, filter, nil, showDeleted, ordering.OrderBy{})
 }
 
 func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
