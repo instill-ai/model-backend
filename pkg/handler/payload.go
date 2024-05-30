@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "golang.org/x/image/tiff"
 
@@ -23,6 +24,11 @@ import (
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
+
+func trimBase64Mime(b64 string) string {
+	splitB64 := strings.Split(b64, ",")
+	return splitB64[len(splitB64)-1]
+}
 
 func parseImageFromURL(ctx context.Context, url string) (image.Image, error) {
 
@@ -67,6 +73,8 @@ func parseImageFromURL(ctx context.Context, url string) (image.Image, error) {
 func parseImageFromBase64(ctx context.Context, encoded string) (image.Image, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	encoded = trimBase64Mime(encoded)
 
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
