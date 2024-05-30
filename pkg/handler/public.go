@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -561,10 +560,6 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, ErrCheckUpdateImmutableFields
 	}
 
-	if _, hasVisibility := mask.Get("Visibility"); hasVisibility {
-		return nil, status.Errorf(codes.InvalidArgument, "unallowed update with field `visibility`, please use publish/unpublish")
-	}
-
 	// Only the fields mentioned in the field mask will be copied to `pbModelToUpdate`, other fields are left intact
 	err = fieldmask_utils.StructToStruct(mask, pbModel, pbModelToUpdate)
 	if err != nil {
@@ -572,8 +567,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, ErrFieldMask
 	}
 
-	reDeploy := slices.Contains(pbUpdateMask.GetPaths(), "hardware")
-	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModelToUpdate, reDeploy)
+	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModelToUpdate)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -760,7 +754,7 @@ func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNa
 
 	pbModel.Visibility = modelPB.Model_VISIBILITY_PUBLIC
 
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel, false)
+	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -831,7 +825,7 @@ func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req Unpubli
 
 	pbModel.Visibility = modelPB.Model_VISIBILITY_PRIVATE
 
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel, false)
+	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
