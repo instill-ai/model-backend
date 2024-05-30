@@ -165,7 +165,11 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
-				return modelPB.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
+				if len(application.Deployments[i].Replicas) == 0 {
+					return modelPB.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, nil
+				} else {
+					return modelPB.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
+				}
 			case rayserver.DeploymentStatusStrUpdating:
 				return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
