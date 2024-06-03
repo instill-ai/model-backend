@@ -191,6 +191,10 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
+	defer func() {
+		w.redisClient.Del(ctx, param.ParsedInputKey)
+		w.redisClient.Del(ctx, param.InputKey)
+	}()
 
 	var inferInput InferInput
 	switch param.Task {
@@ -278,9 +282,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	logger.Info("TriggerModelActivity completed")
-
-	w.redisClient.Del(ctx, param.ParsedInputKey)
-	w.redisClient.Del(ctx, param.InputKey)
 
 	return &TriggerModelActivityResponse{
 		TaskOutputBytes: jsonOutput,

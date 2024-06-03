@@ -15,6 +15,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
@@ -328,6 +330,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 }
 
 type TriggerAsyncNamespaceModelRequestInterface interface {
+	protoreflect.ProtoMessage
 	GetName() string
 	GetVersion() string
 	GetTaskInputs() []*modelPB.TaskInput
@@ -434,6 +437,18 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
+	// TODO: temporary solution to store input json
+	inputRequestJSON, err := protojson.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	h.service.GetRedisClient().Set(
+		ctx,
+		fmt.Sprintf("model_trigger_input:%s:%s", userUID, pbModel.Uid),
+		inputRequestJSON,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second*2,
+	)
 
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
@@ -588,6 +603,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 			return nil, err
 		}
 	}
+
+	// TODO: temporary solution to store output json
+	h.service.GetRedisClient().Set(
+		ctx,
+		fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, pbModel.Uid),
+		operation.GetName(),
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		ctx,
