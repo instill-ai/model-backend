@@ -79,6 +79,7 @@ type Service interface {
 	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
 
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
+	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*longrunningpb.Operation, error)
 
 	// Private
 	GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
@@ -705,6 +706,8 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false)
 	if err != nil {
 		return ErrNotFound
@@ -740,6 +743,8 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	if err != nil {
 		return err
 	}
+
+	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String()))
 
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }

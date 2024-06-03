@@ -191,6 +191,20 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
+	defer func() {
+		w.redisClient.Del(ctx, param.ParsedInputKey)
+		w.redisClient.Del(ctx, param.InputKey)
+		w.redisClient.Expire(
+			ctx,
+			fmt.Sprintf("model_trigger_input:%s:%s", param.UserUID, param.ModelUID.String()),
+			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+		)
+		w.redisClient.Expire(
+			ctx,
+			fmt.Sprintf("model_trigger_output_key:%s:%s", param.UserUID, param.ModelUID.String()),
+			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+		)
+	}()
 
 	var inferInput InferInput
 	switch param.Task {
@@ -278,9 +292,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	logger.Info("TriggerModelActivity completed")
-
-	w.redisClient.Del(ctx, param.ParsedInputKey)
-	w.redisClient.Del(ctx, param.InputKey)
 
 	return &TriggerModelActivityResponse{
 		TaskOutputBytes: jsonOutput,
