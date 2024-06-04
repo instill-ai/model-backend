@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -52,9 +53,14 @@ type ray struct {
 	doneChan       chan error
 }
 
+var once sync.Once
+var rayService *ray
+
 func NewRay() Ray {
-	rayService := &ray{}
-	rayService.Init()
+	once.Do(func() {
+		rayService = &ray{}
+		rayService.Init()
+	})
 	return rayService
 }
 
