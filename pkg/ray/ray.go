@@ -177,7 +177,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 					return modelPB.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
 				}
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Deployments[i].Message, nil
+				return modelPB.State_STATE_STARTING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
 				return modelPB.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
@@ -186,14 +186,14 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 		}
 		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
-		return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Message, nil
+		return modelPB.State_STATE_STARTING.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrNotStarted:
 		return modelPB.State_STATE_OFFLINE.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeployFailed:
 		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 	}
 
-	return modelPB.State_STATE_UNSPECIFIED.Enum(), application.Message, nil
+	return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
@@ -292,7 +292,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	// TODO: Support custom resource configs for deployment in the future
-	if userID == "instill-ai" {
+	if userID == "instill-ai" || userID == "abrc" {
 		runOptions = append(runOptions,
 			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 1),
 			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
