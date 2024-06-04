@@ -292,7 +292,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	// TODO: Support custom resource configs for deployment in the future
-	if userID == "instill-ai" {
+	if userID == "instill-ai" || userID == "abrc" {
 		runOptions = append(runOptions,
 			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 1),
 			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
