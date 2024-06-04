@@ -32,6 +32,8 @@ import (
 
 type ModelConfig struct {
 	ID              string         `json:"id"`
+	OwnerType       string         `json:"owner_type"`
+	OwnerID         string         `json:"owner_id"`
 	Description     string         `json:"description"`
 	Task            string         `json:"task"`
 	ModelDefinition string         `json:"model_definition"`
@@ -175,40 +177,42 @@ func main() {
 		defer modelPrivateServiceClientConn.Close()
 	}
 
-	var owner *mgmtPB.User
-	name := fmt.Sprintf("%s/%s", config.Config.InitModel.OwnerType, config.Config.InitModel.OwnerID)
-	if config.Config.InitModel.OwnerType == string(resource.User) {
-		resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
-			Name: name,
-		})
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		owner = resp.GetUser()
-	} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
-		resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
-			Name: name,
-		})
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		owner = resp.GetOrganization().GetOwner()
-	}
-
-	ctx = middleware.InjectOwnerToContext(ctx, owner)
-
 	var modelConfigs []ModelConfig
 	err := utils.GetJSON(config.Config.InitModel.Path, &modelConfigs)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	logger.Info("Creating models ...")
-	var wg sync.WaitGroup
 
+	logger.Info("Creating models ...")
+
+	var wg sync.WaitGroup
 	wg.Add(len(modelConfigs))
-	for _, modelConfig := range modelConfigs {
+
+	for i := range modelConfigs {
 
 		go func(modelConfig ModelConfig) {
+
+			var owner *mgmtPB.User
+			name := fmt.Sprintf("%s/%s", modelConfig.OwnerType, modelConfig.OwnerID)
+			if modelConfig.OwnerType == string(resource.User) {
+				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
+					Name: name,
+				})
+				if err != nil {
+					logger.Fatal(err.Error())
+				}
+				owner = resp.GetUser()
+			} else if modelConfig.OwnerType == string(resource.Organization) {
+				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
+					Name: name,
+				})
+				if err != nil {
+					logger.Fatal(err.Error())
+				}
+				owner = resp.GetOrganization().GetOwner()
+			}
+
+			ctx = middleware.InjectOwnerToContext(ctx, owner)
 
 			defer wg.Done()
 			configuration, err := structpb.NewStruct(modelConfig.Configuration)
@@ -217,12 +221,12 @@ func main() {
 				return
 			}
 
-			if config.Config.InitModel.OwnerType == string(resource.User) {
+			if modelConfig.OwnerType == string(resource.User) {
 				_, err = modelPublicServiceClient.GetUserModel(ctx, &modelPB.GetUserModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelPB.View_VIEW_FULL.Enum(),
 				})
-			} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+			} else if modelConfig.OwnerType == string(resource.Organization) {
 				_, err = modelPublicServiceClient.GetOrganizationModel(ctx, &modelPB.GetOrganizationModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelPB.View_VIEW_FULL.Enum(),
@@ -241,12 +245,12 @@ func main() {
 					Hardware:        modelConfig.Hardwdare,
 					Configuration:   configuration,
 				}
-				if config.Config.InitModel.OwnerType == string(resource.User) {
+				if modelConfig.OwnerType == string(resource.User) {
 					_, err = modelPublicServiceClient.CreateUserModel(ctx, &modelPB.CreateUserModelRequest{
 						Model:  model,
 						Parent: name,
 					})
-				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+				} else if modelConfig.OwnerType == string(resource.Organization) {
 					_, err = modelPublicServiceClient.CreateOrganizationModel(ctx, &modelPB.CreateOrganizationModelRequest{
 						Model:  model,
 						Parent: name,
@@ -286,7 +290,7 @@ func main() {
 			var message string
 			for state != modelPB.State_STATE_ACTIVE {
 				time.Sleep(2 * time.Second)
-				if config.Config.InitModel.OwnerType == string(resource.User) {
+				if modelConfig.OwnerType == string(resource.User) {
 					var resp *modelPB.WatchUserModelResponse
 					resp, err = modelPublicServiceClient.WatchUserModel(ctx, &modelPB.WatchUserModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
@@ -294,7 +298,7 @@ func main() {
 					})
 					state = resp.GetState()
 					message = resp.GetMessage()
-				} else if config.Config.InitModel.OwnerType == string(resource.Organization) {
+				} else if modelConfig.OwnerType == string(resource.Organization) {
 					var resp *modelPB.WatchOrganizationModelResponse
 					resp, err = modelPublicServiceClient.WatchOrganizationModel(ctx, &modelPB.WatchOrganizationModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
@@ -316,7 +320,7 @@ func main() {
 				}
 				logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
 			}
-		}(modelConfig)
+		}(modelConfigs[i])
 	}
 
 	wg.Wait()

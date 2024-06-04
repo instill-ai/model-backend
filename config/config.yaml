@@ -70,8 +70,6 @@ temporal:
   key:
   servername:
 initmodel:
-  ownertype: users
-  ownerid: admin
   enabled: false
   path: https://raw.githubusercontent.com/instill-ai/instill-core/main/model-hub/model_hub_test.json
 log:
