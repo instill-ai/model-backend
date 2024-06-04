@@ -18,6 +18,9 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-worker ./cmd/worker
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /${SERVICE_NAME}-init-model ./cmd/model
 
+# Mounting points
+RUN mkdir /model-config
+
 FROM golang:${GOLANG_VERSION}
 
 # Need permission of /tmp folder for internal process such as store temporary files.
@@ -37,6 +40,7 @@ COPY --from=build --chown=nobody:nogroup /src/config ./config
 COPY --from=build --chown=nobody:nogroup /src/assets ./assets
 COPY --from=build --chown=nobody:nogroup /src/release-please ./release-please
 COPY --from=build --chown=nobody:nogroup /src/pkg/db/migration ./pkg/db/migration
+COPY --from=build --chown=nobody:nogroup /model-config /model-config
 
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-migrate ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./

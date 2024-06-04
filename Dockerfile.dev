@@ -39,6 +39,9 @@ RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 ENV GOCACHE /go/.cache/go-build
 ENV GOENV /go/.config/go/env
 
+# -- set up mounting points
+RUN mkdir /model-config && chown -R nobody:nogroup /model-config
+
 USER nobody:nogroup
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
