@@ -295,16 +295,6 @@
     "title": "Text Generation",
     "instillShortDescription": "Generate texts from input text prompts.",
     "properties": {
-      "chat_history": {
-        "type": "string",
-        "description": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillAcceptFormats": [
-          "structured/chat_messages"
-        ],
-        "instillShortDescription": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillUIOrder": 4,
-        "title": "Chat history"
-      },
       "extra_params": {
         "type": "string",
         "description": "Extra Parameters",
@@ -403,16 +393,6 @@
     "title": "Text Generation Chat",
     "instillShortDescription": "Generate texts from input text prompts and chat history.",
     "properties": {
-      "chat_history": {
-        "type": "string",
-        "description": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillAcceptFormats": [
-          "structured/chat_messages"
-        ],
-        "instillShortDescription": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillUIOrder": 4,
-        "title": "Chat history"
-      },
       "extra_params": {
         "type": "string",
         "description": "Extra Parameters",
@@ -511,16 +491,6 @@
     "title": "Visual Question Answering",
     "instillShortDescription": "Answer questions based on a prompt and an image.",
     "properties": {
-      "chat_history": {
-        "type": "string",
-        "description": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillAcceptFormats": [
-          "structured/chat_messages"
-        ],
-        "instillShortDescription": "Incorporate external chat history, specifically previous messages within the conversation. Please note that System Message will be ignored and will not have any effect when this field is populated. Each message should adhere to the format: : {\"role\": \"The message role, i.e. 'system', 'user' or 'assistant'\", \"content\": \"message content\"}.",
-        "instillUIOrder": 4,
-        "title": "Chat history"
-      },
       "extra_params": {
         "type": "string",
         "description": "Extra Parameters",
