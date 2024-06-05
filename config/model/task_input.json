@@ -339,6 +339,7 @@
       },
       "prompt_images": {
         "description": "The prompt images",
+        "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
           "array:image/*"
         ],
@@ -446,6 +447,7 @@
       },
       "prompt_images": {
         "description": "The prompt images",
+        "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
           "array:image/*"
         ],
@@ -553,6 +555,7 @@
       },
       "prompt_images": {
         "description": "The prompt images",
+        "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
           "array:image/*"
         ],
