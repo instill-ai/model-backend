@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.24.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.23.0-alpha...v0.24.0-alpha) (2024-06-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **model:** adopt containerized model serving ([#542](https://github.com/instill-ai/model-backend/issues/542))
+
+### Features
+
+* **handler:** implement get latest operation ([#589](https://github.com/instill-ai/model-backend/issues/589)) ([33d2395](https://github.com/instill-ai/model-backend/commit/33d2395f8b89e40f41a5d85adb76be83b590b47b))
+* **handler:** support listing available regions for model deployment ([#561](https://github.com/instill-ai/model-backend/issues/561)) ([52c2172](https://github.com/instill-ai/model-backend/commit/52c217272c05e7e80f807bc624008fc48b58e4c7))
+* **handler:** support model profile image ([#566](https://github.com/instill-ai/model-backend/issues/566)) ([0c8dbba](https://github.com/instill-ai/model-backend/commit/0c8dbba5a2c51ddf7c87eafc05d916a852e53b13))
+* **model:** add permission field in model object ([#576](https://github.com/instill-ai/model-backend/issues/576)) ([2d36a58](https://github.com/instill-ai/model-backend/commit/2d36a584cd37d76b366cf5afcb8762dacdea8200))
+* **model:** add task schema in model struct ([#578](https://github.com/instill-ai/model-backend/issues/578)) ([647069d](https://github.com/instill-ai/model-backend/commit/647069d160d9b1bd57281070db6d147b234f37a3))
+* **model:** adopt containerized model serving ([#542](https://github.com/instill-ai/model-backend/issues/542)) ([3c80f39](https://github.com/instill-ai/model-backend/commit/3c80f39211c7e0eed76f5e02a310a768496e3d30))
+* **model:** embed sample input/output in model proto message ([#558](https://github.com/instill-ai/model-backend/issues/558)) ([5fba538](https://github.com/instill-ai/model-backend/commit/5fba538ab650c107299c0af31354a8f40a02790c))
+* **model:** support latest model version trigger ([#580](https://github.com/instill-ai/model-backend/issues/580)) ([47cb36c](https://github.com/instill-ai/model-backend/commit/47cb36c2b877a775ace8356a33e7dc240e1c6b61))
+* **model:** support resource spec in model definition ([#557](https://github.com/instill-ai/model-backend/issues/557)) ([fee6e4b](https://github.com/instill-ai/model-backend/commit/fee6e4ba51b5debaf70080ae6afe8233efda1128))
+* **model:** support search/filter with list endpoints ([#559](https://github.com/instill-ai/model-backend/issues/559)) ([7b17393](https://github.com/instill-ai/model-backend/commit/7b173938917832c8b1e186c49c35d7d0d15573bd))
+* **model:** support watch latest model and `order_by` for list endpoints ([#586](https://github.com/instill-ai/model-backend/issues/586)) ([1a5e48c](https://github.com/instill-ai/model-backend/commit/1a5e48cbb7422e4775166354b510a78fd7ce122c))
+* **prediction:** implement sync/async prediction records ([#555](https://github.com/instill-ai/model-backend/issues/555)) ([8d58eda](https://github.com/instill-ai/model-backend/commit/8d58edad0c28c9ee2562efda791f345cee9b61a0))
+* **ray:** support containerized model deployment ([#529](https://github.com/instill-ai/model-backend/issues/529)) ([4dcab05](https://github.com/instill-ai/model-backend/commit/4dcab059f1be5ad14242982b19c5cbfd1d0fb822))
+* **ray:** support custom accelerator type ([#547](https://github.com/instill-ai/model-backend/issues/547)) ([f0cc0d7](https://github.com/instill-ai/model-backend/commit/f0cc0d761097834618b03033e295429b2f1b41e3))
+
+
+### Bug Fixes
+
+* **acl:** fix wrong type name ([#560](https://github.com/instill-ai/model-backend/issues/560)) ([89d09a5](https://github.com/instill-ai/model-backend/commit/89d09a57993f50365515d0511c9c0e480992094f))
+* **dockerfile:** update deploy config yaml path ([#590](https://github.com/instill-ai/model-backend/issues/590)) ([ee369e0](https://github.com/instill-ai/model-backend/commit/ee369e0a759014a2728c3b271bbc4f63cda1af59))
+* **model:** fix missing package in test models ([#552](https://github.com/instill-ai/model-backend/issues/552)) ([a28a21b](https://github.com/instill-ai/model-backend/commit/a28a21b01fecb863bf2720baf2f2e01a344fe808))
+* **ray:** check CDI availability for model container ([#538](https://github.com/instill-ai/model-backend/issues/538)) ([28bad42](https://github.com/instill-ai/model-backend/commit/28bad42948b4de2859e7856735d2ca58b194eff7))
+* **server:** add missing message size option ([#597](https://github.com/instill-ai/model-backend/issues/597)) ([d0a0aac](https://github.com/instill-ai/model-backend/commit/d0a0aac8fcbb9d80152477666e5474843ba074ba))
+* **service:** fix list model version pagination ([#569](https://github.com/instill-ai/model-backend/issues/569)) ([d8fb04a](https://github.com/instill-ai/model-backend/commit/d8fb04ae7a8e5e206a010c056992c01201e02cc7))
+* **service:** fix list model version return list size ([#556](https://github.com/instill-ai/model-backend/issues/556)) ([9b69f9c](https://github.com/instill-ai/model-backend/commit/9b69f9c29381d2777da64b0e21a117c3a5113724))
+
 ## [0.23.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.22.0-alpha...v0.23.0-alpha) (2024-03-09)
 
 
