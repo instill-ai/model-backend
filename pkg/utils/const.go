@@ -59,7 +59,6 @@ const MaxBatchSize int = 32
 const DefaultGCPServiceAccountFile = "https://artifacts.instill.tech/default-service-account.json"
 
 var MarshalOptions protojson.MarshalOptions = protojson.MarshalOptions{
-	UseProtoNames:   true,
 	EmitUnpopulated: true,
 	UseEnumNumbers:  false,
 }
