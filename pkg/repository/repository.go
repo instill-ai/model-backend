@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
 	"google.golang.org/grpc/codes"
@@ -20,6 +21,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/x/errmsg"
 	"github.com/instill-ai/x/paginate"
 	"github.com/instill-ai/x/sterr"
 
@@ -45,17 +47,20 @@ type Repository interface {
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
 	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
-	GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 
 	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
+	DeleteModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) error
 	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
-	DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
 	ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 
 	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
+
+	CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
+	DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
+	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.ModelTag, error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -76,21 +81,21 @@ func NewRepository(db *gorm.DB, redisClient *redis.Client) Repository {
 		redisClient: redisClient,
 	}
 }
-func (r *repository) checkPinnedUser(ctx context.Context, db *gorm.DB, _ string) *gorm.DB {
+func (r *repository) checkPinnedUser(ctx context.Context, db *gorm.DB, table string) *gorm.DB {
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// If the user is pinned, we will use the primary database for querying.
-	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model")).Err(), redis.Nil) {
+	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, table)).Err(), redis.Nil) {
 		db = db.Clauses(dbresolver.Write)
 	}
 	return db
 }
 
-func (r *repository) pinUser(ctx context.Context, _ string) {
+func (r *repository) pinUser(ctx context.Context, table string) {
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// To solve the read-after-write inconsistency problem,
 	// we will direct the user to read from the primary database for a certain time frame
 	// to ensure that the data is synchronized from the primary DB to the replica DB.
-	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, "model"), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
+	_ = r.redisClient.Set(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, table), time.Now(), time.Duration(config.Config.Database.Replica.ReplicationTimeFrame)*time.Second)
 }
 
 func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
@@ -116,14 +121,16 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 	}
 
-	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	joinStr := "left join model_tag on model_tag.model_uid = model.uid"
+
+	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...).Joins(joinStr)
 	if uidAllowList != nil {
 		countBuilder = countBuilder.Where("uid in ?", uidAllowList).Count(&totalSize)
 	}
 
 	countBuilder.Count(&totalSize)
 
-	queryBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	queryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Where(where, whereArgs...)
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
@@ -181,19 +188,10 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 	queryBuilder.Omit("profile_image")
 
-	rows, err := queryBuilder.Rows()
-	if err != nil {
+	result := queryBuilder.Preload("Tags").Find(&models)
+	if result.Error != nil {
 		logger.Error(err.Error())
-		return nil, 0, "", err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var item datamodel.Model
-		if err = db.ScanRows(rows, &item); err != nil {
-			logger.Error(err.Error())
-			return nil, 0, "", err
-		}
-		models = append(models, &item)
+		return nil, 0, "", result.Error
 	}
 
 	if len(models) > 0 {
@@ -205,7 +203,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 		tokens := map[string]string{}
 
-		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Omit("profile_image").Where(where, whereArgs...)
+		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Omit("profile_image").Where(where, whereArgs...)
 		if uidAllowList != nil {
 			lastItemQueryBuilder = lastItemQueryBuilder.Where("uid in ?", uidAllowList)
 
@@ -317,14 +315,6 @@ func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink s
 		includeAvatar)
 }
 
-func (r *repository) GetModelByIDAdmin(ctx context.Context, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
-	return r.getNamespaceModel(ctx,
-		"(id = ?)",
-		[]any{id},
-		isBasicView,
-		includeAvatar)
-}
-
 func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	return r.getNamespaceModel(ctx,
 		"(uid = ?)",
@@ -396,8 +386,8 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 
 func (r *repository) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
 
-	r.pinUser(ctx, "model")
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	r.pinUser(ctx, "model_prediction")
+	db := r.checkPinnedUser(ctx, r.db, "model_prediction")
 
 	if result := db.Model(&datamodel.ModelPrediction{}).Create(&prediction); result.Error != nil {
 		return result.Error
@@ -408,8 +398,8 @@ func (r *repository) CreateModelPrediction(ctx context.Context, prediction *data
 
 func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
 
-	r.pinUser(ctx, "model")
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	r.pinUser(ctx, "model_version")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	if result := db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
 		return result.Error
@@ -418,13 +408,13 @@ func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink stri
 	return nil
 }
 
-func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error {
+func (r *repository) DeleteModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) error {
 
-	r.pinUser(ctx, "model")
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	r.pinUser(ctx, "model_version")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	result := db.Model(&datamodel.ModelVersion{}).
-		Where("(name = ? AND version = ?)", version.Name, version.Version).
+		Where("(version = ? AND model_uid = ?)", versionID, modelUID).
 		Delete(&datamodel.ModelVersion{})
 
 	if result.Error != nil {
@@ -439,7 +429,7 @@ func (r *repository) DeleteModelVersion(ctx context.Context, ownerPermalink stri
 }
 
 func (r *repository) GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error) {
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(model_uid = ?)", modelUID)
 
@@ -458,7 +448,7 @@ func (r *repository) GetLatestModelVersionByModelUID(ctx context.Context, modelU
 }
 
 func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error) {
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(version = ? AND model_uid = ?)", versionID, modelUID)
 
@@ -477,12 +467,83 @@ func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID
 }
 
 func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	if result := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
 		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v not found", modelUID)
 	}
 	return versions, nil
+}
+
+func (r *repository) CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error {
+
+	r.pinUser(ctx, "model_tag")
+
+	db := r.checkPinnedUser(ctx, r.db, "model_tag")
+
+	tag := datamodel.ModelTag{
+		ModelUID: modelUID.String(),
+		TagName:  tagName,
+	}
+
+	if result := db.Model(&datamodel.ModelTag{}).Create(&tag); result.Error != nil {
+
+		var pgErr *pgconn.PgError
+
+		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+
+			return errmsg.AddMessage(ErrNameExists, "Tag already exists")
+
+		}
+
+		return result.Error
+
+	}
+
+	return nil
+
+}
+
+func (r *repository) DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error {
+
+	r.pinUser(ctx, "model_tag")
+
+	db := r.checkPinnedUser(ctx, r.db, "model_tag")
+
+	result := db.Model(&datamodel.ModelTag{}).Where("model_uid = ? and tag_name = ?", modelUID, tagName).Delete(&datamodel.ModelTag{})
+
+	if result.Error != nil {
+
+		return result.Error
+
+	}
+
+	if result.RowsAffected == 0 {
+
+		return ErrNoDataDeleted
+
+	}
+
+	return nil
+
+}
+
+func (r *repository) ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.ModelTag, error) {
+
+	db := r.checkPinnedUser(ctx, r.db, "model_tag")
+
+	var tags []*datamodel.ModelTag
+
+	result := db.Model(&datamodel.ModelTag{}).Where("model_uid = ?", modelUID).Find(tags)
+
+	if result.Error != nil {
+
+		return nil, result.Error
+
+	}
+
+	return tags, nil
+
 }
 
 func (r *repository) GetModelDefinition(id string) (*datamodel.ModelDefinition, error) {

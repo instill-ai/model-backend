@@ -84,6 +84,7 @@ type Model struct {
 	DocumentationURL   sql.NullString
 	License            sql.NullString
 	ProfileImage       sql.NullString
+	Tags               []*ModelTag
 }
 
 // Model version
@@ -111,6 +112,13 @@ type ModelPrediction struct {
 	Output              datatypes.JSON `json:"output,omitempty"`
 	ModelUID            uuid.UUID      `json:"model_uid,omitempty"`
 	ModelVersionUID     uuid.UUID      `json:"model_version,omitempty"`
+}
+
+type ModelTag struct {
+	ModelUID   string
+	TagName    string
+	CreateTime time.Time `gorm:"autoCreateTime:nano"`
+	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`
 }
 
 type ContainerizedModelConfiguration struct {

@@ -88,7 +88,7 @@ type Service interface {
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
-	DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
+	DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error
 
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
@@ -181,21 +181,36 @@ func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) 
 	}
 }
 
-func (s *service) FetchOwnerWithPermalink(permalink string) (*mgmtPB.Owner, error) {
+func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtPB.Owner, error) {
+	key := fmt.Sprintf("owner_profile:%s", permalink)
+	if b, err := s.redisClient.Get(ctx, key).Bytes(); err == nil {
+		owner := &mgmtPB.Owner{}
+		if protojson.Unmarshal(b, owner) == nil {
+			return owner, nil
+		}
+	}
+
 	if strings.HasPrefix(permalink, "users") {
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
 		if err != nil {
-			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
+			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
-
-		return &mgmtPB.Owner{Owner: &mgmtPB.Owner_User{User: resp.User}}, nil
+		owner := &mgmtPB.Owner{Owner: &mgmtPB.Owner_User{User: resp.User}}
+		if b, err := protojson.Marshal(owner); err == nil {
+			s.redisClient.Set(ctx, key, b, 5*time.Minute)
+		}
+		return owner, nil
 	} else {
-		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtPB.LookUpOrganizationAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtPB.LookUpOrganizationAdminRequest{Permalink: permalink})
 		if err != nil {
-			return nil, fmt.Errorf("FetchOwnerWithPermalink error")
+			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
+		owner := &mgmtPB.Owner{Owner: &mgmtPB.Owner_Organization{Organization: resp.Organization}}
+		if b, err := protojson.Marshal(owner); err == nil {
+			s.redisClient.Set(ctx, key, b, 5*time.Minute)
+		}
+		return owner, nil
 
-		return &mgmtPB.Owner{Owner: &mgmtPB.Owner_Organization{Organization: resp.Organization}}, nil
 	}
 }
 
@@ -734,7 +749,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
 			return err
 		}
-		if err := s.DeleteModelVersionAdmin(ctx, version); err != nil {
+		if err := s.DeleteModelVersionAdmin(ctx, dbModel.UID, version.Version); err != nil {
 			return err
 		}
 	}
@@ -914,8 +929,8 @@ func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamode
 	return s.repository.CreateModelVersion(ctx, "", version)
 }
 
-func (s *service) DeleteModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
-	return s.repository.DeleteModelVersion(ctx, "", version)
+func (s *service) DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error {
+	return s.repository.DeleteModelVersionByID(ctx, modelUID, versionID)
 }
 
 func (s *service) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {

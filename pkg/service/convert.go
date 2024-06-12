@@ -11,7 +11,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -154,6 +153,12 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
 	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
+
+	tags := []string{}
+	for _, t := range dbModel.Tags {
+		tags = append(tags, t.TagName)
+	}
+
 	pbModel := modelPB.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
@@ -190,54 +195,35 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		License:          &dbModel.License.String,
 		Readme:           &dbModel.Readme.String,
 		ProfileImage:     &profileImage,
+		Tags:             tags,
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(3)
 	pbModel.Permission = &modelPB.Permission{}
-	go func() {
-		defer wg.Done()
-		if !checkPermission {
-			return
-		}
+	if checkPermission {
 		if strings.Split(dbModel.Owner, "/")[1] == ctxUserUID {
 			pbModel.Permission.CanEdit = true
-			return
-		}
-
-		canEdit, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "writer")
-		if err != nil {
-			return
-		}
-		pbModel.Permission.CanEdit = canEdit
-	}()
-	go func() {
-		defer wg.Done()
-		if !checkPermission {
-			return
-		}
-		if strings.Split(dbModel.Owner, "/")[1] == ctxUserUID {
 			pbModel.Permission.CanTrigger = true
-			return
-		}
-
-		canTrigger, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor")
-		if err != nil {
-			return
-		}
-		pbModel.Permission.CanTrigger = canTrigger
-	}()
-	go func() {
-		defer wg.Done()
-		var owner *mgmtPB.Owner
-		if view > modelPB.View_VIEW_BASIC {
-			owner, err = s.FetchOwnerWithPermalink(dbModel.Owner)
+		} else {
+			canEdit, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "writer")
 			if err != nil {
-				return
+				return nil, err
 			}
-			pbModel.Owner = owner
+			pbModel.Permission.CanEdit = canEdit
+
+			canTrigger, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor")
+			if err != nil {
+				return nil, err
+			}
+			pbModel.Permission.CanTrigger = canTrigger
 		}
-	}()
+	}
+
+	var owner *mgmtPB.Owner
+	owner, err = s.FetchOwnerWithPermalink(ctx, dbModel.Owner)
+	if err != nil {
+		return nil, err
+	}
+	pbModel.Owner = owner
 
 	if view > modelPB.View_VIEW_BASIC {
 
@@ -262,8 +248,6 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 
 		appendSampleInputOutput(&pbModel)
 	}
-
-	wg.Wait()
 
 	return &pbModel, nil
 }

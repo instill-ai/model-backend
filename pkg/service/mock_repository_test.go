@@ -53,6 +53,20 @@ func (mr *MockRepositoryMockRecorder) CreateModelPrediction(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelPrediction", reflect.TypeOf((*MockRepository)(nil).CreateModelPrediction), arg0, arg1)
 }
 
+// CreateModelTag mocks base method.
+func (m *MockRepository) CreateModelTag(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateModelTag", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateModelTag indicates an expected call of CreateModelTag.
+func (mr *MockRepositoryMockRecorder) CreateModelTag(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelTag", reflect.TypeOf((*MockRepository)(nil).CreateModelTag), arg0, arg1, arg2)
+}
+
 // CreateModelVersion mocks base method.
 func (m *MockRepository) CreateModelVersion(arg0 context.Context, arg1 string, arg2 *datamodel.ModelVersion) error {
 	m.ctrl.T.Helper()
@@ -81,18 +95,32 @@ func (mr *MockRepositoryMockRecorder) CreateNamespaceModel(arg0, arg1, arg2 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespaceModel", reflect.TypeOf((*MockRepository)(nil).CreateNamespaceModel), arg0, arg1, arg2)
 }
 
-// DeleteModelVersion mocks base method.
-func (m *MockRepository) DeleteModelVersion(arg0 context.Context, arg1 string, arg2 *datamodel.ModelVersion) error {
+// DeleteModelTag mocks base method.
+func (m *MockRepository) DeleteModelTag(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DeleteModelTag", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteModelVersion indicates an expected call of DeleteModelVersion.
-func (mr *MockRepositoryMockRecorder) DeleteModelVersion(arg0, arg1, arg2 interface{}) *gomock.Call {
+// DeleteModelTag indicates an expected call of DeleteModelTag.
+func (mr *MockRepositoryMockRecorder) DeleteModelTag(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockRepository)(nil).DeleteModelVersion), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelTag", reflect.TypeOf((*MockRepository)(nil).DeleteModelTag), arg0, arg1, arg2)
+}
+
+// DeleteModelVersionByID mocks base method.
+func (m *MockRepository) DeleteModelVersionByID(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteModelVersionByID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteModelVersionByID indicates an expected call of DeleteModelVersionByID.
+func (mr *MockRepositoryMockRecorder) DeleteModelVersionByID(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersionByID", reflect.TypeOf((*MockRepository)(nil).DeleteModelVersionByID), arg0, arg1, arg2)
 }
 
 // DeleteNamespaceModelByID mocks base method.
@@ -122,21 +150,6 @@ func (m *MockRepository) GetLatestModelVersionByModelUID(arg0 context.Context, a
 func (mr *MockRepositoryMockRecorder) GetLatestModelVersionByModelUID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestModelVersionByModelUID", reflect.TypeOf((*MockRepository)(nil).GetLatestModelVersionByModelUID), arg0, arg1)
-}
-
-// GetModelByIDAdmin mocks base method.
-func (m *MockRepository) GetModelByIDAdmin(arg0 context.Context, arg1 string, arg2, arg3 bool) (*datamodel.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelByIDAdmin", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*datamodel.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModelByIDAdmin indicates an expected call of GetModelByIDAdmin.
-func (mr *MockRepositoryMockRecorder) GetModelByIDAdmin(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelByIDAdmin", reflect.TypeOf((*MockRepository)(nil).GetModelByIDAdmin), arg0, arg1, arg2, arg3)
 }
 
 // GetModelByUID mocks base method.
@@ -244,6 +257,21 @@ func (m *MockRepository) ListModelDefinitions(arg0 modelv1alpha.View, arg1 int64
 func (mr *MockRepositoryMockRecorder) ListModelDefinitions(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelDefinitions", reflect.TypeOf((*MockRepository)(nil).ListModelDefinitions), arg0, arg1, arg2)
+}
+
+// ListModelTags mocks base method.
+func (m *MockRepository) ListModelTags(arg0 context.Context, arg1 uuid.UUID) ([]*datamodel.ModelTag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModelTags", arg0, arg1)
+	ret0, _ := ret[0].([]*datamodel.ModelTag)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModelTags indicates an expected call of ListModelTags.
+func (mr *MockRepositoryMockRecorder) ListModelTags(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTags", reflect.TypeOf((*MockRepository)(nil).ListModelTags), arg0, arg1)
 }
 
 // ListModelVersions mocks base method.

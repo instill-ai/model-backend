@@ -144,7 +144,7 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		return &modelPB.UndeployModelAdminResponse{}, st.Err()
 	}
 
-	if err := h.service.DeleteModelVersionAdmin(ctx, version); err != nil {
+	if err := h.service.DeleteModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), version.Version); err != nil {
 		return &modelPB.UndeployModelAdminResponse{}, err
 	}
 	return &modelPB.UndeployModelAdminResponse{}, nil

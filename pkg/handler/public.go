@@ -67,6 +67,8 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		filtering.DeclareIdent("q", filtering.TypeString),
 		filtering.DeclareIdent("uid", filtering.TypeString),
 		filtering.DeclareIdent("id", filtering.TypeString),
+		// Currently, we only have a "featured" tag, so we'll only support single tag filter for now.
+		filtering.DeclareIdent("tag", filtering.TypeString),
 		filtering.DeclareIdent("description", filtering.TypeString),
 		filtering.DeclareIdent("owner", filtering.TypeString),
 		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
@@ -267,6 +269,8 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		filtering.DeclareIdent("q", filtering.TypeString),
 		filtering.DeclareIdent("uid", filtering.TypeString),
 		filtering.DeclareIdent("id", filtering.TypeString),
+		// Currently, we only have a "featured" tag, so we'll only support single tag filter for now.
+		filtering.DeclareIdent("tag", filtering.TypeString),
 		filtering.DeclareIdent("description", filtering.TypeString),
 		filtering.DeclareIdent("owner", filtering.TypeString),
 		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
