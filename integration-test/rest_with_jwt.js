@@ -35,7 +35,7 @@ export function setup() {
 
   var header = {
     "headers": {
-      "Authorization": `Bearer ${loginResp.json().access_token}`
+      "Authorization": `Bearer ${loginResp.json().accessToken}`
     },
     "timeout": "600s",
   }
