@@ -121,14 +121,16 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 	}
 
-	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	joinStr := "left join model_tag on model_tag.model_uid = model.uid"
+
+	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...).Joins(joinStr)
 	if uidAllowList != nil {
 		countBuilder = countBuilder.Where("uid in ?", uidAllowList).Count(&totalSize)
 	}
 
 	countBuilder.Count(&totalSize)
 
-	queryBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...)
+	queryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Where(where, whereArgs...)
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
@@ -186,19 +188,10 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 	queryBuilder.Omit("profile_image")
 
-	rows, err := queryBuilder.Rows()
-	if err != nil {
+	result := queryBuilder.Preload("Tags").Find(&models)
+	if result.Error != nil {
 		logger.Error(err.Error())
-		return nil, 0, "", err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var item datamodel.Model
-		if err = db.ScanRows(rows, &item); err != nil {
-			logger.Error(err.Error())
-			return nil, 0, "", err
-		}
-		models = append(models, &item)
+		return nil, 0, "", result.Error
 	}
 
 	if len(models) > 0 {
@@ -210,7 +203,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 		tokens := map[string]string{}
 
-		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Omit("profile_image").Where(where, whereArgs...)
+		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Omit("profile_image").Where(where, whereArgs...)
 		if uidAllowList != nil {
 			lastItemQueryBuilder = lastItemQueryBuilder.Where("uid in ?", uidAllowList)
 
