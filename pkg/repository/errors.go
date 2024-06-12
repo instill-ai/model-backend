@@ -9,3 +9,4 @@ var ErrPageTokenDecode = status.New(codes.InvalidArgument, "page token decode er
 var ErrOwnerTypeNotMatch = status.New(codes.InvalidArgument, "owner type not match").Err()
 var ErrNoDataDeleted = status.New(codes.NotFound, "no data deleted").Err()
 var ErrNoDataUpdated = status.New(codes.NotFound, "no data updated").Err()
+var ErrNameExists = status.New(codes.AlreadyExists, "name or ID already exists").Err()

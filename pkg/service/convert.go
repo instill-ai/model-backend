@@ -154,6 +154,12 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
 	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
+
+	tags := []string{}
+	for _, t := range dbModel.Tags {
+		tags = append(tags, t.TagName)
+	}
+
 	pbModel := modelPB.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
@@ -190,6 +196,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		License:          &dbModel.License.String,
 		Readme:           &dbModel.Readme.String,
 		ProfileImage:     &profileImage,
+		Tags:             tags,
 	}
 
 	var wg sync.WaitGroup
