@@ -28,7 +28,7 @@ export function ListModelsAdmin(header) {
       let model_id_1 = randomString(10)
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_1,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-dummy-cls",
           "tag": "v1.0-cpu"
@@ -56,7 +56,7 @@ export function ListModelsAdmin(header) {
       let model_id_2 = randomString(10)
       createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id_2,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-dummy-cls",
           "tag": "v1.0-cpu"
@@ -102,18 +102,18 @@ export function ListModelsAdmin(header) {
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models task cls response models[0].state`]: (r) =>
           r.json().models[0].state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models task cls response models[0].model_definition`]: (r) =>
-          r.json().models[0].model_definition === "model-definitions/github",
+        [`GET /v1alpha/admin/models task cls response models[0].modelDefinition`]: (r) =>
+          r.json().models[0].modelDefinition === "model-definitions/github",
         [`GET /v1alpha/admin/models task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration === null,
         [`GET /v1alpha/admin/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
-        [`GET /v1alpha/admin/models task cls response models[0].create_time`]: (r) =>
-          r.json().models[0].create_time !== undefined,
-        [`GET /v1alpha/admin/models task cls response models[0].update_time`]: (r) =>
-          r.json().models[0].update_time !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].createTime`]: (r) =>
+          r.json().models[0].createTime !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].updateTime`]: (r) =>
+          r.json().models[0].updateTime !== undefined,
       });
 
       check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?page_size=1&page_token=${resp.json().next_page_token}`, header), {
@@ -137,18 +137,18 @@ export function ListModelsAdmin(header) {
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models task cls response models[0].state`]: (r) =>
           r.json().models[0].state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models task cls response models[0].model_definition`]: (r) =>
-          r.json().models[0].model_definition === "model-definitions/github",
+        [`GET /v1alpha/admin/models task cls response models[0].modelDefinition`]: (r) =>
+          r.json().models[0].modelDefinition === "model-definitions/github",
         [`GET /v1alpha/admin/models task cls response models[0].configuration`]: (r) =>
           r.json().models[0].configuration === null,
         [`GET /v1alpha/admin/models task cls response models[0].visibility`]: (r) =>
           r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
-        [`GET /v1alpha/admin/models task cls response models[0].create_time`]: (r) =>
-          r.json().models[0].create_time !== undefined,
-        [`GET /v1alpha/admin/models task cls response models[0].update_time`]: (r) =>
-          r.json().models[0].update_time !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].createTime`]: (r) =>
+          r.json().models[0].createTime !== undefined,
+        [`GET /v1alpha/admin/models task cls response models[0].updateTime`]: (r) =>
+          r.json().models[0].updateTime !== undefined,
       });
 
       check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models?view=VIEW_FULL`, header), {
@@ -172,8 +172,8 @@ export function ListModelsAdmin(header) {
           r.json().models[0].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].state`]: (r) =>
           r.json().models[0].state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].model_definition`]: (r) =>
-          r.json().models[0].model_definition === "model-definitions/github",
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].modelDefinition`]: (r) =>
+          r.json().models[0].modelDefinition === "model-definitions/github",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].configuration.repository`]: (r) =>
           r.json().models[0].configuration.repository === "admin/model-dummy-cls",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].configuration.html_url`]: (r) =>
@@ -182,10 +182,10 @@ export function ListModelsAdmin(header) {
           r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].create_time`]: (r) =>
-          r.json().models[0].create_time !== undefined,
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].update_time`]: (r) =>
-          r.json().models[0].update_time !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].createTime`]: (r) =>
+          r.json().models[0].createTime !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[0].updateTime`]: (r) =>
+          r.json().models[0].updateTime !== undefined,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].name`]: (r) =>
           r.json().models[1].name === `${constant.namespace}/models/${model_id_1}`,
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].uid`]: (r) =>
@@ -198,8 +198,8 @@ export function ListModelsAdmin(header) {
           r.json().models[1].task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].state`]: (r) =>
           r.json().models[1].state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].model_definition`]: (r) =>
-          r.json().models[1].model_definition === "model-definitions/github",
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].modelDefinition`]: (r) =>
+          r.json().models[1].modelDefinition === "model-definitions/github",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].configuration.repository`]: (r) =>
           r.json().models[1].configuration.repository === "admin/model-dummy-cls",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].configuration.html_url`]: (r) =>
@@ -208,10 +208,10 @@ export function ListModelsAdmin(header) {
           r.json().models[1].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].owner_name`]: (r) =>
           isValidOwner(r.json().models[1].owner_name),
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].create_time`]: (r) =>
-          r.json().models[1].create_time !== undefined,
-        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].update_time`]: (r) =>
-          r.json().models[1].update_time !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].createTime`]: (r) =>
+          r.json().models[1].createTime !== undefined,
+        [`GET /v1alpha/admin/models?view=VIEW_FULL task cls response models[1].updateTime`]: (r) =>
+          r.json().models[1].updateTime !== undefined,
       });
 
       currentTime = new Date().getTime();
@@ -248,7 +248,7 @@ export function LookupModelAdmin(header) {
       let model_description = randomString(20)
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", model_def_name);
+      fd_cls.append("modelDefinition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -286,8 +286,8 @@ export function LookupModelAdmin(header) {
           r.json().model.id === model_id,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.state`]: (r) =>
@@ -298,10 +298,10 @@ export function LookupModelAdmin(header) {
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       check(http.get(`${constant.apiPrivateHost}/v1alpha/admin/models/${modelUid}/lookUp?view=VIEW_FULL`, header), {
@@ -319,18 +319,18 @@ export function LookupModelAdmin(header) {
           r.json().model.task === "TASK_CLASSIFICATION",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.state`]: (r) =>
           r.json().model.state === "STATE_OFFLINE",
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.configuration.content`]: (r) =>
           r.json().model.configuration.content === "dummy-cls-model.zip",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`GET /v1alpha/admin/models/${modelUid}/lookUp task cls response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       currentTime = new Date().getTime();

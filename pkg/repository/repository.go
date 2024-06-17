@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
@@ -138,7 +139,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		})
 	}
 	for _, field := range order.Fields {
-		orderString := field.Path + transformBoolToDescString(field.Desc)
+		orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(field.Desc)
 		queryBuilder.Order(orderString)
 	}
 	queryBuilder.Order("uid DESC")
@@ -210,9 +211,9 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 
 		for _, field := range order.Fields {
-			orderString := field.Path + transformBoolToDescString(!field.Desc)
+			orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(!field.Desc)
 			lastItemQueryBuilder.Order(orderString)
-			switch field.Path {
+			switch strcase.ToSnake(field.Path) {
 			case "id":
 				tokens[field.Path] = lastID
 			case "create_time":

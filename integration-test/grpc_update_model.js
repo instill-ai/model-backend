@@ -39,7 +39,7 @@ export function UpdateUserModel(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", model_def_name);
+    fd_cls.append("modelDefinition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
@@ -77,12 +77,12 @@ export function UpdateUserModel(header) {
       "UpdateModel response model.uid": (r) => r.message.model.uid !== undefined,
       "UpdateModel response model.id": (r) => r.message.model.id === model_id,
       "UpdateModel response model.description": (r) => r.message.model.description === "new_description",
-      "UpdateModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
+      "UpdateModel response model.modelDefinition": (r) => r.message.model.modelDefinition === model_def_name,
       "UpdateModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "UpdateModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
       "UpdateModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
-      "UpdateModel response model.create_time": (r) => r.message.model.createTime !== undefined,
-      "UpdateModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
+      "UpdateModel response model.createTime": (r) => r.message.model.createTime !== undefined,
+      "UpdateModel response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;

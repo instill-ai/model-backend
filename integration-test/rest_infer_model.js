@@ -30,7 +30,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", model_def_name);
+      fd_cls.append("modelDefinition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -240,7 +240,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd_det.append("id", model_id);
       fd_det.append("description", model_description);
-      fd_det.append("model_definition", model_def_name);
+      fd_det.append("modelDefinition", model_def_name);
       fd_det.append("content", http.file(constant.det_model, "dummy-det-model.zip"));
 
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
@@ -551,7 +551,7 @@ export function InferModel(header) {
   //     let model_description = randomString(20)
   //     fd.append("id", model_id);
   //     fd.append("description", model_description);
-  //     fd.append("model_definition", model_def_name);
+  //     fd.append("modelDefinition", model_def_name);
   //     fd.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
 
   //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
@@ -807,7 +807,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd_keypoint.append("id", model_id);
       fd_keypoint.append("description", model_description);
-      fd_keypoint.append("model_definition", model_def_name);
+      fd_keypoint.append("modelDefinition", model_def_name);
       fd_keypoint.append("content", http.file(constant.keypoint_model, "dummy-keypoint-model.zip"));
 
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
@@ -1099,7 +1099,7 @@ export function InferModel(header) {
   //     let model_description = randomString(20)
   //     fd_empty.append("id", model_id);
   //     fd_empty.append("description", model_description);
-  //     fd_empty.append("model_definition", model_def_name);
+  //     fd_empty.append("modelDefinition", model_def_name);
   //     fd_empty.append("content", http.file(constant.empty_response_model, "empty-response-model.zip"));
 
   //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_empty.body(), {
@@ -1390,7 +1390,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.semantic_segmentation_model, "dummy-semantic_segmentation_model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -1620,7 +1620,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.instance_segmentation_model, "dummy-instance-segmentation-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -1946,7 +1946,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.text_to_image_model, "dummy-text-to-image-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -2163,7 +2163,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.image_to_image_model, "dummy-image-to-image-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -2384,7 +2384,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.text_generation_model, "dummy-text-generation-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -2566,7 +2566,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.text_generation_chat_model, "dummy-text-generation-chat-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
@@ -2750,7 +2750,7 @@ export function InferModel(header) {
       let model_description = randomString(20)
       fd.append("id", model_id);
       fd.append("description", model_description);
-      fd.append("model_definition", model_def_name);
+      fd.append("modelDefinition", model_def_name);
       fd.append("content", http.file(constant.visual_question_answering, "dummy-visual-question-answering-model.zip"));
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),

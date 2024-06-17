@@ -71,8 +71,8 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelPB.ListModelsR
 		filtering.DeclareIdent("tag", filtering.TypeString),
 		filtering.DeclareIdent("description", filtering.TypeString),
 		filtering.DeclareIdent("owner", filtering.TypeString),
-		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
-		filtering.DeclareIdent("update_time", filtering.TypeTimestamp),
+		filtering.DeclareIdent("createTime", filtering.TypeTimestamp),
+		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
 	}...)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -273,8 +273,8 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		filtering.DeclareIdent("tag", filtering.TypeString),
 		filtering.DeclareIdent("description", filtering.TypeString),
 		filtering.DeclareIdent("owner", filtering.TypeString),
-		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
-		filtering.DeclareIdent("update_time", filtering.TypeTimestamp),
+		filtering.DeclareIdent("createTime", filtering.TypeTimestamp),
+		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
 	}...)
 	if err != nil {
 		span.SetStatus(1, err.Error())

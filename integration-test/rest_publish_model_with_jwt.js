@@ -25,7 +25,7 @@ export function PublishUnpublishModel(header) {
   let fd_cls = new FormData();
   let model_id = randomString(10)
   fd_cls.append("id", model_id);
-  fd_cls.append("model_definition", model_def_name);
+  fd_cls.append("modelDefinition", model_def_name);
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {

@@ -41,7 +41,7 @@ export function PublishUnPublishUserModel(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", model_def_name);
+    fd_cls.append("modelDefinition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
@@ -75,12 +75,12 @@ export function PublishUnPublishUserModel(header) {
       "PublishModel response model.uid": (r) => r.message.model.uid !== undefined,
       "PublishModel response model.id": (r) => r.message.model.id === model_id,
       "PublishModel response model.description": (r) => r.message.model.description === model_description,
-      "PublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
+      "PublishModel response model.modelDefinition": (r) => r.message.model.modelDefinition === model_def_name,
       "PublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "PublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PUBLIC",
       "PublishModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
-      "PublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
-      "PublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
+      "PublishModel response model.createTime": (r) => r.message.model.createTime !== undefined,
+      "PublishModel response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/UnpublishUserModel', {
@@ -91,12 +91,12 @@ export function PublishUnPublishUserModel(header) {
       "UnpublishModel response model.uid": (r) => r.message.model.uid !== undefined,
       "UnpublishModel response model.id": (r) => r.message.model.id === model_id,
       "UnpublishModel response model.description": (r) => r.message.model.description === model_description,
-      "UnpublishModel response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
+      "UnpublishModel response model.modelDefinition": (r) => r.message.model.modelDefinition === model_def_name,
       "UnpublishModel response model.configuration": (r) => r.message.model.configuration !== undefined,
       "UnpublishModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
       "UnpublishModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
-      "UnpublishModel response model.create_time": (r) => r.message.model.createTime !== undefined,
-      "UnpublishModel response model.update_time": (r) => r.message.model.updateTime !== undefined,
+      "UnpublishModel response model.createTime": (r) => r.message.model.createTime !== undefined,
+      "UnpublishModel response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/PublishUserModel', {

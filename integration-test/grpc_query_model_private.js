@@ -47,7 +47,7 @@ export function ListModels(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", model_def_name);
+    fd_cls.append("modelDefinition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
@@ -82,12 +82,12 @@ export function ListModels(header) {
       "ListModelsAdmin response models[0].uid": (r) => r.message.models[0].uid !== undefined,
       "ListModelsAdmin response models[0].id": (r) => r.message.models[0].id === model_id,
       "ListModelsAdmin response models[0].description": (r) => r.message.models[0].description !== undefined,
-      "ListModelsAdmin response models[0].model_definition": (r) => r.message.models[0].modelDefinition === model_def_name,
+      "ListModelsAdmin response models[0].modelDefinition": (r) => r.message.models[0].modelDefinition === model_def_name,
       "ListModelsAdmin response models[0].configuration": (r) => r.message.models[0].configuration !== undefined,
       "ListModelsAdmin response models[0].visibility": (r) => r.message.models[0].visibility === "VISIBILITY_PRIVATE",
       "ListModelsAdmin response models[0].ownerName": (r) => isValidOwner(r.message.models[0].ownerName),
-      "ListModelsAdmin response models[0].create_time": (r) => r.message.models[0].createTime !== undefined,
-      "ListModelsAdmin response models[0].update_time": (r) => r.message.models[0].updateTime !== undefined,
+      "ListModelsAdmin response models[0].createTime": (r) => r.message.models[0].createTime !== undefined,
+      "ListModelsAdmin response models[0].updateTime": (r) => r.message.models[0].updateTime !== undefined,
     });
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
@@ -128,7 +128,7 @@ export function LookUpModel(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", model_def_name);
+    fd_cls.append("modelDefinition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),
@@ -166,12 +166,12 @@ export function LookUpModel(header) {
       "LookUpModelAdmin response model.uid": (r) => r.message.model.uid !== undefined,
       "LookUpModelAdmin response model.id": (r) => r.message.model.id === model_id,
       "LookUpModelAdmin response model.description": (r) => r.message.model.description === model_description,
-      "LookUpModelAdmin response model.model_definition": (r) => r.message.model.modelDefinition === model_def_name,
+      "LookUpModelAdmin response model.modelDefinition": (r) => r.message.model.modelDefinition === model_def_name,
       "LookUpModelAdmin response model.configuration": (r) => r.message.model.configuration !== undefined,
       "LookUpModelAdmin response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
       "LookUpModelAdmin response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
-      "LookUpModelAdmin response model.create_time": (r) => r.message.model.createTime !== undefined,
-      "LookUpModelAdmin response model.update_time": (r) => r.message.model.updateTime !== undefined,
+      "LookUpModelAdmin response model.createTime": (r) => r.message.model.createTime !== undefined,
+      "LookUpModelAdmin response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
 
     check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {

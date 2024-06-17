@@ -29,7 +29,7 @@ export function UpdateModel(header) {
       let model_description = randomString(20)
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", model_def_name);
+      fd_cls.append("modelDefinition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -68,8 +68,8 @@ export function UpdateModel(header) {
           r.json().model.id === model_id,
         [`PATCH /v1alpha/models/${model_id} task cls response model.description`]: (r) =>
           r.json().model.description === new_description,
-        [`PATCH /v1alpha/models/${model_id} task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`PATCH /v1alpha/models/${model_id} task cls response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`PATCH /v1alpha/models/${model_id} task cls response model.task`]: (r) =>
           r.json().model.task === "TASK_CLASSIFICATION",
         [`PATCH /v1alpha/models/${model_id} task cls response model.state`]: (r) =>
@@ -80,10 +80,10 @@ export function UpdateModel(header) {
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`PATCH /v1alpha/models/${model_id} task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`PATCH /v1alpha/models/${model_id} task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`PATCH /v1alpha/models/${model_id} task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`PATCH /v1alpha/models/${model_id} task cls response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`PATCH /v1alpha/models/${model_id} task cls response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       payload = JSON.stringify({
@@ -104,18 +104,18 @@ export function UpdateModel(header) {
           r.json().model.task === "TASK_CLASSIFICATION",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.state`]: (r) =>
           r.json().model.state === "STATE_OFFLINE",
-        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.configuration`]: (r) =>
           r.json().model.configuration !== undefined,
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`PATCH /v1alpha/models/${model_id} task cls description empty response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`PATCH /v1alpha/models/${model_id} task cls description empty response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       currentTime = new Date().getTime();

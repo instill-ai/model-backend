@@ -29,7 +29,7 @@ export function InferGitHubModel(header) {
       let model_id = randomString(10)
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-mobilenetv2",
           "tag": "v1.0-cpu"
@@ -238,7 +238,7 @@ export function InferGitHubModel(header) {
       let model_id = randomString(10)
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-mobilenetv2-dvc"
         },
@@ -447,7 +447,7 @@ export function InferGitHubModel(header) {
       let model_id = randomString(10)
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-yolov4"
         },
@@ -755,7 +755,7 @@ export function InferGitHubModel(header) {
       let model_id = randomString(10)
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-yolov4-dvc"
         },
@@ -1063,7 +1063,7 @@ export function InferGitHubModel(header) {
       let model_id = randomString(10)
       let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-yolov7-pose-dvc"
         },
@@ -1356,7 +1356,7 @@ export function InferGitHubModel(header) {
   //   group("Model Backend API: Predict Model with semantic segmentation model", function () {
   //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
   //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
+  //       "modelDefinition": "model-definitions/github",
   //       "configuration": {
   //         "repository": "admin/model-semantic-segmentation-dvc"
   //       },
@@ -1608,7 +1608,7 @@ export function InferGitHubModel(header) {
   //   group("Model Backend API: Predict Model with instance segmentation model", function () {
   //     let createModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
   //       "id": model_id,
-  //       "model_definition": "model-definitions/github",
+  //       "modelDefinition": "model-definitions/github",
   //       "configuration": {
   //         "repository": "admin/model-instance-segmentation-dvc"
   //       },
