@@ -394,6 +394,11 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 		return nil, "", ErrNotFound
 	}
 
+	_, err = s.GetModelVersionAdmin(ctx, dbModel.UID, version)
+	if err != nil {
+		return modelPB.State_STATE_ERROR.Enum(), "", status.New(codes.NotFound, "Model version not found").Err()
+	}
+
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
 
 	state, message, err := s.ray.ModelReady(ctx, name, version)
@@ -689,9 +694,14 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	versions := make([]*modelPB.ModelVersion, len(tags))
 
 	for i, tag := range tags {
-		state, _, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
-		if err != nil {
+		var state *modelPB.State
+		if _, err := s.GetModelVersionAdmin(ctx, dbModel.UID, tag.GetId()); err != nil {
 			state = modelPB.State_STATE_ERROR.Enum()
+		} else {
+			state, _, err = s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
+			if err != nil {
+				state = modelPB.State_STATE_ERROR.Enum()
+			}
 		}
 		versions[i] = &modelPB.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
