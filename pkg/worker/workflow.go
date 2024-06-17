@@ -118,7 +118,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 			ComputeTimeDuration: usageData.ComputeTimeDuration,
 			ModelTask:           datamodel.ModelTask(usageData.ModelTask),
 			ModelUID:            param.ModelUID,
-			ModelVersionUID:     param.ModelVersion.UID,
+			ModelVersion:        param.ModelVersion.Version,
 			Input:               inputBlob,
 		}
 	}

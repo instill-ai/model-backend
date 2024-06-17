@@ -168,7 +168,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		TriggerTime:        startTime,
 		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
 		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersionUID:    version.UID,
+		ModelVersion:       version.Version,
 		Input:              inputJSON,
 	}
 
@@ -477,7 +477,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ComputeTimeDuration: usageData.ComputeTimeDuration,
 		ModelTask:           datamodel.ModelTask(usageData.ModelTask),
 		ModelUID:            uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersionUID:     version.UID,
+		ModelVersion:        version.Version,
 		Input:               inputJSON,
 	}
 
