@@ -67,16 +67,36 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.Look
 	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.DeployModelAdminRequest) (*modelPB.DeployModelAdminResponse, error) {
+type DeployNamespaceModelAdminRequestInterface interface {
+	GetName() string
+	GetVersion() string
+	GetDigest() string
+}
+
+func (h *PrivateHandler) DeployUserModelAdmin(ctx context.Context, req *modelPB.DeployUserModelAdminRequest) (resp *modelPB.DeployUserModelAdminResponse, err error) {
+
+	err = h.deployNamespaceModelAdmin(ctx, req)
+
+	return &modelPB.DeployUserModelAdminResponse{}, err
+}
+
+func (h *PrivateHandler) DeployOrganizationModelAdmin(ctx context.Context, req *modelPB.DeployOrganizationModelAdminRequest) (resp *modelPB.DeployOrganizationModelAdminResponse, err error) {
+
+	err = h.deployNamespaceModelAdmin(ctx, req)
+
+	return &modelPB.DeployOrganizationModelAdminResponse{}, err
+}
+
+func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req DeployNamespaceModelAdminRequestInterface) error {
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
+		return err
 	}
 
 	version := &datamodel.ModelVersion{
@@ -87,7 +107,7 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 	}
 
 	if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
-		return &modelPB.DeployModelAdminResponse{}, err
+		return err
 	}
 
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), true); err != nil {
@@ -101,24 +121,44 @@ func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelPB.Depl
 		)
 
 		if e != nil {
-			return &modelPB.DeployModelAdminResponse{}, errors.New(e.Error())
+			return errors.New(e.Error())
 		}
-		return &modelPB.DeployModelAdminResponse{}, st.Err()
+		return st.Err()
 	}
 
-	return &modelPB.DeployModelAdminResponse{}, nil
+	return nil
 }
 
-func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.UndeployModelAdminRequest) (*modelPB.UndeployModelAdminResponse, error) {
+type UndeployNamespaceModelAdminRequestInterface interface {
+	GetName() string
+	GetVersion() string
+	GetDigest() string
+}
+
+func (h *PrivateHandler) UndeployUserModelAdmin(ctx context.Context, req *modelPB.UndeployUserModelAdminRequest) (resp *modelPB.UndeployUserModelAdminResponse, err error) {
+
+	err = h.undeployNamespaceModelAdmin(ctx, req)
+
+	return &modelPB.UndeployUserModelAdminResponse{}, err
+}
+
+func (h *PrivateHandler) UndeployOrganizationModelAdmin(ctx context.Context, req *modelPB.UndeployOrganizationModelAdminRequest) (resp *modelPB.UndeployOrganizationModelAdminResponse, err error) {
+
+	err = h.undeployNamespaceModelAdmin(ctx, req)
+
+	return &modelPB.UndeployOrganizationModelAdminResponse{}, err
+}
+
+func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req UndeployNamespaceModelAdminRequestInterface) error {
 
 	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
 	if err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
+		return err
 	}
 
 	version := &datamodel.ModelVersion{
@@ -139,13 +179,13 @@ func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelPB.Un
 		)
 
 		if e != nil {
-			return &modelPB.UndeployModelAdminResponse{}, errors.New(e.Error())
+			return errors.New(e.Error())
 		}
-		return &modelPB.UndeployModelAdminResponse{}, st.Err()
+		return st.Err()
 	}
 
 	if err := h.service.DeleteModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), version.Version); err != nil {
-		return &modelPB.UndeployModelAdminResponse{}, err
+		return err
 	}
-	return &modelPB.UndeployModelAdminResponse{}, nil
+	return nil
 }

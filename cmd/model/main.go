@@ -269,10 +269,18 @@ func main() {
 				}
 			}
 			logger.Info("Deploying model: " + modelConfig.ID)
-			_, err = modelPrivateServiceClient.DeployModelAdmin(sCtx, &modelPB.DeployModelAdminRequest{
-				Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-				Version: modelConfig.Version,
-			})
+			if modelConfig.OwnerType == string(resource.User) {
+				_, err = modelPrivateServiceClient.DeployUserModelAdmin(sCtx, &modelPB.DeployUserModelAdminRequest{
+					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+					Version: modelConfig.Version,
+				})
+
+			} else if modelConfig.OwnerType == string(resource.Organization) {
+				_, err = modelPrivateServiceClient.DeployOrganizationModelAdmin(sCtx, &modelPB.DeployOrganizationModelAdminRequest{
+					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+					Version: modelConfig.Version,
+				})
+			}
 			if err != nil {
 				logger.Error(fmt.Sprintf("deploy model err: %v", err))
 				if e, ok := status.FromError(err); ok {

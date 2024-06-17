@@ -16,13 +16,12 @@ dev:							## Run dev container
 		echo "Run dev container ${SERVICE_NAME}. To stop it, run \"make stop\"."
 	@docker run -d --rm \
 		-v $(PWD):/${SERVICE_NAME} \
-		-v model-repository:/model-repository \
-		-v ray-conda:/ray-conda \
-		-v ~/.cache/instill:/.cache \
+		-v model-config:/model-config \
 		-p ${SERVICE_PORT}:${SERVICE_PORT} \
+		-p ${PRIVATE_SERVICE_PORT}:${PRIVATE_SERVICE_PORT} \
 		--network instill-network \
 		--name ${SERVICE_NAME} \
-		instill/${SERVICE_NAME}:dev >/dev/null 2>&1
+		instill/${SERVICE_NAME}:dev
 
 .PHONY: logs
 logs:							## Tail container logs with -n 10

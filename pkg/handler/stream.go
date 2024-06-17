@@ -257,7 +257,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		TriggerTime:        startTime,
 		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
 		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersionUID:    version.UID,
+		ModelVersion:       version.Version,
 	}
 
 	// write usage/metric datapoint and prediction record

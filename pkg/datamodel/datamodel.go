@@ -89,11 +89,12 @@ type Model struct {
 
 // Model version
 type ModelVersion struct {
-	BaseDynamic
-	Name     string
-	Version  string
-	Digest   string
-	ModelUID uuid.UUID
+	Name       string
+	Version    string
+	Digest     string
+	ModelUID   uuid.UUID
+	CreateTime time.Time `gorm:"autoCreateTime:nano"`
+	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`
 }
 
 type ModelPrediction struct {
@@ -111,7 +112,7 @@ type ModelPrediction struct {
 	Input               datatypes.JSON `json:"input,omitempty"`
 	Output              datatypes.JSON `json:"output,omitempty"`
 	ModelUID            uuid.UUID      `json:"model_uid,omitempty"`
-	ModelVersionUID     uuid.UUID      `json:"model_version,omitempty"`
+	ModelVersion        string         `json:"model_version,omitempty"`
 }
 
 type ModelTag struct {
