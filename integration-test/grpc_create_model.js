@@ -24,7 +24,7 @@ export function CreateUserModel(header) {
     let createRes = client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: model_id,
-        model_definition: constant.model_def_name,
+        modelDefinition: constant.model_def_name,
         visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         hardware: "CPU",
@@ -49,7 +49,7 @@ export function CreateUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: randomString(10),
-        model_definition: randomString(10),
+        modelDefinition: randomString(10),
         visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         hardware: "CPU",
@@ -64,7 +64,7 @@ export function CreateUserModel(header) {
 
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
-        model_definition: constant.model_def_name,
+        modelDefinition: constant.model_def_name,
         visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         hardware: "CPU",
@@ -80,7 +80,7 @@ export function CreateUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: randomString(10),
-        model_definition: constant.model_def_name,
+        modelDefinition: constant.model_def_name,
         visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         hardware: "CPU",
@@ -95,7 +95,7 @@ export function CreateUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: randomString(10),
-        model_definition: constant.model_def_name,
+        modelDefinition: constant.model_def_name,
         visibility: "VISIBILITY_PUBLIC",
         region: "REGION_GCP_EUROPE_WEST_4",
         configuration: {
@@ -110,7 +110,7 @@ export function CreateUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/CreateUserModel', {
       model: {
         id: randomString(10),
-        model_definition: constant.model_def_name,
+        modelDefinition: constant.model_def_name,
         visibility: "VISIBILITY_PUBLIC",
         hardware: "CPU",
         configuration: {

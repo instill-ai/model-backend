@@ -26,8 +26,8 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 		filtering.DeclareIdent("id", filtering.TypeString),
 		filtering.DeclareIdent("description", filtering.TypeString),
 		filtering.DeclareIdent("owner", filtering.TypeString),
-		filtering.DeclareIdent("create_time", filtering.TypeTimestamp),
-		filtering.DeclareIdent("update_time", filtering.TypeTimestamp),
+		filtering.DeclareIdent("createTime", filtering.TypeTimestamp),
+		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
 	}...)
 	if err != nil {
 		return nil, err

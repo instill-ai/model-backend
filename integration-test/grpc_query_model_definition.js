@@ -27,8 +27,8 @@ export function GetModelDefinition(header) {
       "GetModelDefinition response modelDefinition.icon": (r) => r.message.modelDefinition.icon !== undefined,
       "GetModelDefinition response modelDefinition.documentationUrl": (r) => r.message.modelDefinition.documentationUrl !== undefined,
       "GetModelDefinition response modelDefinition.modelSpec": (r) => r.message.modelDefinition.modelSpec !== undefined,
-      "GetModelDefinition response modelDefinition.create_time": (r) => r.message.modelDefinition.createTime !== undefined,
-      "GetModelDefinition response modelDefinition.update_time": (r) => r.message.modelDefinition.updateTime !== undefined,
+      "GetModelDefinition response modelDefinition.createTime": (r) => r.message.modelDefinition.createTime !== undefined,
+      "GetModelDefinition response modelDefinition.updateTime": (r) => r.message.modelDefinition.updateTime !== undefined,
     });
     client.close();
   });
@@ -48,8 +48,8 @@ export function ListModelDefinitions(header) {
       "ListModelDefinitions response modelDefinitions[0].icon": (r) => r.message.modelDefinitions[0].icon !== undefined,
       "ListModelDefinitions response modelDefinitions[0].documentationUrl": (r) => r.message.modelDefinitions[0].documentationUrl !== undefined,
       "ListModelDefinitions response modelDefinitions[0].modelSpec": (r) => r.message.modelDefinitions[0].modelSpec !== undefined,
-      "ListModelDefinitions response modelDefinitions[0].create_time": (r) => r.message.modelDefinitions[0].createTime !== undefined,
-      "ListModelDefinitions response modelDefinitions[0].update_time": (r) => r.message.modelDefinitions[0].updateTime !== undefined,
+      "ListModelDefinitions response modelDefinitions[0].createTime": (r) => r.message.modelDefinitions[0].createTime !== undefined,
+      "ListModelDefinitions response modelDefinitions[0].updateTime": (r) => r.message.modelDefinitions[0].updateTime !== undefined,
     });
     client.close();
   });

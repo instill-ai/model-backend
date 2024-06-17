@@ -29,7 +29,7 @@ export function PublishUnpublishModel(header) {
       let model_description = randomString(20)
       fd_cls.append("id", model_id);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", model_def_name);
+      fd_cls.append("modelDefinition", model_def_name);
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -64,18 +64,18 @@ export function PublishUnpublishModel(header) {
           r.json().model.id === model_id,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`POST /v1alpha/models/${model_id}/publish task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`POST /v1alpha/models/${model_id}/publish task cls response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.configuration`]: (r) =>
           r.json().model.configuration !== undefined,
         [`POST /v1alpha/models/${model_id}/publish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PUBLIC",
         [`POST /v1alpha/models/${model_id}/publish task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`POST /v1alpha/models/${model_id}/publish task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/publish task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/publish task cls response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`POST /v1alpha/models/${model_id}/publish task cls response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/unpublish`, null, header), {
@@ -89,18 +89,18 @@ export function PublishUnpublishModel(header) {
           r.json().model.id === model_id,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.description`]: (r) =>
           r.json().model.description === model_description,
-        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.model_definition`]: (r) =>
-          r.json().model.model_definition === model_def_name,
+        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.modelDefinition`]: (r) =>
+          r.json().model.modelDefinition === model_def_name,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.configuration`]: (r) =>
           r.json().model.configuration !== undefined,
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.visibility`]: (r) =>
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`POST /v1alpha/models/${model_id}/unpublish task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
-        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.create_time`]: (r) =>
-          r.json().model.create_time !== undefined,
-        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.update_time`]: (r) =>
-          r.json().model.update_time !== undefined,
+        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.createTime`]: (r) =>
+          r.json().model.createTime !== undefined,
+        [`POST /v1alpha/models/${model_id}/unpublish task cls response model.updateTime`]: (r) =>
+          r.json().model.updateTime !== undefined,
       });
 
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${randomString(10)}/publish`, null, header), {

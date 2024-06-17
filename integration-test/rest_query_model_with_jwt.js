@@ -24,7 +24,7 @@ export function GetModel(header) {
   let model_description = randomString(20)
   fd_cls.append("id", model_id);
   fd_cls.append("description", model_description);
-  fd_cls.append("model_definition", "model-definitions/local");
+  fd_cls.append("modelDefinition", "model-definitions/local");
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {
@@ -134,7 +134,7 @@ export function LookupModel(header) {
   let model_description = randomString(20)
   fd_cls.append("id", model_id);
   fd_cls.append("description", model_description);
-  fd_cls.append("model_definition", "model-definitions/local");
+  fd_cls.append("modelDefinition", "model-definitions/local");
   fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
   {

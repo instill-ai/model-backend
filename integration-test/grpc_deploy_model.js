@@ -37,7 +37,7 @@ export function DeployUndeployUserModel(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", model_def_name);
+    fd_cls.append("modelDefinition", model_def_name);
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
     let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
       headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.metadata.Authorization),

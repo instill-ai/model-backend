@@ -28,7 +28,7 @@ export function CreateModelFromLocal(header) {
     let model_description = randomString(20)
     fd_cls.append("id", model_id);
     fd_cls.append("description", model_description);
-    fd_cls.append("model_definition", "model-definitions/local");
+    fd_cls.append("modelDefinition", "model-definitions/local");
     fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
 
     group(`Model Backend API: CreateModelFromLocal [with random "Instill-User-Uid" header]`, function () {
@@ -97,7 +97,7 @@ export function CreateModelFromGitHub(header) {
     let model_id = randomString(10)
     let payload = JSON.stringify({
       "id": model_id,
-      "model_definition": "model-definitions/github",
+      "modelDefinition": "model-definitions/github",
       "configuration": {
         "repository": "admin/model-dummy-cls",
         "tag": "v1.0-cpu"

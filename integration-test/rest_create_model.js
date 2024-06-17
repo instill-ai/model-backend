@@ -27,7 +27,7 @@ export function CreateModelFromLocal(header) {
       let model_description = randomString(20)
       fd_cls.append("id", model_id_cls);
       fd_cls.append("description", model_description);
-      fd_cls.append("model_definition", "model-definitions/local");
+      fd_cls.append("modelDefinition", "model-definitions/local");
       fd_cls.append("content", http.file(constant.cls_model, "dummy-cls-model.zip"));
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -60,7 +60,7 @@ export function CreateModelFromLocal(header) {
       model_description = randomString(20)
       fd_det.append("id", model_id_det);
       fd_det.append("description", model_description);
-      fd_det.append("model_definition", "model-definitions/local");
+      fd_det.append("modelDefinition", "model-definitions/local");
       fd_det.append("content", http.file(constant.det_model, "dummy-det-model.zip"));
       let createDetModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
@@ -93,7 +93,7 @@ export function CreateModelFromLocal(header) {
       model_description = randomString(20)
       fd_keypoint.append("id", model_id_keypoint);
       fd_keypoint.append("description", model_description);
-      fd_keypoint.append("model_definition", "model-definitions/local");
+      fd_keypoint.append("modelDefinition", "model-definitions/local");
       fd_keypoint.append("content", http.file(constant.keypoint_model, "dummy-keypoint-model.zip"));
       let createKpModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
@@ -126,7 +126,7 @@ export function CreateModelFromLocal(header) {
       // model_description = randomString(20)
       // fd_unspecified.append("id", model_id_unspecified);
       // fd_unspecified.append("description", model_description);
-      // fd_unspecified.append("model_definition", "model-definitions/local");
+      // fd_unspecified.append("modelDefinition", "model-definitions/local");
       // fd_unspecified.append("content", http.file(constant.unspecified_model, "dummy-unspecified-model.zip"));
       // let createUnspecifiedModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
       //   headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
@@ -204,7 +204,7 @@ export function CreateModelFromLocal(header) {
     //   let model_description = randomString(20)
     //   fd_cls.append("id", model_id_cls);
     //   fd_cls.append("description", model_description);
-    //   fd_cls.append("model_definition", "model-definitions/local");
+    //   fd_cls.append("modelDefinition", "model-definitions/local");
     //   fd_cls.append("content", http.file(constant.cls_model_bz17, "dummy-cls-model-bz17.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_cls.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_cls.boundary}`, header.headers.Authorization),
@@ -218,7 +218,7 @@ export function CreateModelFromLocal(header) {
     //   model_description = randomString(20)
     //   fd_det.append("id", model_id_det);
     //   fd_det.append("description", model_description);
-    //   fd_det.append("model_definition", "model-definitions/local");
+    //   fd_det.append("modelDefinition", "model-definitions/local");
     //   fd_det.append("content", http.file(constant.det_model_bz9, "dummy-det-model-bz9.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_det.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_det.boundary}`, header.headers.Authorization),
@@ -232,7 +232,7 @@ export function CreateModelFromLocal(header) {
     //   model_description = randomString(20)
     //   fd_keypoint.append("id", model_id_keypoint);
     //   fd_keypoint.append("description", model_description);
-    //   fd_keypoint.append("model_definition", "model-definitions/local");
+    //   fd_keypoint.append("modelDefinition", "model-definitions/local");
     //   fd_keypoint.append("content", http.file(constant.keypoint_model_bz9, "dummy-keypoint-model-bz9.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_keypoint.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_keypoint.boundary}`, header.headers.Authorization),
@@ -246,7 +246,7 @@ export function CreateModelFromLocal(header) {
     //   model_description = randomString(20)
     //   fd_unspecified.append("id", model_id_unspecified);
     //   fd_unspecified.append("description", model_description);
-    //   fd_unspecified.append("model_definition", "model-definitions/local");
+    //   fd_unspecified.append("modelDefinition", "model-definitions/local");
     //   fd_unspecified.append("content", http.file(constant.unspecified_model_bz3, "dummy-unspecified-model-bz3.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_unspecified.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_unspecified.boundary}`, header.headers.Authorization),
@@ -260,7 +260,7 @@ export function CreateModelFromLocal(header) {
     //   model_description = randomString(20)
     //   fd_semantic.append("id", model_id_semantic);
     //   fd_semantic.append("description", model_description);
-    //   fd_semantic.append("model_definition", "model-definitions/local");
+    //   fd_semantic.append("modelDefinition", "model-definitions/local");
     //   fd_semantic.append("content", http.file(constant.semantic_segmentation_model_bz9, "dummy-semantic-segmentation-model-bz9.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_semantic.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_semantic.boundary}`, header.headers.Authorization),
@@ -274,7 +274,7 @@ export function CreateModelFromLocal(header) {
     //   model_description = randomString(20)
     //   fd_instance.append("id", model_id_instance);
     //   fd_instance.append("description", model_description);
-    //   fd_instance.append("model_definition", "model-definitions/local");
+    //   fd_instance.append("modelDefinition", "model-definitions/local");
     //   fd_instance.append("content", http.file(constant.instance_segmentation_model_bz9, "dummy-instance-segmentation-model-bz9.zip"));
     //   check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/multipart`, fd_instance.body(), {
     //     headers: genHeader(`multipart/form-data; boundary=${fd_instance.boundary}`, header.headers.Authorization),
@@ -329,7 +329,7 @@ export function CreateModelFromGitHub(header) {
       let model_id = randomString(10)
       let createClsModelRes = http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": model_id,
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-dummy-cls",
           "tag": "v1.0-cpu"
@@ -361,7 +361,7 @@ export function CreateModelFromGitHub(header) {
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": randomString(10),
-        "model_definition": randomString(10),
+        "modelDefinition": randomString(10),
         "configuration": {
           "repository": "admin/model-dummy-cls"
         },
@@ -371,7 +371,7 @@ export function CreateModelFromGitHub(header) {
       });
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {
           "repository": "admin/model-dummy-cls"
         }
@@ -382,7 +382,7 @@ export function CreateModelFromGitHub(header) {
 
       check(http.request("POST", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, JSON.stringify({
         "id": randomString(10),
-        "model_definition": "model-definitions/github",
+        "modelDefinition": "model-definitions/github",
         "configuration": {}
       }), header), {
         "POST /v1alpha/models by github missing github_url status": (r) =>
