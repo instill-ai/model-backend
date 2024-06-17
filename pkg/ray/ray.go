@@ -15,10 +15,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
@@ -163,7 +161,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelPB.State_STATE_ERROR.Enum(), "", status.New(codes.NotFound, "Model version not found").Err()
+		return modelPB.State_STATE_OFFLINE.Enum(), "", nil
 	}
 
 	switch application.Status {
@@ -186,6 +184,14 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 		}
 		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
+		for i := range application.Deployments {
+			switch application.Deployments[i].Status {
+			case rayserver.DeploymentStatusStrUpdating:
+				return modelPB.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
+			case rayserver.DeploymentStatusStrUnhealthy:
+				return modelPB.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+			}
+		}
 		return modelPB.State_STATE_STARTING.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrNotStarted:
 		return modelPB.State_STATE_OFFLINE.Enum(), application.Message, nil
