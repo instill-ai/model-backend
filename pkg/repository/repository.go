@@ -166,18 +166,20 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		for _, o := range order.Fields {
 
 			if v, ok := tokens[o.Path]; ok {
+				p := strcase.ToSnake(o.Path)
 				switch o.Path {
 				case "create_time", "update_time":
+					// Add "model." prefix to prevent ambiguous since tag table also has the two columns.
 					if o.Desc {
-						queryBuilder = queryBuilder.Where(o.Path+" < ?::timestamp", v)
+						queryBuilder = queryBuilder.Where("model."+p+" < ?::timestamp", v)
 					} else {
-						queryBuilder = queryBuilder.Where(o.Path+" > ?::timestamp", v)
+						queryBuilder = queryBuilder.Where("model."+p+" > ?::timestamp", v)
 					}
 				default:
 					if o.Desc {
-						queryBuilder = queryBuilder.Where(o.Path+" < ?", v)
+						queryBuilder = queryBuilder.Where(p+" < ?", v)
 					} else {
-						queryBuilder = queryBuilder.Where(o.Path+" > ?", v)
+						queryBuilder = queryBuilder.Where(p+" > ?", v)
 					}
 				}
 			}
@@ -213,13 +215,13 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		for _, field := range order.Fields {
 			orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(!field.Desc)
 			lastItemQueryBuilder.Order(orderString)
-			switch strcase.ToSnake(field.Path) {
+			switch p := strcase.ToSnake(field.Path); p {
 			case "id":
-				tokens[field.Path] = lastID
+				tokens[p] = lastID
 			case "create_time":
-				tokens[field.Path] = lastCreateTime.Format(time.RFC3339Nano)
+				tokens[p] = lastCreateTime.Format(time.RFC3339Nano)
 			case "update_time":
-				tokens[field.Path] = lastUpdateTime.Format(time.RFC3339Nano)
+				tokens[p] = lastUpdateTime.Format(time.RFC3339Nano)
 			}
 
 		}
