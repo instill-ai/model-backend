@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.25.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.24.0-alpha...v0.25.0-alpha) (2024-06-18)
+
+
+### Features
+
+* **endpoints:** use camelCase for `filter` query string ([#603](https://github.com/instill-ai/model-backend/issues/603)) ([23955e9](https://github.com/instill-ai/model-backend/commit/23955e9a3f3cbb5cdc0fec67091c1275eceed07f))
+* **handler:** use camelCase for HTTP body ([#599](https://github.com/instill-ai/model-backend/issues/599)) ([70f6d9a](https://github.com/instill-ai/model-backend/commit/70f6d9ac629ebb5dbb8ffcc5685731ef5c1609c0))
+* **model:** support model tag ([#600](https://github.com/instill-ai/model-backend/issues/600)) ([ef87bc9](https://github.com/instill-ai/model-backend/commit/ef87bc9a36a10546559f3590668c49b7e94fc3c5))
+
 ## [0.24.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.23.0-alpha...v0.24.0-alpha) (2024-06-06)
 
 
