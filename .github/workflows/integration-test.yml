@@ -82,7 +82,6 @@ jobs:
             SERVICE_NAME=model-backend
             GOLANG_VERSION=${{ env.GOLANG_VERSION }}
             UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
-            ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
       - name: Checkout repo (instill-core)

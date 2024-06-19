@@ -1,7 +1,4 @@
-ARG GOLANG_VERSION
-ARG UBUNTU_VERSION
-
-FROM --platform=$BUILDPLATFORM golang:${GOLANG_VERSION} AS build
+FROM --platform=$BUILDPLATFORM golang:1.22.4 AS build
 
 ARG SERVICE_NAME
 
@@ -21,7 +18,7 @@ RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=typ
 # Mounting points
 RUN mkdir /model-config
 
-FROM golang:${GOLANG_VERSION}
+FROM golang:1.22.4
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
