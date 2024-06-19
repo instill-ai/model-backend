@@ -924,7 +924,7 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelpb.View, p
 func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error {
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
-	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, isDeploy); err != nil {
+	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, isDeploy, []string{}); err != nil {
 		return err
 	}
 

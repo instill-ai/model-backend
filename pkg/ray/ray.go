@@ -36,7 +36,7 @@ type Ray interface {
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error
 	Init()
 	Close()
 }
@@ -248,7 +248,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferIn
 	return modelInferResponse, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -295,19 +295,15 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 				)
 			}
 		}
-	}
 
-	// TODO: Support custom resource configs for deployment in the future
-	if userID == "instill-ai" || userID == "abrc" {
-		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 1),
-			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
-		)
-	} else {
-		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
-			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
-		)
+		if scalingConfig != nil {
+			runOptions = append(runOptions, scalingConfig...)
+		} else {
+			runOptions = append(runOptions,
+				fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
+				fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 10),
+			)
+		}
 	}
 
 	applicationConfig := Application{

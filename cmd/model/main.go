@@ -294,40 +294,40 @@ func main() {
 				logger.Error("handler.DeployModel: " + err.Error())
 				return
 			}
-			state := modelpb.State_STATE_OFFLINE
-			var message string
-			for state != modelpb.State_STATE_ACTIVE {
-				time.Sleep(2 * time.Second)
-				if modelConfig.OwnerType == string(resource.User) {
-					var resp *modelpb.WatchUserModelResponse
-					resp, err = modelPublicServiceClient.WatchUserModel(sCtx, &modelpb.WatchUserModelRequest{
-						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						Version: modelConfig.Version,
-					})
-					state = resp.GetState()
-					message = resp.GetMessage()
-				} else if modelConfig.OwnerType == string(resource.Organization) {
-					var resp *modelpb.WatchOrganizationModelResponse
-					resp, err = modelPublicServiceClient.WatchOrganizationModel(sCtx, &modelpb.WatchOrganizationModelRequest{
-						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-						Version: modelConfig.Version,
-					})
-					state = resp.GetState()
-					message = resp.GetMessage()
-				}
-				if err != nil {
-					logger.Info(fmt.Sprintf("Deploy model err: %v", err))
-					if e, ok := status.FromError(err); ok {
-						if e.Code() != codes.AlreadyExists {
-							logger.Fatal("handler.DeployModelAdmin: " + err.Error())
-							return
-						}
-						return
-					}
-					return
-				}
-				logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
-			}
+			// state := modelpb.State_STATE_OFFLINE
+			// var message string
+			// for state != modelpb.State_STATE_ACTIVE {
+			// 	time.Sleep(2 * time.Second)
+			// 	if modelConfig.OwnerType == string(resource.User) {
+			// 		var resp *modelpb.WatchUserModelResponse
+			// 		resp, err = modelPublicServiceClient.WatchUserModel(sCtx, &modelpb.WatchUserModelRequest{
+			// 			Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+			// 			Version: modelConfig.Version,
+			// 		})
+			// 		state = resp.GetState()
+			// 		message = resp.GetMessage()
+			// 	} else if modelConfig.OwnerType == string(resource.Organization) {
+			// 		var resp *modelpb.WatchOrganizationModelResponse
+			// 		resp, err = modelPublicServiceClient.WatchOrganizationModel(sCtx, &modelpb.WatchOrganizationModelRequest{
+			// 			Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
+			// 			Version: modelConfig.Version,
+			// 		})
+			// 		state = resp.GetState()
+			// 		message = resp.GetMessage()
+			// 	}
+			// 	if err != nil {
+			// 		logger.Info(fmt.Sprintf("Deploy model err: %v", err))
+			// 		if e, ok := status.FromError(err); ok {
+			// 			if e.Code() != codes.AlreadyExists {
+			// 				logger.Fatal("handler.DeployModelAdmin: " + err.Error())
+			// 				return
+			// 			}
+			// 			return
+			// 		}
+			// 		return
+			// 	}
+			// 	logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
+			// }
 		}(modelConfigs[i])
 	}
 
