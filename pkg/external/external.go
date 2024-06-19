@@ -13,12 +13,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
-	artifactPB "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	usagePB "github.com/instill-ai/protogen-go/core/usage/v1beta"
+	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
 )
 
-func InitMgmtPublicServiceClient(ctx context.Context) (mgmtPB.MgmtPublicServiceClient, *grpc.ClientConn) {
+func InitMgmtPublicServiceClient(ctx context.Context) (mgmtpb.MgmtPublicServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -38,11 +38,11 @@ func InitMgmtPublicServiceClient(ctx context.Context) (mgmtPB.MgmtPublicServiceC
 		return nil, nil
 	}
 
-	return mgmtPB.NewMgmtPublicServiceClient(clientConn), clientConn
+	return mgmtpb.NewMgmtPublicServiceClient(clientConn), clientConn
 }
 
 // InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
-func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
+func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtpb.MgmtPrivateServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -63,11 +63,11 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 		logger.Fatal(err.Error())
 	}
 
-	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
+	return mgmtpb.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
 // InitArtifactPrivateServiceClient initializes a ArtifactPrivateServiceClient instance
-func InitArtifactPrivateServiceClient(ctx context.Context) (artifactPB.ArtifactPrivateServiceClient, *grpc.ClientConn) {
+func InitArtifactPrivateServiceClient(ctx context.Context) (artifactpb.ArtifactPrivateServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -88,11 +88,11 @@ func InitArtifactPrivateServiceClient(ctx context.Context) (artifactPB.ArtifactP
 		logger.Fatal(err.Error())
 	}
 
-	return artifactPB.NewArtifactPrivateServiceClient(clientConn), clientConn
+	return artifactpb.NewArtifactPrivateServiceClient(clientConn), clientConn
 }
 
 // InitUsageServiceClient initializes a UsageServiceClient instance (no mTLS)
-func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *grpc.ClientConn) {
+func InitUsageServiceClient(ctx context.Context) (usagepb.UsageServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -116,5 +116,5 @@ func InitUsageServiceClient(ctx context.Context) (usagePB.UsageServiceClient, *g
 		return nil, nil
 	}
 
-	return usagePB.NewUsageServiceClient(clientConn), clientConn
+	return usagepb.NewUsageServiceClient(clientConn), clientConn
 }

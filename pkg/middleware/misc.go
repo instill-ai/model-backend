@@ -19,7 +19,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/constant"
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
 func HTTPResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
@@ -175,7 +175,7 @@ func CustomMatcher(key string) (string, bool) {
 	}
 }
 
-func InjectOwnerToContext(ctx context.Context, owner *mgmtPB.User) context.Context {
+func InjectOwnerToContext(ctx context.Context, owner *mgmtpb.User) context.Context {
 	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderAuthTypeKey, "user")
 	ctx = metadata.AppendToOutgoingContext(ctx, constant.HeaderUserUIDKey, owner.GetUid())
 	return ctx

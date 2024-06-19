@@ -17,7 +17,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error) {
@@ -29,7 +29,7 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 	return s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, nil)
 }
 
-func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*longrunningpb.Operation, error) {
+func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
@@ -51,7 +51,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, ErrNoPermission
 	}
 
-	triggerModelReq := &modelPB.TriggerUserModelRequest{}
+	triggerModelReq := &modelpb.TriggerUserModelRequest{}
 
 	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String())).Bytes()
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, err
 	}
 
-	if view != modelPB.View_VIEW_FULL {
+	if view != modelpb.View_VIEW_FULL {
 		operation.Result = nil
 	}
 
@@ -90,17 +90,17 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 }
 
-func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerModelReq *modelPB.TriggerUserModelRequest) (*longrunningpb.Operation, error) {
+func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerModelReq *modelpb.TriggerUserModelRequest) (*longrunningpb.Operation, error) {
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
 
-		latestOperation := &modelPB.LatestOperation{
+		latestOperation := &modelpb.LatestOperation{
 			Request: triggerModelReq,
 		}
 
-		triggerModelResp := &modelPB.TriggerUserModelResponse{}
+		triggerModelResp := &modelpb.TriggerUserModelResponse{}
 
 		blobRedisKey := fmt.Sprintf("async_model_response:%s", workflowExecutionInfo.Execution.WorkflowId)
 		blob, err := s.redisClient.Get(ctx, blobRedisKey).Bytes()

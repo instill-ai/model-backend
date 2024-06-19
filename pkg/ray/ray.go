@@ -24,19 +24,19 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type Ray interface {
 	// grpc
-	ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, string, error)
+	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse
-	ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
+	ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error
 	Init()
 	Close()
 }
@@ -131,7 +131,7 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	}
 }
 
-func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelPB.State, string, error) {
+func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
@@ -161,7 +161,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelPB.State_STATE_OFFLINE.Enum(), "", nil
+		return modelpb.State_STATE_OFFLINE.Enum(), "", nil
 	}
 
 	switch application.Status {
@@ -170,36 +170,36 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
 				if len(application.Deployments[i].Replicas) == 0 {
-					return modelPB.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, nil
+					return modelpb.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, nil
 				} else {
-					return modelPB.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
+					return modelpb.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
 				}
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelPB.State_STATE_STARTING.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_STARTING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
-				return modelPB.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelPB.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
 			}
 		}
-		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
+		return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelPB.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelPB.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
 			}
 		}
-		return modelPB.State_STATE_STARTING.Enum(), application.Message, nil
+		return modelpb.State_STATE_STARTING.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrNotStarted:
-		return modelPB.State_STATE_OFFLINE.Enum(), application.Message, nil
+		return modelpb.State_STATE_OFFLINE.Enum(), application.Message, nil
 	case rayserver.ApplicationStatusStrDeployFailed:
-		return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
+		return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
 	}
 
-	return modelPB.State_STATE_ERROR.Enum(), application.Message, nil
+	return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
@@ -226,7 +226,7 @@ func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, versio
 	return modelMetadataResponse
 }
 
-func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
@@ -248,7 +248,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonPB.Task, inferIn
 	return modelInferResponse, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -295,19 +295,15 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 				)
 			}
 		}
-	}
 
-	// TODO: Support custom resource configs for deployment in the future
-	if userID == "instill-ai" || userID == "abrc" {
-		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 1),
-			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
-		)
-	} else {
-		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
-			fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 1),
-		)
+		if scalingConfig != nil {
+			runOptions = append(runOptions, scalingConfig...)
+		} else {
+			runOptions = append(runOptions,
+				fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
+				fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 10),
+			)
+		}
 	}
 
 	applicationConfig := Application{

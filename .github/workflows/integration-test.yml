@@ -165,6 +165,9 @@ jobs:
         with:
           envFile: .env
 
+      - name: Check test models deployment
+        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "Models are still deploying"; sleep 5; done;
+
       - name: Run integration-test
         run: |
           make integration-test API_GATEWAY_URL=localhost:8080

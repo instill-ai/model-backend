@@ -3,14 +3,14 @@ package init
 import (
 	"fmt"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 const (
 	seedDir = "config/init/%s/seed/%s"
 )
 
-func LoadDefinitions(modelDefs *[]*modelPB.ModelDefinition) error {
+func LoadDefinitions(modelDefs *[]*modelpb.ModelDefinition) error {
 
 	modelDefsFiles := []string{
 		fmt.Sprintf(seedDir, "instill", "model_definitions.json"),

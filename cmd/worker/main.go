@@ -16,7 +16,7 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 
-	temporalClient "go.temporal.io/sdk/client"
+	temporalclient "go.temporal.io/sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/ray"
@@ -25,13 +25,13 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
+	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 
-func initTemporalNamespace(ctx context.Context, client temporalClient.Client) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	resp, err := client.WorkflowService().ListNamespaces(ctx, &workflowservice.ListNamespacesRequest{})
 	if err != nil {
@@ -80,7 +80,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-worker"); err != nil {
+	if tp, err := customotel.SetupTracing(ctx, "model-backend-worker"); err != nil {
 		panic(err)
 	} else {
 		defer func() {
@@ -93,7 +93,7 @@ func main() {
 	)
 	defer cancel()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
@@ -115,7 +115,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
 	}
-	var temporalClientOptions temporalClient.Options
+	var temporalClientOptions temporalclient.Options
 	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
 		if temporalClientOptions, err = temporal.GetTLSClientOption(
 			config.Config.Temporal.HostPort,
@@ -139,7 +139,7 @@ func main() {
 	}
 
 	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
-	tempClient, err := temporalClient.Dial(temporalClientOptions)
+	tempClient, err := temporalclient.Dial(temporalClientOptions)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
 	}

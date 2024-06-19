@@ -20,8 +20,8 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 )
 
 type ModelMeta struct {
@@ -272,23 +272,23 @@ func DoSupportBatch() (bool, error) {
 func GetSupportedBatchSize(task datamodel.ModelTask) int {
 	allowedMaxBatchSize := 0
 	switch task {
-	case datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED):
+	case datamodel.ModelTask(commonpb.Task_TASK_UNSPECIFIED):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelTask(commonPB.Task_TASK_CLASSIFICATION):
+	case datamodel.ModelTask(commonpb.Task_TASK_CLASSIFICATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelTask(commonPB.Task_TASK_DETECTION):
+	case datamodel.ModelTask(commonpb.Task_TASK_DETECTION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelTask(commonPB.Task_TASK_KEYPOINT):
+	case datamodel.ModelTask(commonpb.Task_TASK_KEYPOINT):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelTask(commonPB.Task_TASK_OCR):
+	case datamodel.ModelTask(commonpb.Task_TASK_OCR):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelTask(commonPB.Task_TASK_INSTANCE_SEGMENTATION):
+	case datamodel.ModelTask(commonpb.Task_TASK_INSTANCE_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelTask(commonPB.Task_TASK_SEMANTIC_SEGMENTATION):
+	case datamodel.ModelTask(commonpb.Task_TASK_SEMANTIC_SEGMENTATION):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	case datamodel.ModelTask(commonPB.Task_TASK_TEXT_GENERATION),
-		datamodel.ModelTask(commonPB.Task_TASK_TEXT_GENERATION_CHAT),
-		datamodel.ModelTask(commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING):
+	case datamodel.ModelTask(commonpb.Task_TASK_TEXT_GENERATION),
+		datamodel.ModelTask(commonpb.Task_TASK_TEXT_GENERATION_CHAT),
+		datamodel.ModelTask(commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING):
 		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.TextGeneration
 	}
 	return allowedMaxBatchSize
@@ -331,16 +331,16 @@ func IsBillableEvent(_ string) bool {
 
 type UsageMetricData struct {
 	OwnerUID            string
-	OwnerType           mgmtPB.OwnerType
+	OwnerType           mgmtpb.OwnerType
 	UserUID             string
-	UserType            mgmtPB.OwnerType
+	UserType            mgmtpb.OwnerType
 	ModelUID            string
 	Version             string
-	Status              mgmtPB.Status
-	Mode                mgmtPB.Mode
+	Status              mgmtpb.Status
+	Mode                mgmtpb.Mode
 	TriggerUID          string
 	ModelDefinitionUID  string
 	TriggerTime         string
 	ComputeTimeDuration float64
-	ModelTask           commonPB.Task
+	ModelTask           commonpb.Task
 }

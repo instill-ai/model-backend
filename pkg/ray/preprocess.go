@@ -6,35 +6,35 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 )
 
-func PreProcess(modelName string, version string, inferInput InferInput, task commonPB.Task, modelMetadata *rayserver.ModelMetadataResponse) (modelInferRequest *rayserver.RayServiceCallRequest) {
+func PreProcess(modelName string, version string, inferInput InferInput, task commonpb.Task, modelMetadata *rayserver.ModelMetadataResponse) (modelInferRequest *rayserver.RayServiceCallRequest) {
 	// Create request input tensors
 	var inferInputs []*rayserver.InferTensor
 	for i := 0; i < len(modelMetadata.Inputs); i++ {
 		switch task {
-		case commonPB.Task_TASK_IMAGE_TO_IMAGE,
-			commonPB.Task_TASK_TEXT_TO_IMAGE:
+		case commonpb.Task_TASK_IMAGE_TO_IMAGE,
+			commonpb.Task_TASK_TEXT_TO_IMAGE:
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
-		case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING,
-			commonPB.Task_TASK_TEXT_GENERATION_CHAT,
-			commonPB.Task_TASK_TEXT_GENERATION:
+		case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING,
+			commonpb.Task_TASK_TEXT_GENERATION_CHAT,
+			commonpb.Task_TASK_TEXT_GENERATION:
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
 				Datatype: modelMetadata.Inputs[i].Datatype,
 				Shape:    []int64{1},
 			})
-		case commonPB.Task_TASK_CLASSIFICATION,
-			commonPB.Task_TASK_DETECTION,
-			commonPB.Task_TASK_KEYPOINT,
-			commonPB.Task_TASK_OCR,
-			commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-			commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
+		case commonpb.Task_TASK_CLASSIFICATION,
+			commonpb.Task_TASK_DETECTION,
+			commonpb.Task_TASK_KEYPOINT,
+			commonpb.Task_TASK_OCR,
+			commonpb.Task_TASK_INSTANCE_SEGMENTATION,
+			commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
 			batchSize := int64(len(inferInput.([][]byte)))
 			inferInputs = append(inferInputs, &rayserver.InferTensor{
 				Name:     modelMetadata.Inputs[i].Name,
@@ -55,11 +55,11 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 	var inferOutputs []*rayserver.RayServiceCallRequest_InferRequestedOutputTensor
 	for i := 0; i < len(modelMetadata.Outputs); i++ {
 		switch task {
-		case commonPB.Task_TASK_CLASSIFICATION:
+		case commonpb.Task_TASK_CLASSIFICATION:
 			inferOutputs = append(inferOutputs, &rayserver.RayServiceCallRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
-		case commonPB.Task_TASK_DETECTION:
+		case commonpb.Task_TASK_DETECTION:
 			inferOutputs = append(inferOutputs, &rayserver.RayServiceCallRequest_InferRequestedOutputTensor{
 				Name: modelMetadata.Outputs[i].Name,
 			})
@@ -79,7 +79,7 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 	}
 
 	switch task {
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonpb.Task_TASK_TEXT_TO_IMAGE:
 		textToImageInput := inferInput.(*TextToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(textToImageInput.Samples))
@@ -101,7 +101,7 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 			seed,
 			SerializeBytesTensor([][]byte{[]byte(textToImageInput.ExtraParams)}),
 		)
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		imageToImageInput := inferInput.(*ImageToImageInput)
 		samples := make([]byte, 4)
 		binary.LittleEndian.PutUint32(samples, uint32(imageToImageInput.Samples))
@@ -123,7 +123,7 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 			seed,
 			SerializeBytesTensor([][]byte{[]byte(imageToImageInput.ExtraParams)}),
 		)
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		visualQUestionAnsweringInput := inferInput.(*VisualQuestionAnsweringInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(visualQUestionAnsweringInput.MaxNewTokens))
@@ -145,7 +145,7 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 			seed,
 			SerializeBytesTensor([][]byte{[]byte(visualQUestionAnsweringInput.ExtraParams)}),
 		)
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 		textGenerationChatInput := inferInput.(*TextGenerationChatInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationChatInput.MaxNewTokens))
@@ -167,7 +167,7 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 			seed,
 			SerializeBytesTensor([][]byte{[]byte(textGenerationChatInput.ExtraParams)}),
 		)
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonpb.Task_TASK_TEXT_GENERATION:
 		textGenerationInput := inferInput.(*TextGenerationInput)
 		maxNewToken := make([]byte, 4)
 		binary.LittleEndian.PutUint32(maxNewToken, uint32(textGenerationInput.MaxNewTokens))
@@ -189,12 +189,12 @@ func PreProcess(modelName string, version string, inferInput InferInput, task co
 			seed,
 			SerializeBytesTensor([][]byte{[]byte(textGenerationInput.ExtraParams)}),
 		)
-	case commonPB.Task_TASK_CLASSIFICATION,
-		commonPB.Task_TASK_DETECTION,
-		commonPB.Task_TASK_KEYPOINT,
-		commonPB.Task_TASK_OCR,
-		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-		commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
+	case commonpb.Task_TASK_CLASSIFICATION,
+		commonpb.Task_TASK_DETECTION,
+		commonpb.Task_TASK_KEYPOINT,
+		commonpb.Task_TASK_OCR,
+		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
+		commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
 	default:
 		modelInferRequest.RawInputContents = append(modelInferRequest.RawInputContents, SerializeBytesTensor(inferInput.([][]byte)))
