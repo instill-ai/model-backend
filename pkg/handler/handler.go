@@ -10,18 +10,18 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var tracer = otel.Tracer("model-backend.public-handler.tracer")
 
 type PublicHandler struct {
-	modelPB.UnimplementedModelPublicServiceServer
+	modelpb.UnimplementedModelPublicServiceServer
 	service service.Service
 	ray     ray.Ray
 }
 
-func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray) modelPB.ModelPublicServiceServer {
+func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray) modelpb.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PublicHandler{
 		service: s,
@@ -39,36 +39,36 @@ func (h *PublicHandler) SetService(s service.Service) {
 	h.service = s
 }
 
-func (h *PublicHandler) Liveness(ctx context.Context, pb *modelPB.LivenessRequest) (*modelPB.LivenessResponse, error) {
+func (h *PublicHandler) Liveness(ctx context.Context, pb *modelpb.LivenessRequest) (*modelpb.LivenessResponse, error) {
 	if !h.ray.IsRayServerReady(ctx) {
-		return &modelPB.LivenessResponse{
+		return &modelpb.LivenessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
 				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
 			},
 		}, nil
 	}
 
-	return &modelPB.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
+	return &modelpb.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
-func (h *PublicHandler) Readiness(ctx context.Context, pb *modelPB.ReadinessRequest) (*modelPB.ReadinessResponse, error) {
+func (h *PublicHandler) Readiness(ctx context.Context, pb *modelpb.ReadinessRequest) (*modelpb.ReadinessResponse, error) {
 	if !h.ray.IsRayServerReady(ctx) {
-		return &modelPB.ReadinessResponse{
+		return &modelpb.ReadinessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
 				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
 			},
 		}, nil
 	}
 
-	return &modelPB.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
+	return &modelpb.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
 type PrivateHandler struct {
-	modelPB.UnimplementedModelPrivateServiceServer
+	modelpb.UnimplementedModelPrivateServiceServer
 	service service.Service
 }
 
-func NewPrivateHandler(ctx context.Context, s service.Service) modelPB.ModelPrivateServiceServer {
+func NewPrivateHandler(ctx context.Context, s service.Service) modelpb.ModelPrivateServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PrivateHandler{
 		service: s,

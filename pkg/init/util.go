@@ -6,11 +6,11 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var EnumRegistry = map[string]map[string]int32{
-	"release_stage": modelPB.ReleaseStage_value,
+	"release_stage": modelpb.ReleaseStage_value,
 }
 
 // unmarshalModelPB unmarshals a slice of JSON object into a Protobuf Message Go struct element by element
@@ -29,8 +29,8 @@ func unmarshalModelPB(jsonSliceMap any, pb any) error {
 				return err
 			}
 
-			if pb, ok := pb.(*[]*modelPB.ModelDefinition); ok {
-				modelDef := modelPB.ModelDefinition{}
+			if pb, ok := pb.(*[]*modelpb.ModelDefinition); ok {
+				modelDef := modelpb.ModelDefinition{}
 				if err := pj.Unmarshal(b, &modelDef); err != nil {
 					return err
 				}

@@ -13,10 +13,10 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/x/sterr"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListModelsAdminRequest) (*modelPB.ListModelsAdminResponse, error) {
+func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelpb.ListModelsAdminRequest) (*modelpb.ListModelsAdminResponse, error) {
 
 	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
 		filtering.DeclareStandardFunctions(),
@@ -40,10 +40,10 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 
 	pbModels, totalSize, nextPageToken, err := h.service.ListModelsAdmin(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), filter, req.GetShowDeleted())
 	if err != nil {
-		return &modelPB.ListModelsAdminResponse{}, err
+		return &modelpb.ListModelsAdminResponse{}, err
 	}
 
-	resp := modelPB.ListModelsAdminResponse{
+	resp := modelpb.ListModelsAdminResponse{
 		Models:        pbModels,
 		NextPageToken: nextPageToken,
 		TotalSize:     totalSize,
@@ -52,19 +52,19 @@ func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelPB.ListM
 	return &resp, nil
 }
 
-func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelPB.LookUpModelAdminRequest) (*modelPB.LookUpModelAdminResponse, error) {
+func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelpb.LookUpModelAdminRequest) (*modelpb.LookUpModelAdminResponse, error) {
 
 	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
 	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, err
+		return &modelpb.LookUpModelAdminResponse{}, err
 	}
 
 	pbModel, err := h.service.GetModelByUIDAdmin(ctx, modelUID, parseView(req.GetView()))
 	if err != nil {
-		return &modelPB.LookUpModelAdminResponse{}, err
+		return &modelpb.LookUpModelAdminResponse{}, err
 	}
 
-	return &modelPB.LookUpModelAdminResponse{Model: pbModel}, nil
+	return &modelpb.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
 type DeployNamespaceModelAdminRequestInterface interface {
@@ -73,18 +73,18 @@ type DeployNamespaceModelAdminRequestInterface interface {
 	GetDigest() string
 }
 
-func (h *PrivateHandler) DeployUserModelAdmin(ctx context.Context, req *modelPB.DeployUserModelAdminRequest) (resp *modelPB.DeployUserModelAdminResponse, err error) {
+func (h *PrivateHandler) DeployUserModelAdmin(ctx context.Context, req *modelpb.DeployUserModelAdminRequest) (resp *modelpb.DeployUserModelAdminResponse, err error) {
 
 	err = h.deployNamespaceModelAdmin(ctx, req)
 
-	return &modelPB.DeployUserModelAdminResponse{}, err
+	return &modelpb.DeployUserModelAdminResponse{}, err
 }
 
-func (h *PrivateHandler) DeployOrganizationModelAdmin(ctx context.Context, req *modelPB.DeployOrganizationModelAdminRequest) (resp *modelPB.DeployOrganizationModelAdminResponse, err error) {
+func (h *PrivateHandler) DeployOrganizationModelAdmin(ctx context.Context, req *modelpb.DeployOrganizationModelAdminRequest) (resp *modelpb.DeployOrganizationModelAdminResponse, err error) {
 
 	err = h.deployNamespaceModelAdmin(ctx, req)
 
-	return &modelPB.DeployOrganizationModelAdminResponse{}, err
+	return &modelpb.DeployOrganizationModelAdminResponse{}, err
 }
 
 func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req DeployNamespaceModelAdminRequestInterface) error {
@@ -94,7 +94,7 @@ func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req Depl
 		return err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}
@@ -135,18 +135,18 @@ type UndeployNamespaceModelAdminRequestInterface interface {
 	GetDigest() string
 }
 
-func (h *PrivateHandler) UndeployUserModelAdmin(ctx context.Context, req *modelPB.UndeployUserModelAdminRequest) (resp *modelPB.UndeployUserModelAdminResponse, err error) {
+func (h *PrivateHandler) UndeployUserModelAdmin(ctx context.Context, req *modelpb.UndeployUserModelAdminRequest) (resp *modelpb.UndeployUserModelAdminResponse, err error) {
 
 	err = h.undeployNamespaceModelAdmin(ctx, req)
 
-	return &modelPB.UndeployUserModelAdminResponse{}, err
+	return &modelpb.UndeployUserModelAdminResponse{}, err
 }
 
-func (h *PrivateHandler) UndeployOrganizationModelAdmin(ctx context.Context, req *modelPB.UndeployOrganizationModelAdminRequest) (resp *modelPB.UndeployOrganizationModelAdminResponse, err error) {
+func (h *PrivateHandler) UndeployOrganizationModelAdmin(ctx context.Context, req *modelpb.UndeployOrganizationModelAdminRequest) (resp *modelpb.UndeployOrganizationModelAdminResponse, err error) {
 
 	err = h.undeployNamespaceModelAdmin(ctx, req)
 
-	return &modelPB.UndeployOrganizationModelAdminResponse{}, err
+	return &modelpb.UndeployOrganizationModelAdminResponse{}, err
 }
 
 func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req UndeployNamespaceModelAdminRequestInterface) error {
@@ -156,7 +156,7 @@ func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req Un
 		return err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return err
 	}

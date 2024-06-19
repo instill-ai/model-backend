@@ -27,9 +27,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) compressProfileImage(profileImage string) (string, error) {
@@ -75,7 +75,7 @@ func (s *service) compressProfileImage(profileImage string) (string, error) {
 	return profileImage, nil
 }
 
-func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) (*datamodel.Model, error) {
+func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelpb.Model) (*datamodel.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	profileImage, err := s.compressProfileImage(pbModel.GetProfileImage())
@@ -142,7 +142,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 	}, nil
 }
 
-func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelPB.View, checkPermission bool) (*modelPB.Model, error) {
+func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelpb.View, checkPermission bool) (*modelpb.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
@@ -159,7 +159,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		tags = append(tags, t.TagName)
 	}
 
-	pbModel := modelPB.Model{
+	pbModel := modelpb.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
 		Id:         dbModel.ID,
@@ -174,8 +174,8 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		}(),
 		Description:     &dbModel.Description.String,
 		ModelDefinition: fmt.Sprintf("model-definitions/%s", modelDef.ID),
-		Visibility:      modelPB.Model_Visibility(dbModel.Visibility),
-		Task:            commonPB.Task(dbModel.Task),
+		Visibility:      modelpb.Model_Visibility(dbModel.Visibility),
+		Task:            commonpb.Task(dbModel.Task),
 		Configuration: func() *structpb.Struct {
 			if dbModel.Configuration != nil {
 				str := structpb.Struct{}
@@ -198,7 +198,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		Tags:             tags,
 	}
 
-	pbModel.Permission = &modelPB.Permission{}
+	pbModel.Permission = &modelpb.Permission{}
 	if checkPermission {
 		if strings.Split(dbModel.Owner, "/")[1] == ctxUserUID {
 			pbModel.Permission.CanEdit = true
@@ -218,14 +218,14 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		}
 	}
 
-	var owner *mgmtPB.Owner
+	var owner *mgmtpb.Owner
 	owner, err = s.FetchOwnerWithPermalink(ctx, dbModel.Owner)
 	if err != nil {
 		return nil, err
 	}
 	pbModel.Owner = owner
 
-	if view > modelPB.View_VIEW_BASIC {
+	if view > modelpb.View_VIEW_BASIC {
 
 		inputTaskSchema, ok := datamodel.TaskInputJSON[pbModel.Task.String()].(map[string]any)
 		if !ok {
@@ -252,9 +252,9 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	return &pbModel, nil
 }
 
-func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelPB.View, checkPermission bool) ([]*modelPB.Model, error) {
+func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelpb.View, checkPermission bool) ([]*modelpb.Model, error) {
 
-	pbModels := make([]*modelPB.Model, len(dbModels))
+	pbModels := make([]*modelpb.Model, len(dbModels))
 
 	for idx := range dbModels {
 		modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModels[idx].ModelDefinitionUID)
@@ -277,10 +277,10 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model,
 	return pbModels, nil
 }
 
-func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error) {
+func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelpb.ModelDefinition, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	pbModelDefinition := modelPB.ModelDefinition{
+	pbModelDefinition := modelpb.ModelDefinition{
 		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),
 		Id:               dbModelDefinition.ID,
 		Uid:              dbModelDefinition.BaseStatic.UID.String(),
@@ -289,7 +289,7 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 		Icon:             dbModelDefinition.Icon,
 		CreateTime:       timestamppb.New(dbModelDefinition.CreateTime),
 		UpdateTime:       timestamppb.New(dbModelDefinition.UpdateTime),
-		ReleaseStage:     modelPB.ReleaseStage(dbModelDefinition.ReleaseStage),
+		ReleaseStage:     modelpb.ReleaseStage(dbModelDefinition.ReleaseStage),
 		ModelSpec: func() *structpb.Struct {
 			if dbModelDefinition.ModelSpec != nil {
 				var specification = &structpb.Struct{}
@@ -306,10 +306,10 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 	return &pbModelDefinition, nil
 }
 
-func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error) {
+func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelpb.ModelDefinition, error) {
 
 	var err error
-	pbModelDefinitions := make([]*modelPB.ModelDefinition, len(dbModelDefinitions))
+	pbModelDefinitions := make([]*modelpb.ModelDefinition, len(dbModelDefinitions))
 
 	for idx := range dbModelDefinitions {
 		pbModelDefinitions[idx], err = s.DBToPBModelDefinition(
@@ -324,7 +324,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 	return pbModelDefinitions, nil
 }
 
-func appendSampleInputOutput(pbModel *modelPB.Model) {
+func appendSampleInputOutput(pbModel *modelpb.Model) {
 	steps := int32(10)
 	cfgScale := float32(7)
 	samples := int32(1)
@@ -333,38 +333,38 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 	temperature := float32(0.7)
 	seed := int32(1024)
 
-	sampleInput := modelPB.TaskInput{}
-	sampleOutput := modelPB.TaskOutput{}
+	sampleInput := modelpb.TaskInput{}
+	sampleOutput := modelpb.TaskOutput{}
 	switch pbModel.Task {
-	case commonPB.Task_TASK_CLASSIFICATION:
-		sampleInput.Input = &modelPB.TaskInput_Classification{
-			Classification: &modelPB.ClassificationInput{
-				Type: &modelPB.ClassificationInput_ImageUrl{
+	case commonpb.Task_TASK_CLASSIFICATION:
+		sampleInput.Input = &modelpb.TaskInput_Classification{
+			Classification: &modelpb.ClassificationInput{
+				Type: &modelpb.ClassificationInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_Classification{
-			Classification: &modelPB.ClassificationOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_Classification{
+			Classification: &modelpb.ClassificationOutput{
 				Category: "golden retriever",
 				Score:    0.98,
 			},
 		}
-	case commonPB.Task_TASK_DETECTION:
-		sampleInput.Input = &modelPB.TaskInput_Detection{
-			Detection: &modelPB.DetectionInput{
-				Type: &modelPB.DetectionInput_ImageUrl{
+	case commonpb.Task_TASK_DETECTION:
+		sampleInput.Input = &modelpb.TaskInput_Detection{
+			Detection: &modelpb.DetectionInput{
+				Type: &modelpb.DetectionInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_Detection{
-			Detection: &modelPB.DetectionOutput{
-				Objects: []*modelPB.DetectionObject{
+		sampleOutput.Output = &modelpb.TaskOutput_Detection{
+			Detection: &modelpb.DetectionOutput{
+				Objects: []*modelpb.DetectionObject{
 					{
 						Category: "dog",
 						Score:    0.9582795,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    102,
 							Left:   324,
 							Width:  208,
@@ -374,7 +374,7 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 					{
 						Category: "dog",
 						Score:    0.9457829,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    198,
 							Left:   130,
 							Width:  198,
@@ -384,19 +384,19 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				},
 			},
 		}
-	case commonPB.Task_TASK_KEYPOINT:
-		sampleInput.Input = &modelPB.TaskInput_Keypoint{
-			Keypoint: &modelPB.KeypointInput{
-				Type: &modelPB.KeypointInput_ImageUrl{
+	case commonpb.Task_TASK_KEYPOINT:
+		sampleInput.Input = &modelpb.TaskInput_Keypoint{
+			Keypoint: &modelpb.KeypointInput{
+				Type: &modelpb.KeypointInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/dance.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_Keypoint{
-			Keypoint: &modelPB.KeypointOutput{
-				Objects: []*modelPB.KeypointObject{
+		sampleOutput.Output = &modelpb.TaskOutput_Keypoint{
+			Keypoint: &modelpb.KeypointOutput{
+				Objects: []*modelpb.KeypointObject{
 					{
-						Keypoints: []*modelPB.Keypoint{
+						Keypoints: []*modelpb.Keypoint{
 							{
 								X: 542.82764,
 								Y: 86.63817,
@@ -409,7 +409,7 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 							},
 						},
 						Score: 0.94,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    86,
 							Left:   185,
 							Width:  571,
@@ -419,21 +419,21 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				},
 			},
 		}
-	case commonPB.Task_TASK_OCR:
-		sampleInput.Input = &modelPB.TaskInput_Ocr{
-			Ocr: &modelPB.OcrInput{
-				Type: &modelPB.OcrInput_ImageUrl{
+	case commonpb.Task_TASK_OCR:
+		sampleInput.Input = &modelpb.TaskInput_Ocr{
+			Ocr: &modelpb.OcrInput{
+				Type: &modelpb.OcrInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/sign-small.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_Ocr{
-			Ocr: &modelPB.OcrOutput{
-				Objects: []*modelPB.OcrObject{
+		sampleOutput.Output = &modelpb.TaskOutput_Ocr{
+			Ocr: &modelpb.OcrOutput{
+				Objects: []*modelpb.OcrObject{
 					{
 						Text:  "ENDS",
 						Score: 0.99,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    298,
 							Left:   279,
 							Width:  134,
@@ -443,7 +443,7 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 					{
 						Text:  "PAVEMENT",
 						Score: 0.99,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    228,
 							Left:   216,
 							Width:  255,
@@ -453,20 +453,20 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				},
 			},
 		}
-	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
-		sampleInput.Input = &modelPB.TaskInput_InstanceSegmentation{
-			InstanceSegmentation: &modelPB.InstanceSegmentationInput{
-				Type: &modelPB.InstanceSegmentationInput_ImageUrl{
+	case commonpb.Task_TASK_INSTANCE_SEGMENTATION:
+		sampleInput.Input = &modelpb.TaskInput_InstanceSegmentation{
+			InstanceSegmentation: &modelpb.InstanceSegmentationInput{
+				Type: &modelpb.InstanceSegmentationInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_InstanceSegmentation{
-			InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
-				Objects: []*modelPB.InstanceSegmentationObject{
+		sampleOutput.Output = &modelpb.TaskOutput_InstanceSegmentation{
+			InstanceSegmentation: &modelpb.InstanceSegmentationOutput{
+				Objects: []*modelpb.InstanceSegmentationObject{
 					{
 						Score: 0.99,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    95,
 							Left:   320,
 							Width:  215,
@@ -477,7 +477,7 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 					},
 					{
 						Score: 0.97,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Top:    194,
 							Left:   130,
 							Width:  197,
@@ -489,17 +489,17 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				},
 			},
 		}
-	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
-		sampleInput.Input = &modelPB.TaskInput_SemanticSegmentation{
-			SemanticSegmentation: &modelPB.SemanticSegmentationInput{
-				Type: &modelPB.SemanticSegmentationInput_ImageUrl{
+	case commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
+		sampleInput.Input = &modelpb.TaskInput_SemanticSegmentation{
+			SemanticSegmentation: &modelpb.SemanticSegmentationInput{
+				Type: &modelpb.SemanticSegmentationInput_ImageUrl{
 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 				},
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_SemanticSegmentation{
-			SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
-				Stuffs: []*modelPB.SemanticSegmentationStuff{
+		sampleOutput.Output = &modelpb.TaskOutput_SemanticSegmentation{
+			SemanticSegmentation: &modelpb.SemanticSegmentationOutput{
+				Stuffs: []*modelpb.SemanticSegmentationStuff{
 					{
 						Rle:      "472,26,35,31,31,34,28,35,27,36,25,37,25,37,24,37,24,38,23,39,23,40,22,40,22,41,21,41,21,41,21,40,22,39,22,40,22,39,23,39,23,39,24,38,25,37,26,35,28,32,31,29,34,27,36,26,37,25,38,25,38,24,39,23,40,21,42,16,47,11,53,8,55,7,50",
 						Category: "person",
@@ -511,10 +511,10 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				},
 			},
 		}
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonpb.Task_TASK_TEXT_TO_IMAGE:
 
-		sampleInput.Input = &modelPB.TaskInput_TextToImage{
-			TextToImage: &modelPB.TextToImageInput{
+		sampleInput.Input = &modelpb.TaskInput_TextToImage{
+			TextToImage: &modelpb.TextToImageInput{
 				Prompt:   "A stunning landscape with metropolitan view",
 				CfgScale: &cfgScale,
 				Steps:    &steps,
@@ -522,19 +522,19 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				Seed:     &seed,
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_TextToImage{
-			TextToImage: &modelPB.TextToImageOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_TextToImage{
+			TextToImage: &modelpb.TextToImageOutput{
 				Images: []string{
 					"/9j/4AAQSkZJRgABAQAAAQABAAD/...",
 				},
 			},
 		}
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		prompt := "cute dog"
-		sampleInput.Input = &modelPB.TaskInput_ImageToImage{
-			ImageToImage: &modelPB.ImageToImageInput{
+		sampleInput.Input = &modelpb.TaskInput_ImageToImage{
+			ImageToImage: &modelpb.ImageToImageInput{
 				Prompt: &prompt,
-				Type: &modelPB.ImageToImageInput_PromptImageUrl{
+				Type: &modelpb.ImageToImageInput_PromptImageUrl{
 					PromptImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 				},
 				CfgScale: &cfgScale,
@@ -543,17 +543,17 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				Seed:     &seed,
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_ImageToImage{
-			ImageToImage: &modelPB.ImageToImageOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_ImageToImage{
+			ImageToImage: &modelpb.ImageToImageOutput{
 				Images: []string{
 					"/9j/4AAQSkZJRgABAQAAAQABAAD/...",
 				},
 			},
 		}
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonpb.Task_TASK_TEXT_GENERATION:
 		systemMessage := "You are a helpful assistant."
-		sampleInput.Input = &modelPB.TaskInput_TextGeneration{
-			TextGeneration: &modelPB.TextGenerationInput{
+		sampleInput.Input = &modelpb.TaskInput_TextGeneration{
+			TextGeneration: &modelpb.TextGenerationInput{
 				Prompt:        "The winds of change",
 				SystemMessage: &systemMessage,
 				MaxNewTokens:  &maxNewTokens,
@@ -562,15 +562,15 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				Seed:          &seed,
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_TextGeneration{
-			TextGeneration: &modelPB.TextGenerationOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_TextGeneration{
+			TextGeneration: &modelpb.TextGenerationOutput{
 				Text: "The winds of change are blowing strong, bring new beginnings, righting wrongs. The world around us is constantly turning, and with each sunrise, our spirits are yearning.",
 			},
 		}
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 		systemMessage := "You are a lovely cat, named Penguin."
-		sampleInput.Input = &modelPB.TaskInput_TextGenerationChat{
-			TextGenerationChat: &modelPB.TextGenerationChatInput{
+		sampleInput.Input = &modelpb.TaskInput_TextGenerationChat{
+			TextGenerationChat: &modelpb.TextGenerationChatInput{
 				Prompt:        "Who are you?",
 				SystemMessage: &systemMessage,
 				MaxNewTokens:  &maxNewTokens,
@@ -579,19 +579,19 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				Seed:          &seed,
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_TextGenerationChat{
-			TextGenerationChat: &modelPB.TextGenerationChatOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_TextGenerationChat{
+			TextGenerationChat: &modelpb.TextGenerationChatOutput{
 				Text: "*rubs against leg* Oh, hello there! My name is Penguin, and I'm a lovely cat. I'm a bit of a gentle soul, with soft gray fur and bright green eyes. I love to lounge in the sunbeams that stream through the windows, chase the occasional fly, and purr contentedly as I watch the world go by. I'm a bit of a cuddlebug, too - I adore being petted and snuggled, and I'll often curl up in my human's lap for a good nap.",
 			},
 		}
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		systemMessage := "You are a helpful assistant."
-		sampleInput.Input = &modelPB.TaskInput_VisualQuestionAnswering{
-			VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringInput{
+		sampleInput.Input = &modelpb.TaskInput_VisualQuestionAnswering{
+			VisualQuestionAnswering: &modelpb.VisualQuestionAnsweringInput{
 				Prompt: "What is in the picture?",
-				PromptImages: []*modelPB.PromptImage{
+				PromptImages: []*modelpb.PromptImage{
 					{
-						Type: &modelPB.PromptImage_PromptImageUrl{
+						Type: &modelpb.PromptImage_PromptImageUrl{
 							PromptImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
 						},
 					},
@@ -603,8 +603,8 @@ func appendSampleInputOutput(pbModel *modelPB.Model) {
 				Seed:          &seed,
 			},
 		}
-		sampleOutput.Output = &modelPB.TaskOutput_VisualQuestionAnswering{
-			VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
+		sampleOutput.Output = &modelpb.TaskOutput_VisualQuestionAnswering{
+			VisualQuestionAnswering: &modelpb.VisualQuestionAnsweringOutput{
 				Text: "The picture shows two dogs standing in a snowy outdoor setting. The dog on the left appears to be a young Labrador Retriever puppy with a light cream or yellowish coat, while the dog on the right is an adult",
 			},
 		}

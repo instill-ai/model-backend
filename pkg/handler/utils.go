@@ -7,12 +7,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/service"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func parseView(view modelPB.View) modelPB.View {
-	if view == modelPB.View_VIEW_UNSPECIFIED {
-		return modelPB.View_VIEW_BASIC
+func parseView(view modelpb.View) modelpb.View {
+	if view == modelpb.View_VIEW_UNSPECIFIED {
+		return modelpb.View_VIEW_BASIC
 	}
 	return view
 }

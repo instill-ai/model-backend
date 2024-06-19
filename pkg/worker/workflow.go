@@ -23,9 +23,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
 
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type InferInput any
@@ -40,10 +40,10 @@ type TriggerModelWorkflowRequest struct {
 	UserUID            uuid.UUID
 	UserType           string
 	ModelDefinitionUID uuid.UUID
-	Task               commonPB.Task
+	Task               commonpb.Task
 	InputKey           string
 	ParsedInputKey     string
-	Mode               mgmtPB.Mode
+	Mode               mgmtpb.Mode
 }
 
 type TriggerModelActivityRequest struct {
@@ -74,19 +74,19 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	logger, _ := custom_logger.GetZapLogger(sCtx)
 	logger.Info("TriggerModelWorkflow started")
 
-	var ownerType mgmtPB.OwnerType
+	var ownerType mgmtpb.OwnerType
 	switch param.OwnerType {
 	case "organizations":
-		ownerType = mgmtPB.OwnerType_OWNER_TYPE_ORGANIZATION
+		ownerType = mgmtpb.OwnerType_OWNER_TYPE_ORGANIZATION
 	case "users":
-		ownerType = mgmtPB.OwnerType_OWNER_TYPE_USER
+		ownerType = mgmtpb.OwnerType_OWNER_TYPE_USER
 	default:
-		ownerType = mgmtPB.OwnerType_OWNER_TYPE_UNSPECIFIED
+		ownerType = mgmtpb.OwnerType_OWNER_TYPE_UNSPECIFIED
 	}
 
 	var usageData *utils.UsageMetricData
 	var modelPrediction *datamodel.ModelPrediction
-	if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+	if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 		inputBlob, err := w.redisClient.Get(sCtx, param.InputKey).Bytes()
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
@@ -96,7 +96,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 			OwnerUID:           param.OwnerUID.String(),
 			OwnerType:          ownerType,
 			UserUID:            param.UserUID.String(),
-			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
+			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 			ModelUID:           param.ModelUID.String(),
 			Version:            param.ModelVersion.Version,
 			Mode:               param.Mode,
@@ -137,7 +137,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
 	}).Get(ctx, &triggerResult); err != nil {
-		if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
 			// TODO: prediction feature not ready
 			// w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
@@ -146,11 +146,11 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
 	}
 
-	if param.Mode == mgmtPB.Mode_MODE_ASYNC {
+	if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 		usageData.ComputeTimeDuration = time.Since(startTime).Seconds()
-		usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+		usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 		modelPrediction.ComputeTimeDuration = time.Since(startTime).Seconds()
-		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_COMPLETED)
+		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_COMPLETED)
 		modelPrediction.Output = triggerResult.TaskOutputBytes
 		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
 			logger.Warn(err.Error())
@@ -208,48 +208,48 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	var inferInput InferInput
 	switch param.Task {
-	case commonPB.Task_TASK_CLASSIFICATION,
-		commonPB.Task_TASK_DETECTION,
-		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonPB.Task_TASK_OCR,
-		commonPB.Task_TASK_KEYPOINT,
-		commonPB.Task_TASK_UNSPECIFIED:
+	case commonpb.Task_TASK_CLASSIFICATION,
+		commonpb.Task_TASK_DETECTION,
+		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
+		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonpb.Task_TASK_OCR,
+		commonpb.Task_TASK_KEYPOINT,
+		commonpb.Task_TASK_UNSPECIFIED:
 		var input [][]byte
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonpb.Task_TASK_TEXT_TO_IMAGE:
 		var input *ray.TextToImageInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		var input *ray.ImageToImageInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		var input *ray.VisualQuestionAnsweringInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 		var input *ray.TextGenerationChatInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonpb.Task_TASK_TEXT_GENERATION:
 		var input *ray.TextGenerationInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
@@ -268,7 +268,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	triggerModelResp := &modelPB.TriggerUserModelResponse{
+	triggerModelResp := &modelpb.TriggerUserModelResponse{
 		Task:        param.Task,
 		TaskOutputs: outputs,
 	}
@@ -302,14 +302,14 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 func (w *worker) writeErrorDataPoint(ctx context.Context, err error, span trace.Span, startTime time.Time, dataPoint *utils.UsageMetricData) {
 	span.SetStatus(1, err.Error())
 	dataPoint.ComputeTimeDuration = time.Since(startTime).Seconds()
-	dataPoint.Status = mgmtPB.Status_STATUS_ERRORED
+	dataPoint.Status = mgmtpb.Status_STATUS_ERRORED
 	_ = w.writeNewDataPoint(ctx, dataPoint)
 }
 
 // func (w *worker) writeErrorPrediction(ctx context.Context, err error, span trace.Span, startTime time.Time, pred *datamodel.ModelPrediction) {
 // 	span.SetStatus(1, err.Error())
 // 	pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-// 	pred.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+// 	pred.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 // 	_ = w.writePrediction(ctx, pred)
 // }
 

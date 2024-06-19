@@ -32,17 +32,17 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/errmsg"
 
-	artifactPB "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // Service is the interface for the service layer
 type Service interface {
 
 	// Utils
-	GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient
+	GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
 	GetACLClient() *acl.ACLClient
@@ -51,40 +51,40 @@ type Service interface {
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
 	ConvertOwnerNameToPermalink(name string) (string, error)
 	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
-	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelPB.Model) (*datamodel.Model, error)
-	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelPB.View, checkPermission bool) (*modelPB.Model, error)
-	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelPB.View, checkPermission bool) ([]*modelPB.Model, error)
-	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelPB.ModelDefinition, error)
-	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelPB.ModelDefinition, error)
+	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelpb.Model) (*datamodel.Model, error)
+	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelpb.View, checkPermission bool) (*modelpb.Model, error)
+	DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelpb.View, checkPermission bool) ([]*modelpb.Model, error)
+	DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelpb.ModelDefinition, error)
+	DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions []*datamodel.ModelDefinition) ([]*modelpb.ModelDefinition, error)
 
 	// Public
-	ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error)
-	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error)
-	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
+	ListModels(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error)
+	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error)
+	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error)
+	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error)
 	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
-	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelPB.Model, error)
-	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelPB.Model) (*modelPB.Model, error)
-	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error)
-	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error)
+	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelpb.Model, error)
+	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelpb.Model) (*modelpb.Model, error)
+	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error)
+	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error)
-	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
 
-	GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error)
-	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error)
-	ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error)
+	GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error)
+	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error)
+	ListModelDefinitions(ctx context.Context, view modelpb.View, pageSize int32, pageToken string) ([]*modelpb.ModelDefinition, int32, string, error)
 
 	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
 
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
-	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*longrunningpb.Operation, error)
+	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error)
 
 	// Private
-	GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error)
-	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error)
-	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error)
+	GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error)
+	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error)
+	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, filter filtering.Filter, showDeleted bool) ([]*modelpb.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
@@ -97,9 +97,9 @@ type Service interface {
 type service struct {
 	repository                   repository.Repository
 	redisClient                  *redis.Client
-	mgmtPublicServiceClient      mgmtPB.MgmtPublicServiceClient
-	mgmtPrivateServiceClient     mgmtPB.MgmtPrivateServiceClient
-	artifactPrivateServiceClient artifactPB.ArtifactPrivateServiceClient
+	mgmtPublicServiceClient      mgmtpb.MgmtPublicServiceClient
+	mgmtPrivateServiceClient     mgmtpb.MgmtPrivateServiceClient
+	artifactPrivateServiceClient artifactpb.ArtifactPrivateServiceClient
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    *acl.ACLClient
@@ -109,9 +109,9 @@ type service struct {
 // NewService returns a new service instance
 func NewService(
 	r repository.Repository,
-	mp mgmtPB.MgmtPublicServiceClient,
-	m mgmtPB.MgmtPrivateServiceClient,
-	ar artifactPB.ArtifactPrivateServiceClient,
+	mp mgmtpb.MgmtPublicServiceClient,
+	m mgmtpb.MgmtPrivateServiceClient,
+	ar artifactpb.ArtifactPrivateServiceClient,
 	rc *redis.Client,
 	tc client.Client,
 	ra ray.Ray,
@@ -145,19 +145,19 @@ func (s *service) GetACLClient() *acl.ACLClient {
 }
 
 // GetMgmtPrivateServiceClient returns the management private service client
-func (s *service) GetMgmtPrivateServiceClient() mgmtPB.MgmtPrivateServiceClient {
+func (s *service) GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient {
 	return s.mgmtPrivateServiceClient
 }
 
 func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
 	if strings.HasPrefix(name, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtPB.GetUserAdminRequest{Name: name})
+		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtpb.GetUserAdminRequest{Name: name})
 		if err != nil {
 			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
 		}
 		return fmt.Sprintf("users/%s", *userResp.User.Uid), nil
 	} else {
-		orgResp, err := s.mgmtPrivateServiceClient.GetOrganizationAdmin(context.Background(), &mgmtPB.GetOrganizationAdminRequest{Name: name})
+		orgResp, err := s.mgmtPrivateServiceClient.GetOrganizationAdmin(context.Background(), &mgmtpb.GetOrganizationAdminRequest{Name: name})
 		if err != nil {
 			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
 		}
@@ -167,13 +167,13 @@ func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
 
 func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) {
 	if strings.HasPrefix(permalink, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
+		userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtpb.LookUpUserAdminRequest{Permalink: permalink})
 		if err != nil {
 			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
 		}
 		return fmt.Sprintf("users/%s", userResp.User.Id), nil
 	} else {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtPB.LookUpOrganizationAdminRequest{Permalink: permalink})
+		userResp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtpb.LookUpOrganizationAdminRequest{Permalink: permalink})
 		if err != nil {
 			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
 		}
@@ -181,31 +181,31 @@ func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) 
 	}
 }
 
-func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtPB.Owner, error) {
+func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtpb.Owner, error) {
 	key := fmt.Sprintf("owner_profile:%s", permalink)
 	if b, err := s.redisClient.Get(ctx, key).Bytes(); err == nil {
-		owner := &mgmtPB.Owner{}
+		owner := &mgmtpb.Owner{}
 		if protojson.Unmarshal(b, owner) == nil {
 			return owner, nil
 		}
 	}
 
 	if strings.HasPrefix(permalink, "users") {
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtPB.LookUpUserAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{Permalink: permalink})
 		if err != nil {
 			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
-		owner := &mgmtPB.Owner{Owner: &mgmtPB.Owner_User{User: resp.User}}
+		owner := &mgmtpb.Owner{Owner: &mgmtpb.Owner_User{User: resp.User}}
 		if b, err := protojson.Marshal(owner); err == nil {
 			s.redisClient.Set(ctx, key, b, 5*time.Minute)
 		}
 		return owner, nil
 	} else {
-		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtPB.LookUpOrganizationAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{Permalink: permalink})
 		if err != nil {
 			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
-		owner := &mgmtPB.Owner{Owner: &mgmtPB.Owner_Organization{Organization: resp.Organization}}
+		owner := &mgmtpb.Owner{Owner: &mgmtpb.Owner_Organization{Organization: resp.Organization}}
 		if b, err := protojson.Marshal(owner); err == nil {
 			s.redisClient.Set(ctx, key, b, 5*time.Minute)
 		}
@@ -272,9 +272,9 @@ func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespac
 	}, uuid.FromStringOrNil(splits[3]), nil
 }
 
-func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error) {
 
-	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelPB.View_VIEW_BASIC, false)
+	dbModel, err := s.repository.GetModelByUID(ctx, modelUID, view == modelpb.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -293,9 +293,9 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
-func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error) {
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, view == modelPB.View_VIEW_BASIC, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, view == modelpb.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -308,9 +308,9 @@ func (s *service) GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, 
 	return s.DBToPBModel(ctx, modelDef, dbModel, view, false)
 }
 
-func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error) {
 
-	dbModel, err := s.repository.GetModelByUIDAdmin(ctx, modelUID, view == modelPB.View_VIEW_BASIC, false)
+	dbModel, err := s.repository.GetModelByUIDAdmin(ctx, modelUID, view == modelpb.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, err
 	}
@@ -323,11 +323,11 @@ func (s *service) GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, vi
 	return s.DBToPBModel(ctx, modelDef, dbModel, view, false)
 }
 
-func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelPB.View) (*modelPB.Model, error) {
+func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelPB.View_VIEW_BASIC, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelpb.View_VIEW_BASIC, false)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -371,7 +371,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 		return err
 	}
 
-	if dbCreatedModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if dbCreatedModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC) {
 		if err := s.aclClient.SetPublicModelPermission(ctx, dbCreatedModel.UID); err != nil {
 			return err
 		}
@@ -380,7 +380,7 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	return nil
 }
 
-func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelPB.State, string, error) {
+func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
@@ -396,7 +396,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 
 	_, err = s.GetModelVersionAdmin(ctx, dbModel.UID, version)
 	if err != nil {
-		return modelPB.State_STATE_ERROR.Enum(), "", status.New(codes.NotFound, "Model version not found").Err()
+		return modelpb.State_STATE_ERROR.Enum(), "", status.New(codes.NotFound, "Model version not found").Err()
 	}
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
@@ -409,7 +409,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 	return state, message, nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonPB.Task, triggerUID string) ([]*modelPB.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -462,11 +462,11 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
-			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
 			ParsedInputKey:     parsedInputKey,
-			Mode:               mgmtPB.Mode_MODE_SYNC,
+			Mode:               mgmtpb.Mode_MODE_SYNC,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -487,7 +487,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
-	triggerModelResponse := &modelPB.TriggerUserModelResponse{}
+	triggerModelResponse := &modelpb.TriggerUserModelResponse{}
 
 	blob, err := s.redisClient.GetDel(ctx, triggerResult.OutputKey).Bytes()
 	if err != nil {
@@ -502,7 +502,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonPB.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -564,12 +564,12 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
-			UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER.String(),
+			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
 			InputKey:           inputKey,
 			ParsedInputKey:     parsedInputKey,
-			Mode:               mgmtPB.Mode_MODE_ASYNC,
+			Mode:               mgmtpb.Mode_MODE_ASYNC,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -584,18 +584,18 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	}, nil
 }
 
-func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error) {
 
 	var uidAllowList []uuid.UUID
 	var err error
 	role := "reader"
 
-	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
+	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
 		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
-	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
+	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
 		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
@@ -616,7 +616,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 		}
 	}
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -624,19 +624,19 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelPB.View, visibility *modelPB.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error) {
 
 	ownerPermalink := ns.Permalink()
 	var uidAllowList []uuid.UUID
 	var err error
 	role := "reader"
 
-	if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PUBLIC {
+	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
 		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
-	} else if visibility != nil && *visibility == modelPB.Model_VISIBILITY_PRIVATE {
+	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
 		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
 		if err != nil {
 			return nil, 0, "", err
@@ -657,7 +657,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 		}
 	}
 
-	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
+	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -666,7 +666,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 	return pbModels, int32(ps), pt, err
 }
 
-func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelPB.ModelVersion, int32, int32, int32, error) {
+func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error) {
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
@@ -680,7 +680,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, ErrNotFound
 	}
 
-	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactPB.ListRepositoryTagsRequest{
+	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactpb.ListRepositoryTagsRequest{
 		Parent:   fmt.Sprintf("repositories/%s/%s", ns.NsID, modelID),
 		Page:     &page,
 		PageSize: &pageSize,
@@ -691,19 +691,19 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 
 	tags := resp.GetTags()
 
-	versions := make([]*modelPB.ModelVersion, len(tags))
+	versions := make([]*modelpb.ModelVersion, len(tags))
 
 	for i, tag := range tags {
-		var state *modelPB.State
+		var state *modelpb.State
 		if _, err := s.GetModelVersionAdmin(ctx, dbModel.UID, tag.GetId()); err != nil {
-			state = modelPB.State_STATE_ERROR.Enum()
+			state = modelpb.State_STATE_ERROR.Enum()
 		} else {
 			state, _, err = s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
 			if err != nil {
-				state = modelPB.State_STATE_ERROR.Enum()
+				state = modelpb.State_STATE_ERROR.Enum()
 			}
 		}
-		versions[i] = &modelPB.ModelVersion{
+		versions[i] = &modelpb.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
 			Id:         tag.GetId(),
 			Digest:     tag.GetDigest(),
@@ -715,9 +715,9 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 	return versions, resp.GetTotalSize(), resp.GetPageSize(), resp.GetPage(), nil
 }
 
-func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelPB.View, filter filtering.Filter, showDeleted bool) ([]*modelPB.Model, int32, string, error) {
+func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, filter filtering.Filter, showDeleted bool) ([]*modelpb.Model, int32, string, error) {
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModelsAdmin(ctx, int64(pageSize), pageToken, view == modelPB.View_VIEW_BASIC, filter, showDeleted)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModelsAdmin(ctx, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, showDeleted)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -774,7 +774,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }
 
-func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelPB.Model, error) {
+func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelpb.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -809,10 +809,10 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelPB.View_VIEW_BASIC, true)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelpb.View_VIEW_BASIC, true)
 }
 
-func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelPB.Model) (*modelPB.Model, error) {
+func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, toUpdateModel *modelpb.Model) (*modelpb.Model, error) {
 
 	ownerPermalink := ns.Permalink()
 
@@ -852,11 +852,11 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	if updatedDBModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC) {
+	if updatedDBModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC) {
 		if err := s.aclClient.SetPublicModelPermission(ctx, updatedDBModel.UID); err != nil {
 			return nil, err
 		}
-	} else if updatedDBModel.Visibility == datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE) {
+	} else if updatedDBModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE) {
 		if err := s.aclClient.DeletePublicModelPermission(ctx, updatedDBModel.UID); err != nil {
 			return nil, err
 		}
@@ -886,10 +886,10 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 	}
 
-	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelPB.View_VIEW_BASIC, true)
+	return s.DBToPBModel(ctx, modelDef, updatedDBModel, modelpb.View_VIEW_BASIC, true)
 }
 
-func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelPB.ModelDefinition, error) {
+func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error) {
 
 	dbModelDef, err := s.repository.GetModelDefinition(id)
 	if err != nil {
@@ -899,7 +899,7 @@ func (s *service) GetModelDefinition(ctx context.Context, id string) (*modelPB.M
 	return s.DBToPBModelDefinition(ctx, dbModelDef)
 }
 
-func (s *service) GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelPB.ModelDefinition, error) {
+func (s *service) GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error) {
 
 	dbModelDef, err := s.repository.GetModelDefinitionByUID(uid)
 	if err != nil {
@@ -909,7 +909,7 @@ func (s *service) GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*
 	return s.DBToPBModelDefinition(ctx, dbModelDef)
 }
 
-func (s *service) ListModelDefinitions(ctx context.Context, view modelPB.View, pageSize int32, pageToken string) ([]*modelPB.ModelDefinition, int32, string, error) {
+func (s *service) ListModelDefinitions(ctx context.Context, view modelpb.View, pageSize int32, pageToken string) ([]*modelpb.ModelDefinition, int32, string, error) {
 
 	dbModelDefs, nextPageToken, totalSize, err := s.repository.ListModelDefinitions(view, int64(pageSize), pageToken)
 	if err != nil {

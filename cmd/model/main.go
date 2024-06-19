@@ -25,9 +25,9 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type ModelConfig struct {
@@ -44,11 +44,11 @@ type ModelConfig struct {
 }
 
 type GetNamespaceModelResponseInterface interface {
-	GetModel() *modelPB.Model
+	GetModel() *modelpb.Model
 }
 
 // InitMgmtPrivateServiceClient initializes a MgmtPrivateServiceClient instance
-func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServiceClient, *grpc.ClientConn) {
+func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtpb.MgmtPrivateServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -69,11 +69,11 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtPB.MgmtPrivateServic
 		logger.Fatal(err.Error())
 	}
 
-	return mgmtPB.NewMgmtPrivateServiceClient(clientConn), clientConn
+	return mgmtpb.NewMgmtPrivateServiceClient(clientConn), clientConn
 }
 
 // InitModelPublicServiceClient initializes a ModelServiceClient instance
-func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServiceClient, *grpc.ClientConn) {
+func InitModelPublicServiceClient(ctx context.Context) (modelpb.ModelPublicServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -97,11 +97,11 @@ func InitModelPublicServiceClient(ctx context.Context) (modelPB.ModelPublicServi
 		return nil, nil
 	}
 
-	return modelPB.NewModelPublicServiceClient(clientConn), clientConn
+	return modelpb.NewModelPublicServiceClient(clientConn), clientConn
 }
 
 // InitModelPrivateServiceClient initializes a ModelServiceClient instance
-func InitModelPrivateServiceClient(ctx context.Context) (modelPB.ModelPrivateServiceClient, *grpc.ClientConn) {
+func InitModelPrivateServiceClient(ctx context.Context) (modelpb.ModelPrivateServiceClient, *grpc.ClientConn) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var clientDialOpts grpc.DialOption
@@ -125,7 +125,7 @@ func InitModelPrivateServiceClient(ctx context.Context) (modelPB.ModelPrivateSer
 		return nil, nil
 	}
 
-	return modelPB.NewModelPrivateServiceClient(clientConn), clientConn
+	return modelpb.NewModelPrivateServiceClient(clientConn), clientConn
 }
 
 func main() {
@@ -192,10 +192,10 @@ func main() {
 
 		go func(modelConfig ModelConfig) {
 
-			var owner *mgmtPB.User
+			var owner *mgmtpb.User
 			name := fmt.Sprintf("%s/%s", modelConfig.OwnerType, modelConfig.OwnerID)
 			if modelConfig.OwnerType == string(resource.User) {
-				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{
+				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{
 					Name: name,
 				})
 				if err != nil {
@@ -203,7 +203,7 @@ func main() {
 				}
 				owner = resp.GetUser()
 			} else if modelConfig.OwnerType == string(resource.Organization) {
-				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtPB.GetOrganizationAdminRequest{
+				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtpb.GetOrganizationAdminRequest{
 					Name: name,
 				})
 				if err != nil {
@@ -222,36 +222,36 @@ func main() {
 			}
 
 			if modelConfig.OwnerType == string(resource.User) {
-				_, err = modelPublicServiceClient.GetUserModel(sCtx, &modelPB.GetUserModelRequest{
+				_, err = modelPublicServiceClient.GetUserModel(sCtx, &modelpb.GetUserModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					View: modelPB.View_VIEW_FULL.Enum(),
+					View: modelpb.View_VIEW_FULL.Enum(),
 				})
 			} else if modelConfig.OwnerType == string(resource.Organization) {
-				_, err = modelPublicServiceClient.GetOrganizationModel(sCtx, &modelPB.GetOrganizationModelRequest{
+				_, err = modelPublicServiceClient.GetOrganizationModel(sCtx, &modelpb.GetOrganizationModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					View: modelPB.View_VIEW_FULL.Enum(),
+					View: modelpb.View_VIEW_FULL.Enum(),
 				})
 			}
 			if err != nil {
 				logger.Info("Creating model: " + modelConfig.ID)
 
-				model := &modelPB.Model{
+				model := &modelpb.Model{
 					Id:              modelConfig.ID,
 					Description:     &modelConfig.Description,
 					ModelDefinition: modelConfig.ModelDefinition,
-					Visibility:      modelPB.Model_VISIBILITY_PUBLIC,
-					Task:            commonPB.Task(commonPB.Task_value[modelConfig.Task]),
+					Visibility:      modelpb.Model_VISIBILITY_PUBLIC,
+					Task:            commonpb.Task(commonpb.Task_value[modelConfig.Task]),
 					Region:          modelConfig.Region,
 					Hardware:        modelConfig.Hardwdare,
 					Configuration:   configuration,
 				}
 				if modelConfig.OwnerType == string(resource.User) {
-					_, err = modelPublicServiceClient.CreateUserModel(sCtx, &modelPB.CreateUserModelRequest{
+					_, err = modelPublicServiceClient.CreateUserModel(sCtx, &modelpb.CreateUserModelRequest{
 						Model:  model,
 						Parent: name,
 					})
 				} else if modelConfig.OwnerType == string(resource.Organization) {
-					_, err = modelPublicServiceClient.CreateOrganizationModel(sCtx, &modelPB.CreateOrganizationModelRequest{
+					_, err = modelPublicServiceClient.CreateOrganizationModel(sCtx, &modelpb.CreateOrganizationModelRequest{
 						Model:  model,
 						Parent: name,
 					})
@@ -270,13 +270,13 @@ func main() {
 			}
 			logger.Info("Deploying model: " + modelConfig.ID)
 			if modelConfig.OwnerType == string(resource.User) {
-				_, err = modelPrivateServiceClient.DeployUserModelAdmin(sCtx, &modelPB.DeployUserModelAdminRequest{
+				_, err = modelPrivateServiceClient.DeployUserModelAdmin(sCtx, &modelpb.DeployUserModelAdminRequest{
 					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					Version: modelConfig.Version,
 				})
 
 			} else if modelConfig.OwnerType == string(resource.Organization) {
-				_, err = modelPrivateServiceClient.DeployOrganizationModelAdmin(sCtx, &modelPB.DeployOrganizationModelAdminRequest{
+				_, err = modelPrivateServiceClient.DeployOrganizationModelAdmin(sCtx, &modelpb.DeployOrganizationModelAdminRequest{
 					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					Version: modelConfig.Version,
 				})
@@ -294,21 +294,21 @@ func main() {
 				logger.Error("handler.DeployModel: " + err.Error())
 				return
 			}
-			state := modelPB.State_STATE_OFFLINE
+			state := modelpb.State_STATE_OFFLINE
 			var message string
-			for state != modelPB.State_STATE_ACTIVE {
+			for state != modelpb.State_STATE_ACTIVE {
 				time.Sleep(2 * time.Second)
 				if modelConfig.OwnerType == string(resource.User) {
-					var resp *modelPB.WatchUserModelResponse
-					resp, err = modelPublicServiceClient.WatchUserModel(sCtx, &modelPB.WatchUserModelRequest{
+					var resp *modelpb.WatchUserModelResponse
+					resp, err = modelPublicServiceClient.WatchUserModel(sCtx, &modelpb.WatchUserModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 						Version: modelConfig.Version,
 					})
 					state = resp.GetState()
 					message = resp.GetMessage()
 				} else if modelConfig.OwnerType == string(resource.Organization) {
-					var resp *modelPB.WatchOrganizationModelResponse
-					resp, err = modelPublicServiceClient.WatchOrganizationModel(sCtx, &modelPB.WatchOrganizationModelRequest{
+					var resp *modelpb.WatchOrganizationModelResponse
+					resp, err = modelPublicServiceClient.WatchOrganizationModel(sCtx, &modelpb.WatchOrganizationModelRequest{
 						Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 						Version: modelConfig.Version,
 					})

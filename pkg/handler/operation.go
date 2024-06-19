@@ -11,10 +11,10 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetModelOperationRequest) (*modelPB.GetModelOperationResponse, error) {
+func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetModelOperationRequest) (*modelpb.GetModelOperationResponse, error) {
 
 	ctx, span := tracer.Start(ctx, "GetModelOperation",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -22,35 +22,35 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelPB.GetM
 
 	operationID, err := resource.GetOperationID(req.Name)
 	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
+		return &modelpb.GetModelOperationResponse{}, err
 	}
 	operation, err := h.service.GetOperation(ctx, operationID)
 	if err != nil {
-		return &modelPB.GetModelOperationResponse{}, err
+		return &modelpb.GetModelOperationResponse{}, err
 	}
 
-	return &modelPB.GetModelOperationResponse{
+	return &modelpb.GetModelOperationResponse{
 		Operation: operation,
 	}, nil
 }
 
 type GetNamespaceLatestModelOperationRequestInterface interface {
 	GetName() string
-	GetView() modelPB.View
+	GetView() modelpb.View
 }
 
-func (h *PublicHandler) GetUserLatestModelOperation(ctx context.Context, req *modelPB.GetUserLatestModelOperationRequest) (resp *modelPB.GetUserLatestModelOperationResponse, err error) {
+func (h *PublicHandler) GetUserLatestModelOperation(ctx context.Context, req *modelpb.GetUserLatestModelOperationRequest) (resp *modelpb.GetUserLatestModelOperationResponse, err error) {
 
-	resp = &modelPB.GetUserLatestModelOperationResponse{}
+	resp = &modelpb.GetUserLatestModelOperationResponse{}
 
 	resp.Operation, err = h.getNamespaceLatestModelOperation(ctx, req)
 
 	return resp, err
 }
 
-func (h *PublicHandler) GetOrganizationLatestModelOperation(ctx context.Context, req *modelPB.GetOrganizationLatestModelOperationRequest) (resp *modelPB.GetOrganizationLatestModelOperationResponse, err error) {
+func (h *PublicHandler) GetOrganizationLatestModelOperation(ctx context.Context, req *modelpb.GetOrganizationLatestModelOperationRequest) (resp *modelpb.GetOrganizationLatestModelOperationResponse, err error) {
 
-	resp = &modelPB.GetOrganizationLatestModelOperationResponse{}
+	resp = &modelpb.GetOrganizationLatestModelOperationResponse{}
 
 	resp.Operation, err = h.getNamespaceLatestModelOperation(ctx, req)
 
