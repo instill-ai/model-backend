@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
@@ -695,7 +696,8 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 
 	for i, tag := range tags {
 		var state *modelpb.State
-		if _, err := s.GetModelVersionAdmin(ctx, dbModel.UID, tag.GetId()); err != nil {
+		dbVersion, err := s.GetModelVersionAdmin(ctx, dbModel.UID, tag.GetId())
+		if err != nil {
 			state = modelpb.State_STATE_ERROR.Enum()
 		} else {
 			state, _, err = s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
@@ -705,10 +707,10 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		}
 		versions[i] = &modelpb.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
-			Id:         tag.GetId(),
+			Version:    tag.GetId(),
 			Digest:     tag.GetDigest(),
 			State:      *state,
-			UpdateTime: tag.GetUpdateTime(),
+			UpdateTime: timestamppb.New(dbVersion.UpdateTime),
 		}
 	}
 
@@ -877,10 +879,10 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 
 		for _, v := range versions {
-			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, "", v.Id, false); err != nil {
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, "", v.Version, false); err != nil {
 				return nil, err
 			}
-			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, updatedDBModel.Hardware, v.Id, true); err != nil {
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, updatedDBModel.Hardware, v.Version, true); err != nil {
 				return nil, err
 			}
 		}
