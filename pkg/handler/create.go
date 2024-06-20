@@ -23,10 +23,10 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createContainerizedModel(s service.Service, ctx context.Context, model *modelPB.Model, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition) (*modelPB.Model, error) {
+func createContainerizedModel(s service.Service, ctx context.Context, model *modelpb.Model, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition) (*modelpb.Model, error) {
 
 	eventName := "CreateContainerizedModel"
 
@@ -42,11 +42,11 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return &modelPB.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
+		return &modelpb.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
 		span.SetStatus(1, err.Error())
-		return &modelPB.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
+		return &modelpb.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	bModelConfig, _ := json.Marshal(modelConfig)
@@ -80,9 +80,9 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 	// 			logger.Error(err.Error())
 	// 		}
 	// 		span.SetStatus(1, st.Err().Error())
-	// 		return &modelPB.Model{}, st.Err()
+	// 		return &modelpb.Model{}, st.Err()
 	// 	} else {
-	// 		containerizedModel.Task = datamodel.ModelTask(commonPB.Task_TASK_UNSPECIFIED)
+	// 		containerizedModel.Task = datamodel.ModelTask(commonpb.Task_TASK_UNSPECIFIED)
 	// 	}
 	// }
 
@@ -104,7 +104,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 			logger.Error(e.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
-		return &modelPB.Model{}, st.Err()
+		return &modelpb.Model{}, st.Err()
 	}
 
 	if err := s.CreateNamespaceModel(ctx, ns, containerizedModel); err != nil {
@@ -120,10 +120,10 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 			logger.Error(err.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
-		return &modelPB.Model{}, st.Err()
+		return &modelpb.Model{}, st.Err()
 	}
 
-	model, _ = s.GetNamespaceModelByID(ctx, ns, model.Id, modelPB.View_VIEW_FULL)
+	model, _ = s.GetNamespaceModelByID(ctx, ns, model.Id, modelpb.View_VIEW_FULL)
 
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {

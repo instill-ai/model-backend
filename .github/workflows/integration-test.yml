@@ -82,7 +82,6 @@ jobs:
             SERVICE_NAME=model-backend
             GOLANG_VERSION=${{ env.GOLANG_VERSION }}
             UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
-            ARTIVC_VERSION=${{ env.ARTIVC_VERSION }}
           tags: instill/model-backend:latest
 
       - name: Checkout repo (instill-core)
@@ -165,6 +164,9 @@ jobs:
         uses: cardinalby/export-env-action@v2
         with:
           envFile: .env
+
+      - name: Check test models deployment
+        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "Models are still deploying"; sleep 5; done;
 
       - name: Run integration-test
         run: |

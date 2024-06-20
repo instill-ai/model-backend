@@ -26,16 +26,16 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) (triggerInput any, modelID string, version string, err error) {
+func savePredictInputsTriggerMode(stream modelpb.ModelPublicService_TriggerUserModelBinaryFileUploadServer) (triggerInput any, modelID string, version string, err error) {
 
 	var firstChunk = true
 
-	var fileData *modelPB.TriggerUserModelBinaryFileUploadRequest
+	var fileData *modelpb.TriggerUserModelBinaryFileUploadRequest
 
 	var allContentFiles []byte
 	var fileLengths []uint32
@@ -43,7 +43,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 	var textToImageInput *ray.TextToImageInput
 	var textGeneration *ray.TextGenerationInput
 
-	var task *modelPB.TaskInputStream
+	var task *modelpb.TaskInputStream
 	for {
 		fileData, err = stream.Recv()
 		if errors.Is(err, io.EOF) {
@@ -63,25 +63,25 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			version = fileData.Version
 			task = fileData.TaskInput
 			switch fileData.TaskInput.Input.(type) {
-			case *modelPB.TaskInputStream_Classification:
+			case *modelpb.TaskInputStream_Classification:
 				fileLengths = fileData.TaskInput.GetClassification().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
-			case *modelPB.TaskInputStream_Detection:
+			case *modelpb.TaskInputStream_Detection:
 				fileLengths = fileData.TaskInput.GetDetection().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
-			case *modelPB.TaskInputStream_Keypoint:
+			case *modelpb.TaskInputStream_Keypoint:
 				fileLengths = fileData.TaskInput.GetKeypoint().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
-			case *modelPB.TaskInputStream_Ocr:
+			case *modelpb.TaskInputStream_Ocr:
 				fileLengths = fileData.TaskInput.GetOcr().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
-			case *modelPB.TaskInputStream_InstanceSegmentation:
+			case *modelpb.TaskInputStream_InstanceSegmentation:
 				fileLengths = fileData.TaskInput.GetInstanceSegmentation().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
-			case *modelPB.TaskInputStream_SemanticSegmentation:
+			case *modelpb.TaskInputStream_SemanticSegmentation:
 				fileLengths = fileData.TaskInput.GetSemanticSegmentation().FileLengths
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
-			case *modelPB.TaskInputStream_TextToImage:
+			case *modelpb.TaskInputStream_TextToImage:
 				extraParams := ""
 				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
 					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
@@ -100,7 +100,7 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 					Samples:     *fileData.TaskInput.GetTextToImage().Samples,
 					ExtraParams: extraParams, // *fileData.TaskInput.GetTextToImage().ExtraParams
 				}
-			case *modelPB.TaskInputStream_TextGeneration:
+			case *modelpb.TaskInputStream_TextGeneration:
 				extraParams := ""
 				if fileData.TaskInput.GetTextGeneration().ExtraParams != nil {
 					jsonData, err := json.Marshal(fileData.TaskInput.GetTextGeneration().ExtraParams)
@@ -125,17 +125,17 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			}
 		} else {
 			switch fileData.TaskInput.Input.(type) {
-			case *modelPB.TaskInputStream_Classification:
+			case *modelpb.TaskInputStream_Classification:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetClassification().Content...)
-			case *modelPB.TaskInputStream_Detection:
+			case *modelpb.TaskInputStream_Detection:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetDetection().Content...)
-			case *modelPB.TaskInputStream_Keypoint:
+			case *modelpb.TaskInputStream_Keypoint:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetKeypoint().Content...)
-			case *modelPB.TaskInputStream_Ocr:
+			case *modelpb.TaskInputStream_Ocr:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetOcr().Content...)
-			case *modelPB.TaskInputStream_InstanceSegmentation:
+			case *modelpb.TaskInputStream_InstanceSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetInstanceSegmentation().Content...)
-			case *modelPB.TaskInputStream_SemanticSegmentation:
+			case *modelpb.TaskInputStream_SemanticSegmentation:
 				allContentFiles = append(allContentFiles, fileData.TaskInput.GetSemanticSegmentation().Content...)
 			default:
 				return nil, "", "", errors.New("unsupported task input type")
@@ -144,12 +144,12 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 	}
 
 	switch task.Input.(type) {
-	case *modelPB.TaskInputStream_Classification,
-		*modelPB.TaskInputStream_Detection,
-		*modelPB.TaskInputStream_Keypoint,
-		*modelPB.TaskInputStream_Ocr,
-		*modelPB.TaskInputStream_InstanceSegmentation,
-		*modelPB.TaskInputStream_SemanticSegmentation:
+	case *modelpb.TaskInputStream_Classification,
+		*modelpb.TaskInputStream_Detection,
+		*modelpb.TaskInputStream_Keypoint,
+		*modelpb.TaskInputStream_Ocr,
+		*modelpb.TaskInputStream_InstanceSegmentation,
+		*modelpb.TaskInputStream_SemanticSegmentation:
 		if len(fileLengths) == 0 {
 			return nil, "", "", errors.New("wrong parameter length of files")
 		}
@@ -169,15 +169,15 @@ func savePredictInputsTriggerMode(stream modelPB.ModelPublicService_TriggerUserM
 			start += fileLengths[i]
 		}
 		return imageBytes, modelID, version, nil
-	case *modelPB.TaskInputStream_TextToImage:
+	case *modelpb.TaskInputStream_TextToImage:
 		return textToImageInput, modelID, version, nil
-	case *modelPB.TaskInputStream_TextGeneration:
+	case *modelpb.TaskInputStream_TextGeneration:
 		return textGeneration, modelID, version, nil
 	}
 	return nil, "", "", errors.New("unsupported task input type")
 }
 
-func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPublicService_TriggerUserModelBinaryFileUploadServer) error {
+func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPublicService_TriggerUserModelBinaryFileUploadServer) error {
 
 	startTime := time.Now()
 	eventName := "TriggerUserModelBinaryFileUpload"
@@ -206,7 +206,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 		return err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(stream.Context(), ns, modelID, modelPB.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(stream.Context(), ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return err
@@ -233,11 +233,11 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
-		OwnerType:          mgmtPB.OwnerType_OWNER_TYPE_USER,
+		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
 		UserUID:            userUID,
-		UserType:           mgmtPB.OwnerType_OWNER_TYPE_USER,
+		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
-		Mode:               mgmtPB.Mode_MODE_SYNC,
+		Mode:               mgmtpb.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),
@@ -276,26 +276,26 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
 	switch pbModel.Task {
-	case commonPB.Task_TASK_CLASSIFICATION,
-		commonPB.Task_TASK_DETECTION,
-		commonPB.Task_TASK_INSTANCE_SEGMENTATION,
-		commonPB.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonPB.Task_TASK_OCR,
-		commonPB.Task_TASK_KEYPOINT:
+	case commonpb.Task_TASK_CLASSIFICATION,
+		commonpb.Task_TASK_DETECTION,
+		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
+		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
+		commonpb.Task_TASK_OCR,
+		commonpb.Task_TASK_KEYPOINT:
 		numberOfInferences = len(triggerInput.([][]byte))
 	}
 	if numberOfInferences > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			usageData.Status = mgmtPB.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -303,8 +303,8 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 	parsedInputJSON, err := json.Marshal(triggerInput)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -333,21 +333,21 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelPB.ModelPub
 			logger.Error(e.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
-		usageData.Status = mgmtPB.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_ERRORED)
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return st.Err()
 	}
 
-	usageData.Status = mgmtPB.Status_STATUS_COMPLETED
+	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
 	jsonOutput, err := json.Marshal(response)
 	if err != nil {
 		logger.Warn("json marshal error for task inputs")
 	}
-	modelPrediction.Status = datamodel.Status(mgmtPB.Status_STATUS_COMPLETED)
+	modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_COMPLETED)
 	modelPrediction.Output = jsonOutput
 
-	err = stream.SendAndClose(&modelPB.TriggerUserModelBinaryFileUploadResponse{
+	err = stream.SendAndClose(&modelpb.TriggerUserModelBinaryFileUploadResponse{
 		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})

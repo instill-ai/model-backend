@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v9"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
@@ -15,8 +15,8 @@ import (
 	"github.com/instill-ai/x/repo"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	usagePB "github.com/instill-ai/protogen-go/core/usage/v1beta"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
 	usageClient "github.com/instill-ai/usage-client/client"
 	usageReporter "github.com/instill-ai/usage-client/reporter"
 )
@@ -30,7 +30,7 @@ type Usage interface {
 
 type usage struct {
 	repository               repository.Repository
-	mgmtPrivateServiceClient mgmtPB.MgmtPrivateServiceClient
+	mgmtPrivateServiceClient mgmtpb.MgmtPrivateServiceClient
 	redisClient              *redis.Client
 	reporter                 usageReporter.Reporter
 	version                  string
@@ -38,7 +38,7 @@ type usage struct {
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivateServiceClient, rc *redis.Client, usc usagePB.UsageServiceClient, userUID string) Usage {
+func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivateServiceClient, rc *redis.Client, usc usagepb.UsageServiceClient, userUID string) Usage {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
@@ -47,7 +47,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtPB.MgmtPrivate
 		return nil
 	}
 
-	reporter, err := usageClient.InitReporter(ctx, usc, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
+	reporter, err := usageClient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -70,13 +70,13 @@ func (u *usage) RetrieveUsageData() any {
 
 	logger.Debug("Retrieve usage data...")
 
-	pbModelUsageData := []*usagePB.ModelUsageData_UserUsageData{}
+	pbModelUsageData := []*usagepb.ModelUsageData_UserUsageData{}
 
 	// Roll over all users and update the metrics with the cached uuid
 	userPageToken := ""
 	pageSizeMax := int32(repository.MaxPageSize)
 	for {
-		userResp, err := u.mgmtPrivateServiceClient.ListUsersAdmin(ctx, &mgmtPB.ListUsersAdminRequest{
+		userResp, err := u.mgmtPrivateServiceClient.ListUsersAdmin(ctx, &mgmtpb.ListUsersAdminRequest{
 			PageSize:  &pageSizeMax,
 			PageToken: &userPageToken,
 		})
@@ -88,7 +88,7 @@ func (u *usage) RetrieveUsageData() any {
 		// Roll all model resources on a user
 		for _, user := range userResp.GetUsers() {
 
-			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
+			triggerDataList := []*usagepb.ModelUsageData_UserUsageData_ModelTriggerData{}
 
 			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("owner:%s:model.trigger_data", user.GetUid())).Val() // O(1)
 
@@ -106,7 +106,7 @@ func (u *usage) RetrieveUsageData() any {
 
 					triggerDataList = append(
 						triggerDataList,
-						&usagePB.ModelUsageData_UserUsageData_ModelTriggerData{
+						&usagepb.ModelUsageData_UserUsageData_ModelTriggerData{
 							TriggerUid:         triggerData.TriggerUID,
 							TriggerTime:        timestamppb.New(triggerTime),
 							ModelUid:           triggerData.ModelUID,
@@ -118,9 +118,9 @@ func (u *usage) RetrieveUsageData() any {
 						},
 					)
 				}
-				pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
+				pbModelUsageData = append(pbModelUsageData, &usagepb.ModelUsageData_UserUsageData{
 					OwnerUid:         user.GetUid(),
-					OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_USER,
+					OwnerType:        mgmtpb.OwnerType_OWNER_TYPE_USER,
 					ModelTriggerData: triggerDataList,
 				})
 			}
@@ -136,7 +136,7 @@ func (u *usage) RetrieveUsageData() any {
 	// Roll over all orgs and update the metrics with the cached uuid
 	orgPageToken := ""
 	for {
-		orgResp, err := u.mgmtPrivateServiceClient.ListOrganizationsAdmin(ctx, &mgmtPB.ListOrganizationsAdminRequest{
+		orgResp, err := u.mgmtPrivateServiceClient.ListOrganizationsAdmin(ctx, &mgmtpb.ListOrganizationsAdminRequest{
 			PageSize:  &pageSizeMax,
 			PageToken: &orgPageToken,
 		})
@@ -148,7 +148,7 @@ func (u *usage) RetrieveUsageData() any {
 		// Roll all model resources on an org
 		for _, org := range orgResp.GetOrganizations() {
 
-			triggerDataList := []*usagePB.ModelUsageData_UserUsageData_ModelTriggerData{}
+			triggerDataList := []*usagepb.ModelUsageData_UserUsageData_ModelTriggerData{}
 
 			triggerCount := u.redisClient.LLen(ctx, fmt.Sprintf("owner:%s:model.trigger_data", org.GetUid())).Val() // O(1)
 
@@ -166,7 +166,7 @@ func (u *usage) RetrieveUsageData() any {
 
 					triggerDataList = append(
 						triggerDataList,
-						&usagePB.ModelUsageData_UserUsageData_ModelTriggerData{
+						&usagepb.ModelUsageData_UserUsageData_ModelTriggerData{
 							TriggerUid:         triggerData.TriggerUID,
 							TriggerTime:        timestamppb.New(triggerTime),
 							ModelUid:           triggerData.ModelUID,
@@ -178,9 +178,9 @@ func (u *usage) RetrieveUsageData() any {
 						},
 					)
 				}
-				pbModelUsageData = append(pbModelUsageData, &usagePB.ModelUsageData_UserUsageData{
+				pbModelUsageData = append(pbModelUsageData, &usagepb.ModelUsageData_UserUsageData{
 					OwnerUid:         org.GetUid(),
-					OwnerType:        mgmtPB.OwnerType_OWNER_TYPE_ORGANIZATION,
+					OwnerType:        mgmtpb.OwnerType_OWNER_TYPE_ORGANIZATION,
 					ModelTriggerData: triggerDataList,
 				})
 			}
@@ -194,8 +194,8 @@ func (u *usage) RetrieveUsageData() any {
 	}
 
 	logger.Debug("Send retrieved usage data...")
-	return &usagePB.SessionReport_ModelUsageData{
-		ModelUsageData: &usagePB.ModelUsageData{
+	return &usagepb.SessionReport_ModelUsageData{
+		ModelUsageData: &usagepb.ModelUsageData{
 			Usages: pbModelUsageData,
 		},
 	}
@@ -210,7 +210,7 @@ func (u *usage) StartReporter(ctx context.Context) {
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageClient.StartReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
+		err := usageClient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -224,7 +224,7 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	err := usageClient.SingleReporter(ctx, u.reporter, usagePB.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
+	err := usageClient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}

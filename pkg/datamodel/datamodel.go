@@ -9,16 +9,16 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-type ModelVisibility modelPB.Model_Visibility
-type ModelTask commonPB.Task
-type UserType mgmtPB.OwnerType
-type Mode mgmtPB.Mode
-type Status mgmtPB.Status
+type ModelVisibility modelpb.Model_Visibility
+type ModelTask commonpb.Task
+type UserType mgmtpb.OwnerType
+type Mode mgmtpb.Mode
+type Status mgmtpb.Status
 
 type BaseStatic struct {
 	UID        uuid.UUID      `gorm:"type:uuid;primary_key;"`
@@ -126,60 +126,60 @@ type ContainerizedModelConfiguration struct {
 }
 
 func (s ModelTask) Value() (driver.Value, error) {
-	return commonPB.Task(s).String(), nil
+	return commonpb.Task(s).String(), nil
 }
 
 func (s *ModelTask) Scan(value any) error {
-	*s = ModelTask(commonPB.Task_value[value.(string)])
+	*s = ModelTask(commonpb.Task_value[value.(string)])
 	return nil
 }
 
 func (v *ModelVisibility) Scan(value any) error {
-	*v = ModelVisibility(modelPB.Model_Visibility_value[value.(string)])
+	*v = ModelVisibility(modelpb.Model_Visibility_value[value.(string)])
 	return nil
 }
 
 func (v ModelVisibility) Value() (driver.Value, error) {
-	return modelPB.Model_Visibility(v).String(), nil
+	return modelpb.Model_Visibility(v).String(), nil
 }
 
 func (v *UserType) Scan(value any) error {
-	*v = UserType(mgmtPB.OwnerType_value[value.(string)])
+	*v = UserType(mgmtpb.OwnerType_value[value.(string)])
 	return nil
 }
 
 func (v UserType) Value() (driver.Value, error) {
-	return mgmtPB.OwnerType(v).String(), nil
+	return mgmtpb.OwnerType(v).String(), nil
 }
 
 func (v *Mode) Scan(value any) error {
-	*v = Mode(mgmtPB.Mode_value[value.(string)])
+	*v = Mode(mgmtpb.Mode_value[value.(string)])
 	return nil
 }
 
 func (v Mode) Value() (driver.Value, error) {
-	return mgmtPB.Mode(v).String(), nil
+	return mgmtpb.Mode(v).String(), nil
 }
 
 func (v *Status) Scan(value any) error {
-	*v = Status(mgmtPB.Status_value[value.(string)])
+	*v = Status(mgmtpb.Status_value[value.(string)])
 	return nil
 }
 
 func (v Status) Value() (driver.Value, error) {
-	return mgmtPB.Status(v).String(), nil
+	return mgmtpb.Status(v).String(), nil
 }
 
 // ReleaseStage is an alias type for Protobuf enum ReleaseStage
-type ReleaseStage modelPB.ReleaseStage
+type ReleaseStage modelpb.ReleaseStage
 
 // Scan function for custom GORM type ReleaseStage
 func (r *ReleaseStage) Scan(value any) error {
-	*r = ReleaseStage(modelPB.ReleaseStage_value[value.(string)])
+	*r = ReleaseStage(modelpb.ReleaseStage_value[value.(string)])
 	return nil
 }
 
 // Value function for custom GORM type ReleaseStage
 func (r ReleaseStage) Value() (driver.Value, error) {
-	return modelPB.ReleaseStage(r).String(), nil
+	return modelpb.ReleaseStage(r).String(), nil
 }

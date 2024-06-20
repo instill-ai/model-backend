@@ -1,5 +1,4 @@
-ARG GOLANG_VERSION
-FROM golang:${GOLANG_VERSION}
+FROM golang:1.22.4
 
 ARG SERVICE_NAME
 
@@ -11,7 +10,7 @@ COPY --from=docker:dind-rootless --chown=nobody:nogroup /usr/local/bin/docker /u
 
 # -- install 3rd-party
 
-ARG TARGETOS TARGETARCH K6_VERSION ARTIVC_VERSION
+ARG TARGETOS TARGETARCH K6_VERSION
 
 # air
 RUN --mount=target=. --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg GOOS=$TARGETOS GOARCH=$TARGETARCH go install github.com/cosmtrek/air@v1.49

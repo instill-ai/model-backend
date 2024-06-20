@@ -22,7 +22,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func trimBase64Mime(b64 string) string {
@@ -139,42 +139,42 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 	for idx, taskInput := range req.GetTaskInputs() {
 		var imageInput ray.ImageInput
 		switch taskInput.Input.(type) {
-		case *modelPB.TaskInput_Classification:
+		case *modelpb.TaskInput_Classification:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetClassification().GetImageUrl(),
 				ImgBase64: taskInput.GetClassification().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_Detection:
+		case *modelpb.TaskInput_Detection:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetDetection().GetImageUrl(),
 				ImgBase64: taskInput.GetDetection().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_Ocr:
+		case *modelpb.TaskInput_Ocr:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetOcr().GetImageUrl(),
 				ImgBase64: taskInput.GetOcr().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_Keypoint:
+		case *modelpb.TaskInput_Keypoint:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetKeypoint().GetImageUrl(),
 				ImgBase64: taskInput.GetKeypoint().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_InstanceSegmentation:
+		case *modelpb.TaskInput_InstanceSegmentation:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetInstanceSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetInstanceSegmentation().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_SemanticSegmentation:
+		case *modelpb.TaskInput_SemanticSegmentation:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetSemanticSegmentation().GetImageUrl(),
 				ImgBase64: taskInput.GetSemanticSegmentation().GetImageBase64(),
 			}
-		case *modelPB.TaskInput_TextToImage:
+		case *modelpb.TaskInput_TextToImage:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetTextToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetTextToImage().GetPromptImageBase64(),
 			}
-		case *modelPB.TaskInput_ImageToImage:
+		case *modelpb.TaskInput_ImageToImage:
 			imageInput = ray.ImageInput{
 				ImgURL:    taskInput.GetImageToImage().GetPromptImageUrl(),
 				ImgBase64: taskInput.GetImageToImage().GetPromptImageBase64(),

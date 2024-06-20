@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
 	"google.golang.org/grpc/codes"
@@ -27,10 +27,10 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-const VisibilityPublic = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PUBLIC)
+const VisibilityPublic = datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
 	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
@@ -46,7 +46,7 @@ type Repository interface {
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
-	ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
+	ListModelDefinitions(view modelpb.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error)
 
 	GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error)
@@ -565,7 +565,7 @@ func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDef
 	return definitionDB, nil
 }
 
-func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
+func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
 		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
 	}
@@ -587,7 +587,7 @@ func (r *repository) ListModelDefinitions(view modelPB.View, pageSize int64, pag
 		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, id)
 	}
 
-	if view != modelPB.View_VIEW_FULL {
+	if view != modelpb.View_VIEW_FULL {
 		queryBuilder.Omit("model_spec")
 	}
 

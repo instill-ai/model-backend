@@ -17,8 +17,8 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	commonPB "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func postProcessDetection(modelInferResponse *rayserver.RayServiceCallResponse, outputNameBboxes string, outputNameLabels string) (any, error) {
@@ -460,7 +460,7 @@ func postProcessSemanticSegmentation(modelInferResponse *rayserver.RayServiceCal
 	}, nil
 }
 
-func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse, outputNameImages string, task commonPB.Task) (any, error) {
+func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse, outputNameImages string, task commonpb.Task) (any, error) {
 	outputTensorImages, rawOutputContentImages, err := GetOutputFromInferResponse(outputNameImages, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for images")
@@ -496,7 +496,7 @@ func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse
 		batchedOutputDataImages[0] = append(batchedOutputDataImages[0], base64EncodedStr)
 	}
 	switch task {
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		return ImageToImageOutput{
 			Images: batchedOutputDataImages,
 		}, nil
@@ -507,7 +507,7 @@ func postProcessTextToImage(modelInferResponse *rayserver.RayServiceCallResponse
 	}
 }
 
-func postProcessTextGeneration(modelInferResponse *rayserver.RayServiceCallResponse, outputNameTexts string, task commonPB.Task) (any, error) {
+func postProcessTextGeneration(modelInferResponse *rayserver.RayServiceCallResponse, outputNameTexts string, task commonpb.Task) (any, error) {
 	outputTensorTexts, rawOutputContentTexts, err := GetOutputFromInferResponse(outputNameTexts, modelInferResponse)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find inference output for generated texts")
@@ -518,11 +518,11 @@ func postProcessTextGeneration(modelInferResponse *rayserver.RayServiceCallRespo
 	outputTexts := DeserializeBytesTensor(rawOutputContentTexts, outputTensorTexts.Shape[0])
 
 	switch task {
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		return VisualQuestionAnsweringOutput{
 			Text: outputTexts,
 		}, nil
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 
 		return TextGenerationChatOutput{
 			Text: outputTexts,
@@ -535,18 +535,18 @@ func postProcessTextGeneration(modelInferResponse *rayserver.RayServiceCallRespo
 	}
 }
 
-func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonPB.Task) (outputs []*modelPB.TaskOutput, err error) {
+func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata *rayserver.ModelMetadataResponse, task commonpb.Task) (outputs []*modelpb.TaskOutput, err error) {
 
 	var postprocessResponse any
 
 	switch task {
-	case commonPB.Task_TASK_CLASSIFICATION:
+	case commonpb.Task_TASK_CLASSIFICATION:
 		postprocessResponse, err = postProcessClassification(inferResponse, modelMetadata.Outputs[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process classification output: %w", err)
 		}
 		clsResponses := postprocessResponse.([]string)
-		var clsOutputs []*modelPB.TaskOutput
+		var clsOutputs []*modelpb.TaskOutput
 		for _, clsRes := range clsResponses {
 			clsResSplit := strings.Split(clsRes, ":")
 			if len(clsResSplit) == 2 {
@@ -554,9 +554,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				if err != nil {
 					return nil, fmt.Errorf("unable to decode inference output")
 				}
-				clsOutput := modelPB.TaskOutput{
-					Output: &modelPB.TaskOutput_Classification{
-						Classification: &modelPB.ClassificationOutput{
+				clsOutput := modelpb.TaskOutput{
+					Output: &modelpb.TaskOutput_Classification{
+						Classification: &modelpb.ClassificationOutput{
 							Category: clsResSplit[1],
 							Score:    float32(score),
 						},
@@ -568,9 +568,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				if err != nil {
 					return nil, fmt.Errorf("unable to decode inference output")
 				}
-				clsOutput := modelPB.TaskOutput{
-					Output: &modelPB.TaskOutput_Classification{
-						Classification: &modelPB.ClassificationOutput{
+				clsOutput := modelpb.TaskOutput{
+					Output: &modelpb.TaskOutput_Classification{
+						Classification: &modelpb.ClassificationOutput{
 							Category: clsResSplit[2],
 							Score:    float32(score),
 						},
@@ -582,14 +582,14 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			}
 		}
 		if len(clsOutputs) == 0 {
-			clsOutputs = append(clsOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Classification{
-					Classification: &modelPB.ClassificationOutput{},
+			clsOutputs = append(clsOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Classification{
+					Classification: &modelpb.ClassificationOutput{},
 				},
 			})
 		}
 		return clsOutputs, nil
-	case commonPB.Task_TASK_DETECTION:
+	case commonpb.Task_TASK_DETECTION:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of detection task")
 		}
@@ -600,12 +600,12 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 		detResponses := postprocessResponse.(DetectionOutput)
 		batchedOutputDataBboxes := detResponses.Boxes
 		batchedOutputDataLabels := detResponses.Labels
-		var detOutputs []*modelPB.TaskOutput
+		var detOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataBboxes {
-			var detOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Detection{
-					Detection: &modelPB.DetectionOutput{
-						Objects: []*modelPB.DetectionObject{},
+			var detOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Detection{
+					Detection: &modelpb.DetectionOutput{
+						Objects: []*modelpb.DetectionObject{},
 					},
 				},
 			}
@@ -614,11 +614,11 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				label := batchedOutputDataLabels[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and label "0" for Ray to be able to batch Tensors
 				if label != "0" {
-					bbObj := &modelPB.DetectionObject{
+					bbObj := &modelpb.DetectionObject{
 						Category: label,
 						Score:    box[4],
 						// Convert x1y1x2y2 to xywh where xy is top-left corner
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Left:   box[0],
 							Top:    box[1],
 							Width:  box[2] - box[0],
@@ -631,16 +631,16 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			detOutputs = append(detOutputs, &detOutput)
 		}
 		if len(detOutputs) == 0 {
-			detOutputs = append(detOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Detection{
-					Detection: &modelPB.DetectionOutput{
-						Objects: []*modelPB.DetectionObject{},
+			detOutputs = append(detOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Detection{
+					Detection: &modelpb.DetectionOutput{
+						Objects: []*modelpb.DetectionObject{},
 					},
 				},
 			})
 		}
 		return detOutputs, nil
-	case commonPB.Task_TASK_KEYPOINT:
+	case commonpb.Task_TASK_KEYPOINT:
 		if len(modelMetadata.Outputs) < 3 {
 			return nil, fmt.Errorf("wrong output format of keypoint detection task")
 		}
@@ -649,28 +649,28 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			return nil, fmt.Errorf("unable to post-process keypoint output: %w", err)
 		}
 		keypointResponse := postprocessResponse.(KeypointOutput)
-		var keypointOutputs []*modelPB.TaskOutput
+		var keypointOutputs []*modelpb.TaskOutput
 		for i := range keypointResponse.Keypoints { // batch size
-			var keypointObjects []*modelPB.KeypointObject
+			var keypointObjects []*modelpb.KeypointObject
 			for j := range keypointResponse.Keypoints[i] { // n keypoints in one image
 				if keypointResponse.Scores[i][j] == -1 { // dummy object for batching to make sure every images have same output shape
 					continue
 				}
-				var keypoints []*modelPB.Keypoint
+				var keypoints []*modelpb.Keypoint
 				points := keypointResponse.Keypoints[i][j]
 				for k := range points { // 17 point for each keypoint
 					if points[k][0] == -1 && points[k][1] == -1 && points[k][2] == -1 { // dummy output for batching to make sure every images have same output shape
 						continue
 					}
-					keypoints = append(keypoints, &modelPB.Keypoint{
+					keypoints = append(keypoints, &modelpb.Keypoint{
 						X: points[k][0],
 						Y: points[k][1],
 						V: points[k][2],
 					})
 				}
-				keypointObjects = append(keypointObjects, &modelPB.KeypointObject{
+				keypointObjects = append(keypointObjects, &modelpb.KeypointObject{
 					Keypoints: keypoints,
-					BoundingBox: &modelPB.BoundingBox{
+					BoundingBox: &modelpb.BoundingBox{
 						Left:   keypointResponse.Boxes[i][j][0],
 						Top:    keypointResponse.Boxes[i][j][1],
 						Width:  keypointResponse.Boxes[i][j][2],
@@ -679,25 +679,25 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 					Score: keypointResponse.Scores[i][j],
 				})
 			}
-			keypointOutputs = append(keypointOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Keypoint{
-					Keypoint: &modelPB.KeypointOutput{
+			keypointOutputs = append(keypointOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Keypoint{
+					Keypoint: &modelpb.KeypointOutput{
 						Objects: keypointObjects,
 					},
 				},
 			})
 		}
 		if len(keypointOutputs) == 0 {
-			keypointOutputs = append(keypointOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Keypoint{
-					Keypoint: &modelPB.KeypointOutput{
-						Objects: []*modelPB.KeypointObject{},
+			keypointOutputs = append(keypointOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Keypoint{
+					Keypoint: &modelpb.KeypointOutput{
+						Objects: []*modelpb.KeypointObject{},
 					},
 				},
 			})
 		}
 		return keypointOutputs, nil
-	case commonPB.Task_TASK_OCR:
+	case commonpb.Task_TASK_OCR:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of OCR task")
 		}
@@ -717,12 +717,12 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 		batchedOutputDataBboxes := ocrResponses.Boxes
 		batchedOutputDataTexts := ocrResponses.Texts
 		batchedOutputDataScores := ocrResponses.Scores
-		var ocrOutputs []*modelPB.TaskOutput
+		var ocrOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataBboxes {
-			var ocrOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Ocr{
-					Ocr: &modelPB.OcrOutput{
-						Objects: []*modelPB.OcrObject{},
+			var ocrOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Ocr{
+					Ocr: &modelpb.OcrOutput{
+						Objects: []*modelpb.OcrObject{},
 					},
 				},
 			}
@@ -732,8 +732,8 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				score := batchedOutputDataScores[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if text != "" && box[0] != -1 {
-					ocrOutput.GetOcr().Objects = append(ocrOutput.GetOcr().Objects, &modelPB.OcrObject{
-						BoundingBox: &modelPB.BoundingBox{
+					ocrOutput.GetOcr().Objects = append(ocrOutput.GetOcr().Objects, &modelpb.OcrObject{
+						BoundingBox: &modelpb.BoundingBox{
 							Left:   box[0],
 							Top:    box[1],
 							Width:  box[2],
@@ -747,16 +747,16 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			ocrOutputs = append(ocrOutputs, &ocrOutput)
 		}
 		if len(ocrOutputs) == 0 {
-			ocrOutputs = append(ocrOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Ocr{
-					Ocr: &modelPB.OcrOutput{
-						Objects: []*modelPB.OcrObject{},
+			ocrOutputs = append(ocrOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Ocr{
+					Ocr: &modelpb.OcrOutput{
+						Objects: []*modelpb.OcrObject{},
 					},
 				},
 			})
 		}
 		return ocrOutputs, nil
-	case commonPB.Task_TASK_INSTANCE_SEGMENTATION:
+	case commonpb.Task_TASK_INSTANCE_SEGMENTATION:
 		if len(modelMetadata.Outputs) < 4 {
 			return nil, fmt.Errorf("wrong output format of instance segmentation task")
 		}
@@ -769,12 +769,12 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 		batchedOutputDataBboxes := instanceSegmentationResponses.Boxes
 		batchedOutputDataLabels := instanceSegmentationResponses.Labels
 		batchedOutputDataScores := instanceSegmentationResponses.Scores
-		var instanceSegmentationOutputs []*modelPB.TaskOutput
+		var instanceSegmentationOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataBboxes {
-			var instanceSegmentationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_InstanceSegmentation{
-					InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
-						Objects: []*modelPB.InstanceSegmentationObject{},
+			var instanceSegmentationOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_InstanceSegmentation{
+					InstanceSegmentation: &modelpb.InstanceSegmentationOutput{
+						Objects: []*modelpb.InstanceSegmentationObject{},
 					},
 				},
 			}
@@ -785,9 +785,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				score := batchedOutputDataScores[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if label != "" && rle != "" {
-					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelPB.InstanceSegmentationObject{
+					instanceSegmentationOutput.GetInstanceSegmentation().Objects = append(instanceSegmentationOutput.GetInstanceSegmentation().Objects, &modelpb.InstanceSegmentationObject{
 						Rle: rle,
-						BoundingBox: &modelPB.BoundingBox{
+						BoundingBox: &modelpb.BoundingBox{
 							Left:   box[0],
 							Top:    box[1],
 							Width:  box[2],
@@ -801,16 +801,16 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &instanceSegmentationOutput)
 		}
 		if len(instanceSegmentationOutputs) == 0 {
-			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_InstanceSegmentation{
-					InstanceSegmentation: &modelPB.InstanceSegmentationOutput{
-						Objects: []*modelPB.InstanceSegmentationObject{},
+			instanceSegmentationOutputs = append(instanceSegmentationOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_InstanceSegmentation{
+					InstanceSegmentation: &modelpb.InstanceSegmentationOutput{
+						Objects: []*modelpb.InstanceSegmentationObject{},
 					},
 				},
 			})
 		}
 		return instanceSegmentationOutputs, nil
-	case commonPB.Task_TASK_SEMANTIC_SEGMENTATION:
+	case commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
 		if len(modelMetadata.Outputs) < 2 {
 			return nil, fmt.Errorf("wrong output format of semantic segmentation task")
 		}
@@ -821,12 +821,12 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 		semanticSegmentationResponses := postprocessResponse.(SemanticSegmentationOutput)
 		batchedOutputDataRles := semanticSegmentationResponses.Rles
 		batchedOutputDataCategories := semanticSegmentationResponses.Categories
-		var semanticSegmentationOutputs []*modelPB.TaskOutput
+		var semanticSegmentationOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataCategories { // loop over images
-			var semanticSegmentationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_SemanticSegmentation{
-					SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
-						Stuffs: []*modelPB.SemanticSegmentationStuff{},
+			var semanticSegmentationOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_SemanticSegmentation{
+					SemanticSegmentation: &modelpb.SemanticSegmentationOutput{
+						Stuffs: []*modelpb.SemanticSegmentationStuff{},
 					},
 				},
 			}
@@ -835,7 +835,7 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				category := batchedOutputDataCategories[i][j]
 				// Non-meaningful bboxes were added with coords [-1, -1, -1, -1, -1] and text "" for Ray to be able to batch Tensors
 				if category != "" && rle != "" {
-					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelPB.SemanticSegmentationStuff{
+					semanticSegmentationOutput.GetSemanticSegmentation().Stuffs = append(semanticSegmentationOutput.GetSemanticSegmentation().Stuffs, &modelpb.SemanticSegmentationStuff{
 						Rle:      rle,
 						Category: category,
 					})
@@ -844,27 +844,27 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &semanticSegmentationOutput)
 		}
 		if len(semanticSegmentationOutputs) == 0 {
-			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_SemanticSegmentation{
-					SemanticSegmentation: &modelPB.SemanticSegmentationOutput{
-						Stuffs: []*modelPB.SemanticSegmentationStuff{},
+			semanticSegmentationOutputs = append(semanticSegmentationOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_SemanticSegmentation{
+					SemanticSegmentation: &modelpb.SemanticSegmentationOutput{
+						Stuffs: []*modelpb.SemanticSegmentationStuff{},
 					},
 				},
 			})
 		}
 		return semanticSegmentationOutputs, nil
-	case commonPB.Task_TASK_TEXT_TO_IMAGE:
+	case commonpb.Task_TASK_TEXT_TO_IMAGE:
 		postprocessResponse, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to image output: %w", err)
 		}
 		textToImageResponses := postprocessResponse.(TextToImageOutput)
 		batchedOutputDataImages := textToImageResponses.Images
-		var textToImageOutputs []*modelPB.TaskOutput
+		var textToImageOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataImages { // loop over images
-			var textToImageOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextToImage{
-					TextToImage: &modelPB.TextToImageOutput{
+			var textToImageOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextToImage{
+					TextToImage: &modelpb.TextToImageOutput{
 						Images: batchedOutputDataImages[i],
 					},
 				},
@@ -873,27 +873,27 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			textToImageOutputs = append(textToImageOutputs, &textToImageOutput)
 		}
 		if len(textToImageOutputs) == 0 {
-			textToImageOutputs = append(textToImageOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextToImage{
-					TextToImage: &modelPB.TextToImageOutput{
+			textToImageOutputs = append(textToImageOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextToImage{
+					TextToImage: &modelpb.TextToImageOutput{
 						Images: []string{},
 					},
 				},
 			})
 		}
 		return textToImageOutputs, nil
-	case commonPB.Task_TASK_IMAGE_TO_IMAGE:
+	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		postprocessResponse, err = postProcessTextToImage(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process image to image output: %w", err)
 		}
 		imageToImageResponses := postprocessResponse.(ImageToImageOutput)
 		batchedOutputDataImages := imageToImageResponses.Images
-		var imageToImageOutputs []*modelPB.TaskOutput
+		var imageToImageOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataImages { // loop over images
-			var imageToImageOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_ImageToImage{
-					ImageToImage: &modelPB.ImageToImageOutput{
+			var imageToImageOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_ImageToImage{
+					ImageToImage: &modelpb.ImageToImageOutput{
 						Images: batchedOutputDataImages[i],
 					},
 				},
@@ -902,27 +902,27 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			imageToImageOutputs = append(imageToImageOutputs, &imageToImageOutput)
 		}
 		if len(imageToImageOutputs) == 0 {
-			imageToImageOutputs = append(imageToImageOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_ImageToImage{
-					ImageToImage: &modelPB.ImageToImageOutput{
+			imageToImageOutputs = append(imageToImageOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_ImageToImage{
+					ImageToImage: &modelpb.ImageToImageOutput{
 						Images: []string{},
 					},
 				},
 			})
 		}
 		return imageToImageOutputs, nil
-	case commonPB.Task_TASK_TEXT_GENERATION:
+	case commonpb.Task_TASK_TEXT_GENERATION:
 		postprocessResponse, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text generation output: %w", err)
 		}
 		textGenerationResponses := postprocessResponse.(TextGenerationOutput)
 		batchedOutputDataTexts := textGenerationResponses.Text
-		var textGenerationOutputs []*modelPB.TaskOutput
+		var textGenerationOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataTexts {
-			var textGenerationOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGeneration{
-					TextGeneration: &modelPB.TextGenerationOutput{
+			var textGenerationOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextGeneration{
+					TextGeneration: &modelpb.TextGenerationOutput{
 						Text: batchedOutputDataTexts[i],
 					},
 				},
@@ -931,27 +931,27 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			textGenerationOutputs = append(textGenerationOutputs, &textGenerationOutput)
 		}
 		if len(textGenerationOutputs) == 0 {
-			textGenerationOutputs = append(textGenerationOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGeneration{
-					TextGeneration: &modelPB.TextGenerationOutput{
+			textGenerationOutputs = append(textGenerationOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextGeneration{
+					TextGeneration: &modelpb.TextGenerationOutput{
 						Text: "",
 					},
 				},
 			})
 		}
 		return textGenerationOutputs, nil
-	case commonPB.Task_TASK_VISUAL_QUESTION_ANSWERING:
+	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		postprocessResponse, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process visual question answering output: %w", err)
 		}
 		visualQuestionAnsweringResponses := postprocessResponse.(VisualQuestionAnsweringOutput)
 		batchedOutputDataTexts := visualQuestionAnsweringResponses.Text
-		var visualQuestionAnsweringOutputs []*modelPB.TaskOutput
+		var visualQuestionAnsweringOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataTexts {
-			var visualQuestionAnsweringOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
-					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
+			var visualQuestionAnsweringOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_VisualQuestionAnswering{
+					VisualQuestionAnswering: &modelpb.VisualQuestionAnsweringOutput{
 						Text: batchedOutputDataTexts[i],
 					},
 				},
@@ -960,27 +960,27 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &visualQuestionAnsweringOutput)
 		}
 		if len(visualQuestionAnsweringOutputs) == 0 {
-			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_VisualQuestionAnswering{
-					VisualQuestionAnswering: &modelPB.VisualQuestionAnsweringOutput{
+			visualQuestionAnsweringOutputs = append(visualQuestionAnsweringOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_VisualQuestionAnswering{
+					VisualQuestionAnswering: &modelpb.VisualQuestionAnsweringOutput{
 						Text: "",
 					},
 				},
 			})
 		}
 		return visualQuestionAnsweringOutputs, nil
-	case commonPB.Task_TASK_TEXT_GENERATION_CHAT:
+	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 		postprocessResponse, err = postProcessTextGeneration(inferResponse, modelMetadata.Outputs[0].Name, task)
 		if err != nil {
 			return nil, fmt.Errorf("unable to post-process text to text output: %w", err)
 		}
 		textGenerationChatResponses := postprocessResponse.(TextGenerationChatOutput)
 		batchedOutputDataTexts := textGenerationChatResponses.Text
-		var textGenerationChatOutputs []*modelPB.TaskOutput
+		var textGenerationChatOutputs []*modelpb.TaskOutput
 		for i := range batchedOutputDataTexts {
-			var textGenerationChatOutput = modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGenerationChat{
-					TextGenerationChat: &modelPB.TextGenerationChatOutput{
+			var textGenerationChatOutput = modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextGenerationChat{
+					TextGenerationChat: &modelpb.TextGenerationChatOutput{
 						Text: batchedOutputDataTexts[i],
 					},
 				},
@@ -989,9 +989,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			textGenerationChatOutputs = append(textGenerationChatOutputs, &textGenerationChatOutput)
 		}
 		if len(textGenerationChatOutputs) == 0 {
-			textGenerationChatOutputs = append(textGenerationChatOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_TextGenerationChat{
-					TextGenerationChat: &modelPB.TextGenerationChatOutput{
+			textGenerationChatOutputs = append(textGenerationChatOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_TextGenerationChat{
+					TextGenerationChat: &modelpb.TextGenerationChatOutput{
 						Text: "",
 					},
 				},
@@ -1004,9 +1004,9 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 			return nil, fmt.Errorf("unable to post-process unspecified output: %w", err)
 		}
 		outputs := postprocessResponse.([]BatchUnspecifiedTaskOutputs)
-		var rawOutputs []*modelPB.TaskOutput
+		var rawOutputs []*modelpb.TaskOutput
 		if len(outputs) == 0 {
-			return []*modelPB.TaskOutput{}, nil
+			return []*modelpb.TaskOutput{}, nil
 		}
 		deserializedOutputs := outputs[0].SerializedOutputs
 		for i := range deserializedOutputs {
@@ -1043,18 +1043,18 @@ func PostProcess(inferResponse *rayserver.RayServiceCallResponse, modelMetadata 
 				singleImageOutput = append(singleImageOutput, structData)
 			}
 
-			rawOutputs = append(rawOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Unspecified{
-					Unspecified: &modelPB.UnspecifiedOutput{
+			rawOutputs = append(rawOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Unspecified{
+					Unspecified: &modelpb.UnspecifiedOutput{
 						RawOutputs: singleImageOutput,
 					},
 				},
 			})
 		}
 		if len(rawOutputs) == 0 {
-			rawOutputs = append(rawOutputs, &modelPB.TaskOutput{
-				Output: &modelPB.TaskOutput_Unspecified{
-					Unspecified: &modelPB.UnspecifiedOutput{
+			rawOutputs = append(rawOutputs, &modelpb.TaskOutput{
+				Output: &modelpb.TaskOutput_Unspecified{
+					Unspecified: &modelpb.UnspecifiedOutput{
 						RawOutputs: []*structpb.Struct{},
 					},
 				},

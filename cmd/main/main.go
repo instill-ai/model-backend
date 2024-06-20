@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -27,9 +27,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	openfga "github.com/openfga/api/proto/openfga/v1"
 
 	"github.com/instill-ai/model-backend/config"
@@ -47,10 +47,10 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	mgmtPB "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
+	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
@@ -81,7 +81,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if tp, err := custom_otel.SetupTracing(ctx, "model-backend"); err != nil {
+	if tp, err := customotel.SetupTracing(ctx, "model-backend"); err != nil {
 		panic(err)
 	} else {
 		defer func() {
@@ -94,14 +94,14 @@ func main() {
 	)
 	defer cancel()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 	defer func() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
 	}()
 
 	// verbosity 3 will avoid [transport] from emitting
-	grpc_zap.ReplaceGrpcLoggerV2WithVerbosity(logger, 3)
+	grpczap.ReplaceGrpcLoggerV2WithVerbosity(logger, 3)
 
 	db := database.GetSharedConnection()
 	defer database.Close(db)
@@ -117,8 +117,8 @@ func main() {
 	}
 
 	// Shared options for the logger, with a custom gRPC code to log level function.
-	opts := []grpc_zap.Option{
-		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
+	opts := []grpczap.Option{
+		grpczap.WithDecider(func(fullMethodName string, err error) bool {
 			// will not log gRPC calls if it was a call to liveness or readiness and no error was raised
 			if err == nil {
 				if match, _ := regexp.MatchString("model.model.v1alpha.ModelPublicService/.*ness$", fullMethodName); match {
@@ -134,15 +134,15 @@ func main() {
 	}
 
 	grpcServerOpts := []grpc.ServerOption{
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		grpc.StreamInterceptor(grpcmiddleware.ChainStreamServer(
 			middleware.StreamAppendMetadataInterceptor,
-			grpc_zap.StreamServerInterceptor(logger, opts...),
-			grpc_recovery.StreamServerInterceptor(middleware.RecoveryInterceptorOpt()),
+			grpczap.StreamServerInterceptor(logger, opts...),
+			grpcrecovery.StreamServerInterceptor(middleware.RecoveryInterceptorOpt()),
 		)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(
 			middleware.UnaryAppendMetadataInterceptor,
-			grpc_zap.UnaryServerInterceptor(logger, opts...),
-			grpc_recovery.UnaryServerInterceptor(middleware.RecoveryInterceptorOpt()),
+			grpczap.UnaryServerInterceptor(logger, opts...),
+			grpcrecovery.UnaryServerInterceptor(middleware.RecoveryInterceptorOpt()),
 		)),
 	}
 
@@ -229,11 +229,11 @@ func main() {
 
 	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, config.Config.Server.InstillCoreHost)
 
-	modelPB.RegisterModelPublicServiceServer(
+	modelpb.RegisterModelPublicServiceServer(
 		publicGrpcS,
 		handler.NewPublicHandler(ctx, serv, rayService))
 
-	modelPB.RegisterModelPrivateServiceServer(
+	modelpb.RegisterModelPrivateServiceServer(
 		privateGrpcS,
 		handler.NewPrivateHandler(ctx, serv))
 
@@ -279,7 +279,7 @@ func main() {
 	if config.Config.Server.Usage.Enabled {
 		userUID := config.Config.Server.Usage.UsageIdentifierUID
 		if userUID == "" {
-			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtPB.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
+			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
 				userUID = resp.GetUser().GetUid()
 			} else {
 				logger.Error(err.Error())
@@ -308,10 +308,10 @@ func main() {
 	} else {
 		dialOpts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB), grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB))}
 	}
-	if err := modelPB.RegisterModelPrivateServiceHandlerFromEndpoint(ctx, privateGwS, fmt.Sprintf(":%v", config.Config.Server.PrivatePort), dialOpts); err != nil {
+	if err := modelpb.RegisterModelPrivateServiceHandlerFromEndpoint(ctx, privateGwS, fmt.Sprintf(":%v", config.Config.Server.PrivatePort), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
-	if err := modelPB.RegisterModelPublicServiceHandlerFromEndpoint(ctx, publicGwS, fmt.Sprintf(":%v", config.Config.Server.PublicPort), dialOpts); err != nil {
+	if err := modelpb.RegisterModelPublicServiceHandlerFromEndpoint(ctx, publicGwS, fmt.Sprintf(":%v", config.Config.Server.PublicPort), dialOpts); err != nil {
 		logger.Fatal(err.Error())
 	}
 

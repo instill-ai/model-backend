@@ -15,10 +15,10 @@ import (
 	databaseInit "github.com/instill-ai/model-backend/pkg/init"
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createModelDefinition(db *gorm.DB, modelDef *modelPB.ModelDefinition) error {
+func createModelDefinition(db *gorm.DB, modelDef *modelpb.ModelDefinition) error {
 	modelSpecBytes, _ := json.Marshal(modelDef.GetModelSpec())
 	if err := databaseInit.CreateModelDefinitionRecord(
 		db,
@@ -66,7 +66,7 @@ func main() {
 
 	datamodel.InitJSONSchema(ctx)
 
-	modelDefs := []*modelPB.ModelDefinition{}
+	modelDefs := []*modelpb.ModelDefinition{}
 
 	if err := databaseInit.LoadDefinitions(&modelDefs); err != nil {
 		logger.Fatal(err.Error())

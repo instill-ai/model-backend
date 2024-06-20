@@ -1,11 +1,10 @@
 module github.com/instill-ai/model-backend
 
-go 1.21.3
+go 1.22.4
 
 require (
 	cloud.google.com/go/longrunning v0.5.4
 	github.com/gabriel-vasile/mimetype v1.4.0
-	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
 	github.com/golang-migrate/migrate/v4 v4.15.2
@@ -21,6 +20,7 @@ require (
 	github.com/mennanov/fieldmask-utils v1.1.0
 	github.com/openfga/api/proto v0.0.0-20240501220219-2b164f5813a7
 	github.com/pkg/errors v0.9.1
+	github.com/redis/go-redis/v9 v9.5.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.8.4
 	go.einride.tech/aip v0.67.1
