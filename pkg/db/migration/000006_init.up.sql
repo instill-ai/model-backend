@@ -1,16 +1,15 @@
 BEGIN;
 
-ALTER TABLE model_prediction
-DROP COLUMN IF EXISTS delete_time,
-DROP COLUMN IF EXISTS model_version_uid,
-ADD COLUMN IF NOT EXISTS model_version VARCHAR(255) NOT NULL,
-DROP CONSTRAINT IF EXISTS fk_model_version;
-
 DELETE FROM model_version WHERE delete_time IS NOT NULL;
 
-ALTER TABLE model_version
-DROP COLUMN IF EXISTS delete_time,
-DROP COLUMN IF EXISTS uid;
+ALTER TABLE model_prediction DROP COLUMN IF EXISTS delete_time;
+ALTER TABLE model_prediction DROP COLUMN IF EXISTS model_version_uid;
+ALTER TABLE model_prediction ADD COLUMN model_version VARCHAR(255) NOT NULL;
+ALTER TABLE model_prediction DROP CONSTRAINT IF EXISTS fk_model_version;
+
+
+ALTER TABLE model_version DROP COLUMN IF EXISTS delete_time;
+ALTER TABLE model_version DROP COLUMN IF EXISTS uid;
 
 CREATE INDEX IF NOT EXISTS version_model_uid ON model_version (model_uid);
 CREATE UNIQUE INDEX IF NOT EXISTS version_unique_model_version ON model_version (model_uid, version);
