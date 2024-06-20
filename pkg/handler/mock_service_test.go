@@ -12,7 +12,7 @@ import (
 	redis "github.com/redis/go-redis/v9"
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	resource "github.com/instill-ai/model-backend/internal/resource"
+	resource "github.com/instill-ai/model-backend/pkg/resource"
 	acl "github.com/instill-ai/model-backend/pkg/acl"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	repository "github.com/instill-ai/model-backend/pkg/repository"

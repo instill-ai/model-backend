@@ -19,10 +19,10 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"

@@ -6,8 +6,8 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 )
 

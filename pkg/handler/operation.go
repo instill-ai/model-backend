@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/model-backend/internal/resource"
+	"github.com/instill-ai/model-backend/pkg/resource"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"

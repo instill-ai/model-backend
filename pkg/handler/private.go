@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/x/sterr"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"

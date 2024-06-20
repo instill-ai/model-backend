@@ -16,8 +16,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/redis/go-redis/v9"
 )
 
