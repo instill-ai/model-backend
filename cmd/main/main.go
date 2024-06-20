@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"

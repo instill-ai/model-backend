@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
 	"google.golang.org/grpc/codes"

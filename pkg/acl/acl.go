@@ -14,11 +14,11 @@ import (
 
 	openfga "github.com/openfga/api/proto/openfga/v1"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/redis/go-redis/v9"
 )
 
 type ACLClient struct {

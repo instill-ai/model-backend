@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/go-redis/redis/v9"
 	"github.com/gofrs/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
 	"go.temporal.io/sdk/client"

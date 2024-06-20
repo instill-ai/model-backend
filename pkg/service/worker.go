@@ -13,9 +13,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/go-redis/redis/v9"
 	"github.com/instill-ai/model-backend/internal/resource"
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/redis/go-redis/v9"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )

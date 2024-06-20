@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
-	redis "github.com/go-redis/redis/v9"
+	redis "github.com/redis/go-redis/v9"
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
 	resource "github.com/instill-ai/model-backend/internal/resource"
