@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.25.0-alpha...v0.25.1-alpha) (2024-06-20)
+
+
+### Bug Fixes
+
+* **schema:** use camelCase for schema fields ([5629b6a](https://github.com/instill-ai/model-backend/commit/5629b6a687e813ab7fd9420e9c96103b08855f9a))
+
 ## [0.25.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.24.0-alpha...v0.25.0-alpha) (2024-06-18)
 
 
