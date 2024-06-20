@@ -36,17 +36,17 @@
     "properties": {
       "objects": {
         "description": "A list of detected objects.",
-        "instillFormat": "array:structured/detection_object",
+        "instillFormat": "array:structured/detection-object",
         "instillUIOrder": 0,
         "items": {
           "additionalProperties": false,
-          "instillFormat": "structured/detection_object",
+          "instillFormat": "structured/detection-object",
           "instillUIOrder": 0,
           "properties": {
-            "bounding_box": {
+            "boundingBox": {
               "additionalProperties": false,
               "description": "The detected bounding box in (left, top, width, height) format.",
-              "instillFormat": "structured/bounding_box",
+              "instillFormat": "structured/bounding-box",
               "instillUIOrder": 1,
               "properties": {
                 "height": {
@@ -109,7 +109,7 @@
             }
           },
           "required": [
-            "bounding_box",
+            "boundingBox",
             "category",
             "score"
           ],
@@ -133,16 +133,16 @@
     "properties": {
       "objects": {
         "description": "A list of detected bounding boxes.",
-        "instillFormat": "array:structured/ocr_object",
+        "instillFormat": "array:structured/ocr-object",
         "instillUIOrder": 0,
         "items": {
-          "instillFormat": "structured/ocr_object",
+          "instillFormat": "structured/ocr-object",
           "instillUIOrder": 0,
           "properties": {
-            "bounding_box": {
+            "boundingBox": {
               "additionalProperties": false,
               "description": "The detected bounding box in (left, top, width, height) format.",
-              "instillFormat": "structured/bounding_box",
+              "instillFormat": "structured/bounding-box",
               "instillUIOrder": 0,
               "properties": {
                 "height": {
@@ -205,7 +205,7 @@
             }
           },
           "required": [
-            "bounding_box",
+            "boundingBox",
             "text",
             "score"
           ],
@@ -229,10 +229,10 @@
     "properties": {
       "stuffs": {
         "description": "A list of RLE binary masks.",
-        "instillFormat": "array:structured/semantic_segmentation_stuff",
+        "instillFormat": "array:structured/semantic-segmentation-stuff",
         "instillUIOrder": 0,
         "items": {
-          "instillFormat": "structured/semantic_segmentation_stuff",
+          "instillFormat": "structured/semantic-segmentation-stuff",
           "instillUIOrder": 0,
           "properties": {
             "category": {
@@ -276,16 +276,16 @@
     "properties": {
       "objects": {
         "description": "A list of keypoint objects, a keypoint object includes all the pre-defined keypoints of a detected object.",
-        "instillFormat": "array:structured/keypoint_object",
+        "instillFormat": "array:structured/keypoint-object",
         "instillUIOrder": 0,
         "items": {
-          "instillFormat": "structured/keypoint_object",
+          "instillFormat": "structured/keypoint-object",
           "instillUIOrder": 0,
           "properties": {
-            "bounding_box": {
+            "boundingBox": {
               "additionalProperties": false,
               "description": "The detected bounding box in (left, top, width, height) format.",
-              "instillFormat": "structured/bounding_box",
+              "instillFormat": "structured/bounding-box",
               "instillUIOrder": 2,
               "properties": {
                 "height": {
@@ -384,7 +384,7 @@
           "required": [
             "keypoints",
             "score",
-            "bounding_box"
+            "boundingBox"
           ],
           "title": "Object",
           "type": "object"
@@ -406,19 +406,19 @@
     "properties": {
       "objects": {
         "description": "A list of detected instance bounding boxes.",
-        "instillFormat": "array:structured/instance_segmentation_object",
+        "instillFormat": "array:structured/instance-segmentation-object",
         "instillUIOrder": 0,
         "items": {
           "instillEditOnNodeFields": [
             "rle",
-            "bounding_box",
+            "boundingBox",
             "category",
             "score"
           ],
-          "instillFormat": "structured/instance_segmentation_object",
+          "instillFormat": "structured/instance-segmentation-object",
           "instillUIOrder": 0,
           "properties": {
-            "bounding_box": {
+            "boundingBox": {
               "additionalProperties": false,
               "description": "The detected bounding box in (left, top, width, height) format.",
               "instillEditOnNodeFields": [
@@ -427,7 +427,7 @@
                 "width",
                 "height"
               ],
-              "instillFormat": "structured/bounding_box",
+              "instillFormat": "structured/bounding-box",
               "instillUIOrder": 1,
               "properties": {
                 "height": {
@@ -499,7 +499,7 @@
           },
           "required": [
             "rle",
-            "bounding_box",
+            "boundingBox",
             "category",
             "score"
           ],

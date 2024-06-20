@@ -4,7 +4,7 @@
     "title": "Classification",
     "instillShortDescription": "Classify images into predefined categories.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -16,7 +16,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -25,7 +25,7 @@
     "title": "Detection",
     "instillShortDescription": "Detect and localize multiple objects in images.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -37,7 +37,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -46,7 +46,7 @@
     "title": "Ocr",
     "instillShortDescription": "Detect and recognize text in images.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -58,7 +58,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -67,7 +67,7 @@
     "title": "Semantic Segmentation",
     "instillShortDescription": "Classify image pixels into predefined categories.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -79,7 +79,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -88,7 +88,7 @@
     "title": "Keypoint",
     "instillShortDescription": "Detect and localize multiple keypoints of objects in images.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -100,7 +100,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -109,7 +109,7 @@
     "title": "Instance Segmentation",
     "instillShortDescription": "Detect, localize and delineate multiple objects in images.",
     "properties": {
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillUIOrder": 0,
@@ -121,7 +121,7 @@
       }
     },
     "required": [
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -130,7 +130,7 @@
     "title": "Text To Image",
     "instillShortDescription": "Generate images from input text prompts.",
     "properties": {
-      "cfg_scale": {
+      "cfgScale": {
         "type": "number",
         "description": "The guidance scale, default is 7.5",
         "instillAcceptFormats": [
@@ -142,7 +142,7 @@
         "instillUIOrder": 2,
         "title": "CFG Scale"
       },
-      "extra_params": {
+      "extraParams": {
         "type": "string",
         "description": "Extra Parameters",
         "instillAcceptFormats": [
@@ -207,7 +207,7 @@
     "title": "Image To Image",
     "instillShortDescription": "Generate image from input text prompt and image.",
     "properties": {
-      "cfg_scale": {
+      "cfgScale": {
         "type": "number",
         "description": "The guidance scale, default is 7.5",
         "instillAcceptFormats": [
@@ -219,7 +219,7 @@
         "instillUIOrder": 3,
         "title": "CFG Scale"
       },
-      "extra_params": {
+      "extraParams": {
         "type": "string",
         "description": "Extra Parameters",
         "instillAcceptFormats": [
@@ -229,7 +229,7 @@
         "instillUIOrder": 6,
         "title": "Extra Parameters"
       },
-      "image_base64": {
+      "imageBase64": {
         "description": "Image base64",
         "instillShortDescription": "Image base64",
         "instillAcceptFormats": [
@@ -272,7 +272,7 @@
         "instillUIOrder": 4,
         "title": "Seed"
       },
-      "top_k": {
+      "topK": {
         "type": "integer",
         "description": "Top k for sampling",
         "instillAcceptFormats": [
@@ -286,7 +286,7 @@
     },
     "required": [
       "prompt",
-      "image_base64"
+      "imageBase64"
     ],
     "type": "object"
   },
@@ -295,7 +295,7 @@
     "title": "Text Generation",
     "instillShortDescription": "Generate texts from input text prompts.",
     "properties": {
-      "extra_params": {
+      "extraParams": {
         "type": "string",
         "description": "Extra Parameters",
         "instillAcceptFormats": [
@@ -305,7 +305,7 @@
         "instillUIOrder": 8,
         "title": "Extra Parameters"
       },
-      "max_new_tokens": {
+      "maxNewTokens": {
         "type": "integer",
         "default": 50,
         "description": "The maximum number of tokens for model to generate",
@@ -327,7 +327,7 @@
         "instillUIOrder": 1,
         "title": "Prompt"
       },
-      "prompt_images": {
+      "promptImages": {
         "description": "The prompt images",
         "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
@@ -348,7 +348,7 @@
         "instillUIOrder": 6,
         "title": "Seed"
       },
-      "system_message": {
+      "systemMessage": {
         "instillUIMultiline": true,
         "type": "string",
         "description": "The system message helps set the behavior of the assistant. For example, you can modify the personality of the assistant or provide specific instructions about how it should behave throughout the conversation. By default, the model’s behavior is using a generic message as \"You are a helpful assistant.\"",
@@ -371,7 +371,7 @@
         "instillUIOrder": 5,
         "title": "Temperature"
       },
-      "top_k": {
+      "topK": {
         "type": "integer",
         "description": "Top k for sampling",
         "instillAcceptFormats": [
@@ -393,7 +393,7 @@
     "title": "Text Generation Chat",
     "instillShortDescription": "Generate texts from input text prompts and chat history.",
     "properties": {
-      "extra_params": {
+      "extraParams": {
         "type": "string",
         "description": "Extra Parameters",
         "instillAcceptFormats": [
@@ -403,7 +403,7 @@
         "instillUIOrder": 8,
         "title": "Extra Parameters"
       },
-      "max_new_tokens": {
+      "maxNewTokens": {
         "type": "integer",
         "default": 50,
         "description": "The maximum number of tokens for model to generate",
@@ -425,7 +425,7 @@
         "instillUIOrder": 1,
         "title": "Prompt"
       },
-      "prompt_images": {
+      "promptImages": {
         "description": "The prompt images",
         "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
@@ -446,7 +446,7 @@
         "instillUIOrder": 6,
         "title": "Seed"
       },
-      "system_message": {
+      "systemMessage": {
         "instillUIMultiline": true,
         "type": "string",
         "description": "The system message helps set the behavior of the assistant. For example, you can modify the personality of the assistant or provide specific instructions about how it should behave throughout the conversation. By default, the model’s behavior is using a generic message as \"You are a helpful assistant.\"",
@@ -469,7 +469,7 @@
         "instillUIOrder": 5,
         "title": "Temperature"
       },
-      "top_k": {
+      "topK": {
         "type": "integer",
         "description": "Top k for sampling",
         "instillAcceptFormats": [
@@ -491,7 +491,7 @@
     "title": "Visual Question Answering",
     "instillShortDescription": "Answer questions based on a prompt and an image.",
     "properties": {
-      "extra_params": {
+      "extraParams": {
         "type": "string",
         "description": "Extra Parameters",
         "instillAcceptFormats": [
@@ -501,7 +501,7 @@
         "instillUIOrder": 8,
         "title": "Extra Parameters"
       },
-      "max_new_tokens": {
+      "maxNewTokens": {
         "type": "integer",
         "default": 50,
         "description": "The maximum number of tokens for model to generate",
@@ -523,7 +523,7 @@
         "instillUIOrder": 1,
         "title": "Prompt"
       },
-      "prompt_images": {
+      "promptImages": {
         "description": "The prompt images",
         "instillModelPromptImageBase64ObjectFormat": true,
         "instillAcceptFormats": [
@@ -544,7 +544,7 @@
         "instillUIOrder": 6,
         "title": "Seed"
       },
-      "system_message": {
+      "systemMessage": {
         "instillUIMultiline": true,
         "type": "string",
         "description": "The system message helps set the behavior of the assistant. For example, you can modify the personality of the assistant or provide specific instructions about how it should behave throughout the conversation. By default, the model’s behavior is using a generic message as \"You are a helpful assistant.\"",
@@ -567,7 +567,7 @@
         "instillUIOrder": 5,
         "title": "Temperature"
       },
-      "top_k": {
+      "topK": {
         "type": "integer",
         "description": "Top k for sampling",
         "instillAcceptFormats": [
@@ -581,7 +581,7 @@
     },
     "required": [
       "prompt",
-      "prompt_images"
+      "promptImages"
     ],
     "type": "object"
   }
