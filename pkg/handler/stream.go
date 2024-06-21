@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -244,24 +243,8 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPub
 		ModelTask:          pbModel.Task,
 	}
 
-	modelPrediction := &datamodel.ModelPrediction{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
-			UID: logUUID,
-		},
-		OwnerUID:           ns.NsUID,
-		OwnerType:          datamodel.UserType(usageData.OwnerType),
-		UserUID:            uuid.FromStringOrNil(userUID),
-		UserType:           datamodel.UserType(usageData.UserType),
-		Mode:               datamodel.Mode(usageData.Mode),
-		ModelDefinitionUID: modelDef.UID,
-		TriggerTime:        startTime,
-		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
-		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersion:       version.Version,
-	}
-
 	// write usage/metric datapoint and prediction record
-	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		// TODO: prediction feature not ready
 		// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
 		// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
@@ -271,7 +254,7 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPub
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
 		}
-	}(modelPrediction, usageData, startTime)
+	}(usageData, startTime)
 
 	// check whether model support batching or not. If not, raise an error
 	numberOfInferences := 1
@@ -289,13 +272,11 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPub
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -304,7 +285,6 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPub
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -334,18 +314,10 @@ func (h *PublicHandler) TriggerUserModelBinaryFileUpload(stream modelpb.ModelPub
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return st.Err()
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-
-	jsonOutput, err := json.Marshal(response)
-	if err != nil {
-		logger.Warn("json marshal error for task inputs")
-	}
-	modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_COMPLETED)
-	modelPrediction.Output = jsonOutput
 
 	err = stream.SendAndClose(&modelpb.TriggerUserModelBinaryFileUploadResponse{
 		Task:        pbModel.Task,

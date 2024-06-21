@@ -97,24 +97,6 @@ type ModelVersion struct {
 	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`
 }
 
-type ModelPrediction struct {
-	BaseStaticHardDelete
-	OwnerUID            uuid.UUID      `json:"owner_uid,omitempty"`
-	OwnerType           UserType       `json:"owner_type,omitempty"`
-	UserUID             uuid.UUID      `json:"user_uid,omitempty"`
-	UserType            UserType       `json:"user_type,omitempty"`
-	Mode                Mode           `json:"mode,omitempty"`
-	ModelDefinitionUID  uuid.UUID      `json:"model_definition_uid,omitempty"`
-	TriggerTime         time.Time      `json:"trigger_time,omitempty"`
-	ComputeTimeDuration float64        `json:"compute_time_duration,omitempty"`
-	ModelTask           ModelTask      `json:"model_task,omitempty"`
-	Status              Status         `json:"status,omitempty"`
-	Input               datatypes.JSON `json:"input,omitempty"`
-	Output              datatypes.JSON `json:"output,omitempty"`
-	ModelUID            uuid.UUID      `json:"model_uid,omitempty"`
-	ModelVersion        string         `json:"model_version,omitempty"`
-}
-
 type ModelTag struct {
 	ModelUID   string
 	TagName    string
