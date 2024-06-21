@@ -77,8 +77,6 @@ type Service interface {
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelpb.View, pageSize int32, pageToken string) ([]*modelpb.ModelDefinition, int32, string, error)
 
-	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
-
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error)
 
@@ -943,8 +941,4 @@ func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamode
 
 func (s *service) DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error {
 	return s.repository.DeleteModelVersionByID(ctx, modelUID, versionID)
-}
-
-func (s *service) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
-	return s.repository.CreateModelPrediction(ctx, prediction)
 }

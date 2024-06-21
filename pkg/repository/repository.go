@@ -57,8 +57,6 @@ type Repository interface {
 	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
 	ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 
-	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
-
 	CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
 	DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.ModelTag, error)
@@ -382,18 +380,6 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 
 	if result.RowsAffected == 0 {
 		return ErrNoDataDeleted
-	}
-
-	return nil
-}
-
-func (r *repository) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
-
-	r.pinUser(ctx, "model_prediction")
-	db := r.checkPinnedUser(ctx, r.db, "model_prediction")
-
-	if result := db.Model(&datamodel.ModelPrediction{}).Create(&prediction); result.Error != nil {
-		return result.Error
 	}
 
 	return nil
