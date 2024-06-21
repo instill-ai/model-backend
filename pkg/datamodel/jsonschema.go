@@ -20,15 +20,6 @@ var ModelDefJSONSchema *jsonschema.Schema
 // ModelJSONSchema represents the Model JSON Schema for validating the payload
 var ModelJSONSchema *jsonschema.Schema
 
-// ModelCardJSONSchema represents the Model Instance Card JSON Schema for validating the payload
-var ModelCardJSONSchema *jsonschema.Schema
-
-// GCSUserAccountJSONSchema represents the GCS User Account JSON Schema for validating the payload
-var GCSUserAccountJSONSchema *jsonschema.Schema
-
-// GCSServiceAccountJSONSchema represents the GCS Service Account JSON Schema for validating the payload
-var GCSServiceAccountJSONSchema *jsonschema.Schema
-
 var RegionHardwareJSON RegionHardware
 
 var TaskInputJSON map[string]any
@@ -91,38 +82,6 @@ func InitJSONSchema(ctx context.Context) {
 		}
 	}
 
-	if r, err := os.Open("config/model/model_spec.json"); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_spec.json", r); err != nil {
-			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-		}
-	}
-
-	if r, err := os.Open("config/model/model_card.json"); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_card.json", r); err != nil {
-			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-		}
-	}
-
-	if r, err := os.Open("config/credential/gcs_user_account.json"); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/credential/gcs_user_account.json", r); err != nil {
-			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-		}
-	}
-
-	if r, err := os.Open("config/credential/gcs_service_account.json"); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/credential/gcs_service_account.json", r); err != nil {
-			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-		}
-	}
-
 	var err error
 	ModelDefJSONSchema, err = compiler.Compile("config/model/model_definition.json")
 	if err != nil {
@@ -133,26 +92,12 @@ func InitJSONSchema(ctx context.Context) {
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
+
 	modelJSONFile, err := os.ReadFile("config/model/model.json")
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 	if err := json.Unmarshal(modelJSONFile, &RegionHardwareJSON); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	}
-
-	ModelCardJSONSchema, err = compiler.Compile("config/model/model_card.json")
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	}
-
-	GCSUserAccountJSONSchema, err = compiler.Compile("config/credential/gcs_user_account.json")
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
-	}
-
-	GCSServiceAccountJSONSchema, err = compiler.Compile("config/credential/gcs_service_account.json")
-	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
