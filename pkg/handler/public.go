@@ -311,7 +311,7 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 	return pbModels, nextPageToken, totalSize, nil
 }
 
-type ListNamespaceModelVersionRequestInterface interface {
+type ListNamespaceModelVersionsRequestInterface interface {
 	GetPage() int32
 	GetPageSize() int32
 	GetName() string
@@ -331,7 +331,7 @@ func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *
 	return resp, err
 }
 
-func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req ListNamespaceModelVersionRequestInterface) (versions []*modelpb.ModelVersion, totalSize int32, pageSize int32, page int32, err error) {
+func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req ListNamespaceModelVersionsRequestInterface) (versions []*modelpb.ModelVersion, totalSize int32, pageSize int32, page int32, err error) {
 
 	eventName := "ListNamespaceModelVersions"
 
@@ -369,6 +369,63 @@ func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req List
 	)))
 
 	return pbModelVersions, totalSize, pageSize, page, nil
+}
+
+type DeleteNamespaceModelVersionRequestInterface interface {
+	GetName() string
+	GetVersion() string
+}
+
+func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb.DeleteUserModelVersionRequest) (resp *modelpb.DeleteUserModelVersionResponse, err error) {
+	resp = &modelpb.DeleteUserModelVersionResponse{}
+	err = h.deleteNamespaceModelVersion(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req *modelpb.DeleteOrganizationModelVersionRequest) (resp *modelpb.DeleteOrganizationModelVersionResponse, err error) {
+	resp = &modelpb.DeleteOrganizationModelVersionResponse{}
+	err = h.deleteNamespaceModelVersion(ctx, req)
+
+	return resp, err
+}
+
+func (h *PublicHandler) deleteNamespaceModelVersion(ctx context.Context, req DeleteNamespaceModelVersionRequestInterface) error {
+	eventName := "DeleteNamespaceModelVersion"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return err
+	}
+
+	if err := authenticateUser(ctx, false); err != nil {
+		span.SetStatus(1, err.Error())
+		return err
+	}
+
+	if err := h.service.DeleteModelVersionByID(ctx, ns, modelID, req.GetVersion()); err != nil {
+		span.SetStatus(1, err.Error())
+		return err
+	}
+
+	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
+		span,
+		logUUID.String(),
+		eventName,
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+	)))
+
+	return nil
 }
 
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelpb.LookUpModelRequest) (*modelpb.LookUpModelResponse, error) {

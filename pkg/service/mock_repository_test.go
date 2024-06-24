@@ -95,6 +95,20 @@ func (mr *MockRepositoryMockRecorder) DeleteModelTag(arg0, arg1, arg2 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelTag", reflect.TypeOf((*MockRepository)(nil).DeleteModelTag), arg0, arg1, arg2)
 }
 
+// DeleteModelVersionByDigest mocks base method.
+func (m *MockRepository) DeleteModelVersionByDigest(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteModelVersionByDigest", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteModelVersionByDigest indicates an expected call of DeleteModelVersionByDigest.
+func (mr *MockRepositoryMockRecorder) DeleteModelVersionByDigest(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersionByDigest", reflect.TypeOf((*MockRepository)(nil).DeleteModelVersionByDigest), arg0, arg1, arg2)
+}
+
 // DeleteModelVersionByID mocks base method.
 func (m *MockRepository) DeleteModelVersionByID(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
 	m.ctrl.T.Helper()
@@ -275,6 +289,21 @@ func (mr *MockRepositoryMockRecorder) ListModelVersions(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockRepository)(nil).ListModelVersions), arg0, arg1)
 }
 
+// ListModelVersionsByDigest mocks base method.
+func (m *MockRepository) ListModelVersionsByDigest(arg0 context.Context, arg1 uuid.UUID, arg2 string) ([]*datamodel.ModelVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModelVersionsByDigest", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]*datamodel.ModelVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModelVersionsByDigest indicates an expected call of ListModelVersionsByDigest.
+func (mr *MockRepositoryMockRecorder) ListModelVersionsByDigest(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersionsByDigest", reflect.TypeOf((*MockRepository)(nil).ListModelVersionsByDigest), arg0, arg1, arg2)
+}
+
 // ListModels mocks base method.
 func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 filtering.Filter, arg5 []uuid.UUID, arg6 bool, arg7 ordering.OrderBy) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
@@ -324,6 +353,20 @@ func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, 
 func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+}
+
+// UpdateModelVersionDigestByID mocks base method.
+func (m *MockRepository) UpdateModelVersionDigestByID(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateModelVersionDigestByID", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateModelVersionDigestByID indicates an expected call of UpdateModelVersionDigestByID.
+func (mr *MockRepositoryMockRecorder) UpdateModelVersionDigestByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersionDigestByID", reflect.TypeOf((*MockRepository)(nil).UpdateModelVersionDigestByID), arg0, arg1, arg2, arg3)
 }
 
 // UpdateNamespaceModelByID mocks base method.

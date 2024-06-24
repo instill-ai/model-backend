@@ -106,8 +106,10 @@ func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req Depl
 		ModelUID: uuid.FromStringOrNil(pbModel.Uid),
 	}
 
-	if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
-		return err
+	if _, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), version.Version); err != nil {
+		if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
+			return err
+		}
 	}
 
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), true); err != nil {
@@ -161,13 +163,6 @@ func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req Un
 		return err
 	}
 
-	version := &datamodel.ModelVersion{
-		Name:     req.GetName(),
-		Version:  req.GetVersion(),
-		Digest:   req.GetDigest(),
-		ModelUID: uuid.FromStringOrNil(pbModel.Uid),
-	}
-
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), false); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
@@ -184,8 +179,5 @@ func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req Un
 		return st.Err()
 	}
 
-	if err := h.service.DeleteModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), version.Version); err != nil {
-		return err
-	}
 	return nil
 }
