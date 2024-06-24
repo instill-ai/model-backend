@@ -39,20 +39,6 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
-// CreateModelPrediction mocks base method.
-func (m *MockRepository) CreateModelPrediction(arg0 context.Context, arg1 *datamodel.ModelPrediction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModelPrediction", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateModelPrediction indicates an expected call of CreateModelPrediction.
-func (mr *MockRepositoryMockRecorder) CreateModelPrediction(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelPrediction", reflect.TypeOf((*MockRepository)(nil).CreateModelPrediction), arg0, arg1)
-}
-
 // CreateModelTag mocks base method.
 func (m *MockRepository) CreateModelTag(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
 	m.ctrl.T.Helper()

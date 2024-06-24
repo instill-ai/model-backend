@@ -77,8 +77,6 @@ type Service interface {
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error)
 	ListModelDefinitions(ctx context.Context, view modelpb.View, pageSize int32, pageToken string) ([]*modelpb.ModelDefinition, int32, string, error)
 
-	CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error
-
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
 	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error)
 
@@ -526,14 +524,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, ErrNoPermission
 	}
 
-	inputKey := fmt.Sprintf("model_trigger_input:%s", triggerUID)
-	s.redisClient.Set(
-		ctx,
-		inputKey,
-		inferInput,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
-
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
@@ -568,7 +558,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			InputKey:           inputKey,
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 		})
@@ -943,8 +932,4 @@ func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamode
 
 func (s *service) DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error {
 	return s.repository.DeleteModelVersionByID(ctx, modelUID, versionID)
-}
-
-func (s *service) CreateModelPrediction(ctx context.Context, prediction *datamodel.ModelPrediction) error {
-	return s.repository.CreateModelPrediction(ctx, prediction)
 }

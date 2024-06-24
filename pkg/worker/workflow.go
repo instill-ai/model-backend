@@ -41,7 +41,6 @@ type TriggerModelWorkflowRequest struct {
 	UserType           string
 	ModelDefinitionUID uuid.UUID
 	Task               commonpb.Task
-	InputKey           string
 	ParsedInputKey     string
 	Mode               mgmtpb.Mode
 }
@@ -85,12 +84,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 
 	var usageData *utils.UsageMetricData
-	var modelPrediction *datamodel.ModelPrediction
 	if param.Mode == mgmtpb.Mode_MODE_ASYNC {
-		inputBlob, err := w.redisClient.Get(sCtx, param.InputKey).Bytes()
-		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
-		}
 		usageData = &utils.UsageMetricData{
 			TriggerUID:         param.TriggerUID.String(),
 			OwnerUID:           param.OwnerUID.String(),
@@ -103,23 +97,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 			ModelDefinitionUID: param.ModelDefinitionUID.String(),
 			ModelTask:          param.Task,
 			TriggerTime:        startTime.Format(time.RFC3339Nano),
-		}
-		modelPrediction = &datamodel.ModelPrediction{
-			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
-				UID: param.TriggerUID,
-			},
-			OwnerUID:            param.OwnerUID,
-			OwnerType:           datamodel.UserType(usageData.OwnerType),
-			UserUID:             param.UserUID,
-			UserType:            datamodel.UserType(usageData.UserType),
-			Mode:                datamodel.Mode(usageData.Mode),
-			ModelDefinitionUID:  param.ModelDefinitionUID,
-			TriggerTime:         startTime,
-			ComputeTimeDuration: usageData.ComputeTimeDuration,
-			ModelTask:           datamodel.ModelTask(usageData.ModelTask),
-			ModelUID:            param.ModelUID,
-			ModelVersion:        param.ModelVersion.Version,
-			Input:               inputBlob,
 		}
 	}
 
@@ -149,9 +126,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 		usageData.ComputeTimeDuration = time.Since(startTime).Seconds()
 		usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-		modelPrediction.ComputeTimeDuration = time.Since(startTime).Seconds()
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_COMPLETED)
-		modelPrediction.Output = triggerResult.TaskOutputBytes
 		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
 			logger.Warn(err.Error())
 		}
@@ -193,7 +167,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 	defer func() {
 		w.redisClient.Del(ctx, param.ParsedInputKey)
-		w.redisClient.Del(ctx, param.InputKey)
 		w.redisClient.Expire(
 			ctx,
 			fmt.Sprintf("model_trigger_input:%s:%s", param.UserUID, param.ModelUID.String()),

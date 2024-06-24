@@ -135,11 +135,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	inputJSON, err := json.Marshal(req.GetTaskInputs())
-	if err != nil {
-		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
 	usageData := &utils.UsageMetricData{
@@ -155,25 +150,8 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		ModelTask:          pbModel.Task,
 	}
 
-	modelPrediction := &datamodel.ModelPrediction{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
-			UID: logUUID,
-		},
-		OwnerUID:           ns.NsUID,
-		OwnerType:          datamodel.UserType(usageData.OwnerType),
-		UserUID:            uuid.FromStringOrNil(userUID),
-		UserType:           datamodel.UserType(usageData.UserType),
-		Mode:               datamodel.Mode(usageData.Mode),
-		ModelDefinitionUID: modelDef.UID,
-		TriggerTime:        startTime,
-		ModelTask:          datamodel.ModelTask(usageData.ModelTask),
-		ModelUID:           uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersion:       version.Version,
-		Input:              inputJSON,
-	}
-
 	// write usage/metric datapoint and prediction record
-	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		// TODO: prediction feature not ready
 		// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
 		// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
@@ -183,7 +161,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
 		}
-	}(modelPrediction, usageData, startTime)
+	}(usageData, startTime)
 
 	var parsedInput any
 	var lenInputs = 1
@@ -199,7 +177,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
@@ -209,7 +186,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -219,7 +195,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -229,7 +204,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		parsedInput = visualQuestionAnswering
@@ -238,7 +212,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -248,7 +221,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -260,13 +232,11 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -274,7 +244,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	parsedInputJSON, err := json.Marshal(parsedInput)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -304,18 +273,10 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return commonpb.Task_TASK_UNSPECIFIED, nil, st.Err()
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-
-	jsonOutput, err := json.Marshal(response)
-	if err != nil {
-		logger.Warn("json marshal error for task inputs")
-	}
-	modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_COMPLETED)
-	modelPrediction.Output = jsonOutput
 
 	logger.Info(string(custom_otel.NewLogMessage(
 		ctx,
@@ -438,7 +399,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
-	// TODO: temporary solution to store input json
+	// TODO: temporary solution to store input json for latest operation
 	inputRequestJSON, err := protojson.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -463,26 +424,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ModelTask:          pbModel.Task,
 	}
 
-	modelPrediction := &datamodel.ModelPrediction{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{
-			UID: logUUID,
-		},
-		OwnerUID:            ns.NsUID,
-		OwnerType:           datamodel.UserType(usageData.OwnerType),
-		UserUID:             uuid.FromStringOrNil(userUID),
-		UserType:            datamodel.UserType(usageData.UserType),
-		Mode:                datamodel.Mode(usageData.Mode),
-		ModelDefinitionUID:  modelDef.UID,
-		TriggerTime:         startTime,
-		ComputeTimeDuration: usageData.ComputeTimeDuration,
-		ModelTask:           datamodel.ModelTask(usageData.ModelTask),
-		ModelUID:            uuid.FromStringOrNil(pbModel.GetUid()),
-		ModelVersion:        version.Version,
-		Input:               inputJSON,
-	}
-
 	// write usage/metric datapoint and prediction record
-	defer func(_ *datamodel.ModelPrediction, u *utils.UsageMetricData, startTime time.Time) {
+	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
 			// TODO: prediction feature not ready
 			// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
@@ -494,7 +437,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 				logger.Warn("usage/metric write failed")
 			}
 		}
-	}(modelPrediction, usageData, startTime)
+	}(usageData, startTime)
 
 	var parsedInput any
 	var lenInputs = 1
@@ -510,7 +453,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = len(imageInput)
@@ -520,7 +462,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -530,7 +471,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -545,7 +485,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		parsedInput = visualQuestionAnswering
@@ -554,7 +493,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -564,7 +502,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		lenInputs = 1
@@ -576,13 +513,11 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
 	}
@@ -590,7 +525,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	parsedInputJSON, err := json.Marshal(parsedInput)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -599,7 +533,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			modelPrediction.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
 			return nil, err
 		}
 	}
