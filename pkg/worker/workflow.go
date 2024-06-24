@@ -41,7 +41,6 @@ type TriggerModelWorkflowRequest struct {
 	UserType           string
 	ModelDefinitionUID uuid.UUID
 	Task               commonpb.Task
-	InputKey           string
 	ParsedInputKey     string
 	Mode               mgmtpb.Mode
 }
@@ -168,7 +167,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 	defer func() {
 		w.redisClient.Del(ctx, param.ParsedInputKey)
-		w.redisClient.Del(ctx, param.InputKey)
 		w.redisClient.Expire(
 			ctx,
 			fmt.Sprintf("model_trigger_input:%s:%s", param.UserUID, param.ModelUID.String()),

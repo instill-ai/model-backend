@@ -399,7 +399,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
-	// TODO: temporary solution to store input json
+	// TODO: temporary solution to store input json for latest operation
 	inputRequestJSON, err := protojson.Marshal(req)
 	if err != nil {
 		return nil, err

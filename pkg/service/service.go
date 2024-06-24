@@ -524,14 +524,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, ErrNoPermission
 	}
 
-	inputKey := fmt.Sprintf("model_trigger_input:%s", triggerUID)
-	s.redisClient.Set(
-		ctx,
-		inputKey,
-		inferInput,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
-
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
@@ -566,7 +558,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			InputKey:           inputKey,
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 		})
