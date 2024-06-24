@@ -88,7 +88,6 @@ type Service interface {
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) (*datamodel.ModelVersion, error)
-	DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) error
 
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
@@ -812,7 +811,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
 			return err
 		}
-		if err := s.DeleteModelVersionAdmin(ctx, dbModel.UID, version.Version); err != nil {
+		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
 			return err
 		}
 	}
@@ -990,8 +989,4 @@ func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, 
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
-}
-
-func (s *service) DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) error {
-	return s.repository.DeleteModelVersionByID(ctx, modelUID, version)
 }
