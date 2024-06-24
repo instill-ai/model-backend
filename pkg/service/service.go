@@ -658,6 +658,9 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 }
 
 func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error) {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
@@ -693,7 +696,9 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		} else {
 
 			if dbVersion.Digest == "" {
-				s.repository.UpdateModelVersionDigestByID(ctx, dbModel.UID, tag.GetId(), tag.GetDigest())
+				if err := s.repository.UpdateModelVersionDigestByID(ctx, dbModel.UID, tag.GetId(), tag.GetDigest()); err != nil {
+					logger.Warn(fmt.Sprintf("Upsert missing image digest err: %v", err))
+				}
 			}
 
 			state, _, err = s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
