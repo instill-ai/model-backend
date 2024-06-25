@@ -802,7 +802,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNoPermission
 	}
 
-	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID)
+	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID, true)
 	if err != nil {
 		return err
 	}
