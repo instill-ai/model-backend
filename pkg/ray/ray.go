@@ -23,9 +23,10 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 type Ray interface {
@@ -103,10 +104,10 @@ func (r *ray) Init() {
 		}
 		initConfigData, err := yaml.Marshal(&initDeployConfig)
 		if err != nil {
-			fmt.Printf("error while Marshaling deployment config: %v", err)
+			fmt.Printf("error while Marshaling deployment config: %v\n", err)
 		}
 		if err := os.WriteFile(r.configFilePath, initConfigData, 0666); err != nil {
-			fmt.Printf("error creating deployment config: %v", err)
+			fmt.Printf("error creating deployment config: %v\n", err)
 		}
 	}
 

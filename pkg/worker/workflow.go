@@ -7,25 +7,26 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	"github.com/instill-ai/x/errmsg"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/errmsg"
-
-	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 type InferInput any
@@ -231,8 +232,29 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		inferInput = input
 	}
 
+	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
+	start := time.Now()
+
 	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
 	if err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	timeUsedInSec := int(time.Since(start).Seconds())
+	logger.Info("ModelInferRequest ended", zap.Int("timeUsed(sec)", timeUsedInSec))
+
+	// todo: pending detail confirmation
+	const creditPrice = 1
+	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:        param.UserUID,
+		OwnerUID:       param.OwnerUID,
+		ModelUID:       param.ModelUID,
+		OwnerType:      resource.NamespaceType(param.OwnerType),
+		CreditAmount:   1 + timeUsedInSec*creditPrice,
+		ModelVersion:   param.ModelVersion.Version,
+		ModelTriggerID: param.TriggerUID.String(),
+		ModelID:        param.ModelID,
+	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 

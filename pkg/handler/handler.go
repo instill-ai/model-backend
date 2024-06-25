@@ -8,6 +8,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/usage"
 
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -17,15 +18,20 @@ var tracer = otel.Tracer("model-backend.public-handler.tracer")
 
 type PublicHandler struct {
 	modelpb.UnimplementedModelPublicServiceServer
-	service service.Service
-	ray     ray.Ray
+	service           service.Service
+	ray               ray.Ray
+	modelUsageHandler usage.ModelUsageHandler
 }
 
-func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray) modelpb.ModelPublicServiceServer {
+func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray, h usage.ModelUsageHandler) modelpb.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
+	if h == nil {
+		h = usage.NewNoopModelUsageHandler()
+	}
 	return &PublicHandler{
-		service: s,
-		ray:     r,
+		service:           s,
+		ray:               r,
+		modelUsageHandler: h,
 	}
 }
 
