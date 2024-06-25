@@ -22,9 +22,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/x/errmsg"
 	"github.com/instill-ai/x/paginate"
-	"github.com/instill-ai/x/sterr"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -52,10 +50,13 @@ type Repository interface {
 	ListModelsAdmin(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, showDeleted bool) ([]*datamodel.Model, int64, string, error)
 
 	CreateModelVersion(ctx context.Context, ownerPermalink string, version *datamodel.ModelVersion) error
+	UpdateModelVersionDigestByID(ctx context.Context, modelUID uuid.UUID, versionID string, digest string) error
 	GetModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) (version *datamodel.ModelVersion, err error)
 	DeleteModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) error
+	DeleteModelVersionByDigest(ctx context.Context, modelUID uuid.UUID, digest string) error
 	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
-	ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
+	ListModelVersions(ctx context.Context, modelUID uuid.UUID, groupDigest bool) (versions []*datamodel.ModelVersion, err error)
+	ListModelVersionsByDigest(ctx context.Context, modelUID uuid.UUID, digest string) (versions []*datamodel.ModelVersion, err error)
 
 	CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
 	DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
@@ -191,7 +192,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 	result := queryBuilder.Preload("Tags").Find(&models)
 	if result.Error != nil {
-		logger.Error(err.Error())
+		logger.Error(result.Error.Error())
 		return nil, 0, "", result.Error
 	}
 
@@ -267,8 +268,6 @@ func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageTo
 
 func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	db := r.checkPinnedUser(ctx, r.db, "model")
 
 	var model datamodel.Model
@@ -279,22 +278,11 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 		queryBuilder.Omit("configuration")
 	}
 	if !includeAvatar {
-		queryBuilder.Omit("configuration")
+		queryBuilder.Omit("profile_image")
 	}
 
 	if result := queryBuilder.First(&model); result.Error != nil {
-		st, err := sterr.CreateErrorResourceInfo(
-			codes.NotFound,
-			fmt.Sprintf("[db] getNamespaceModel error: %s", result.Error.Error()),
-			"model",
-			"",
-			"",
-			result.Error.Error(),
-		)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		return nil, st.Err()
+		return nil, result.Error
 	}
 	return &model, nil
 }
@@ -397,6 +385,22 @@ func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink stri
 	return nil
 }
 
+func (r *repository) UpdateModelVersionDigestByID(ctx context.Context, modelUID uuid.UUID, versionID string, digest string) error {
+
+	r.pinUser(ctx, "model_version")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
+
+	if result := db.Model(&datamodel.ModelVersion{}).
+		Where("(version = ? AND model_uid = ?)", versionID, modelUID).
+		Update("digest", digest); result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return ErrNoDataUpdated
+	}
+
+	return nil
+}
+
 func (r *repository) DeleteModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) error {
 
 	r.pinUser(ctx, "model_version")
@@ -417,21 +421,33 @@ func (r *repository) DeleteModelVersionByID(ctx context.Context, modelUID uuid.U
 	return nil
 }
 
+func (r *repository) DeleteModelVersionByDigest(ctx context.Context, modelUID uuid.UUID, digest string) error {
+
+	r.pinUser(ctx, "model_version")
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
+
+	result := db.Model(&datamodel.ModelVersion{}).
+		Where("(digest = ? AND model_uid = ?)", digest, modelUID).
+		Delete(&datamodel.ModelVersion{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrNoDataDeleted
+	}
+
+	return nil
+}
+
 func (r *repository) GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error) {
 	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(model_uid = ?)", modelUID)
 
 	if result := queryBuilder.Order("update_time DESC").First(&version); result.Error != nil {
-		st, _ := sterr.CreateErrorResourceInfo(
-			codes.NotFound,
-			fmt.Sprintf("[db] GetModelVersionByName error: %s", result.Error.Error()),
-			"model",
-			"",
-			"",
-			result.Error.Error(),
-		)
-		return nil, st.Err()
+		return nil, result.Error
 	}
 	return version, nil
 }
@@ -442,23 +458,30 @@ func (r *repository) GetModelVersionByID(ctx context.Context, modelUID uuid.UUID
 	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("(version = ? AND model_uid = ?)", versionID, modelUID)
 
 	if result := queryBuilder.First(&version); result.Error != nil {
-		st, _ := sterr.CreateErrorResourceInfo(
-			codes.NotFound,
-			fmt.Sprintf("[db] GetModelVersionByName error: %s", result.Error.Error()),
-			"model",
-			"",
-			"",
-			result.Error.Error(),
-		)
-		return nil, st.Err()
+		return nil, result.Error
 	}
 	return version, nil
 }
 
-func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
+func (r *repository) ListModelVersionsByDigest(ctx context.Context, modelUID uuid.UUID, digest string) (versions []*datamodel.ModelVersion, err error) {
 	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
-	if result := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID).Find(&versions); result.Error != nil {
+	if result := db.Model(&datamodel.ModelVersion{}).Where("(digest = ? AND model_uid = ?)", digest, modelUID).Find(&versions); result.Error != nil {
+		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v with digest %s not found", modelUID, digest)
+	}
+	return versions, nil
+}
+
+func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID, groupDigest bool) (versions []*datamodel.ModelVersion, err error) {
+	db := r.checkPinnedUser(ctx, r.db, "model_version")
+
+	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID)
+
+	if groupDigest {
+		queryBuilder.Select("MIN(version) as version, model_uid, digest").Group("model_uid, digest")
+	}
+
+	if result := queryBuilder.Find(&versions); result.Error != nil {
 		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v not found", modelUID)
 	}
 	return versions, nil
@@ -480,9 +503,7 @@ func (r *repository) CreateModelTag(ctx context.Context, modelUID uuid.UUID, tag
 		var pgErr *pgconn.PgError
 
 		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-
-			return errmsg.AddMessage(ErrNameExists, "Tag already exists")
-
+			return ErrNameExists
 		}
 
 		return result.Error

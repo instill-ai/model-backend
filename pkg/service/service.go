@@ -68,6 +68,7 @@ type Service interface {
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelpb.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelpb.Model) (*modelpb.Model, error)
 	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error)
+	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
@@ -86,8 +87,7 @@ type Service interface {
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, filter filtering.Filter, showDeleted bool) ([]*modelpb.Model, int32, string, error)
 	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
-	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error)
-	DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error
+	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) (*datamodel.ModelVersion, error)
 
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
@@ -657,6 +657,9 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 }
 
 func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error) {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
@@ -681,29 +684,87 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 
 	tags := resp.GetTags()
 
-	versions := make([]*modelpb.ModelVersion, len(tags))
+	versions := []*modelpb.ModelVersion{}
 
-	for i, tag := range tags {
+	for _, tag := range tags {
 		var state *modelpb.State
+		var updateTime time.Time
 		dbVersion, err := s.GetModelVersionAdmin(ctx, dbModel.UID, tag.GetId())
 		if err != nil {
-			state = modelpb.State_STATE_ERROR.Enum()
+			continue
 		} else {
+
+			if dbVersion.Digest == "" {
+				if err := s.repository.UpdateModelVersionDigestByID(ctx, dbModel.UID, tag.GetId(), tag.GetDigest()); err != nil {
+					logger.Warn(fmt.Sprintf("Upsert missing image digest err: %v", err))
+				}
+			}
+
 			state, _, err = s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), modelID), tag.GetId())
 			if err != nil {
 				state = modelpb.State_STATE_ERROR.Enum()
 			}
+			updateTime = dbVersion.UpdateTime
 		}
-		versions[i] = &modelpb.ModelVersion{
+		versions = append(versions, &modelpb.ModelVersion{
 			Name:       fmt.Sprintf("%s/models/%s/versions/%s", ns.Name(), modelID, tag.GetId()),
 			Version:    tag.GetId(),
 			Digest:     tag.GetDigest(),
 			State:      *state,
-			UpdateTime: timestamppb.New(dbVersion.UpdateTime),
-		}
+			UpdateTime: timestamppb.New(updateTime),
+		})
 	}
 
 	return versions, resp.GetTotalSize(), resp.GetPageSize(), resp.GetPage(), nil
+}
+
+func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+		return err
+	} else if !granted {
+		return ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
+		return err
+	} else if !granted {
+		return ErrNoPermission
+	}
+
+	dbVersion, err := s.repository.GetModelVersionByID(ctx, dbModel.UID, version)
+	if err != nil {
+		return err
+	}
+
+	dbVersions, err := s.repository.ListModelVersionsByDigest(ctx, dbModel.UID, dbVersion.Digest)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
+		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version),
+	}); err != nil {
+		return err
+	}
+
+	if err := s.repository.DeleteModelVersionByDigest(ctx, dbModel.UID, dbVersion.Digest); err != nil {
+		return err
+	}
+
+	for _, v := range dbVersions {
+		if err := s.UpdateModelInstanceAdmin(ctx, ns, modelID, dbModel.Hardware, v.Version, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *service) ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, filter filtering.Filter, showDeleted bool) ([]*modelpb.Model, int32, string, error) {
@@ -741,7 +802,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNoPermission
 	}
 
-	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID)
+	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID, true)
 	if err != nil {
 		return err
 	}
@@ -750,7 +811,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
 			return err
 		}
-		if err := s.DeleteModelVersionAdmin(ctx, dbModel.UID, version.Version); err != nil {
+		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
 			return err
 		}
 	}
@@ -922,14 +983,10 @@ func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Name
 	return nil
 }
 
-func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) (*datamodel.ModelVersion, error) {
-	return s.repository.GetModelVersionByID(ctx, modelUID, versionID)
+func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) (*datamodel.ModelVersion, error) {
+	return s.repository.GetModelVersionByID(ctx, modelUID, version)
 }
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
-}
-
-func (s *service) DeleteModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, versionID string) error {
-	return s.repository.DeleteModelVersionByID(ctx, modelUID, versionID)
 }

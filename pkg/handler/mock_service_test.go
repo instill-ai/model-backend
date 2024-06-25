@@ -180,18 +180,18 @@ func (mr *MockServiceMockRecorder) DBToPBModels(arg0, arg1, arg2, arg3 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DBToPBModels", reflect.TypeOf((*MockService)(nil).DBToPBModels), arg0, arg1, arg2, arg3)
 }
 
-// DeleteModelVersionAdmin mocks base method.
-func (m *MockService) DeleteModelVersionAdmin(arg0 context.Context, arg1 uuid.UUID, arg2 string) error {
+// DeleteModelVersionByID mocks base method.
+func (m *MockService) DeleteModelVersionByID(arg0 context.Context, arg1 resource.Namespace, arg2, arg3 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteModelVersionAdmin", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DeleteModelVersionByID", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteModelVersionAdmin indicates an expected call of DeleteModelVersionAdmin.
-func (mr *MockServiceMockRecorder) DeleteModelVersionAdmin(arg0, arg1, arg2 interface{}) *gomock.Call {
+// DeleteModelVersionByID indicates an expected call of DeleteModelVersionByID.
+func (mr *MockServiceMockRecorder) DeleteModelVersionByID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersionAdmin", reflect.TypeOf((*MockService)(nil).DeleteModelVersionAdmin), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersionByID", reflect.TypeOf((*MockService)(nil).DeleteModelVersionByID), arg0, arg1, arg2, arg3)
 }
 
 // DeleteNamespaceModelByID mocks base method.
