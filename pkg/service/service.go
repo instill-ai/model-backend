@@ -148,6 +148,11 @@ func (s *service) GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient 
 	return s.mgmtPrivateServiceClient
 }
 
+// GetRayClient returns the ray client
+func (s *service) GetRayClient() ray.Ray {
+	return s.ray
+}
+
 func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
 	if strings.HasPrefix(name, "users") {
 		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtpb.GetUserAdminRequest{Name: name})
