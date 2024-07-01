@@ -47,6 +47,7 @@ type Service interface {
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
 	GetACLClient() *acl.ACLClient
+	GetRayClient() ray.Ray
 	GetRscNamespaceAndNameID(path string) (resource.Namespace, string, error)
 	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
