@@ -52,8 +52,8 @@ jobs:
 
       - name: Build test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: instill-build -t latest
+        run: instill build instill/${{ matrix.model }}
 
       - name: Push test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: instill-push -t latest -u docker.io
+        run: instill push instill/${{ matrix.model }} -u docker.io
