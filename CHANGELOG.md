@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.26.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.25.1-alpha...v0.26.0-alpha) (2024-07-02)
+
+
+### Features
+
+* **model:** support model version deletion ([#616](https://github.com/instill-ai/model-backend/issues/616)) ([2dca40b](https://github.com/instill-ai/model-backend/commit/2dca40be24409981f95f5f0b1686bd8d2d5771e1))
+* **repository:** support case-insensitive search models ([#621](https://github.com/instill-ai/model-backend/issues/621)) ([26c76b2](https://github.com/instill-ai/model-backend/commit/26c76b280d23265cf975d4d1509e7823ea1defa5))
+
+
+### Bug Fixes
+
+* **redis:** fix misconfigured ttl ([f5da795](https://github.com/instill-ai/model-backend/commit/f5da7958146ea79627e710ee25fe6fcdc2f22abd))
+* **worker:** fix mishandled workflow not found ([0189dd8](https://github.com/instill-ai/model-backend/commit/0189dd81715574d6dd985a974fb007cf90102518))
+
 ## [0.25.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.25.0-alpha...v0.25.1-alpha) (2024-06-20)
 
 
