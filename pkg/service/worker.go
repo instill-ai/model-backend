@@ -65,7 +65,14 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, err
 	}
 
-	outputWorkflowID := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String())).Val()
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String())).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
 	operationID, err := resource.GetOperationID(outputWorkflowID)
 	if err != nil {
 		return nil, err
@@ -73,7 +80,6 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, operationID, "")
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
