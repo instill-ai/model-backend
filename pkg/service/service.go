@@ -828,6 +828,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	}
 
 	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String()))
+	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String()))
 
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }

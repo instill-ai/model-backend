@@ -167,12 +167,12 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 	defer func() {
 		w.redisClient.Del(ctx, param.ParsedInputKey)
-		w.redisClient.Expire(
+		w.redisClient.ExpireGT(
 			ctx,
 			fmt.Sprintf("model_trigger_input:%s:%s", param.UserUID, param.ModelUID.String()),
 			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 		)
-		w.redisClient.Expire(
+		w.redisClient.ExpireGT(
 			ctx,
 			fmt.Sprintf("model_trigger_output_key:%s:%s", param.UserUID, param.ModelUID.String()),
 			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,

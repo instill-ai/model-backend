@@ -408,7 +408,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ctx,
 		fmt.Sprintf("model_trigger_input:%s:%s", userUID, pbModel.Uid),
 		inputRequestJSON,
-		0,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
 	usageData := &utils.UsageMetricData{
@@ -542,7 +542,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ctx,
 		fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, pbModel.Uid),
 		operation.GetName(),
-		0,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
 	logger.Info(string(custom_otel.NewLogMessage(
