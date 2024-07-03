@@ -17,10 +17,10 @@ import (
 
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
-	usageClient "github.com/instill-ai/usage-client/client"
-	usageReporter "github.com/instill-ai/usage-client/reporter"
+	usageclient "github.com/instill-ai/usage-client/client"
+	usagereporter "github.com/instill-ai/usage-client/reporter"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // Usage interface
@@ -34,14 +34,14 @@ type usage struct {
 	repository               repository.Repository
 	mgmtPrivateServiceClient mgmtpb.MgmtPrivateServiceClient
 	redisClient              *redis.Client
-	reporter                 usageReporter.Reporter
+	reporter                 usagereporter.Reporter
 	version                  string
 	userUID                  string
 }
 
 // NewUsage initiates a usage instance
 func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivateServiceClient, rc *redis.Client, usc usagepb.UsageServiceClient, userUID string) Usage {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
 	if err != nil {
@@ -49,7 +49,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivate
 		return nil
 	}
 
-	reporter, err := usageClient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
+	reporter, err := usageclient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -68,7 +68,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivate
 func (u *usage) RetrieveUsageData() any {
 
 	ctx := context.Background()
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	logger.Debug("Retrieve usage data...")
 
@@ -208,11 +208,11 @@ func (u *usage) StartReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageClient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
+		err := usageclient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -224,18 +224,23 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
-	err := usageClient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
+	err := usageclient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 }
 
 type ModelUsageHandlerParams struct {
-	UserUID, OwnerUID, ModelUID                     uuid.UUID
-	ModelVersion, ModelTriggerID, ModelID, Hardware string
-	UsageTime                                       int // in second
+	UserUID        uuid.UUID
+	OwnerUID       uuid.UUID
+	ModelUID       uuid.UUID
+	ModelVersion   string
+	ModelTriggerID string
+	ModelID        string
+	Hardware       string
+	UsageTime      time.Duration
 }
 
 type ModelUsageHandler interface {

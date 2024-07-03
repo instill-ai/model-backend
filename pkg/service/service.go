@@ -22,6 +22,8 @@ import (
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
+	"github.com/instill-ai/x/errmsg"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -31,7 +33,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
-	"github.com/instill-ai/x/errmsg"
 
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -461,6 +462,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		workflowOptions,
 		"TriggerModelWorkflow",
 		&worker.TriggerModelWorkflowRequest{
+			TriggerUID:         uuid.FromStringOrNil(triggerUID),
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,

@@ -235,8 +235,8 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	timeUsedInSec := int(time.Since(start).Seconds())
-	logger.Info("ModelInferRequest ended", zap.Int("timeUsed(sec)", timeUsedInSec))
+	timeUsed := time.Since(start)
+	logger.Info("ModelInferRequest ended", zap.Float64("timeUsed(sec)", timeUsed.Seconds()))
 
 	dbModel, err := w.repository.GetModelByUID(ctx, param.ModelUID, true, false)
 	if err != nil {
@@ -250,7 +250,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		ModelVersion:   param.ModelVersion.Version,
 		ModelTriggerID: param.TriggerUID.String(),
 		ModelID:        param.ModelID,
-		UsageTime:      timeUsedInSec,
+		UsageTime:      timeUsed,
 		Hardware:       dbModel.Hardware,
 	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
