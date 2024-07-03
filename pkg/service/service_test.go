@@ -8,11 +8,12 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
+
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 const ID = "modelID"

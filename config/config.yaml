@@ -83,3 +83,12 @@ openfga:
 registry:
   host: registry
   port: 5000
+influxdb:
+  url: http://influxdb:8086
+  token: i-love-instill-ai
+  org: instill-ai
+  bucket: instill-ai
+  flushinterval: 10s
+  https:
+    cert:
+    key:

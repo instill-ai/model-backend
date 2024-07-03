@@ -20,11 +20,12 @@ import (
 	"go.temporal.io/sdk/worker"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/repository"
+
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/repository"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 

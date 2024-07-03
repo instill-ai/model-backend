@@ -7,19 +7,20 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
-	usageClient "github.com/instill-ai/usage-client/client"
-	usageReporter "github.com/instill-ai/usage-client/reporter"
 	"github.com/instill-ai/x/repo"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
+
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
+	usageClient "github.com/instill-ai/usage-client/client"
+	usageReporter "github.com/instill-ai/usage-client/reporter"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // Usage interface
@@ -232,10 +233,9 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 }
 
 type ModelUsageHandlerParams struct {
-	UserUID, OwnerUID, ModelUID           uuid.UUID
-	OwnerType                             resource.NamespaceType
-	CreditAmount                          int
-	ModelVersion, ModelTriggerID, ModelID string
+	UserUID, OwnerUID, ModelUID                     uuid.UUID
+	ModelVersion, ModelTriggerID, ModelID, Hardware string
+	UsageTime                                       int // in second
 }
 
 type ModelUsageHandler interface {

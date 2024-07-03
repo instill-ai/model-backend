@@ -10,29 +10,31 @@ import (
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
-	"github.com/instill-ai/x/sterr"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/instill-ai/x/sterr"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
+
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 )
 
 type TriggerNamespaceModelRequestInterface interface {
@@ -106,9 +108,8 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:   userUID,
-		OwnerUID:  ns.NsUID,
-		OwnerType: ns.NsType,
+		UserUID:  userUID,
+		OwnerUID: ns.NsUID,
 	}); err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.FailedPrecondition, "model failed to trigger")
 	}
@@ -252,9 +253,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	start := time.Now()
-	logger.Info("TriggerNamespaceModelByID started", zap.String("modelID", modelID), zap.String("version", version.Version))
-
 	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
@@ -284,24 +282,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, st.Err()
 	}
 
-	timeUsedInSec := int(time.Since(start).Seconds())
-	logger.Info("ModelInferRequest ended", zap.Int("timeUsed(sec)", timeUsedInSec))
-
-	// todo: pending detail confirmation
-	const creditPrice = 1
-	if err := h.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:        userUID,
-		OwnerUID:       ns.NsUID,
-		ModelUID:       modelUID,
-		OwnerType:      ns.NsType,
-		CreditAmount:   1 + timeUsedInSec*creditPrice,
-		ModelVersion:   version.Version,
-		ModelTriggerID: logUUID.String(),
-		ModelID:        modelID,
-	}); err != nil {
-		return 0, nil, err
-	}
-
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -324,20 +304,6 @@ type TriggerAsyncNamespaceModelRequestInterface interface {
 }
 
 func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.TriggerAsyncUserModelRequest) (resp *modelpb.TriggerAsyncUserModelResponse, err error) {
-	ns, _, err := h.service.GetRscNamespaceAndNameID(req.GetName())
-	if err != nil {
-		return nil, err
-	}
-
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:   userUID,
-		OwnerUID:  ns.NsUID,
-		OwnerType: ns.NsType,
-	}); err != nil {
-		return nil, status.Error(codes.FailedPrecondition, "model failed to trigger")
-	}
-
 	resp = &modelpb.TriggerAsyncUserModelResponse{}
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
 
@@ -402,9 +368,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:   userUID,
-		OwnerUID:  ns.NsUID,
-		OwnerType: ns.NsType,
+		UserUID:  userUID,
+		OwnerUID: ns.NsUID,
 	}); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

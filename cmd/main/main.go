@@ -12,11 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	openfga "github.com/openfga/api/proto/openfga/v1"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
@@ -31,25 +27,32 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	openfga "github.com/openfga/api/proto/openfga/v1"
+
 	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	database "github.com/instill-ai/model-backend/pkg/db"
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
-	customlogger "github.com/instill-ai/model-backend/pkg/logger"
-	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	"github.com/instill-ai/model-backend/pkg/middleware"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
+
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	database "github.com/instill-ai/model-backend/pkg/db"
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
+	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 )
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))

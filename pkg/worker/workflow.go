@@ -7,9 +7,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/instill-ai/x/errmsg"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -22,11 +19,15 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
+
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 type InferInput any
@@ -117,8 +118,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}).Get(ctx, &triggerResult); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
-			// TODO: prediction feature not ready
-			// w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
 		}
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
@@ -130,10 +129,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
 			logger.Warn(err.Error())
 		}
-		// TODO: prediction feature not ready
-		// if err := w.writePrediction(sCtx, modelPrediction); err != nil {
-		// 	logger.Warn(err.Error())
-		// }
 	}
 
 	logger.Info("TriggerModelWorkflow completed")
@@ -243,17 +238,20 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	timeUsedInSec := int(time.Since(start).Seconds())
 	logger.Info("ModelInferRequest ended", zap.Int("timeUsed(sec)", timeUsedInSec))
 
-	// todo: pending detail confirmation
-	const creditPrice = 1
+	dbModel, err := w.repository.GetModelByUID(ctx, param.ModelUID, true, false)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
 		UserUID:        param.UserUID,
 		OwnerUID:       param.OwnerUID,
 		ModelUID:       param.ModelUID,
-		OwnerType:      resource.NamespaceType(param.OwnerType),
-		CreditAmount:   1 + timeUsedInSec*creditPrice,
 		ModelVersion:   param.ModelVersion.Version,
 		ModelTriggerID: param.TriggerUID.String(),
 		ModelID:        param.ModelID,
+		UsageTime:      timeUsedInSec,
+		Hardware:       dbModel.Hardware,
 	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
