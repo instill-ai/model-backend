@@ -108,8 +108,9 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:  userUID,
-		OwnerUID: ns.NsUID,
+		UserUID:      userUID,
+		OwnerUID:     ns.NsUID,
+		RequesterUID: resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID),
 	}); err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.FailedPrecondition, "model failed to trigger")
 	}
@@ -368,8 +369,9 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:  userUID,
-		OwnerUID: ns.NsUID,
+		UserUID:      userUID,
+		OwnerUID:     ns.NsUID,
+		RequesterUID: resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID),
 	}); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

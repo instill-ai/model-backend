@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/x/repo"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/instill-ai/x/repo"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -239,6 +240,7 @@ type ModelUsageHandlerParams struct {
 	ModelVersion   string
 	ModelTriggerID string
 	ModelID        string
+	RequesterUID   string
 	Hardware       string
 	UsageTime      time.Duration
 }

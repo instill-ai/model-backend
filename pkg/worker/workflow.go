@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/instill-ai/x/errmsg"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
@@ -16,10 +15,13 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/instill-ai/x/errmsg"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
@@ -252,6 +254,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		ModelID:        param.ModelID,
 		UsageTime:      timeUsed,
 		Hardware:       dbModel.Hardware,
+		RequesterUID:   resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID),
 	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}

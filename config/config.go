@@ -172,7 +172,6 @@ type AppConfig struct {
 	Registry               RegistryConfig        `koanf:"registry"`
 	InitModel              InitModelConfig       `koanf:"initmodel"`
 	Log                    LogConfig             `koanf:"log"`
-	InfluxDB               InfluxDBConfig        `koanf:"influxdb"`
 }
 
 // Config - Global variable to export
@@ -227,17 +226,4 @@ func ParseConfigFlag() string {
 	flag.Parse()
 
 	return *configPath
-}
-
-// InfluxDBConfig related to influxDB database
-type InfluxDBConfig struct {
-	URL           string        `koanf:"url"`
-	Token         string        `koanf:"token"`
-	Org           string        `koanf:"org"`
-	Bucket        string        `koanf:"bucket"`
-	FlushInterval time.Duration `koanf:"flushinterval"`
-	HTTPS         struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
 }

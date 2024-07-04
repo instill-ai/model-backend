@@ -8,16 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/api/workflowservice/v1"
-	temporalclient "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
+
+	temporalclient "go.temporal.io/sdk/client"
+
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/ray"
