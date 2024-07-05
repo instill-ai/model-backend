@@ -237,10 +237,10 @@ type ModelUsageHandlerParams struct {
 	UserUID        uuid.UUID
 	OwnerUID       uuid.UUID
 	ModelUID       uuid.UUID
+	RequesterUID   uuid.UUID
 	ModelVersion   string
 	ModelTriggerID string
 	ModelID        string
-	RequesterUID   string
 	Hardware       string
 	UsageTime      time.Duration
 }

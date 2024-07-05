@@ -238,7 +238,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	timeUsed := time.Since(start)
-	logger.Info("ModelInferRequest ended", zap.Float64("timeUsed(sec)", timeUsed.Seconds()))
+	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
 
 	dbModel, err := w.repository.GetModelByUID(ctx, param.ModelUID, true, false)
 	if err != nil {
@@ -254,7 +254,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		ModelID:        param.ModelID,
 		UsageTime:      timeUsed,
 		Hardware:       dbModel.Hardware,
-		RequesterUID:   resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID),
+		RequesterUID:   uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
 	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}

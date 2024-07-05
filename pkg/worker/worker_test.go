@@ -84,7 +84,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		rc.Set(ctx, param.ParsedInputKey, "{}", 30*time.Second)
 
-		w := worker.NewWorker(mockRepository, rc, mockRay)
+		w := worker.NewWorker(mockRepository, rc, mockRay, nil)
 		resp, err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
