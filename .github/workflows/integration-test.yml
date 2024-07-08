@@ -155,6 +155,9 @@ jobs:
         run: |
           curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
 
+      - name: Install jq
+        uses: dcarbone/install-jq-action@v2
+
       - name: Checkout (model-backend)
         uses: actions/checkout@v4
         with:
@@ -165,8 +168,11 @@ jobs:
         with:
           envFile: .env
 
-      - name: Check test models deployment
-        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "Models are still deploying"; sleep 5; done;
+      - name: Check test model init job
+        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "model init pod still running"; sleep 5; done;
+
+      - name: Check test model deployment
+        run: while [ "$(curl -s http://localhost:8265/api/serve/applications/ | jq '.applications | to_entries | map(select(.key | contains("dummy-")) | .value.status) | length == 10 and all(. == "RUNNING")')" != "true" ]; do echo "models still deploying"; sleep 5; done;
 
       - name: Run integration-test
         run: |
