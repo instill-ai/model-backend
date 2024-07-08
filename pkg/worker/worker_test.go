@@ -49,6 +49,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 
 		mockRepository := NewMockRepository(ctrl)
+		mockRepository.EXPECT().GetModelByUID(gomock.Any(), param.ModelUID, true, false).Return(&datamodel.Model{Hardware: "CPU"}, nil).Times(1)
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 		name := "text"
