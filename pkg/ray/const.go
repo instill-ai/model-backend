@@ -273,6 +273,7 @@ var SupportedAcceleratorTypeMemory = map[string]int{
 }
 
 const (
+	EnvIsTestModel        = "RAY_IS_TEST_MODEL"
 	EnvMemory             = "RAY_MEMORY"
 	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
 	EnvRayAcceleratorType = "RAY_ACCELERATOR_TYPE"
