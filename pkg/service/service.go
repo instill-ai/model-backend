@@ -45,6 +45,7 @@ type Service interface {
 
 	// Utils
 	GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient
+	GetArtifactPrivateServiceClient() artifactpb.ArtifactPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
 	GetACLClient() *acl.ACLClient
@@ -158,6 +159,11 @@ func (s *service) GetACLClient() *acl.ACLClient {
 // GetMgmtPrivateServiceClient returns the management private service client
 func (s *service) GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient {
 	return s.mgmtPrivateServiceClient
+}
+
+// GetArtifactPrivateServiceClient returns the management private service client
+func (s *service) GetArtifactPrivateServiceClient() artifactpb.ArtifactPrivateServiceClient {
+	return s.artifactPrivateServiceClient
 }
 
 // GetRayClient returns the ray client
