@@ -373,7 +373,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		OwnerUID:     ns.NsUID,
 		RequesterUID: uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
 	}); err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Errorf(codes.FailedPrecondition, "performing usage check: %s", err.Error())
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
