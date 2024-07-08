@@ -11,21 +11,25 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	"github.com/instill-ai/x/errmsg"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/errmsg"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 type InferInput any
@@ -116,8 +120,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}).Get(ctx, &triggerResult); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
-			// TODO: prediction feature not ready
-			// w.writeErrorPrediction(sCtx, err, span, startTime, modelPrediction)
 		}
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
@@ -129,10 +131,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		if err := w.writeNewDataPoint(sCtx, usageData); err != nil {
 			logger.Warn(err.Error())
 		}
-		// TODO: prediction feature not ready
-		// if err := w.writePrediction(sCtx, modelPrediction); err != nil {
-		// 	logger.Warn(err.Error())
-		// }
 	}
 
 	logger.Info("TriggerModelWorkflow completed")
@@ -231,8 +229,33 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		inferInput = input
 	}
 
+	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
+	start := time.Now()
+
 	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
 	if err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	timeUsed := time.Since(start)
+	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
+
+	dbModel, err := w.repository.GetModelByUID(ctx, param.ModelUID, true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:        param.UserUID,
+		OwnerUID:       param.OwnerUID,
+		ModelUID:       param.ModelUID,
+		ModelVersion:   param.ModelVersion.Version,
+		ModelTriggerID: param.TriggerUID.String(),
+		ModelID:        param.ModelID,
+		UsageTime:      timeUsed,
+		Hardware:       dbModel.Hardware,
+		RequesterUID:   uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
+	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 

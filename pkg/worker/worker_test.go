@@ -49,6 +49,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 
 		mockRepository := NewMockRepository(ctrl)
+		mockRepository.EXPECT().GetModelByUID(gomock.Any(), param.ModelUID, true, false).Return(&datamodel.Model{Hardware: "CPU"}, nil).Times(1)
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 		name := "text"
@@ -84,7 +85,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		rc.Set(ctx, param.ParsedInputKey, "{}", 30*time.Second)
 
-		w := worker.NewWorker(mockRepository, rc, mockRay)
+		w := worker.NewWorker(mockRepository, rc, mockRay, nil)
 		resp, err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
 		require.NotNil(t, resp)

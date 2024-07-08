@@ -18,11 +18,12 @@ import (
 
 	temporalclient "go.temporal.io/sdk/client"
 
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
@@ -150,7 +151,7 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db, redisClient), redisClient, rayService)
+	cw := modelWorker.NewWorker(repository.NewRepository(db, redisClient), redisClient, rayService, nil)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

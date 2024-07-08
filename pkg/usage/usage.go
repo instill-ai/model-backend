@@ -6,19 +6,22 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/instill-ai/x/repo"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/repo"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
-	usageClient "github.com/instill-ai/usage-client/client"
-	usageReporter "github.com/instill-ai/usage-client/reporter"
+	usageclient "github.com/instill-ai/usage-client/client"
+	usagereporter "github.com/instill-ai/usage-client/reporter"
+
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // Usage interface
@@ -32,14 +35,14 @@ type usage struct {
 	repository               repository.Repository
 	mgmtPrivateServiceClient mgmtpb.MgmtPrivateServiceClient
 	redisClient              *redis.Client
-	reporter                 usageReporter.Reporter
+	reporter                 usagereporter.Reporter
 	version                  string
 	userUID                  string
 }
 
 // NewUsage initiates a usage instance
 func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivateServiceClient, rc *redis.Client, usc usagepb.UsageServiceClient, userUID string) Usage {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
 	if err != nil {
@@ -47,7 +50,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivate
 		return nil
 	}
 
-	reporter, err := usageClient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
+	reporter, err := usageclient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -66,7 +69,7 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivate
 func (u *usage) RetrieveUsageData() any {
 
 	ctx := context.Background()
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	logger.Debug("Retrieve usage data...")
 
@@ -206,11 +209,11 @@ func (u *usage) StartReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageClient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
+		err := usageclient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -222,10 +225,42 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := customlogger.GetZapLogger(ctx)
 
-	err := usageClient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
+	err := usageclient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+}
+
+type ModelUsageHandlerParams struct {
+	UserUID        uuid.UUID
+	OwnerUID       uuid.UUID
+	ModelUID       uuid.UUID
+	RequesterUID   uuid.UUID
+	ModelVersion   string
+	ModelTriggerID string
+	ModelID        string
+	Hardware       string
+	UsageTime      time.Duration
+}
+
+type ModelUsageHandler interface {
+	Check(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error
+	Collect(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error
+}
+
+type noopModelUsageHandler struct{}
+
+func (h *noopModelUsageHandler) Check(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error {
+	return nil
+}
+
+func (h *noopModelUsageHandler) Collect(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error {
+	return nil
+}
+
+// NewNoopModelUsageHandler is a no-op usage handler initializer.
+func NewNoopModelUsageHandler() ModelUsageHandler {
+	return new(noopModelUsageHandler)
 }

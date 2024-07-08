@@ -6,23 +6,23 @@ import (
 	"context"
 	"testing"
 
+	"github.com/gofrs/uuid"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	uuid "github.com/gofrs/uuid"
-	gomock "github.com/golang/mock/gomock"
-
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/service"
 
-	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 const ID = "modelID"
+
 const OWNER = "users/909c3278-f7d1-461c-9352-87741bef1ds1"
 
 var ModelDefinition, _ = uuid.FromString("909c3278-f7d1-461c-9352-87741bef11d3")
 
-//TODO: async method, need to figure out how to test this
+// TODO: async method, need to figure out how to test this
 // func TestCreateModel(t *testing.T) {
 // 	t.Run("CreateModel", func(t *testing.T) {
 // 		ctrl := gomock.NewController(t)
@@ -456,6 +456,21 @@ func TestGetModelDefinition(t *testing.T) {
 		_, err := s.GetModelDefinition(context.Background(), "github")
 		assert.NoError(t, err)
 	})
+
+	t.Run("GetModelDefinitionByUID", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+
+		mockRepository := NewMockRepository(ctrl)
+		mockRepository.
+			EXPECT().
+			GetModelDefinitionByUID(ModelDefinition).
+			Return(&datamodel.ModelDefinition{}, nil).
+			Times(1)
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+
+		_, err := s.GetModelDefinitionByUID(context.Background(), ModelDefinition)
+		assert.NoError(t, err)
+	})
 }
 
 func TestListModelDefinitions(t *testing.T) {
@@ -473,4 +488,7 @@ func TestListModelDefinitions(t *testing.T) {
 		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, int32(100), "")
 		assert.NoError(t, err)
 	})
+}
+
+func TestService_ListNamespaceModelVersions(t *testing.T) {
 }

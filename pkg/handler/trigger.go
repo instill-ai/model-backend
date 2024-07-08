@@ -18,20 +18,23 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/instill-ai/x/sterr"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/sterr"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 )
 
 type TriggerNamespaceModelRequestInterface interface {
@@ -98,9 +101,18 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
-	if err := authenticateUser(ctx, false); err != nil {
+	if err = authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
+	}
+
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:      userUID,
+		OwnerUID:     ns.NsUID,
+		RequesterUID: uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
+	}); err != nil {
+		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Errorf(codes.FailedPrecondition, "performing usage check: %s", err.Error())
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
@@ -123,24 +135,24 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	var version *datamodel.ModelVersion
 	versionID := req.GetVersion()
+	modelUID := uuid.FromStringOrNil(pbModel.Uid)
+
 	if versionID == "" {
-		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
 		if err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
 		}
 	} else {
-		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionID)
+		version, err = h.service.GetModelVersionAdmin(ctx, modelUID, versionID)
 		if err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
 		}
 	}
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
-
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID,
+		UserUID:            userUID.String(),
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtpb.Mode_MODE_SYNC,
@@ -150,13 +162,8 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		ModelTask:          pbModel.Task,
 	}
 
-	// write usage/metric datapoint and prediction record
+	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
-		// TODO: prediction feature not ready
-		// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-		// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-		// 	logger.Warn("model prediction write failed")
-		// }
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
@@ -360,6 +367,15 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:      userUID,
+		OwnerUID:     ns.NsUID,
+		RequesterUID: uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
+	}); err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "performing usage check: %s", err.Error())
+	}
+
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -397,8 +413,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
-
 	// TODO: temporary solution to store input json for latest operation
 	inputRequestJSON, err := protojson.Marshal(req)
 	if err != nil {
@@ -406,7 +420,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_input:%s:%s", userUID, pbModel.Uid),
+		fmt.Sprintf("model_trigger_input:%s:%s", userUID.String(), pbModel.Uid),
 		inputRequestJSON,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
@@ -414,7 +428,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID,
+		UserUID:            userUID.String(),
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtpb.Mode_MODE_ASYNC,
@@ -424,14 +438,9 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ModelTask:          pbModel.Task,
 	}
 
-	// write usage/metric datapoint and prediction record
+	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
-			// TODO: prediction feature not ready
-			// pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-			// if err := h.service.CreateModelPrediction(ctx, pred); err != nil {
-			// 	logger.Warn("model prediction write failed")
-			// }
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
 			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 				logger.Warn("usage/metric write failed")
