@@ -13,6 +13,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/x/sterr"
 
+	artifactv1alpha "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -110,6 +111,12 @@ func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req Depl
 		if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
 			return err
 		}
+	}
+
+	if _, err := h.service.GetArtifactPrivateServiceClient().GetRepositoryTag(ctx, &artifactv1alpha.GetRepositoryTagRequest{
+		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version.Version),
+	}); err != nil {
+		return err
 	}
 
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), true); err != nil {
