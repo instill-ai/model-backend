@@ -20,8 +20,12 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+<<<<<<< HEAD
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
+=======
+	minio2 "github.com/instill-ai/model-backend/pkg/minio"
+>>>>>>> 468833a (refactor(ray): remove data serialization)
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
 
@@ -47,7 +51,7 @@ type TriggerModelWorkflowRequest struct {
 	ModelDefinitionUID uuid.UUID
 	RequesterUID       uuid.UUID
 	Task               commonpb.Task
-	ParsedInputKey     string
+	InputKey           string
 	Mode               mgmtpb.Mode
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
@@ -103,7 +107,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 
 	defer func() {
-		w.redisClient.Del(sCtx, param.ParsedInputKey)
+		w.redisClient.Del(sCtx, param.InputKey)
 		w.redisClient.ExpireGT(
 			sCtx,
 			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
@@ -229,79 +233,36 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
-	if modelMetadataResponse == nil {
-		err = fmt.Errorf("model is offline") // used by model run logging in defer
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
-	blob, err := w.redisClient.Get(ctx, param.ParsedInputKey).Bytes()
+	blob, err := w.redisClient.Get(ctx, param.InputKey).Bytes()
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	var inferInput InferInput
-	switch param.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		var input [][]byte
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		var input *ray.TextToImageInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		var input *ray.ImageToImageInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		var input *ray.VisualQuestionAnsweringInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		var input *ray.TextGenerationChatInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		var input *ray.TextGenerationInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
+	triggerModelReq := &modelpb.TriggerUserModelRequest{}
+	err = protojson.Unmarshal(blob, triggerModelReq)
+	if err != nil {
+		return nil, err
 	}
 
 	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
 
-	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
+	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, triggerModelReq, modelName, param.ModelVersion.Version)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
-	if err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
+	outputs := make([]*modelpb.TaskOutput, len(inferResponse.GetTaskOutputs()))
+	for _, output := range inferResponse.GetTaskOutputs() {
+		outputBytes, err := output.MarshalJSON()
+		if err != nil {
+			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		}
+		var outputStruct *modelpb.TaskOutput
+		err = json.Unmarshal(outputBytes, outputStruct)
+		if err != nil {
+			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		}
+		outputs = append(outputs, outputStruct)
 	}
 
 	triggerModelResp := &modelpb.TriggerUserModelResponse{

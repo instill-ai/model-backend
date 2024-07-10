@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
@@ -32,7 +33,6 @@ import (
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
-	ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse
 	ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
 	// standard
@@ -221,31 +221,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 }
 
-func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil
-	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
-
-	// Create status request for a given model
-	modelMetadataRequest := rayserver.ModelMetadataRequest{
-		Name:    modelName,
-		Version: version,
-	}
-	// Submit modelMetadata request to server
-	modelMetadataResponse, err := r.rayClient.ModelMetadata(ctx, &modelMetadataRequest)
-	if err != nil {
-		log.Printf("Couldn't get server model metadata: %v", err)
-	}
-	return modelMetadataResponse
-}
-
-func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.TriggerResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
@@ -256,12 +232,30 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferIn
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-	modelInferRequest := PreProcess(modelName, version, inferInput, task, modelMetadata)
+	inputStructs := make([]*structpb.Struct, len(req.GetTaskInputs()))
 
-	modelInferResponse, err := r.rayClient.XCall__(ctx, modelInferRequest)
+	for _, input := range req.GetTaskInputs() {
+		taskInput, err := json.Marshal(input)
+		if err != nil {
+			return &rayserver.TriggerResponse{}, err
+		}
+		inputStruct := new(structpb.Struct)
+		err = json.Unmarshal(taskInput, inputStruct)
+		if err != nil {
+			return &rayserver.TriggerResponse{}, err
+		}
+		inputStructs = append(inputStructs, inputStruct)
+
+	}
+
+	rayTriggerReq := &rayserver.TriggerRequest{
+		TaskInputs: inputStructs,
+	}
+
+	modelInferResponse, err := r.rayClient.Trigger(ctx, rayTriggerReq)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
-		return &rayserver.RayServiceCallResponse{}, err
+		return &rayserver.TriggerResponse{}, err
 	}
 
 	return modelInferResponse, nil

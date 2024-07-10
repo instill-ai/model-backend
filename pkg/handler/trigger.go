@@ -103,6 +103,7 @@ func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req 
 }
 
 type TriggerNamespaceModelRequestInterface interface {
+	protoreflect.ProtoMessage
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
@@ -217,81 +218,8 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}(usageData, startTime)
 
-	inputRequestJSON, err := protojson.Marshal(&modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		TaskInputs:  req.GetTaskInputs(),
-		Version:     req.GetVersion(),
-	})
-	if err != nil {
-		return 0, nil, err
-	}
-
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGeneration
-	}
 	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
+	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -305,13 +233,19 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
+	inputJSON, err := protojson.Marshal(req)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	h.service.GetRedisClient().Set(
+		ctx,
+		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
+		inputJSON,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -503,11 +437,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
-	inputRequestJSON, err := protojson.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
@@ -531,71 +460,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}(usageData, startTime)
 
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGeneration
-	}
 	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
+	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -609,13 +475,13 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
+	inputJSON, err := protojson.Marshal(req)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
