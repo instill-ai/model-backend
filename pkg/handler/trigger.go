@@ -26,7 +26,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -106,15 +105,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:      userUID,
-		OwnerUID:     ns.NsUID,
-		RequesterUID: uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
-	}); err != nil {
-		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Errorf(codes.FailedPrecondition, "performing usage check: %s", err.Error())
-	}
-
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -149,6 +139,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
@@ -367,15 +358,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	if err = h.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:      userUID,
-		OwnerUID:     ns.NsUID,
-		RequesterUID: uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
-	}); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "performing usage check: %s", err.Error())
-	}
-
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -412,6 +394,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
 	// TODO: temporary solution to store input json for latest operation
 	inputRequestJSON, err := protojson.Marshal(req)

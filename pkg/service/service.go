@@ -472,6 +472,10 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
+	if requesterUID.IsNil() {
+		requesterUID = userUID
+	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
@@ -486,6 +490,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
+			RequesterUID:       requesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
 			ParsedInputKey:     parsedInputKey,
