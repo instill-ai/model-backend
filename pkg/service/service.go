@@ -74,8 +74,8 @@ type Service interface {
 	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
-	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error)
@@ -429,7 +429,7 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 	return nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -459,11 +459,11 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
-	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
+	inputKey := fmt.Sprintf("model_trigger_input_req:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
-		parsedInputKey,
-		parsedInferInput,
+		inputKey,
+		reqJSON,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
@@ -498,7 +498,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			RequesterUID:       requesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			ParsedInputKey:     parsedInputKey,
+			InputKey:           inputKey,
 			Mode:               mgmtpb.Mode_MODE_SYNC,
 			Hardware:           dbModel.Hardware,
 		})
@@ -536,7 +536,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -566,11 +566,11 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
-	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
+	inputKey := fmt.Sprintf("model_trigger_input_req:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
-		parsedInputKey,
-		parsedInferInput,
+		inputKey,
+		reqJSON,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
@@ -605,7 +605,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			RequesterUID:       requesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			ParsedInputKey:     parsedInputKey,
+			InputKey:           inputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 			Hardware:           dbModel.Hardware,
 		})

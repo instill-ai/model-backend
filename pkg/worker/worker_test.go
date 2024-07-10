@@ -5,7 +5,7 @@ package worker_test
 
 import (
 	"context"
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -17,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/workflow"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
@@ -71,43 +72,27 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.ParsedInputKey = "ParsedInputKey"
+		param.InputKey = "InputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
-		name := "text"
 
-		var contents [][]byte
-		err = json.Unmarshal([]byte(`["RAEAADx8c3lzdGVtfD4KWW91IGFyZSBhIGZyaWVuZGx5IGNoYXRib3Q8L3M+Cjx8dXNlcnw+CndoYXQgZG9lcyB0aGUgY29tcGFueSB0ZXNsYSBkbz88L3M+Cjx8YXNzaXN0YW50fD4KVGhlIGNvbXBhbnkgVGVzbGEgZG9lcyBub3QgaGF2ZSBhIHBoeXNpY2FsIHByZXNlbmNlLiBIb3dldmVyLCBpdCBpcyBhIHRlY2hub2xvZ3kgY29tcGFueSB0aGF0IGRldmVsb3BzIGFuZCBtYW51ZmFjdHVyZXMgZWxlY3RyaWMgdmVoaWNsZXMgKEVWcyksIGVuZXJneSBzdG9yYWdlIHN5c3RlbXMsIGFuZCBzb2xhciBwYW5lbHMuIFRlc2xhJ3MgcHJpbWFyeSBmb2N1cyBpcyBvbiBlbGVjdHJpYw=="]`), &contents)
+		// var contents [][]byte
+		// err = json.Unmarshal([]byte(`["RAEAADx8c3lzdGVtfD4KWW91IGFyZSBhIGZyaWVuZGx5IGNoYXRib3Q8L3M+Cjx8dXNlcnw+CndoYXQgZG9lcyB0aGUgY29tcGFueSB0ZXNsYSBkbz88L3M+Cjx8YXNzaXN0YW50fD4KVGhlIGNvbXBhbnkgVGVzbGEgZG9lcyBub3QgaGF2ZSBhIHBoeXNpY2FsIHByZXNlbmNlLiBIb3dldmVyLCBpdCBpcyBhIHRlY2hub2xvZ3kgY29tcGFueSB0aGF0IGRldmVsb3BzIGFuZCBtYW51ZmFjdHVyZXMgZWxlY3RyaWMgdmVoaWNsZXMgKEVWcyksIGVuZXJneSBzdG9yYWdlIHN5c3RlbXMsIGFuZCBzb2xhciBwYW5lbHMuIFRlc2xhJ3MgcHJpbWFyeSBmb2N1cyBpcyBvbiBlbGVjdHJpYw=="]`), &contents)
 		require.NoError(t, err)
 
-		mockRay.EXPECT().
-			ModelMetadataRequest(
-				gomock.Any(),
-				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
-				param.ModelVersion.Version,
-			).
-			Return(&rayserver.ModelMetadataResponse{
-				Outputs: []*rayserver.ModelMetadataResponse_TensorMetadata{
-					{Name: name, Shape: []int64{-1, -1}},
-				},
-			}).Times(1)
 		mockRay.EXPECT().ModelInferRequest(
 			gomock.Any(),
 			param.Task,
 			gomock.Any(),
 			fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
 			param.ModelVersion.Version,
-			gomock.Any(),
-		).Return(&rayserver.RayServiceCallResponse{
-			RawOutputContents: contents,
-			Outputs: []*rayserver.InferTensor{
-				{Name: name, Shape: []int64{1, 1}},
-			},
+		).Return(&rayserver.TriggerResponse{
+			TaskOutputs: []*structpb.Struct{},
 		}, nil).Times(1)
 
-		rc.Set(ctx, param.ParsedInputKey, "{}", 30*time.Second)
+		rc.Set(ctx, param.InputKey, "{}", 30*time.Second)
 
 		w := worker.NewWorker(rc, mockRay, nil)
 		resp, err := w.TriggerModelActivity(ctx, param)
