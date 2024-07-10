@@ -21,7 +21,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
@@ -44,6 +43,7 @@ type TriggerModelWorkflowRequest struct {
 	UserUID            uuid.UUID
 	UserType           string
 	ModelDefinitionUID uuid.UUID
+	RequesterUID       uuid.UUID
 	Task               commonpb.Task
 	ParsedInputKey     string
 	Mode               mgmtpb.Mode
@@ -152,6 +152,14 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
+	if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:      param.UserUID,
+		OwnerUID:     param.OwnerUID,
+		RequesterUID: param.RequesterUID,
+	}); err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
 	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
@@ -254,7 +262,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		ModelID:        param.ModelID,
 		UsageTime:      timeUsed,
 		Hardware:       dbModel.Hardware,
-		RequesterUID:   uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUID)),
+		RequesterUID:   param.RequesterUID,
 	}); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
