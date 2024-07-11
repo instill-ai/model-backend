@@ -116,7 +116,9 @@ func (r *ray) Init() {
 	go r.sync()
 
 	// sync potential missing applications
-	r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{})
+	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}); err != nil {
+		fmt.Printf("error syncing deployment config: %v\n", err)
+	}
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {

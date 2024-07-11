@@ -199,8 +199,8 @@ type Action string
 
 const (
 	Deploy   Action = "deploy"
-	Undeploy        = "undeploy"
-	Sync            = "sync"
+	Undeploy Action = "undeploy"
+	Sync     Action = "sync"
 )
 
 type ApplicationWithAction struct {
