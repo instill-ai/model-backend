@@ -258,22 +258,28 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
-	if err != nil {
-		logger.Error(err.Error())
-		return err
-	}
+	var err error
+	applicationMetadatValue := ""
+	runOptions := []string{}
 
-	runOptions := []string{
-		"--tls-verify=false",
-		"--pull=always",
-		"--rm",
-		"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
-		"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
-		"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
+	if action != Sync {
+		applicationMetadatValue, err = GetApplicationMetadaValue(modelName, version)
+		if err != nil {
+			logger.Error(err.Error())
+			return err
+		}
 	}
 
 	if action == Deploy {
+		runOptions = []string{
+			"--tls-verify=false",
+			"--pull=always",
+			"--rm",
+			"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+			"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+			"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
+		}
+
 		accelerator, ok := SupportedAcceleratorType[hardware]
 		if !ok {
 			logger.Warn("accelerator type(hardware) not supported, setting it as custom resource")
