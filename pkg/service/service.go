@@ -88,7 +88,7 @@ type Service interface {
 	GetModelByIDAdmin(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error)
 	GetModelByUIDAdmin(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error)
 	ListModelsAdmin(ctx context.Context, pageSize int32, pageToken string, view modelpb.View, filter filtering.Filter, showDeleted bool) ([]*modelpb.Model, int32, string, error)
-	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error
+	UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, action ray.Action) error
 	CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error
 	GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, version string) (*datamodel.ModelVersion, error)
 
@@ -793,7 +793,7 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 	}
 
 	for _, v := range dbVersions {
-		if err := s.UpdateModelInstanceAdmin(ctx, ns, modelID, dbModel.Hardware, v.Version, false); err != nil {
+		if err := s.UpdateModelInstanceAdmin(ctx, ns, modelID, dbModel.Hardware, v.Version, ray.Undeploy); err != nil {
 			return err
 		}
 	}
@@ -842,7 +842,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 	}
 
 	for _, version := range versions {
-		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, false); err != nil {
+		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, ray.Undeploy); err != nil {
 			return err
 		}
 		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
@@ -964,10 +964,10 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		}
 
 		for _, v := range versions {
-			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, "", v.Version, false); err != nil {
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, "", v.Version, ray.Undeploy); err != nil {
 				return nil, err
 			}
-			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, updatedDBModel.Hardware, v.Version, true); err != nil {
+			if err := s.UpdateModelInstanceAdmin(ctx, ns, updatedDBModel.ID, updatedDBModel.Hardware, v.Version, ray.Deploy); err != nil {
 				return nil, err
 			}
 		}
@@ -1008,12 +1008,12 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelpb.View, p
 	return pbModelDefs, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, isDeploy bool) error {
+func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, action ray.Action) error {
 
 	scalingConfig := s.generateScalingConfig(modelID)
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
-	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, isDeploy, scalingConfig); err != nil {
+	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, action, scalingConfig); err != nil {
 		return err
 	}
 

@@ -122,7 +122,7 @@ func (mr *MockRayMockRecorder) ModelReady(arg0, arg1, arg2 interface{}) *gomock.
 }
 
 // UpdateContainerizedModel mocks base method.
-func (m *MockRay) UpdateContainerizedModel(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string, arg6 bool, arg7 []string) error {
+func (m *MockRay) UpdateContainerizedModel(arg0 context.Context, arg1, arg2, arg3, arg4, arg5 string, arg6 ray.Action, arg7 []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateContainerizedModel", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].(error)
