@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/x/sterr"
 
@@ -119,7 +120,7 @@ func (h *PrivateHandler) deployNamespaceModelAdmin(ctx context.Context, req Depl
 		return err
 	}
 
-	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), true); err != nil {
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), ray.Deploy); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
@@ -170,7 +171,7 @@ func (h *PrivateHandler) undeployNamespaceModelAdmin(ctx context.Context, req Un
 		return err
 	}
 
-	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), false); err != nil {
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), req.GetVersion(), ray.Undeploy); err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] undeploy a model error: %s", err.Error()),

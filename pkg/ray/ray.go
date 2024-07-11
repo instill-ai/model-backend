@@ -37,7 +37,7 @@ type Ray interface {
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string) error
 	Init()
 	Close()
 }
@@ -114,6 +114,11 @@ func (r *ray) Init() {
 	// avoid race condition with file writing
 	// add/remove application entries
 	go r.sync()
+
+	// sync potential missing applications
+	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}); err != nil {
+		fmt.Printf("error syncing deployment config: %v\n", err)
+	}
 }
 
 func (r *ray) IsRayServerReady(ctx context.Context) bool {
@@ -249,7 +254,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferIn
 	return modelInferResponse, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, isDeploy bool, scalingConfig []string) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string) error {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -268,7 +273,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py",
 	}
 
-	if isDeploy {
+	if action == Deploy {
 		accelerator, ok := SupportedAcceleratorType[hardware]
 		if !ok {
 			logger.Warn("accelerator type(hardware) not supported, setting it as custom resource")
@@ -321,7 +326,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 
 	r.configChan <- ApplicationWithAction{
 		Application: applicationConfig,
-		IsDeploy:    isDeploy,
+		Action:      action,
 	}
 
 	return <-r.doneChan
@@ -345,8 +350,8 @@ func (r *ray) sync() {
 		}
 
 		newApplications := []Application{}
-		switch applicationWithAction.IsDeploy {
-		case true:
+		switch applicationWithAction.Action {
+		case Deploy:
 			for _, app := range modelDeploymentConfig.Applications {
 				if app.Name != applicationWithAction.Application.Name {
 					newApplications = append(newApplications, app)
@@ -354,7 +359,7 @@ func (r *ray) sync() {
 			}
 			modelDeploymentConfig.Applications = newApplications
 			modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
-		case false:
+		case Undeploy:
 			for _, app := range modelDeploymentConfig.Applications {
 				if app.Name != applicationWithAction.Application.Name {
 					newApplications = append(newApplications, app)

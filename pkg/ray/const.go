@@ -195,9 +195,17 @@ type ModelDeploymentConfig struct {
 	Applications []Application `yaml:"applications" json:"applications"`
 }
 
+type Action string
+
+const (
+	Deploy   Action = "deploy"
+	Undeploy Action = "undeploy"
+	Sync     Action = "sync"
+)
+
 type ApplicationWithAction struct {
 	Application Application
-	IsDeploy    bool
+	Action      Action
 }
 
 type Application struct {
