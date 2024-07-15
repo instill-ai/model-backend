@@ -258,7 +258,7 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		return nil, "", 0, err
 	}
 
-	if err := authenticateUser(ctx, false); err != nil {
+	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, "", 0, err
 	}
@@ -504,7 +504,7 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-	if err := authenticateUser(ctx, false); err != nil {
+	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
