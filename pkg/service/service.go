@@ -461,18 +461,13 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 		return fmt.Errorf("authenticated user doesn't belong to requester organization: %w", ErrUnauthenticated)
 	}
 
-	if model.IsPublic() {
-		// Public model can be always be triggered as an organization.
-		return nil
+	// Organizations can only trigger private models owned by themselves.
+	// The rest of private models are invisible to them.
+	if !model.IsPublic() && model.OwnerUID().String() != requester {
+		return fmt.Errorf("model not found: %w", ErrNotFound)
 	}
 
-	if model.OwnerUID().String() == requester {
-		// Organizations can trigger their private model.
-		return nil
-	}
-
-	// private model is not visible to anyone other than the owner
-	return fmt.Errorf("model not found: %w", ErrNotFound)
+	return nil
 }
 
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
