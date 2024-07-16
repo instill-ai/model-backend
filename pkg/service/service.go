@@ -495,6 +495,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			Task:               task,
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_SYNC,
+			Hardware:           dbModel.Hardware,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -594,6 +595,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			Task:               task,
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
+			Hardware:           dbModel.Hardware,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))

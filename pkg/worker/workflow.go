@@ -21,7 +21,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -47,6 +46,7 @@ type TriggerModelWorkflowRequest struct {
 	Task               commonpb.Task
 	ParsedInputKey     string
 	Mode               mgmtpb.Mode
+	Hardware           string
 }
 
 type TriggerModelActivityRequest struct {
@@ -152,13 +152,14 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
-	if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:      param.UserUID,
-		OwnerUID:     param.OwnerUID,
-		RequesterUID: param.RequesterUID,
-	}); err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
+	// TODO: temporary disable usage check until further decision
+	// if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+	// 	UserUID:      param.UserUID,
+	// 	OwnerUID:     param.OwnerUID,
+	// 	RequesterUID: param.RequesterUID,
+	// }); err != nil {
+	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	// }
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
@@ -248,24 +249,20 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	timeUsed := time.Since(start)
 	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
 
-	dbModel, err := w.repository.GetModelByUID(ctx, param.ModelUID, true, false)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:        param.UserUID,
-		OwnerUID:       param.OwnerUID,
-		ModelUID:       param.ModelUID,
-		ModelVersion:   param.ModelVersion.Version,
-		ModelTriggerID: param.TriggerUID.String(),
-		ModelID:        param.ModelID,
-		UsageTime:      timeUsed,
-		Hardware:       dbModel.Hardware,
-		RequesterUID:   param.RequesterUID,
-	}); err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
+	// TODO: temporary disable usage collect until further decision
+	// if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
+	// 	UserUID:        param.UserUID,
+	// 	OwnerUID:       param.OwnerUID,
+	// 	ModelUID:       param.ModelUID,
+	// 	ModelVersion:   param.ModelVersion.Version,
+	// 	ModelTriggerID: param.TriggerUID.String(),
+	// 	ModelID:        param.ModelID,
+	// 	UsageTime:      timeUsed,
+	// 	Hardware:       param.Hardware,
+	// 	RequesterUID:   param.RequesterUID,
+	// }); err != nil {
+	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	// }
 
 	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
 	if err != nil {

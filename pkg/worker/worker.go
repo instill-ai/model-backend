@@ -7,7 +7,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/usage"
 )
 
@@ -23,18 +22,16 @@ type Worker interface {
 // worker represents resources required to run Temporal workflow and activity
 type worker struct {
 	redisClient       *redis.Client
-	repository        repository.Repository
 	ray               ray.Ray
 	modelUsageHandler usage.ModelUsageHandler
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(r repository.Repository, rc *redis.Client, ra ray.Ray, modelUsageHandler usage.ModelUsageHandler) Worker {
+func NewWorker(rc *redis.Client, ra ray.Ray, modelUsageHandler usage.ModelUsageHandler) Worker {
 	if modelUsageHandler == nil {
 		modelUsageHandler = usage.NewNoopModelUsageHandler()
 	}
 	return &worker{
-		repository:        r,
 		redisClient:       rc,
 		ray:               ra,
 		modelUsageHandler: modelUsageHandler,
