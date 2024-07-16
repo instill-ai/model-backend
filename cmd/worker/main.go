@@ -23,7 +23,6 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/ray"
-	"github.com/instill-ai/model-backend/pkg/repository"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
@@ -151,7 +150,7 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	cw := modelWorker.NewWorker(repository.NewRepository(db, redisClient), redisClient, rayService, nil)
+	cw := modelWorker.NewWorker(redisClient, rayService, nil)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 
