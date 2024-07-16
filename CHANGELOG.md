@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.27.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.26.0-alpha...v0.27.0-alpha) (2024-07-16)
+
+
+### Features
+
+* **credit:** INS-5058 added check and collect for model trigger ([#619](https://github.com/instill-ai/model-backend/issues/619)) ([5d55b5b](https://github.com/instill-ai/model-backend/commit/5d55b5b1a98d7719701fc9b611cac2f1509f8420))
+* **credit:** refactored check and collect for model trigger ([#629](https://github.com/instill-ai/model-backend/issues/629)) ([0a14f9e](https://github.com/instill-ai/model-backend/commit/0a14f9e042ba0fd5e656363c7b8cb381385c3422))
+* **ray:** sync deployment configs when starting up ([#631](https://github.com/instill-ai/model-backend/issues/631)) ([4a2fc8a](https://github.com/instill-ai/model-backend/commit/4a2fc8ad682872a63ed98575f8b04639388958b7))
+* **service:** check trigger permissions when impersonating an org ([#635](https://github.com/instill-ai/model-backend/issues/635)) ([427fc45](https://github.com/instill-ai/model-backend/commit/427fc45cc46493e5ea8f7f7ef76389803c20e5e2))
+
+
+### Bug Fixes
+
+* **worker:** unit test for TriggerModelActivity ([#624](https://github.com/instill-ai/model-backend/issues/624)) ([dec7a60](https://github.com/instill-ai/model-backend/commit/dec7a6052d366a04de2b22f2213d320f09d342c9))
+
 ## [0.26.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.25.1-alpha...v0.26.0-alpha) (2024-07-02)
 
 
