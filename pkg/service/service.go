@@ -431,6 +431,45 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 	return state, message, nil
 }
 
+// checkRequesterPermission validates that the authenticated user can make
+// requests on behalf of the resource identified by the requester UID.
+func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel.Model) error {
+	authType := resource.GetRequestSingleHeader(ctx, constant.HeaderAuthTypeKey)
+	if authType != "user" {
+		// Only authenticated users can switch namespaces.
+		return ErrUnauthenticated
+	}
+
+	requester := resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey)
+	authenticatedUser := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	if requester == "" || authenticatedUser == requester {
+		// Request doesn't contain impersonation.
+		return nil
+	}
+
+	// The only impersonation that's currently implemented is switching to an
+	// organization namespace.
+	isMember, err := s.aclClient.CheckPermission(ctx, "organization", uuid.FromStringOrNil(requester), "member")
+	if err != nil {
+		return errmsg.AddMessage(
+			fmt.Errorf("checking organization membership: %w", err),
+			"Couldn't check organization membership.",
+		)
+	}
+
+	if !isMember {
+		return fmt.Errorf("authenticated user doesn't belong to requester organization: %w", ErrUnauthenticated)
+	}
+
+	// Organizations can only trigger private models owned by themselves.
+	// The rest of private models are invisible to them.
+	if !model.IsPublic() && model.OwnerUID().String() != requester {
+		return fmt.Errorf("model not found: %w", ErrNotFound)
+	}
+
+	return nil
+}
+
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
@@ -452,6 +491,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
+	}
+
+	// For now, impersonation is only implemented for model triggers. When
+	// this is used in other entrypoints, the requester permission should be
+	// checked at a higher level (e.g. handler or middleware).
+	if err := s.checkRequesterPermission(ctx, dbModel); err != nil {
+		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
@@ -552,6 +598,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, err
 	} else if !granted {
 		return nil, ErrNoPermission
+	}
+
+	// For now, impersonation is only implemented for model triggers. When
+	// this is used in other entrypoints, the requester permission should be
+	// checked at a higher level (e.g. handler or middleware).
+	if err := s.checkRequesterPermission(ctx, dbModel); err != nil {
+		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)

@@ -3,6 +3,7 @@ package datamodel
 import (
 	"database/sql"
 	"database/sql/driver"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -85,6 +86,16 @@ type Model struct {
 	License            sql.NullString
 	ProfileImage       sql.NullString
 	Tags               []*ModelTag
+}
+
+// IsPublic returns the visibility of the model.
+func (m *Model) IsPublic() bool {
+	return m.Visibility == ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC)
+}
+
+// OwnerUID returns the UID of the model owner.
+func (m *Model) OwnerUID() uuid.UUID {
+	return uuid.FromStringOrNil(strings.Split(m.Owner, "/")[1])
 }
 
 // Model version
