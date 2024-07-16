@@ -349,7 +349,7 @@ func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req List
 		return nil, 0, 0, 0, err
 	}
 
-	if err := authenticateUser(ctx, false); err != nil {
+	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, 0, 0, 0, err
 	}
@@ -970,7 +970,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
-	if err := authenticateUser(ctx, false); err != nil {
+	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
 			ctx,
