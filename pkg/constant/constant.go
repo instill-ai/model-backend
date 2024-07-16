@@ -17,3 +17,10 @@ const HeaderRequesterUIDKey = "Instill-Requester-Uid"
 
 // Ray proto path
 const RayProtoPath string = "assets/ray/proto"
+
+type RunLevel string
+
+const (
+	RunLevelFlag           = "run_level"
+	LevelUnitTest RunLevel = "unit-test"
+)

@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/instill-ai/model-backend/pkg/constant"
+
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
@@ -61,6 +63,10 @@ type RegionHardware struct {
 
 // InitJSONSchema initializes JSON Schema instances with the given files
 func InitJSONSchema(ctx context.Context) {
+	v := ctx.Value(constant.RunLevelFlag)
+	if unitTestFlag, ok := v.(constant.RunLevel); ok && unitTestFlag == constant.LevelUnitTest {
+		return
+	}
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
