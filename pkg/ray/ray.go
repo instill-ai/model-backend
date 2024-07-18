@@ -327,7 +327,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 
 	applicationConfig := Application{
 		Name:        applicationMetadatValue,
-		ImportPath:  "model:entrypoint",
+		ImportPath:  "_model:entrypoint",
 		RoutePrefix: "/" + applicationMetadatValue,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{
