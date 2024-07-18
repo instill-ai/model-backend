@@ -16,12 +16,38 @@ import (
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+	"go.temporal.io/sdk/workflow"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/worker"
 )
+
+func TestWorker_TriggerModelWorkflow(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s, err := miniredis.Run()
+	require.NoError(t, err)
+	defer s.Close()
+
+	rc := redis.NewClient(&redis.Options{
+		Addr: s.Addr(),
+	})
+
+	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
+		// todo: fix input workflow.Context for unit test
+		t.SkipNow()
+
+		param := &worker.TriggerModelWorkflowRequest{}
+		mockRay := NewMockRay(ctrl)
+
+		w := worker.NewWorker(rc, mockRay, nil)
+		_, err = w.TriggerModelWorkflow(workflow.Context(nil), param)
+		require.NoError(t, err)
+	})
+}
 
 func TestWorker_TriggerModelActivity(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -89,5 +115,34 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		require.NotNil(t, resp)
 		require.Contains(t, resp.OutputKey, "async_model_response:")
 		require.Contains(t, string(resp.TaskOutputBytes), "You are a friendly chatbot")
+	})
+
+	t.Run("when model is offline", func(t *testing.T) {
+		param := &worker.TriggerModelActivityRequest{}
+		param.UserUID, _ = uuid.NewV4()
+		param.OwnerUID, _ = uuid.NewV4()
+		param.ModelID = "ModelID"
+		param.OwnerType = string(resource.User)
+		param.ModelVersion = datamodel.ModelVersion{
+			Version:  "Version",
+			ModelUID: param.ModelUID,
+		}
+		param.ParsedInputKey = "ParsedInputKey"
+		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
+
+		mockRay := NewMockRay(ctrl)
+		ctx := context.Background()
+
+		mockRay.EXPECT().
+			ModelMetadataRequest(
+				gomock.Any(),
+				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
+				param.ModelVersion.Version,
+			).
+			Return(nil).Times(1)
+
+		w := worker.NewWorker(rc, mockRay, nil)
+		_, err = w.TriggerModelActivity(ctx, param)
+		require.ErrorContains(t, err, "model is offline")
 	})
 }
