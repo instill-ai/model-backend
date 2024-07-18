@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.24.4
-// source: ray/v1/ray.proto
+// source: ray.proto
 
 package rayserver
 
@@ -107,5 +107,5 @@ var RayService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "ray/v1/ray.proto",
+	Metadata: "ray.proto",
 }
