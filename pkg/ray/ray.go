@@ -232,10 +232,10 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-	inputStructs := make([]*structpb.Struct, len(req.GetTaskInputs()))
+	inputStructs := []*structpb.Struct{}
 
 	for _, input := range req.GetTaskInputs() {
-		taskInput, err := json.Marshal(input)
+		taskInput, err := json.Marshal(input.GetInput())
 		if err != nil {
 			return &rayserver.TriggerResponse{}, err
 		}

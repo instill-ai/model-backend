@@ -257,7 +257,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
-		var outputStruct *modelpb.TaskOutput
+		outputStruct := &modelpb.TaskOutput{}
 		err = json.Unmarshal(outputBytes, outputStruct)
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
