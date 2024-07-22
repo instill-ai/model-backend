@@ -58,8 +58,7 @@ type TriggerModelWorkflowResponse struct {
 }
 
 type TriggerModelActivityResponse struct {
-	TaskOutputBytes []byte
-	OutputKey       string
+	OutputKey string
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -218,11 +217,112 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
-		outputStruct := &modelpb.TaskOutput{}
-		err = json.Unmarshal(outputBytes, outputStruct)
-		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+
+		var outputStruct *modelpb.TaskOutput
+
+		switch param.Task {
+		case commonpb.Task_TASK_CLASSIFICATION:
+			taskOutput := &modelpb.TaskOutput_Classification{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_DETECTION:
+			taskOutput := &modelpb.TaskOutput_Detection{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_OCR:
+			taskOutput := &modelpb.TaskOutput_Ocr{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_KEYPOINT:
+			taskOutput := &modelpb.TaskOutput_Keypoint{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_INSTANCE_SEGMENTATION:
+			taskOutput := &modelpb.TaskOutput_InstanceSegmentation{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
+			taskOutput := &modelpb.TaskOutput_InstanceSegmentation{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_GENERATION:
+			taskOutput := &modelpb.TaskOutput_TextGeneration{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
+			taskOutput := &modelpb.TaskOutput_TextGenerationChat{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_TO_IMAGE:
+			taskOutput := &modelpb.TaskOutput_TextToImage{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_IMAGE_TO_IMAGE:
+			taskOutput := &modelpb.TaskOutput_ImageToImage{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
 		}
+
 		outputs = append(outputs, outputStruct)
 	}
 
@@ -244,16 +344,10 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
-	jsonOutput, err := json.Marshal(outputs)
-	if err != nil {
-		logger.Warn("json marshal error for task inputs")
-	}
-
 	logger.Info("TriggerModelActivity completed")
 
 	return &TriggerModelActivityResponse{
-		TaskOutputBytes: jsonOutput,
-		OutputKey:       outputKey,
+		OutputKey: outputKey,
 	}, nil
 }
 

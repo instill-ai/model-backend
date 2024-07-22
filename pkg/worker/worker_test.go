@@ -99,7 +99,6 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.Contains(t, resp.OutputKey, "async_model_response:")
-		require.Contains(t, string(resp.TaskOutputBytes), "You are a friendly chatbot")
 	})
 
 	t.Run("when model is offline", func(t *testing.T) {
