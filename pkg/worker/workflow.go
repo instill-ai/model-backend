@@ -20,12 +20,8 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-<<<<<<< HEAD
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
-=======
-	minio2 "github.com/instill-ai/model-backend/pkg/minio"
->>>>>>> 468833a (refactor(ray): remove data serialization)
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
 
@@ -257,11 +253,112 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		if err != nil {
 			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
-		outputStruct := &modelpb.TaskOutput{}
-		err = json.Unmarshal(outputBytes, outputStruct)
-		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+
+		var outputStruct *modelpb.TaskOutput
+
+		switch param.Task {
+		case commonpb.Task_TASK_CLASSIFICATION:
+			taskOutput := &modelpb.TaskOutput_Classification{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_DETECTION:
+			taskOutput := &modelpb.TaskOutput_Detection{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_OCR:
+			taskOutput := &modelpb.TaskOutput_Ocr{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_KEYPOINT:
+			taskOutput := &modelpb.TaskOutput_Keypoint{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_INSTANCE_SEGMENTATION:
+			taskOutput := &modelpb.TaskOutput_InstanceSegmentation{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
+			taskOutput := &modelpb.TaskOutput_InstanceSegmentation{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_GENERATION:
+			taskOutput := &modelpb.TaskOutput_TextGeneration{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
+			taskOutput := &modelpb.TaskOutput_TextGenerationChat{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_TEXT_TO_IMAGE:
+			taskOutput := &modelpb.TaskOutput_TextToImage{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
+		case commonpb.Task_TASK_IMAGE_TO_IMAGE:
+			taskOutput := &modelpb.TaskOutput_ImageToImage{}
+			err = json.Unmarshal(outputBytes, taskOutput)
+			if err != nil {
+				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			}
+
+			outputStruct = &modelpb.TaskOutput{
+				Output: taskOutput,
+			}
 		}
+
 		outputs = append(outputs, outputStruct)
 	}
 
