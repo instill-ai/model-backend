@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RayService_Trigger_FullMethodName = "/ray.v1.RayService/Trigger"
+	RayService_XCall___FullMethodName = "/ray.v1.RayService/__call__"
 )
 
 // RayServiceClient is the client API for RayService service.
@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RayServiceClient interface {
 	// Trigger method is the defaut trigger entry for ray deployment
-	Trigger(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*TriggerResponse, error)
+	XCall__(ctx context.Context, in *CallRequest, opts ...grpc.CallOption) (*CallResponse, error)
 }
 
 type rayServiceClient struct {
@@ -38,9 +38,9 @@ func NewRayServiceClient(cc grpc.ClientConnInterface) RayServiceClient {
 	return &rayServiceClient{cc}
 }
 
-func (c *rayServiceClient) Trigger(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*TriggerResponse, error) {
-	out := new(TriggerResponse)
-	err := c.cc.Invoke(ctx, RayService_Trigger_FullMethodName, in, out, opts...)
+func (c *rayServiceClient) XCall__(ctx context.Context, in *CallRequest, opts ...grpc.CallOption) (*CallResponse, error) {
+	out := new(CallResponse)
+	err := c.cc.Invoke(ctx, RayService_XCall___FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *rayServiceClient) Trigger(ctx context.Context, in *TriggerRequest, opts
 // for forward compatibility
 type RayServiceServer interface {
 	// Trigger method is the defaut trigger entry for ray deployment
-	Trigger(context.Context, *TriggerRequest) (*TriggerResponse, error)
+	XCall__(context.Context, *CallRequest) (*CallResponse, error)
 	mustEmbedUnimplementedRayServiceServer()
 }
 
@@ -60,8 +60,8 @@ type RayServiceServer interface {
 type UnimplementedRayServiceServer struct {
 }
 
-func (UnimplementedRayServiceServer) Trigger(context.Context, *TriggerRequest) (*TriggerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Trigger not implemented")
+func (UnimplementedRayServiceServer) XCall__(context.Context, *CallRequest) (*CallResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method XCall__ not implemented")
 }
 func (UnimplementedRayServiceServer) mustEmbedUnimplementedRayServiceServer() {}
 
@@ -76,20 +76,20 @@ func RegisterRayServiceServer(s grpc.ServiceRegistrar, srv RayServiceServer) {
 	s.RegisterService(&RayService_ServiceDesc, srv)
 }
 
-func _RayService_Trigger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerRequest)
+func _RayService_XCall___Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CallRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RayServiceServer).Trigger(ctx, in)
+		return srv.(RayServiceServer).XCall__(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RayService_Trigger_FullMethodName,
+		FullMethod: RayService_XCall___FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RayServiceServer).Trigger(ctx, req.(*TriggerRequest))
+		return srv.(RayServiceServer).XCall__(ctx, req.(*CallRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -102,8 +102,8 @@ var RayService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RayServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Trigger",
-			Handler:    _RayService_Trigger_Handler,
+			MethodName: "__call__",
+			Handler:    _RayService_XCall___Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
