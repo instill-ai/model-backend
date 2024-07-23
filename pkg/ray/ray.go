@@ -33,7 +33,7 @@ import (
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
-	ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
+	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.CallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
@@ -221,7 +221,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 }
 
-func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.TriggerResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.CallResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
@@ -237,25 +237,25 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 	for _, input := range req.GetTaskInputs() {
 		taskInput, err := json.Marshal(input.GetInput())
 		if err != nil {
-			return &rayserver.TriggerResponse{}, err
+			return &rayserver.CallResponse{}, err
 		}
 		inputStruct := new(structpb.Struct)
 		err = json.Unmarshal(taskInput, inputStruct)
 		if err != nil {
-			return &rayserver.TriggerResponse{}, err
+			return &rayserver.CallResponse{}, err
 		}
 		inputStructs = append(inputStructs, inputStruct)
 
 	}
 
-	rayTriggerReq := &rayserver.TriggerRequest{
+	rayTriggerReq := &rayserver.CallRequest{
 		TaskInputs: inputStructs,
 	}
 
-	modelInferResponse, err := r.rayClient.Trigger(ctx, rayTriggerReq)
+	modelInferResponse, err := r.rayClient.XCall__(ctx, rayTriggerReq)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
-		return &rayserver.TriggerResponse{}, err
+		return &rayserver.CallResponse{}, err
 	}
 
 	return modelInferResponse, nil
