@@ -197,3 +197,8 @@ func (r *ReleaseStage) Scan(value any) error {
 func (r ReleaseStage) Value() (driver.Value, error) {
 	return modelpb.ReleaseStage(r).String(), nil
 }
+
+const (
+	FieldCreateTime = "create_time"
+	FieldUpdateTime = "update_time"
+)

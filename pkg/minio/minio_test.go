@@ -14,25 +14,40 @@ import (
 
 func TestMinio(t *testing.T) {
 	t.Skipf("only for testing on local")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mc, err := minio.NewMinioClientAndInitBucket(&config.MinioConfig{
+	minioConfig := &config.MinioConfig{
 		Host:       "localhost",
 		Port:       "19000",
 		RootUser:   "minioadmin",
 		RootPwd:    "minioadmin",
 		BucketName: "instill-ai-model",
-	})
+	}
+
+	mc, err := minio.NewMinioClientAndInitBucket(minioConfig)
 	require.NoError(t, err)
 
+	t.Log("test upload file to minio")
 	fileName, _ := uuid.NewV4()
 	uid, _ := uuid.NewV4()
 	fileContent := base64.StdEncoding.EncodeToString([]byte(uid.String()))
 	err = mc.UploadBase64File(ctx, fileName.String(), fileContent, "text/plain")
 	require.NoError(t, err)
+	t.Log("minio file name", fileName.String())
 
 	fileBytes, err := mc.GetFile(ctx, fileName.String())
 	require.NoError(t, err)
 	require.Equal(t, uid.String(), string(fileBytes))
+
+	t.Log("test init minio again")
+	mc, err = minio.NewMinioClientAndInitBucket(minioConfig)
+	require.NoError(t, err)
+
+	t.Log("test get file again")
+	fileBytes, err = mc.GetFile(ctx, fileName.String())
+	require.NoError(t, err)
+	require.Equal(t, uid.String(), string(fileBytes))
+
 }

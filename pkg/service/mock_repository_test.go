@@ -7,6 +7,7 @@ package service_test
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
@@ -51,6 +52,21 @@ func (m *MockRepository) CreateModelTags(arg0 context.Context, arg1 uuid.UUID, a
 func (mr *MockRepositoryMockRecorder) CreateModelTags(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelTags", reflect.TypeOf((*MockRepository)(nil).CreateModelTags), arg0, arg1, arg2)
+}
+
+// CreateModelTrigger mocks base method.
+func (m *MockRepository) CreateModelTrigger(arg0 context.Context, arg1 *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateModelTrigger", arg0, arg1)
+	ret0, _ := ret[0].(*datamodel.ModelTrigger)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateModelTrigger indicates an expected call of CreateModelTrigger.
+func (mr *MockRepositoryMockRecorder) CreateModelTrigger(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelTrigger", reflect.TypeOf((*MockRepository)(nil).CreateModelTrigger), arg0, arg1)
 }
 
 // CreateModelVersion mocks base method.
@@ -274,6 +290,22 @@ func (mr *MockRepositoryMockRecorder) ListModelTags(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTags", reflect.TypeOf((*MockRepository)(nil).ListModelTags), arg0, arg1)
 }
 
+// ListModelTriggers mocks base method.
+func (m *MockRepository) ListModelTriggers(arg0 context.Context, arg1, arg2 int64, arg3 ordering.OrderBy, arg4 *string, arg5, arg6 *time.Time) ([]*datamodel.ModelTrigger, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret0, _ := ret[0].([]*datamodel.ModelTrigger)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListModelTriggers indicates an expected call of ListModelTriggers.
+func (mr *MockRepositoryMockRecorder) ListModelTriggers(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockRepository)(nil).ListModelTriggers), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+}
+
 // ListModelVersions mocks base method.
 func (m *MockRepository) ListModelVersions(arg0 context.Context, arg1 uuid.UUID, arg2 bool) ([]*datamodel.ModelVersion, error) {
 	m.ctrl.T.Helper()
@@ -353,6 +385,20 @@ func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, 
 func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+}
+
+// UpdateModelTrigger mocks base method.
+func (m *MockRepository) UpdateModelTrigger(arg0 context.Context, arg1 *datamodel.ModelTrigger) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateModelTrigger", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateModelTrigger indicates an expected call of UpdateModelTrigger.
+func (mr *MockRepositoryMockRecorder) UpdateModelTrigger(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelTrigger", reflect.TypeOf((*MockRepository)(nil).UpdateModelTrigger), arg0, arg1)
 }
 
 // UpdateModelVersionDigestByID mocks base method.

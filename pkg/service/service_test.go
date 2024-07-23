@@ -451,7 +451,7 @@ func TestGetModelDefinition(t *testing.T) {
 			GetModelDefinition("github").
 			Return(&datamodel.ModelDefinition{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinition(context.Background(), "github")
 		assert.NoError(t, err)
@@ -466,7 +466,7 @@ func TestGetModelDefinition(t *testing.T) {
 			GetModelDefinitionByUID(ModelDefinition).
 			Return(&datamodel.ModelDefinition{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinitionByUID(context.Background(), ModelDefinition)
 		assert.NoError(t, err)
@@ -483,7 +483,7 @@ func TestListModelDefinitions(t *testing.T) {
 			ListModelDefinitions(modelPB.View_VIEW_FULL, int64(100), "").
 			Return([]*datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, int32(100), "")
 		assert.NoError(t, err)
