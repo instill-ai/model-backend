@@ -14,6 +14,7 @@ import (
 
 func TestMinio(t *testing.T) {
 	t.Skipf("only for testing on local")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -23,9 +24,12 @@ func TestMinio(t *testing.T) {
 		RootUser:   "minioadmin",
 		RootPwd:    "minioadmin",
 		BucketName: "instill-ai-model",
-	})
+	}
+
+	mc, err := minio.NewMinioClientAndInitBucket(minioConfig)
 	require.NoError(t, err)
 
+	t.Log("test upload file to minio")
 	fileName, _ := uuid.NewV4()
 	uid, _ := uuid.NewV4()
 

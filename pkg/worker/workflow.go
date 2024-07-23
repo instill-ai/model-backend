@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -14,8 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	"github.com/instill-ai/x/errmsg"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -23,11 +23,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
+	"github.com/instill-ai/x/errmsg"
+
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 type InferInput any
@@ -37,6 +39,7 @@ type TriggerModelWorkflowRequest struct {
 	ModelID            string
 	ModelUID           uuid.UUID
 	ModelVersion       datamodel.ModelVersion
+	ModelTags          []*datamodel.ModelTag
 	OwnerUID           uuid.UUID
 	OwnerType          string
 	UserUID            uuid.UUID
@@ -47,6 +50,9 @@ type TriggerModelWorkflowRequest struct {
 	ParsedInputKey     string
 	Mode               mgmtpb.Mode
 	Hardware           string
+	Visibility         datamodel.ModelVisibility
+	InputReferenceID   string
+	Source             datamodel.TriggerSource
 }
 
 type TriggerModelActivityRequest struct {
@@ -161,11 +167,57 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	// }
 
+	modelTags := make([]string, 0)
+	for _, tag := range param.ModelTags {
+		modelTags = append(modelTags, tag.TagName)
+	}
+	jsonBytes, _ := json.Marshal(modelTags)
+
+	start := time.Now()
+
+	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
+		ModelUID:         param.ModelUID,
+		ModelVersion:     param.ModelVersion.Version,
+		ModelTask:        datamodel.ModelTask(param.Task),
+		ModelTags:        jsonBytes,
+		TriggerUID:       param.TriggerUID,
+		Status:           datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_PROCESSING),
+		Visibility:       param.Visibility,
+		Source:           param.Source,
+		StartTime:        start,
+		RequesterUID:     param.RequesterUID,
+		InputReferenceID: param.InputReferenceID,
+	})
+	if err != nil {
+		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	succeeded := false
+	defer func() {
+		if err != nil || !succeeded {
+			runLog.Status = datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_FAILED)
+			endTime := time.Now()
+			timeUsed := endTime.Sub(start)
+			runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
+			runLog.EndTime = null.TimeFrom(endTime)
+			if err != nil {
+				runLog.Error = null.StringFrom(err.Error())
+			} else {
+				runLog.Error = null.StringFrom("unknown error occurred")
+			}
+			if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
+				logger.Error("UpdateModelTrigger for TriggerModelActivity failed", zap.Error(err))
+			}
+		}
+	}()
+
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
 	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
 	if modelMetadataResponse == nil {
-		return nil, w.toApplicationError(fmt.Errorf("model is offline"), param.ModelID, ModelActivityError)
+		err = fmt.Errorf("model is offline") // used by model run logging in defer
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	blob, err := w.redisClient.Get(ctx, param.ParsedInputKey).Bytes()
@@ -239,14 +291,14 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
-	start := time.Now()
 
 	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	timeUsed := time.Since(start)
+	endTime := time.Now()
+	timeUsed := endTime.Sub(start)
 	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
 
 	// TODO: temporary disable usage collect until further decision
@@ -292,9 +344,25 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		logger.Warn("json marshal error for task inputs")
 	}
 
+	outputReferenceUID, _ := uuid.NewV4()
+	outputReferenceID := outputReferenceUID.String()
+	if err = w.minioClient.UploadBase64File(ctx, outputReferenceID, base64.StdEncoding.EncodeToString(outputJSON), constant.ContentTypeJSON); err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
+	runLog.EndTime = null.TimeFrom(endTime)
+	runLog.OutputReferenceID = null.StringFrom(outputReferenceID)
+	runLog.Status = datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_COMPLETED)
+	if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	succeeded = true
 	logger.Info("TriggerModelActivity completed")
 
 	return &TriggerModelActivityResponse{
+		// todo: this is not used anymore?
 		TaskOutputBytes: jsonOutput,
 		OutputKey:       outputKey,
 	}, nil

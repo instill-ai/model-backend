@@ -20,6 +20,7 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
+	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -41,6 +42,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/middleware"
+	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
@@ -229,7 +231,13 @@ func main() {
 
 	repo := repository.NewRepository(db, redisClient)
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, config.Config.Server.InstillCoreHost)
+	// Initialize Minio client
+	minioClient, err := minio.NewMinioClientAndInitBucket(&config.Config.Minio)
+	if err != nil {
+		logger.Fatal("failed to create minio client", zap.Error(err))
+	}
+
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, minioClient, config.Config.Server.InstillCoreHost)
 
 	modelpb.RegisterModelPublicServiceServer(
 		publicGrpcS,

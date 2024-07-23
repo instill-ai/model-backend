@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,26 +17,30 @@ import (
 	"go.einride.tech/aip/ordering"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
-	"github.com/instill-ai/x/errmsg"
-	"github.com/instill-ai/x/sterr"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
+	"github.com/instill-ai/x/errmsg"
+	"github.com/instill-ai/x/sterr"
 
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -94,6 +99,8 @@ type Service interface {
 
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
+
+	ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest, view modelpb.View) (*modelpb.ListModelTriggersResponse, error)
 }
 
 type service struct {
@@ -105,6 +112,7 @@ type service struct {
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    acl.ACLClientInterface
+	minioClient                  minio.MinioI
 	instillCoreHost              string
 }
 
@@ -118,6 +126,7 @@ func NewService(
 	tc client.Client,
 	ra ray.Ray,
 	a acl.ACLClientInterface,
+	minioClient minio.MinioI,
 	h string) Service {
 	return &service{
 		repository:                   r,
@@ -128,6 +137,7 @@ func NewService(
 		redisClient:                  rc,
 		temporalClient:               tc,
 		aclClient:                    a,
+		minioClient:                  minioClient,
 		instillCoreHost:              h,
 	}
 }
@@ -459,6 +469,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
+	inputReferenceUID, _ := uuid.NewV4()
+	inputReferenceID := inputReferenceUID.String()
+	if err = s.minioClient.UploadBase64File(ctx, inputReferenceID, base64.StdEncoding.EncodeToString(parsedInferInput), constant.ContentTypeJSON); err != nil {
+		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
+		return nil, err
+	}
+
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
@@ -482,6 +499,12 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		requesterUID = userUID
 	}
 
+	source := datamodel.TriggerSource(modelpb.ModelTrigger_TRIGGER_SOURCE_API)
+	userAgentEnum, ok := modelpb.ModelTrigger_TriggerSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	if ok {
+		source = datamodel.TriggerSource(userAgentEnum)
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
@@ -491,6 +514,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
+			ModelTags:          dbModel.Tags,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
@@ -501,6 +525,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_SYNC,
 			Hardware:           dbModel.Hardware,
+			Visibility:         dbModel.Visibility,
+			Source:             source,
+			InputReferenceID:   inputReferenceID,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -566,6 +593,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
+	inputReferenceUID, _ := uuid.NewV4()
+	inputReferenceID := inputReferenceUID.String()
+	if err = s.minioClient.UploadBase64File(ctx, inputReferenceID, base64.StdEncoding.EncodeToString(parsedInferInput), constant.ContentTypeJSON); err != nil {
+		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
+		return nil, err
+	}
+
 	parsedInputKey := fmt.Sprintf("model_trigger_input_parsed:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
@@ -589,6 +623,12 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		requesterUID = userUID
 	}
 
+	source := datamodel.TriggerSource(modelpb.ModelTrigger_TRIGGER_SOURCE_API)
+	userAgentEnum, ok := modelpb.ModelTrigger_TriggerSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	if ok {
+		source = datamodel.TriggerSource(userAgentEnum)
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
@@ -598,6 +638,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
+			ModelTags:          dbModel.Tags,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
@@ -608,6 +649,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			ParsedInputKey:     parsedInputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 			Hardware:           dbModel.Hardware,
+			Visibility:         dbModel.Visibility,
+			Source:             source,
+			InputReferenceID:   inputReferenceID,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -660,6 +704,108 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	}
 	pbModels, err := s.DBToPBModels(ctx, dbModels, view, true)
 	return pbModels, int32(totalSize), nextPageToken, err
+}
+
+func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest, view modelpb.View) (*modelpb.ListModelTriggersResponse, error) {
+	pageSize := s.pageSizeInRange(req.GetPageSize())
+	page := s.pageInRange(req.GetPage())
+
+	orderBy, err := ordering.ParseOrderBy(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var startTimeFrom, startTimeTo *time.Time
+	if req.StartTimeFrom.IsValid() {
+		t := req.GetStartTimeFrom().AsTime()
+		startTimeFrom = &t
+	}
+	if req.StartTimeTo.IsValid() {
+		t := req.GetStartTimeTo().AsTime()
+		startTimeTo = &t
+	}
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), orderBy, req.ModelUid, startTimeFrom, startTimeTo)
+	if err != nil {
+		return nil, err
+	}
+
+	metadataMap := make(map[string][]byte)
+	if view == modelpb.View_VIEW_FULL {
+		var referenceIDs []string
+		for _, trigger := range triggers {
+			referenceIDs = append(referenceIDs, trigger.InputReferenceID)
+			if trigger.OutputReferenceID.Valid {
+				referenceIDs = append(referenceIDs, trigger.OutputReferenceID.String)
+			}
+		}
+
+		logger.Debug("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, "/")))
+		fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
+		if err != nil {
+			logger.Error("failed to get files from minio", zap.Error(err))
+			return nil, err
+		}
+		for _, content := range fileContents {
+			metadataMap[content.Name] = content.Content
+		}
+	}
+
+	pbTriggers := make([]*modelpb.ModelTrigger, len(triggers))
+	for i, trigger := range triggers {
+		pbTrigger := &modelpb.ModelTrigger{
+			Uid:          trigger.UID.String(),
+			ModelUid:     trigger.ModelUID.String(),
+			TriggerUid:   trigger.TriggerUID.String(),
+			Status:       modelpb.ModelTrigger_TriggerStatus(trigger.Status),
+			Visibility:   modelpb.Model_Visibility(trigger.Visibility),
+			Source:       modelpb.ModelTrigger_TriggerSource(trigger.Source),
+			StartTime:    timestamppb.New(trigger.StartTime),
+			RequesterUid: trigger.RequesterUID.String(),
+			Error:        trigger.Error.Ptr(),
+			CreateTime:   timestamppb.New(trigger.CreateTime),
+			UpdateTime:   timestamppb.New(trigger.UpdateTime),
+		}
+		if trigger.TotalDuration.Valid {
+			pbTrigger.TotalDuration = durationpb.New(time.Duration(trigger.TotalDuration.Int64) * time.Millisecond)
+		}
+		if trigger.EndTime.Valid {
+			pbTrigger.EndTime = timestamppb.New(trigger.EndTime.Time)
+		}
+
+		if view == modelpb.View_VIEW_FULL {
+			data, ok := metadataMap[trigger.InputReferenceID]
+			if !ok {
+				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)
+			}
+			pbTrigger.TaskInputs = &structpb.Struct{}
+			if err := protojson.Unmarshal(data, pbTrigger.TaskInputs); err != nil {
+				return nil, err
+			}
+
+			if trigger.OutputReferenceID.Valid {
+				data := metadataMap[trigger.OutputReferenceID.String]
+
+				triggerModelResp := &modelpb.TriggerUserModelResponse{}
+				err = protojson.Unmarshal(data, triggerModelResp)
+				if err != nil {
+					return nil, err
+				}
+
+				pbTrigger.TaskOutputs = triggerModelResp.TaskOutputs
+			}
+		}
+
+		pbTriggers[i] = pbTrigger
+	}
+
+	return &modelpb.ListModelTriggersResponse{
+		Triggers:  pbTriggers,
+		TotalSize: int32(totalSize),
+		PageSize:  pageSize,
+		Page:      page,
+	}, nil
 }
 
 func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error) {
@@ -1069,4 +1215,24 @@ func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, 
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
+}
+
+func (s *service) pageSizeInRange(pageSize int32) int32 {
+	if pageSize <= 0 {
+		return repository.DefaultPageSize
+	}
+
+	if pageSize > repository.MaxPageSize {
+		return repository.MaxPageSize
+	}
+
+	return pageSize
+}
+
+func (s *service) pageInRange(page int32) int32 {
+	if page <= 0 {
+		return 0
+	}
+
+	return page
 }

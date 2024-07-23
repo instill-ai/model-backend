@@ -25,6 +25,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/repository"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
@@ -117,6 +118,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
 	}
+
 	var temporalClientOptions temporalclient.Options
 	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
 		if temporalClientOptions, err = temporal.GetTLSClientOption(
@@ -158,7 +160,8 @@ func main() {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
 
-	cw := modelWorker.NewWorker(redisClient, rayService, minioClient, nil)
+	repo := repository.NewRepository(db, redisClient)
+	cw := modelWorker.NewWorker(redisClient, rayService, repo, minioClient, nil)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

@@ -9,12 +9,14 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
+	github.com/gojuno/minimock/v3 v3.3.13
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/iancoleman/strcase v0.3.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240729074509-fc8357b6c13f
+	// todo: fetch from main branch when protogen-go changes merged
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240807084552-cc0754ca07c1
 	github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a
 	github.com/instill-ai/x v0.4.0-alpha
 	github.com/jackc/pgx/v5 v5.6.0
@@ -43,6 +45,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.33.0
+	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.25.2
