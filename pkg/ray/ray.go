@@ -65,7 +65,7 @@ func NewRay() Ray {
 
 func (r *ray) Init() {
 	// Connect to gRPC server
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		config.Config.RayServer.GrpcURI,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(

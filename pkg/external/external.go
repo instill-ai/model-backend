@@ -32,7 +32,7 @@ func InitMgmtPublicServiceClient(ctx context.Context) (mgmtpb.MgmtPublicServiceC
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PublicPort), clientDialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize), grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize)))
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PublicPort), clientDialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize), grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize)))
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
@@ -58,7 +58,7 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtpb.MgmtPrivateServic
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PrivatePort), clientDialOpts)
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PrivatePort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -83,7 +83,7 @@ func InitArtifactPrivateServiceClient(ctx context.Context) (artifactpb.ArtifactP
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.ArtifactBackend.Host, config.Config.ArtifactBackend.PrivatePort), clientDialOpts)
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", config.Config.ArtifactBackend.Host, config.Config.ArtifactBackend.PrivatePort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -104,7 +104,7 @@ func InitUsageServiceClient(ctx context.Context) (usagepb.UsageServiceClient, *g
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(
+	clientConn, err := grpc.NewClient(
 		fmt.Sprintf("%v:%v", config.Config.Server.Usage.Host, config.Config.Server.Usage.Port),
 		clientDialOpts, grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
