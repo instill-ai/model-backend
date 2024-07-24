@@ -137,7 +137,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 		},
 		ProfileImage: sql.NullString{
 			String: profileImage,
-			Valid:  len(profileImage) > 0,
+			Valid:  profileImage != "",
 		},
 	}, nil
 }

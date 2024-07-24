@@ -8,8 +8,6 @@ import "google/api/resource.proto";
 // Protocol Buffers Well-Known Types
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-// OpenAPI
-import "protoc-gen-openapiv2/options/annotations.proto";
 
 ///////////////////////////////////////////////////////////////////
 
@@ -59,7 +57,8 @@ message ModelDefinition {
 
   // The model specification represented by a JSON schema. It is used to
   // validate the JSON configurations of a model created from a specific model
-  // source. It must be a valid JSON that includes what fields are needed to
+  // source, and the resource spec which the model is desired to be deployed on.
+  // It must be a valid JSON that includes what fields are needed to
   // create or display a model.
   google.protobuf.Struct model_spec = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -83,7 +82,7 @@ enum View {
 // definitions.
 message ListModelDefinitionsRequest {
   // The maximum number of model definitions to return. If this parameter
-  // is unspecified, at most 10 pipelines will be returned. The cap value for
+  // is unspecified, at most 10 definitions will be returned. The cap value for
   // this parameter is 100 (i.e. any value above that will be coerced to 100).
   optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
   // Page token.
@@ -105,21 +104,17 @@ message ListModelDefinitionsResponse {
 // GetModelDefinitionRequest represents a request to fetch the details of a
 // model definition.
 message GetModelDefinitionRequest {
-  // The resource name of the model definition, which allows its access by ID.
-  // - Format: `model-definitions/{id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "model_definition_name"}
-    }
-  ];
+  // Reserved for `name`
+  reserved 1;
   // View allows clients to specify the desired resource view in the response.
   optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
+  // The resource name of the model definition, which allows its access by ID.
+  // - Format: `model-definitions/{id}`.
+  string model_definition_id = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // GetModelDefinitionResponse contains the requested model definition.
 message GetModelDefinitionResponse {
   // The model definition resource.
-  ModelDefinition model_definition = 1;
+  ModelDefinition model_definition = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

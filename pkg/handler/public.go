@@ -1104,12 +1104,7 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelpb.Get
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	definitionID, err := resource.GetDefinitionID(req.Name)
-	if err != nil {
-		return &modelpb.GetModelDefinitionResponse{}, err
-	}
-
-	pbModelDefinition, err := h.service.GetModelDefinition(ctx, definitionID)
+	pbModelDefinition, err := h.service.GetModelDefinition(ctx, req.ModelDefinitionId)
 	if err != nil {
 		return &modelpb.GetModelDefinitionResponse{}, err
 	}

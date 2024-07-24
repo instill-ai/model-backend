@@ -102,13 +102,13 @@ func parseImageInputToByte(ctx context.Context, imageInput ray.ImageInput) (enco
 	var img image.Image
 	if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
 		logger, _ := custom_logger.GetZapLogger(ctx)
-		if len(imageInput.ImgURL) > 0 {
+		if imageInput.ImgURL != "" {
 			img, err = parseImageFromURL(ctx, imageInput.ImgURL)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to parse image from url. %v", err))
 				return nil, fmt.Errorf("unable to parse image from url")
 			}
-		} else if len(imageInput.ImgBase64) > 0 {
+		} else if imageInput.ImgBase64 != "" {
 			img, err = parseImageFromBase64(ctx, imageInput.ImgBase64)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Unable to parse base64 image. %v", err))
@@ -194,13 +194,13 @@ func parseImageRequestInputsToBytes(ctx context.Context, req TriggerNamespaceMod
 		)
 
 		if imageInput.ImgURL != "" || imageInput.ImgBase64 != "" {
-			if len(imageInput.ImgURL) > 0 {
+			if imageInput.ImgURL != "" {
 				img, err = parseImageFromURL(ctx, imageInput.ImgURL)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse image %v from url. %v", idx, err))
 					return nil, fmt.Errorf("unable to parse image %v from url", idx)
 				}
-			} else if len(imageInput.ImgBase64) > 0 {
+			} else if imageInput.ImgBase64 != "" {
 				img, err = parseImageFromBase64(ctx, imageInput.ImgBase64)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Unable to parse base64 image %v. %v", idx, err))

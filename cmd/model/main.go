@@ -64,7 +64,7 @@ func InitMgmtPrivateServiceClient(ctx context.Context) (mgmtpb.MgmtPrivateServic
 		clientDialOpts = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PrivatePort), clientDialOpts)
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", config.Config.MgmtBackend.Host, config.Config.MgmtBackend.PrivatePort), clientDialOpts)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -91,7 +91,7 @@ func InitModelPublicServiceClient(ctx context.Context) (modelpb.ModelPublicServi
 	if host == "" {
 		host = "localhost"
 	}
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PublicPort), clientDialOpts)
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", host, config.Config.Server.PublicPort), clientDialOpts)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
@@ -119,7 +119,7 @@ func InitModelPrivateServiceClient(ctx context.Context) (modelpb.ModelPrivateSer
 	if host == "" {
 		host = "localhost"
 	}
-	clientConn, err := grpc.Dial(fmt.Sprintf("%v:%v", host, config.Config.Server.PrivatePort), clientDialOpts)
+	clientConn, err := grpc.NewClient(fmt.Sprintf("%v:%v", host, config.Config.Server.PrivatePort), clientDialOpts)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, nil
@@ -196,7 +196,7 @@ func main() {
 			name := fmt.Sprintf("%s/%s", modelConfig.OwnerType, modelConfig.OwnerID)
 			if modelConfig.OwnerType == string(resource.User) {
 				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{
-					Name: name,
+					UserId: modelConfig.OwnerID,
 				})
 				if err != nil {
 					logger.Fatal(err.Error())
@@ -204,7 +204,7 @@ func main() {
 				owner = resp.GetUser()
 			} else if modelConfig.OwnerType == string(resource.Organization) {
 				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtpb.GetOrganizationAdminRequest{
-					Name: name,
+					OrganizationId: modelConfig.OwnerID,
 				})
 				if err != nil {
 					logger.Fatal(err.Error())
@@ -222,11 +222,13 @@ func main() {
 			}
 
 			if modelConfig.OwnerType == string(resource.User) {
+				//nolint:staticcheck
 				_, err = modelPublicServiceClient.GetUserModel(sCtx, &modelpb.GetUserModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelpb.View_VIEW_FULL.Enum(),
 				})
 			} else if modelConfig.OwnerType == string(resource.Organization) {
+				//nolint:staticcheck
 				_, err = modelPublicServiceClient.GetOrganizationModel(sCtx, &modelpb.GetOrganizationModelRequest{
 					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
 					View: modelpb.View_VIEW_FULL.Enum(),
@@ -246,11 +248,13 @@ func main() {
 					Configuration:   configuration,
 				}
 				if modelConfig.OwnerType == string(resource.User) {
+					//nolint:staticcheck
 					_, err = modelPublicServiceClient.CreateUserModel(sCtx, &modelpb.CreateUserModelRequest{
 						Model:  model,
 						Parent: name,
 					})
 				} else if modelConfig.OwnerType == string(resource.Organization) {
+					//nolint:staticcheck
 					_, err = modelPublicServiceClient.CreateOrganizationModel(sCtx, &modelpb.CreateOrganizationModelRequest{
 						Model:  model,
 						Parent: name,
