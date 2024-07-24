@@ -485,6 +485,10 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
+	if state, _, err := s.ray.ModelReady(ctx, id, version.Version); err != nil || state == modelpb.State_STATE_ERROR.Enum() || state == modelpb.State_STATE_STARTING.Enum() {
+		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+	}
+
 	inputKey := fmt.Sprintf("model_trigger_input_req:%s", triggerUID)
 	s.redisClient.Set(
 		ctx,
