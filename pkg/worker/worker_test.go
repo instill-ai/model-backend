@@ -110,22 +110,14 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.ParsedInputKey = "ParsedInputKey"
+		param.InputKey = "InputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 
-		mockRay.EXPECT().
-			ModelMetadataRequest(
-				gomock.Any(),
-				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
-				param.ModelVersion.Version,
-			).
-			Return(nil).Times(1)
-
 		w := worker.NewWorker(rc, mockRay, nil)
 		_, err = w.TriggerModelActivity(ctx, param)
-		require.ErrorContains(t, err, "model is offline")
+		require.ErrorContains(t, err, "model failed to execute")
 	})
 }
