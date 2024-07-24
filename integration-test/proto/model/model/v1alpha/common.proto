@@ -64,3 +64,11 @@ message Message {
   // Message content.
   repeated MessageContent content = 2;
 }
+
+// Permission defines how a pipeline can be used.
+message Permission {
+  // Defines whether the pipeline can be modified.
+  bool can_edit = 1;
+  // Defines whether the pipeline can be executed.
+  bool can_trigger = 2;
+}

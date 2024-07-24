@@ -281,7 +281,7 @@ func main() {
 	if config.Config.Server.Usage.Enabled {
 		userUID := config.Config.Server.Usage.UsageIdentifierUID
 		if userUID == "" {
-			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{Name: constant.DefaultUserID}); err == nil {
+			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{UserId: constant.DefaultUserID}); err == nil {
 				userUID = resp.GetUser().GetUid()
 			} else {
 				logger.Error(err.Error())

@@ -53,8 +53,6 @@ jobs:
           provenance: false
           build-args: |
             SERVICE_NAME=model-backend
-            GOLANG_VERSION=${{ env.GOLANG_VERSION }}
-            UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
           tags: instill/model-backend:latest
           cache-from: type=registry,ref=instill/model-backend:buildcache
           cache-to: type=registry,ref=instill/model-backend:buildcache,mode=max
@@ -81,8 +79,6 @@ jobs:
           provenance: false
           build-args: |
             SERVICE_NAME=model-backend
-            GOLANG_VERSION=${{ env.GOLANG_VERSION }}
-            UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
           tags: instill/model-backend:${{steps.set_version.outputs.no_v_tag}}
           cache-from: type=registry,ref=instill/model-backend:buildcache
           cache-to: type=registry,ref=instill/model-backend:buildcache,mode=max

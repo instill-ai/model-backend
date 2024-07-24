@@ -172,14 +172,15 @@ func (s *service) GetRayClient() ray.Ray {
 }
 
 func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
+	id := strings.Split(name, "/")[1]
 	if strings.HasPrefix(name, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtpb.GetUserAdminRequest{Name: name})
+		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtpb.GetUserAdminRequest{UserId: id})
 		if err != nil {
 			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
 		}
 		return fmt.Sprintf("users/%s", *userResp.User.Uid), nil
 	} else {
-		orgResp, err := s.mgmtPrivateServiceClient.GetOrganizationAdmin(context.Background(), &mgmtpb.GetOrganizationAdminRequest{Name: name})
+		orgResp, err := s.mgmtPrivateServiceClient.GetOrganizationAdmin(context.Background(), &mgmtpb.GetOrganizationAdminRequest{OrganizationId: id})
 		if err != nil {
 			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
 		}
@@ -188,14 +189,15 @@ func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
 }
 
 func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) {
+	uid := strings.Split(permalink, "/")[1]
 	if strings.HasPrefix(permalink, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtpb.LookUpUserAdminRequest{Permalink: permalink})
+		userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtpb.LookUpUserAdminRequest{UserUid: uid})
 		if err != nil {
 			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
 		}
 		return fmt.Sprintf("users/%s", userResp.User.Id), nil
 	} else {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtpb.LookUpOrganizationAdminRequest{Permalink: permalink})
+		userResp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
 		if err != nil {
 			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
 		}
@@ -212,8 +214,9 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 		}
 	}
 
+	uid := strings.Split(permalink, "/")[1]
 	if strings.HasPrefix(permalink, "users") {
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{UserUid: uid})
 		if err != nil {
 			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
@@ -223,7 +226,7 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 		}
 		return owner, nil
 	} else {
-		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{Permalink: permalink})
+		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
 		if err != nil {
 			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}

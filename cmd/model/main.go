@@ -196,7 +196,7 @@ func main() {
 			name := fmt.Sprintf("%s/%s", modelConfig.OwnerType, modelConfig.OwnerID)
 			if modelConfig.OwnerType == string(resource.User) {
 				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{
-					Name: name,
+					UserId: modelConfig.OwnerID,
 				})
 				if err != nil {
 					logger.Fatal(err.Error())
@@ -204,7 +204,7 @@ func main() {
 				owner = resp.GetUser()
 			} else if modelConfig.OwnerType == string(resource.Organization) {
 				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtpb.GetOrganizationAdminRequest{
-					Name: name,
+					OrganizationId: modelConfig.OwnerID,
 				})
 				if err != nil {
 					logger.Fatal(err.Error())

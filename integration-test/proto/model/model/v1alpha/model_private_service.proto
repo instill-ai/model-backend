@@ -2,10 +2,6 @@ syntax = "proto3";
 
 package model.model.v1alpha;
 
-// Google API
-import "google/api/annotations.proto";
-import "google/api/client.proto";
-import "google/api/visibility.proto";
 import "../../../model/model/v1alpha/model.proto";
 
 // Model service responds to internal access
@@ -14,32 +10,27 @@ service ModelPrivateService {
 
   // ListModelsAdmin method receives a ListModelsAdminRequest message and
   // returns a ListModelsAdminResponse
-  rpc ListModelsAdmin(ListModelsAdminRequest) returns (ListModelsAdminResponse) {
-    option (google.api.http) = {get: "/v1alpha/admin/models"};
-  }
+  rpc ListModelsAdmin(ListModelsAdminRequest) returns (ListModelsAdminResponse) {}
 
   // LookUpModelAdmin method receives a LookUpModelAdminRequest message and
   // returns a LookUpModelAdminResponse
-  rpc LookUpModelAdmin(LookUpModelAdminRequest) returns (LookUpModelAdminResponse) {
-    option (google.api.http) = {get: "/v1alpha/admin/{permalink=models/*}/lookUp"};
-    option (google.api.method_signature) = "permalink";
-  }
+  rpc LookUpModelAdmin(LookUpModelAdminRequest) returns (LookUpModelAdminResponse) {}
 
-  // DeployModelAdmin deploy a model to online state
-  rpc DeployModelAdmin(DeployModelAdminRequest) returns (DeployModelAdminResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/admin/{name=users/*/models/*}/{version=*}/deploy"
-      body: "*"
-    };
-  }
+  // DeployNamespaceModelAdmin deploy a model to online state
+  rpc DeployNamespaceModelAdmin(DeployNamespaceModelAdminRequest) returns (DeployNamespaceModelAdminResponse) {}
 
-  // UndeployModelAdmin undeploy a model to offline state
-  rpc UndeployModelAdmin(UndeployModelAdminRequest) returns (UndeployModelAdminResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/admin/{name=users/*/models/*}/{version=*}/undeploy"
-      body: "*"
-    };
-  }
+  // DeployUserModelAdmin deploy a model to online state
+  rpc DeployUserModelAdmin(DeployUserModelAdminRequest) returns (DeployUserModelAdminResponse) {}
 
-  option (google.api.api_visibility).restriction = "INTERNAL";
+  // DeployOrganizationModelAdmin deploy a model to online state
+  rpc DeployOrganizationModelAdmin(DeployOrganizationModelAdminRequest) returns (DeployOrganizationModelAdminResponse) {}
+
+  // UndeployUserModelAdmin undeploy a model to offline state
+  rpc UndeployUserModelAdmin(UndeployUserModelAdminRequest) returns (UndeployUserModelAdminResponse) {}
+
+  // UndeployNamespaceModelAdmin undeploy a model to offline state
+  rpc UndeployNamespaceModelAdmin(UndeployNamespaceModelAdminRequest) returns (UndeployNamespaceModelAdminResponse) {}
+
+  // UndeployOrganizationModelAdmin undeploy a model to offline state
+  rpc UndeployOrganizationModelAdmin(UndeployOrganizationModelAdminRequest) returns (UndeployOrganizationModelAdminResponse) {}
 }
