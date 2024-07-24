@@ -308,7 +308,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 				Output: taskOutput,
 			}
 		case commonpb.Task_TASK_SEMANTIC_SEGMENTATION:
-			taskOutput := &modelpb.TaskOutput_InstanceSegmentation{}
+			taskOutput := &modelpb.TaskOutput_SemanticSegmentation{}
 			err = json.Unmarshal(outputBytes, taskOutput)
 			if err != nil {
 				return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)

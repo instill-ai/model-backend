@@ -4,7 +4,6 @@ package worker_test
 
 import (
 	"context"
-	// "encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -115,7 +114,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			gomock.Any(),
 			fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
 			param.ModelVersion.Version,
-		).Return(&rayserver.TriggerResponse{
+		).Return(&rayserver.CallResponse{
 			TaskOutputs: []*structpb.Struct{},
 		}, nil).Times(1)
 
