@@ -115,6 +115,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsR
 func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.CreateUserModelRequest) (resp *modelpb.CreateUserModelResponse, err error) {
 	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
+		Model:       req.Model,
 	})
 	if err != nil {
 		return nil, err
@@ -126,6 +127,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.Create
 func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelpb.CreateOrganizationModelRequest) (resp *modelpb.CreateOrganizationModelResponse, err error) {
 	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
+		Model:       req.Model,
 	})
 	if err != nil {
 		return nil, err
@@ -598,6 +600,8 @@ func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.Update
 	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Model.Name, "/")[1],
 		ModelId:     strings.Split(req.Model.Name, "/")[3],
+		Model:       req.Model,
+		UpdateMask:  req.UpdateMask,
 	})
 	if err != nil {
 		return nil, err
@@ -612,6 +616,8 @@ func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelp
 	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Model.Name, "/")[1],
 		ModelId:     strings.Split(req.Model.Name, "/")[3],
+		Model:       req.Model,
+		UpdateMask:  req.UpdateMask,
 	})
 	if err != nil {
 		return nil, err
