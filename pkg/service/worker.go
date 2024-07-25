@@ -51,7 +51,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, ErrNoPermission
 	}
 
-	triggerModelReq := &modelpb.TriggerUserModelRequest{}
+	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
 
 	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String())).Bytes()
 	if err != nil {
@@ -96,7 +96,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 }
 
-func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerModelReq *modelpb.TriggerUserModelRequest) (*longrunningpb.Operation, error) {
+func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerModelReq *modelpb.TriggerNamespaceModelRequest) (*longrunningpb.Operation, error) {
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -106,7 +106,7 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 			Request: triggerModelReq,
 		}
 
-		triggerModelResp := &modelpb.TriggerUserModelResponse{}
+		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
 
 		blobRedisKey := fmt.Sprintf("async_model_response:%s", workflowExecutionInfo.Execution.WorkflowId)
 		blob, err := s.redisClient.Get(ctx, blobRedisKey).Bytes()

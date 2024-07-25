@@ -34,11 +34,6 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetM
 	}, nil
 }
 
-type GetNamespaceLatestModelOperationRequestInterface interface {
-	GetName() string
-	GetView() modelpb.View
-}
-
 func (h *PublicHandler) GetUserLatestModelOperation(ctx context.Context, req *modelpb.GetUserLatestModelOperationRequest) (*modelpb.GetUserLatestModelOperationResponse, error) {
 	r, err := h.GetNamespaceLatestModelOperation(ctx, &modelpb.GetNamespaceLatestModelOperationRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
