@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -18,11 +17,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -115,24 +112,29 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsR
 	return &resp, nil
 }
 
-type CreateNamespaceModelRequestInterface interface {
-	GetModel() *modelpb.Model
-	GetParent() string
-}
-
 func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.CreateUserModelRequest) (resp *modelpb.CreateUserModelResponse, err error) {
-	resp = &modelpb.CreateUserModelResponse{}
-	resp.Model, err = h.createNamespaceModel(ctx, req)
-	return resp, err
+	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Parent, "/")[1],
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.CreateUserModelResponse{Model: r.Model}, nil
 }
 
 func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelpb.CreateOrganizationModelRequest) (resp *modelpb.CreateOrganizationModelResponse, err error) {
-	resp = &modelpb.CreateOrganizationModelResponse{}
-	resp.Model, err = h.createNamespaceModel(ctx, req)
-	return resp, err
+	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Parent, "/")[1],
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.CreateOrganizationModelResponse{Model: r.Model}, nil
 }
 
-func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateNamespaceModelRequestInterface) (*modelpb.Model, error) {
+func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.CreateNamespaceModelRequest) (*modelpb.CreateNamespaceModelResponse, error) {
 
 	ctx, span := tracer.Start(ctx, "CreateNamespaceModel",
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -158,9 +160,7 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 	}
 
-	modelToCreate.OwnerName = req.GetParent()
-
-	ns, _, err := h.service.GetRscNamespaceAndNameID(modelToCreate.GetOwnerName())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -215,32 +215,49 @@ func (h *PublicHandler) createNamespaceModel(ctx context.Context, req CreateName
 
 }
 
-type ListNamespaceModelRequestInterface interface {
-	GetPageSize() int32
-	GetPageToken() string
-	GetView() modelpb.View
-	GetParent() string
-	GetFilter() string
-	GetVisibility() modelpb.Model_Visibility
-	GetOrderBy() string
-	GetShowDeleted() bool
-}
-
 func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelpb.ListUserModelsRequest) (resp *modelpb.ListUserModelsResponse, err error) {
-	resp = &modelpb.ListUserModelsResponse{}
-	resp.Models, resp.NextPageToken, resp.TotalSize, err = h.listNamespaceModels(ctx, req)
-
-	return resp, err
+	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
+		NamespaceId: strings.Split(req.Parent, "/")[1],
+		PageSize:    req.PageSize,
+		PageToken:   req.PageToken,
+		View:        req.View,
+		Visibility:  req.Visibility,
+		Filter:      req.Filter,
+		OrderBy:     req.OrderBy,
+		ShowDeleted: req.ShowDeleted,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &modelpb.ListUserModelsResponse{
+		Models:        r.Models,
+		NextPageToken: r.NextPageToken,
+		TotalSize:     r.TotalSize,
+	}, nil
 }
 
 func (h *PublicHandler) ListOrganizationModels(ctx context.Context, req *modelpb.ListOrganizationModelsRequest) (resp *modelpb.ListOrganizationModelsResponse, err error) {
-	resp = &modelpb.ListOrganizationModelsResponse{}
-	resp.Models, resp.NextPageToken, resp.TotalSize, err = h.listNamespaceModels(ctx, req)
-
-	return resp, err
+	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
+		NamespaceId: strings.Split(req.Parent, "/")[1],
+		PageSize:    req.PageSize,
+		PageToken:   req.PageToken,
+		View:        req.View,
+		Visibility:  req.Visibility,
+		Filter:      req.Filter,
+		OrderBy:     req.OrderBy,
+		ShowDeleted: req.ShowDeleted,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &modelpb.ListOrganizationModelsResponse{
+		Models:        r.Models,
+		NextPageToken: r.NextPageToken,
+		TotalSize:     r.TotalSize,
+	}, nil
 }
 
-func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespaceModelRequestInterface) (models []*modelpb.Model, nextPageToken string, totalSize int32, err error) {
+func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.ListNamespaceModelsRequest) (*modelpb.ListNamespaceModelsResponse, error) {
 
 	eventName := "ListNamespaceModels"
 
@@ -252,15 +269,15 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, _, err := h.service.GetRscNamespaceAndNameID(req.GetParent())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
@@ -278,26 +295,26 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 	}...)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	filter, err := filtering.ParseFilter(req, declarations)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 	visibility := req.GetVisibility()
 
 	orderBy, err := ordering.ParseOrderBy(req)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, "", 0, err
+		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -308,30 +325,52 @@ func (h *PublicHandler) listNamespaceModels(ctx context.Context, req ListNamespa
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return pbModels, nextPageToken, totalSize, nil
-}
-
-type ListNamespaceModelVersionsRequestInterface interface {
-	GetPage() int32
-	GetPageSize() int32
-	GetName() string
+	return &modelpb.ListNamespaceModelsResponse{
+		Models:        pbModels,
+		TotalSize:     totalSize,
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
 func (h *PublicHandler) ListUserModelVersions(ctx context.Context, req *modelpb.ListUserModelVersionsRequest) (resp *modelpb.ListUserModelVersionsResponse, err error) {
-	resp = &modelpb.ListUserModelVersionsResponse{}
-	resp.Versions, resp.TotalSize, resp.PageSize, resp.Page, err = h.listNamespaceModelVersions(ctx, req)
+	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		PageSize:    req.PageSize,
+		Page:        req.Page,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.ListUserModelVersionsResponse{
+		Versions:  r.Versions,
+		TotalSize: r.TotalSize,
+		PageSize:  r.PageSize,
+		Page:      r.Page,
+	}, nil
 }
 
 func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *modelpb.ListOrganizationModelVersionsRequest) (resp *modelpb.ListOrganizationModelVersionsResponse, err error) {
-	resp = &modelpb.ListOrganizationModelVersionsResponse{}
-	resp.Versions, resp.TotalSize, resp.PageSize, resp.Page, err = h.listNamespaceModelVersions(ctx, req)
+	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		PageSize:    req.PageSize,
+		Page:        req.Page,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.ListOrganizationModelVersionsResponse{
+		Versions:  r.Versions,
+		TotalSize: r.TotalSize,
+		PageSize:  r.PageSize,
+		Page:      r.Page,
+	}, nil
 }
 
-func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req ListNamespaceModelVersionsRequestInterface) (versions []*modelpb.ModelVersion, totalSize int32, pageSize int32, page int32, err error) {
+func (h *PublicHandler) ListNamespaceModelVersions(ctx context.Context, req *modelpb.ListNamespaceModelVersionsRequest) (resp *modelpb.ListNamespaceModelVersionsResponse, err error) {
 
 	eventName := "ListNamespaceModelVersions"
 
@@ -343,21 +382,21 @@ func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req List
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, 0, 0, 0, err
+		return nil, err
 	}
 
 	if err := authenticateUser(ctx, true); err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, 0, 0, 0, err
+		return nil, err
 	}
 
-	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, req.GetPage(), req.GetPageSize(), modelID)
+	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, req.GetPage(), req.GetPageSize(), req.ModelId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, 0, 0, 0, err
+		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -368,29 +407,41 @@ func (h *PublicHandler) listNamespaceModelVersions(ctx context.Context, req List
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return pbModelVersions, totalSize, pageSize, page, nil
+	return &modelpb.ListNamespaceModelVersionsResponse{
+		Versions:  pbModelVersions,
+		TotalSize: totalSize,
+		PageSize:  pageSize,
+		Page:      page,
+	}, nil
 }
 
-type DeleteNamespaceModelVersionRequestInterface interface {
-	GetName() string
-	GetVersion() string
+func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb.DeleteUserModelVersionRequest) (*modelpb.DeleteUserModelVersionResponse, error) {
+	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.DeleteUserModelVersionResponse{}, nil
 }
 
-func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb.DeleteUserModelVersionRequest) (resp *modelpb.DeleteUserModelVersionResponse, err error) {
-	resp = &modelpb.DeleteUserModelVersionResponse{}
-	err = h.deleteNamespaceModelVersion(ctx, req)
+func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req *modelpb.DeleteOrganizationModelVersionRequest) (*modelpb.DeleteOrganizationModelVersionResponse, error) {
+	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.DeleteOrganizationModelVersionResponse{}, nil
 }
 
-func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req *modelpb.DeleteOrganizationModelVersionRequest) (resp *modelpb.DeleteOrganizationModelVersionResponse, err error) {
-	resp = &modelpb.DeleteOrganizationModelVersionResponse{}
-	err = h.deleteNamespaceModelVersion(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) deleteNamespaceModelVersion(ctx context.Context, req DeleteNamespaceModelVersionRequestInterface) error {
+func (h *PublicHandler) DeleteNamespaceModelVersion(ctx context.Context, req *modelpb.DeleteNamespaceModelVersionRequest) (*modelpb.DeleteNamespaceModelVersionResponse, error) {
 	eventName := "DeleteNamespaceModelVersion"
 
 	ctx, span := tracer.Start(ctx, eventName,
@@ -401,20 +452,20 @@ func (h *PublicHandler) deleteNamespaceModelVersion(ctx context.Context, req Del
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
 	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
-	if err := h.service.DeleteModelVersionByID(ctx, ns, modelID, req.GetVersion()); err != nil {
+	if err := h.service.DeleteModelVersionByID(ctx, ns, req.ModelId, req.GetVersion()); err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -425,7 +476,7 @@ func (h *PublicHandler) deleteNamespaceModelVersion(ctx context.Context, req Del
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return nil
+	return &modelpb.DeleteNamespaceModelVersionResponse{}, nil
 }
 
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelpb.LookUpModelRequest) (*modelpb.LookUpModelResponse, error) {
@@ -473,21 +524,37 @@ type GetNamespaceModelRequestInterface interface {
 	GetView() modelpb.View
 }
 
-func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelpb.GetUserModelRequest) (resp *modelpb.GetUserModelResponse, err error) {
-	resp = &modelpb.GetUserModelResponse{}
-	resp.Model, err = h.getNamespaceModel(ctx, req)
+func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelpb.GetUserModelRequest) (*modelpb.GetUserModelResponse, error) {
+	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		View:        req.View,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.GetUserModelResponse{
+		Model: r.Model,
+	}, nil
 }
 
-func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelpb.GetOrganizationModelRequest) (resp *modelpb.GetOrganizationModelResponse, err error) {
-	resp = &modelpb.GetOrganizationModelResponse{}
-	resp.Model, err = h.getNamespaceModel(ctx, req)
+func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelpb.GetOrganizationModelRequest) (*modelpb.GetOrganizationModelResponse, error) {
+	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		View:        req.View,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.GetOrganizationModelResponse{
+		Model: r.Model,
+	}, nil
 }
 
-func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceModelRequestInterface) (*modelpb.Model, error) {
+func (h *PublicHandler) GetNamespaceModel(ctx context.Context, req *modelpb.GetNamespaceModelRequest) (*modelpb.GetNamespaceModelResponse, error) {
 
 	eventName := "GetNamespaceModel"
 
@@ -499,7 +566,7 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -509,7 +576,7 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, parseView(req.GetView()))
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.ModelId, parseView(req.GetView()))
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -524,29 +591,38 @@ func (h *PublicHandler) getNamespaceModel(ctx context.Context, req GetNamespaceM
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return pbModel, err
+	return &modelpb.GetNamespaceModelResponse{Model: pbModel}, err
 }
 
-type UpdateNamespaceModelRequestInterface interface {
-	GetModel() *modelpb.Model
-	GetUpdateMask() *fieldmaskpb.FieldMask
+func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.UpdateUserModelRequest) (*modelpb.UpdateUserModelResponse, error) {
+	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Model.Name, "/")[1],
+		ModelId:     strings.Split(req.Model.Name, "/")[3],
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.UpdateUserModelResponse{
+		Model: r.Model,
+	}, nil
 }
 
-func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.UpdateUserModelRequest) (resp *modelpb.UpdateUserModelResponse, err error) {
-	resp = &modelpb.UpdateUserModelResponse{}
-	resp.Model, err = h.updateNamespaceModel(ctx, req)
+func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelpb.UpdateOrganizationModelRequest) (*modelpb.UpdateOrganizationModelResponse, error) {
+	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Model.Name, "/")[1],
+		ModelId:     strings.Split(req.Model.Name, "/")[3],
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.UpdateOrganizationModelResponse{
+		Model: r.Model,
+	}, nil
 }
 
-func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelpb.UpdateOrganizationModelRequest) (resp *modelpb.UpdateOrganizationModelResponse, err error) {
-	resp = &modelpb.UpdateOrganizationModelResponse{}
-	resp.Model, err = h.updateNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateNamespaceModelRequestInterface) (*modelpb.Model, error) {
+func (h *PublicHandler) UpdateNamespaceModel(ctx context.Context, req *modelpb.UpdateNamespaceModelRequest) (*modelpb.UpdateNamespaceModelResponse, error) {
 
 	eventName := "UpdateNamespaceModel"
 
@@ -558,7 +634,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetModel().GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -581,23 +657,12 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, status.Error(codes.InvalidArgument, "The update_mask is invalid")
 	}
 
-	var pbModelToUpdate *modelpb.Model
-	if ns.NsType == resource.User {
-		getResp, err := h.GetUserModel(ctx, &modelpb.GetUserModelRequest{Name: pbModel.GetName(), View: modelpb.View_VIEW_FULL.Enum()})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return nil, err
-		}
-		pbModelToUpdate = getResp.GetModel()
+	getResp, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{NamespaceId: req.NamespaceId, ModelId: req.ModelId, View: modelpb.View_VIEW_FULL.Enum()})
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
 	}
-	if ns.NsType == resource.Organization {
-		getResp, err := h.GetOrganizationModel(ctx, &modelpb.GetOrganizationModelRequest{Name: pbModel.GetName(), View: modelpb.View_VIEW_FULL.Enum()})
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			return nil, err
-		}
-		pbModelToUpdate = getResp.GetModel()
-	}
+	pbModelToUpdate := getResp.GetModel()
 
 	pbUpdateMask, err = checkfield.CheckUpdateOutputOnlyFields(pbUpdateMask, outputOnlyFields)
 	if err != nil {
@@ -628,7 +693,7 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		return nil, ErrFieldMask
 	}
 
-	pbModelResp, err := h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModelToUpdate)
+	pbUpdatedModel, err := h.service.UpdateNamespaceModelByID(ctx, ns, req.ModelId, pbModelToUpdate)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -639,32 +704,41 @@ func (h *PublicHandler) updateNamespaceModel(ctx context.Context, req UpdateName
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModelResp),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return pbModelResp, err
+	return &modelpb.UpdateNamespaceModelResponse{Model: pbUpdatedModel}, err
 }
 
 type DeleteNamespaceModelRequestInterface interface {
 	GetName() string
 }
 
-func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelpb.DeleteUserModelRequest) (resp *modelpb.DeleteUserModelResponse, err error) {
-	resp = &modelpb.DeleteUserModelResponse{}
-	err = h.deleteNamespaceModel(ctx, req)
+func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelpb.DeleteUserModelRequest) (*modelpb.DeleteUserModelResponse, error) {
+	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.DeleteUserModelResponse{}, nil
 }
 
-func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelpb.DeleteOrganizationModelRequest) (resp *modelpb.DeleteOrganizationModelResponse, err error) {
-	resp = &modelpb.DeleteOrganizationModelResponse{}
-	err = h.deleteNamespaceModel(ctx, req)
+func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelpb.DeleteOrganizationModelRequest) (*modelpb.DeleteOrganizationModelResponse, error) {
+	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.DeleteOrganizationModelResponse{}, nil
 }
 
-func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteNamespaceModelRequestInterface) error {
+func (h *PublicHandler) DeleteNamespaceModel(ctx context.Context, req *modelpb.DeleteNamespaceModelRequest) (*modelpb.DeleteNamespaceModelResponse, error) {
 
 	eventName := "DeleteNamespaceModel"
 
@@ -676,25 +750,25 @@ func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteName
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 	if err := authenticateUser(ctx, false); err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
 	// Manually set the custom header to have a StatusNoContent http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusNoContent))); err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
-	if err := h.service.DeleteNamespaceModelByID(ctx, ns, modelID); err != nil {
+	if err := h.service.DeleteNamespaceModelByID(ctx, ns, req.ModelId); err != nil {
 		span.SetStatus(1, err.Error())
-		return err
+		return nil, err
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(
@@ -702,10 +776,10 @@ func (h *PublicHandler) deleteNamespaceModel(ctx context.Context, req DeleteName
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, modelID)),
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, req.ModelId)),
 	)))
 
-	return nil
+	return &modelpb.DeleteNamespaceModelResponse{}, nil
 }
 
 type RenameNamespaceModelRequestInterface interface {
@@ -713,21 +787,33 @@ type RenameNamespaceModelRequestInterface interface {
 	GetNewModelId() string
 }
 
-func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelpb.RenameUserModelRequest) (resp *modelpb.RenameUserModelResponse, err error) {
-	resp = &modelpb.RenameUserModelResponse{}
-	resp.Model, err = h.renameNamespaceModel(ctx, req)
+func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelpb.RenameUserModelRequest) (*modelpb.RenameUserModelResponse, error) {
+	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		NewModelId:  req.NewModelId,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.RenameUserModelResponse{Model: r.Model}, nil
 }
 
-func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelpb.RenameOrganizationModelRequest) (resp *modelpb.RenameOrganizationModelResponse, err error) {
-	resp = &modelpb.RenameOrganizationModelResponse{}
-	resp.Model, err = h.renameNamespaceModel(ctx, req)
+func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelpb.RenameOrganizationModelRequest) (*modelpb.RenameOrganizationModelResponse, error) {
+	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		NewModelId:  req.NewModelId,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.RenameOrganizationModelResponse{Model: r.Model}, nil
 }
 
-func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameNamespaceModelRequestInterface) (*modelpb.Model, error) {
+func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.RenameNamespaceModelRequest) (*modelpb.RenameNamespaceModelResponse, error) {
 
 	eventName := "RenameNamespaceModel"
 
@@ -739,7 +825,7 @@ func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameName
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -749,7 +835,7 @@ func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameName
 		return nil, err
 	}
 
-	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, modelID, req.GetNewModelId())
+	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, req.ModelId, req.GetNewModelId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -764,175 +850,84 @@ func (h *PublicHandler) renameNamespaceModel(ctx context.Context, req RenameName
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
-	return pbModel, nil
+	return &modelpb.RenameNamespaceModelResponse{Model: pbModel}, nil
 }
 
-type PublishNamespaceModelRequestInterface interface {
-	GetName() string
-}
-
-func (h *PublicHandler) PublishUserModel(ctx context.Context, req *modelpb.PublishUserModelRequest) (resp *modelpb.PublishUserModelResponse, err error) {
-	resp = &modelpb.PublishUserModelResponse{}
-	resp.Model, err = h.publishNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) PublishOrganizationModel(ctx context.Context, req *modelpb.PublishOrganizationModelRequest) (resp *modelpb.PublishOrganizationModelResponse, err error) {
-	resp = &modelpb.PublishOrganizationModelResponse{}
-	resp.Model, err = h.publishNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) publishNamespaceModel(ctx context.Context, req PublishNamespaceModelRequestInterface) (*modelpb.Model, error) {
-
-	eventName := "PublishNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelpb.WatchUserModelRequest) (*modelpb.WatchUserModelResponse, error) {
+	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		Version:     req.Version,
+	})
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	pbModel.Visibility = modelpb.Model_VISIBILITY_PUBLIC
-
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	if err := h.service.GetACLClient().SetPublicModelPermission(ctx, uuid.FromStringOrNil(pbModel.Uid)); err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return pbModel, nil
+	return &modelpb.WatchUserModelResponse{
+		State:   r.State,
+		Message: r.Message,
+	}, nil
 }
 
-type UnpublishNamespaceModelRequestInterface interface {
-	GetName() string
+func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelpb.WatchOrganizationModelRequest) (*modelpb.WatchOrganizationModelResponse, error) {
+	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.WatchOrganizationModelResponse{
+		State:   r.State,
+		Message: r.Message,
+	}, nil
 }
 
-func (h *PublicHandler) UnpublishUserModel(ctx context.Context, req *modelpb.UnpublishUserModelRequest) (resp *modelpb.UnpublishUserModelResponse, err error) {
-	resp = &modelpb.UnpublishUserModelResponse{}
-	resp.Model, err = h.unpublishNamespaceModel(ctx, req)
+func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.WatchUserLatestModelRequest) (*modelpb.WatchUserLatestModelResponse, error) {
+	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return &modelpb.WatchUserLatestModelResponse{
+		State:   r.State,
+		Message: r.Message,
+	}, nil
 }
 
-func (h *PublicHandler) UnpublishOrganizationModel(ctx context.Context, req *modelpb.UnpublishOrganizationModelRequest) (resp *modelpb.UnpublishOrganizationModelResponse, err error) {
-	resp = &modelpb.UnpublishOrganizationModelResponse{}
-	resp.Model, err = h.unpublishNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) unpublishNamespaceModel(ctx context.Context, req UnpublishNamespaceModelRequestInterface) (*modelpb.Model, error) {
-
-	eventName := "UnpublishNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *modelpb.WatchOrganizationLatestModelRequest) (*modelpb.WatchOrganizationLatestModelResponse, error) {
+	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+	})
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	pbModel.Visibility = modelpb.Model_VISIBILITY_PRIVATE
-
-	_, err = h.service.UpdateNamespaceModelByID(ctx, ns, modelID, pbModel)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	if err := h.service.GetACLClient().DeletePublicModelPermission(ctx, uuid.FromStringOrNil(pbModel.GetUid())); err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return pbModel, nil
+	return &modelpb.WatchOrganizationLatestModelResponse{
+		State:   r.State,
+		Message: r.Message,
+	}, nil
 }
 
 type WatchNamespaceModelRequestInterface interface {
-	GetName() string
+	GetNamespaceId() string
+	GetModelId() string
 	GetVersion() string
 }
 
-func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelpb.WatchUserModelRequest) (resp *modelpb.WatchUserModelResponse, err error) {
-	resp = &modelpb.WatchUserModelResponse{}
-	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
+func (h *PublicHandler) WatchNamespaceModel(ctx context.Context, req *modelpb.WatchNamespaceModelRequest) (resp *modelpb.WatchNamespaceModelResponse, err error) {
+	resp = &modelpb.WatchNamespaceModelResponse{}
 
-	return resp, err
-}
-
-func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelpb.WatchOrganizationModelRequest) (resp *modelpb.WatchOrganizationModelResponse, err error) {
-	resp = &modelpb.WatchOrganizationModelResponse{}
-	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.WatchUserLatestModelRequest) (resp *modelpb.WatchUserLatestModelResponse, err error) {
-	resp = &modelpb.WatchUserLatestModelResponse{}
-
-	r := &modelpb.WatchUserModelRequest{
-		Name: req.GetName(),
+	r := &modelpb.WatchNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		Version:     req.GetVersion(),
 	}
 
 	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
@@ -940,11 +935,12 @@ func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.W
 	return resp, err
 }
 
-func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *modelpb.WatchOrganizationLatestModelRequest) (resp *modelpb.WatchOrganizationLatestModelResponse, err error) {
-	resp = &modelpb.WatchOrganizationLatestModelResponse{}
+func (h *PublicHandler) WatchNamespaceLatestModel(ctx context.Context, req *modelpb.WatchNamespaceLatestModelRequest) (resp *modelpb.WatchNamespaceLatestModelResponse, err error) {
+	resp = &modelpb.WatchNamespaceLatestModelResponse{}
 
-	r := &modelpb.WatchOrganizationModelRequest{
-		Name: req.GetName(),
+	r := &modelpb.WatchNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
 	}
 
 	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
@@ -964,7 +960,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return modelpb.State_STATE_ERROR, "", err
@@ -977,13 +973,13 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			span,
 			logUUID.String(),
 			eventName,
-			custom_otel.SetEventResource(req.GetName()),
+			custom_otel.SetEventResource(req.GetModelId()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_BASIC)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_BASIC)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return modelpb.State_STATE_ERROR, "", err
@@ -998,7 +994,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		versionID = version.Version
 	}
 
-	state, message, err := h.service.WatchModel(ctx, ns, modelID, versionID)
+	state, message, err := h.service.WatchModel(ctx, ns, req.GetModelId(), versionID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		logger.Info(string(custom_otel.NewLogMessage(
@@ -1006,96 +1002,13 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 			span,
 			logUUID.String(),
 			eventName,
-			custom_otel.SetEventResource(req.GetName()),
+			custom_otel.SetEventResource(req.GetModelId()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
 	return *state, message, nil
-}
-
-type GetNamespaceModelCardRequestInterface interface {
-	GetName() string
-}
-
-func (h *PublicHandler) GetUserModelCard(ctx context.Context, req *modelpb.GetUserModelCardRequest) (resp *modelpb.GetUserModelCardResponse, err error) {
-	resp = &modelpb.GetUserModelCardResponse{}
-	resp.Readme, err = h.getNamespaceModelCard(ctx, req)
-
-	return resp, err
-
-}
-
-func (h *PublicHandler) GetOrganizationModelCard(ctx context.Context, req *modelpb.GetOrganizationModelCardRequest) (resp *modelpb.GetOrganizationModelCardResponse, err error) {
-	resp = &modelpb.GetOrganizationModelCardResponse{}
-	resp.Readme, err = h.getNamespaceModelCard(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) getNamespaceModelCard(ctx context.Context, req GetNamespaceModelCardRequestInterface) (*modelpb.ModelCard, error) {
-
-	eventName := "GetNamespaceModelCard"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return nil, err
-	}
-
-	readmeFilePath := fmt.Sprintf("%v/%v#%v#README.md", config.Config.RayServer.ModelStore, ns.Permalink(), modelID)
-	stat, err := os.Stat(readmeFilePath)
-	if err != nil { // return empty content base64
-		span.SetStatus(1, err.Error())
-		return &modelpb.ModelCard{
-			Name:     req.GetName(),
-			Size:     0,
-			Type:     "file",
-			Encoding: "base64",
-			Content:  []byte(""),
-		}, nil
-	}
-
-	content, err := os.ReadFile(readmeFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
-
-	return &modelpb.ModelCard{
-		Name:     req.GetName(),
-		Size:     int32(stat.Size()),
-		Type:     "file",   // currently only support file type
-		Encoding: "base64", // currently only support base64 encoding
-		Content:  content,
-	}, nil
 }
 
 func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelpb.GetModelDefinitionRequest) (*modelpb.GetModelDefinitionResponse, error) {

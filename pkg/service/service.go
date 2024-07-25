@@ -50,7 +50,7 @@ type Service interface {
 	GetRedisClient() *redis.Client
 	GetACLClient() *acl.ACLClient
 	GetRayClient() ray.Ray
-	GetRscNamespaceAndNameID(path string) (resource.Namespace, string, error)
+	GetRscNamespace(ctx context.Context, namespaceID string) (resource.Namespace, error)
 	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
 	ConvertOwnerPermalinkToName(permalink string) (string, error)
 	ConvertOwnerNameToPermalink(name string) (string, error)

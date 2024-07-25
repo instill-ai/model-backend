@@ -2,8 +2,8 @@ package handler
 
 import (
 	"context"
+	"strings"
 
-	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gofrs/uuid"
@@ -20,7 +20,7 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetM
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	operationID, err := resource.GetOperationID(req.Name)
+	operationID, err := resource.GetOperationID(req.OperationId)
 	if err != nil {
 		return &modelpb.GetModelOperationResponse{}, err
 	}
@@ -39,25 +39,33 @@ type GetNamespaceLatestModelOperationRequestInterface interface {
 	GetView() modelpb.View
 }
 
-func (h *PublicHandler) GetUserLatestModelOperation(ctx context.Context, req *modelpb.GetUserLatestModelOperationRequest) (resp *modelpb.GetUserLatestModelOperationResponse, err error) {
+func (h *PublicHandler) GetUserLatestModelOperation(ctx context.Context, req *modelpb.GetUserLatestModelOperationRequest) (*modelpb.GetUserLatestModelOperationResponse, error) {
+	r, err := h.GetNamespaceLatestModelOperation(ctx, &modelpb.GetNamespaceLatestModelOperationRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		View:        req.View,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	resp = &modelpb.GetUserLatestModelOperationResponse{}
-
-	resp.Operation, err = h.getNamespaceLatestModelOperation(ctx, req)
-
-	return resp, err
+	return &modelpb.GetUserLatestModelOperationResponse{Operation: r.Operation}, nil
 }
 
-func (h *PublicHandler) GetOrganizationLatestModelOperation(ctx context.Context, req *modelpb.GetOrganizationLatestModelOperationRequest) (resp *modelpb.GetOrganizationLatestModelOperationResponse, err error) {
+func (h *PublicHandler) GetOrganizationLatestModelOperation(ctx context.Context, req *modelpb.GetOrganizationLatestModelOperationRequest) (*modelpb.GetOrganizationLatestModelOperationResponse, error) {
+	r, err := h.GetNamespaceLatestModelOperation(ctx, &modelpb.GetNamespaceLatestModelOperationRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		View:        req.View,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	resp = &modelpb.GetOrganizationLatestModelOperationResponse{}
-
-	resp.Operation, err = h.getNamespaceLatestModelOperation(ctx, req)
-
-	return resp, err
+	return &modelpb.GetOrganizationLatestModelOperationResponse{Operation: r.Operation}, nil
 }
 
-func (h *PublicHandler) getNamespaceLatestModelOperation(ctx context.Context, req GetNamespaceLatestModelOperationRequestInterface) (*longrunningpb.Operation, error) {
+func (h *PublicHandler) GetNamespaceLatestModelOperation(ctx context.Context, req *modelpb.GetNamespaceLatestModelOperationRequest) (*modelpb.GetNamespaceLatestModelOperationResponse, error) {
 	eventName := "GetNamespaceLatestModelOperation"
 
 	ctx, span := tracer.Start(ctx, eventName,
@@ -68,7 +76,7 @@ func (h *PublicHandler) getNamespaceLatestModelOperation(ctx context.Context, re
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -81,17 +89,17 @@ func (h *PublicHandler) getNamespaceLatestModelOperation(ctx context.Context, re
 			span,
 			logUUID.String(),
 			eventName,
-			custom_otel.SetEventResource(req.GetName()),
+			custom_otel.SetEventResource(req.GetModelId()),
 			custom_otel.SetErrorMessage(err.Error()),
 		)))
 		return nil, err
 	}
 
-	operation, err := h.service.GetNamespaceLatestModelOperation(ctx, ns, modelID, req.GetView())
+	operation, err := h.service.GetNamespaceLatestModelOperation(ctx, ns, req.GetModelId(), req.GetView())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
-	return operation, nil
+	return &modelpb.GetNamespaceLatestModelOperationResponse{Operation: operation}, nil
 }

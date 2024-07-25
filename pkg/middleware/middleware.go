@@ -28,7 +28,10 @@ func HandleProfileImage(s service.Service, r repository.Repository, w http.Respo
 		return
 	}
 
-	ns, modelID, err := s.GetRscNamespaceAndNameID(pathParams["path"])
+	namespaceID := strings.Split(pathParams["path"], "/")[1]
+	modelID := strings.Split(pathParams["path"], "/")[3]
+
+	ns, err := s.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
