@@ -305,9 +305,9 @@ func (mr *MockRepositoryMockRecorder) ListModelVersionsByDigest(arg0, arg1, arg2
 }
 
 // ListModels mocks base method.
-func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 filtering.Filter, arg5 []uuid.UUID, arg6 bool, arg7 ordering.OrderBy) ([]*datamodel.Model, int64, string, error) {
+func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 string, arg3 bool, arg4 filtering.Filter, arg5 []uuid.UUID, arg6 bool, arg7 ordering.OrderBy, arg8 *modelv1alpha.Model_Visibility) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	ret := m.ctrl.Call(m, "ListModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 	ret0, _ := ret[0].([]*datamodel.Model)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(string)
@@ -316,9 +316,9 @@ func (m *MockRepository) ListModels(arg0 context.Context, arg1 int64, arg2 strin
 }
 
 // ListModels indicates an expected call of ListModels.
-func (mr *MockRepositoryMockRecorder) ListModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockRepository)(nil).ListModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockRepository)(nil).ListModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 }
 
 // ListModelsAdmin mocks base method.
@@ -339,9 +339,9 @@ func (mr *MockRepositoryMockRecorder) ListModelsAdmin(arg0, arg1, arg2, arg3, ar
 }
 
 // ListNamespaceModels mocks base method.
-func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, arg2 int64, arg3 string, arg4 bool, arg5 filtering.Filter, arg6 []uuid.UUID, arg7 bool, arg8 ordering.OrderBy) ([]*datamodel.Model, int64, string, error) {
+func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, arg2 int64, arg3 string, arg4 bool, arg5 filtering.Filter, arg6 []uuid.UUID, arg7 bool, arg8 ordering.OrderBy, arg9 *modelv1alpha.Model_Visibility) ([]*datamodel.Model, int64, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	ret := m.ctrl.Call(m, "ListNamespaceModels", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 	ret0, _ := ret[0].([]*datamodel.Model)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(string)
@@ -350,9 +350,9 @@ func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, 
 }
 
 // ListNamespaceModels indicates an expected call of ListNamespaceModels.
-func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 }
 
 // UpdateModelVersionDigestByID mocks base method.

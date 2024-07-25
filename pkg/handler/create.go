@@ -26,7 +26,7 @@ import (
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func createContainerizedModel(s service.Service, ctx context.Context, model *modelpb.Model, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition) (*modelpb.Model, error) {
+func createContainerizedModel(s service.Service, ctx context.Context, model *modelpb.Model, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition) (*modelpb.CreateNamespaceModelResponse, error) {
 
 	eventName := "CreateContainerizedModel"
 
@@ -42,11 +42,11 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return &modelpb.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
+		return &modelpb.CreateNamespaceModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
 		span.SetStatus(1, err.Error())
-		return &modelpb.Model{}, status.Errorf(codes.InvalidArgument, err.Error())
+		return &modelpb.CreateNamespaceModelResponse{}, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	bModelConfig, _ := json.Marshal(modelConfig)
@@ -104,7 +104,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 			logger.Error(e.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
-		return &modelpb.Model{}, st.Err()
+		return &modelpb.CreateNamespaceModelResponse{}, st.Err()
 	}
 
 	if err := s.CreateNamespaceModel(ctx, ns, containerizedModel); err != nil {
@@ -120,7 +120,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 			logger.Error(err.Error())
 		}
 		span.SetStatus(1, st.Err().Error())
-		return &modelpb.Model{}, st.Err()
+		return &modelpb.CreateNamespaceModelResponse{}, st.Err()
 	}
 
 	model, _ = s.GetNamespaceModelByID(ctx, ns, model.Id, modelpb.View_VIEW_FULL)
@@ -139,5 +139,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, model *mod
 		custom_otel.SetEventResource(containerizedModel),
 	)))
 
-	return model, nil
+	return &modelpb.CreateNamespaceModelResponse{
+		Model: model,
+	}, nil
 }

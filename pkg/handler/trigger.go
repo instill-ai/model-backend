@@ -36,32 +36,87 @@ import (
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 )
 
+func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.TriggerUserModelRequest) (*modelpb.TriggerUserModelResponse, error) {
+	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerUserModelResponse{
+		Task:        r.Task,
+		TaskOutputs: r.TaskOutputs,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *modelpb.TriggerOrganizationModelRequest) (*modelpb.TriggerOrganizationModelResponse, error) {
+	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerOrganizationModelResponse{
+		Task:        r.Task,
+		TaskOutputs: r.TaskOutputs,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb.TriggerUserLatestModelRequest) (*modelpb.TriggerUserLatestModelResponse, error) {
+	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerUserLatestModelResponse{
+		Task:        r.Task,
+		TaskOutputs: r.TaskOutputs,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerOrganizationLatestModelRequest) (*modelpb.TriggerOrganizationLatestModelResponse, error) {
+	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerOrganizationLatestModelResponse{
+		Task:        r.Task,
+		TaskOutputs: r.TaskOutputs,
+	}, nil
+}
+
 type TriggerNamespaceModelRequestInterface interface {
-	GetName() string
+	GetNamespaceId() string
+	GetModelId() string
 	GetVersion() string
 	GetTaskInputs() []*modelpb.TaskInput
 }
 
-func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.TriggerUserModelRequest) (resp *modelpb.TriggerUserModelResponse, err error) {
-	resp = &modelpb.TriggerUserModelResponse{}
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, req)
+func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
+	resp = &modelpb.TriggerNamespaceModelResponse{}
 
-	return resp, err
-}
-
-func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *modelpb.TriggerOrganizationModelRequest) (resp *modelpb.TriggerOrganizationModelResponse, err error) {
-	resp = &modelpb.TriggerOrganizationModelResponse{}
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb.TriggerUserLatestModelRequest) (resp *modelpb.TriggerUserLatestModelResponse, err error) {
-	resp = &modelpb.TriggerUserLatestModelResponse{}
-
-	r := &modelpb.TriggerUserModelRequest{
-		Name:       req.GetName(),
-		TaskInputs: req.GetTaskInputs(),
+	r := &modelpb.TriggerNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		Version:     req.GetVersion(),
+		TaskInputs:  req.GetTaskInputs(),
 	}
 
 	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, r)
@@ -69,12 +124,13 @@ func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb
 	return resp, err
 }
 
-func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerOrganizationLatestModelRequest) (resp *modelpb.TriggerOrganizationLatestModelResponse, err error) {
-	resp = &modelpb.TriggerOrganizationLatestModelResponse{}
+func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerNamespaceLatestModelRequest) (resp *modelpb.TriggerNamespaceLatestModelResponse, err error) {
+	resp = &modelpb.TriggerNamespaceLatestModelResponse{}
 
-	r := &modelpb.TriggerOrganizationModelRequest{
-		Name:       req.GetName(),
-		TaskInputs: req.GetTaskInputs(),
+	r := &modelpb.TriggerNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		TaskInputs:  req.GetTaskInputs(),
 	}
 
 	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, r)
@@ -95,7 +151,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
@@ -105,7 +161,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
@@ -245,7 +301,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -288,33 +344,84 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	return pbModel.Task, response, nil
 }
 
+func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.TriggerAsyncUserModelRequest) (*modelpb.TriggerAsyncUserModelResponse, error) {
+	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerAsyncUserModelResponse{
+		Operation: r.Operation,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationModelRequest) (*modelpb.TriggerAsyncOrganizationModelResponse, error) {
+	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+		Version:     req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerAsyncOrganizationModelResponse{
+		Operation: r.Operation,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *modelpb.TriggerAsyncUserLatestModelRequest) (*modelpb.TriggerAsyncUserLatestModelResponse, error) {
+	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerAsyncUserLatestModelResponse{
+		Operation: r.Operation,
+	}, nil
+}
+
+func (h *PublicHandler) TriggerAsyncOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationLatestModelRequest) (*modelpb.TriggerAsyncOrganizationLatestModelResponse, error) {
+	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
+		NamespaceId: strings.Split(req.Name, "/")[1],
+		ModelId:     strings.Split(req.Name, "/")[3],
+		TaskInputs:  req.TaskInputs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &modelpb.TriggerAsyncOrganizationLatestModelResponse{
+		Operation: r.Operation,
+	}, nil
+}
+
 type TriggerAsyncNamespaceModelRequestInterface interface {
 	protoreflect.ProtoMessage
-	GetName() string
+	GetNamespaceId() string
+	GetModelId() string
 	GetVersion() string
 	GetTaskInputs() []*modelpb.TaskInput
 }
 
-func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.TriggerAsyncUserModelRequest) (resp *modelpb.TriggerAsyncUserModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncUserModelResponse{}
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
+	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
-	return resp, err
-}
-
-func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationModelRequest) (resp *modelpb.TriggerAsyncOrganizationModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncOrganizationModelResponse{}
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
-
-	return resp, err
-}
-
-func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *modelpb.TriggerAsyncUserLatestModelRequest) (resp *modelpb.TriggerAsyncUserLatestModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncUserLatestModelResponse{}
-
-	r := &modelpb.TriggerAsyncUserModelRequest{
-		Name:       req.GetName(),
-		TaskInputs: req.GetTaskInputs(),
+	r := &modelpb.TriggerAsyncNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		Version:     req.GetVersion(),
+		TaskInputs:  req.GetTaskInputs(),
 	}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
@@ -322,12 +429,13 @@ func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *mo
 	return resp, err
 }
 
-func (h *PublicHandler) TriggerAsyncOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationLatestModelRequest) (resp *modelpb.TriggerAsyncOrganizationLatestModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncOrganizationLatestModelResponse{}
+func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceLatestModelRequest) (resp *modelpb.TriggerAsyncNamespaceLatestModelResponse, err error) {
+	resp = &modelpb.TriggerAsyncNamespaceLatestModelResponse{}
 
-	r := &modelpb.TriggerAsyncOrganizationModelRequest{
-		Name:       req.GetName(),
-		TaskInputs: req.GetTaskInputs(),
+	r := &modelpb.TriggerAsyncNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		TaskInputs:  req.GetTaskInputs(),
 	}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
@@ -348,7 +456,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ns, modelID, err := h.service.GetRscNamespaceAndNameID(req.GetName())
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -358,7 +466,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
@@ -469,12 +577,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		lenInputs = 1
 		parsedInput = imageToImage
 	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(
-			ctx,
-			&modelpb.TriggerUserModelRequest{
-				Name:       req.GetName(),
-				TaskInputs: req.GetTaskInputs(),
-			})
+		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
 		if err != nil {
 			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
@@ -521,7 +624,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, modelID, version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -601,7 +704,10 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 		}
 	}
 
-	ns, modelID, err := s.GetRscNamespaceAndNameID(pathParams["path"])
+	namespaceID := strings.Split(pathParams["path"], "/")[1]
+	modelID := strings.Split(pathParams["path"], "/")[3]
+
+	ns, err := s.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
 		span.SetStatus(1, "Model path format error")

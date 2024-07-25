@@ -269,10 +269,18 @@ func main() {
 		panic(err)
 	}
 
+	// Register custom route for  POST /v1alpha/namespaces/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=namespaces/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
+		panic(err)
+	}
+
 	if err := publicGwS.HandlePath("GET", "/v1alpha/{path=users/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(serv, repo, middleware.HandleProfileImage)); err != nil {
 		logger.Fatal(err.Error())
 	}
 	if err := publicGwS.HandlePath("GET", "/v1alpha/{path=organizations/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(serv, repo, middleware.HandleProfileImage)); err != nil {
+		logger.Fatal(err.Error())
+	}
+	if err := publicGwS.HandlePath("GET", "/v1alpha/{path=namespaces/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(serv, repo, middleware.HandleProfileImage)); err != nil {
 		logger.Fatal(err.Error())
 	}
 
