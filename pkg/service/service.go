@@ -698,7 +698,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 		}
 	}
 
-	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
+	dbModels, totalSize, nextPageToken, err := s.repository.ListModels(ctx, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order, visibility)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -739,7 +739,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 		}
 	}
 
-	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order)
+	dbModels, ps, pt, err := s.repository.ListNamespaceModels(ctx, ownerPermalink, int64(pageSize), pageToken, view == modelpb.View_VIEW_BASIC, filter, uidAllowList, showDeleted, order, visibility)
 	if err != nil {
 		return nil, 0, "", err
 	}

@@ -29,7 +29,7 @@ func DecodeToken(encodedToken string) (map[string]string, error) {
 }
 
 // EncodeToken encodes create_time and UUID into a single string
-func EncodeToken(tokens map[string]string) (string, error) {
+func EncodeToken(tokens map[string]any) (string, error) {
 	b, err := json.Marshal(tokens)
 	if err != nil {
 		return "", err
