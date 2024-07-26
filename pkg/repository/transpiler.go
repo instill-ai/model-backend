@@ -324,9 +324,6 @@ func (t *Transpiler) transpileHasCallExpr(e *expr.Expr) (*clause.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			if err != nil {
-				return nil, err
-			}
 			con, err := t.transpileConstExpr(constExpr)
 			if err != nil {
 				return nil, err
