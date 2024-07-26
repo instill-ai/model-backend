@@ -51,9 +51,6 @@ type Service interface {
 	GetACLClient() *acl.ACLClient
 	GetRayClient() ray.Ray
 	GetRscNamespace(ctx context.Context, namespaceID string) (resource.Namespace, error)
-	GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error)
-	ConvertOwnerPermalinkToName(permalink string) (string, error)
-	ConvertOwnerNameToPermalink(name string) (string, error)
 	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
 	PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelpb.Model) (*datamodel.Model, error)
 	DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelpb.View, checkPermission bool) (*modelpb.Model, error)
@@ -171,40 +168,6 @@ func (s *service) GetRayClient() ray.Ray {
 	return s.ray
 }
 
-func (s *service) ConvertOwnerNameToPermalink(name string) (string, error) {
-	id := strings.Split(name, "/")[1]
-	if strings.HasPrefix(name, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.GetUserAdmin(context.Background(), &mgmtpb.GetUserAdminRequest{UserId: id})
-		if err != nil {
-			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
-		}
-		return fmt.Sprintf("users/%s", *userResp.User.Uid), nil
-	} else {
-		orgResp, err := s.mgmtPrivateServiceClient.GetOrganizationAdmin(context.Background(), &mgmtpb.GetOrganizationAdminRequest{OrganizationId: id})
-		if err != nil {
-			return "", fmt.Errorf("ConvertOwnerNameToPermalink error %w", err)
-		}
-		return fmt.Sprintf("organizations/%s", orgResp.Organization.Uid), nil
-	}
-}
-
-func (s *service) ConvertOwnerPermalinkToName(permalink string) (string, error) {
-	uid := strings.Split(permalink, "/")[1]
-	if strings.HasPrefix(permalink, "users") {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(context.Background(), &mgmtpb.LookUpUserAdminRequest{UserUid: uid})
-		if err != nil {
-			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
-		}
-		return fmt.Sprintf("users/%s", userResp.User.Id), nil
-	} else {
-		userResp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(context.Background(), &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
-		if err != nil {
-			return "", fmt.Errorf("ConvertNamespaceToOwnerPath error")
-		}
-		return fmt.Sprintf("organizations/%s", userResp.Organization.Id), nil
-	}
-}
-
 func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtpb.Owner, error) {
 	key := fmt.Sprintf("owner_profile:%s", permalink)
 	if b, err := s.redisClient.Get(ctx, key).Bytes(); err == nil {
@@ -247,54 +210,6 @@ func (s *service) ConvertRepositoryNameToRscName(repositoryName string) (string,
 	}
 	// TODO: how to tell if is user or org
 	return fmt.Sprintf("users/%s/models/%s", splits[1], splits[2]), nil
-}
-
-func (s *service) GetRscNamespaceAndNameID(path string) (resource.Namespace, string, error) {
-
-	splits := strings.Split(path, "/")
-	if len(splits) < 2 {
-		return resource.Namespace{}, "", status.Errorf(codes.InvalidArgument, "Namespace format error")
-	}
-	uidStr, err := s.ConvertOwnerNameToPermalink(fmt.Sprintf("%s/%s", splits[0], splits[1]))
-
-	if err != nil {
-		return resource.Namespace{}, "", status.Errorf(codes.InvalidArgument, "Namespace format error")
-	}
-	if len(splits) < 4 {
-		return resource.Namespace{
-			NsType: resource.NamespaceType(splits[0]),
-			NsID:   splits[1],
-			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
-		}, "", nil
-	}
-	return resource.Namespace{
-		NsType: resource.NamespaceType(splits[0]),
-		NsID:   splits[1],
-		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
-	}, splits[3], nil
-}
-
-func (s *service) GetRscNamespaceAndPermalinkUID(path string) (resource.Namespace, uuid.UUID, error) {
-	splits := strings.Split(path, "/")
-	if len(splits) < 2 {
-		return resource.Namespace{}, uuid.Nil, status.Errorf(codes.InvalidArgument, "Namespace format error")
-	}
-	uidStr, err := s.ConvertOwnerNameToPermalink((fmt.Sprintf("%s/%s", splits[0], splits[1])))
-	if err != nil {
-		return resource.Namespace{}, uuid.Nil, status.Errorf(codes.InvalidArgument, "Namespace format error")
-	}
-	if len(splits) < 4 {
-		return resource.Namespace{
-			NsType: resource.NamespaceType(splits[0]),
-			NsID:   splits[1],
-			NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
-		}, uuid.Nil, nil
-	}
-	return resource.Namespace{
-		NsType: resource.NamespaceType(splits[0]),
-		NsID:   splits[1],
-		NsUID:  uuid.FromStringOrNil(strings.Split(uidStr, "/")[1]),
-	}, uuid.FromStringOrNil(splits[3]), nil
 }
 
 func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error) {

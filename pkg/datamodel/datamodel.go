@@ -86,6 +86,8 @@ type Model struct {
 	License            sql.NullString
 	ProfileImage       sql.NullString
 	Tags               []*ModelTag
+	NamespaceID        string `gorm:"type:namespace_id"`
+	NamespaceType      string `gorm:"type:namespace_type"`
 }
 
 // IsPublic returns the visibility of the model.
