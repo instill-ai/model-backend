@@ -10,6 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/db/migration"
 )
 
 func checkExist(databaseConfig *config.DatabaseConfig) error {
@@ -122,6 +123,10 @@ func main() {
 		}
 
 		if step, _, err = m.Version(); err != nil {
+			panic(err)
+		}
+
+		if err := migration.Migrate(step); err != nil {
 			panic(err)
 		}
 	}
