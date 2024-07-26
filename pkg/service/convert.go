@@ -109,8 +109,10 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 				return time.Time{}
 			}(),
 		},
-		Owner: ns.Permalink(),
-		ID:    pbModel.GetId(),
+		Owner:         ns.Permalink(),
+		ID:            pbModel.GetId(),
+		NamespaceID:   ns.NsID,
+		NamespaceType: string(ns.NsType),
 		Description: sql.NullString{
 			String: pbModel.GetDescription(),
 			Valid:  true,
@@ -145,10 +147,7 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelpb.View, checkPermission bool) (*modelpb.Model, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	ownerName, err := s.ConvertOwnerPermalinkToName(dbModel.Owner)
-	if err != nil {
-		return nil, err
-	}
+	ownerName := fmt.Sprintf("%s/%s", dbModel.NamespaceType, dbModel.NamespaceID)
 
 	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
@@ -219,7 +218,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	}
 
 	var owner *mgmtpb.Owner
-	owner, err = s.FetchOwnerWithPermalink(ctx, dbModel.Owner)
+	owner, err := s.FetchOwnerWithPermalink(ctx, dbModel.Owner)
 	if err != nil {
 		return nil, err
 	}
