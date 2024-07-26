@@ -21,7 +21,7 @@ const batchSize = 100
 type ModelACLConverter struct {
 	DB         *gorm.DB
 	Logger     *zap.Logger
-	ACLClient  *acl.ACLClient
+	ACLClient  acl.ACLClientInterface
 	MgmtClient mgmtpb.MgmtPrivateServiceClient
 }
 

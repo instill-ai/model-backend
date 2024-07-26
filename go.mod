@@ -5,6 +5,7 @@ go 1.22.5
 require (
 	cloud.google.com/go/longrunning v0.5.4
 	github.com/alicebob/miniredis/v2 v2.33.0
+	github.com/frankban/quicktest v1.14.6
 	github.com/gabriel-vasile/mimetype v1.4.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
@@ -54,8 +55,12 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 )
