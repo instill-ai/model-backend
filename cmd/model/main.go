@@ -193,7 +193,6 @@ func main() {
 		go func(modelConfig ModelConfig) {
 
 			var owner *mgmtpb.User
-			name := fmt.Sprintf("%s/%s", modelConfig.OwnerType, modelConfig.OwnerID)
 			if modelConfig.OwnerType == string(resource.User) {
 				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{
 					UserId: modelConfig.OwnerID,
@@ -221,20 +220,11 @@ func main() {
 				return
 			}
 
-			if modelConfig.OwnerType == string(resource.User) {
-				//nolint:staticcheck
-				_, err = modelPublicServiceClient.GetUserModel(sCtx, &modelpb.GetUserModelRequest{
-					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					View: modelpb.View_VIEW_FULL.Enum(),
-				})
-			} else if modelConfig.OwnerType == string(resource.Organization) {
-				//nolint:staticcheck
-				_, err = modelPublicServiceClient.GetOrganizationModel(sCtx, &modelpb.GetOrganizationModelRequest{
-					Name: fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					View: modelpb.View_VIEW_FULL.Enum(),
-				})
-			}
-			if err != nil {
+			if _, err = modelPublicServiceClient.GetNamespaceModel(sCtx, &modelpb.GetNamespaceModelRequest{
+				NamespaceId: modelConfig.OwnerID,
+				ModelId:     modelConfig.ID,
+				View:        modelpb.View_VIEW_FULL.Enum(),
+			}); err != nil {
 				logger.Info("Creating model: " + modelConfig.ID)
 
 				model := &modelpb.Model{
@@ -247,20 +237,10 @@ func main() {
 					Hardware:        modelConfig.Hardwdare,
 					Configuration:   configuration,
 				}
-				if modelConfig.OwnerType == string(resource.User) {
-					//nolint:staticcheck
-					_, err = modelPublicServiceClient.CreateUserModel(sCtx, &modelpb.CreateUserModelRequest{
-						Model:  model,
-						Parent: name,
-					})
-				} else if modelConfig.OwnerType == string(resource.Organization) {
-					//nolint:staticcheck
-					_, err = modelPublicServiceClient.CreateOrganizationModel(sCtx, &modelpb.CreateOrganizationModelRequest{
-						Model:  model,
-						Parent: name,
-					})
-				}
-				if err != nil {
+				if _, err = modelPublicServiceClient.CreateNamespaceModel(sCtx, &modelpb.CreateNamespaceModelRequest{
+					NamespaceId: modelConfig.OwnerID,
+					Model:       model,
+				}); err != nil {
 					logger.Info(fmt.Sprintf("Created model err: %v", err))
 					if e, ok := status.FromError(err); ok {
 						if e.Code() != codes.AlreadyExists {
@@ -273,19 +253,11 @@ func main() {
 				}
 			}
 			logger.Info("Deploying model: " + modelConfig.ID)
-			if modelConfig.OwnerType == string(resource.User) {
-				_, err = modelPrivateServiceClient.DeployUserModelAdmin(sCtx, &modelpb.DeployUserModelAdminRequest{
-					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					Version: modelConfig.Version,
-				})
-
-			} else if modelConfig.OwnerType == string(resource.Organization) {
-				_, err = modelPrivateServiceClient.DeployOrganizationModelAdmin(sCtx, &modelpb.DeployOrganizationModelAdminRequest{
-					Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-					Version: modelConfig.Version,
-				})
-			}
-			if err != nil {
+			if _, err = modelPrivateServiceClient.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
+				NamespaceId: modelConfig.OwnerID,
+				ModelId:     modelConfig.ID,
+				Version:     modelConfig.Version,
+			}); err != nil {
 				logger.Error(fmt.Sprintf("deploy model err: %v", err))
 				if e, ok := status.FromError(err); ok {
 					if e.Code() == codes.FailedPrecondition {
@@ -298,40 +270,6 @@ func main() {
 				logger.Error("handler.DeployModel: " + err.Error())
 				return
 			}
-			// state := modelpb.State_STATE_OFFLINE
-			// var message string
-			// for state != modelpb.State_STATE_ACTIVE {
-			// 	time.Sleep(2 * time.Second)
-			// 	if modelConfig.OwnerType == string(resource.User) {
-			// 		var resp *modelpb.WatchUserModelResponse
-			// 		resp, err = modelPublicServiceClient.WatchUserModel(sCtx, &modelpb.WatchUserModelRequest{
-			// 			Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-			// 			Version: modelConfig.Version,
-			// 		})
-			// 		state = resp.GetState()
-			// 		message = resp.GetMessage()
-			// 	} else if modelConfig.OwnerType == string(resource.Organization) {
-			// 		var resp *modelpb.WatchOrganizationModelResponse
-			// 		resp, err = modelPublicServiceClient.WatchOrganizationModel(sCtx, &modelpb.WatchOrganizationModelRequest{
-			// 			Name:    fmt.Sprintf("%s/models/%s", name, modelConfig.ID),
-			// 			Version: modelConfig.Version,
-			// 		})
-			// 		state = resp.GetState()
-			// 		message = resp.GetMessage()
-			// 	}
-			// 	if err != nil {
-			// 		logger.Info(fmt.Sprintf("Deploy model err: %v", err))
-			// 		if e, ok := status.FromError(err); ok {
-			// 			if e.Code() != codes.AlreadyExists {
-			// 				logger.Fatal("handler.DeployModelAdmin: " + err.Error())
-			// 				return
-			// 			}
-			// 			return
-			// 		}
-			// 		return
-			// 	}
-			// 	logger.Info(fmt.Sprintf("%s: %v, message: %s", modelConfig.ID, state, message))
-			// }
 		}(modelConfigs[i])
 	}
 
