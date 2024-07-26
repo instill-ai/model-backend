@@ -58,9 +58,9 @@ type Repository interface {
 	ListModelVersions(ctx context.Context, modelUID uuid.UUID, groupDigest bool) (versions []*datamodel.ModelVersion, err error)
 	ListModelVersionsByDigest(ctx context.Context, modelUID uuid.UUID, digest string) (versions []*datamodel.ModelVersion, err error)
 
-	CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
-	DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error
-	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.ModelTag, error)
+	CreateModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
+	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
+	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -123,14 +123,14 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 	joinStr := "left join model_tag on model_tag.model_uid = model.uid"
 
-	countBuilder := db.Model(&datamodel.Model{}).Where(where, whereArgs...).Joins(joinStr)
+	countBuilder := db.Distinct("uid").Model(&datamodel.Model{}).Where(where, whereArgs...).Joins(joinStr)
 	if uidAllowList != nil {
 		countBuilder = countBuilder.Where("uid in ?", uidAllowList).Count(&totalSize)
 	}
 
 	countBuilder.Count(&totalSize)
 
-	queryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Where(where, whereArgs...)
+	queryBuilder := db.Distinct().Model(&datamodel.Model{}).Joins(joinStr).Where(where, whereArgs...)
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
@@ -202,7 +202,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 
 		tokens := map[string]any{}
 
-		lastItemQueryBuilder := db.Model(&datamodel.Model{}).Joins(joinStr).Omit("profile_image").Where(where, whereArgs...)
+		lastItemQueryBuilder := db.Distinct().Model(&datamodel.Model{}).Joins(joinStr).Omit("profile_image").Where(where, whereArgs...)
 		if uidAllowList != nil {
 			lastItemQueryBuilder = lastItemQueryBuilder.Where("uid in ?", uidAllowList)
 		}
@@ -491,23 +491,31 @@ func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID, 
 	return versions, nil
 }
 
-func (r *repository) CreateModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error {
+func (r *repository) CreateModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error {
 
 	r.pinUser(ctx, "model_tag")
 
 	db := r.checkPinnedUser(ctx, r.db, "model_tag")
 
-	tag := datamodel.ModelTag{
-		ModelUID: modelUID.String(),
-		TagName:  tagName,
+	tags := []datamodel.ModelTag{}
+	for _, tagName := range tagNames {
+		tag := datamodel.ModelTag{
+			ModelUID:   modelUID,
+			TagName:    tagName,
+			CreateTime: time.Now(),
+			UpdateTime: time.Now(),
+		}
+		tags = append(tags, tag)
 	}
 
-	if result := db.Model(&datamodel.ModelTag{}).Create(&tag); result.Error != nil {
+	if result := db.Model(&datamodel.ModelTag{}).Create(&tags); result.Error != nil {
 
 		var pgErr *pgconn.PgError
 
 		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+
 			return ErrNameExists
+
 		}
 
 		return result.Error
@@ -518,13 +526,13 @@ func (r *repository) CreateModelTag(ctx context.Context, modelUID uuid.UUID, tag
 
 }
 
-func (r *repository) DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tagName string) error {
+func (r *repository) DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error {
 
 	r.pinUser(ctx, "model_tag")
 
 	db := r.checkPinnedUser(ctx, r.db, "model_tag")
 
-	result := db.Model(&datamodel.ModelTag{}).Where("model_uid = ? and tag_name = ?", modelUID, tagName).Delete(&datamodel.ModelTag{})
+	result := db.Model(&datamodel.ModelTag{}).Where("model_uid = ? and tag_name in ?", modelUID, tagNames).Delete(&datamodel.ModelTag{})
 
 	if result.Error != nil {
 
@@ -542,11 +550,11 @@ func (r *repository) DeleteModelTag(ctx context.Context, modelUID uuid.UUID, tag
 
 }
 
-func (r *repository) ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]*datamodel.ModelTag, error) {
+func (r *repository) ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error) {
 
 	db := r.checkPinnedUser(ctx, r.db, "model_tag")
 
-	var tags []*datamodel.ModelTag
+	var tags []datamodel.ModelTag
 
 	result := db.Model(&datamodel.ModelTag{}).Where("model_uid = ?", modelUID).Find(tags)
 

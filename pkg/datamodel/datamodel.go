@@ -100,6 +100,14 @@ func (m *Model) OwnerUID() uuid.UUID {
 	return uuid.FromStringOrNil(strings.Split(m.Owner, "/")[1])
 }
 
+func (m *Model) TagNames() []string {
+	tags := make([]string, len(m.Tags))
+	for i, t := range m.Tags {
+		tags[i] = t.TagName
+	}
+	return tags
+}
+
 // Model version
 type ModelVersion struct {
 	Name       string
@@ -111,7 +119,7 @@ type ModelVersion struct {
 }
 
 type ModelTag struct {
-	ModelUID   string
+	ModelUID   uuid.UUID
 	TagName    string
 	CreateTime time.Time `gorm:"autoCreateTime:nano"`
 	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`

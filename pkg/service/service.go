@@ -48,7 +48,7 @@ type Service interface {
 	GetArtifactPrivateServiceClient() artifactpb.ArtifactPrivateServiceClient
 	GetRepository() repository.Repository
 	GetRedisClient() *redis.Client
-	GetACLClient() *acl.ACLClient
+	GetACLClient() acl.ACLClientInterface
 	GetRayClient() ray.Ray
 	GetRscNamespace(ctx context.Context, namespaceID string) (resource.Namespace, error)
 	ConvertRepositoryNameToRscName(repositoryName string) (string, error)
@@ -101,7 +101,7 @@ type service struct {
 	artifactPrivateServiceClient artifactpb.ArtifactPrivateServiceClient
 	temporalClient               client.Client
 	ray                          ray.Ray
-	aclClient                    *acl.ACLClient
+	aclClient                    acl.ACLClientInterface
 	instillCoreHost              string
 }
 
@@ -114,7 +114,7 @@ func NewService(
 	rc *redis.Client,
 	tc client.Client,
 	ra ray.Ray,
-	a *acl.ACLClient,
+	a acl.ACLClientInterface,
 	h string) Service {
 	return &service{
 		repository:                   r,
@@ -149,7 +149,7 @@ func (s *service) GetRedisClient() *redis.Client {
 }
 
 // GetACLClient returns the acl client
-func (s *service) GetACLClient() *acl.ACLClient {
+func (s *service) GetACLClient() acl.ACLClientInterface {
 	return s.aclClient
 }
 
@@ -900,6 +900,35 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	if err := s.repository.UpdateNamespaceModelByID(ctx, ownerPermalink, modelID, dbToUpdateModel); err != nil {
 		return nil, err
+	}
+
+	toUpdTags := toUpdateModel.GetTags()
+
+	currentTags := dbModel.TagNames()
+	toBeCreatedTagNames := make([]string, 0, len(toUpdTags))
+	for _, tag := range toUpdTags {
+		if !slices.Contains(currentTags, tag) && !slices.Contains(preserveTags, tag) {
+			toBeCreatedTagNames = append(toBeCreatedTagNames, tag)
+		}
+	}
+
+	toBeDeletedTagNames := make([]string, 0, len(toUpdTags))
+	for _, tag := range currentTags {
+		if !slices.Contains(toUpdTags, tag) && !slices.Contains(preserveTags, tag) {
+			toBeDeletedTagNames = append(toBeDeletedTagNames, tag)
+		}
+	}
+	if len(toBeDeletedTagNames) > 0 {
+		err = s.repository.DeleteModelTags(ctx, dbModel.UID, toBeDeletedTagNames)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(toBeCreatedTagNames) > 0 {
+		err = s.repository.CreateModelTags(ctx, dbModel.UID, toBeCreatedTagNames)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	updatedDBModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, dbModel.ID, false, false)

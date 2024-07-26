@@ -21,6 +21,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type ACLClientInterface interface {
+	SetOwner(ctx context.Context, objectType string, objectUID uuid.UUID, ownerType string, ownerUID uuid.UUID) error
+	SetModelPermission(ctx context.Context, modelUID uuid.UUID, user, role string, enable bool) error
+	SetPublicModelPermission(ctx context.Context, modelUID uuid.UUID) error
+	DeleteModelPermission(ctx context.Context, modelUID uuid.UUID, user string) error
+	DeletePublicModelPermission(ctx context.Context, modelUID uuid.UUID) error
+	Purge(ctx context.Context, objectType string, objectUID uuid.UUID) error
+	CheckPermission(ctx context.Context, objectType string, objectUID uuid.UUID, role string) (bool, error)
+	CheckPublicExecutable(ctx context.Context, objectType string, objectUID uuid.UUID) (bool, error)
+	ListPermissions(ctx context.Context, objectType string, role string, isPublic bool) ([]uuid.UUID, error)
+}
+
 type ACLClient struct {
 	writeClient          openfga.OpenFGAServiceClient
 	readClient           openfga.OpenFGAServiceClient
