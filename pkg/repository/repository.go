@@ -288,6 +288,12 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	if result := queryBuilder.First(&model); result.Error != nil {
 		return nil, result.Error
 	}
+
+	model.Tags = []*datamodel.ModelTag{}
+	tagDB := r.checkPinnedUser(ctx, r.db, "model_tag")
+	tagDBQueryBuilder := tagDB.Model(&datamodel.ModelTag{}).Where("model_uid = ?", model.UID)
+	tagDBQueryBuilder.Find(&model.Tags)
+
 	return &model, nil
 }
 
