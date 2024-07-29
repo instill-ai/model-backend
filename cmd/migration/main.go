@@ -91,7 +91,6 @@ func main() {
 	)
 
 	m, err := migrate.New(fmt.Sprintf("file:///%s/pkg/db/migration", migrateFolder), dsn)
-
 	if err != nil {
 		panic(err)
 	}
