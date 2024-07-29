@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"go.einride.tech/aip/ordering"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -23,6 +25,7 @@ import (
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	"github.com/instill-ai/x/errmsg"
+	"github.com/instill-ai/x/sterr"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
@@ -63,7 +66,7 @@ type Service interface {
 	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error)
 	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error)
 	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error)
-	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error
+	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) error
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelpb.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelpb.Model) (*modelpb.Model, error)
@@ -286,22 +289,60 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
-func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, model *datamodel.Model) error {
+func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) error {
 
 	if err := s.checkNamespacePermission(ctx, ns); err != nil {
 		return err
 	}
 
-	if err := s.repository.CreateNamespaceModel(ctx, model.Owner, model); err != nil {
+	var modelConfig datamodel.ContainerizedModelConfiguration
+	b, err := model.GetConfiguration().MarshalJSON()
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	if err := json.Unmarshal(b, &modelConfig); err != nil {
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	bModelConfig, _ := json.Marshal(modelConfig)
+
+	dbModel, err := s.PBToDBModel(ctx, ns, model)
+	if err != nil {
+		return err
+	}
+	dbModel.Configuration = bModelConfig
+	dbModel.ModelDefinitionUID = modelDefinition.UID
+	dbModel.Task = datamodel.ModelTask(utils.Tasks[model.Task.String()])
+
+	maxBatchSize := 0
+	allowedMaxBatchSize := utils.GetSupportedBatchSize(dbModel.Task)
+
+	if maxBatchSize > allowedMaxBatchSize {
+		st, e := sterr.CreateErrorPreconditionFailure(
+			"[handler] create a model",
+			[]*errdetails.PreconditionFailure_Violation{
+				{
+					Type:        "MAX BATCH SIZE LIMITATION",
+					Subject:     "Create a model error",
+					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
+				},
+			})
+		if e != nil {
+			return err
+		}
+		return st.Err()
+	}
+
+	if err := s.repository.CreateNamespaceModel(ctx, dbModel.Owner, dbModel); err != nil {
 		return err
 	}
 
-	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, model.Owner, model.ID, false, false)
+	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, dbModel.Owner, dbModel.ID, false, false)
 	if err != nil {
 		return err
 	}
 
-	nsType, ownerUID, err := resource.GetNamespaceTypeAndUID(model.Owner)
+	nsType, ownerUID, err := resource.GetNamespaceTypeAndUID(dbModel.Owner)
 	if err != nil {
 		return err
 	}

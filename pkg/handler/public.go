@@ -162,10 +162,6 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 	}
 
-	if modelToCreate.Visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		return nil, status.Errorf(codes.InvalidArgument, "We do not support private model for serverless deployment")
-	}
-
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
 		span.SetStatus(1, err.Error())
@@ -213,7 +209,7 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 
 	switch modelDefinitionID {
 	case "container":
-		return createContainerizedModel(h.service, ctx, modelToCreate, ns, modelDefinition)
+		return createContainerizedModel(h.service, ctx, ns, modelDefinition, modelToCreate)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
@@ -701,10 +697,6 @@ func (h *PublicHandler) UpdateNamespaceModel(ctx context.Context, req *modelpb.U
 	if err != nil {
 		span.SetStatus(1, ErrFieldMask.Error())
 		return nil, ErrFieldMask
-	}
-
-	if pbModelToUpdate.Visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		return nil, status.Error(codes.InvalidArgument, "We do not support private model for serverless deployment")
 	}
 
 	pbUpdatedModel, err := h.service.UpdateNamespaceModelByID(ctx, ns, req.ModelId, pbModelToUpdate)
