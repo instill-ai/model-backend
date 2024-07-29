@@ -153,11 +153,6 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 
 	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 
-	tags := []string{}
-	for _, t := range dbModel.Tags {
-		tags = append(tags, t.TagName)
-	}
-
 	pbModel := modelpb.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
@@ -194,7 +189,8 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		License:          &dbModel.License.String,
 		Readme:           &dbModel.Readme.String,
 		ProfileImage:     &profileImage,
-		Tags:             tags,
+		Tags:             dbModel.TagNames(),
+		Versions:         dbModel.VersionNames(),
 	}
 
 	pbModel.Permission = &modelpb.Permission{}

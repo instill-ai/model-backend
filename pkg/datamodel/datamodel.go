@@ -86,6 +86,7 @@ type Model struct {
 	License            sql.NullString
 	ProfileImage       sql.NullString
 	Tags               []*ModelTag
+	Versions           []*ModelVersion
 	NamespaceID        string `gorm:"type:namespace_id"`
 	NamespaceType      string `gorm:"type:namespace_type"`
 }
@@ -108,12 +109,22 @@ func (m *Model) TagNames() []string {
 	return tags
 }
 
+func (m *Model) VersionNames() []string {
+	versions := make([]string, len(m.Versions))
+	for i, v := range m.Versions {
+		versions[i] = v.Version
+	}
+	return versions
+}
+
 // Model version
+// Name: resource name
+// Version: version name
 type ModelVersion struct {
+	ModelUID   uuid.UUID
 	Name       string
 	Version    string
 	Digest     string
-	ModelUID   uuid.UUID
 	CreateTime time.Time `gorm:"autoCreateTime:nano"`
 	UpdateTime time.Time `gorm:"autoUpdateTime:nano"`
 }

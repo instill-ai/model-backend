@@ -121,7 +121,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		}
 	}
 
-	joinStr := "left join model_tag on model_tag.model_uid = model.uid"
+	joinStr := "left join model_tag on model_tag.model_uid = model.uid left join model_version on model_version.model_uid = model.uid"
 
 	countBuilder := db.Distinct("uid").Model(&datamodel.Model{}).Where(where, whereArgs...).Joins(joinStr)
 	if uidAllowList != nil {
@@ -190,7 +190,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 	queryBuilder.Omit("profile_image")
 
-	result := queryBuilder.Preload("Tags").Find(&models)
+	result := queryBuilder.Preload("Tags").Preload("Versions").Find(&models)
 	if result.Error != nil {
 		logger.Error(result.Error.Error())
 		return nil, 0, "", result.Error
@@ -294,6 +294,11 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 	tagDBQueryBuilder := tagDB.Model(&datamodel.ModelTag{}).Where("model_uid = ?", model.UID)
 	tagDBQueryBuilder.Find(&model.Tags)
 
+	model.Versions = []*datamodel.ModelVersion{}
+	versionDB := r.checkPinnedUser(ctx, r.db, "model_version")
+	versionDBQueryBuilder := versionDB.Model(&datamodel.ModelVersion{}).Where("model_uid = ?", model.UID)
+	versionDBQueryBuilder.Find(&model.Versions)
+
 	return &model, nil
 }
 
@@ -389,6 +394,15 @@ func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink stri
 	db := r.checkPinnedUser(ctx, r.db, "model_version")
 
 	if result := db.Model(&datamodel.ModelVersion{}).Create(&version); result.Error != nil {
+
+		var pgErr *pgconn.PgError
+
+		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+
+			return ErrNameExists
+
+		}
+
 		return result.Error
 	}
 
