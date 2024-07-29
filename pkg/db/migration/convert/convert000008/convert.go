@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -21,14 +20,12 @@ const batchSize = 100
 type ModelACLConverter struct {
 	DB         *gorm.DB
 	Logger     *zap.Logger
-	ACLClient  acl.ACLClientInterface
 	MgmtClient mgmtpb.MgmtPrivateServiceClient
 }
 
-// Migrate updates all models' visibility to VISIBILITY_PUBLIC
-// and migrate the existing owner field to new namespace_id and namespace_type field.
+// Migrate updates the existing owner field to new namespace_id and namespace_type field.
 func (c *ModelACLConverter) Migrate() error {
-	c.Logger.Info("NamespaceVisibilityAndIDMigrator start")
+	c.Logger.Info("NamespaceMigrator start")
 	if err := c.migrateModel(); err != nil {
 		return err
 	}
@@ -43,11 +40,7 @@ func (c *ModelACLConverter) migrateModel() error {
 		for _, m := range models {
 			l := c.Logger.With(zap.String("modelUID", m.UID.String()))
 
-			l.Info(fmt.Sprintf("Migrating model: %s to public", m.ID))
-			if err := c.ACLClient.SetPublicModelPermission(ctx, m.UID); err != nil {
-				l.Error(fmt.Sprintf("Migrating model: %s to public failed!!", m.ID))
-				return fmt.Errorf("migrating model: %w to public failed", err)
-			}
+			l.Info(fmt.Sprintf("Migrating model: %s to add namespace", m.ID))
 
 			ownerUID := strings.Split(m.Owner, "/")[1]
 
