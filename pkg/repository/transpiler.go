@@ -188,10 +188,10 @@ func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op any) (*clause.
 		switch ident.SQL {
 		// TODO we should support wildcards without special filter names
 		case "q":
-			sql = "(SIMILARITY(id, ?) > 0.2) OR (SIMILARITY(namespace_id, ?) > 0.2) OR (LOWER(id) LIKE LOWER(?)) OR (LOWER(namespace_id) LIKE LOWER(?))"
+			sql = "((SIMILARITY(id, ?) > 0.2) OR (SIMILARITY(namespace_id, ?) > 0.2) OR (LOWER(id) LIKE LOWER(?)) OR (LOWER(namespace_id) LIKE LOWER(?)))"
 			vars = append(vars, con.Vars[0], con.Vars[0], fmt.Sprintf("%%%s%%", con.Vars[0]), fmt.Sprintf("%%%s%%", con.Vars[0]))
 		case "q_title":
-			sql = "(SIMILARITY(title, ?) > 0.2) OR (LOWER(title) LIKE LOWER(?))"
+			sql = "((SIMILARITY(title, ?) > 0.2) OR (LOWER(title) LIKE LOWER(?)))"
 			vars = append(vars, con.Vars[0], fmt.Sprintf("%%%s%%", con.Vars[0]))
 		case "tag":
 			sql = "model_tag.tag_name = ?"
@@ -252,7 +252,7 @@ func (t *Transpiler) transpileBinaryLogicalCallExpr(e *expr.Expr, op clause.Expr
 
 	return &clause.Expr{
 		SQL:                sql,
-		Vars:               append(lhsExpr.Vars, rhsExpr.Vars),
+		Vars:               append(lhsExpr.Vars, rhsExpr.Vars...),
 		WithoutParentheses: true,
 	}, nil
 }
