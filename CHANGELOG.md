@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.28.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.27.0-alpha...v0.28.0-alpha) (2024-07-31)
+
+
+### Features
+
+* **mgmt:** use explicit `user_id` and `organization_id` in mgmt request ([#638](https://github.com/instill-ai/model-backend/issues/638)) ([4af37e6](https://github.com/instill-ai/model-backend/commit/4af37e695954001da9d2b6da358f990c90bf884f))
+* **model:** implement namespace endpoints ([#639](https://github.com/instill-ai/model-backend/issues/639)) ([8c9acac](https://github.com/instill-ai/model-backend/commit/8c9acac740258cbc908f499ebda78680be664541))
+* **pkg:** implement fuzze search for namespace and model ID ([#642](https://github.com/instill-ai/model-backend/issues/642)) ([30b11a8](https://github.com/instill-ai/model-backend/commit/30b11a8cff071e21b53a13f7105e900c88a8b605))
+* **tag:** allow custom tags for model ([#643](https://github.com/instill-ai/model-backend/issues/643)) ([9c49db6](https://github.com/instill-ai/model-backend/commit/9c49db63e5620691781dd5d3860b6de34e1fec0f))
+* **version:** embed version names in model struct ([#645](https://github.com/instill-ai/model-backend/issues/645)) ([88f107b](https://github.com/instill-ai/model-backend/commit/88f107ba31458a1dfa69274080730f27ed4e25a0))
+
+
+### Bug Fixes
+
+* **repository:** fix missing tag query ([#644](https://github.com/instill-ai/model-backend/issues/644)) ([f1f3229](https://github.com/instill-ai/model-backend/commit/f1f3229557c7b44f9deaba5e6c916d7ac7d6480d))
+* **transpiler:** fix expression ([#649](https://github.com/instill-ai/model-backend/issues/649)) ([4680c92](https://github.com/instill-ai/model-backend/commit/4680c92c8b67faae1cc461a81e5f8527738803cf))
+* **worker:** added tests for trigger model activity ([#630](https://github.com/instill-ai/model-backend/issues/630)) ([abe562e](https://github.com/instill-ai/model-backend/commit/abe562e855b6c68271340aef00265e13aebcf665))
+
 ## [0.27.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.26.0-alpha...v0.27.0-alpha) (2024-07-16)
 
 
