@@ -179,7 +179,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		)
 	}()
 
-	triggerModelReq := &modelpb.TriggerUserModelRequest{}
+	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
 	err = protojson.Unmarshal(blob, triggerModelReq)
 	if err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		outputs = append(outputs, outputStruct)
 	}
 
-	triggerModelResp := &modelpb.TriggerUserModelResponse{
+	triggerModelResp := &modelpb.TriggerNamespaceModelResponse{
 		Task:        param.Task,
 		TaskOutputs: outputs,
 	}

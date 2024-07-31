@@ -33,7 +33,7 @@ import (
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, error)
-	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.CallResponse, error)
+	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
@@ -208,7 +208,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
 }
 
-func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerUserModelRequest, modelName string, version string) (*rayserver.CallResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)

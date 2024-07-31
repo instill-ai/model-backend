@@ -77,7 +77,7 @@ func (mr *MockRayMockRecorder) IsRayServerReady(arg0 interface{}) *gomock.Call {
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockRay) ModelInferRequest(arg0 context.Context, arg1 taskv1alpha.Task, arg2 *modelv1alpha.TriggerUserModelRequest, arg3, arg4 string) (*rayserver.CallResponse, error) {
+func (m *MockRay) ModelInferRequest(arg0 context.Context, arg1 taskv1alpha.Task, arg2 *modelv1alpha.TriggerNamespaceModelRequest, arg3, arg4 string) (*rayserver.CallResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*rayserver.CallResponse)
