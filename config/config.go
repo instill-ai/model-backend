@@ -172,6 +172,7 @@ type AppConfig struct {
 	Registry               RegistryConfig        `koanf:"registry"`
 	InitModel              InitModelConfig       `koanf:"initmodel"`
 	Log                    LogConfig             `koanf:"log"`
+	Minio                  MinioConfig           `koanf:"minio"`
 }
 
 // Config - Global variable to export
@@ -226,4 +227,13 @@ func ParseConfigFlag() string {
 	flag.Parse()
 
 	return *configPath
+}
+
+// MinioConfig is the minio configuration.
+type MinioConfig struct {
+	Host       string `koanf:"host"`
+	Port       string `koanf:"port"`
+	RootUser   string `koanf:"rootuser"`
+	RootPwd    string `koanf:"rootpwd"`
+	BucketName string `koanf:"bucketname"`
 }

@@ -83,3 +83,9 @@ openfga:
 registry:
   host: registry
   port: 5000
+minio:
+  host: minio
+  port: 9000
+  rootuser: minioadmin
+  rootpwd: minioadmin
+  bucketname: instill-ai-model
