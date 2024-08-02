@@ -66,6 +66,16 @@ message RayServiceCallRequest {
   repeated bytes raw_input_contents = 7;
 }
 
+// RayServiceCallMetadata represents metadata for model inference
+message RayServiceCallMetadata {
+  // application name
+  string application = 1;
+  // request id
+  string request_id = 2;
+  // multiplexed model id
+  string multiplexed_model_id = 3;
+}
+
 // RayServiceCallResponse represents a response for model inference
 message RayServiceCallResponse {
   // name of the model to use for inferencing.
@@ -84,5 +94,5 @@ service RayService {
   // returns a ModelMetadataResponse
   rpc ModelMetadata(ModelMetadataRequest) returns (ModelMetadataResponse) {}
   // __call__ method is the defaut trigger entry for ray deployment
-  rpc __call__(RayServiceCallRequest) returns (RayServiceCallResponse) {}
+  rpc __call__(RayServiceCallRequest, RayServiceCallMetadata) returns (RayServiceCallResponse) {}
 }
