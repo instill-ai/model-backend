@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.28.0-alpha...v0.29.0-alpha) (2024-08-05)
+
+
+### Features
+
+* **minio:** added minio connection ([#651](https://github.com/instill-ai/model-backend/issues/651)) ([d17770f](https://github.com/instill-ai/model-backend/commit/d17770f56df19dc3e3999bc11383db321b67cd28))
+
 ## [0.28.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.27.0-alpha...v0.28.0-alpha) (2024-07-31)
 
 
