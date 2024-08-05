@@ -15,6 +15,7 @@ import (
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
+	"go.uber.org/zap"
 
 	temporalclient "go.temporal.io/sdk/client"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
@@ -150,7 +152,13 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	cw := modelWorker.NewWorker(redisClient, rayService, nil)
+	// Initialize Minio client
+	minioClient, err := minio.NewMinioClientAndInitBucket(&config.Config.Minio)
+	if err != nil {
+		logger.Fatal("failed to create minio client", zap.Error(err))
+	}
+
+	cw := modelWorker.NewWorker(redisClient, rayService, minioClient, nil)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

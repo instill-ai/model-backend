@@ -43,7 +43,7 @@ func TestWorker_TriggerModelWorkflow(t *testing.T) {
 		param := &worker.TriggerModelWorkflowRequest{}
 		mockRay := NewMockRay(ctrl)
 
-		w := worker.NewWorker(rc, mockRay, nil)
+		w := worker.NewWorker(rc, mockRay, nil, nil)
 		_, err = w.TriggerModelWorkflow(workflow.Context(nil), param)
 		require.NoError(t, err)
 	})
@@ -109,7 +109,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		rc.Set(ctx, param.ParsedInputKey, "{}", 30*time.Second)
 
-		w := worker.NewWorker(rc, mockRay, nil)
+		w := worker.NewWorker(rc, mockRay, nil, nil)
 		resp, err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
@@ -141,7 +141,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			).
 			Return(nil).Times(1)
 
-		w := worker.NewWorker(rc, mockRay, nil)
+		w := worker.NewWorker(rc, mockRay, nil, nil)
 		_, err = w.TriggerModelActivity(ctx, param)
 		require.ErrorContains(t, err, "model is offline")
 	})
