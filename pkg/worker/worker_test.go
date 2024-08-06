@@ -72,7 +72,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			ModelUID: param.ModelUID,
 		}
 		param.InputKey = "InputKey"
-		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
+		param.Task = taskv1alpha.Task_TASK_CHAT
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -111,7 +111,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			ModelUID: param.ModelUID,
 		}
 		param.InputKey = "InputKey"
-		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
+		param.Task = taskv1alpha.Task_TASK_CHAT
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()

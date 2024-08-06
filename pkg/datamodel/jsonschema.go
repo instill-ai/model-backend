@@ -1,15 +1,22 @@
 package datamodel
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 
+	"github.com/lestrrat-go/jsref/provider"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/internal/jsonref"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
@@ -22,8 +29,9 @@ var ModelJSONSchema *jsonschema.Schema
 
 var RegionHardwareJSON RegionHardware
 
-var TaskInputJSON map[string]any
-var TaskOutputJSON map[string]any
+// Tasks schema
+var TasksJSONMap map[string]map[string]any
+var TasksJSONSchemaMap map[string]*jsonschema.Schema
 
 type RegionHardware struct {
 	Properties struct {
@@ -57,6 +65,32 @@ type RegionHardware struct {
 			}
 		}
 	}
+}
+
+func renderJSON(tasksJSONBytes []byte) ([]byte, error) {
+	var err error
+	res := jsonref.New()
+	err = res.AddProvider(provider.NewHTTP())
+	if err != nil {
+		return nil, err
+	}
+
+	var tasksJSON any
+	err = json.Unmarshal(tasksJSONBytes, &tasksJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := res.Resolve(tasksJSON, "", jsonref.WithRecursiveResolution(true))
+	if err != nil {
+		return nil, err
+	}
+	renderedTasksJSON, err := json.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+	return renderedTasksJSON, nil
+
 }
 
 // InitJSONSchema initializes JSON Schema instances with the given files
@@ -101,20 +135,44 @@ func InitJSONSchema(ctx context.Context) {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	taskInputJSONFile, err := os.ReadFile("config/model/task_input.json")
+	resp, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/instill-ai/instill-core/%s/schema/ai-tasks.json", config.Config.Server.TaskSchemaVersion))
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
-	if err := json.Unmarshal(taskInputJSONFile, &TaskInputJSON); err != nil {
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Fatal(fmt.Sprintf("failed to fetch data: %s", resp.Status))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	taskOutputJSONFile, err := os.ReadFile("config/model/task_output.json")
+	TasksJSONMap = map[string]map[string]any{}
+	err = json.Unmarshal(body, &TasksJSONMap)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
-	if err := json.Unmarshal(taskOutputJSONFile, &TaskOutputJSON); err != nil {
-		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+
+	TasksJSONSchemaMap = map[string]*jsonschema.Schema{}
+
+	for task := range TasksJSONMap {
+		schemaBytes, err := json.Marshal(TasksJSONMap[task]["input"])
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+		renderedSchemaBytes, err := renderJSON(schemaBytes)
+		if err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+		if err = compiler.AddResource(fmt.Sprintf("%v.json", task), bytes.NewReader(renderedSchemaBytes)); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+		if TasksJSONSchemaMap[task], err = compiler.Compile(fmt.Sprintf("%v.json", task)); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
 	}
 }
 

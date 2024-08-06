@@ -35,8 +35,8 @@ RUN mkdir /.cache && chown -R nobody:nogroup /.cache
 # Need permission of /nonexistent folder for HuggingFace internal process.
 RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 
-ENV GOCACHE /go/.cache/go-build
-ENV GOENV /go/.config/go/env
+ENV GOCACHE=/go/.cache/go-build
+ENV GOENV=/go/.config/go/env
 
 # -- set up mounting points
 RUN mkdir /model-config && chown -R nobody:nogroup /model-config

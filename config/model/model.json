@@ -73,14 +73,9 @@
           "title": "Semantic Segmentation"
         },
         {
-          "const": "TASK_TEXT_GENERATION",
-          "instillShortDescription": "Generate texts from input text prompts.",
-          "title": "Text Generation"
-        },
-        {
-          "const": "TASK_TEXT_GENERATION_CHAT",
-          "instillShortDescription": "Generate texts from input text prompts and chat history.",
-          "title": "Text Generation Chat"
+          "const": "TASK_CHAT",
+          "instillShortDescription": "Generate texts from input text prompts in chat style.",
+          "title": "Chat"
         },
         {
           "const": "TASK_TEXT_TO_IMAGE",
@@ -91,11 +86,6 @@
           "const": "TASK_IMAGE_TO_IMAGE",
           "instillShortDescription": "Generate image from input text prompt and image.",
           "title": "Image To Image"
-        },
-        {
-          "const": "TASK_VISUAL_QUESTION_ANSWERING",
-          "instillShortDescription": "Answer questions based on a prompt and an image.",
-          "title": "Visual Question Answering"
         }
       ]
     },
