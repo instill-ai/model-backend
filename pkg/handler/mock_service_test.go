@@ -24,6 +24,7 @@ import (
 	redis "github.com/redis/go-redis/v9"
 	filtering "go.einride.tech/aip/filtering"
 	ordering "go.einride.tech/aip/ordering"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // MockService is a mock of Service interface.
@@ -546,25 +547,25 @@ func (mr *MockServiceMockRecorder) RenameNamespaceModelByID(arg0, arg1, arg2, ar
 }
 
 // TriggerAsyncNamespaceModelByID mocks base method.
-func (m *MockService) TriggerAsyncNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) (*longrunningpb.Operation, error) {
+func (m *MockService) TriggerAsyncNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4 []byte, arg5 taskv1alpha.Task, arg6 string) (*longrunningpb.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TriggerAsyncNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	ret := m.ctrl.Call(m, "TriggerAsyncNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 	ret0, _ := ret[0].(*longrunningpb.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // TriggerAsyncNamespaceModelByID indicates an expected call of TriggerAsyncNamespaceModelByID.
-func (mr *MockServiceMockRecorder) TriggerAsyncNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) TriggerAsyncNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerAsyncNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerAsyncNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerAsyncNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerAsyncNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 }
 
 // TriggerNamespaceModelByID mocks base method.
-func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) ([]*modelv1alpha.TaskOutput, error) {
+func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4 []byte, arg5 taskv1alpha.Task, arg6 string) ([]*structpb.Struct, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-	ret0, _ := ret[0].([]*modelv1alpha.TaskOutput)
+	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret0, _ := ret[0].([]*structpb.Struct)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

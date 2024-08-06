@@ -21,8 +21,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/instill-ai/x/errmsg"
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -33,12 +35,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
-	"github.com/instill-ai/x/errmsg"
 	"github.com/instill-ai/x/sterr"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -77,7 +76,7 @@ type Service interface {
 	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*structpb.Struct, error)
 	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error)
@@ -313,25 +312,6 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	dbModel.ModelDefinitionUID = modelDefinition.UID
 	dbModel.Task = datamodel.ModelTask(utils.Tasks[model.Task.String()])
 
-	maxBatchSize := 0
-	allowedMaxBatchSize := utils.GetSupportedBatchSize(dbModel.Task)
-
-	if maxBatchSize > allowedMaxBatchSize {
-		st, e := sterr.CreateErrorPreconditionFailure(
-			"[handler] create a model",
-			[]*errdetails.PreconditionFailure_Violation{
-				{
-					Type:        "MAX BATCH SIZE LIMITATION",
-					Subject:     "Create a model error",
-					Description: fmt.Sprintf("The max_batch_size in config.pbtxt exceeded the limitation %v, please try with a smaller max_batch_size", allowedMaxBatchSize),
-				},
-			})
-		if e != nil {
-			return err
-		}
-		return st.Err()
-	}
-
 	if err := s.repository.CreateNamespaceModel(ctx, dbModel.Owner, dbModel); err != nil {
 		return err
 	}
@@ -428,7 +408,7 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 	return nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*structpb.Struct, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -485,7 +465,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
-	if state, _, err := s.ray.ModelReady(ctx, id, version.Version); err != nil || state == modelpb.State_STATE_ERROR.Enum() || state == modelpb.State_STATE_STARTING.Enum() {
+	if state, _, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), id), version.Version); err != nil || state == modelpb.State_STATE_ERROR.Enum() || state == modelpb.State_STATE_STARTING.Enum() {
 		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
 	}
 

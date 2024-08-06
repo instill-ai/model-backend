@@ -18,6 +18,7 @@ server:
     maxworkflowretry: 1
     maxactivityretry: 3
   instillcorehost: http://localhost:8080
+  taskschemaversion: 0b3f2a5
 database:
   username: postgres
   password: password
@@ -52,15 +53,6 @@ cache:
   redis:
     redisoptions:
       addr: redis:6379
-maxbatchsizelimitation:
-  unspecified: 2
-  classification: 16
-  detection: 8
-  keypoint: 8
-  ocr: 2
-  instancesegmentation: 8
-  semanticsegmentation: 8
-  textgeneration: 1
 temporal:
   hostport: temporal:7233
   namespace: model-backend

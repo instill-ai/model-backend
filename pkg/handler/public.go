@@ -217,7 +217,6 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 	}
-
 }
 
 func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelpb.ListUserModelsRequest) (resp *modelpb.ListUserModelsResponse, err error) {

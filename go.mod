@@ -21,6 +21,11 @@ require (
 	github.com/instill-ai/x v0.4.0-alpha
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/knadh/koanf v1.5.0
+	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c
+	github.com/lestrrat-go/jsref v0.0.0-20211028120858-c0bcbb5abf20
+	github.com/lestrrat-go/option v1.0.1
+	github.com/lestrrat-go/pdebug v0.0.0-20210111095411-35b07dbf089b
+	github.com/lestrrat-go/structinfo v0.0.0-20210312050401-7f8bd69d6acb
 	github.com/mennanov/fieldmask-utils v1.1.0
 	github.com/minio/minio-go/v7 v7.0.74
 	github.com/openfga/api/proto v0.0.0-20240501220219-2b164f5813a7

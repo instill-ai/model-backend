@@ -173,14 +173,14 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 		}
 
 		// TODO: handle mimetype for output
-		for i := range triggerModelResp.TaskOutputs {
-			ttiOutput := triggerModelResp.TaskOutputs[i].GetTextToImage()
-			if ttiOutput != nil {
-				for i := range ttiOutput.Images {
-					ttiOutput.Images[i] = fmt.Sprintf("data:image/jpeg;base64,%s", ttiOutput.Images[i])
-				}
-			}
-		}
+		// for i := range triggerModelResp.TaskOutputs {
+		// 	ttiOutput := triggerModelResp.TaskOutputs[i].GetTextToImage()
+		// 	if ttiOutput != nil {
+		// 		for i := range ttiOutput.Images {
+		// 			ttiOutput.Images[i] = fmt.Sprintf("data:image/jpeg;base64,%s", ttiOutput.Images[i])
+		// 		}
+		// 	}
+		// }
 
 		latestOperation.Request = triggerModelReq
 		latestOperation.Response = triggerModelResp

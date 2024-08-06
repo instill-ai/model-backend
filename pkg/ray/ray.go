@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
@@ -232,24 +231,8 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-	inputStructs := []*structpb.Struct{}
-
-	for _, input := range req.GetTaskInputs() {
-		taskInput, err := json.Marshal(input.GetInput())
-		if err != nil {
-			return &rayserver.CallResponse{}, err
-		}
-		inputStruct := new(structpb.Struct)
-		err = json.Unmarshal(taskInput, inputStruct)
-		if err != nil {
-			return &rayserver.CallResponse{}, err
-		}
-		inputStructs = append(inputStructs, inputStruct)
-
-	}
-
 	rayTriggerReq := &rayserver.CallRequest{
-		TaskInputs: inputStructs,
+		TaskInputs: req.GetTaskInputs(),
 	}
 
 	modelInferResponse, err := r.rayClient.XCall__(ctx, rayTriggerReq)
@@ -315,7 +298,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			}
 		}
 
-		if scalingConfig != nil {
+		if len(scalingConfig) > 0 {
 			runOptions = append(runOptions, scalingConfig...)
 		} else {
 			runOptions = append(runOptions,

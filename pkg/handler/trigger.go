@@ -2,31 +2,25 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
-
-	"github.com/instill-ai/x/sterr"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/sterr"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -107,7 +101,7 @@ type TriggerNamespaceModelRequestInterface interface {
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
-	GetTaskInputs() []*modelpb.TaskInput
+	GetTaskInputs() []*structpb.Struct
 }
 
 func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
@@ -139,7 +133,7 @@ func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *mo
 	return resp, err
 }
 
-func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*modelpb.TaskOutput, error) {
+func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*structpb.Struct, error) {
 
 	startTime := time.Now()
 	eventName := "TriggerNamespaceModel"
@@ -230,6 +224,13 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+
+	for _, i := range req.GetTaskInputs() {
+		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONSchemaMap[pbModel.Task.String()], i, false)
+		if err != nil {
+			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
@@ -355,7 +356,7 @@ type TriggerAsyncNamespaceModelRequestInterface interface {
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
-	GetTaskInputs() []*modelpb.TaskInput
+	GetTaskInputs() []*structpb.Struct
 }
 
 func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
@@ -515,283 +516,282 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	return operation, nil
 }
 
-// TODO: to be reimplement
-func inferModelByUpload(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+// func inferModelByUpload(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
-	startTime := time.Now()
-	eventName := "InferModelByUpload"
+// 	startTime := time.Now()
+// 	eventName := "InferModelByUpload"
 
-	ctx, span := tracer.Start(req.Context(), eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
+// 	ctx, span := tracer.Start(req.Context(), eventName,
+// 		trace.WithSpanKind(trace.SpanKindServer))
+// 	defer span.End()
 
-	// inject header into ctx
-	headers := map[string]string{}
-	// inject header into ctx
-	for key, value := range req.Header {
-		if len(value) > 0 {
-			headers[key] = value[0]
-		}
-	}
-	md := metadata.New(headers)
-	ctx = metadata.NewIncomingContext(ctx, md)
+// 	// inject header into ctx
+// 	headers := map[string]string{}
+// 	// inject header into ctx
+// 	for key, value := range req.Header {
+// 		if len(value) > 0 {
+// 			headers[key] = value[0]
+// 		}
+// 	}
+// 	md := metadata.New(headers)
+// 	ctx = metadata.NewIncomingContext(ctx, md)
 
-	logUUID, _ := uuid.NewV4()
+// 	logUUID, _ := uuid.NewV4()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+// 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	contentType := req.Header.Get("Content-Type")
+// 	contentType := req.Header.Get("Content-Type")
 
-	if !strings.Contains(contentType, "multipart/form-data") {
-		w.Header().Add("Content-Type", "application/json+problem")
-		w.WriteHeader(405)
-		span.SetStatus(1, "")
-		return
-	}
+// 	if !strings.Contains(contentType, "multipart/form-data") {
+// 		w.Header().Add("Content-Type", "application/json+problem")
+// 		w.WriteHeader(405)
+// 		span.SetStatus(1, "")
+// 		return
+// 	}
 
-	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
-	defer redisClient.Close()
+// 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
+// 	defer redisClient.Close()
 
-	if err := authenticateUser(ctx, false); err != nil {
-		logger.Error(fmt.Sprintf("AuthenticatedUser Error: %s", err.Error()))
-		sta := status.Convert(err)
-		switch sta.Code() {
-		case codes.NotFound:
-			makeJSONResponse(w, 404, "Not found", "User not found")
-			span.SetStatus(1, "User not found")
-			return
-		default:
-			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
-			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
-			return
-		}
-	}
+// 	if err := authenticateUser(ctx, false); err != nil {
+// 		logger.Error(fmt.Sprintf("AuthenticatedUser Error: %s", err.Error()))
+// 		sta := status.Convert(err)
+// 		switch sta.Code() {
+// 		case codes.NotFound:
+// 			makeJSONResponse(w, 404, "Not found", "User not found")
+// 			span.SetStatus(1, "User not found")
+// 			return
+// 		default:
+// 			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
+// 			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
+// 			return
+// 		}
+// 	}
 
-	namespaceID := strings.Split(pathParams["path"], "/")[1]
-	modelID := strings.Split(pathParams["path"], "/")[3]
+// 	namespaceID := strings.Split(pathParams["path"], "/")[1]
+// 	modelID := strings.Split(pathParams["path"], "/")[3]
 
-	ns, err := s.GetRscNamespace(ctx, namespaceID)
-	if err != nil {
-		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
-		span.SetStatus(1, "Model path format error")
-		return
-	}
+// 	ns, err := s.GetRscNamespace(ctx, namespaceID)
+// 	if err != nil {
+// 		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
+// 		span.SetStatus(1, "Model path format error")
+// 		return
+// 	}
 
-	pbModel, err := s.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
-		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
-		span.SetStatus(1, "The model not found in server")
-		return
-	}
+// 	pbModel, err := s.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+// 	if err != nil {
+// 		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
+// 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
+// 		span.SetStatus(1, "The model not found in server")
+// 		return
+// 	}
 
-	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
-	if err != nil {
-		span.SetStatus(1, err.Error())
-		return
-	}
+// 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
+// 	if err != nil {
+// 		span.SetStatus(1, err.Error())
+// 		return
+// 	}
 
-	modelDef, err := s.GetRepository().GetModelDefinition(modelDefID)
-	if err != nil {
-		logger.Error(fmt.Sprintf("GetModelDefinition Error: %s", err.Error()))
-		makeJSONResponse(w, 404, "Model definition not found", "The model definition not found in server")
-		span.SetStatus(1, "The model definition not found in server")
-		return
-	}
+// 	modelDef, err := s.GetRepository().GetModelDefinition(modelDefID)
+// 	if err != nil {
+// 		logger.Error(fmt.Sprintf("GetModelDefinition Error: %s", err.Error()))
+// 		makeJSONResponse(w, 404, "Model definition not found", "The model definition not found in server")
+// 		span.SetStatus(1, "The model definition not found in server")
+// 		return
+// 	}
 
-	version, err := s.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), pathParams["version"])
-	if err != nil {
-		logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
-		makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
-		span.SetStatus(1, "The model version not found in server")
-		return
-	}
+// 	version, err := s.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), pathParams["version"])
+// 	if err != nil {
+// 		logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
+// 		makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
+// 		span.SetStatus(1, "The model version not found in server")
+// 		return
+// 	}
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+// 	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
-	usageData := &utils.UsageMetricData{
-		OwnerUID:           ns.NsUID.String(),
-		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID,
-		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
-		ModelUID:           pbModel.Uid,
-		TriggerUID:         logUUID.String(),
-		TriggerTime:        startTime.Format(time.RFC3339Nano),
-		ModelDefinitionUID: modelDef.UID.String(),
-		ModelTask:          pbModel.Task,
-	}
+// 	usageData := &utils.UsageMetricData{
+// 		OwnerUID:           ns.NsUID.String(),
+// 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
+// 		UserUID:            userUID,
+// 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
+// 		ModelUID:           pbModel.Uid,
+// 		TriggerUID:         logUUID.String(),
+// 		TriggerTime:        startTime.Format(time.RFC3339Nano),
+// 		ModelDefinitionUID: modelDef.UID.String(),
+// 		ModelTask:          pbModel.Task,
+// 	}
 
-	err = req.ParseMultipartForm(4 << 20)
-	if err != nil {
-		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		_ = s.WriteNewDataPoint(ctx, usageData)
-		return
-	}
+// 	err = req.ParseMultipartForm(4 << 20)
+// 	if err != nil {
+// 		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+// 		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
+// 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 		_ = s.WriteNewDataPoint(ctx, usageData)
+// 		return
+// 	}
 
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageFormDataInputsToBytes(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "File Input Error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseImageFormDataTextToImageInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageFormDataImageToImageInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseTextFormDataVisualQuestionAnsweringInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTextFormDataTextGenerationChatInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textGeneration
-	}
-	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
-		doSupportBatch, err := utils.DoSupportBatch()
-		if err != nil {
-			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		if !doSupportBatch {
-			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-	}
+// 	var parsedInput any
+// 	var lenInputs = 1
+// 	switch pbModel.Task {
+// 	case commonpb.Task_TASK_CLASSIFICATION,
+// 		commonpb.Task_TASK_DETECTION,
+// 		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
+// 		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
+// 		commonpb.Task_TASK_OCR,
+// 		commonpb.Task_TASK_KEYPOINT,
+// 		commonpb.Task_TASK_UNSPECIFIED:
+// 		imageInput, err := parseImageFormDataInputsToBytes(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "File Input Error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		lenInputs = len(imageInput)
+// 		parsedInput = imageInput
+// 	case commonpb.Task_TASK_TEXT_TO_IMAGE:
+// 		textToImage, err := parseImageFormDataTextToImageInputs(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		parsedInput = textToImage
+// 	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
+// 		imageToImage, err := parseImageFormDataImageToImageInputs(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		parsedInput = imageToImage
+// 	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
+// 		visualQuestionAnswering, err := parseTextFormDataVisualQuestionAnsweringInputs(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		parsedInput = visualQuestionAnswering
+// 	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
+// 		textGenerationChat, err := parseTextFormDataTextGenerationChatInputs(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		parsedInput = textGenerationChat
+// 	case commonpb.Task_TASK_TEXT_GENERATION:
+// 		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		parsedInput = textGeneration
+// 	}
+// 	// check whether model support batching or not. If not, raise an error
+// 	if lenInputs > 1 {
+// 		doSupportBatch, err := utils.DoSupportBatch()
+// 		if err != nil {
+// 			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
+// 			span.SetStatus(1, err.Error())
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 		if !doSupportBatch {
+// 			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
+// 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
+// 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 			_ = s.WriteNewDataPoint(ctx, usageData)
+// 			return
+// 		}
+// 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
-	if err != nil {
-		makeJSONResponse(w, 400, "Parser input error", err.Error())
-		span.SetStatus(1, err.Error())
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		_ = s.WriteNewDataPoint(ctx, usageData)
-		return
-	}
+// 	parsedInputJSON, err := json.Marshal(parsedInput)
+// 	if err != nil {
+// 		makeJSONResponse(w, 400, "Parser input error", err.Error())
+// 		span.SetStatus(1, err.Error())
+// 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 		_ = s.WriteNewDataPoint(ctx, usageData)
+// 		return
+// 	}
 
-	var response []*modelpb.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
-	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Ray inference server",
-			"",
-			"",
-			err.Error(),
-		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"Ray inference server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
+// 	var response []*structpb.Struct
+// 	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+// 	if err != nil {
+// 		st, e := sterr.CreateErrorResourceInfo(
+// 			codes.FailedPrecondition,
+// 			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
+// 			"Ray inference server",
+// 			"",
+// 			"",
+// 			err.Error(),
+// 		)
+// 		if strings.Contains(err.Error(), "Failed to allocate memory") {
+// 			st, e = sterr.CreateErrorResourceInfo(
+// 				codes.ResourceExhausted,
+// 				"[handler] inference model error",
+// 				"Ray inference server OOM",
+// 				"Out of memory for running the model, maybe try with smaller batch size",
+// 				"",
+// 				err.Error(),
+// 			)
+// 		}
 
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		obj, _ := json.Marshal(st.Details())
-		makeJSONResponse(w, 500, st.Message(), string(obj))
-		span.SetStatus(1, st.Message())
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		_ = s.WriteNewDataPoint(ctx, usageData)
-		return
-	}
+// 		if e != nil {
+// 			logger.Error(e.Error())
+// 		}
+// 		obj, _ := json.Marshal(st.Details())
+// 		makeJSONResponse(w, 500, st.Message(), string(obj))
+// 		span.SetStatus(1, st.Message())
+// 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+// 		_ = s.WriteNewDataPoint(ctx, usageData)
+// 		return
+// 	}
 
-	w.Header().Add("Content-Type", "application/json+problem")
-	w.WriteHeader(200)
-	res, err := utils.MarshalOptions.Marshal(&modelpb.TriggerUserModelBinaryFileUploadResponse{
-		Task:        pbModel.Task,
-		TaskOutputs: response,
-	})
-	if err != nil {
-		makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-		span.SetStatus(1, err.Error())
-		return
-	}
+// 	w.Header().Add("Content-Type", "application/json+problem")
+// 	w.WriteHeader(200)
+// 	res, err := utils.MarshalOptions.Marshal(&modelpb.TriggerUserModelBinaryFileUploadResponse{
+// 		Task:        pbModel.Task,
+// 		TaskOutputs: response,
+// 	})
+// 	if err != nil {
+// 		makeJSONResponse(w, 500, "Error Predict Model", err.Error())
+// 		span.SetStatus(1, err.Error())
+// 		return
+// 	}
 
-	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
-		logger.Warn("usage and metric data write fail")
-	}
+// 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
+// 	if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+// 		logger.Warn("usage and metric data write fail")
+// 	}
 
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel.Id),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
+// 	logger.Info(string(custom_otel.NewLogMessage(
+// 		ctx,
+// 		span,
+// 		logUUID.String(),
+// 		eventName,
+// 		custom_otel.SetEventResource(pbModel),
+// 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+// 	)))
 
-	_, _ = w.Write(res)
+// 	_, _ = w.Write(res)
 
-}
+// }
 
-func HandleTriggerModelByUpload(s service.Service, repo repository.Repository, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(s, repo, w, r, pathParams)
-}
+// func HandleTriggerModelByUpload(s service.Service, repo repository.Repository, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+// 	inferModelByUpload(s, repo, w, r, pathParams)
+// }

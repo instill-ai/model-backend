@@ -85,9 +85,13 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			ModelUID: param.ModelUID,
 		}
 		param.InputKey = "InputKey"
+<<<<<<< HEAD
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+=======
+		param.Task = taskv1alpha.Task_TASK_CHAT
+>>>>>>> 0a73ce8 (feat(task): implement new task input parsing logic)
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -150,7 +154,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			ModelUID: param.ModelUID,
 		}
 		param.InputKey = "InputKey"
-		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
+		param.Task = taskv1alpha.Task_TASK_CHAT
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
 
