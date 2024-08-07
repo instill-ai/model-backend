@@ -23,13 +23,15 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
+
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+
 	"github.com/instill-ai/x/sterr"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func triggerUserModelBinaryFileUploadParser(stream modelpb.ModelPublicService_TriggerUserModelBinaryFileUploadServer) (triggerInput any, path string, version string, err error) {
@@ -693,7 +695,7 @@ func (h *PublicHandler) TriggerNamespaceLatestModelBinaryFileUpload(stream model
 	return err
 }
 
-func (h *PublicHandler) triggerNamespaceModelBinaryFileUpload(ctx context.Context, triggerInput any, namespaceID string, modelID string, versionID string) ([]*modelpb.TaskOutput, *commonpb.Task, error) {
+func (h *PublicHandler) triggerNamespaceModelBinaryFileUpload(ctx context.Context, triggerInput any, namespaceID, modelID, versionID string) ([]*modelpb.TaskOutput, *commonpb.Task, error) {
 
 	startTime := time.Now()
 	eventName := "TriggerUserModelBinaryFileUpload"

@@ -19,7 +19,6 @@ import (
 )
 
 type MinioI interface {
-	GetClient() *minio.Client
 	UploadBase64File(ctx context.Context, filePath string, base64Content string, fileMimeType string) (err error)
 	DeleteFile(ctx context.Context, filePath string) (err error)
 	GetFile(ctx context.Context, filePath string) ([]byte, error)
