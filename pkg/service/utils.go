@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
+
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) checkNamespacePermission(ctx context.Context, ns resource.Namespace) error {
@@ -49,4 +51,12 @@ func (s *service) GetRscNamespace(ctx context.Context, namespaceID string) (reso
 		}, nil
 	}
 	return resource.Namespace{}, fmt.Errorf("namespace error")
+}
+
+// todo: merge usages of this and the one in handler
+func parseView(view modelpb.View) modelpb.View {
+	if view == modelpb.View_VIEW_UNSPECIFIED {
+		return modelpb.View_VIEW_BASIC
+	}
+	return view
 }

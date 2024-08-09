@@ -100,7 +100,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
-	ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest, view modelpb.View) (*modelpb.ListModelTriggersResponse, error)
+	ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest) (*modelpb.ListModelTriggersResponse, error)
 }
 
 type service struct {
@@ -514,7 +514,6 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
-			ModelTags:          dbModel.Tags,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
@@ -638,7 +637,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
-			ModelTags:          dbModel.Tags,
 			OwnerUID:           ns.NsUID,
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
@@ -706,9 +704,10 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest, view modelpb.View) (*modelpb.ListModelTriggersResponse, error) {
+func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest) (*modelpb.ListModelTriggersResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
+	view := parseView(req.GetView())
 
 	orderBy, err := ordering.ParseOrderBy(req)
 	if err != nil {
@@ -716,17 +715,28 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 	}
 
 	var startTimeFrom, startTimeTo *time.Time
-	if req.StartTimeFrom.IsValid() {
-		t := req.GetStartTimeFrom().AsTime()
-		startTimeFrom = &t
-	}
-	if req.StartTimeTo.IsValid() {
-		t := req.GetStartTimeTo().AsTime()
-		startTimeTo = &t
-	}
+	// todo: use filter
+	// if req.StartTimeFrom.IsValid() {
+	// 	t := req.GetStartTimeFrom().AsTime()
+	// 	startTimeFrom = &t
+	// }
+	// if req.StartTimeTo.IsValid() {
+	// 	t := req.GetStartTimeTo().AsTime()
+	// 	startTimeTo = &t
+	// }
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), orderBy, req.ModelUid, startTimeFrom, startTimeTo)
+	ns, err := s.GetRscNamespace(ctx, req.GetNamespaceId())
+	if err != nil {
+		return nil, err
+	}
+
+	pbModel, err := s.GetNamespaceModelByID(ctx, ns, req.GetModelId(), view)
+	if err != nil {
+		return nil, err
+	}
+
+	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), orderBy, pbModel.Uid, startTimeFrom, startTimeTo)
 	if err != nil {
 		return nil, err
 	}
@@ -752,20 +762,23 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 		}
 	}
 
+	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+
 	pbTriggers := make([]*modelpb.ModelTrigger, len(triggers))
 	for i, trigger := range triggers {
 		pbTrigger := &modelpb.ModelTrigger{
-			Uid:          trigger.UID.String(),
-			ModelUid:     trigger.ModelUID.String(),
-			TriggerUid:   trigger.TriggerUID.String(),
-			Status:       modelpb.ModelTrigger_TriggerStatus(trigger.Status),
-			Visibility:   modelpb.Model_Visibility(trigger.Visibility),
-			Source:       modelpb.ModelTrigger_TriggerSource(trigger.Source),
-			StartTime:    timestamppb.New(trigger.StartTime),
-			RequesterUid: trigger.RequesterUID.String(),
-			Error:        trigger.Error.Ptr(),
-			CreateTime:   timestamppb.New(trigger.CreateTime),
-			UpdateTime:   timestamppb.New(trigger.UpdateTime),
+			Uid:         trigger.UID.String(),
+			ModelUid:    trigger.ModelUID.String(),
+			Version:     trigger.ModelVersion,
+			Status:      modelpb.ModelTrigger_TriggerStatus(trigger.Status),
+			Source:      modelpb.ModelTrigger_TriggerSource(trigger.Source),
+			RequesterId: trigger.RequesterUID.String(),
+			Error:       trigger.Error.Ptr(),
+			CreateTime:  timestamppb.New(trigger.CreateTime),
+			UpdateTime:  timestamppb.New(trigger.UpdateTime),
+		}
+		if trigger.RequesterUID.String() != ctxUserUID {
+			pbTrigger.RequesterId = ""
 		}
 		if trigger.TotalDuration.Valid {
 			pbTrigger.TotalDuration = durationpb.New(time.Duration(trigger.TotalDuration.Int64) * time.Millisecond)

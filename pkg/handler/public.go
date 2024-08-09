@@ -1106,7 +1106,7 @@ func (h *PublicHandler) ListModelTriggers(ctx context.Context, req *modelpb.List
 		return nil, err
 	}
 
-	resp, err := h.service.ListModelTriggers(ctx, req, parseView(req.GetView()))
+	resp, err := h.service.ListModelTriggers(ctx, req)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err

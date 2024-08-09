@@ -1,7 +1,5 @@
 package service_test
 
-//go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
-
 import (
 	"context"
 	"testing"
@@ -11,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/mock"
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -445,7 +444,7 @@ func TestGetModelDefinition(t *testing.T) {
 	t.Run("TestGetModelDefinition", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			GetModelDefinition("github").
@@ -460,7 +459,7 @@ func TestGetModelDefinition(t *testing.T) {
 	t.Run("GetModelDefinitionByUID", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			GetModelDefinitionByUID(ModelDefinition).
@@ -477,7 +476,7 @@ func TestListModelDefinitions(t *testing.T) {
 	t.Run("TestListModelDefinition", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			ListModelDefinitions(modelPB.View_VIEW_FULL, int64(100), "").

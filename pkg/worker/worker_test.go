@@ -1,6 +1,5 @@
 package worker_test
 
-//go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
 //go:generate mockgen -destination mock_ray_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/ray Ray
 
 import (
@@ -19,10 +18,9 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/workflow"
-	"gorm.io/datatypes"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	mock2 "github.com/instill-ai/model-backend/pkg/mock"
+	"github.com/instill-ai/model-backend/pkg/mock"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/worker"
@@ -67,9 +65,9 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	repo := NewMockRepository(ctrl)
+	repo := mock.NewMockRepository(ctrl)
 
-	mockMinio := mock2.NewMinioIMock(mc)
+	mockMinio := mock.NewMinioIMock(mc)
 	mockMinio.UploadBase64FileMock.Return(nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
@@ -130,13 +128,8 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			ModelTask:        datamodel.ModelTask(param.Task),
-			ModelTags:        datatypes.JSON("[]"),
-			TriggerUID:       param.TriggerUID,
 			Status:           datamodel.TriggerStatus(modelPB.ModelTrigger_TRIGGER_STATUS_PROCESSING),
-			Visibility:       param.Visibility,
 			Source:           param.Source,
-			StartTime:        time.Now(),
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,
 		}
@@ -183,13 +176,8 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			ModelTask:        datamodel.ModelTask(param.Task),
-			ModelTags:        datatypes.JSON("[]"),
-			TriggerUID:       param.TriggerUID,
 			Status:           datamodel.TriggerStatus(modelPB.ModelTrigger_TRIGGER_STATUS_PROCESSING),
-			Visibility:       param.Visibility,
 			Source:           param.Source,
-			StartTime:        time.Now(),
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,
 		}

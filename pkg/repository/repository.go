@@ -64,7 +64,7 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
-	ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID *string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
+	ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
 	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
 	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
 }
@@ -677,15 +677,14 @@ func (r *repository) transpileFilter(filter filtering.Filter) (*clause.Expr, err
 	}).Transpile()
 }
 
-func (r *repository) ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID *string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+func (r *repository) ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var whereConditions []string
 	var whereArgs []any
-	if modelUID != nil {
-		whereConditions = append(whereConditions, "model_uid = ?")
-		whereArgs = append(whereArgs, *modelUID)
-	}
+
+	whereConditions = append(whereConditions, "model_uid = ?")
+	whereArgs = append(whereArgs, modelUID)
 	if startTimeFrom != nil {
 		whereConditions = append(whereConditions, "start_time >= ?")
 		whereArgs = append(whereArgs, *startTimeFrom)

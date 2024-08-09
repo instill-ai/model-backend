@@ -39,7 +39,6 @@ type TriggerModelWorkflowRequest struct {
 	ModelID            string
 	ModelUID           uuid.UUID
 	ModelVersion       datamodel.ModelVersion
-	ModelTags          []*datamodel.ModelTag
 	OwnerUID           uuid.UUID
 	OwnerType          string
 	UserUID            uuid.UUID
@@ -167,24 +166,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	// }
 
-	modelTags := make([]string, 0)
-	for _, tag := range param.ModelTags {
-		modelTags = append(modelTags, tag.TagName)
-	}
-	jsonBytes, _ := json.Marshal(modelTags)
-
 	start := time.Now()
 
 	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
 		ModelUID:         param.ModelUID,
 		ModelVersion:     param.ModelVersion.Version,
-		ModelTask:        datamodel.ModelTask(param.Task),
-		ModelTags:        jsonBytes,
-		TriggerUID:       param.TriggerUID,
 		Status:           datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_PROCESSING),
-		Visibility:       param.Visibility,
 		Source:           param.Source,
-		StartTime:        start,
 		RequesterUID:     param.RequesterUID,
 		InputReferenceID: param.InputReferenceID,
 	})
@@ -404,4 +392,17 @@ const (
 // message to a temporal.ApplicationError.
 type EndUserErrorDetails struct {
 	Message string
+}
+
+type UploadToMinioActivityParam struct {
+	ObjectName  string
+	Data        []byte
+	ContentType string
+}
+
+func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityParam) (string, error) {
+
+	// url, _, err := w.repository.UploadToMinio(ctx, param.ObjectName, param.Data, param.ContentType, param.BucketName)
+	// return url, err
+	return "", nil
 }
