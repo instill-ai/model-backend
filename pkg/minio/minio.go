@@ -3,14 +3,17 @@ package minio
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"path/filepath"
-	"strings"
 	"sync"
+	"time"
 
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/minio/minio-go/v7/pkg/lifecycle"
 	"go.uber.org/zap"
 
 	"github.com/instill-ai/model-backend/config"
@@ -19,8 +22,7 @@ import (
 )
 
 type MinioI interface {
-	GetClient() *minio.Client
-	UploadBase64File(ctx context.Context, filePath string, base64Content string, fileMimeType string) (err error)
+	UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
 	DeleteFile(ctx context.Context, filePath string) (err error)
 	GetFile(ctx context.Context, filePath string) ([]byte, error)
 	GetFilesByPaths(ctx context.Context, filePaths []string) ([]FileContent, error)
@@ -33,14 +35,18 @@ type Minio struct {
 	bucket string
 }
 
-func NewMinioClientAndInitBucket(cfg *config.MinioConfig) (*Minio, error) {
+func NewMinioClientAndInitBucket(ctx context.Context, cfg *config.MinioConfig) (*Minio, error) {
 	logger, err := log.GetZapLogger(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Initializing Minio client and bucket...")
 
-	client, err := minio.New(cfg.Host+":"+cfg.Port, cfg.RootUser, cfg.RootPwd, false)
+	endpoint := net.JoinHostPort(cfg.Host, cfg.Port)
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.RootUser, cfg.RootPwd, ""),
+		Secure: cfg.Secure,
+	})
 	if err != nil {
 		logger.Error("cannot connect to minio",
 			zap.String("host:port", cfg.Host+":"+cfg.Port),
@@ -49,7 +55,7 @@ func NewMinioClientAndInitBucket(cfg *config.MinioConfig) (*Minio, error) {
 		return nil, err
 	}
 
-	exists, err := client.BucketExists(cfg.BucketName)
+	exists, err := client.BucketExists(ctx, cfg.BucketName)
 	if err != nil {
 		logger.Error("failed in checking BucketExists", zap.Error(err))
 		return nil, err
@@ -59,40 +65,62 @@ func NewMinioClientAndInitBucket(cfg *config.MinioConfig) (*Minio, error) {
 		return &Minio{client: client, bucket: cfg.BucketName}, nil
 	}
 
-	if err = client.MakeBucket(cfg.BucketName, Location); err != nil {
+	if err = client.MakeBucket(ctx, cfg.BucketName, minio.MakeBucketOptions{
+		Region: Location,
+	}); err != nil {
 		logger.Error("creating Bucket failed", zap.Error(err))
 		return nil, err
 	}
 	logger.Info("Successfully created bucket", zap.String("bucket", cfg.BucketName))
 
+	lccfg := lifecycle.NewConfiguration()
+	lccfg.Rules = []lifecycle.Rule{
+		{
+			ID:     "expire-bucket-objects",
+			Status: "Enabled",
+			Expiration: lifecycle.Expiration{
+				Days: lifecycle.ExpirationDays(30),
+			},
+		},
+	}
+	err = client.SetBucketLifecycle(ctx, cfg.BucketName, lccfg)
+	if err != nil {
+		logger.Error("setting Bucket lifecycle failed", zap.Error(err))
+		return nil, err
+	}
+
 	return &Minio{client: client, bucket: cfg.BucketName}, nil
 }
 
-func (m *Minio) GetClient() *minio.Client {
-	return m.client
-}
-
-func (m *Minio) UploadBase64File(ctx context.Context, filePathName string, base64Content string, fileMimeType string) (err error) {
+func (m *Minio) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
 	logger, err := log.GetZapLogger(ctx)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
-	// Decode the base64 content
-	decodedContent, err := base64.StdEncoding.DecodeString(base64Content)
-	if err != nil {
-		return err
-	}
-	// Convert the decoded content to an io.Reader
-	contentReader := strings.NewReader(string(decodedContent))
-	// Upload the content to MinIO
-	size := int64(len(decodedContent))
+
+	jsonData, _ := json.Marshal(fileContent)
+	reader := bytes.NewReader(jsonData)
+
 	// Create the file path with folder structure
-	_, err = m.client.PutObjectWithContext(ctx, m.bucket, filePathName, contentReader, size, minio.PutObjectOptions{ContentType: fileMimeType})
+	_, err = m.client.PutObject(ctx, m.bucket, filePath, reader, int64(len(jsonData)), minio.PutObjectOptions{ContentType: fileMimeType})
 	if err != nil {
 		logger.Error("Failed to upload file to MinIO", zap.Error(err))
-		return err
+		return "", nil, err
 	}
-	return nil
+
+	// Get the object stat (metadata)
+	stat, err := m.client.StatObject(ctx, m.bucket, filePath, minio.StatObjectOptions{})
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Generate the presigned URL
+	presignedURL, err := m.client.PresignedGetObject(ctx, m.bucket, filePath, time.Hour*24*7, nil)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return presignedURL.String(), &stat, nil
 }
 
 // DeleteFile delete the file from minio
@@ -102,7 +130,7 @@ func (m *Minio) DeleteFile(ctx context.Context, filePathName string) (err error)
 		return err
 	}
 	// Delete the file from MinIO
-	err = m.client.RemoveObject(m.bucket, filePathName)
+	err = m.client.RemoveObject(ctx, m.bucket, filePathName, minio.RemoveObjectOptions{})
 	if err != nil {
 		logger.Error("Failed to delete file from MinIO", zap.Error(err))
 		return err
@@ -117,7 +145,7 @@ func (m *Minio) GetFile(ctx context.Context, filePathName string) ([]byte, error
 	}
 
 	// Get the object using the client
-	object, err := m.client.GetObject(m.bucket, filePathName, minio.GetObjectOptions{})
+	object, err := m.client.GetObject(ctx, m.bucket, filePathName, minio.GetObjectOptions{})
 	if err != nil {
 		logger.Error("Failed to get file from MinIO", zap.Error(err))
 		return nil, err
@@ -159,7 +187,7 @@ func (m *Minio) GetFilesByPaths(ctx context.Context, filePaths []string) ([]File
 		go func(filePath string) {
 			defer wg.Done()
 
-			obj, err := m.client.GetObject(m.bucket, filePath, minio.GetObjectOptions{})
+			obj, err := m.client.GetObject(ctx, m.bucket, filePath, minio.GetObjectOptions{})
 			if err != nil {
 				logger.Error("Failed to get object from MinIO", zap.String("path", filePath), zap.Error(err))
 				errCh <- err
@@ -184,6 +212,7 @@ func (m *Minio) GetFilesByPaths(ctx context.Context, filePaths []string) ([]File
 	}
 
 	wg.Wait()
+
 	close(errCh)
 	close(resultCh)
 

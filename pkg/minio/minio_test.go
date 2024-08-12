@@ -2,7 +2,7 @@ package minio_test
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/json"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -17,7 +17,7 @@ func TestMinio(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mc, err := minio.NewMinioClientAndInitBucket(&config.MinioConfig{
+	mc, err := minio.NewMinioClientAndInitBucket(ctx, &config.MinioConfig{
 		Host:       "localhost",
 		Port:       "19000",
 		RootUser:   "minioadmin",
@@ -28,11 +28,17 @@ func TestMinio(t *testing.T) {
 
 	fileName, _ := uuid.NewV4()
 	uid, _ := uuid.NewV4()
-	fileContent := base64.StdEncoding.EncodeToString([]byte(uid.String()))
-	err = mc.UploadBase64File(ctx, fileName.String(), fileContent, "text/plain")
+
+	data := make(map[string]string)
+	data["uid"] = uid.String()
+	jsonBytes, _ := json.Marshal(data)
+
+	url, stat, err := mc.UploadFile(ctx, fileName.String(), data, "application/json")
 	require.NoError(t, err)
+	t.Log("url:", url)
+	t.Log("size:", stat.Size)
 
 	fileBytes, err := mc.GetFile(ctx, fileName.String())
 	require.NoError(t, err)
-	require.Equal(t, uid.String(), string(fileBytes))
+	require.Equal(t, jsonBytes, fileBytes)
 }
