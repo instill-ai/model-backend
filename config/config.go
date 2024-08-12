@@ -236,4 +236,5 @@ type MinioConfig struct {
 	RootUser   string `koanf:"rootuser"`
 	RootPwd    string `koanf:"rootpwd"`
 	BucketName string `koanf:"bucketname"`
+	Secure     bool   `koanf:"secure"` // Add this line for the Secure option
 }
