@@ -246,6 +246,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
+	for _, o := range inferResponse.GetTaskOutputs() {
+		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONOutputSchemaMap[param.Task.String()], o, false)
+		if err != nil {
+			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		}
+	}
+
 	triggerModelResp := &modelpb.TriggerNamespaceModelResponse{
 		Task:        param.Task,
 		TaskOutputs: inferResponse.GetTaskOutputs(),

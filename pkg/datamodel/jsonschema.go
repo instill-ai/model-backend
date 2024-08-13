@@ -31,7 +31,8 @@ var RegionHardwareJSON RegionHardware
 
 // Tasks schema
 var TasksJSONMap map[string]map[string]any
-var TasksJSONSchemaMap map[string]*jsonschema.Schema
+var TasksJSONInputSchemaMap map[string]*jsonschema.Schema
+var TasksJSONOutputSchemaMap map[string]*jsonschema.Schema
 
 type RegionHardware struct {
 	Properties struct {
@@ -145,32 +146,41 @@ func InitJSONSchema(ctx context.Context) {
 		logger.Fatal(fmt.Sprintf("failed to fetch data: %s", resp.Status))
 	}
 
+	TasksJSONMap = map[string]map[string]any{}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
-
-	TasksJSONMap = map[string]map[string]any{}
-	err = json.Unmarshal(body, &TasksJSONMap)
+	renderedSchemaBytes, err := renderJSON(body)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	err = json.Unmarshal(renderedSchemaBytes, &TasksJSONMap)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	TasksJSONSchemaMap = map[string]*jsonschema.Schema{}
-
+	TasksJSONInputSchemaMap = map[string]*jsonschema.Schema{}
+	TasksJSONOutputSchemaMap = map[string]*jsonschema.Schema{}
 	for task := range TasksJSONMap {
-		schemaBytes, err := json.Marshal(TasksJSONMap[task]["input"])
+		inputSchemaBytes, err := json.Marshal(TasksJSONMap[task]["input"])
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
-		renderedSchemaBytes, err := renderJSON(schemaBytes)
+		if err = compiler.AddResource(fmt.Sprintf("%v_INPUT.json", task), bytes.NewReader(inputSchemaBytes)); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+		if TasksJSONInputSchemaMap[task], err = compiler.Compile(fmt.Sprintf("%v_INPUT.json", task)); err != nil {
+			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+		}
+		outputSchemaBytes, err := json.Marshal(TasksJSONMap[task]["output"])
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
-		if err = compiler.AddResource(fmt.Sprintf("%v.json", task), bytes.NewReader(renderedSchemaBytes)); err != nil {
+		if err = compiler.AddResource(fmt.Sprintf("%v_OUTPUT.json", task), bytes.NewReader(outputSchemaBytes)); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
-		if TasksJSONSchemaMap[task], err = compiler.Compile(fmt.Sprintf("%v.json", task)); err != nil {
+		if TasksJSONOutputSchemaMap[task], err = compiler.Compile(fmt.Sprintf("%v_OUTPUT.json", task)); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
 	}
