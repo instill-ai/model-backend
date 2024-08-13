@@ -228,6 +228,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	for _, i := range req.GetTaskInputs() {
+		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue("")
 		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false)
 		if err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
