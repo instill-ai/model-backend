@@ -1091,7 +1091,7 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.L
 	}, nil
 }
 
-func (h *PublicHandler) ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest) (*modelpb.ListModelTriggersResponse, error) {
+func (h *PublicHandler) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
 
 	eventName := "ListModelTriggers"
 

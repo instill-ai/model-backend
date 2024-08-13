@@ -68,7 +68,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 	repo := mock.NewMockRepository(ctrl)
 
 	mockMinio := mock.NewMinioIMock(mc)
-	mockMinio.UploadBase64FileMock.Return(nil)
+	mockMinio.UploadFileMock.Return("", nil, nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
 		param := &worker.TriggerModelActivityRequest{}
@@ -86,7 +86,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.ParsedInputKey = "ParsedInputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(modelPB.ModelTrigger_TRIGGER_SOURCE_API)
+		param.Source = datamodel.TriggerSource(modelPB.ModelRun_RUN_SOURCE_API)
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -128,7 +128,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(modelPB.ModelTrigger_TRIGGER_STATUS_PROCESSING),
+			Status:           datamodel.TriggerStatus(modelPB.ModelRun_RUN_STATUS_PROCESSING),
 			Source:           param.Source,
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,
@@ -158,7 +158,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.ParsedInputKey = "ParsedInputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(modelPB.ModelTrigger_TRIGGER_SOURCE_API)
+		param.Source = datamodel.TriggerSource(modelPB.ModelRun_RUN_SOURCE_API)
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -176,7 +176,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(modelPB.ModelTrigger_TRIGGER_STATUS_PROCESSING),
+			Status:           datamodel.TriggerStatus(modelPB.ModelRun_RUN_STATUS_PROCESSING),
 			Source:           param.Source,
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,

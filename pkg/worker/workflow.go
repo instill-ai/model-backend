@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -171,7 +170,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
 		ModelUID:         param.ModelUID,
 		ModelVersion:     param.ModelVersion.Version,
-		Status:           datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_PROCESSING),
+		Status:           datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_PROCESSING),
 		Source:           param.Source,
 		RequesterUID:     param.RequesterUID,
 		InputReferenceID: param.InputReferenceID,
@@ -184,7 +183,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	succeeded := false
 	defer func() {
 		if err != nil || !succeeded {
-			runLog.Status = datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_FAILED)
+			runLog.Status = datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_FAILED)
 			endTime := time.Now()
 			timeUsed := endTime.Sub(start)
 			runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
@@ -318,6 +317,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
+	logger.Debug("test by jeremy", zap.String("outputJSON", string(outputJSON)))
 
 	outputKey := fmt.Sprintf("async_model_response:%s", param.WorkflowExecutionID)
 	w.redisClient.Set(
@@ -334,14 +334,16 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	outputReferenceUID, _ := uuid.NewV4()
 	outputReferenceID := outputReferenceUID.String()
-	if err = w.minioClient.UploadBase64File(ctx, outputReferenceID, base64.StdEncoding.EncodeToString(outputJSON), constant.ContentTypeJSON); err != nil {
+	// todo: store url and file size
+	_, _, err = w.minioClient.UploadFileBytes(ctx, outputReferenceID, outputJSON, constant.ContentTypeJSON)
+	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
 	runLog.EndTime = null.TimeFrom(endTime)
 	runLog.OutputReferenceID = null.StringFrom(outputReferenceID)
-	runLog.Status = datamodel.TriggerStatus(modelpb.ModelTrigger_TRIGGER_STATUS_COMPLETED)
+	runLog.Status = datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_COMPLETED)
 	if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}

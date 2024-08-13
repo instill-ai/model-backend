@@ -10,6 +10,7 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	mm_minio "github.com/instill-ai/model-backend/pkg/minio"
+	"github.com/minio/minio-go/v7"
 )
 
 // MinioIMock implements minio.MinioI
@@ -35,11 +36,11 @@ type MinioIMock struct {
 	beforeGetFilesByPathsCounter uint64
 	GetFilesByPathsMock          mMinioIMockGetFilesByPaths
 
-	funcUploadBase64File          func(ctx context.Context, filePath string, base64Content string, fileMimeType string) (err error)
-	inspectFuncUploadBase64File   func(ctx context.Context, filePath string, base64Content string, fileMimeType string)
-	afterUploadBase64FileCounter  uint64
-	beforeUploadBase64FileCounter uint64
-	UploadBase64FileMock          mMinioIMockUploadBase64File
+	funcUploadFile          func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
+	inspectFuncUploadFile   func(ctx context.Context, filePath string, fileContent any, fileMimeType string)
+	afterUploadFileCounter  uint64
+	beforeUploadFileCounter uint64
+	UploadFileMock          mMinioIMockUploadFile
 }
 
 // NewMinioIMock returns a mock for minio.MinioI
@@ -59,8 +60,8 @@ func NewMinioIMock(t minimock.Tester) *MinioIMock {
 	m.GetFilesByPathsMock = mMinioIMockGetFilesByPaths{mock: m}
 	m.GetFilesByPathsMock.callArgs = []*MinioIMockGetFilesByPathsParams{}
 
-	m.UploadBase64FileMock = mMinioIMockUploadBase64File{mock: m}
-	m.UploadBase64FileMock.callArgs = []*MinioIMockUploadBase64FileParams{}
+	m.UploadFileMock = mMinioIMockUploadFile{mock: m}
+	m.UploadFileMock.callArgs = []*MinioIMockUploadFileParams{}
 
 	t.Cleanup(m.MinimockFinish)
 
@@ -1029,46 +1030,48 @@ func (m *MinioIMock) MinimockGetFilesByPathsInspect() {
 	}
 }
 
-type mMinioIMockUploadBase64File struct {
+type mMinioIMockUploadFile struct {
 	optional           bool
 	mock               *MinioIMock
-	defaultExpectation *MinioIMockUploadBase64FileExpectation
-	expectations       []*MinioIMockUploadBase64FileExpectation
+	defaultExpectation *MinioIMockUploadFileExpectation
+	expectations       []*MinioIMockUploadFileExpectation
 
-	callArgs []*MinioIMockUploadBase64FileParams
+	callArgs []*MinioIMockUploadFileParams
 	mutex    sync.RWMutex
 
 	expectedInvocations uint64
 }
 
-// MinioIMockUploadBase64FileExpectation specifies expectation struct of the MinioI.UploadBase64File
-type MinioIMockUploadBase64FileExpectation struct {
+// MinioIMockUploadFileExpectation specifies expectation struct of the MinioI.UploadFile
+type MinioIMockUploadFileExpectation struct {
 	mock      *MinioIMock
-	params    *MinioIMockUploadBase64FileParams
-	paramPtrs *MinioIMockUploadBase64FileParamPtrs
-	results   *MinioIMockUploadBase64FileResults
+	params    *MinioIMockUploadFileParams
+	paramPtrs *MinioIMockUploadFileParamPtrs
+	results   *MinioIMockUploadFileResults
 	Counter   uint64
 }
 
-// MinioIMockUploadBase64FileParams contains parameters of the MinioI.UploadBase64File
-type MinioIMockUploadBase64FileParams struct {
-	ctx           context.Context
-	filePath      string
-	base64Content string
-	fileMimeType  string
+// MinioIMockUploadFileParams contains parameters of the MinioI.UploadFile
+type MinioIMockUploadFileParams struct {
+	ctx          context.Context
+	filePath     string
+	fileContent  any
+	fileMimeType string
 }
 
-// MinioIMockUploadBase64FileParamPtrs contains pointers to parameters of the MinioI.UploadBase64File
-type MinioIMockUploadBase64FileParamPtrs struct {
-	ctx           *context.Context
-	filePath      *string
-	base64Content *string
-	fileMimeType  *string
+// MinioIMockUploadFileParamPtrs contains pointers to parameters of the MinioI.UploadFile
+type MinioIMockUploadFileParamPtrs struct {
+	ctx          *context.Context
+	filePath     *string
+	fileContent  *any
+	fileMimeType *string
 }
 
-// MinioIMockUploadBase64FileResults contains results of the MinioI.UploadBase64File
-type MinioIMockUploadBase64FileResults struct {
-	err error
+// MinioIMockUploadFileResults contains results of the MinioI.UploadFile
+type MinioIMockUploadFileResults struct {
+	url        string
+	objectInfo *minio.ObjectInfo
+	err        error
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1076,332 +1079,332 @@ type MinioIMockUploadBase64FileResults struct {
 // Optional() makes method check to work in '0 or more' mode.
 // It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
 // catch the problems when the expected method call is totally skipped during test run.
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Optional() *mMinioIMockUploadBase64File {
-	mmUploadBase64File.optional = true
-	return mmUploadBase64File
+func (mmUploadFile *mMinioIMockUploadFile) Optional() *mMinioIMockUploadFile {
+	mmUploadFile.optional = true
+	return mmUploadFile
 }
 
-// Expect sets up expected params for MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Expect(ctx context.Context, filePath string, base64Content string, fileMimeType string) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// Expect sets up expected params for MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) Expect(ctx context.Context, filePath string, fileContent any, fileMimeType string) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{}
 	}
 
-	if mmUploadBase64File.defaultExpectation.paramPtrs != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by ExpectParams functions")
+	if mmUploadFile.defaultExpectation.paramPtrs != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by ExpectParams functions")
 	}
 
-	mmUploadBase64File.defaultExpectation.params = &MinioIMockUploadBase64FileParams{ctx, filePath, base64Content, fileMimeType}
-	for _, e := range mmUploadBase64File.expectations {
-		if minimock.Equal(e.params, mmUploadBase64File.defaultExpectation.params) {
-			mmUploadBase64File.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmUploadBase64File.defaultExpectation.params)
+	mmUploadFile.defaultExpectation.params = &MinioIMockUploadFileParams{ctx, filePath, fileContent, fileMimeType}
+	for _, e := range mmUploadFile.expectations {
+		if minimock.Equal(e.params, mmUploadFile.defaultExpectation.params) {
+			mmUploadFile.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmUploadFile.defaultExpectation.params)
 		}
 	}
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// ExpectCtxParam1 sets up expected param ctx for MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) ExpectCtxParam1(ctx context.Context) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// ExpectCtxParam1 sets up expected param ctx for MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) ExpectCtxParam1(ctx context.Context) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{}
 	}
 
-	if mmUploadBase64File.defaultExpectation.params != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Expect")
+	if mmUploadFile.defaultExpectation.params != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Expect")
 	}
 
-	if mmUploadBase64File.defaultExpectation.paramPtrs == nil {
-		mmUploadBase64File.defaultExpectation.paramPtrs = &MinioIMockUploadBase64FileParamPtrs{}
+	if mmUploadFile.defaultExpectation.paramPtrs == nil {
+		mmUploadFile.defaultExpectation.paramPtrs = &MinioIMockUploadFileParamPtrs{}
 	}
-	mmUploadBase64File.defaultExpectation.paramPtrs.ctx = &ctx
+	mmUploadFile.defaultExpectation.paramPtrs.ctx = &ctx
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// ExpectFilePathParam2 sets up expected param filePath for MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) ExpectFilePathParam2(filePath string) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// ExpectFilePathParam2 sets up expected param filePath for MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) ExpectFilePathParam2(filePath string) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{}
 	}
 
-	if mmUploadBase64File.defaultExpectation.params != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Expect")
+	if mmUploadFile.defaultExpectation.params != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Expect")
 	}
 
-	if mmUploadBase64File.defaultExpectation.paramPtrs == nil {
-		mmUploadBase64File.defaultExpectation.paramPtrs = &MinioIMockUploadBase64FileParamPtrs{}
+	if mmUploadFile.defaultExpectation.paramPtrs == nil {
+		mmUploadFile.defaultExpectation.paramPtrs = &MinioIMockUploadFileParamPtrs{}
 	}
-	mmUploadBase64File.defaultExpectation.paramPtrs.filePath = &filePath
+	mmUploadFile.defaultExpectation.paramPtrs.filePath = &filePath
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// ExpectBase64ContentParam3 sets up expected param base64Content for MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) ExpectBase64ContentParam3(base64Content string) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// ExpectFileContentParam3 sets up expected param fileContent for MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) ExpectFileContentParam3(fileContent any) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{}
 	}
 
-	if mmUploadBase64File.defaultExpectation.params != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Expect")
+	if mmUploadFile.defaultExpectation.params != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Expect")
 	}
 
-	if mmUploadBase64File.defaultExpectation.paramPtrs == nil {
-		mmUploadBase64File.defaultExpectation.paramPtrs = &MinioIMockUploadBase64FileParamPtrs{}
+	if mmUploadFile.defaultExpectation.paramPtrs == nil {
+		mmUploadFile.defaultExpectation.paramPtrs = &MinioIMockUploadFileParamPtrs{}
 	}
-	mmUploadBase64File.defaultExpectation.paramPtrs.base64Content = &base64Content
+	mmUploadFile.defaultExpectation.paramPtrs.fileContent = &fileContent
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// ExpectFileMimeTypeParam4 sets up expected param fileMimeType for MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) ExpectFileMimeTypeParam4(fileMimeType string) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// ExpectFileMimeTypeParam4 sets up expected param fileMimeType for MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) ExpectFileMimeTypeParam4(fileMimeType string) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{}
 	}
 
-	if mmUploadBase64File.defaultExpectation.params != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Expect")
+	if mmUploadFile.defaultExpectation.params != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Expect")
 	}
 
-	if mmUploadBase64File.defaultExpectation.paramPtrs == nil {
-		mmUploadBase64File.defaultExpectation.paramPtrs = &MinioIMockUploadBase64FileParamPtrs{}
+	if mmUploadFile.defaultExpectation.paramPtrs == nil {
+		mmUploadFile.defaultExpectation.paramPtrs = &MinioIMockUploadFileParamPtrs{}
 	}
-	mmUploadBase64File.defaultExpectation.paramPtrs.fileMimeType = &fileMimeType
+	mmUploadFile.defaultExpectation.paramPtrs.fileMimeType = &fileMimeType
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// Inspect accepts an inspector function that has same arguments as the MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Inspect(f func(ctx context.Context, filePath string, base64Content string, fileMimeType string)) *mMinioIMockUploadBase64File {
-	if mmUploadBase64File.mock.inspectFuncUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("Inspect function is already set for MinioIMock.UploadBase64File")
+// Inspect accepts an inspector function that has same arguments as the MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) Inspect(f func(ctx context.Context, filePath string, fileContent any, fileMimeType string)) *mMinioIMockUploadFile {
+	if mmUploadFile.mock.inspectFuncUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("Inspect function is already set for MinioIMock.UploadFile")
 	}
 
-	mmUploadBase64File.mock.inspectFuncUploadBase64File = f
+	mmUploadFile.mock.inspectFuncUploadFile = f
 
-	return mmUploadBase64File
+	return mmUploadFile
 }
 
-// Return sets up results that will be returned by MinioI.UploadBase64File
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Return(err error) *MinioIMock {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+// Return sets up results that will be returned by MinioI.UploadFile
+func (mmUploadFile *mMinioIMockUploadFile) Return(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	if mmUploadBase64File.defaultExpectation == nil {
-		mmUploadBase64File.defaultExpectation = &MinioIMockUploadBase64FileExpectation{mock: mmUploadBase64File.mock}
+	if mmUploadFile.defaultExpectation == nil {
+		mmUploadFile.defaultExpectation = &MinioIMockUploadFileExpectation{mock: mmUploadFile.mock}
 	}
-	mmUploadBase64File.defaultExpectation.results = &MinioIMockUploadBase64FileResults{err}
-	return mmUploadBase64File.mock
+	mmUploadFile.defaultExpectation.results = &MinioIMockUploadFileResults{url, objectInfo, err}
+	return mmUploadFile.mock
 }
 
-// Set uses given function f to mock the MinioI.UploadBase64File method
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Set(f func(ctx context.Context, filePath string, base64Content string, fileMimeType string) (err error)) *MinioIMock {
-	if mmUploadBase64File.defaultExpectation != nil {
-		mmUploadBase64File.mock.t.Fatalf("Default expectation is already set for the MinioI.UploadBase64File method")
+// Set uses given function f to mock the MinioI.UploadFile method
+func (mmUploadFile *mMinioIMockUploadFile) Set(f func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)) *MinioIMock {
+	if mmUploadFile.defaultExpectation != nil {
+		mmUploadFile.mock.t.Fatalf("Default expectation is already set for the MinioI.UploadFile method")
 	}
 
-	if len(mmUploadBase64File.expectations) > 0 {
-		mmUploadBase64File.mock.t.Fatalf("Some expectations are already set for the MinioI.UploadBase64File method")
+	if len(mmUploadFile.expectations) > 0 {
+		mmUploadFile.mock.t.Fatalf("Some expectations are already set for the MinioI.UploadFile method")
 	}
 
-	mmUploadBase64File.mock.funcUploadBase64File = f
-	return mmUploadBase64File.mock
+	mmUploadFile.mock.funcUploadFile = f
+	return mmUploadFile.mock
 }
 
-// When sets expectation for the MinioI.UploadBase64File which will trigger the result defined by the following
+// When sets expectation for the MinioI.UploadFile which will trigger the result defined by the following
 // Then helper
-func (mmUploadBase64File *mMinioIMockUploadBase64File) When(ctx context.Context, filePath string, base64Content string, fileMimeType string) *MinioIMockUploadBase64FileExpectation {
-	if mmUploadBase64File.mock.funcUploadBase64File != nil {
-		mmUploadBase64File.mock.t.Fatalf("MinioIMock.UploadBase64File mock is already set by Set")
+func (mmUploadFile *mMinioIMockUploadFile) When(ctx context.Context, filePath string, fileContent any, fileMimeType string) *MinioIMockUploadFileExpectation {
+	if mmUploadFile.mock.funcUploadFile != nil {
+		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
 
-	expectation := &MinioIMockUploadBase64FileExpectation{
-		mock:   mmUploadBase64File.mock,
-		params: &MinioIMockUploadBase64FileParams{ctx, filePath, base64Content, fileMimeType},
+	expectation := &MinioIMockUploadFileExpectation{
+		mock:   mmUploadFile.mock,
+		params: &MinioIMockUploadFileParams{ctx, filePath, fileContent, fileMimeType},
 	}
-	mmUploadBase64File.expectations = append(mmUploadBase64File.expectations, expectation)
+	mmUploadFile.expectations = append(mmUploadFile.expectations, expectation)
 	return expectation
 }
 
-// Then sets up MinioI.UploadBase64File return parameters for the expectation previously defined by the When method
-func (e *MinioIMockUploadBase64FileExpectation) Then(err error) *MinioIMock {
-	e.results = &MinioIMockUploadBase64FileResults{err}
+// Then sets up MinioI.UploadFile return parameters for the expectation previously defined by the When method
+func (e *MinioIMockUploadFileExpectation) Then(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+	e.results = &MinioIMockUploadFileResults{url, objectInfo, err}
 	return e.mock
 }
 
-// Times sets number of times MinioI.UploadBase64File should be invoked
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Times(n uint64) *mMinioIMockUploadBase64File {
+// Times sets number of times MinioI.UploadFile should be invoked
+func (mmUploadFile *mMinioIMockUploadFile) Times(n uint64) *mMinioIMockUploadFile {
 	if n == 0 {
-		mmUploadBase64File.mock.t.Fatalf("Times of MinioIMock.UploadBase64File mock can not be zero")
+		mmUploadFile.mock.t.Fatalf("Times of MinioIMock.UploadFile mock can not be zero")
 	}
-	mm_atomic.StoreUint64(&mmUploadBase64File.expectedInvocations, n)
-	return mmUploadBase64File
+	mm_atomic.StoreUint64(&mmUploadFile.expectedInvocations, n)
+	return mmUploadFile
 }
 
-func (mmUploadBase64File *mMinioIMockUploadBase64File) invocationsDone() bool {
-	if len(mmUploadBase64File.expectations) == 0 && mmUploadBase64File.defaultExpectation == nil && mmUploadBase64File.mock.funcUploadBase64File == nil {
+func (mmUploadFile *mMinioIMockUploadFile) invocationsDone() bool {
+	if len(mmUploadFile.expectations) == 0 && mmUploadFile.defaultExpectation == nil && mmUploadFile.mock.funcUploadFile == nil {
 		return true
 	}
 
-	totalInvocations := mm_atomic.LoadUint64(&mmUploadBase64File.mock.afterUploadBase64FileCounter)
-	expectedInvocations := mm_atomic.LoadUint64(&mmUploadBase64File.expectedInvocations)
+	totalInvocations := mm_atomic.LoadUint64(&mmUploadFile.mock.afterUploadFileCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmUploadFile.expectedInvocations)
 
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// UploadBase64File implements minio.MinioI
-func (mmUploadBase64File *MinioIMock) UploadBase64File(ctx context.Context, filePath string, base64Content string, fileMimeType string) (err error) {
-	mm_atomic.AddUint64(&mmUploadBase64File.beforeUploadBase64FileCounter, 1)
-	defer mm_atomic.AddUint64(&mmUploadBase64File.afterUploadBase64FileCounter, 1)
+// UploadFile implements minio.MinioI
+func (mmUploadFile *MinioIMock) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+	mm_atomic.AddUint64(&mmUploadFile.beforeUploadFileCounter, 1)
+	defer mm_atomic.AddUint64(&mmUploadFile.afterUploadFileCounter, 1)
 
-	if mmUploadBase64File.inspectFuncUploadBase64File != nil {
-		mmUploadBase64File.inspectFuncUploadBase64File(ctx, filePath, base64Content, fileMimeType)
+	if mmUploadFile.inspectFuncUploadFile != nil {
+		mmUploadFile.inspectFuncUploadFile(ctx, filePath, fileContent, fileMimeType)
 	}
 
-	mm_params := MinioIMockUploadBase64FileParams{ctx, filePath, base64Content, fileMimeType}
+	mm_params := MinioIMockUploadFileParams{ctx, filePath, fileContent, fileMimeType}
 
 	// Record call args
-	mmUploadBase64File.UploadBase64FileMock.mutex.Lock()
-	mmUploadBase64File.UploadBase64FileMock.callArgs = append(mmUploadBase64File.UploadBase64FileMock.callArgs, &mm_params)
-	mmUploadBase64File.UploadBase64FileMock.mutex.Unlock()
+	mmUploadFile.UploadFileMock.mutex.Lock()
+	mmUploadFile.UploadFileMock.callArgs = append(mmUploadFile.UploadFileMock.callArgs, &mm_params)
+	mmUploadFile.UploadFileMock.mutex.Unlock()
 
-	for _, e := range mmUploadBase64File.UploadBase64FileMock.expectations {
+	for _, e := range mmUploadFile.UploadFileMock.expectations {
 		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.err
+			return e.results.url, e.results.objectInfo, e.results.err
 		}
 	}
 
-	if mmUploadBase64File.UploadBase64FileMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmUploadBase64File.UploadBase64FileMock.defaultExpectation.Counter, 1)
-		mm_want := mmUploadBase64File.UploadBase64FileMock.defaultExpectation.params
-		mm_want_ptrs := mmUploadBase64File.UploadBase64FileMock.defaultExpectation.paramPtrs
+	if mmUploadFile.UploadFileMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmUploadFile.UploadFileMock.defaultExpectation.Counter, 1)
+		mm_want := mmUploadFile.UploadFileMock.defaultExpectation.params
+		mm_want_ptrs := mmUploadFile.UploadFileMock.defaultExpectation.paramPtrs
 
-		mm_got := MinioIMockUploadBase64FileParams{ctx, filePath, base64Content, fileMimeType}
+		mm_got := MinioIMockUploadFileParams{ctx, filePath, fileContent, fileMimeType}
 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmUploadBase64File.t.Errorf("MinioIMock.UploadBase64File got unexpected parameter ctx, want: %#v, got: %#v%s\n", *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+				mmUploadFile.t.Errorf("MinioIMock.UploadFile got unexpected parameter ctx, want: %#v, got: %#v%s\n", *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 			if mm_want_ptrs.filePath != nil && !minimock.Equal(*mm_want_ptrs.filePath, mm_got.filePath) {
-				mmUploadBase64File.t.Errorf("MinioIMock.UploadBase64File got unexpected parameter filePath, want: %#v, got: %#v%s\n", *mm_want_ptrs.filePath, mm_got.filePath, minimock.Diff(*mm_want_ptrs.filePath, mm_got.filePath))
+				mmUploadFile.t.Errorf("MinioIMock.UploadFile got unexpected parameter filePath, want: %#v, got: %#v%s\n", *mm_want_ptrs.filePath, mm_got.filePath, minimock.Diff(*mm_want_ptrs.filePath, mm_got.filePath))
 			}
 
-			if mm_want_ptrs.base64Content != nil && !minimock.Equal(*mm_want_ptrs.base64Content, mm_got.base64Content) {
-				mmUploadBase64File.t.Errorf("MinioIMock.UploadBase64File got unexpected parameter base64Content, want: %#v, got: %#v%s\n", *mm_want_ptrs.base64Content, mm_got.base64Content, minimock.Diff(*mm_want_ptrs.base64Content, mm_got.base64Content))
+			if mm_want_ptrs.fileContent != nil && !minimock.Equal(*mm_want_ptrs.fileContent, mm_got.fileContent) {
+				mmUploadFile.t.Errorf("MinioIMock.UploadFile got unexpected parameter fileContent, want: %#v, got: %#v%s\n", *mm_want_ptrs.fileContent, mm_got.fileContent, minimock.Diff(*mm_want_ptrs.fileContent, mm_got.fileContent))
 			}
 
 			if mm_want_ptrs.fileMimeType != nil && !minimock.Equal(*mm_want_ptrs.fileMimeType, mm_got.fileMimeType) {
-				mmUploadBase64File.t.Errorf("MinioIMock.UploadBase64File got unexpected parameter fileMimeType, want: %#v, got: %#v%s\n", *mm_want_ptrs.fileMimeType, mm_got.fileMimeType, minimock.Diff(*mm_want_ptrs.fileMimeType, mm_got.fileMimeType))
+				mmUploadFile.t.Errorf("MinioIMock.UploadFile got unexpected parameter fileMimeType, want: %#v, got: %#v%s\n", *mm_want_ptrs.fileMimeType, mm_got.fileMimeType, minimock.Diff(*mm_want_ptrs.fileMimeType, mm_got.fileMimeType))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmUploadBase64File.t.Errorf("MinioIMock.UploadBase64File got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmUploadFile.t.Errorf("MinioIMock.UploadFile got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		mm_results := mmUploadBase64File.UploadBase64FileMock.defaultExpectation.results
+		mm_results := mmUploadFile.UploadFileMock.defaultExpectation.results
 		if mm_results == nil {
-			mmUploadBase64File.t.Fatal("No results are set for the MinioIMock.UploadBase64File")
+			mmUploadFile.t.Fatal("No results are set for the MinioIMock.UploadFile")
 		}
-		return (*mm_results).err
+		return (*mm_results).url, (*mm_results).objectInfo, (*mm_results).err
 	}
-	if mmUploadBase64File.funcUploadBase64File != nil {
-		return mmUploadBase64File.funcUploadBase64File(ctx, filePath, base64Content, fileMimeType)
+	if mmUploadFile.funcUploadFile != nil {
+		return mmUploadFile.funcUploadFile(ctx, filePath, fileContent, fileMimeType)
 	}
-	mmUploadBase64File.t.Fatalf("Unexpected call to MinioIMock.UploadBase64File. %v %v %v %v", ctx, filePath, base64Content, fileMimeType)
+	mmUploadFile.t.Fatalf("Unexpected call to MinioIMock.UploadFile. %v %v %v %v", ctx, filePath, fileContent, fileMimeType)
 	return
 }
 
-// UploadBase64FileAfterCounter returns a count of finished MinioIMock.UploadBase64File invocations
-func (mmUploadBase64File *MinioIMock) UploadBase64FileAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmUploadBase64File.afterUploadBase64FileCounter)
+// UploadFileAfterCounter returns a count of finished MinioIMock.UploadFile invocations
+func (mmUploadFile *MinioIMock) UploadFileAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmUploadFile.afterUploadFileCounter)
 }
 
-// UploadBase64FileBeforeCounter returns a count of MinioIMock.UploadBase64File invocations
-func (mmUploadBase64File *MinioIMock) UploadBase64FileBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmUploadBase64File.beforeUploadBase64FileCounter)
+// UploadFileBeforeCounter returns a count of MinioIMock.UploadFile invocations
+func (mmUploadFile *MinioIMock) UploadFileBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmUploadFile.beforeUploadFileCounter)
 }
 
-// Calls returns a list of arguments used in each call to MinioIMock.UploadBase64File.
+// Calls returns a list of arguments used in each call to MinioIMock.UploadFile.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (mmUploadBase64File *mMinioIMockUploadBase64File) Calls() []*MinioIMockUploadBase64FileParams {
-	mmUploadBase64File.mutex.RLock()
+func (mmUploadFile *mMinioIMockUploadFile) Calls() []*MinioIMockUploadFileParams {
+	mmUploadFile.mutex.RLock()
 
-	argCopy := make([]*MinioIMockUploadBase64FileParams, len(mmUploadBase64File.callArgs))
-	copy(argCopy, mmUploadBase64File.callArgs)
+	argCopy := make([]*MinioIMockUploadFileParams, len(mmUploadFile.callArgs))
+	copy(argCopy, mmUploadFile.callArgs)
 
-	mmUploadBase64File.mutex.RUnlock()
+	mmUploadFile.mutex.RUnlock()
 
 	return argCopy
 }
 
-// MinimockUploadBase64FileDone returns true if the count of the UploadBase64File invocations corresponds
+// MinimockUploadFileDone returns true if the count of the UploadFile invocations corresponds
 // the number of defined expectations
-func (m *MinioIMock) MinimockUploadBase64FileDone() bool {
-	if m.UploadBase64FileMock.optional {
+func (m *MinioIMock) MinimockUploadFileDone() bool {
+	if m.UploadFileMock.optional {
 		// Optional methods provide '0 or more' call count restriction.
 		return true
 	}
 
-	for _, e := range m.UploadBase64FileMock.expectations {
+	for _, e := range m.UploadFileMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
 		}
 	}
 
-	return m.UploadBase64FileMock.invocationsDone()
+	return m.UploadFileMock.invocationsDone()
 }
 
-// MinimockUploadBase64FileInspect logs each unmet expectation
-func (m *MinioIMock) MinimockUploadBase64FileInspect() {
-	for _, e := range m.UploadBase64FileMock.expectations {
+// MinimockUploadFileInspect logs each unmet expectation
+func (m *MinioIMock) MinimockUploadFileInspect() {
+	for _, e := range m.UploadFileMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to MinioIMock.UploadBase64File with params: %#v", *e.params)
+			m.t.Errorf("Expected call to MinioIMock.UploadFile with params: %#v", *e.params)
 		}
 	}
 
-	afterUploadBase64FileCounter := mm_atomic.LoadUint64(&m.afterUploadBase64FileCounter)
+	afterUploadFileCounter := mm_atomic.LoadUint64(&m.afterUploadFileCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.UploadBase64FileMock.defaultExpectation != nil && afterUploadBase64FileCounter < 1 {
-		if m.UploadBase64FileMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to MinioIMock.UploadBase64File")
+	if m.UploadFileMock.defaultExpectation != nil && afterUploadFileCounter < 1 {
+		if m.UploadFileMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to MinioIMock.UploadFile")
 		} else {
-			m.t.Errorf("Expected call to MinioIMock.UploadBase64File with params: %#v", *m.UploadBase64FileMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to MinioIMock.UploadFile with params: %#v", *m.UploadFileMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcUploadBase64File != nil && afterUploadBase64FileCounter < 1 {
-		m.t.Error("Expected call to MinioIMock.UploadBase64File")
+	if m.funcUploadFile != nil && afterUploadFileCounter < 1 {
+		m.t.Error("Expected call to MinioIMock.UploadFile")
 	}
 
-	if !m.UploadBase64FileMock.invocationsDone() && afterUploadBase64FileCounter > 0 {
-		m.t.Errorf("Expected %d calls to MinioIMock.UploadBase64File but found %d calls",
-			mm_atomic.LoadUint64(&m.UploadBase64FileMock.expectedInvocations), afterUploadBase64FileCounter)
+	if !m.UploadFileMock.invocationsDone() && afterUploadFileCounter > 0 {
+		m.t.Errorf("Expected %d calls to MinioIMock.UploadFile but found %d calls",
+			mm_atomic.LoadUint64(&m.UploadFileMock.expectedInvocations), afterUploadFileCounter)
 	}
 }
 
@@ -1415,7 +1418,7 @@ func (m *MinioIMock) MinimockFinish() {
 
 			m.MinimockGetFilesByPathsInspect()
 
-			m.MinimockUploadBase64FileInspect()
+			m.MinimockUploadFileInspect()
 		}
 	})
 }
@@ -1442,5 +1445,5 @@ func (m *MinioIMock) minimockDone() bool {
 		m.MinimockDeleteFileDone() &&
 		m.MinimockGetFileDone() &&
 		m.MinimockGetFilesByPathsDone() &&
-		m.MinimockUploadBase64FileDone()
+		m.MinimockUploadFileDone()
 }

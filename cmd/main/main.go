@@ -232,7 +232,7 @@ func main() {
 	repo := repository.NewRepository(db, redisClient)
 
 	// Initialize Minio client
-	minioClient, err := minio.NewMinioClientAndInitBucket(&config.Config.Minio)
+	minioClient, err := minio.NewMinioClientAndInitBucket(ctx, &config.Config.Minio)
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}

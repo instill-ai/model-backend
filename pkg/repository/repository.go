@@ -707,7 +707,7 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize int64, page
 	queryBuilder := r.db.Where(where, whereArgs...)
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
-			Path: "start_time",
+			Path: "create_time",
 			Desc: true,
 		})
 	}

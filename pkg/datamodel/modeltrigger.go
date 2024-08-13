@@ -11,30 +11,30 @@ import (
 
 // for saving the protobuf types as string values
 type (
-	TriggerStatus modelpb.ModelTrigger_TriggerStatus
-	TriggerSource modelpb.ModelTrigger_TriggerSource
+	TriggerStatus modelpb.ModelRun_RunStatus
+	TriggerSource modelpb.ModelRun_RunSource
 )
 
 func (v *TriggerStatus) Scan(value any) error {
-	*v = TriggerStatus(modelpb.ModelTrigger_TriggerStatus_value[value.(string)])
+	*v = TriggerStatus(modelpb.ModelRun_RunStatus_value[value.(string)])
 	return nil
 }
 
 func (v TriggerStatus) Value() (driver.Value, error) {
-	return modelpb.ModelTrigger_TriggerStatus(v).String(), nil
+	return modelpb.ModelRun_RunStatus(v).String(), nil
 }
 
 func (v *TriggerSource) Scan(value any) error {
-	*v = TriggerSource(modelpb.ModelTrigger_TriggerSource_value[value.(string)])
+	*v = TriggerSource(modelpb.ModelRun_RunSource_value[value.(string)])
 	return nil
 }
 
 func (v TriggerSource) Value() (driver.Value, error) {
-	return modelpb.ModelTrigger_TriggerSource(v).String(), nil
+	return modelpb.ModelRun_RunSource(v).String(), nil
 }
 
 type ModelTrigger struct {
-	UID               uuid.UUID `gorm:"primary_key;<-:false"`
+	UID               uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	ModelUID          uuid.UUID
 	ModelVersion      string
 	Status            TriggerStatus

@@ -24,9 +24,8 @@ func TestMinio(t *testing.T) {
 		RootUser:   "minioadmin",
 		RootPwd:    "minioadmin",
 		BucketName: "instill-ai-model",
-	}
+	})
 
-	mc, err := minio.NewMinioClientAndInitBucket(minioConfig)
 	require.NoError(t, err)
 
 	t.Log("test upload file to minio")

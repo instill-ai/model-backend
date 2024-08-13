@@ -1,7 +1,7 @@
 BEGIN;
 
-create type valid_trigger_status as enum ('TRIGGER_STATUS_COMPLETED', 'TRIGGER_STATUS_FAILED', 'TRIGGER_STATUS_PROCESSING', 'TRIGGER_STATUS_QUEUED');
-create type valid_trigger_source as enum ('TRIGGER_SOURCE_CONSOLE', 'TRIGGER_SOURCE_API');
+create type valid_trigger_status as enum ('RUN_STATUS_COMPLETED', 'RUN_STATUS_FAILED', 'RUN_STATUS_PROCESSING', 'RUN_STATUS_QUEUED');
+create type valid_trigger_source as enum ('RUN_SOURCE_CONSOLE', 'RUN_SOURCE_API');
 
 create table model_trigger
 (

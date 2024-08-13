@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -100,7 +99,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
-	ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest) (*modelpb.ListModelTriggersResponse, error)
+	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error)
 }
 
 type service struct {
@@ -471,7 +470,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	inputReferenceUID, _ := uuid.NewV4()
 	inputReferenceID := inputReferenceUID.String()
-	if err = s.minioClient.UploadBase64File(ctx, inputReferenceID, base64.StdEncoding.EncodeToString(parsedInferInput), constant.ContentTypeJSON); err != nil {
+	// todo: store url and file size
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, parsedInferInput, constant.ContentTypeJSON)
+	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
 	}
@@ -499,8 +500,8 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		requesterUID = userUID
 	}
 
-	source := datamodel.TriggerSource(modelpb.ModelTrigger_TRIGGER_SOURCE_API)
-	userAgentEnum, ok := modelpb.ModelTrigger_TriggerSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
+	userAgentEnum, ok := modelpb.ModelRun_RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
 		source = datamodel.TriggerSource(userAgentEnum)
 	}
@@ -594,7 +595,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 
 	inputReferenceUID, _ := uuid.NewV4()
 	inputReferenceID := inputReferenceUID.String()
-	if err = s.minioClient.UploadBase64File(ctx, inputReferenceID, base64.StdEncoding.EncodeToString(parsedInferInput), constant.ContentTypeJSON); err != nil {
+	// todo: store url and file size
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, parsedInferInput, constant.ContentTypeJSON)
+	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
 	}
@@ -622,8 +625,8 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		requesterUID = userUID
 	}
 
-	source := datamodel.TriggerSource(modelpb.ModelTrigger_TRIGGER_SOURCE_API)
-	userAgentEnum, ok := modelpb.ModelTrigger_TriggerSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
+	userAgentEnum, ok := modelpb.ModelRun_RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
 		source = datamodel.TriggerSource(userAgentEnum)
 	}
@@ -704,7 +707,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelTriggersRequest) (*modelpb.ListModelTriggersResponse, error) {
+func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
 	view := parseView(req.GetView())
@@ -764,14 +767,14 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 
 	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
-	pbTriggers := make([]*modelpb.ModelTrigger, len(triggers))
+	pbTriggers := make([]*modelpb.ModelRun, len(triggers))
 	for i, trigger := range triggers {
-		pbTrigger := &modelpb.ModelTrigger{
+		pbTrigger := &modelpb.ModelRun{
 			Uid:         trigger.UID.String(),
 			ModelUid:    trigger.ModelUID.String(),
 			Version:     trigger.ModelVersion,
-			Status:      modelpb.ModelTrigger_TriggerStatus(trigger.Status),
-			Source:      modelpb.ModelTrigger_TriggerSource(trigger.Source),
+			Status:      modelpb.ModelRun_RunStatus(trigger.Status),
+			Source:      modelpb.ModelRun_RunSource(trigger.Source),
 			RequesterId: trigger.RequesterUID.String(),
 			Error:       trigger.Error.Ptr(),
 			CreateTime:  timestamppb.New(trigger.CreateTime),
@@ -792,6 +795,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 			if !ok {
 				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)
 			}
+			// todo: fix TaskInputs type
 			pbTrigger.TaskInputs = &structpb.Struct{}
 			if err := protojson.Unmarshal(data, pbTrigger.TaskInputs); err != nil {
 				return nil, err
@@ -799,7 +803,9 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 
 			if trigger.OutputReferenceID.Valid {
 				data := metadataMap[trigger.OutputReferenceID.String]
+				logger.Debug("test by jeremy", zap.String("data", string(data)))
 
+				// todo: fix TaskOutputs type
 				triggerModelResp := &modelpb.TriggerUserModelResponse{}
 				err = protojson.Unmarshal(data, triggerModelResp)
 				if err != nil {
@@ -813,8 +819,8 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelT
 		pbTriggers[i] = pbTrigger
 	}
 
-	return &modelpb.ListModelTriggersResponse{
-		Triggers:  pbTriggers,
+	return &modelpb.ListModelRunsResponse{
+		Runs:      pbTriggers,
 		TotalSize: int32(totalSize),
 		PageSize:  pageSize,
 		Page:      page,

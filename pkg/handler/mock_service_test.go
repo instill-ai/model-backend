@@ -432,10 +432,10 @@ func (mr *MockServiceMockRecorder) ListModelDefinitions(arg0, arg1, arg2, arg3 i
 }
 
 // ListModelTriggers mocks base method.
-func (m *MockService) ListModelTriggers(arg0 context.Context, arg1 *modelv1alpha.ListModelTriggersRequest) (*modelv1alpha.ListModelTriggersResponse, error) {
+func (m *MockService) ListModelTriggers(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsRequest) (*modelv1alpha.ListModelRunsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.ListModelTriggersResponse)
+	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
