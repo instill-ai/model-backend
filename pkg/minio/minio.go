@@ -23,6 +23,7 @@ import (
 
 type MinioI interface {
 	UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
+	UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
 	DeleteFile(ctx context.Context, filePath string) (err error)
 	GetFile(ctx context.Context, filePath string) ([]byte, error)
 	GetFilesByPaths(ctx context.Context, filePaths []string) ([]FileContent, error)
@@ -93,16 +94,20 @@ func NewMinioClientAndInitBucket(ctx context.Context, cfg *config.MinioConfig) (
 }
 
 func (m *Minio) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+	jsonData, _ := json.Marshal(fileContent)
+	return m.UploadFileBytes(ctx, filePath, jsonData, fileMimeType)
+}
+
+func (m *Minio) UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
 	logger, err := log.GetZapLogger(ctx)
 	if err != nil {
 		return "", nil, err
 	}
 
-	jsonData, _ := json.Marshal(fileContent)
-	reader := bytes.NewReader(jsonData)
+	reader := bytes.NewReader(fileBytes)
 
 	// Create the file path with folder structure
-	_, err = m.client.PutObject(ctx, m.bucket, filePath, reader, int64(len(jsonData)), minio.PutObjectOptions{ContentType: fileMimeType})
+	_, err = m.client.PutObject(ctx, m.bucket, filePath, reader, int64(len(fileBytes)), minio.PutObjectOptions{ContentType: fileMimeType})
 	if err != nil {
 		logger.Error("Failed to upload file to MinIO", zap.Error(err))
 		return "", nil, err
