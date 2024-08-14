@@ -68,7 +68,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 	repo := mock.NewMockRepository(ctrl)
 
 	mockMinio := mock.NewMinioIMock(mc)
-	mockMinio.UploadFileMock.Return("", nil, nil)
+	mockMinio.UploadFileBytesMock.Return("", nil, nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
 		param := &worker.TriggerModelActivityRequest{}
