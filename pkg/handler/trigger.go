@@ -626,11 +626,9 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, err
-		}
+		span.SetStatus(1, err.Error())
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return nil, err
 	}
 
 	// TODO: temporary solution to store output json
