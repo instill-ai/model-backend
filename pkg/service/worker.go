@@ -13,9 +13,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/redis/go-redis/v9"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -53,7 +54,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
 
-	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String())).Bytes()
+	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil

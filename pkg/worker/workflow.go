@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
@@ -19,6 +20,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	minio2 "github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
@@ -215,7 +217,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		w.redisClient.Del(ctx, param.ParsedInputKey)
 		w.redisClient.ExpireGT(
 			ctx,
-			fmt.Sprintf("model_trigger_input:%s:%s", param.UserUID, param.ModelUID.String()),
+			fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, param.UserUID, param.ModelUID.String()),
 			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 		)
 		w.redisClient.ExpireGT(
@@ -332,9 +334,8 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		logger.Warn("json marshal error for task inputs")
 	}
 
-	outputReferenceUID, _ := uuid.NewV4()
-	outputReferenceID := outputReferenceUID.String()
-	// todo: store url and file size
+	outputReferenceID := minio2.GenerateOutputRefID()
+	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = w.minioClient.UploadFileBytes(ctx, outputReferenceID, outputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
@@ -396,15 +397,24 @@ type EndUserErrorDetails struct {
 	Message string
 }
 
-type UploadToMinioActivityParam struct {
+type UploadToMinioActivityRequest struct {
 	ObjectName  string
 	Data        []byte
 	ContentType string
 }
 
-func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityParam) (string, error) {
+type UploadToMinioActivityResponse struct {
+	URL        string
+	ObjectInfo *minio.ObjectInfo
+}
 
-	// url, _, err := w.repository.UploadToMinio(ctx, param.ObjectName, param.Data, param.ContentType, param.BucketName)
-	// return url, err
-	return "", nil
+func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error) {
+	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, param.ObjectName, param.Data, param.ContentType)
+	if err != nil {
+		return nil, err
+	}
+	return &UploadToMinioActivityResponse{
+		URL:        url,
+		ObjectInfo: objectInfo,
+	}, nil
 }

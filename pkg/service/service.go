@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
@@ -468,10 +467,23 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
-	inputReferenceUID, _ := uuid.NewV4()
-	inputReferenceID := inputReferenceUID.String()
-	// todo: store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, parsedInferInput, constant.ContentTypeJSON)
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
+	if requesterUID.IsNil() {
+		requesterUID = userUID
+	}
+
+	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	inputReferenceID := minio.GenerateInputRefID()
+	// todo: put it in separate workflow activity and store url and file size
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
@@ -492,12 +504,6 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
 		},
-	}
-
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
-	if requesterUID.IsNil() {
-		requesterUID = userUID
 	}
 
 	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
@@ -593,10 +599,23 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, fmt.Errorf("checking requester permission: %w", err)
 	}
 
-	inputReferenceUID, _ := uuid.NewV4()
-	inputReferenceID := inputReferenceUID.String()
-	// todo: store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, parsedInferInput, constant.ContentTypeJSON)
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
+	if requesterUID.IsNil() {
+		requesterUID = userUID
+	}
+
+	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	inputReferenceID := minio.GenerateInputRefID()
+	// todo: put it in separate workflow activity and store url and file size
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
@@ -617,12 +636,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: config.Config.Server.Workflow.MaxWorkflowRetry,
 		},
-	}
-
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
-	if requesterUID.IsNil() {
-		requesterUID = userUID
 	}
 
 	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
@@ -754,7 +767,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			}
 		}
 
-		logger.Debug("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, "/")))
+		logger.Debug("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
 		fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
 		if err != nil {
 			logger.Error("failed to get files from minio", zap.Error(err))
@@ -770,18 +783,18 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 	pbTriggers := make([]*modelpb.ModelRun, len(triggers))
 	for i, trigger := range triggers {
 		pbTrigger := &modelpb.ModelRun{
-			Uid:         trigger.UID.String(),
-			ModelUid:    trigger.ModelUID.String(),
-			Version:     trigger.ModelVersion,
-			Status:      modelpb.ModelRun_RunStatus(trigger.Status),
-			Source:      modelpb.ModelRun_RunSource(trigger.Source),
-			RequesterId: trigger.RequesterUID.String(),
-			Error:       trigger.Error.Ptr(),
-			CreateTime:  timestamppb.New(trigger.CreateTime),
-			UpdateTime:  timestamppb.New(trigger.UpdateTime),
+			Uid:        trigger.UID.String(),
+			ModelUid:   trigger.ModelUID.String(),
+			Version:    trigger.ModelVersion,
+			Status:     modelpb.ModelRun_RunStatus(trigger.Status),
+			Source:     modelpb.ModelRun_RunSource(trigger.Source),
+			Error:      trigger.Error.Ptr(),
+			CreateTime: timestamppb.New(trigger.CreateTime),
+			UpdateTime: timestamppb.New(trigger.UpdateTime),
 		}
-		if trigger.RequesterUID.String() != ctxUserUID {
-			pbTrigger.RequesterId = ""
+		if trigger.RequesterUID.String() == ctxUserUID {
+			requesterUID := trigger.RequesterUID.String()
+			pbTrigger.RequesterId = &requesterUID
 		}
 		if trigger.TotalDuration.Valid {
 			pbTrigger.TotalDuration = durationpb.New(time.Duration(trigger.TotalDuration.Int64) * time.Millisecond)
@@ -796,10 +809,12 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)
 			}
 			// todo: fix TaskInputs type
-			pbTrigger.TaskInputs = &structpb.Struct{}
-			if err := protojson.Unmarshal(data, pbTrigger.TaskInputs); err != nil {
+			triggerReq := &modelpb.TriggerNamespaceModelRequest{}
+			err = protojson.Unmarshal(data, triggerReq)
+			if err != nil {
 				return nil, err
 			}
+			pbTrigger.TaskInputs = triggerReq.TaskInputs
 
 			if trigger.OutputReferenceID.Valid {
 				data := metadataMap[trigger.OutputReferenceID.String]
@@ -1034,7 +1049,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return err
 	}
 
-	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_input:%s:%s", userUID, dbModel.UID.String()))
+	s.redisClient.Del(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String()))
 	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String()))
 
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)

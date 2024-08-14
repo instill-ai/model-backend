@@ -7,10 +7,10 @@ import (
 	"errors"
 	"io"
 	"net"
-	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/lifecycle"
@@ -209,7 +209,7 @@ func (m *Minio) GetFilesByPaths(ctx context.Context, filePaths []string) ([]File
 			}
 
 			fileContent := FileContent{
-				Name:    filepath.Base(filePath),
+				Name:    filePath,
 				Content: buffer.Bytes(),
 			}
 			resultCh <- fileContent
@@ -230,10 +230,20 @@ func (m *Minio) GetFilesByPaths(ctx context.Context, filePaths []string) ([]File
 		return nil, errors.Join(errs...)
 	}
 
-	files := make([]FileContent, fileCount)
+	files := make([]FileContent, 0)
 	for fileContent := range resultCh {
 		files = append(files, fileContent)
 	}
 
 	return files, nil
+}
+
+func GenerateInputRefID() string {
+	referenceUID, _ := uuid.NewV4()
+	return "model-runs/input/" + referenceUID.String()
+}
+
+func GenerateOutputRefID() string {
+	referenceUID, _ := uuid.NewV4()
+	return "model-runs/output/" + referenceUID.String()
 }
