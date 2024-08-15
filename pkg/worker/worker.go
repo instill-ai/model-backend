@@ -8,6 +8,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/usage"
 )
 
@@ -18,6 +19,7 @@ const TaskQueue = "model-backend"
 type Worker interface {
 	TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) (*TriggerModelWorkflowResponse, error)
 	TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) (*TriggerModelActivityResponse, error)
+	UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error)
 }
 
 // worker represents resources required to run Temporal workflow and activity
@@ -25,11 +27,12 @@ type worker struct {
 	redisClient       *redis.Client
 	ray               ray.Ray
 	minioClient       minio.MinioI
+	repository        repository.Repository
 	modelUsageHandler usage.ModelUsageHandler
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(rc *redis.Client, ra ray.Ray, minioClient minio.MinioI, modelUsageHandler usage.ModelUsageHandler) Worker {
+func NewWorker(rc *redis.Client, ra ray.Ray, repo repository.Repository, minioClient minio.MinioI, modelUsageHandler usage.ModelUsageHandler) Worker {
 	if modelUsageHandler == nil {
 		modelUsageHandler = usage.NewNoopModelUsageHandler()
 	}
@@ -37,6 +40,7 @@ func NewWorker(rc *redis.Client, ra ray.Ray, minioClient minio.MinioI, modelUsag
 		redisClient:       rc,
 		ray:               ra,
 		minioClient:       minioClient,
+		repository:        repo,
 		modelUsageHandler: modelUsageHandler,
 	}
 }

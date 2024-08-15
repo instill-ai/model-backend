@@ -1,7 +1,5 @@
 package service_test
 
-//go:generate mockgen -destination mock_repository_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/repository Repository
-
 import (
 	"context"
 	"testing"
@@ -11,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/mock"
 	"github.com/instill-ai/model-backend/pkg/service"
 
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -445,13 +444,13 @@ func TestGetModelDefinition(t *testing.T) {
 	t.Run("TestGetModelDefinition", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			GetModelDefinition("github").
 			Return(&datamodel.ModelDefinition{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinition(context.Background(), "github")
 		assert.NoError(t, err)
@@ -460,13 +459,13 @@ func TestGetModelDefinition(t *testing.T) {
 	t.Run("GetModelDefinitionByUID", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			GetModelDefinitionByUID(ModelDefinition).
 			Return(&datamodel.ModelDefinition{}, nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinitionByUID(context.Background(), ModelDefinition)
 		assert.NoError(t, err)
@@ -477,13 +476,13 @@ func TestListModelDefinitions(t *testing.T) {
 	t.Run("TestListModelDefinition", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		mockRepository := NewMockRepository(ctrl)
+		mockRepository := mock.NewMockRepository(ctrl)
 		mockRepository.
 			EXPECT().
 			ListModelDefinitions(modelPB.View_VIEW_FULL, int64(100), "").
 			Return([]*datamodel.ModelDefinition{}, "", int64(100), nil).
 			Times(1)
-		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, "")
+		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, int32(100), "")
 		assert.NoError(t, err)

@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"gorm.io/plugin/dbresolver"
 
@@ -92,6 +93,7 @@ func GetSharedConnection() *gorm.DB {
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: true,
 			},
+			Logger: logger.Default.LogMode(logger.Info),
 		})
 
 		if err != nil {

@@ -217,6 +217,23 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}(usageData, startTime)
 
+	// todo: save req to redis
+	inputRequestJSON, err := protojson.Marshal(&modelpb.TriggerNamespaceModelRequest{
+		NamespaceId: req.GetNamespaceId(),
+		ModelId:     req.GetModelId(),
+		TaskInputs:  req.GetTaskInputs(),
+		Version:     req.GetVersion(),
+	})
+	if err != nil {
+		return 0, nil, err
+	}
+	h.service.GetRedisClient().Set(
+		ctx,
+		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
+		inputRequestJSON,
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
+
 	var parsedInput any
 	var lenInputs = 1
 	switch pbModel.Task {
@@ -512,7 +529,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_input:%s:%s", userUID.String(), pbModel.Uid),
+		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
 		inputRequestJSON,
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)

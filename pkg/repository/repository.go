@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -22,13 +24,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/x/paginate"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+
+	"github.com/instill-ai/x/paginate"
+
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
-
-const VisibilityPublic = datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC)
 
 type Repository interface {
 	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
@@ -61,6 +63,10 @@ type Repository interface {
 	CreateModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
+
+	ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
+	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
+	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -167,7 +173,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 			p := strcase.ToSnake(o.Path)
 			if v, ok := tokens[p]; ok {
 				switch p {
-				case "create_time", "update_time":
+				case datamodel.FieldCreateTime, datamodel.FieldUpdateTime:
 					// Add "model." prefix to prevent ambiguous since tag table also has the two columns.
 					if o.Desc {
 						queryBuilder = queryBuilder.Where("model."+p+" < ?::timestamp", v)
@@ -211,11 +217,12 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 			orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(!field.Desc)
 			lastItemQueryBuilder.Order(orderString)
 			switch p := strcase.ToSnake(field.Path); p {
+			// todo: this is not being used?
 			case "id":
 				tokens[p] = (models)[len(models)-1].ID
-			case "create_time":
+			case datamodel.FieldCreateTime:
 				tokens[p] = (models)[len(models)-1].CreateTime.Format(time.RFC3339Nano)
-			case "update_time":
+			case datamodel.FieldUpdateTime:
 				tokens[p] = (models)[len(models)-1].UpdateTime.Format(time.RFC3339Nano)
 			}
 
@@ -668,4 +675,74 @@ func (r *repository) transpileFilter(filter filtering.Filter) (*clause.Expr, err
 	return (&Transpiler{
 		filter: filter,
 	}).Transpile()
+}
+
+func (r *repository) ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var whereConditions []string
+	var whereArgs []any
+
+	whereConditions = append(whereConditions, "model_uid = ?")
+	whereArgs = append(whereArgs, modelUID)
+	if startTimeFrom != nil {
+		whereConditions = append(whereConditions, "start_time >= ?")
+		whereArgs = append(whereArgs, *startTimeFrom)
+	}
+	if startTimeTo != nil {
+		whereConditions = append(whereConditions, "start_time <= ?")
+		whereArgs = append(whereArgs, *startTimeTo)
+	}
+
+	var where string
+	if len(whereConditions) > 0 {
+		where = strings.Join(whereConditions, " and ")
+	}
+
+	if err = r.db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
+		logger.Error("failed in count model trigger total size", zap.Error(err))
+		return nil, 0, err
+	}
+
+	queryBuilder := r.db.Where(where, whereArgs...)
+	if order.Fields == nil || len(order.Fields) == 0 {
+		order.Fields = append(order.Fields, ordering.Field{
+			Path: "create_time",
+			Desc: true,
+		})
+	}
+
+	for _, field := range order.Fields {
+		orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(field.Desc)
+		queryBuilder.Order(orderString)
+	}
+
+	if err = queryBuilder.Limit(int(pageSize)).Offset(int(pageSize * page)).Find(&modelTriggers).Error; err != nil {
+		logger.Error("failed in querying model triggers", zap.Error(err))
+		return nil, 0, err
+	}
+
+	return modelTriggers, totalSize, nil
+}
+
+func (r *repository) CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error) {
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if err := db.Create(modelTrigger).Error; err != nil {
+		return nil, err
+	}
+	return modelTrigger, nil
+}
+
+func (r *repository) UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error {
+
+	r.pinUser(ctx, "model")
+	db := r.checkPinnedUser(ctx, r.db, "model")
+
+	if err := db.Save(modelTrigger).Error; err != nil {
+		return err
+	}
+	return nil
 }
