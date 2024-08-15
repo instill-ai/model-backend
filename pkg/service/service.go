@@ -767,7 +767,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			}
 		}
 
-		logger.Debug("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
+		logger.Info("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
 		fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
 		if err != nil {
 			logger.Error("failed to get files from minio", zap.Error(err))
@@ -818,7 +818,6 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 
 			if trigger.OutputReferenceID.Valid {
 				data := metadataMap[trigger.OutputReferenceID.String]
-				logger.Debug("test by jeremy", zap.String("data", string(data)))
 
 				// todo: fix TaskOutputs type
 				triggerModelResp := &modelpb.TriggerUserModelResponse{}

@@ -71,9 +71,6 @@ func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *model
 }
 
 func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb.TriggerUserLatestModelRequest) (*modelpb.TriggerUserLatestModelResponse, error) {
-	// jsonBytes, _ := protojson.Marshal(req)
-	// fmt.Println(string(jsonBytes))
-	// fmt.Println(req.TaskInputs[0].GetImageToImage().GetPromptImageBase64())
 	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
 		ModelId:     strings.Split(req.Name, "/")[3],

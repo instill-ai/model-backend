@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"gopkg.in/guregu/null.v4"
+
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 // for saving the protobuf types as string values

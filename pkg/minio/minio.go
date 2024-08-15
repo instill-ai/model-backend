@@ -103,7 +103,7 @@ func (m *Minio) UploadFileBytes(ctx context.Context, filePath string, fileBytes 
 	if err != nil {
 		return "", nil, err
 	}
-	logger.Debug("test by jeremy", zap.String("fileBytes", string(fileBytes)))
+	logger.Info("start to upload file to minio", zap.String("filePath", filePath))
 	reader := bytes.NewReader(fileBytes)
 
 	// Create the file path with folder structure

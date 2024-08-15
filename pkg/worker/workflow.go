@@ -319,7 +319,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
-	logger.Debug("test by jeremy", zap.String("outputJSON", string(outputJSON)))
 
 	outputKey := fmt.Sprintf("async_model_response:%s", param.WorkflowExecutionID)
 	w.redisClient.Set(
