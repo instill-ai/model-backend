@@ -815,7 +815,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 				data := metadataMap[trigger.OutputReferenceID.String]
 
 				// todo: fix TaskOutputs type
-				triggerModelResp := &modelpb.TriggerUserModelResponse{}
+				triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
 				err = protojson.Unmarshal(data, triggerModelResp)
 				if err != nil {
 					return nil, err

@@ -240,12 +240,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	h.service.GetRedisClient().Set(
-		ctx,
-		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
-		inputJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
 
 	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
