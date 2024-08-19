@@ -695,6 +695,7 @@ func (h *PublicHandler) TriggerNamespaceLatestModelBinaryFileUpload(stream model
 	return err
 }
 
+// TODO: to be reimplemented
 func (h *PublicHandler) triggerNamespaceModelBinaryFileUpload(ctx context.Context, triggerInput any, namespaceID, modelID, versionID string) ([]*modelpb.TaskOutput, *commonpb.Task, error) {
 
 	startTime := time.Now()
@@ -810,7 +811,7 @@ func (h *PublicHandler) triggerNamespaceModelBinaryFileUpload(ctx context.Contex
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,

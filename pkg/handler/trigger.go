@@ -227,12 +227,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	if err != nil {
 		return 0, nil, err
 	}
-	h.service.GetRedisClient().Set(
-		ctx,
-		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
-		inputRequestJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
 
 	var parsedInput any
 	var lenInputs = 1
@@ -318,7 +312,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -668,6 +662,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	return operation, nil
 }
 
+// TODO: to be reimplement
 func inferModelByUpload(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
 	startTime := time.Now()
@@ -882,7 +877,7 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 	}
 
 	var response []*modelpb.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
