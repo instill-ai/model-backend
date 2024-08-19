@@ -77,7 +77,7 @@ type Service interface {
 	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqInputJSON []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
 	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error)
@@ -437,7 +437,7 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 	return nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqInputJSON []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -473,17 +473,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		requesterUID = userUID
 	}
 
-	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
 	inputReferenceID := minio.GenerateInputRefID()
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, reqInputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
