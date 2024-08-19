@@ -7,31 +7,31 @@ import (
 	"github.com/gofrs/uuid"
 	"gopkg.in/guregu/null.v4"
 
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 )
 
 // for saving the protobuf types as string values
 type (
-	TriggerStatus modelpb.ModelRun_RunStatus
-	TriggerSource modelpb.ModelRun_RunSource
+	TriggerStatus runpb.RunStatus
+	TriggerSource runpb.RunSource
 )
 
 func (v *TriggerStatus) Scan(value any) error {
-	*v = TriggerStatus(modelpb.ModelRun_RunStatus_value[value.(string)])
+	*v = TriggerStatus(runpb.RunStatus_value[value.(string)])
 	return nil
 }
 
 func (v TriggerStatus) Value() (driver.Value, error) {
-	return modelpb.ModelRun_RunStatus(v).String(), nil
+	return runpb.RunStatus(v).String(), nil
 }
 
 func (v *TriggerSource) Scan(value any) error {
-	*v = TriggerSource(modelpb.ModelRun_RunSource_value[value.(string)])
+	*v = TriggerSource(runpb.RunSource_value[value.(string)])
 	return nil
 }
 
 func (v TriggerSource) Value() (driver.Value, error) {
-	return modelpb.ModelRun_RunSource(v).String(), nil
+	return runpb.RunSource(v).String(), nil
 }
 
 type ModelTrigger struct {

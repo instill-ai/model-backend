@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -172,7 +173,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
 		ModelUID:         param.ModelUID,
 		ModelVersion:     param.ModelVersion.Version,
-		Status:           datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_PROCESSING),
+		Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 		Source:           param.Source,
 		RequesterUID:     param.RequesterUID,
 		InputReferenceID: param.InputReferenceID,
@@ -185,7 +186,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	succeeded := false
 	defer func() {
 		if err != nil || !succeeded {
-			runLog.Status = datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_FAILED)
+			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
 			endTime := time.Now()
 			timeUsed := endTime.Sub(start)
 			runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
@@ -343,7 +344,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
 	runLog.EndTime = null.TimeFrom(endTime)
 	runLog.OutputReferenceID = null.StringFrom(outputReferenceID)
-	runLog.Status = datamodel.TriggerStatus(modelpb.ModelRun_RUN_STATUS_COMPLETED)
+	runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
 	if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gojuno/minimock/v3"
 	"github.com/golang/mock/gomock"
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/redis/go-redis/v9"
@@ -86,7 +87,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.ParsedInputKey = "ParsedInputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(modelPB.ModelRun_RUN_SOURCE_API)
+		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -128,7 +129,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(modelPB.ModelRun_RUN_STATUS_PROCESSING),
+			Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 			Source:           param.Source,
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,
@@ -158,7 +159,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.ParsedInputKey = "ParsedInputKey"
 		param.Task = taskv1alpha.Task_TASK_TEXT_GENERATION
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(modelPB.ModelRun_RUN_SOURCE_API)
+		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -176,7 +177,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			UID:              uid,
 			ModelUID:         param.ModelUID,
 			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(modelPB.ModelRun_RUN_STATUS_PROCESSING),
+			Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 			Source:           param.Source,
 			RequesterUID:     param.RequesterUID,
 			InputReferenceID: param.InputReferenceID,

@@ -432,18 +432,18 @@ func (mr *MockServiceMockRecorder) ListModelDefinitions(arg0, arg1, arg2, arg3 i
 }
 
 // ListModelTriggers mocks base method.
-func (m *MockService) ListModelTriggers(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsRequest) (*modelv1alpha.ListModelRunsResponse, error) {
+func (m *MockService) ListModelTriggers(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsRequest, arg2 filtering.Filter) (*modelv1alpha.ListModelRunsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1)
+	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListModelTriggers indicates an expected call of ListModelTriggers.
-func (mr *MockServiceMockRecorder) ListModelTriggers(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) ListModelTriggers(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockService)(nil).ListModelTriggers), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockService)(nil).ListModelTriggers), arg0, arg1, arg2)
 }
 
 // ListModels mocks base method.
