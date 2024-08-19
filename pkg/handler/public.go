@@ -1091,7 +1091,7 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.L
 	}, nil
 }
 
-func (h *PublicHandler) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
+func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
 
 	eventName := "ListModelTriggers"
 
@@ -1106,7 +1106,25 @@ func (h *PublicHandler) ListModelTriggers(ctx context.Context, req *modelpb.List
 		return nil, err
 	}
 
-	resp, err := h.service.ListModelTriggers(ctx, req)
+	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
+		filtering.DeclareStandardFunctions(),
+		filtering.DeclareIdent("uid", filtering.TypeString),
+		filtering.DeclareIdent("modelVersion", filtering.TypeString),
+		filtering.DeclareIdent("status", filtering.TypeString),
+		filtering.DeclareIdent("source", filtering.TypeString),
+		filtering.DeclareIdent("createTime", filtering.TypeTimestamp),
+		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
+	}...)
+	if err != nil {
+		return nil, err
+	}
+
+	filter, err := filtering.ParseFilter(req, declarations)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.service.ListModelTriggers(ctx, req, filter)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err

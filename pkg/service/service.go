@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
@@ -41,6 +40,7 @@ import (
 	"github.com/instill-ai/x/sterr"
 
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -98,7 +98,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
-	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error)
+	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 }
 
 type service struct {
@@ -506,8 +506,8 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
-	userAgentEnum, ok := modelpb.ModelRun_RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
 		source = datamodel.TriggerSource(userAgentEnum)
 	}
@@ -638,8 +638,8 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		},
 	}
 
-	source := datamodel.TriggerSource(modelpb.ModelRun_RUN_SOURCE_API)
-	userAgentEnum, ok := modelpb.ModelRun_RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
 		source = datamodel.TriggerSource(userAgentEnum)
 	}
@@ -720,7 +720,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
+func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
 	view := parseView(req.GetView())
@@ -730,16 +730,6 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 		return nil, err
 	}
 
-	var startTimeFrom, startTimeTo *time.Time
-	// todo: use filter
-	// if req.StartTimeFrom.IsValid() {
-	// 	t := req.GetStartTimeFrom().AsTime()
-	// 	startTimeFrom = &t
-	// }
-	// if req.StartTimeTo.IsValid() {
-	// 	t := req.GetStartTimeTo().AsTime()
-	// 	startTimeTo = &t
-	// }
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := s.GetRscNamespace(ctx, req.GetNamespaceId())
@@ -752,7 +742,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 		return nil, err
 	}
 
-	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), orderBy, pbModel.Uid, startTimeFrom, startTimeTo)
+	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, pbModel.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -786,8 +776,8 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			Uid:        trigger.UID.String(),
 			ModelUid:   trigger.ModelUID.String(),
 			Version:    trigger.ModelVersion,
-			Status:     modelpb.ModelRun_RunStatus(trigger.Status),
-			Source:     modelpb.ModelRun_RunSource(trigger.Source),
+			Status:     runpb.RunStatus(trigger.Status),
+			Source:     runpb.RunSource(trigger.Source),
 			Error:      trigger.Error.Ptr(),
 			CreateTime: timestamppb.New(trigger.CreateTime),
 			UpdateTime: timestamppb.New(trigger.UpdateTime),
@@ -797,7 +787,8 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			pbTrigger.RequesterId = &requesterUID
 		}
 		if trigger.TotalDuration.Valid {
-			pbTrigger.TotalDuration = durationpb.New(time.Duration(trigger.TotalDuration.Int64) * time.Millisecond)
+			totalDuration := int32(trigger.TotalDuration.Int64)
+			pbTrigger.TotalDuration = &totalDuration
 		}
 		if trigger.EndTime.Valid {
 			pbTrigger.EndTime = timestamppb.New(trigger.EndTime.Time)

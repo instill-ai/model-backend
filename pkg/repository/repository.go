@@ -64,7 +64,7 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
-	ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
+	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
 	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
 	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
 }
@@ -114,7 +114,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	}
 
 	var expr *clause.Expr
-	if expr, err = r.transpileFilter(filter); err != nil {
+	if expr, err = r.transpileFilter(filter, "model"); err != nil {
 		return nil, 0, "", err
 	}
 	if expr != nil {
@@ -671,27 +671,26 @@ func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pag
 }
 
 // TranspileFilter transpiles a parsed AIP filter expression to GORM DB clauses
-func (r *repository) transpileFilter(filter filtering.Filter) (*clause.Expr, error) {
+func (r *repository) transpileFilter(filter filtering.Filter, tableName string) (*clause.Expr, error) {
 	return (&Transpiler{
-		filter: filter,
+		filter:    filter,
+		tableName: tableName,
 	}).Transpile()
 }
 
-func (r *repository) ListModelTriggers(ctx context.Context, pageSize int64, page int64, order ordering.OrderBy, modelUID string, startTimeFrom *time.Time, startTimeTo *time.Time) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	var whereConditions []string
-	var whereArgs []any
+	whereConditions := []string{"model_uid = ?"}
+	whereArgs := []any{modelUID}
 
-	whereConditions = append(whereConditions, "model_uid = ?")
-	whereArgs = append(whereArgs, modelUID)
-	if startTimeFrom != nil {
-		whereConditions = append(whereConditions, "start_time >= ?")
-		whereArgs = append(whereArgs, *startTimeFrom)
+	var expr *clause.Expr
+	if expr, err = r.transpileFilter(filter, "model_trigger"); err != nil {
+		return nil, 0, err
 	}
-	if startTimeTo != nil {
-		whereConditions = append(whereConditions, "start_time <= ?")
-		whereArgs = append(whereArgs, *startTimeTo)
+	if expr != nil {
+		whereConditions = append(whereConditions, "(?)")
+		whereArgs = append(whereArgs, expr)
 	}
 
 	var where string

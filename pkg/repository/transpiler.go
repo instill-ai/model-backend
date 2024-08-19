@@ -16,7 +16,8 @@ import (
 
 // Transpiler data
 type Transpiler struct {
-	filter filtering.Filter
+	filter    filtering.Filter
+	tableName string
 }
 
 func NewTranspiler(filter filtering.Filter) Transpiler {
@@ -181,7 +182,7 @@ func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op any) (*clause.
 	// TODO: we should remove the hardcode table prefix here.
 	// Add "pipeline." prefix to prevent ambiguous since tag table also has the two columns.
 	if ident.SQL == "create_time" || ident.SQL == "update_time" {
-		ident.SQL = "model." + ident.SQL
+		ident.SQL = t.tableName + "." + ident.SQL
 	}
 	switch op.(type) {
 	case clause.Eq:
