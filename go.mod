@@ -16,11 +16,15 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.21.0
 	github.com/iancoleman/strcase v0.3.0
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// todo: fetch from main branch when protogen-go changes merged
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240823094247-7e590cc3a0d2
 	github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a
 =======
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240812042523-9b82181ecb31
+=======
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36
+>>>>>>> e245ec7 (chore: fix static check)
 	github.com/instill-ai/usage-client v0.3.0-alpha
 >>>>>>> c5e9f1c (chore: add task output validation)
 	github.com/instill-ai/x v0.4.0-alpha
@@ -55,6 +59,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
+	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/datatypes v1.2.1
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.11

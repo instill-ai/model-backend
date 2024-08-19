@@ -22,5 +22,5 @@ type Resolver struct {
 
 // Provider resolves a URL into a ... thing.
 type Provider interface {
-	Get(*url.URL) (interface{}, error)
+	Get(*url.URL) (any, error)
 }

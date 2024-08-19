@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/lestrrat-go/jsref/provider"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -29,9 +30,13 @@ var ModelJSONSchema *jsonschema.Schema
 
 var RegionHardwareJSON RegionHardware
 
-// Tasks schema
+// TasksJSONMap represents the curated list of JSON Schema for all tasks' input/output
 var TasksJSONMap map[string]map[string]any
+
+// TasksJSONInputSchemaMap represents the curated list of input schema object for all tasks
 var TasksJSONInputSchemaMap map[string]*jsonschema.Schema
+
+// TasksJSONOutputSchemaMap represents the curated list of output schema object for all tasks
 var TasksJSONOutputSchemaMap map[string]*jsonschema.Schema
 
 type RegionHardware struct {
@@ -136,7 +141,12 @@ func InitJSONSchema(ctx context.Context) {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/instill-ai/instill-core/%s/schema/ai-tasks.json", config.Config.Server.TaskSchemaVersion))
+	c := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://raw.githubusercontent.com/instill-ai/instill-core/%s/schema/ai-tasks.json", config.Config.Server.TaskSchemaVersion), http.NoBody)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
+	}
+	resp, err := c.Do(req)
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	}

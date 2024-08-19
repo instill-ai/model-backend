@@ -622,6 +622,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 // 		ModelTask:          pbModel.Task,
 // 	}
 
+// 	// write usage/metric datapoint
+// 	defer func(u *utils.UsageMetricData, startTime time.Time) {
+// 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
+// 		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+// 			logger.Warn("usage/metric write failed")
+// 		}
+// 	}(usageData, startTime)
+
 // 	err = req.ParseMultipartForm(4 << 20)
 // 	if err != nil {
 // 		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))

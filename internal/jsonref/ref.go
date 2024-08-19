@@ -32,11 +32,11 @@ func (r *Resolver) AddProvider(p Provider) error {
 }
 
 type resolveCtx struct {
-	rlevel    int         // recurse level
-	maxrlevel int         // max recurse level
-	object    interface{} // the main object that was passed to `Resolve()`
-	recursive bool        // should traverseExpandRefRecursive or not
-	seen      []string    // loop detection
+	rlevel    int      // recurse level
+	maxrlevel int      // max recurse level
+	object    any      // the main object that was passed to `Resolve()`
+	recursive bool     // should traverseExpandRefRecursive or not
+	seen      []string // loop detection
 }
 
 // Resolve takes a target `v`, and a JSON pointer `spec`.
@@ -54,7 +54,7 @@ type resolveCtx struct {
 // If `WithRecursiveResolution` option is given and its value is true,
 // an attempt to resolve all references within the resulting object
 // is made by traversing the structure recursively. Default is false
-func (r *Resolver) Resolve(v interface{}, ptr string, options ...Option) (ret interface{}, err error) {
+func (r *Resolver) Resolve(v any, ptr string, options ...Option) (ret any, err error) {
 	if pdebug.Enabled {
 		g := pdebug.Marker("Resolver.Resolve(%s)", ptr).BindError(&err)
 		defer g.End()
@@ -64,6 +64,8 @@ func (r *Resolver) Resolve(v interface{}, ptr string, options ...Option) (ret in
 		switch opt.Ident() {
 		case identRecursiveResolution{}:
 			recursiveResolution = opt.Value().(bool)
+		default:
+			continue
 		}
 	}
 
@@ -203,7 +205,7 @@ func traverseExpandRefRecursive(ctx *resolveCtx, r *Resolver, rv reflect.Value) 
 
 // expands $ref with in v, until all $refs are expanded.
 // note: DOES NOT recurse down into structures
-func expandRefRecursive(ctx *resolveCtx, r *Resolver, v interface{}) (ret interface{}, err error) {
+func expandRefRecursive(ctx *resolveCtx, r *Resolver, v any) (ret any, err error) {
 	if pdebug.Enabled {
 		g := pdebug.Marker("expandRefRecursive")
 		defer g.End()
@@ -221,7 +223,7 @@ func expandRefRecursive(ctx *resolveCtx, r *Resolver, v interface{}) (ret interf
 			pdebug.Printf("Found ref '%s'", ref)
 		}
 
-		newv, err := expandRef(ctx, r, v, ref)
+		newv, err := expandRef(ctx, r, ref)
 		if err != nil {
 			if pdebug.Enabled {
 				pdebug.Printf("Failed to expand ref '%s': %s", ref, err)
@@ -232,15 +234,15 @@ func expandRefRecursive(ctx *resolveCtx, r *Resolver, v interface{}) (ret interf
 		if err != nil {
 			return nil, err
 		}
-		var i interface{}
+		var i any
 		err = json.Unmarshal(b, &i)
 		if err != nil {
 			return nil, err
 		}
 
-		for key, value := range v.(map[string]interface{}) {
+		for key, value := range v.(map[string]any) {
 			if key != refrv.String() {
-				i.(map[string]interface{})[key] = value
+				i.(map[string]any)[key] = value
 			}
 		}
 		v = i
@@ -249,7 +251,7 @@ func expandRefRecursive(ctx *resolveCtx, r *Resolver, v interface{}) (ret interf
 	return v, nil
 }
 
-func expandRef(ctx *resolveCtx, r *Resolver, v interface{}, ref string) (ret interface{}, err error) {
+func expandRef(ctx *resolveCtx, r *Resolver, ref string) (ret any, err error) {
 	if pdebug.Enabled {
 		g := pdebug.Marker("expandRef %s", ref)
 		defer g.End()
@@ -323,7 +325,7 @@ func expandRef(ctx *resolveCtx, r *Resolver, v interface{}, ref string) (ret int
 	return nil, errors.New("element pointed by $ref '" + ref + "' not found")
 }
 
-func findRef(v interface{}) (ref string, err error) {
+func findRef(v any) (ref string, err error) {
 	if pdebug.Enabled {
 		g := pdebug.Marker("findRef").BindError(&err)
 		defer g.End()
@@ -385,7 +387,7 @@ func findRef(v interface{}) (ref string, err error) {
 	return "", errors.New("$ref element must be a string")
 }
 
-func evalptr(ctx *resolveCtx, r *Resolver, v interface{}, ptrspec string) (ret interface{}, err error) {
+func evalptr(ctx *resolveCtx, r *Resolver, v any, ptrspec string) (ret any, err error) {
 	if pdebug.Enabled {
 		g := pdebug.Marker("evalptr(%s)", ptrspec).BindError(&err)
 		defer g.End()
