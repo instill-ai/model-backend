@@ -182,18 +182,30 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 				}
 			case rayserver.DeploymentStatusStrUpdating:
 				return modelpb.State_STATE_STARTING.Enum(), application.Deployments[i].Message, nil
-			case rayserver.DeploymentStatusStrUpscaling, rayserver.DeploymentStatusStrDownscaling:
-				return modelpb.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
+			case rayserver.DeploymentStatusStrUpscaling:
+				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, nil
+			case rayserver.DeploymentStatusStrDownscaling:
+				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
 				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
 			}
 		}
 		return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
-	case rayserver.ApplicationStatusStrDeploying, rayserver.ApplicationStatusStrDeleting:
+	case rayserver.ApplicationStatusStrDeploying:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelpb.State_STATE_SCALING.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, nil
+			case rayserver.DeploymentStatusStrUnhealthy:
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+			}
+		}
+		return modelpb.State_STATE_STARTING.Enum(), application.Message, nil
+	case rayserver.ApplicationStatusStrDeleting:
+		for i := range application.Deployments {
+			switch application.Deployments[i].Status {
+			case rayserver.DeploymentStatusStrUpdating:
+				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
 				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
 			}
