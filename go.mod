@@ -15,8 +15,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/iancoleman/strcase v0.3.0
-	// todo: fetch from main branch when protogen-go changes merged
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819185125-3f9f6f7c76a3
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820090807-8ddfc17c2eaf
 	github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a
 	github.com/instill-ai/x v0.4.0-alpha
 	github.com/jackc/pgx/v5 v5.6.0

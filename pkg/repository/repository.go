@@ -224,6 +224,10 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 				tokens[p] = (models)[len(models)-1].CreateTime.Format(time.RFC3339Nano)
 			case datamodel.FieldUpdateTime:
 				tokens[p] = (models)[len(models)-1].UpdateTime.Format(time.RFC3339Nano)
+			case datamodel.FieldLastRunTime:
+				tokens[p] = (models)[len(models)-1].LastRunTime.Format(time.RFC3339Nano)
+			case datamodel.FieldNumberOfRuns:
+				tokens[p] = (models)[len(models)-1].NumberOfRuns
 			}
 
 		}
@@ -729,6 +733,19 @@ func (r *repository) CreateModelTrigger(ctx context.Context, modelTrigger *datam
 	r.pinUser(ctx, "model")
 	db := r.checkPinnedUser(ctx, r.db, "model")
 
+	result := db.Model(&datamodel.Model{}).
+		Where("uid = ?", modelTrigger.ModelUID).
+		UpdateColumns(map[string]any{
+			"last_run_time":  time.Now(),
+			"number_of_runs": gorm.Expr("number_of_runs + 1"),
+		})
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	r.pinUser(ctx, "model_trigger")
+	db = r.checkPinnedUser(ctx, r.db, "model_trigger")
+
 	if err := db.Create(modelTrigger).Error; err != nil {
 		return nil, err
 	}
@@ -737,8 +754,8 @@ func (r *repository) CreateModelTrigger(ctx context.Context, modelTrigger *datam
 
 func (r *repository) UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error {
 
-	r.pinUser(ctx, "model")
-	db := r.checkPinnedUser(ctx, r.db, "model")
+	r.pinUser(ctx, "model_trigger")
+	db := r.checkPinnedUser(ctx, r.db, "model_trigger")
 
 	if err := db.Save(modelTrigger).Error; err != nil {
 		return err
