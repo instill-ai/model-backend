@@ -153,7 +153,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 
 	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 
-	pbModel := modelpb.Model{
+	pbModel := &modelpb.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
 		Uid:        dbModel.BaseDynamic.UID.String(),
 		Id:         dbModel.ID,
@@ -242,7 +242,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		// appendSampleInputOutput(&pbModel)
 	}
 
-	return &pbModel, nil
+	return pbModel, nil
 }
 
 func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model, view modelpb.View, checkPermission bool) ([]*modelpb.Model, error) {

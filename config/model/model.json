@@ -78,6 +78,16 @@
           "title": "Chat"
         },
         {
+          "const": "TASK_COMPLETION",
+          "instillShortDescription": "Generate text response base on input.",
+          "title": "Completion"
+        },
+        {
+          "const": "TASK_EMBEDDING",
+          "instillShortDescription": "Generate embeddings based on input data.",
+          "title": "Embedding"
+        },
+        {
           "const": "TASK_TEXT_TO_IMAGE",
           "instillShortDescription": "Generate images from input text prompts.",
           "title": "Text To Image"
@@ -86,6 +96,11 @@
           "const": "TASK_IMAGE_TO_IMAGE",
           "instillShortDescription": "Generate image from input text prompt and image.",
           "title": "Image To Image"
+        },
+        {
+          "const": "TASK_CUSTOM",
+          "instillShortDescription": "Custom model with free form input and output.",
+          "title": "Custom"
         }
       ]
     },

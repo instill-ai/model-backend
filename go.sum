@@ -254,7 +254,12 @@ github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36/go.
 =======
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d h1:adKfanoUAHKMDzzqta3K/CoBPhA3EreXzDOzvvhV6Gs=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
+<<<<<<< HEAD
 >>>>>>> f1cad62 (chore: add missing input validation)
+=======
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820170137-673db344f896 h1:/d7ZApk9DidNUhtOSThSKl0QzX9nV2C0mlYZl4Kx2rA=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820170137-673db344f896/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
+>>>>>>> 8f62376 (chore: support embedding and custom task)
 github.com/instill-ai/usage-client v0.3.0-alpha h1:yY5eNn5zINqy8wpOogiNmrVYzJKnd1KMnMxlYBpr7Tk=
 github.com/instill-ai/usage-client v0.3.0-alpha/go.mod h1:8lvtZulkhQ7t8alttb2KkLKYoCp5u4oatzDbfFlEld0=
 >>>>>>> c5e9f1c (chore: add task output validation)

@@ -308,7 +308,6 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	}
 	dbModel.Configuration = bModelConfig
 	dbModel.ModelDefinitionUID = modelDefinition.UID
-	dbModel.Task = datamodel.ModelTask(utils.Tasks[model.Task.String()])
 
 	if err := s.repository.CreateNamespaceModel(ctx, dbModel.Owner, dbModel); err != nil {
 		return err

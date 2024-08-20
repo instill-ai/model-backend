@@ -109,7 +109,7 @@ func InitJSONSchema(ctx context.Context) {
 	if r, err := os.Open("config/model/model_definition.json"); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model_definition.json", r); err != nil {
+		if err := compiler.AddResource("config/model/model_definition.json", r); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
 	}
@@ -117,7 +117,7 @@ func InitJSONSchema(ctx context.Context) {
 	if r, err := os.Open("config/model/model.json"); err != nil {
 		logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 	} else {
-		if err := compiler.AddResource("https://github.com/instill-ai/model-backend/blob/main/config/model/model.json", r); err != nil {
+		if err := compiler.AddResource("config/model/model.json", r); err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
 		}
 	}
