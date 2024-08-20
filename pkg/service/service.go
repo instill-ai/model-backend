@@ -715,7 +715,6 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
-	view := parseView(req.GetView())
 
 	orderBy, err := ordering.ParseOrderBy(req)
 	if err != nil {
@@ -729,38 +728,52 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 		return nil, err
 	}
 
-	pbModel, err := s.GetNamespaceModelByID(ctx, ns, req.GetModelId(), view)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), req.GetModelId(), true, false)
 	if err != nil {
 		return nil, err
 	}
+	ctxUserUID := utils.GetUserUID(ctx)
 
-	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, pbModel.Uid)
+	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, dbModel, ctxUserUID)
 	if err != nil {
 		return nil, err
 	}
 
 	metadataMap := make(map[string][]byte)
-	if view == modelpb.View_VIEW_FULL {
-		var referenceIDs []string
-		for _, trigger := range triggers {
+	var referenceIDs []string
+	for _, trigger := range triggers {
+		if trigger.RequesterUID.String() == ctxUserUID { // only the runner could see their input/output data
 			referenceIDs = append(referenceIDs, trigger.InputReferenceID)
 			if trigger.OutputReferenceID.Valid {
 				referenceIDs = append(referenceIDs, trigger.OutputReferenceID.String)
 			}
 		}
-
-		logger.Info("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
-		fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
-		if err != nil {
-			logger.Error("failed to get files from minio", zap.Error(err))
-			return nil, err
-		}
-		for _, content := range fileContents {
-			metadataMap[content.Name] = content.Content
-		}
 	}
 
-	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	logger.Info("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
+	fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
+	if err != nil {
+		logger.Error("failed to get files from minio", zap.Error(err))
+		return nil, err
+	}
+	for _, content := range fileContents {
+		metadataMap[content.Name] = content.Content
+	}
+
+	requesterIDMap := make(map[string]struct{})
+	for _, trigger := range triggers {
+		requesterIDMap[trigger.RequesterUID.String()] = struct{}{}
+	}
+
+	runnerMap := make(map[string]*string)
+	for requesterID := range requesterIDMap {
+		runner, err := s.mgmtPrivateServiceClient.CheckNamespaceByUIDAdmin(ctx, &mgmtpb.CheckNamespaceByUIDAdminRequest{Uid: requesterID})
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("CheckNamespaceByUIDAdmin finished", zap.String("RequesterUID", requesterID), zap.String("runnerId", runner.Id))
+		runnerMap[requesterID] = &runner.Id
+	}
 
 	pbTriggers := make([]*modelpb.ModelRun, len(triggers))
 	for i, trigger := range triggers {
@@ -774,10 +787,9 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			CreateTime: timestamppb.New(trigger.CreateTime),
 			UpdateTime: timestamppb.New(trigger.UpdateTime),
 		}
-		if trigger.RequesterUID.String() == ctxUserUID {
-			requesterUID := trigger.RequesterUID.String()
-			pbTrigger.RequesterId = &requesterUID
-		}
+
+		pbTrigger.RunnerId = runnerMap[trigger.RequesterUID.String()]
+
 		if trigger.TotalDuration.Valid {
 			totalDuration := int32(trigger.TotalDuration.Int64)
 			pbTrigger.TotalDuration = &totalDuration
@@ -786,7 +798,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			pbTrigger.EndTime = timestamppb.New(trigger.EndTime.Time)
 		}
 
-		if view == modelpb.View_VIEW_FULL {
+		if trigger.RequesterUID.String() == ctxUserUID { // only the runner could see their input/output data
 			data, ok := metadataMap[trigger.InputReferenceID]
 			if !ok {
 				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)

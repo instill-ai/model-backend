@@ -18,7 +18,9 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/resource"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -343,4 +345,12 @@ type UsageMetricData struct {
 	TriggerTime         string
 	ComputeTimeDuration float64
 	ModelTask           commonpb.Task
+}
+
+func GetUserUID(ctx context.Context) string {
+	requesterUID := resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey)
+	if requesterUID == "" {
+		return resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	}
+	return requesterUID
 }
