@@ -228,7 +228,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	for _, i := range req.GetTaskInputs() {
-		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue("")
+		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
 		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false)
 		if err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -468,6 +468,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
+		}
+	}
+
+	for _, i := range req.GetTaskInputs() {
+		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 

@@ -32,16 +32,16 @@ import (
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string) {
-	w.Header().Add("Content-Type", "application/json+problem")
-	w.WriteHeader(st)
-	obj, _ := json.Marshal(datamodel.Error{
-		Status: int32(st),
-		Title:  title,
-		Detail: detail,
-	})
-	_, _ = w.Write(obj)
-}
+// func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string) {
+// 	w.Header().Add("Content-Type", "application/json+problem")
+// 	w.WriteHeader(st)
+// 	obj, _ := json.Marshal(datamodel.Error{
+// 		Status: int32(st),
+// 		Title:  title,
+// 		Detail: detail,
+// 	})
+// 	_, _ = w.Write(obj)
+// }
 
 func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsRequest) (*modelpb.ListModelsResponse, error) {
 

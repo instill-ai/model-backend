@@ -231,6 +231,7 @@ github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSAS
 github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
@@ -250,6 +251,10 @@ github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240812042523-9b82181ecb31/go.
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36 h1:IrjhISfFEZckZdQU0aSiupQ7RZecSdwKsq/AtvbSaDw=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
 >>>>>>> e245ec7 (chore: fix static check)
+=======
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d h1:adKfanoUAHKMDzzqta3K/CoBPhA3EreXzDOzvvhV6Gs=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
+>>>>>>> f1cad62 (chore: add missing input validation)
 github.com/instill-ai/usage-client v0.3.0-alpha h1:yY5eNn5zINqy8wpOogiNmrVYzJKnd1KMnMxlYBpr7Tk=
 github.com/instill-ai/usage-client v0.3.0-alpha/go.mod h1:8lvtZulkhQ7t8alttb2KkLKYoCp5u4oatzDbfFlEld0=
 >>>>>>> c5e9f1c (chore: add task output validation)

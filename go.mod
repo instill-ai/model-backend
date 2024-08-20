@@ -17,6 +17,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// todo: fetch from main branch when protogen-go changes merged
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240823094247-7e590cc3a0d2
 	github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a
@@ -25,6 +26,9 @@ require (
 =======
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36
 >>>>>>> e245ec7 (chore: fix static check)
+=======
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d
+>>>>>>> f1cad62 (chore: add missing input validation)
 	github.com/instill-ai/usage-client v0.3.0-alpha
 >>>>>>> c5e9f1c (chore: add task output validation)
 	github.com/instill-ai/x v0.4.0-alpha
