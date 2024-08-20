@@ -89,6 +89,13 @@ type Model struct {
 	Versions           []*ModelVersion
 	NamespaceID        string `gorm:"type:namespace_id"`
 	NamespaceType      string `gorm:"type:namespace_type"`
+
+	// Note:
+	// We store the NumberOfRuns and LastRunTime in this table
+	// to make it easier to sort the models. We should develop an approach to
+	// sync the data between InfluxDB and here.
+	LastRunTime  time.Time
+	NumberOfRuns int
 }
 
 // IsPublic returns the visibility of the model.
@@ -199,6 +206,8 @@ func (r ReleaseStage) Value() (driver.Value, error) {
 }
 
 const (
-	FieldCreateTime = "create_time"
-	FieldUpdateTime = "update_time"
+	FieldCreateTime   = "create_time"
+	FieldUpdateTime   = "update_time"
+	FieldLastRunTime  = "last_run_time"
+	FieldNumberOfRuns = "number_of_runs"
 )

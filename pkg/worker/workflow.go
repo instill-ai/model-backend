@@ -111,6 +111,20 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		}
 	}
 
+	defer func() {
+		w.redisClient.Del(sCtx, param.ParsedInputKey)
+		w.redisClient.ExpireGT(
+			sCtx,
+			fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, param.UserUID, param.ModelUID.String()),
+			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+		)
+		w.redisClient.ExpireGT(
+			sCtx,
+			fmt.Sprintf("model_trigger_output_key:%s:%s", param.UserUID, param.ModelUID.String()),
+			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+		)
+	}()
+
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
 		StartToCloseTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
@@ -214,19 +228,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	if err != nil {
 		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
-	defer func() {
-		w.redisClient.Del(ctx, param.ParsedInputKey)
-		w.redisClient.ExpireGT(
-			ctx,
-			fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, param.UserUID, param.ModelUID.String()),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
-		w.redisClient.ExpireGT(
-			ctx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s", param.UserUID, param.ModelUID.String()),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
-	}()
 
 	var inferInput InferInput
 	switch param.Task {

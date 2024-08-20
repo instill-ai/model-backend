@@ -191,6 +191,10 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		ProfileImage:     &profileImage,
 		Tags:             dbModel.TagNames(),
 		Versions:         dbModel.VersionNames(),
+		Stats: &modelpb.Model_Stats{
+			NumberOfRuns: int32(dbModel.NumberOfRuns),
+			LastRunTime:  timestamppb.New(dbModel.LastRunTime),
+		},
 	}
 
 	pbModel.Permission = &modelpb.Permission{}
