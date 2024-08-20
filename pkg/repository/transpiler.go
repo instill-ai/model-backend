@@ -197,9 +197,6 @@ func (t *Transpiler) transpileComparisonCallExpr(e *expr.Expr, op any) (*clause.
 		case "tag":
 			sql = "model_tag.tag_name = ?"
 			vars = append(vars, con.Vars...)
-		case "numberOfRuns":
-			sql = "number_of_runs >= ?"
-			vars = append(vars, con.Vars...)
 		default:
 			sql = fmt.Sprintf("%s = ?", ident.SQL)
 			vars = append(vars, con.Vars...)
