@@ -142,6 +142,10 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
 		}
+		_ = workflow.UpsertMemo(ctx, map[string]any{
+			"error": fmt.Sprintf("Model %s failed to execute. %s", param.ModelID, errmsg.MessageOrErr(err)),
+		})
+
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
 		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
 	}

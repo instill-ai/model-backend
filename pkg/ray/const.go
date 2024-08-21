@@ -198,9 +198,10 @@ type ModelDeploymentConfig struct {
 type Action string
 
 const (
+	Sync     Action = "sync"
 	Deploy   Action = "deploy"
 	Undeploy Action = "undeploy"
-	Sync     Action = "sync"
+	UpScale  Action = "upscale"
 )
 
 type ApplicationWithAction struct {

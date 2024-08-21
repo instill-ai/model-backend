@@ -518,7 +518,6 @@ func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelpb.LookUpMode
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -593,7 +592,7 @@ func (h *PublicHandler) GetNamespaceModel(ctx context.Context, req *modelpb.GetN
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Id),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -856,7 +855,7 @@ func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.R
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Id),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
