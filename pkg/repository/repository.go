@@ -64,7 +64,7 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
-	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, dbModel *datamodel.Model, userUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
+	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
 	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
 	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
 }
@@ -682,11 +682,11 @@ func (r *repository) transpileFilter(filter filtering.Filter, tableName string) 
 	}).Transpile()
 }
 
-func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, dbModel *datamodel.Model, userUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	whereConditions := []string{"model_uid = ?"}
-	whereArgs := []any{dbModel.UID.String()}
+	whereArgs := []any{modelUID}
 
 	var expr *clause.Expr
 	if expr, err = r.transpileFilter(filter, "model_trigger"); err != nil {
@@ -697,17 +697,9 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 		whereArgs = append(whereArgs, expr)
 	}
 
-	if dbModel.OwnerUID().String() != userUID { // for a runner without ownership, they could only view their own logs
+	if !isOwner {
 		whereConditions = append(whereConditions, "requester_uid = ?")
 		whereArgs = append(whereArgs, userUID)
-
-		// below for owner viewing run logging...
-	} else if dbModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE) {
-		// for a private model, owner could view their own logs
-		whereConditions = append(whereConditions, "requester_uid = ?")
-		whereArgs = append(whereArgs, userUID)
-
-		// for a public model, owner could view all logs
 	}
 
 	var where string

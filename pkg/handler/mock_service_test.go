@@ -561,18 +561,18 @@ func (mr *MockServiceMockRecorder) TriggerAsyncNamespaceModelByID(arg0, arg1, ar
 }
 
 // TriggerNamespaceModelByID mocks base method.
-func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4 []byte, arg5 taskv1alpha.Task, arg6 string) ([]*modelv1alpha.TaskOutput, error) {
+func (m *MockService) TriggerNamespaceModelByID(arg0 context.Context, arg1 resource.Namespace, arg2 string, arg3 *datamodel.ModelVersion, arg4, arg5 []byte, arg6 taskv1alpha.Task, arg7 string) ([]*modelv1alpha.TaskOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "TriggerNamespaceModelByID", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].([]*modelv1alpha.TaskOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // TriggerNamespaceModelByID indicates an expected call of TriggerNamespaceModelByID.
-func (mr *MockServiceMockRecorder) TriggerNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) TriggerNamespaceModelByID(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerNamespaceModelByID", reflect.TypeOf((*MockService)(nil).TriggerNamespaceModelByID), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // UpdateModelInstanceAdmin mocks base method.

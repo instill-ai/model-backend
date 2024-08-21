@@ -734,7 +734,17 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 	}
 	ctxUserUID := utils.GetUserUID(ctx)
 
-	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, dbModel, ctxUserUID)
+	isOwner := true
+	if dbModel.OwnerUID().String() != ctxUserUID { // for a runner without ownership, they could only view their own logs
+		isOwner = false
+		// below for owner viewing run logging...
+	} else if dbModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE) {
+		// for a private model, owner could view their own logs
+		isOwner = false
+		// for a public model, owner could view all logs
+	}
+
+	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, ctxUserUID, isOwner, dbModel.UID.String())
 	if err != nil {
 		return nil, err
 	}
