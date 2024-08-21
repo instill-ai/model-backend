@@ -357,6 +357,22 @@ func (r *ray) sync() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		logger, _ := custom_logger.GetZapLogger(ctx)
+
+		if applicationWithAction.Action == UpScale {
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
+			if err != nil {
+				logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
+			}
+			resp, err := r.rayHTTPClient.Do(req)
+			if err != nil {
+				logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
+			}
+			resp.Body.Close()
+
+			r.doneChan <- err
+			continue
+		}
+
 		var modelDeploymentConfig ModelDeploymentConfig
 
 		currentConfigFile, err := os.ReadFile(r.configFilePath)
@@ -420,18 +436,6 @@ func (r *ray) sync() {
 		}
 
 		resp.Body.Close()
-
-		if applicationWithAction.Action == UpScale {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
-			}
-			resp, err = r.rayHTTPClient.Do(req)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
-			}
-			resp.Body.Close()
-		}
 
 		cancel()
 
