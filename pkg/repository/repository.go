@@ -64,7 +64,7 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
-	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
+	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
 	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
 	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
 }
@@ -682,7 +682,7 @@ func (r *repository) transpileFilter(filter filtering.Filter, tableName string) 
 	}).Transpile()
 }
 
-func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	whereConditions := []string{"model_uid = ?"}
@@ -695,6 +695,11 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 	if expr != nil {
 		whereConditions = append(whereConditions, "(?)")
 		whereArgs = append(whereArgs, expr)
+	}
+
+	if !isOwner {
+		whereConditions = append(whereConditions, "requester_uid = ?")
+		whereArgs = append(whereArgs, userUID)
 	}
 
 	var where string

@@ -290,9 +290,9 @@ func (mr *MockRepositoryMockRecorder) ListModelTags(arg0, arg1 interface{}) *gom
 }
 
 // ListModelTriggers mocks base method.
-func (m *MockRepository) ListModelTriggers(arg0 context.Context, arg1, arg2 int64, arg3 filtering.Filter, arg4 ordering.OrderBy, arg5 string) ([]*datamodel.ModelTrigger, int64, error) {
+func (m *MockRepository) ListModelTriggers(arg0 context.Context, arg1, arg2 int64, arg3 filtering.Filter, arg4 ordering.OrderBy, arg5 string, arg6 bool, arg7 string) ([]*datamodel.ModelTrigger, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	ret0, _ := ret[0].([]*datamodel.ModelTrigger)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
@@ -300,9 +300,9 @@ func (m *MockRepository) ListModelTriggers(arg0 context.Context, arg1, arg2 int6
 }
 
 // ListModelTriggers indicates an expected call of ListModelTriggers.
-func (mr *MockRepositoryMockRecorder) ListModelTriggers(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListModelTriggers(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockRepository)(nil).ListModelTriggers), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockRepository)(nil).ListModelTriggers), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 }
 
 // ListModelVersions mocks base method.
