@@ -470,10 +470,12 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if state, _, numOfActiveReplica, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), id), version.Version); err != nil {
 		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
 	} else if numOfActiveReplica == 0 {
-		scalingConfig := s.generateScalingConfig(dbModel.ID)
-		name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
-		if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
-			return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+		if state == modelpb.State_STATE_OFFLINE.Enum() {
+			scalingConfig := s.generateScalingConfig(dbModel.ID)
+			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
+			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
+				return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+			}
 		}
 		return nil, status.Errorf(codes.Unavailable, fmt.Sprintf("model is in %s and has 0 active replica, triggering scale up now and please try again later", state))
 	}
@@ -605,10 +607,12 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	if state, _, numOfActiveReplica, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), id), version.Version); err != nil {
 		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
 	} else if numOfActiveReplica == 0 {
-		scalingConfig := s.generateScalingConfig(dbModel.ID)
-		name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
-		if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
-			return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+		if state == modelpb.State_STATE_OFFLINE.Enum() {
+			scalingConfig := s.generateScalingConfig(dbModel.ID)
+			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
+			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
+				return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+			}
 		}
 		return nil, status.Errorf(codes.Unavailable, fmt.Sprintf("model is in %s and has 0 active replica, triggering scale up now and please try again later", state))
 	}
