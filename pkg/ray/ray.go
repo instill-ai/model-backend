@@ -31,7 +31,7 @@ import (
 
 type Ray interface {
 	// grpc
-	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, error)
+	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
 	ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse
 	ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
 
@@ -137,24 +137,24 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 	}
 }
 
-func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, error) {
+func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, "", err
+		return nil, "", 0, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1), http.NoBody)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	resp, err := r.rayHTTPClient.Do(req)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, "", err
+		return nil, "", 0, err
 	}
 	defer resp.Body.Close()
 
@@ -162,62 +162,63 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	err = json.NewDecoder(resp.Body).Decode(&applicationStatus)
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, "", err
+		return nil, "", 0, err
 	}
 
 	application, ok := applicationStatus.Applications[applicationMetadatValue]
 	if !ok {
-		return modelpb.State_STATE_OFFLINE.Enum(), "", nil
+		return modelpb.State_STATE_OFFLINE.Enum(), "", 0, nil
 	}
 
 	switch application.Status {
 	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
 		for i := range application.Deployments {
+			numOfReplicas := len(application.Deployments[i].Replicas)
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrHealthy:
-				if len(application.Deployments[i].Replicas) == 0 {
-					return modelpb.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, nil
+				if numOfReplicas == 0 {
+					return modelpb.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 				} else {
-					return modelpb.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, nil
+					return modelpb.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 				}
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelpb.State_STATE_STARTING.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_STARTING.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 			case rayserver.DeploymentStatusStrUpscaling:
-				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 			case rayserver.DeploymentStatusStrDownscaling:
-				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
-		return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
+		return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 	case rayserver.ApplicationStatusStrDeploying:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, 0, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
-		return modelpb.State_STATE_STARTING.Enum(), application.Message, nil
+		return modelpb.State_STATE_STARTING.Enum(), application.Message, 0, nil
 	case rayserver.ApplicationStatusStrDeleting:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
 			case rayserver.DeploymentStatusStrUpdating:
-				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, 0, nil
 			case rayserver.DeploymentStatusStrUnhealthy:
-				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, nil
+				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
-		return modelpb.State_STATE_STARTING.Enum(), application.Message, nil
+		return modelpb.State_STATE_STARTING.Enum(), application.Message, 0, nil
 	case rayserver.ApplicationStatusStrNotStarted:
-		return modelpb.State_STATE_OFFLINE.Enum(), application.Message, nil
+		return modelpb.State_STATE_OFFLINE.Enum(), application.Message, 0, nil
 	case rayserver.ApplicationStatusStrDeployFailed:
-		return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
+		return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 	}
 
-	return modelpb.State_STATE_ERROR.Enum(), application.Message, nil
+	return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 }
 
 func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
@@ -356,6 +357,22 @@ func (r *ray) sync() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		logger, _ := custom_logger.GetZapLogger(ctx)
+
+		if applicationWithAction.Action == UpScale {
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
+			if err != nil {
+				logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
+			}
+			resp, err := r.rayHTTPClient.Do(req)
+			if err != nil {
+				logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
+			}
+			resp.Body.Close()
+
+			r.doneChan <- err
+			continue
+		}
+
 		var modelDeploymentConfig ModelDeploymentConfig
 
 		currentConfigFile, err := os.ReadFile(r.configFilePath)
@@ -419,6 +436,7 @@ func (r *ray) sync() {
 		}
 
 		resp.Body.Close()
+
 		cancel()
 
 		r.doneChan <- err

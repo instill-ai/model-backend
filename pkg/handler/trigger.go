@@ -348,7 +348,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel.Name),
+		custom_otel.SetEventResource(fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -655,7 +655,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 
@@ -931,7 +931,7 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Id),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 

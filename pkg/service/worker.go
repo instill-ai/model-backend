@@ -12,6 +12,7 @@ import (
 	"go.temporal.io/api/enums/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/redis/go-redis/v9"
 
@@ -152,13 +153,27 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 			},
 		}
 	default:
+		var s *structpb.Value
+
+		errMessage, ok := workflowExecutionInfo.GetMemo().GetFields()["error"]
+		if ok {
+			s = structpb.NewStringValue(string(errMessage.GetData()))
+		} else {
+			s = structpb.NewStringValue("model execution error")
+		}
+
+		errMessagePB, err := anypb.New(s)
+		if err != nil {
+			return nil, err
+		}
+
 		operation = longrunningpb.Operation{
 			Done: true,
 			Result: &longrunningpb.Operation_Error{
 				Error: &rpcStatus.Status{
-					Code:    int32(workflowExecutionInfo.Status),
-					Details: []*anypb.Any{},
-					Message: "",
+					Code:    13,
+					Details: []*anypb.Any{errMessagePB},
+					Message: s.GetStringValue(),
 				},
 			},
 		}
