@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -21,14 +20,14 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	minio2 "github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
+	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
 	"github.com/instill-ai/x/errmsg"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	minio2 "github.com/instill-ai/model-backend/pkg/minio"
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -177,14 +176,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
-	// TODO: temporary disable usage check until further decision
-	// if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-	// 	UserUID:      param.UserUID,
-	// 	OwnerUID:     param.OwnerUID,
-	// 	RequesterUID: param.RequesterUID,
-	// }); err != nil {
-	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
-	// }
+	if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:      param.UserUID,
+		OwnerUID:     param.OwnerUID,
+		RequesterUID: param.RequesterUID,
+	}); err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
 
 	start := time.Now()
 
@@ -296,20 +294,19 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	timeUsed := endTime.Sub(start)
 	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
 
-	// TODO: temporary disable usage collect until further decision
-	// if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
-	// 	UserUID:        param.UserUID,
-	// 	OwnerUID:       param.OwnerUID,
-	// 	ModelUID:       param.ModelUID,
-	// 	ModelVersion:   param.ModelVersion.Version,
-	// 	ModelTriggerID: param.TriggerUID.String(),
-	// 	ModelID:        param.ModelID,
-	// 	UsageTime:      timeUsed,
-	// 	Hardware:       param.Hardware,
-	// 	RequesterUID:   param.RequesterUID,
-	// }); err != nil {
-	// 	return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
-	// }
+	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
+		UserUID:        param.UserUID,
+		OwnerUID:       param.OwnerUID,
+		ModelUID:       param.ModelUID,
+		ModelVersion:   param.ModelVersion.Version,
+		ModelTriggerID: param.TriggerUID.String(),
+		ModelID:        param.ModelID,
+		UsageTime:      timeUsed,
+		Hardware:       param.Hardware,
+		RequesterUID:   param.RequesterUID,
+	}); err != nil {
+		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
 
 	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
 	if err != nil {
