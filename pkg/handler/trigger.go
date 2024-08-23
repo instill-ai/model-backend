@@ -629,10 +629,17 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
-	// TODO: temporary solution to store output json
+	// latest operation
 	h.service.GetRedisClient().Set(
 		ctx,
 		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, versionID),
+		operation.GetName(),
+		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+	)
+	// latest version operation
+	h.service.GetRedisClient().Set(
+		ctx,
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, version.Version),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
