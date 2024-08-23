@@ -64,6 +64,9 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
+	GetModelTriggerByTriggerUID(ctx context.Context, triggerUID string) (modelTrigger *datamodel.ModelTrigger, err error)
+	GetLatestModelTriggerByModelUID(ctx context.Context, userUID string, modelUID string) (modelTrigger *datamodel.ModelTrigger, err error)
+	GetLatestModelVersionTriggerByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelTrigger *datamodel.ModelTrigger, err error)
 	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
 	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
 	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
@@ -680,6 +683,44 @@ func (r *repository) transpileFilter(filter filtering.Filter, tableName string) 
 		filter:    filter,
 		tableName: tableName,
 	}).Transpile()
+}
+
+func (r *repository) GetModelTriggerByTriggerUID(ctx context.Context, triggerUID string) (modelTrigger *datamodel.ModelTrigger, err error) {
+	return r.getModelTriggerByModelUID(
+		ctx,
+		"(uid = ?)",
+		[]any{triggerUID},
+	)
+}
+
+func (r *repository) GetLatestModelTriggerByModelUID(ctx context.Context, userUID string, modelUID string) (modelTrigger *datamodel.ModelTrigger, err error) {
+	return r.getModelTriggerByModelUID(
+		ctx,
+		"(model_uid = ? AND requester_uid = ?)",
+		[]any{modelUID, userUID},
+	)
+}
+
+func (r *repository) GetLatestModelVersionTriggerByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelTrigger *datamodel.ModelTrigger, err error) {
+	return r.getModelTriggerByModelUID(
+		ctx,
+		"(model_uid = ? AND requester_uid = ? AND model_version = ?)",
+		[]any{modelUID, userUID, version},
+	)
+}
+
+func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string, whereArgs []any) (modelTrigger *datamodel.ModelTrigger, err error) {
+
+	db := r.checkPinnedUser(ctx, r.db, "model_trigger")
+
+	var trigger datamodel.ModelTrigger
+
+	queryBuilder := db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...)
+	if result := queryBuilder.First(&trigger); result.Error != nil {
+		return &datamodel.ModelTrigger{}, status.Errorf(codes.NotFound, "The model trigger not found")
+	}
+
+	return &trigger, nil
 }
 
 func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {

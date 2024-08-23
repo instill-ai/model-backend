@@ -217,7 +217,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}(usageData, startTime)
 
-	// todo: save req to redis
 	inputRequestJSON, err := protojson.Marshal(&modelpb.TriggerNamespaceModelRequest{
 		NamespaceId: req.GetNamespaceId(),
 		ModelId:     req.GetModelId(),
@@ -509,24 +508,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	inputJSON, err := json.Marshal(req.GetTaskInputs())
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
-	// TODO: temporary solution to store input json for latest operation
 	inputRequestJSON, err := protojson.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	h.service.GetRedisClient().Set(
-		ctx,
-		fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID.String(), pbModel.Uid),
-		inputRequestJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
 
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
@@ -635,7 +622,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
@@ -645,7 +632,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	// TODO: temporary solution to store output json
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, pbModel.Uid),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, versionID),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)

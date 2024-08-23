@@ -5,19 +5,18 @@ import (
 	"errors"
 	"fmt"
 
-	workflowpb "go.temporal.io/api/workflow/v1"
-	rpcStatus "google.golang.org/genproto/googleapis/rpc/status"
-
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	"github.com/redis/go-redis/v9"
 	"go.temporal.io/api/enums/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/redis/go-redis/v9"
+	workflowpb "go.temporal.io/api/workflow/v1"
+	rpcStatus "google.golang.org/genproto/googleapis/rpc/status"
 
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -28,13 +27,13 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 		return nil, err
 	}
 
-	return s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, nil)
+	return s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, workflowID)
 }
 
 func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := utils.GetUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -53,21 +52,8 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, ErrNoPermission
 	}
 
-	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), "")).Result()
 
-	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	err = protojson.Unmarshal(inputJSON, triggerModelReq)
-	if err != nil {
-		return nil, err
-	}
-
-	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String())).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil
@@ -75,17 +61,17 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, err
 	}
 
-	operationID, err := resource.GetOperationID(outputWorkflowID)
+	workflowID, err := resource.GetWorkflowID(outputWorkflowID)
 	if err != nil {
 		return nil, err
 	}
 
-	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, operationID, "")
+	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowID, "")
 	if err != nil {
 		return nil, err
 	}
 
-	operation, err := s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, triggerModelReq)
+	operation, err := s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, workflowID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,26 +84,91 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 }
 
-func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerModelReq *modelpb.TriggerNamespaceModelRequest) (*longrunningpb.Operation, error) {
+func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
+	ownerPermalink := ns.Permalink()
+
+	userUID := utils.GetUserUID(ctx)
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
+		return nil, err
+	} else if !granted {
+		return nil, ErrNoPermission
+	}
+
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), version)).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	workflowID, err := resource.GetWorkflowID(outputWorkflowID)
+	if err != nil {
+		return nil, err
+	}
+
+	workflowExecutionRes, err := s.temporalClient.DescribeWorkflowExecution(ctx, workflowID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, workflowID)
+	if err != nil {
+		return nil, err
+	}
+
+	if view != modelpb.View_VIEW_FULL {
+		operation.Result = nil
+	}
+
+	return operation, nil
+
+}
+
+func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerUID string) (*longrunningpb.Operation, error) {
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
 
-		latestOperation := &modelpb.LatestOperation{
-			Request: triggerModelReq,
-		}
-
-		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
-
-		blobRedisKey := fmt.Sprintf("async_model_response:%s", workflowExecutionInfo.Execution.WorkflowId)
-		blob, err := s.redisClient.Get(ctx, blobRedisKey).Bytes()
+		trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, triggerUID)
 		if err != nil {
 			return nil, err
 		}
 
-		err = protojson.Unmarshal(blob, triggerModelResp)
+		input, err := s.minioClient.GetFile(ctx, trigger.InputReferenceID)
 		if err != nil {
+			return nil, err
+		}
+		if !trigger.OutputReferenceID.Valid {
+			return nil, fmt.Errorf("trigger output not valid")
+		}
+		output, err := s.minioClient.GetFile(ctx, trigger.OutputReferenceID.String)
+		if err != nil {
+			return nil, err
+		}
+
+		latestOperation := &modelpb.LatestOperation{}
+		triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
+		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
+
+		if err := protojson.Unmarshal(input, triggerModelReq); err != nil {
+			return nil, err
+		}
+
+		if err := protojson.Unmarshal(output, triggerModelResp); err != nil {
 			return nil, err
 		}
 
@@ -131,6 +182,7 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 			}
 		}
 
+		latestOperation.Request = triggerModelReq
 		latestOperation.Response = triggerModelResp
 
 		resp, err := anypb.New(latestOperation)

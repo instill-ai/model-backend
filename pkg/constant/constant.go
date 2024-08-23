@@ -20,5 +20,3 @@ const HeaderUserAgent = "Instill-User-Agent"
 const RayProtoPath string = "assets/ray/proto"
 
 const ContentTypeJSON = "application/json"
-
-const ModelTriggerInputKey = "model_trigger_input"

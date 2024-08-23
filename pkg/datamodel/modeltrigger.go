@@ -2,7 +2,6 @@ package datamodel
 
 import (
 	"database/sql/driver"
-	"time"
 
 	"github.com/gofrs/uuid"
 	"gopkg.in/guregu/null.v4"
@@ -35,7 +34,7 @@ func (v TriggerSource) Value() (driver.Value, error) {
 }
 
 type ModelTrigger struct {
-	UID               uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
+	BaseStaticHardDelete
 	ModelUID          uuid.UUID
 	ModelVersion      string
 	Status            TriggerStatus
@@ -46,6 +45,4 @@ type ModelTrigger struct {
 	InputReferenceID  string
 	OutputReferenceID null.String
 	Error             null.String
-	CreateTime        time.Time `gorm:"autoCreateTime:nano"`
-	UpdateTime        time.Time `gorm:"autoUpdateTime:nano"`
 }

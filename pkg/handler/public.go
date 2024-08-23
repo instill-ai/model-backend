@@ -1094,7 +1094,7 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.L
 
 func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
 
-	eventName := "ListModelTriggers"
+	eventName := "ListModelRuns"
 
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))

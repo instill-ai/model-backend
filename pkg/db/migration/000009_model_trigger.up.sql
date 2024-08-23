@@ -5,7 +5,7 @@ CREATE TYPE valid_trigger_source AS ENUM ('RUN_SOURCE_CONSOLE', 'RUN_SOURCE_API'
 
 CREATE TABLE model_trigger
 (
-    uid uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    uid uuid PRIMARY KEY,
     model_uid uuid NOT NULL,
     model_version varchar(255) NOT NULL,
     status valid_trigger_status NOT NULL,
