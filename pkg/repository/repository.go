@@ -715,7 +715,7 @@ func (r *repository) GetLatestModelVersionTriggerByModelUID(ctx context.Context,
 
 func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string, whereArgs []any) (modelTrigger *datamodel.ModelTrigger, err error) {
 
-	db := r.checkPinnedUser(ctx, r.db, "model_trigger")
+	db := r.CheckPinnedUser(ctx, r.db, "model_trigger")
 
 	var trigger datamodel.ModelTrigger
 
@@ -729,6 +729,8 @@ func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string
 
 func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	db := r.CheckPinnedUser(ctx, r.db, "model_trigger")
 
 	whereConditions := []string{"model_uid = ?"}
 	whereArgs := []any{modelUID}
@@ -752,12 +754,12 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 		where = strings.Join(whereConditions, " and ")
 	}
 
-	if err = r.db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
+	if err = db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
 		logger.Error("failed in count model trigger total size", zap.Error(err))
 		return nil, 0, err
 	}
 
-	queryBuilder := r.db.Where(where, whereArgs...)
+	queryBuilder := db.Where(where, whereArgs...)
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
