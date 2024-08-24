@@ -287,6 +287,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		UserUID:        param.UserUID,
 		OwnerUID:       param.OwnerUID,
 		ModelUID:       param.ModelUID,
+		ModelRunUID:    runLog.UID,
 		ModelVersion:   param.ModelVersion.Version,
 		ModelTriggerID: param.TriggerUID.String(),
 		ModelID:        param.ModelID,
