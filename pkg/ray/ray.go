@@ -447,4 +447,6 @@ func (r *ray) Close() {
 	if r.connection != nil {
 		r.connection.Close()
 	}
+	close(r.configChan)
+	close(r.doneChan)
 }

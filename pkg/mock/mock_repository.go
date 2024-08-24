@@ -152,6 +152,21 @@ func (mr *MockRepositoryMockRecorder) DeleteNamespaceModelByID(arg0, arg1, arg2 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespaceModelByID", reflect.TypeOf((*MockRepository)(nil).DeleteNamespaceModelByID), arg0, arg1, arg2)
 }
 
+// GetLatestModelTriggerByModelUID mocks base method.
+func (m *MockRepository) GetLatestModelTriggerByModelUID(arg0 context.Context, arg1, arg2 string) (*datamodel.ModelTrigger, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestModelTriggerByModelUID", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datamodel.ModelTrigger)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestModelTriggerByModelUID indicates an expected call of GetLatestModelTriggerByModelUID.
+func (mr *MockRepositoryMockRecorder) GetLatestModelTriggerByModelUID(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestModelTriggerByModelUID", reflect.TypeOf((*MockRepository)(nil).GetLatestModelTriggerByModelUID), arg0, arg1, arg2)
+}
+
 // GetLatestModelVersionByModelUID mocks base method.
 func (m *MockRepository) GetLatestModelVersionByModelUID(arg0 context.Context, arg1 uuid.UUID) (*datamodel.ModelVersion, error) {
 	m.ctrl.T.Helper()
@@ -165,6 +180,21 @@ func (m *MockRepository) GetLatestModelVersionByModelUID(arg0 context.Context, a
 func (mr *MockRepositoryMockRecorder) GetLatestModelVersionByModelUID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestModelVersionByModelUID", reflect.TypeOf((*MockRepository)(nil).GetLatestModelVersionByModelUID), arg0, arg1)
+}
+
+// GetLatestModelVersionTriggerByModelUID mocks base method.
+func (m *MockRepository) GetLatestModelVersionTriggerByModelUID(arg0 context.Context, arg1, arg2, arg3 string) (*datamodel.ModelTrigger, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestModelVersionTriggerByModelUID", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*datamodel.ModelTrigger)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestModelVersionTriggerByModelUID indicates an expected call of GetLatestModelVersionTriggerByModelUID.
+func (mr *MockRepositoryMockRecorder) GetLatestModelVersionTriggerByModelUID(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestModelVersionTriggerByModelUID", reflect.TypeOf((*MockRepository)(nil).GetLatestModelVersionTriggerByModelUID), arg0, arg1, arg2, arg3)
 }
 
 // GetModelByUID mocks base method.
@@ -225,6 +255,21 @@ func (m *MockRepository) GetModelDefinitionByUID(arg0 uuid.UUID) (*datamodel.Mod
 func (mr *MockRepositoryMockRecorder) GetModelDefinitionByUID(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelDefinitionByUID", reflect.TypeOf((*MockRepository)(nil).GetModelDefinitionByUID), arg0)
+}
+
+// GetModelTriggerByTriggerUID mocks base method.
+func (m *MockRepository) GetModelTriggerByTriggerUID(arg0 context.Context, arg1 string) (*datamodel.ModelTrigger, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetModelTriggerByTriggerUID", arg0, arg1)
+	ret0, _ := ret[0].(*datamodel.ModelTrigger)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetModelTriggerByTriggerUID indicates an expected call of GetModelTriggerByTriggerUID.
+func (mr *MockRepositoryMockRecorder) GetModelTriggerByTriggerUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelTriggerByTriggerUID", reflect.TypeOf((*MockRepository)(nil).GetModelTriggerByTriggerUID), arg0, arg1)
 }
 
 // GetModelVersionByID mocks base method.

@@ -90,9 +90,9 @@ func UserUIDToUserPermalink(userUID uuid.UUID) string {
 	return fmt.Sprintf("users/%s", userUID.String())
 }
 
-func GetOperationID(name string) (string, error) {
-	id := strings.TrimPrefix(name, "operations/")
-	if !strings.HasPrefix(name, "operations/") || id == "" {
+func GetWorkflowID(operationID string) (string, error) {
+	id := strings.TrimPrefix(operationID, "operations/")
+	if !strings.HasPrefix(operationID, "operations/") || id == "" {
 		return "", status.Error(codes.InvalidArgument, "Error when extract operations resource id")
 	}
 	return id, nil

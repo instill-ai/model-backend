@@ -47,7 +47,7 @@ func TestWorker_TriggerModelWorkflow(t *testing.T) {
 		mockRay := NewMockRay(ctrl)
 
 		w := worker.NewWorker(rc, mockRay, nil, nil, nil)
-		_, err = w.TriggerModelWorkflow(workflow.Context(nil), param)
+		err = w.TriggerModelWorkflow(workflow.Context(nil), param)
 		require.NoError(t, err)
 	})
 }
@@ -126,23 +126,20 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		uid, _ := uuid.NewV4()
 		modelTrigger := &datamodel.ModelTrigger{
-			UID:              uid,
-			ModelUID:         param.ModelUID,
-			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-			Source:           param.Source,
-			RequesterUID:     param.RequesterUID,
-			InputReferenceID: param.InputReferenceID,
+			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
+			ModelUID:             param.ModelUID,
+			ModelVersion:         param.ModelVersion.Version,
+			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			Source:               param.Source,
+			RequesterUID:         param.RequesterUID,
+			InputReferenceID:     param.InputReferenceID,
 		}
 		repo.EXPECT().CreateModelTrigger(gomock.Any(), gomock.Any()).Return(modelTrigger, nil).Times(1)
 		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
-		resp, err := w.TriggerModelActivity(ctx, param)
+		err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
-		require.NotNil(t, resp)
-		require.Contains(t, resp.OutputKey, "async_model_response:")
-		require.Contains(t, string(resp.TaskOutputBytes), "You are a friendly chatbot")
 	})
 
 	t.Run("when model is offline", func(t *testing.T) {
@@ -174,19 +171,19 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		uid, _ := uuid.NewV4()
 		modelTrigger := &datamodel.ModelTrigger{
-			UID:              uid,
-			ModelUID:         param.ModelUID,
-			ModelVersion:     param.ModelVersion.Version,
-			Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-			Source:           param.Source,
-			RequesterUID:     param.RequesterUID,
-			InputReferenceID: param.InputReferenceID,
+			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
+			ModelUID:             param.ModelUID,
+			ModelVersion:         param.ModelVersion.Version,
+			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			Source:               param.Source,
+			RequesterUID:         param.RequesterUID,
+			InputReferenceID:     param.InputReferenceID,
 		}
 		repo.EXPECT().CreateModelTrigger(gomock.Any(), gomock.Any()).Return(modelTrigger, nil).Times(1)
 		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
-		_, err = w.TriggerModelActivity(ctx, param)
+		err = w.TriggerModelActivity(ctx, param)
 		require.ErrorContains(t, err, "model is offline")
 	})
 }

@@ -85,6 +85,7 @@ type Service interface {
 	ListModelDefinitions(ctx context.Context, view modelpb.View, pageSize int32, pageToken string) ([]*modelpb.ModelDefinition, int32, string, error)
 
 	GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error)
+	GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error)
 	GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error)
 
 	// Private
@@ -545,8 +546,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
-	var triggerResult *worker.TriggerModelWorkflowResponse
-	err = we.Get(ctx, &triggerResult)
+	err = we.Get(ctx, nil)
 	if err != nil {
 		var applicationErr *temporal.ApplicationError
 		if errors.As(err, &applicationErr) {
@@ -559,14 +559,22 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
-	triggerModelResponse := &modelpb.TriggerUserModelResponse{}
+	triggerModelResponse := &modelpb.TriggerNamespaceModelResponse{}
 
-	blob, err := s.redisClient.GetDel(ctx, triggerResult.OutputKey).Bytes()
+	trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, triggerUID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = protojson.Unmarshal(blob, triggerModelResponse)
+	if !trigger.OutputReferenceID.Valid {
+		return nil, fmt.Errorf("trigger output not valid")
+	}
+	output, err := s.minioClient.GetFile(ctx, trigger.OutputReferenceID.String)
+	if err != nil {
+		return nil, err
+	}
+
+	err = protojson.Unmarshal(output, triggerModelResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -574,7 +582,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, inferInput []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqInputJSON []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -623,17 +631,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		requesterUID = userUID
 	}
 
-	inputJSON, err := s.redisClient.Get(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String())).Bytes()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
 	inputReferenceID := minio.GenerateInputRefID()
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, reqInputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(parsedInferInput)), zap.Error(err))
 		return nil, err
@@ -1072,15 +1072,15 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
 			return err
 		}
+		s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), version.Version))
 	}
+
+	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), ""))
 
 	err = s.aclClient.Purge(ctx, "model_", dbModel.UID)
 	if err != nil {
 		return err
 	}
-
-	s.redisClient.Del(ctx, fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, userUID, dbModel.UID.String()))
-	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s", userUID, dbModel.UID.String()))
 
 	return s.repository.DeleteNamespaceModelByID(ctx, ownerPermalink, dbModel.ID)
 }

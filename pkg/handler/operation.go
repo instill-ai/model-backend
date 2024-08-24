@@ -20,11 +20,17 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetM
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	operationID, err := resource.GetOperationID(req.OperationId)
+	if err := authenticateUser(ctx, false); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	workflowID, err := resource.GetWorkflowID(req.OperationId)
 	if err != nil {
 		return &modelpb.GetModelOperationResponse{}, err
 	}
-	operation, err := h.service.GetOperation(ctx, operationID)
+
+	operation, err := h.service.GetOperation(ctx, workflowID)
 	if err != nil {
 		return &modelpb.GetModelOperationResponse{}, err
 	}
@@ -97,4 +103,43 @@ func (h *PublicHandler) GetNamespaceLatestModelOperation(ctx context.Context, re
 	}
 
 	return &modelpb.GetNamespaceLatestModelOperationResponse{Operation: operation}, nil
+}
+
+func (h *PublicHandler) GetNamespaceModelOperation(ctx context.Context, req *modelpb.GetNamespaceModelOperationRequest) (*modelpb.GetNamespaceModelOperationResponse, error) {
+	eventName := "GetNamespaceModelOperation"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logUUID, _ := uuid.NewV4()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	if err := authenticateUser(ctx, false); err != nil {
+		span.SetStatus(1, err.Error())
+		logger.Info(string(custom_otel.NewLogMessage(
+			ctx,
+			span,
+			logUUID.String(),
+			eventName,
+			custom_otel.SetEventResource(req.GetModelId()),
+			custom_otel.SetErrorMessage(err.Error()),
+		)))
+		return nil, err
+	}
+
+	operation, err := h.service.GetNamespaceModelOperation(ctx, ns, req.GetModelId(), req.GetVersion(), req.GetView())
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	return &modelpb.GetNamespaceModelOperationResponse{Operation: operation}, nil
 }

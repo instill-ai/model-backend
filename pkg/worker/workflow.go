@@ -60,18 +60,9 @@ type TriggerModelActivityRequest struct {
 	WorkflowExecutionID string
 }
 
-type TriggerModelWorkflowResponse struct {
-	TriggerModelActivityResponse
-}
-
-type TriggerModelActivityResponse struct {
-	TaskOutputBytes []byte
-	OutputKey       string
-}
-
 var tracer = otel.Tracer("model-backend.temporal.tracer")
 
-func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) (*TriggerModelWorkflowResponse, error) {
+func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) error {
 
 	startTime := time.Now()
 	eventName := "TriggerModelWorkflow"
@@ -114,12 +105,12 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		w.redisClient.Del(sCtx, param.ParsedInputKey)
 		w.redisClient.ExpireGT(
 			sCtx,
-			fmt.Sprintf("%s:%s:%s", constant.ModelTriggerInputKey, param.UserUID, param.ModelUID.String()),
+			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
 			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 		)
 		w.redisClient.ExpireGT(
 			sCtx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s", param.UserUID, param.ModelUID.String()),
+			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
 			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 		)
 	}()
@@ -133,11 +124,10 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
-	var triggerResult TriggerModelActivityResponse
 	if err := workflow.ExecuteActivity(ctx, w.TriggerModelActivity, &TriggerModelActivityRequest{
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
-	}).Get(ctx, &triggerResult); err != nil {
+	}).Get(ctx, nil); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
 		}
@@ -146,7 +136,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		})
 
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
-		return nil, w.toApplicationError(err, param.ModelID, ModelWorkflowError)
+		return w.toApplicationError(err, param.ModelID, ModelWorkflowError)
 	}
 
 	if param.Mode == mgmtpb.Mode_MODE_ASYNC {
@@ -159,12 +149,10 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 
 	logger.Info("TriggerModelWorkflow completed")
 
-	return &TriggerModelWorkflowResponse{
-		TriggerModelActivityResponse: triggerResult,
-	}, nil
+	return nil
 }
 
-func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) (*TriggerModelActivityResponse, error) {
+func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) error {
 
 	eventName := "TriggerModelActivity"
 
@@ -181,22 +169,23 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		OwnerUID:     param.OwnerUID,
 		RequesterUID: param.RequesterUID,
 	}); err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	start := time.Now()
 
 	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
-		ModelUID:         param.ModelUID,
-		ModelVersion:     param.ModelVersion.Version,
-		Status:           datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-		Source:           param.Source,
-		RequesterUID:     param.RequesterUID,
-		InputReferenceID: param.InputReferenceID,
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: param.TriggerUID},
+		ModelUID:             param.ModelUID,
+		ModelVersion:         param.ModelVersion.Version,
+		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+		Source:               param.Source,
+		RequesterUID:         param.RequesterUID,
+		InputReferenceID:     param.InputReferenceID,
 	})
 	if err != nil {
 		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	succeeded := false
@@ -223,12 +212,12 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
 	if modelMetadataResponse == nil {
 		err = fmt.Errorf("model is offline") // used by model run logging in defer
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	blob, err := w.redisClient.Get(ctx, param.ParsedInputKey).Bytes()
 	if err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	var inferInput InferInput
@@ -243,42 +232,42 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		var input [][]byte
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	case commonpb.Task_TASK_TEXT_TO_IMAGE:
 		var input *ray.TextToImageInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
 		var input *ray.ImageToImageInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
 		var input *ray.VisualQuestionAnsweringInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
 		var input *ray.TextGenerationChatInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	case commonpb.Task_TASK_TEXT_GENERATION:
 		var input *ray.TextGenerationInput
 		err = json.Unmarshal(blob, &input)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 		inferInput = input
 	}
@@ -287,7 +276,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
 	if err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	endTime := time.Now()
@@ -305,12 +294,12 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		Hardware:       param.Hardware,
 		RequesterUID:   param.RequesterUID,
 	}); err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
 	if err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	triggerModelResp := &modelpb.TriggerUserModelResponse{
@@ -320,27 +309,14 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	outputJSON, err := protojson.Marshal(triggerModelResp)
 	if err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
-	outputKey := fmt.Sprintf("async_model_response:%s", param.WorkflowExecutionID)
-	w.redisClient.Set(
-		ctx,
-		outputKey,
-		outputJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
-
-	jsonOutput, err := json.Marshal(outputs)
-	if err != nil {
-		logger.Warn("json marshal error for task inputs")
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	outputReferenceID := minio2.GenerateOutputRefID()
 	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = w.minioClient.UploadFileBytes(ctx, outputReferenceID, outputJSON, constant.ContentTypeJSON)
 	if err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
@@ -348,17 +324,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	runLog.OutputReferenceID = null.StringFrom(outputReferenceID)
 	runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
 	if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
-		return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	succeeded = true
 	logger.Info("TriggerModelActivity completed")
 
-	return &TriggerModelActivityResponse{
-		// todo: this is not used anymore?
-		TaskOutputBytes: jsonOutput,
-		OutputKey:       outputKey,
-	}, nil
+	return nil
 }
 
 func (w *worker) writeErrorDataPoint(ctx context.Context, err error, span trace.Span, startTime time.Time, dataPoint *utils.UsageMetricData) {
