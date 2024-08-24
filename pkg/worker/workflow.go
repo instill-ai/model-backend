@@ -58,6 +58,7 @@ type TriggerModelWorkflowRequest struct {
 type TriggerModelActivityRequest struct {
 	TriggerModelWorkflowRequest
 	WorkflowExecutionID string
+	RunLog              *datamodel.ModelTrigger
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -115,6 +116,20 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		)
 	}()
 
+	runLog, err := w.repository.CreateModelTrigger(sCtx, &datamodel.ModelTrigger{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: param.TriggerUID},
+		ModelUID:             param.ModelUID,
+		ModelVersion:         param.ModelVersion.Version,
+		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+		Source:               param.Source,
+		RequesterUID:         param.RequesterUID,
+		InputReferenceID:     param.InputReferenceID,
+	})
+	if err != nil {
+		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
 		StartToCloseTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
@@ -127,6 +142,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	if err := workflow.ExecuteActivity(ctx, w.TriggerModelActivity, &TriggerModelActivityRequest{
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
+		RunLog:                      runLog,
 	}).Get(ctx, nil); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
@@ -156,6 +172,10 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	eventName := "TriggerModelActivity"
 
+	var err error
+
+	param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
+
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{constant.HeaderAuthTypeKey: []string{"user"}, constant.HeaderUserUIDKey: []string{param.UserUID.String()}})
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -174,34 +194,20 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	start := time.Now()
 
-	runLog, err := w.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: param.TriggerUID},
-		ModelUID:             param.ModelUID,
-		ModelVersion:         param.ModelVersion.Version,
-		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-		Source:               param.Source,
-		RequesterUID:         param.RequesterUID,
-		InputReferenceID:     param.InputReferenceID,
-	})
-	if err != nil {
-		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
 	succeeded := false
 	defer func() {
 		if err != nil || !succeeded {
-			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+			param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
 			endTime := time.Now()
 			timeUsed := endTime.Sub(start)
-			runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
-			runLog.EndTime = null.TimeFrom(endTime)
+			param.RunLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
+			param.RunLog.EndTime = null.TimeFrom(endTime)
 			if err != nil {
-				runLog.Error = null.StringFrom(err.Error())
+				param.RunLog.Error = null.StringFrom(err.Error())
 			} else {
-				runLog.Error = null.StringFrom("unknown error occurred")
+				param.RunLog.Error = null.StringFrom("unknown error occurred")
 			}
-			if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
+			if err = w.repository.UpdateModelTrigger(ctx, param.RunLog); err != nil {
 				logger.Error("UpdateModelTrigger for TriggerModelActivity failed", zap.Error(err))
 			}
 		}
@@ -287,7 +293,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		UserUID:        param.UserUID,
 		OwnerUID:       param.OwnerUID,
 		ModelUID:       param.ModelUID,
-		ModelRunUID:    runLog.UID,
+		ModelRunUID:    param.RunLog.UID,
 		ModelVersion:   param.ModelVersion.Version,
 		ModelTriggerID: param.TriggerUID.String(),
 		ModelID:        param.ModelID,
@@ -320,11 +326,11 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	runLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
-	runLog.EndTime = null.TimeFrom(endTime)
-	runLog.OutputReferenceID = null.StringFrom(outputReferenceID)
-	runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
-	if err = w.repository.UpdateModelTrigger(ctx, runLog); err != nil {
+	param.RunLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
+	param.RunLog.EndTime = null.TimeFrom(endTime)
+	param.RunLog.OutputReferenceID = null.StringFrom(outputReferenceID)
+	param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
+	if err = w.repository.UpdateModelTrigger(ctx, param.RunLog); err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
