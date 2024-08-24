@@ -134,7 +134,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			RequesterUID:         param.RequesterUID,
 			InputReferenceID:     param.InputReferenceID,
 		}
-		repo.EXPECT().CreateModelTrigger(gomock.Any(), gomock.Any()).Return(modelTrigger, nil).Times(1)
+		param.RunLog = modelTrigger
 		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
@@ -179,7 +179,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			RequesterUID:         param.RequesterUID,
 			InputReferenceID:     param.InputReferenceID,
 		}
-		repo.EXPECT().CreateModelTrigger(gomock.Any(), gomock.Any()).Return(modelTrigger, nil).Times(1)
+		param.RunLog = modelTrigger
 		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
