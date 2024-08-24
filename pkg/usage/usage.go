@@ -237,6 +237,7 @@ type ModelUsageHandlerParams struct {
 	UserUID        uuid.UUID
 	OwnerUID       uuid.UUID
 	ModelUID       uuid.UUID
+	ModelRunUID    uuid.UUID
 	RequesterUID   uuid.UUID
 	ModelVersion   string
 	ModelTriggerID string

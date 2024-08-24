@@ -14,6 +14,7 @@ import (
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	filtering "go.einride.tech/aip/filtering"
 	ordering "go.einride.tech/aip/ordering"
+	gorm "gorm.io/gorm"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -37,6 +38,20 @@ func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
+}
+
+// CheckPinnedUser mocks base method.
+func (m *MockRepository) CheckPinnedUser(arg0 context.Context, arg1 *gorm.DB, arg2 string) *gorm.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckPinnedUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*gorm.DB)
+	return ret0
+}
+
+// CheckPinnedUser indicates an expected call of CheckPinnedUser.
+func (mr *MockRepositoryMockRecorder) CheckPinnedUser(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckPinnedUser", reflect.TypeOf((*MockRepository)(nil).CheckPinnedUser), arg0, arg1, arg2)
 }
 
 // CreateModelTags mocks base method.
@@ -429,6 +444,18 @@ func (m *MockRepository) ListNamespaceModels(arg0 context.Context, arg1 string, 
 func (mr *MockRepositoryMockRecorder) ListNamespaceModels(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNamespaceModels", reflect.TypeOf((*MockRepository)(nil).ListNamespaceModels), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+}
+
+// PinUser mocks base method.
+func (m *MockRepository) PinUser(arg0 context.Context, arg1 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PinUser", arg0, arg1)
+}
+
+// PinUser indicates an expected call of PinUser.
+func (mr *MockRepositoryMockRecorder) PinUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PinUser", reflect.TypeOf((*MockRepository)(nil).PinUser), arg0, arg1)
 }
 
 // UpdateModelTrigger mocks base method.
