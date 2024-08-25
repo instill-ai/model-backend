@@ -632,7 +632,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	// latest operation
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, versionID),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, ""),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
