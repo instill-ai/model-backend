@@ -285,6 +285,21 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
+	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
+	if err != nil {
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
+	triggerModelResp := &modelpb.TriggerUserModelResponse{
+		Task:        param.Task,
+		TaskOutputs: outputs,
+	}
+
+	outputJSON, err := protojson.Marshal(triggerModelResp)
+	if err != nil {
+		return w.toApplicationError(err, param.ModelID, ModelActivityError)
+	}
+
 	endTime := time.Now()
 	timeUsed := endTime.Sub(start)
 	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
@@ -301,21 +316,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		Hardware:       param.Hardware,
 		RequesterUID:   param.RequesterUID,
 	}); err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
-	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
-	if err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
-	triggerModelResp := &modelpb.TriggerUserModelResponse{
-		Task:        param.Task,
-		TaskOutputs: outputs,
-	}
-
-	outputJSON, err := protojson.Marshal(triggerModelResp)
-	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
