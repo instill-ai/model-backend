@@ -141,16 +141,6 @@ func NewService(
 	}
 }
 
-func (s *service) generateScalingConfig(modelID string) []string {
-	if strings.HasPrefix(modelID, DummyModelPrefix) {
-		return []string{
-			fmt.Sprintf("-e %s=%v", ray.EnvIsTestModel, "true"),
-		}
-	}
-
-	return []string{}
-}
-
 func (s *service) GetRepository() repository.Repository {
 	return s.repository
 }
@@ -471,14 +461,14 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if state, _, numOfActiveReplica, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), id), version.Version); err != nil {
 		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
 	} else if numOfActiveReplica == 0 {
-		if *state == modelpb.State_STATE_OFFLINE {
-			scalingConfig := s.generateScalingConfig(dbModel.ID)
+		if *state == modelpb.State_STATE_OFFLINE || *state == modelpb.State_STATE_SCALING_DOWN {
+			scalingConfig := ray.GenerateScalingConfig(dbModel.ID)
 			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
 			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
-				return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+				logger.Warn(fmt.Sprintf("model is not ready to serve requests: %v", err))
 			}
 		}
-		return nil, status.Errorf(codes.Unavailable, fmt.Sprintf("model is in %s and has %v active replica, scaling up now and please try again later.", state, numOfActiveReplica))
+		logger.Warn(fmt.Sprintf("model is in %s and has %v active replica, starting new instance now.", state, numOfActiveReplica))
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
@@ -615,14 +605,14 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	if state, _, numOfActiveReplica, err := s.ray.ModelReady(ctx, fmt.Sprintf("%s/%s", ns.Permalink(), id), version.Version); err != nil {
 		return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
 	} else if numOfActiveReplica == 0 {
-		if *state == modelpb.State_STATE_OFFLINE {
-			scalingConfig := s.generateScalingConfig(dbModel.ID)
+		if *state == modelpb.State_STATE_OFFLINE || *state == modelpb.State_STATE_SCALING_DOWN {
+			scalingConfig := ray.GenerateScalingConfig(dbModel.ID)
 			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
 			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
-				return nil, fmt.Errorf("model is not ready to serve requests: %w", err)
+				logger.Warn(fmt.Sprintf("model is not ready to serve requests: %v", err))
 			}
 		}
-		return nil, status.Errorf(codes.Unavailable, fmt.Sprintf("model is in %s and has %v active replica, scaling up now and please try again later.", state, numOfActiveReplica))
+		logger.Warn(fmt.Sprintf("model is in %s and has %v active replica, starting new instance now.", state, numOfActiveReplica))
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
@@ -1255,7 +1245,7 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelpb.View, p
 
 func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, action ray.Action) error {
 
-	scalingConfig := s.generateScalingConfig(modelID)
+	scalingConfig := ray.GenerateScalingConfig(modelID)
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
 	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, action, scalingConfig); err != nil {

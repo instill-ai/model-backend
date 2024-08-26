@@ -12,6 +12,16 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 )
 
+func GenerateScalingConfig(modelID string) []string {
+	if strings.HasPrefix(modelID, DummyModelPrefix) {
+		return []string{
+			fmt.Sprintf("-e %s=%v", EnvIsTestModel, "true"),
+		}
+	}
+
+	return []string{}
+}
+
 func SerializeBytesTensor(tensor [][]byte) []byte {
 	// TODO: return error status here
 	// Prepend 4-byte length to the input

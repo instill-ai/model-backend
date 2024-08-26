@@ -292,3 +292,7 @@ const (
 	EnvNumOfMinReplicas   = "RAY_NUM_OF_MIN_REPLICAS"
 	EnvNumOfMaxReplicas   = "RAY_NUM_OF_MAX_REPLICAS"
 )
+
+const (
+	DummyModelPrefix = "dummy-"
+)
