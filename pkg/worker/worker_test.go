@@ -97,6 +97,18 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		err = json.Unmarshal([]byte(`["RAEAADx8c3lzdGVtfD4KWW91IGFyZSBhIGZyaWVuZGx5IGNoYXRib3Q8L3M+Cjx8dXNlcnw+CndoYXQgZG9lcyB0aGUgY29tcGFueSB0ZXNsYSBkbz88L3M+Cjx8YXNzaXN0YW50fD4KVGhlIGNvbXBhbnkgVGVzbGEgZG9lcyBub3QgaGF2ZSBhIHBoeXNpY2FsIHByZXNlbmNlLiBIb3dldmVyLCBpdCBpcyBhIHRlY2hub2xvZ3kgY29tcGFueSB0aGF0IGRldmVsb3BzIGFuZCBtYW51ZmFjdHVyZXMgZWxlY3RyaWMgdmVoaWNsZXMgKEVWcyksIGVuZXJneSBzdG9yYWdlIHN5c3RlbXMsIGFuZCBzb2xhciBwYW5lbHMuIFRlc2xhJ3MgcHJpbWFyeSBmb2N1cyBpcyBvbiBlbGVjdHJpYw=="]`), &contents)
 		require.NoError(t, err)
 
+		state := modelPB.State_STATE_ACTIVE
+		mockRay.EXPECT().
+			ModelReady(
+				gomock.Any(),
+				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
+				param.ModelVersion.Version,
+			).Return(
+			&state,
+			"",
+			1,
+			nil,
+		).Times(1)
 		mockRay.EXPECT().
 			ModelMetadataRequest(
 				gomock.Any(),
@@ -161,6 +173,18 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 
+		state := modelPB.State_STATE_ACTIVE
+		mockRay.EXPECT().
+			ModelReady(
+				gomock.Any(),
+				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
+				param.ModelVersion.Version,
+			).Return(
+			&state,
+			"",
+			1,
+			nil,
+		).Times(1)
 		mockRay.EXPECT().
 			ModelMetadataRequest(
 				gomock.Any(),

@@ -192,6 +192,19 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
+	// wait for model instance to come online to start processing the request
+	// temporary solution to not overcharge for credits
+	// TODO: design a better flow
+	for {
+		state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version)
+		if err != nil {
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
+		}
+		if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
+			break
+		}
+	}
+
 	start := time.Now()
 
 	succeeded := false

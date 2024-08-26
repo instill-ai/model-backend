@@ -427,14 +427,7 @@ type TriggerAsyncNamespaceModelRequestInterface interface {
 func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
-	r := &modelpb.TriggerAsyncNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		Version:     req.GetVersion(),
-		TaskInputs:  req.GetTaskInputs(),
-	}
-
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
+	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
 
 	return resp, err
 }
