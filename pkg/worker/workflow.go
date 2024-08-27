@@ -196,12 +196,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// temporary solution to not overcharge for credits
 	// TODO: design a better flow
 	for {
-		state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version)
-		if err != nil {
+		time.Sleep(2 * time.Second)
+		if state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version); err != nil {
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
+		} else if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
 			break
+		} else if state != modelpb.State_STATE_SCALING_UP.Enum() || state != modelpb.State_STATE_STARTING.Enum() {
+			return w.toApplicationError(fmt.Errorf("model upscale failed"), param.ModelID, ModelActivityError)
 		}
 	}
 
