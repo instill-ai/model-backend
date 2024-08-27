@@ -115,7 +115,7 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 	}
 
 	version := &datamodel.ModelVersion{
-		Name:     ns.Name(),
+		Name:     fmt.Sprintf("%s/models/%s", ns.Name(), req.GetModelId()),
 		Version:  req.GetVersion(),
 		Digest:   req.GetDigest(),
 		ModelUID: uuid.FromStringOrNil(pbModel.Uid),

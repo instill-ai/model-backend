@@ -366,18 +366,18 @@ func (mr *MockRepositoryMockRecorder) ListModelTriggers(arg0, arg1, arg2, arg3, 
 }
 
 // ListModelVersions mocks base method.
-func (m *MockRepository) ListModelVersions(arg0 context.Context, arg1 uuid.UUID, arg2 bool) ([]*datamodel.ModelVersion, error) {
+func (m *MockRepository) ListModelVersions(arg0 context.Context, arg1 uuid.UUID) ([]*datamodel.ModelVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelVersions", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ListModelVersions", arg0, arg1)
 	ret0, _ := ret[0].([]*datamodel.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListModelVersions indicates an expected call of ListModelVersions.
-func (mr *MockRepositoryMockRecorder) ListModelVersions(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ListModelVersions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockRepository)(nil).ListModelVersions), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockRepository)(nil).ListModelVersions), arg0, arg1)
 }
 
 // ListModelVersionsByDigest mocks base method.

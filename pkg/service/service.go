@@ -75,6 +75,7 @@ type Service interface {
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelpb.Model) (*modelpb.Model, error)
 	ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error)
 	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
+	DeleteModelVersionDigestByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
 	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqInputJSON []byte, parsedInferInput []byte, task commonpb.Task, triggerUID string) ([]*modelpb.TaskOutput, error)
@@ -983,14 +984,50 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 		return err
 	}
 
-	dbVersions, err := s.repository.ListModelVersionsByDigest(ctx, dbModel.UID, dbVersion.Digest)
+	if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
+		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version),
+	}); err != nil {
+		return err
+	}
+
+	if err := s.repository.DeleteModelVersionByID(ctx, dbModel.UID, dbVersion.Version); err != nil {
+		return err
+	}
+
+	if err := s.UpdateModelInstanceAdmin(ctx, ns, modelID, dbModel.Hardware, dbVersion.Version, ray.Undeploy); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) DeleteModelVersionDigestByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+		return err
+	} else if !granted {
+		return ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
+		return err
+	} else if !granted {
+		return ErrNoPermission
+	}
+
+	dbVersion, err := s.repository.GetModelVersionByID(ctx, dbModel.UID, version)
 	if err != nil {
 		return err
 	}
 
-	if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
-		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version),
-	}); err != nil {
+	dbVersions, err := s.repository.ListModelVersionsByDigest(ctx, dbModel.UID, dbVersion.Digest)
+	if err != nil {
 		return err
 	}
 
@@ -1000,6 +1037,11 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 
 	for _, v := range dbVersions {
 		if err := s.UpdateModelInstanceAdmin(ctx, ns, modelID, dbModel.Hardware, v.Version, ray.Undeploy); err != nil {
+			return err
+		}
+		if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
+			Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, v.Version),
+		}); err != nil {
 			return err
 		}
 	}
@@ -1042,15 +1084,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return ErrNoPermission
 	}
 
-	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID, true)
-	if err != nil {
-		return err
-	}
-
-	for _, version := range versions {
-		if err := s.UpdateModelInstanceAdmin(ctx, ns, dbModel.ID, dbModel.Hardware, version.Version, ray.Undeploy); err != nil {
-			return err
-		}
+	for _, version := range dbModel.Versions {
 		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
 			return err
 		}

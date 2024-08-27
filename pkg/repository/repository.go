@@ -60,7 +60,7 @@ type Repository interface {
 	DeleteModelVersionByID(ctx context.Context, modelUID uuid.UUID, versionID string) error
 	DeleteModelVersionByDigest(ctx context.Context, modelUID uuid.UUID, digest string) error
 	GetLatestModelVersionByModelUID(ctx context.Context, modelUID uuid.UUID) (version *datamodel.ModelVersion, err error)
-	ListModelVersions(ctx context.Context, modelUID uuid.UUID, groupDigest bool) (versions []*datamodel.ModelVersion, err error)
+	ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error)
 	ListModelVersionsByDigest(ctx context.Context, modelUID uuid.UUID, digest string) (versions []*datamodel.ModelVersion, err error)
 
 	CreateModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
@@ -514,14 +514,10 @@ func (r *repository) ListModelVersionsByDigest(ctx context.Context, modelUID uui
 	return versions, nil
 }
 
-func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID, groupDigest bool) (versions []*datamodel.ModelVersion, err error) {
+func (r *repository) ListModelVersions(ctx context.Context, modelUID uuid.UUID) (versions []*datamodel.ModelVersion, err error) {
 	db := r.CheckPinnedUser(ctx, r.db, "model_version")
 
 	queryBuilder := db.Model(&datamodel.ModelVersion{}).Where("model_uid", modelUID)
-
-	if groupDigest {
-		queryBuilder.Select("MIN(version) as version, model_uid, digest").Group("model_uid, digest")
-	}
 
 	if result := queryBuilder.Find(&versions); result.Error != nil {
 		return []*datamodel.ModelVersion{}, status.Errorf(codes.NotFound, "The model versions belongs to model uid %v not found", modelUID)

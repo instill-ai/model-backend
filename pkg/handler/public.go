@@ -469,7 +469,7 @@ func (h *PublicHandler) DeleteNamespaceModelVersion(ctx context.Context, req *mo
 		return nil, err
 	}
 
-	if err := h.service.DeleteModelVersionByID(ctx, ns, req.ModelId, req.GetVersion()); err != nil {
+	if err := h.service.DeleteModelVersionDigestByID(ctx, ns, req.ModelId, req.GetVersion()); err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err
 	}
