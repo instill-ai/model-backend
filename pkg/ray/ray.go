@@ -82,7 +82,7 @@ func (r *ray) Init() {
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
 	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
-	r.rayHTTPClient = &http.Client{Timeout: 60 * time.Second}
+	r.rayHTTPClient = &http.Client{Timeout: time.Minute}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
@@ -355,21 +355,32 @@ func (r *ray) sync() {
 	for {
 		applicationWithAction := <-r.configChan
 
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+
 		logger, _ := custom_logger.GetZapLogger(ctx)
 
 		if applicationWithAction.Action == UpScale {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
-			}
-			resp, err := r.rayHTTPClient.Do(req)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
-			}
-			resp.Body.Close()
+			// this is a pseudo trigger request to invoke model upscale
+			// we do not care about the trigger result
+			go func() {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
 
-			r.doneChan <- err
+				req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
+				if err != nil {
+					logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
+					return
+				}
+				resp, err := r.rayHTTPClient.Do(req)
+				if err != nil {
+					logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
+					return
+				}
+				resp.Body.Close()
+			}()
+
+			cancel()
+			r.doneChan <- nil
 			continue
 		}
 
@@ -438,7 +449,6 @@ func (r *ray) sync() {
 		resp.Body.Close()
 
 		cancel()
-
 		r.doneChan <- err
 	}
 }

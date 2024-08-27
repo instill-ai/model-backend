@@ -996,12 +996,13 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 		if e, ok := status.FromError(err); ok {
 			switch e.Code() {
 			case codes.NotFound:
-				logger.Warn("model version record does not exist in respository_tag table")
+				logger.Warn("model version record does not exist in repository_tag table")
 			default:
 				return err
 			}
+		} else {
+			return err
 		}
-		return err
 	}
 
 	if err := s.repository.DeleteModelVersionByDigest(ctx, dbModel.UID, dbVersion.Digest); err != nil {
