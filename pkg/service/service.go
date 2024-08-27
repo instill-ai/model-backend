@@ -959,6 +959,8 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 }
 
 func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
@@ -991,6 +993,14 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 	if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
 		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version),
 	}); err != nil {
+		if e, ok := status.FromError(err); ok {
+			switch e.Code() {
+			case codes.NotFound:
+				logger.Warn("model version record does not exist in respository_tag table")
+			default:
+				return err
+			}
+		}
 		return err
 	}
 

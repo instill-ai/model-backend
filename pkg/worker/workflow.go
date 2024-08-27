@@ -201,7 +201,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		} else if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
 			break
-		} else if state != modelpb.State_STATE_SCALING_UP.Enum() || state != modelpb.State_STATE_STARTING.Enum() {
+		} else if *state != modelpb.State_STATE_SCALING_UP && *state != modelpb.State_STATE_STARTING {
 			return w.toApplicationError(fmt.Errorf("model upscale failed"), param.ModelID, ModelActivityError)
 		}
 	}
