@@ -229,47 +229,10 @@ github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
 github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
-github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
-github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
-github.com/imdario/mergo v0.3.8/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
-github.com/imdario/mergo v0.3.10/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
-github.com/imdario/mergo v0.3.11/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
-github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
-github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240823094247-7e590cc3a0d2 h1:xHQ4UVh6u/cESlZ2CRNP5AemV0ogJ6wezoq+M4S4Z6I=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240823094247-7e590cc3a0d2/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
-github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a h1:gmy8BcCFDZQan40c/D3f62DwTYtlCwi0VrSax+pKffw=
-github.com/instill-ai/usage-client v0.2.4-alpha.0.20240123081026-6c78d9a5197a/go.mod h1:EpX3Yr661uWULtZf5UnJHfr5rw2PDyX8ku4Kx0UtYFw=
-=======
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240812042523-9b82181ecb31 h1:kA/ZVYEQwLv4PgkbueE4dGByfvdgH3FSc1YWd0VRKXs=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240812042523-9b82181ecb31/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
-=======
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36 h1:IrjhISfFEZckZdQU0aSiupQ7RZecSdwKsq/AtvbSaDw=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240819170045-592224ac7e36/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
->>>>>>> e245ec7 (chore: fix static check)
-=======
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d h1:adKfanoUAHKMDzzqta3K/CoBPhA3EreXzDOzvvhV6Gs=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820150502-ba2c3fe4fe4d/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
-<<<<<<< HEAD
->>>>>>> f1cad62 (chore: add missing input validation)
-=======
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820170137-673db344f896 h1:/d7ZApk9DidNUhtOSThSKl0QzX9nV2C0mlYZl4Kx2rA=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240820170137-673db344f896/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
->>>>>>> 8f62376 (chore: support embedding and custom task)
-=======
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240827130115-364421d3f66b h1:80NoTIdYp0A1RXoaMymPBxqCdbt1mKlEhBmkAAMXZSA=
-github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240827130115-364421d3f66b/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240827174046-15b2cc0e1191 h1:qF2VzuwxiAjIoGQP4d8aXAKaC6ru2YvjhJe7aQxSdn0=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240827174046-15b2cc0e1191/go.mod h1:2blmpUwiTwxIDnrjIqT6FhR5ewshZZF554wzjXFvKpQ=
->>>>>>> 1e7814c (chore: bump protogen)
 github.com/instill-ai/usage-client v0.3.0-alpha h1:yY5eNn5zINqy8wpOogiNmrVYzJKnd1KMnMxlYBpr7Tk=
 github.com/instill-ai/usage-client v0.3.0-alpha/go.mod h1:8lvtZulkhQ7t8alttb2KkLKYoCp5u4oatzDbfFlEld0=
->>>>>>> c5e9f1c (chore: add task output validation)
 github.com/instill-ai/x v0.4.0-alpha h1:zQV2VLbSHjMv6gyBN/2mwwrvWk0/mJM6ZKS12AzjfQg=
 github.com/instill-ai/x v0.4.0-alpha/go.mod h1:L6jmDPrUou6XskaLXZuK/gDeitdoPa9yE8ONKt1ZwCw=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=

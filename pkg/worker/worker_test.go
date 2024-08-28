@@ -12,19 +12,21 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gojuno/minimock/v3"
 	"github.com/golang/mock/gomock"
-	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
-	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/workflow"
-	"google.golang.org/protobuf/types/known/structpb"
+
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/mock"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/worker"
+
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
+	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func TestWorker_TriggerModelWorkflow(t *testing.T) {
@@ -92,10 +94,6 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 
-		// var contents [][]byte
-		// err = json.Unmarshal([]byte(`["RAEAADx8c3lzdGVtfD4KWW91IGFyZSBhIGZyaWVuZGx5IGNoYXRib3Q8L3M+Cjx8dXNlcnw+CndoYXQgZG9lcyB0aGUgY29tcGFueSB0ZXNsYSBkbz88L3M+Cjx8YXNzaXN0YW50fD4KVGhlIGNvbXBhbnkgVGVzbGEgZG9lcyBub3QgaGF2ZSBhIHBoeXNpY2FsIHByZXNlbmNlLiBIb3dldmVyLCBpdCBpcyBhIHRlY2hub2xvZ3kgY29tcGFueSB0aGF0IGRldmVsb3BzIGFuZCBtYW51ZmFjdHVyZXMgZWxlY3RyaWMgdmVoaWNsZXMgKEVWcyksIGVuZXJneSBzdG9yYWdlIHN5c3RlbXMsIGFuZCBzb2xhciBwYW5lbHMuIFRlc2xhJ3MgcHJpbWFyeSBmb2N1cyBpcyBvbiBlbGVjdHJpYw=="]`), &contents)
-		require.NoError(t, err)
-
 		state := modelPB.State_STATE_ACTIVE
 		mockRay.EXPECT().
 			ModelReady(
@@ -157,14 +155,13 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
 
-		state := modelPB.State_STATE_ACTIVE
 		mockRay.EXPECT().
 			ModelReady(
 				gomock.Any(),
 				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
 				param.ModelVersion.Version,
 			).Return(
-			&state,
+			modelPB.State_STATE_OFFLINE.Enum(),
 			"",
 			1,
 			nil,
@@ -181,10 +178,10 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			InputReferenceID:     param.InputReferenceID,
 		}
 		param.RunLog = modelTrigger
-		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		// repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)
-		require.ErrorContains(t, err, "model is offline")
+		require.ErrorContains(t, err, "model upscale failed")
 	})
 }

@@ -19,7 +19,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
@@ -236,7 +235,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
 	err = protojson.Unmarshal(blob, triggerModelReq)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
@@ -249,7 +248,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	for _, o := range inferResponse.GetTaskOutputs() {
 		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONOutputSchemaMap[param.Task.String()], o, false)
 		if err != nil {
-			return nil, w.toApplicationError(err, param.ModelID, ModelActivityError)
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
 	}
 
