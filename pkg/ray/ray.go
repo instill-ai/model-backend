@@ -304,7 +304,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			)
 		} else {
 			if accelerator == SupportedAcceleratorType["CPU"] {
-				runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 2))
+				runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1))
 			} else if accelerator == SupportedAcceleratorType["GPU"] {
 				runOptions = append(runOptions,
 					fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
