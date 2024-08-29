@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.29.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.28.0-alpha...v0.29.0-alpha) (2024-08-29)
+
+
+### Features
+
+* **minio:** added minio connection ([#651](https://github.com/instill-ai/model-backend/issues/651)) ([d17770f](https://github.com/instill-ai/model-backend/commit/d17770f56df19dc3e3999bc11383db321b67cd28))
+* **minio:** added minio upload file bytes function ([#656](https://github.com/instill-ai/model-backend/issues/656)) ([1f7b403](https://github.com/instill-ai/model-backend/commit/1f7b403b4e9b872e28f3cabe5b46ac76d420e567))
+* **minio:** upgraded to minio v7 and return url and file size ([#654](https://github.com/instill-ai/model-backend/issues/654)) ([4c34bf4](https://github.com/instill-ai/model-backend/commit/4c34bf4e930bba25b5ecc0faea5b7fb7d12fae4d))
+* **model:** support model statistics in model message ([#660](https://github.com/instill-ai/model-backend/issues/660)) ([b460778](https://github.com/instill-ai/model-backend/commit/b4607783b63b267d6413ed5ca0b2b9c5f8445f86))
+* **model:** support num_of_runs in list filter ([#661](https://github.com/instill-ai/model-backend/issues/661)) ([b161512](https://github.com/instill-ai/model-backend/commit/b161512447ae0fa227ff990d1becac525d22d542))
+* **ray:** add separate state for scaling ([#659](https://github.com/instill-ai/model-backend/issues/659)) ([f519c82](https://github.com/instill-ai/model-backend/commit/f519c82d3d501a0ba92eaae3fd51dd3763493473))
+* **ray:** support triggering upscale ([#665](https://github.com/instill-ai/model-backend/issues/665)) ([441af13](https://github.com/instill-ai/model-backend/commit/441af13d31be2ba399246ac8fc2d07fa6c585e8a))
+* **redis:** replace I/O data retrieval from redis with minio ([#667](https://github.com/instill-ai/model-backend/issues/667)) ([fc46ef8](https://github.com/instill-ai/model-backend/commit/fc46ef8fcf813db55877d1f149fdeb5aff69c32a))
+* **run:** fix run logging owner view permission ([#668](https://github.com/instill-ai/model-backend/issues/668)) ([5c07c9a](https://github.com/instill-ai/model-backend/commit/5c07c9a7b3df4ad713a524ed1b02f80e03bfd5b3))
+
+
+### Bug Fixes
+
+* **ray:** fix upscale request timeout ([#675](https://github.com/instill-ai/model-backend/issues/675)) ([d24eea5](https://github.com/instill-ai/model-backend/commit/d24eea5f9f1b4903ce9b452bdee8a9ba3046cce2))
+* **redis:** fix input value overwrite ([#658](https://github.com/instill-ai/model-backend/issues/658)) ([a383380](https://github.com/instill-ai/model-backend/commit/a38338001f4f5fa10917635dd8ad2e14e22af1cc))
+* **workflow:** fix duplicate key when activity retry ([#669](https://github.com/instill-ai/model-backend/issues/669)) ([97d9cd2](https://github.com/instill-ai/model-backend/commit/97d9cd247d0e50ed728d11068f555848d80980b8))
+* **workflow:** fix state check ([#673](https://github.com/instill-ai/model-backend/issues/673)) ([0514cae](https://github.com/instill-ai/model-backend/commit/0514caec7b223cf1b69bc21934cebaec16afa394))
+
 ## [0.28.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.27.0-alpha...v0.28.0-alpha) (2024-07-31)
 
 
