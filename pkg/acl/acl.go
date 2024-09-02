@@ -15,10 +15,11 @@ import (
 	openfga "github.com/openfga/api/proto/openfga/v1"
 
 	"github.com/gofrs/uuid"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/redis/go-redis/v9"
 )
 
 type ACLClientInterface interface {
@@ -47,10 +48,16 @@ type Relation struct {
 }
 
 type Mode string
+type ObjectType string
+type Role string
 
 const (
 	ReadMode  Mode = "read"
 	WriteMode Mode = "write"
+
+	Organization ObjectType = "organization"
+
+	Member Role = "member"
 )
 
 func NewACLClient(wc openfga.OpenFGAServiceClient, rc openfga.OpenFGAServiceClient, redisClient *redis.Client) ACLClient {

@@ -733,7 +733,16 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 	}
 	ctxUserUID := utils.GetUserUID(ctx)
 
+	userOrgUIDs, err := s.aclClient.ListPermissions(ctx, string(acl.Organization), string(acl.Member), false)
+	if err != nil {
+		return nil, err
+	}
+
 	isOwner := dbModel.OwnerUID().String() == ctxUserUID
+	if slices.Contains(userOrgUIDs, dbModel.OwnerUID()) {
+		logger.Info("requester is viewing pipeline belonging to one of their organizations", zap.String("organizationUID", dbModel.OwnerUID().String()))
+		isOwner = true
+	}
 
 	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, ctxUserUID, isOwner, dbModel.UID.String())
 	if err != nil {
