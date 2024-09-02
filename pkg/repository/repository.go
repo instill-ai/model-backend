@@ -721,7 +721,10 @@ func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string
 
 	queryBuilder := db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...)
 	if result := queryBuilder.First(&trigger); result.Error != nil {
-		return &datamodel.ModelTrigger{}, status.Errorf(codes.NotFound, "The model trigger not found")
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, status.Errorf(codes.NotFound, "The model trigger not found")
+		}
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &trigger, nil
