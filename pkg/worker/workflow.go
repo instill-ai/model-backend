@@ -45,7 +45,6 @@ type TriggerModelWorkflowRequest struct {
 	ModelDefinitionUID uuid.UUID
 	RequesterUID       uuid.UUID
 	Task               commonpb.Task
-	InputKey           string
 	Mode               mgmtpb.Mode
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
@@ -101,7 +100,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 
 	defer func() {
-		w.redisClient.Del(sCtx, param.InputKey)
 		w.redisClient.ExpireGT(
 			sCtx,
 			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
@@ -227,13 +225,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	blob, err := w.redisClient.Get(ctx, param.InputKey).Bytes()
+	input, err := w.minioClient.GetFile(ctx, param.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
 	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
-	err = protojson.Unmarshal(blob, triggerModelReq)
+	err = protojson.Unmarshal(input, triggerModelReq)
 	if err != nil {
 		return err
 	}

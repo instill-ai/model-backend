@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gofrs/uuid"
@@ -86,7 +85,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.InputKey = "InputKey"
+		param.InputReferenceID = "inputReferenceID"
 		param.Task = taskv1alpha.Task_TASK_CHAT
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
@@ -115,8 +114,13 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		).Return(&rayserver.CallResponse{
 			TaskOutputs: []*structpb.Struct{},
 		}, nil).Times(1)
-
-		rc.Set(ctx, param.InputKey, "{}", 30*time.Second)
+		mockMinio.GetFileMock.Expect(
+			minimock.AnyContext,
+			param.InputReferenceID,
+		).Return(
+			[]byte("{}"),
+			nil,
+		)
 
 		uid, _ := uuid.NewV4()
 		modelTrigger := &datamodel.ModelTrigger{
@@ -147,7 +151,6 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.InputKey = "InputKey"
 		param.Task = taskv1alpha.Task_TASK_CHAT
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)

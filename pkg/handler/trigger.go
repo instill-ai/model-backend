@@ -236,8 +236,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	for _, i := range req.GetTaskInputs() {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
-		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false)
-		if err != nil {
+		if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -480,8 +479,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	for _, i := range req.GetTaskInputs() {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
-		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false)
-		if err != nil {
+		if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -679,6 +677,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
 		}
 
 		byteContainer, err := io.ReadAll(file)
@@ -687,6 +686,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
 		}
 		v := fmt.Sprintf("data:%s;base64,%s", v[0].Header.Get("Content-Type"), base64.StdEncoding.EncodeToString(byteContainer))
 		varMap[k] = v
@@ -702,9 +702,20 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 			span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
 		}
 		data.Fields[k] = structVal
 	}
+
+	data.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+	if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], data, false); err != nil {
+		makeJSONResponse(w, 400, "Invalid argument", fmt.Sprint("Error while parsing data from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		_ = s.WriteNewDataPoint(ctx, usageData)
+		return
+	}
+
 	inputReq := &modelpb.TriggerNamespaceModelRequest{}
 	inputReq.ModelId = ""
 	inputReq.NamespaceId = ns.NsID
@@ -775,7 +786,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		span,
 		logUUID.String(),
 		eventName,
-		custom_otel.SetEventResource(pbModel),
+		custom_otel.SetEventResource(pbModel.Id),
 		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
 	)))
 

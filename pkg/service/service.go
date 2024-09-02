@@ -462,14 +462,6 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, err
 	}
 
-	inputKey := fmt.Sprintf("model_trigger_input_req:%s", triggerUID)
-	s.redisClient.Set(
-		ctx,
-		inputKey,
-		reqJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
-
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       triggerUID,
 		TaskQueue:                worker.TaskQueue,
@@ -501,7 +493,6 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			RequesterUID:       requesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			InputKey:           inputKey,
 			Mode:               mgmtpb.Mode_MODE_SYNC,
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
@@ -606,14 +597,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, err
 	}
 
-	inputKey := fmt.Sprintf("model_trigger_input_req:%s", triggerUID)
-	s.redisClient.Set(
-		ctx,
-		inputKey,
-		reqJSON,
-		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-	)
-
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       triggerUID,
 		TaskQueue:                worker.TaskQueue,
@@ -645,7 +628,6 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			RequesterUID:       requesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
-			InputKey:           inputKey,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
