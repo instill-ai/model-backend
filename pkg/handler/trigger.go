@@ -13,12 +13,14 @@ import (
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -29,6 +31,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -211,8 +214,33 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		ModelTask:          pbModel.Task,
 	}
 
+	inputJSON, err := protojson.Marshal(req)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil && runLog != nil {
+			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+			endTime := time.Now()
+			runLog.EndTime = null.TimeFrom(endTime)
+			if err != nil {
+				runLog.Error = null.StringFrom(err.Error())
+			} else {
+				runLog.Error = null.StringFrom("unknown error occurred")
+			}
+			if err := h.service.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
+				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
+			}
+		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
@@ -236,18 +264,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	for _, i := range req.GetTaskInputs() {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
-		if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
+		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	inputJSON, err := protojson.Marshal(req)
-	if err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, logUUID.String())
+	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -364,6 +386,9 @@ func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *mod
 	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, err
 }
@@ -378,6 +403,9 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 	}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, err
 }
@@ -425,20 +453,21 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	var version *datamodel.ModelVersion
 	versionID := req.GetVersion()
+	modelUID := uuid.FromStringOrNil(pbModel.Uid)
+
 	if versionID == "" {
-		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	} else {
-		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionID)
+		version, err = h.service.GetModelVersionAdmin(ctx, modelUID, versionID)
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
@@ -452,8 +481,33 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ModelTask:          pbModel.Task,
 	}
 
+	inputJSON, err := protojson.Marshal(req)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil && runLog != nil {
+			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+			endTime := time.Now()
+			runLog.EndTime = null.TimeFrom(endTime)
+			if err != nil {
+				runLog.Error = null.StringFrom(err.Error())
+			} else {
+				runLog.Error = null.StringFrom("unknown error occurred")
+			}
+			if err := h.service.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
+				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
+			}
+		}
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
 			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
@@ -479,22 +533,38 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	for _, i := range req.GetTaskInputs() {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
-		if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
+		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	inputJSON, err := protojson.Marshal(req)
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
+			"ray server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, e = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"ray server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, logUUID.String())
-	if err != nil {
-		span.SetStatus(1, err.Error())
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return nil, err
+		return nil, st.Err()
 	}
 
 	// latest operation
@@ -624,12 +694,12 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		}
 	}
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID,
+		UserUID:            userUID.String(),
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
@@ -637,14 +707,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		ModelDefinitionUID: modelDef.UID.String(),
 		ModelTask:          pbModel.Task,
 	}
-
-	// write usage/metric datapoint
-	defer func(u *utils.UsageMetricData, startTime time.Time) {
-		u.ComputeTimeDuration = time.Since(startTime).Seconds()
-		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
-			logger.Warn("usage/metric write failed")
-		}
-	}(usageData, startTime)
 
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
@@ -707,15 +769,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		data.Fields[k] = structVal
 	}
 
-	data.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
-	if err := datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], data, false); err != nil {
-		makeJSONResponse(w, 400, "Invalid argument", fmt.Sprint("Error while parsing data from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		_ = s.WriteNewDataPoint(ctx, usageData)
-		return
-	}
-
 	inputReq := &modelpb.TriggerNamespaceModelRequest{}
 	inputReq.ModelId = ""
 	inputReq.NamespaceId = ns.NsID
@@ -731,8 +784,47 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		return
 	}
 
+	runLog, err := s.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))
+		makeJSONResponse(w, 500, "CreateModelTrigger in DB failedd", "CreateModelTrigger in DB failed")
+		span.SetStatus(1, "CreateModelTrigger in DB failed")
+		return
+	}
+
+	// write usage/metric datapoint
+	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil && runLog != nil {
+			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+			endTime := time.Now()
+			runLog.EndTime = null.TimeFrom(endTime)
+			if err != nil {
+				runLog.Error = null.StringFrom(err.Error())
+			} else {
+				runLog.Error = null.StringFrom("unknown error occurred")
+			}
+			if err := s.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
+				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
+			}
+		}
+		u.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+			logger.Warn("usage/metric write failed")
+		}
+	}(usageData, startTime)
+
+	data.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+	if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], data, false); err != nil {
+		makeJSONResponse(w, 400, "Invalid argument", fmt.Sprint("Error while parsing data from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		_ = s.WriteNewDataPoint(ctx, usageData)
+		return
+	}
+
 	var response []*structpb.Struct
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, logUUID.String())
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -777,7 +869,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+	if err = s.WriteNewDataPoint(ctx, usageData); err != nil {
 		logger.Warn("usage and metric data write fail")
 	}
 

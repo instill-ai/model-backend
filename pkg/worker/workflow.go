@@ -48,14 +48,12 @@ type TriggerModelWorkflowRequest struct {
 	Mode               mgmtpb.Mode
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
-	InputReferenceID   string
-	Source             datamodel.TriggerSource
+	RunLog             *datamodel.ModelTrigger
 }
 
 type TriggerModelActivityRequest struct {
 	TriggerModelWorkflowRequest
 	WorkflowExecutionID string
-	RunLog              *datamodel.ModelTrigger
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -100,31 +98,19 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 
 	defer func() {
-		w.redisClient.ExpireGT(
-			sCtx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
-		w.redisClient.ExpireGT(
-			sCtx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
+		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
+			w.redisClient.ExpireGT(
+				sCtx,
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
+				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+			)
+			w.redisClient.ExpireGT(
+				sCtx,
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
+				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+			)
+		}
 	}()
-
-	runLog, err := w.repository.CreateModelTrigger(sCtx, &datamodel.ModelTrigger{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: param.TriggerUID},
-		ModelUID:             param.ModelUID,
-		ModelVersion:         param.ModelVersion.Version,
-		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-		Source:               param.Source,
-		RequesterUID:         param.RequesterUID,
-		InputReferenceID:     param.InputReferenceID,
-	})
-	if err != nil {
-		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
 
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
@@ -138,7 +124,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	if err := workflow.ExecuteActivity(ctx, w.TriggerModelActivity, &TriggerModelActivityRequest{
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
-		RunLog:                      runLog,
 	}).Get(ctx, nil); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
@@ -170,7 +155,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	var err error
 
-	param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
+	// param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
 
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{constant.HeaderAuthTypeKey: []string{"user"}, constant.HeaderUserUIDKey: []string{param.UserUID.String()}})
 	ctx, span := tracer.Start(ctx, eventName,
@@ -192,7 +177,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// temporary solution to not overcharge for credits
 	// TODO: design a better flow
 	for {
-		time.Sleep(2 * time.Second)
 		if state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version); err != nil {
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		} else if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
@@ -225,7 +209,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	input, err := w.minioClient.GetFile(ctx, param.InputReferenceID)
+	input, err := w.minioClient.GetFile(ctx, param.RunLog.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
