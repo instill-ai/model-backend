@@ -85,10 +85,19 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.InputReferenceID = "inputReferenceID"
 		param.Task = taskv1alpha.Task_TASK_CHAT
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+
+		uid, _ := uuid.NewV4()
+		modelTrigger := &datamodel.ModelTrigger{
+			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
+			ModelUID:             param.ModelUID,
+			ModelVersion:         param.ModelVersion.Version,
+			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			RequesterUID:         param.RequesterUID,
+			InputReferenceID:     "inputReferenceID",
+		}
+		param.RunLog = modelTrigger
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -116,23 +125,12 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		}, nil).Times(1)
 		mockMinio.GetFileMock.Expect(
 			minimock.AnyContext,
-			param.InputReferenceID,
+			modelTrigger.InputReferenceID,
 		).Return(
 			[]byte("{}"),
 			nil,
 		)
 
-		uid, _ := uuid.NewV4()
-		modelTrigger := &datamodel.ModelTrigger{
-			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
-			ModelUID:             param.ModelUID,
-			ModelVersion:         param.ModelVersion.Version,
-			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-			Source:               param.Source,
-			RequesterUID:         param.RequesterUID,
-			InputReferenceID:     param.InputReferenceID,
-		}
-		param.RunLog = modelTrigger
 		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
@@ -153,7 +151,17 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		}
 		param.Task = taskv1alpha.Task_TASK_CHAT
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
-		param.Source = datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+
+		uid, _ := uuid.NewV4()
+		modelTrigger := &datamodel.ModelTrigger{
+			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
+			ModelUID:             param.ModelUID,
+			ModelVersion:         param.ModelVersion.Version,
+			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			RequesterUID:         param.RequesterUID,
+			InputReferenceID:     "inputReferenceID",
+		}
+		param.RunLog = modelTrigger
 
 		mockRay := NewMockRay(ctrl)
 		ctx := context.Background()
@@ -169,19 +177,6 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			1,
 			nil,
 		).Times(1)
-
-		uid, _ := uuid.NewV4()
-		modelTrigger := &datamodel.ModelTrigger{
-			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
-			ModelUID:             param.ModelUID,
-			ModelVersion:         param.ModelVersion.Version,
-			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-			Source:               param.Source,
-			RequesterUID:         param.RequesterUID,
-			InputReferenceID:     param.InputReferenceID,
-		}
-		param.RunLog = modelTrigger
-		// repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)

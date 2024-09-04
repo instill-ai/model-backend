@@ -74,8 +74,8 @@ type Service interface {
 	DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error
 	WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error)
 
-	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*structpb.Struct, error)
-	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error)
+	TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelTrigger) ([]*structpb.Struct, error)
+	TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelTrigger) (*longrunningpb.Operation, error)
 
 	GetModelDefinition(ctx context.Context, id string) (*modelpb.ModelDefinition, error)
 	GetModelDefinitionByUID(ctx context.Context, uid uuid.UUID) (*modelpb.ModelDefinition, error)
@@ -96,6 +96,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
+	CreateModelTrigger(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelTrigger, err error)
 	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 }
 
@@ -165,6 +166,45 @@ func (s *service) GetArtifactPrivateServiceClient() artifactpb.ArtifactPrivateSe
 // GetRayClient returns the ray client
 func (s *service) GetRayClient() ray.Ray {
 	return s.ray
+}
+
+func (s *service) CreateModelTrigger(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelTrigger, err error) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	if ok {
+		source = datamodel.TriggerSource(userAgentEnum)
+	}
+
+	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
+	if requesterUID.IsNil() {
+		requesterUID = userUID
+	}
+
+	inputReferenceID := minio.GenerateInputRefID()
+	// todo: put it in separate workflow activity and store url and file size
+	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
+	if err != nil {
+		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(inputJSON)), zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	runLog, err = s.repository.CreateModelTrigger(ctx, &datamodel.ModelTrigger{
+		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: triggerUID},
+		ModelUID:             modelUID,
+		ModelVersion:         version,
+		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+		Source:               source,
+		RequesterUID:         requesterUID,
+		InputReferenceID:     inputReferenceID,
+	})
+	if err != nil {
+		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", triggerUID.String()), zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return runLog, nil
 }
 
 func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtpb.Owner, error) {
@@ -405,7 +445,7 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 	return nil
 }
 
-func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) ([]*structpb.Struct, error) {
+func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelTrigger) ([]*structpb.Struct, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -449,21 +489,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
-	if requesterUID.IsNil() {
-		requesterUID = userUID
-	}
-
-	inputReferenceID := minio.GenerateInputRefID()
-	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, reqJSON, constant.ContentTypeJSON)
-	if err != nil {
-		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(reqJSON)), zap.Error(err))
-		return nil, err
-	}
 
 	workflowOptions := client.StartWorkflowOptions{
-		ID:                       triggerUID,
+		ID:                       runLog.UID.String(),
 		TaskQueue:                worker.TaskQueue,
 		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
@@ -471,18 +499,12 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
-	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
-	if ok {
-		source = datamodel.TriggerSource(userAgentEnum)
-	}
-
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
 		"TriggerModelWorkflow",
 		&worker.TriggerModelWorkflowRequest{
-			TriggerUID:         uuid.FromStringOrNil(triggerUID),
+			TriggerUID:         runLog.UID,
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
@@ -490,14 +512,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
-			RequesterUID:       requesterUID,
+			RequesterUID:       runLog.RequesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
 			Mode:               mgmtpb.Mode_MODE_SYNC,
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
-			Source:             source,
-			InputReferenceID:   inputReferenceID,
+			RunLog:             runLog,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -519,7 +540,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	triggerModelResponse := &modelpb.TriggerNamespaceModelResponse{}
 
-	trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, triggerUID)
+	trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, runLog.UID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -540,7 +561,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	return triggerModelResponse.TaskOutputs, nil
 }
 
-func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, triggerUID string) (*longrunningpb.Operation, error) {
+func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelTrigger) (*longrunningpb.Operation, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -584,21 +605,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
-	if requesterUID.IsNil() {
-		requesterUID = userUID
-	}
-
-	inputReferenceID := minio.GenerateInputRefID()
-	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, reqJSON, constant.ContentTypeJSON)
-	if err != nil {
-		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("parsedInferInput", string(reqJSON)), zap.Error(err))
-		return nil, err
-	}
 
 	workflowOptions := client.StartWorkflowOptions{
-		ID:                       triggerUID,
+		ID:                       runLog.UID.String(),
 		TaskQueue:                worker.TaskQueue,
 		WorkflowExecutionTimeout: time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout) * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
@@ -606,18 +615,12 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		},
 	}
 
-	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
-	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
-	if ok {
-		source = datamodel.TriggerSource(userAgentEnum)
-	}
-
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
 		"TriggerModelWorkflow",
 		&worker.TriggerModelWorkflowRequest{
-			TriggerUID:         uuid.FromStringOrNil(triggerUID),
+			TriggerUID:         runLog.UID,
 			ModelID:            dbModel.ID,
 			ModelUID:           dbModel.UID,
 			ModelVersion:       *version,
@@ -625,14 +628,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			OwnerType:          string(ns.NsType),
 			UserUID:            userUID,
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER.String(),
-			RequesterUID:       requesterUID,
+			RequesterUID:       runLog.RequesterUID,
 			ModelDefinitionUID: dbModel.ModelDefinitionUID,
 			Task:               task,
 			Mode:               mgmtpb.Mode_MODE_ASYNC,
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
-			Source:             source,
-			InputReferenceID:   inputReferenceID,
+			RunLog:             runLog,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -642,7 +644,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	logger.Info(fmt.Sprintf("started workflow with workflowID %s and RunID %s", we.GetID(), we.GetRunID()))
 
 	return &longrunningpb.Operation{
-		Name: fmt.Sprintf("operations/%s", triggerUID),
+		Name: fmt.Sprintf("operations/%s", runLog.UID.String()),
 		Done: false,
 	}, nil
 }
