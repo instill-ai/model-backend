@@ -1,12 +1,8 @@
-from instill.helpers.const import DataType
 from instill.helpers.ray_config import instill_deployment, InstillDeployable
 from instill.helpers import (
-    construct_infer_response,
-    construct_metadata_response,
-    Metadata,
+    parse_task_text_to_image_input,
+    construct_task_text_to_image_output,
 )
-
-import numpy as np
 
 
 @instill_deployment
@@ -14,86 +10,24 @@ class TextToImage:
     def __init__(self):
         pass
 
-    def ModelMetadata(self, req):
-        resp = construct_metadata_response(
-            req=req,
-            inputs=[
-                Metadata(
-                    name="prompt",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="negative_prompt",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="prompt_image",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="samples",
-                    datatype=str(DataType.TYPE_INT32.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="scheduler",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="steps",
-                    datatype=str(DataType.TYPE_INT32.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="guidance_scale",
-                    datatype=str(DataType.TYPE_FP32.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="seed",
-                    datatype=str(DataType.TYPE_INT64.name),
-                    shape=[1],
-                ),
-                Metadata(
-                    name="extra_params",
-                    datatype=str(DataType.TYPE_STRING.name),
-                    shape=[1],
-                ),
-            ],
-            outputs=[
-                Metadata(
-                    name="images",
-                    datatype=str(DataType.TYPE_FP32.name),
-                    shape=[-1, -1, -1, -1],
-                ),
-            ],
-        )
-        return resp
+    async def __call__(self, request):
 
-    async def __call__(self, req):
-        resp_outputs = []
-        resp_raw_outputs = []
-        for _ in req.raw_input_contents:
-            image = np.zeros([1, 5, 5, 3], dtype=np.float32).tobytes()
+        inputs = await parse_task_text_to_image_input(request=request)
 
-            resp_outputs.append(
-                Metadata(
-                    name="images",
-                    shape=[1, 5, 5, 3],
-                    datatype=str(DataType.TYPE_STRING),
-                )
-            )
+        input_len = len(inputs)
 
-            resp_raw_outputs.append(image)
+        finish_reasons = [["success"] for _ in range(input_len)]
+        images = [
+            [
+                "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC"
+            ]
+            for _ in range(input_len)
+        ]
 
-        return construct_infer_response(
-            req=req,
-            outputs=resp_outputs,
-            raw_outputs=resp_raw_outputs,
+        return construct_task_text_to_image_output(
+            request=request,
+            finish_reasons=finish_reasons,
+            images=images,
         )
 
 

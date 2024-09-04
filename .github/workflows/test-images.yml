@@ -4,6 +4,13 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
+    branches:
+      - main
+    paths:
+      - "assets/model-**"
+  pull_request:
+    branches:
+      - main
     paths:
       - "assets/model-**"
 
@@ -16,14 +23,15 @@ jobs:
           [
             "dummy-cls",
             "dummy-det",
-            "dummy-image-to-image",
+            # "dummy-image-to-image",
             "dummy-instance-segmentation",
             "dummy-keypoint",
             "dummy-semantic-segmentation",
-            "dummy-text-generation",
-            "dummy-text-generation-chat",
+            "dummy-text-completion",
+            "dummy-text-chat",
             "dummy-text-to-image",
-            "dummy-visual-question-answering",
+            "dummy-multimodal-chat",
+            "dummy-text-embedding",
           ]
     steps:
       - uses: actions/checkout@v4
@@ -50,10 +58,19 @@ jobs:
           username: dropletbot
           password: ${{ secrets.botDockerHubPassword }}
 
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "tag=latest" >> $GITHUB_ENV
+          else
+            echo "tag=dev" >> $GITHUB_ENV
+          fi
+
       - name: Build test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: instill build instill/${{ matrix.model }}
+        run: instill build instill/${{ matrix.model }} -t ${{ env.tag }}
 
       - name: Push test models
         working-directory: ./assets/model-${{ matrix.model }}
-        run: instill push instill/${{ matrix.model }} -u docker.io
+        run: instill push instill/${{ matrix.model }} -t ${{ env.tag }} -u docker.io
