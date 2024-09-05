@@ -2,23 +2,24 @@ package handler
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
-
-	"github.com/instill-ai/x/sterr"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -27,6 +28,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/sterr"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -103,10 +105,11 @@ func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req 
 }
 
 type TriggerNamespaceModelRequestInterface interface {
+	protoreflect.ProtoMessage
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
-	GetTaskInputs() []*modelpb.TaskInput
+	GetTaskInputs() []*structpb.Struct
 }
 
 func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
@@ -138,7 +141,7 @@ func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *mo
 	return resp, err
 }
 
-func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*modelpb.TaskOutput, error) {
+func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*structpb.Struct, error) {
 
 	startTime := time.Now()
 	eventName := "TriggerNamespaceModel"
@@ -209,89 +212,32 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		ModelTask:          pbModel.Task,
 	}
 
-	// write usage/metric datapoint
+	inputJSON, err := protojson.Marshal(req)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// write trigger/usage/metric datapoint
+	var triggerErr error
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil && triggerErr == nil {
+			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
+		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
 			logger.Warn("usage/metric write failed")
 		}
 	}(usageData, startTime)
 
-	inputRequestJSON, err := protojson.Marshal(&modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		TaskInputs:  req.GetTaskInputs(),
-		Version:     req.GetVersion(),
-	})
-	if err != nil {
-		return 0, nil, err
-	}
-
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGeneration
-	}
 	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
+	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -305,13 +251,14 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
-	if err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+	for _, i := range req.GetTaskInputs() {
+		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
+			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -421,13 +368,16 @@ type TriggerAsyncNamespaceModelRequestInterface interface {
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
-	GetTaskInputs() []*modelpb.TaskInput
+	GetTaskInputs() []*structpb.Struct
 }
 
 func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, err
 }
@@ -442,6 +392,9 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 	}
 
 	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, err
 }
@@ -489,25 +442,21 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	var version *datamodel.ModelVersion
 	versionID := req.GetVersion()
+	modelUID := uuid.FromStringOrNil(pbModel.Uid)
+
 	if versionID == "" {
-		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Uid))
+		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	} else {
-		version, err = h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), versionID)
+		version, err = h.service.GetModelVersionAdmin(ctx, modelUID, versionID)
 		if err != nil {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	}
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-
-	inputRequestJSON, err := protojson.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
@@ -521,8 +470,23 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ModelTask:          pbModel.Task,
 	}
 
+	inputJSON, err := protojson.Marshal(req)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil {
+			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
+		}
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
 			if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
@@ -531,71 +495,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}(usageData, startTime)
 
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageRequestInputsToBytes(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseTexToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageToImageRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseVisualQuestionAnsweringRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTexGenerationChatRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTexGenerationRequestInputs(ctx, req)
-		if err != nil {
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		lenInputs = 1
-		parsedInput = textGeneration
-	}
 	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
+	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			span.SetStatus(1, err.Error())
@@ -609,17 +510,40 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
-	if err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	for _, i := range req.GetTaskInputs() {
+		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputRequestJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
-		span.SetStatus(1, err.Error())
+		st, e := sterr.CreateErrorResourceInfo(
+			codes.FailedPrecondition,
+			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
+			"ray server",
+			"",
+			"",
+			err.Error(),
+		)
+		if strings.Contains(err.Error(), "Failed to allocate memory") {
+			st, e = sterr.CreateErrorResourceInfo(
+				codes.ResourceExhausted,
+				"[handler] inference model error",
+				"ray server OOM",
+				"Out of memory for running the model, maybe try with smaller batch size",
+				"",
+				err.Error(),
+			)
+		}
+
+		if e != nil {
+			logger.Error(e.Error())
+		}
+		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		return nil, err
+		return nil, st.Err()
 	}
 
 	// latest operation
@@ -649,11 +573,10 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	return operation, nil
 }
 
-// TODO: to be reimplement
-func inferModelByUpload(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
 	startTime := time.Now()
-	eventName := "InferModelByUpload"
+	eventName := "HandleTriggerMultipartForm"
 
 	ctx, span := tracer.Start(req.Context(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -682,9 +605,6 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 		span.SetStatus(1, "")
 		return
 	}
-
-	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
-	defer redisClient.Close()
 
 	if err := authenticateUser(ctx, false); err != nil {
 		logger.Error(fmt.Sprintf("AuthenticatedUser Error: %s", err.Error()))
@@ -733,20 +653,32 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 		return
 	}
 
-	version, err := s.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), pathParams["version"])
-	if err != nil {
-		logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
-		makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
-		span.SetStatus(1, "The model version not found in server")
-		return
+	var version *datamodel.ModelVersion
+	modelUID := uuid.FromStringOrNil(pbModel.Uid)
+	if versionStr, ok := pathParams["version"]; !ok {
+		version, err = s.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
+		if err != nil {
+			logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
+			makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
+			span.SetStatus(1, "The model version not found in server")
+			return
+		}
+	} else {
+		version, err = s.GetModelVersionAdmin(ctx, modelUID, versionStr)
+		if err != nil {
+			logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
+			makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
+			span.SetStatus(1, "The model version not found in server")
+			return
+		}
 	}
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID,
+		UserUID:            userUID.String(),
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
@@ -757,104 +689,72 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
-		makeJSONResponse(w, 400, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
 		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
 	}
 
-	var parsedInput any
-	var lenInputs = 1
-	switch pbModel.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		imageInput, err := parseImageFormDataInputsToBytes(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "File Input Error", err.Error())
-			span.SetStatus(1, err.Error())
+	varMap := map[string]any{}
+
+	for k, v := range req.MultipartForm.Value {
+		var b any
+		unmarshalErr := json.Unmarshal([]byte(v[0]), &b)
+		if unmarshalErr != nil {
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading variables from request %w", unmarshalErr))
+			span.SetStatus(1, fmt.Sprint("Error while reading variables from request %w", unmarshalErr))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
 		}
-		lenInputs = len(imageInput)
-		parsedInput = imageInput
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		textToImage, err := parseImageFormDataTextToImageInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textToImage
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		imageToImage, err := parseImageFormDataImageToImageInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = imageToImage
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		visualQuestionAnswering, err := parseTextFormDataVisualQuestionAnsweringInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = visualQuestionAnswering
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		textGenerationChat, err := parseTextFormDataTextGenerationChatInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textGenerationChat
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		textGeneration, err := parseTextFormDataTextGenerationInputs(req)
-		if err != nil {
-			makeJSONResponse(w, 400, "Parser input error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		parsedInput = textGeneration
-	}
-	// check whether model support batching or not. If not, raise an error
-	if lenInputs > 1 {
-		doSupportBatch, err := utils.DoSupportBatch()
-		if err != nil {
-			makeJSONResponse(w, 400, "Batching Support Error", err.Error())
-			span.SetStatus(1, err.Error())
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
-		if !doSupportBatch {
-			makeJSONResponse(w, 400, "Batching Support Error", "The model do not support batching, so could not make inference with multiple images")
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
-			usageData.Status = mgmtpb.Status_STATUS_ERRORED
-			_ = s.WriteNewDataPoint(ctx, usageData)
-			return
-		}
+		varMap[k] = b
 	}
 
-	parsedInputJSON, err := json.Marshal(parsedInput)
+	for k, v := range req.MultipartForm.File {
+		file, err := v[0].Open()
+		if err != nil {
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
+			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+
+		byteContainer, err := io.ReadAll(file)
+		if err != nil {
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
+			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
+			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		v := fmt.Sprintf("data:%s;base64,%s", v[0].Header.Get("Content-Type"), base64.StdEncoding.EncodeToString(byteContainer))
+		varMap[k] = v
+	}
+
+	data := &structpb.Struct{
+		Fields: make(map[string]*structpb.Value),
+	}
+	for k, v := range varMap {
+		structVal, err := structpb.NewValue(v)
+		if err != nil {
+			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while parsing data from request %w", err))
+			span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
+			usageData.Status = mgmtpb.Status_STATUS_ERRORED
+			_ = s.WriteNewDataPoint(ctx, usageData)
+			return
+		}
+		data.Fields[k] = structVal
+	}
+
+	inputReq := &modelpb.TriggerNamespaceModelRequest{}
+	inputReq.ModelId = ""
+	inputReq.NamespaceId = ns.NsID
+	inputReq.TaskInputs = []*structpb.Struct{data}
+	inputReq.Version = version.Version
+
+	inputJSON, err := json.Marshal(inputReq)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parser input error", err.Error())
 		span.SetStatus(1, err.Error())
@@ -863,8 +763,37 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 		return
 	}
 
-	var response []*modelpb.TaskOutput
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, parsedInputJSON, pbModel.Task, logUUID.String())
+	runLog, err := s.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))
+		makeJSONResponse(w, 500, "CreateModelTrigger in DB failedd", "CreateModelTrigger in DB failed")
+		span.SetStatus(1, "CreateModelTrigger in DB failed")
+		return
+	}
+
+	// write usage/metric datapoint
+	defer func(u *utils.UsageMetricData, startTime time.Time) {
+		if err != nil {
+			_ = s.UpdateModelTriggerWithError(ctx, runLog, err)
+		}
+		u.ComputeTimeDuration = time.Since(startTime).Seconds()
+		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+			logger.Warn("usage/metric write failed")
+		}
+	}(usageData, startTime)
+
+	data.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
+	if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], data, false); err != nil {
+		makeJSONResponse(w, 400, "Invalid argument", fmt.Sprint("Error while parsing data from request %w", err))
+		span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		_ = s.WriteNewDataPoint(ctx, usageData)
+		return
+	}
+
+	var response []*structpb.Struct
+	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -909,7 +838,7 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
+	if err = s.WriteNewDataPoint(ctx, usageData); err != nil {
 		logger.Warn("usage and metric data write fail")
 	}
 
@@ -923,9 +852,4 @@ func inferModelByUpload(s service.Service, _ repository.Repository, w http.Respo
 	)))
 
 	_, _ = w.Write(res)
-
-}
-
-func HandleTriggerModelByUpload(s service.Service, repo repository.Repository, w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	inferModelByUpload(s, repo, w, r, pathParams)
 }

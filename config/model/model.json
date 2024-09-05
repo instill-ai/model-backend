@@ -73,14 +73,19 @@
           "title": "Semantic Segmentation"
         },
         {
-          "const": "TASK_TEXT_GENERATION",
-          "instillShortDescription": "Generate texts from input text prompts.",
-          "title": "Text Generation"
+          "const": "TASK_CHAT",
+          "instillShortDescription": "Generate texts from input text prompts in chat style.",
+          "title": "Chat"
         },
         {
-          "const": "TASK_TEXT_GENERATION_CHAT",
-          "instillShortDescription": "Generate texts from input text prompts and chat history.",
-          "title": "Text Generation Chat"
+          "const": "TASK_COMPLETION",
+          "instillShortDescription": "Generate text response base on input.",
+          "title": "Completion"
+        },
+        {
+          "const": "TASK_EMBEDDING",
+          "instillShortDescription": "Generate embeddings based on input data.",
+          "title": "Embedding"
         },
         {
           "const": "TASK_TEXT_TO_IMAGE",
@@ -93,9 +98,9 @@
           "title": "Image To Image"
         },
         {
-          "const": "TASK_VISUAL_QUESTION_ANSWERING",
-          "instillShortDescription": "Answer questions based on a prompt and an image.",
-          "title": "Visual Question Answering"
+          "const": "TASK_CUSTOM",
+          "instillShortDescription": "Custom model with free form input and output.",
+          "title": "Custom"
         }
       ]
     },

@@ -77,32 +77,18 @@ func (mr *MockRayMockRecorder) IsRayServerReady(arg0 interface{}) *gomock.Call {
 }
 
 // ModelInferRequest mocks base method.
-func (m *MockRay) ModelInferRequest(arg0 context.Context, arg1 taskv1alpha.Task, arg2 ray.InferInput, arg3, arg4 string, arg5 *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
+func (m *MockRay) ModelInferRequest(arg0 context.Context, arg1 taskv1alpha.Task, arg2 *modelv1alpha.TriggerNamespaceModelRequest, arg3, arg4 string) (*rayserver.CallResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4, arg5)
-	ret0, _ := ret[0].(*rayserver.RayServiceCallResponse)
+	ret := m.ctrl.Call(m, "ModelInferRequest", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*rayserver.CallResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ModelInferRequest indicates an expected call of ModelInferRequest.
-func (mr *MockRayMockRecorder) ModelInferRequest(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockRayMockRecorder) ModelInferRequest(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInferRequest", reflect.TypeOf((*MockRay)(nil).ModelInferRequest), arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
-// ModelMetadataRequest mocks base method.
-func (m *MockRay) ModelMetadataRequest(arg0 context.Context, arg1, arg2 string) *rayserver.ModelMetadataResponse {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ModelMetadataRequest", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*rayserver.ModelMetadataResponse)
-	return ret0
-}
-
-// ModelMetadataRequest indicates an expected call of ModelMetadataRequest.
-func (mr *MockRayMockRecorder) ModelMetadataRequest(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelMetadataRequest", reflect.TypeOf((*MockRay)(nil).ModelMetadataRequest), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModelInferRequest", reflect.TypeOf((*MockRay)(nil).ModelInferRequest), arg0, arg1, arg2, arg3, arg4)
 }
 
 // ModelReady mocks base method.

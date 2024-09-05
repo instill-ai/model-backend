@@ -17,9 +17,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -270,31 +268,6 @@ func DoSupportBatch() (bool, error) {
 
 // 	return credentialFile, nil
 // }
-
-func GetSupportedBatchSize(task datamodel.ModelTask) int {
-	allowedMaxBatchSize := 0
-	switch task {
-	case datamodel.ModelTask(commonpb.Task_TASK_UNSPECIFIED):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Unspecified
-	case datamodel.ModelTask(commonpb.Task_TASK_CLASSIFICATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Classification
-	case datamodel.ModelTask(commonpb.Task_TASK_DETECTION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Detection
-	case datamodel.ModelTask(commonpb.Task_TASK_KEYPOINT):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Keypoint
-	case datamodel.ModelTask(commonpb.Task_TASK_OCR):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.Ocr
-	case datamodel.ModelTask(commonpb.Task_TASK_INSTANCE_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.InstanceSegmentation
-	case datamodel.ModelTask(commonpb.Task_TASK_SEMANTIC_SEGMENTATION):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.SemanticSegmentation
-	case datamodel.ModelTask(commonpb.Task_TASK_TEXT_GENERATION),
-		datamodel.ModelTask(commonpb.Task_TASK_TEXT_GENERATION_CHAT),
-		datamodel.ModelTask(commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING):
-		allowedMaxBatchSize = config.Config.MaxBatchSizeLimitation.TextGeneration
-	}
-	return allowedMaxBatchSize
-}
 
 func ConvertModelToResourcePermalink(modelUID string) string {
 	resourcePermalink := fmt.Sprintf("resources/%s/types/models", modelUID)

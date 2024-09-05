@@ -32,8 +32,7 @@ import (
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
-	ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse
-	ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error)
+	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error)
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
@@ -221,31 +220,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 }
 
-func (r *ray) ModelMetadataRequest(ctx context.Context, modelName string, version string) *rayserver.ModelMetadataResponse {
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
-	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil
-	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
-
-	// Create status request for a given model
-	modelMetadataRequest := rayserver.ModelMetadataRequest{
-		Name:    modelName,
-		Version: version,
-	}
-	// Submit modelMetadata request to server
-	modelMetadataResponse, err := r.rayClient.ModelMetadata(ctx, &modelMetadataRequest)
-	if err != nil {
-		log.Printf("Couldn't get server model metadata: %v", err)
-	}
-	return modelMetadataResponse
-}
-
-func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferInput InferInput, modelName string, version string, modelMetadata *rayserver.ModelMetadataResponse) (*rayserver.RayServiceCallResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
@@ -256,12 +231,14 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, inferIn
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
 
-	modelInferRequest := PreProcess(modelName, version, inferInput, task, modelMetadata)
+	rayTriggerReq := &rayserver.CallRequest{
+		TaskInputs: req.GetTaskInputs(),
+	}
 
-	modelInferResponse, err := r.rayClient.XCall__(ctx, modelInferRequest)
+	modelInferResponse, err := r.rayClient.XCall__(ctx, rayTriggerReq)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
-		return &rayserver.RayServiceCallResponse{}, err
+		return &rayserver.CallResponse{}, err
 	}
 
 	return modelInferResponse, nil
@@ -321,7 +298,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			}
 		}
 
-		if scalingConfig != nil {
+		if len(scalingConfig) > 0 {
 			runOptions = append(runOptions, scalingConfig...)
 		} else {
 			runOptions = append(runOptions,
@@ -333,7 +310,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 
 	applicationConfig := Application{
 		Name:        applicationMetadatValue,
-		ImportPath:  "model:entrypoint",
+		ImportPath:  "_model:entrypoint",
 		RoutePrefix: "/" + applicationMetadatValue,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{

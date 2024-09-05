@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -20,7 +19,6 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
@@ -47,18 +45,15 @@ type TriggerModelWorkflowRequest struct {
 	ModelDefinitionUID uuid.UUID
 	RequesterUID       uuid.UUID
 	Task               commonpb.Task
-	ParsedInputKey     string
 	Mode               mgmtpb.Mode
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
-	InputReferenceID   string
-	Source             datamodel.TriggerSource
+	RunLog             *datamodel.ModelTrigger
 }
 
 type TriggerModelActivityRequest struct {
 	TriggerModelWorkflowRequest
 	WorkflowExecutionID string
-	RunLog              *datamodel.ModelTrigger
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
@@ -103,32 +98,19 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 
 	defer func() {
-		w.redisClient.Del(sCtx, param.ParsedInputKey)
-		w.redisClient.ExpireGT(
-			sCtx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
-		w.redisClient.ExpireGT(
-			sCtx,
-			fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
-			time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
-		)
+		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
+			w.redisClient.ExpireGT(
+				sCtx,
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
+				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+			)
+			w.redisClient.ExpireGT(
+				sCtx,
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
+				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
+			)
+		}
 	}()
-
-	runLog, err := w.repository.CreateModelTrigger(sCtx, &datamodel.ModelTrigger{
-		BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: param.TriggerUID},
-		ModelUID:             param.ModelUID,
-		ModelVersion:         param.ModelVersion.Version,
-		Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
-		Source:               param.Source,
-		RequesterUID:         param.RequesterUID,
-		InputReferenceID:     param.InputReferenceID,
-	})
-	if err != nil {
-		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", param.TriggerUID.String()), zap.Error(err))
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
 
 	ao := workflow.ActivityOptions{
 		TaskQueue:           TaskQueue,
@@ -142,7 +124,6 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	if err := workflow.ExecuteActivity(ctx, w.TriggerModelActivity, &TriggerModelActivityRequest{
 		TriggerModelWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
-		RunLog:                      runLog,
 	}).Get(ctx, nil); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
@@ -174,7 +155,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	var err error
 
-	param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
+	// param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
 
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{constant.HeaderAuthTypeKey: []string{"user"}, constant.HeaderUserUIDKey: []string{param.UserUID.String()}})
 	ctx, span := tracer.Start(ctx, eventName,
@@ -184,7 +165,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
-	if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+	if err = w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
 		UserUID:      param.UserUID,
 		OwnerUID:     param.OwnerUID,
 		RequesterUID: param.RequesterUID,
@@ -196,7 +177,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// temporary solution to not overcharge for credits
 	// TODO: design a better flow
 	for {
-		time.Sleep(2 * time.Second)
 		if state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version); err != nil {
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		} else if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
@@ -229,84 +209,33 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	modelMetadataResponse := w.ray.ModelMetadataRequest(ctx, modelName, param.ModelVersion.Version)
-	if modelMetadataResponse == nil {
-		err = fmt.Errorf("model is offline") // used by model run logging in defer
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
-	blob, err := w.redisClient.Get(ctx, param.ParsedInputKey).Bytes()
+	input, err := w.minioClient.GetFile(ctx, param.RunLog.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	var inferInput InferInput
-	switch param.Task {
-	case commonpb.Task_TASK_CLASSIFICATION,
-		commonpb.Task_TASK_DETECTION,
-		commonpb.Task_TASK_INSTANCE_SEGMENTATION,
-		commonpb.Task_TASK_SEMANTIC_SEGMENTATION,
-		commonpb.Task_TASK_OCR,
-		commonpb.Task_TASK_KEYPOINT,
-		commonpb.Task_TASK_UNSPECIFIED:
-		var input [][]byte
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_TO_IMAGE:
-		var input *ray.TextToImageInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_IMAGE_TO_IMAGE:
-		var input *ray.ImageToImageInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_VISUAL_QUESTION_ANSWERING:
-		var input *ray.VisualQuestionAnsweringInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_GENERATION_CHAT:
-		var input *ray.TextGenerationChatInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
-	case commonpb.Task_TASK_TEXT_GENERATION:
-		var input *ray.TextGenerationInput
-		err = json.Unmarshal(blob, &input)
-		if err != nil {
-			return w.toApplicationError(err, param.ModelID, ModelActivityError)
-		}
-		inferInput = input
+	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
+	if err := protojson.Unmarshal(input, triggerModelReq); err != nil {
+		return err
 	}
 
 	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
 
-	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, inferInput, modelName, param.ModelVersion.Version, modelMetadataResponse)
+	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, triggerModelReq, modelName, param.ModelVersion.Version)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	outputs, err := ray.PostProcess(inferResponse, modelMetadataResponse, param.Task)
-	if err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
+	for _, o := range inferResponse.GetTaskOutputs() {
+		err := datamodel.ValidateJSONSchema(datamodel.TasksJSONOutputSchemaMap[param.Task.String()], o, false)
+		if err != nil {
+			return w.toApplicationError(err, param.ModelID, ModelActivityError)
+		}
 	}
 
-	triggerModelResp := &modelpb.TriggerUserModelResponse{
+	triggerModelResp := &modelpb.TriggerNamespaceModelResponse{
 		Task:        param.Task,
-		TaskOutputs: outputs,
+		TaskOutputs: inferResponse.GetTaskOutputs(),
 	}
 
 	outputJSON, err := protojson.Marshal(triggerModelResp)

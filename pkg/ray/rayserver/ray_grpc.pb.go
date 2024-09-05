@@ -19,19 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RayService_ModelMetadata_FullMethodName = "/ray.serve.RayService/ModelMetadata"
-	RayService_XCall___FullMethodName       = "/ray.serve.RayService/__call__"
+	RayService_XCall___FullMethodName = "/ray.v1.RayService/__call__"
 )
 
 // RayServiceClient is the client API for RayService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RayServiceClient interface {
-	// ModelMetadata method receives a ModelMetadataRequest message and
-	// returns a ModelMetadataResponse
-	ModelMetadata(ctx context.Context, in *ModelMetadataRequest, opts ...grpc.CallOption) (*ModelMetadataResponse, error)
-	// __call__ method is the defaut trigger entry for ray deployment
-	XCall__(ctx context.Context, in *RayServiceCallRequest, opts ...grpc.CallOption) (*RayServiceCallResponse, error)
+	// Trigger method is the defaut trigger entry for ray deployment
+	XCall__(ctx context.Context, in *CallRequest, opts ...grpc.CallOption) (*CallResponse, error)
 }
 
 type rayServiceClient struct {
@@ -42,17 +38,8 @@ func NewRayServiceClient(cc grpc.ClientConnInterface) RayServiceClient {
 	return &rayServiceClient{cc}
 }
 
-func (c *rayServiceClient) ModelMetadata(ctx context.Context, in *ModelMetadataRequest, opts ...grpc.CallOption) (*ModelMetadataResponse, error) {
-	out := new(ModelMetadataResponse)
-	err := c.cc.Invoke(ctx, RayService_ModelMetadata_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *rayServiceClient) XCall__(ctx context.Context, in *RayServiceCallRequest, opts ...grpc.CallOption) (*RayServiceCallResponse, error) {
-	out := new(RayServiceCallResponse)
+func (c *rayServiceClient) XCall__(ctx context.Context, in *CallRequest, opts ...grpc.CallOption) (*CallResponse, error) {
+	out := new(CallResponse)
 	err := c.cc.Invoke(ctx, RayService_XCall___FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -64,11 +51,8 @@ func (c *rayServiceClient) XCall__(ctx context.Context, in *RayServiceCallReques
 // All implementations must embed UnimplementedRayServiceServer
 // for forward compatibility
 type RayServiceServer interface {
-	// ModelMetadata method receives a ModelMetadataRequest message and
-	// returns a ModelMetadataResponse
-	ModelMetadata(context.Context, *ModelMetadataRequest) (*ModelMetadataResponse, error)
-	// __call__ method is the defaut trigger entry for ray deployment
-	XCall__(context.Context, *RayServiceCallRequest) (*RayServiceCallResponse, error)
+	// Trigger method is the defaut trigger entry for ray deployment
+	XCall__(context.Context, *CallRequest) (*CallResponse, error)
 	mustEmbedUnimplementedRayServiceServer()
 }
 
@@ -76,10 +60,7 @@ type RayServiceServer interface {
 type UnimplementedRayServiceServer struct {
 }
 
-func (UnimplementedRayServiceServer) ModelMetadata(context.Context, *ModelMetadataRequest) (*ModelMetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ModelMetadata not implemented")
-}
-func (UnimplementedRayServiceServer) XCall__(context.Context, *RayServiceCallRequest) (*RayServiceCallResponse, error) {
+func (UnimplementedRayServiceServer) XCall__(context.Context, *CallRequest) (*CallResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method XCall__ not implemented")
 }
 func (UnimplementedRayServiceServer) mustEmbedUnimplementedRayServiceServer() {}
@@ -95,26 +76,8 @@ func RegisterRayServiceServer(s grpc.ServiceRegistrar, srv RayServiceServer) {
 	s.RegisterService(&RayService_ServiceDesc, srv)
 }
 
-func _RayService_ModelMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ModelMetadataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RayServiceServer).ModelMetadata(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RayService_ModelMetadata_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RayServiceServer).ModelMetadata(ctx, req.(*ModelMetadataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RayService_XCall___Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RayServiceCallRequest)
+	in := new(CallRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -126,7 +89,7 @@ func _RayService_XCall___Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: RayService_XCall___FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RayServiceServer).XCall__(ctx, req.(*RayServiceCallRequest))
+		return srv.(RayServiceServer).XCall__(ctx, req.(*CallRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -135,13 +98,9 @@ func _RayService_XCall___Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var RayService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "ray.serve.RayService",
+	ServiceName: "ray.v1.RayService",
 	HandlerType: (*RayServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "ModelMetadata",
-			Handler:    _RayService_ModelMetadata_Handler,
-		},
 		{
 			MethodName: "__call__",
 			Handler:    _RayService_XCall___Handler,

@@ -33,9 +33,6 @@ import (
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	openfga "github.com/openfga/api/proto/openfga/v1"
 
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
-
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -48,13 +45,14 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
+	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
@@ -267,18 +265,24 @@ func main() {
 		}),
 	)
 
-	// Register custom route for  POST /v1alpha/users/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
+	// Register custom route for REST trigger multipart form-data
+	// TODO: combine multipart trigger with /trigger like pipeline-backend
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
 		panic(err)
 	}
-
-	// Register custom route for  POST /v1alpha/organizations/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
 		panic(err)
 	}
-
-	// Register custom route for  POST /v1alpha/namespaces/*/models/{name=models/*}/trigger-multipart which makes model inference for REST multiple-part form-data
-	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=namespaces/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerModelByUpload)); err != nil {
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=namespaces/*/models/*}/versions/{version=*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
+		panic(err)
+	}
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=users/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
+		panic(err)
+	}
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=organizations/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
+		panic(err)
+	}
+	if err := publicGwS.HandlePath("POST", "/v1alpha/{path=namespaces/*/models/*}/trigger-multipart", middleware.AppendCustomHeaderMiddleware(serv, repo, handler.HandleTriggerMultipartForm)); err != nil {
 		panic(err)
 	}
 

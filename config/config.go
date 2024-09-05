@@ -38,7 +38,8 @@ type ServerConfig struct {
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
 	}
-	InstillCoreHost string `koanf:"instillcorehost"`
+	InstillCoreHost   string `koanf:"instillcorehost"`
+	TaskSchemaVersion string `koanf:"taskschemaversion"`
 }
 
 // DatabaseConfig related to database
@@ -109,18 +110,6 @@ type InitModelConfig struct {
 	Enabled bool   `koanf:"enabled"`
 }
 
-// MaxBatchSizeConfig defines the maximum size of the batch of a AI task
-type MaxBatchSizeConfig struct {
-	Unspecified          int `koanf:"unspecified"`
-	Classification       int `koanf:"classification"`
-	Detection            int `koanf:"detection"`
-	Keypoint             int `koanf:"keypoint"`
-	Ocr                  int `koanf:"ocr"`
-	InstanceSegmentation int `koanf:"instancesegmentation"`
-	SemanticSegmentation int `koanf:"semanticsegmentation"`
-	TextGeneration       int `koanf:"textgeneration"`
-}
-
 // TemporalConfig related to Temporal
 type TemporalConfig struct {
 	HostPort   string `koanf:"hostport"`
@@ -160,19 +149,18 @@ type RegistryConfig struct {
 
 // AppConfig defines
 type AppConfig struct {
-	Server                 ServerConfig          `koanf:"server"`
-	Database               DatabaseConfig        `koanf:"database"`
-	RayServer              RayServerConfig       `koanf:"rayserver"`
-	MgmtBackend            MgmtBackendConfig     `koanf:"mgmtbackend"`
-	ArtifactBackend        ArtifactBackendConfig `koanf:"artifactbackend"`
-	Cache                  CacheConfig           `koanf:"cache"`
-	MaxBatchSizeLimitation MaxBatchSizeConfig    `koanf:"maxbatchsizelimitation"`
-	Temporal               TemporalConfig        `koanf:"temporal"`
-	OpenFGA                OpenFGAConfig         `koanf:"openfga"`
-	Registry               RegistryConfig        `koanf:"registry"`
-	InitModel              InitModelConfig       `koanf:"initmodel"`
-	Log                    LogConfig             `koanf:"log"`
-	Minio                  MinioConfig           `koanf:"minio"`
+	Server          ServerConfig          `koanf:"server"`
+	Database        DatabaseConfig        `koanf:"database"`
+	RayServer       RayServerConfig       `koanf:"rayserver"`
+	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
+	ArtifactBackend ArtifactBackendConfig `koanf:"artifactbackend"`
+	Cache           CacheConfig           `koanf:"cache"`
+	Temporal        TemporalConfig        `koanf:"temporal"`
+	OpenFGA         OpenFGAConfig         `koanf:"openfga"`
+	Registry        RegistryConfig        `koanf:"registry"`
+	InitModel       InitModelConfig       `koanf:"initmodel"`
+	Log             LogConfig             `koanf:"log"`
+	Minio           MinioConfig           `koanf:"minio"`
 }
 
 // Config - Global variable to export

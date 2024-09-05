@@ -16,6 +16,7 @@ import (
 	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	temporalclient "go.temporal.io/sdk/client"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/instill-ai/x/zapadapter"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
@@ -52,7 +54,7 @@ func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
 		if _, err := client.WorkflowService().RegisterNamespace(ctx,
 			&workflowservice.RegisterNamespaceRequest{
 				Namespace: config.Config.Temporal.Namespace,
-				WorkflowExecutionRetentionPeriod: func() *time.Duration {
+				WorkflowExecutionRetentionPeriod: func() *durationpb.Duration {
 					// Check if the string ends with "d" for day.
 					s := config.Config.Temporal.Retention
 					if strings.HasSuffix(s, "d") {
@@ -62,8 +64,9 @@ func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
 							logger.Fatal(fmt.Sprintf("Unable to parse retention period in day: %s", err))
 						}
 						// Convert days to hours and then to a duration.
-						t := time.Hour * 24 * time.Duration(days)
-						return &t
+						return &durationpb.Duration{
+							Seconds: int64(time.Duration(days) * 24 * time.Hour / time.Second),
+						}
 					}
 					logger.Fatal(fmt.Sprintf("Unable to parse retention period in day: %s", err))
 					return nil
@@ -101,6 +104,8 @@ func main() {
 		// can't handle the error due to https://github.com/uber-go/zap/issues/880
 		_ = logger.Sync()
 	}()
+
+	datamodel.InitJSONSchema(ctx)
 
 	db := database.GetSharedConnection()
 	defer database.Close(db)
