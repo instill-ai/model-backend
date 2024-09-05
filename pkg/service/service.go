@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
@@ -97,6 +98,7 @@ type Service interface {
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
 	CreateModelTrigger(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelTrigger, err error)
+	UpdateModelTriggerWithError(ctx context.Context, runLog *datamodel.ModelTrigger, err error) *datamodel.ModelTrigger
 	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 }
 
@@ -205,6 +207,26 @@ func (s *service) CreateModelTrigger(ctx context.Context, triggerUID uuid.UUID, 
 	}
 
 	return runLog, nil
+}
+
+func (s *service) UpdateModelTriggerWithError(ctx context.Context, runLog *datamodel.ModelTrigger, err error) *datamodel.ModelTrigger {
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	if runLog != nil {
+		runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+		endTime := time.Now()
+		runLog.EndTime = null.TimeFrom(endTime)
+		if err != nil {
+			runLog.Error = null.StringFrom(err.Error())
+		} else {
+			runLog.Error = null.StringFrom("unknown error occurred")
+		}
+		if err := s.repository.UpdateModelTrigger(ctx, runLog); err != nil {
+			logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
+		}
+	}
+
+	return runLog
 }
 
 func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string) (*mgmtpb.Owner, error) {

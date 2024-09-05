@@ -165,7 +165,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
-	if err := w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
+	if err = w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
 		UserUID:      param.UserUID,
 		OwnerUID:     param.OwnerUID,
 		RequesterUID: param.RequesterUID,
@@ -215,8 +215,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
-	err = protojson.Unmarshal(input, triggerModelReq)
-	if err != nil {
+	if err := protojson.Unmarshal(input, triggerModelReq); err != nil {
 		return err
 	}
 

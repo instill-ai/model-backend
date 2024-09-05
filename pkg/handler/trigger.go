@@ -20,7 +20,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -31,7 +30,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/sterr"
 
-	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -226,20 +224,11 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// write usage/metric datapoint
+	// write trigger/usage/metric datapoint
+	var triggerErr error
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
-		if err != nil && runLog != nil {
-			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
-			endTime := time.Now()
-			runLog.EndTime = null.TimeFrom(endTime)
-			if err != nil {
-				runLog.Error = null.StringFrom(err.Error())
-			} else {
-				runLog.Error = null.StringFrom("unknown error occurred")
-			}
-			if err := h.service.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
-				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
-			}
+		if err != nil && triggerErr == nil {
+			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
 		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
@@ -269,7 +258,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
+	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.FailedPrecondition,
@@ -495,18 +484,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
-		if err != nil && runLog != nil {
-			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
-			endTime := time.Now()
-			runLog.EndTime = null.TimeFrom(endTime)
-			if err != nil {
-				runLog.Error = null.StringFrom(err.Error())
-			} else {
-				runLog.Error = null.StringFrom("unknown error occurred")
-			}
-			if err := h.service.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
-				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
-			}
+		if err != nil {
+			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
 		}
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
@@ -795,18 +774,8 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
-		if err != nil && runLog != nil {
-			runLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
-			endTime := time.Now()
-			runLog.EndTime = null.TimeFrom(endTime)
-			if err != nil {
-				runLog.Error = null.StringFrom(err.Error())
-			} else {
-				runLog.Error = null.StringFrom("unknown error occurred")
-			}
-			if err := s.GetRepository().UpdateModelTrigger(ctx, runLog); err != nil {
-				logger.Error("UpdateModelTrigger for TriggerNamespaceModel failed", zap.Error(err))
-			}
+		if err != nil {
+			_ = s.UpdateModelTriggerWithError(ctx, runLog, err)
 		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {
