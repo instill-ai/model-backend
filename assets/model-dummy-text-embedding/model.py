@@ -7,7 +7,7 @@ from instill.helpers import (
 
 
 @instill_deployment
-class TextToImage:
+class TextEmbedding:
     def __init__(self):
         pass
 
@@ -31,4 +31,4 @@ class TextToImage:
         )
 
 
-entrypoint = InstillDeployable(TextToImage).get_deployment_handle()
+entrypoint = InstillDeployable(TextEmbedding).get_deployment_handle()

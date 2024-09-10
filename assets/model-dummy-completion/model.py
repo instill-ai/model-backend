@@ -7,7 +7,7 @@ from instill.helpers import (
 
 
 @instill_deployment
-class TextGeneration:
+class Completion:
     def __init__(self):
         pass
 
@@ -30,4 +30,4 @@ class TextGeneration:
         )
 
 
-entrypoint = InstillDeployable(TextGeneration).get_deployment_handle()
+entrypoint = InstillDeployable(Completion).get_deployment_handle()
