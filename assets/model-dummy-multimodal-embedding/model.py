@@ -1,19 +1,19 @@
 import time
 from instill.helpers.ray_config import instill_deployment, InstillDeployable
 from instill.helpers import (
-    parse_task_embedding_to_text_embedding_input,
+    parse_task_embedding_to_multimodal_embedding_input,
     construct_task_embedding_output,
 )
 
 
 @instill_deployment
-class TextEmbedding:
+class MultimodalEmbedding:
     def __init__(self):
         pass
 
     async def __call__(self, request):
 
-        inputs = await parse_task_embedding_to_text_embedding_input(request=request)
+        inputs = await parse_task_embedding_to_multimodal_embedding_input(request=request)
 
         input_len = len(inputs)
 
@@ -31,4 +31,4 @@ class TextEmbedding:
         )
 
 
-entrypoint = InstillDeployable(TextEmbedding).get_deployment_handle()
+entrypoint = InstillDeployable(MultimodalEmbedding).get_deployment_handle()

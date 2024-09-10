@@ -7,7 +7,7 @@ from instill.helpers import (
 
 
 @instill_deployment
-class TextGenerationChat:
+class Chat:
     def __init__(self):
         pass
 
@@ -33,4 +33,4 @@ class TextGenerationChat:
         )
 
 
-entrypoint = InstillDeployable(TextGenerationChat).get_deployment_handle()
+entrypoint = InstillDeployable(Chat).get_deployment_handle()
