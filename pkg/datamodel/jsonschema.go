@@ -73,6 +73,21 @@ type RegionHardware struct {
 	}
 }
 
+func removeNestedKey(obj map[string]any, path []string, keyToRemove string) {
+	// Traverse the JSON object following the path
+	for i := 0; i < len(path)-1; i++ {
+		if nestedObj, ok := obj[path[i]].(map[string]any); ok {
+			obj = nestedObj
+		} else {
+			// Path does not exist, nothing to remove
+			return
+		}
+	}
+
+	// Remove the key at the final nested level
+	delete(obj[path[len(path)-1]].(map[string]any), keyToRemove)
+}
+
 func renderJSON(tasksJSONBytes []byte) ([]byte, error) {
 	var err error
 	res := jsonref.New()
@@ -173,6 +188,17 @@ func InitJSONSchema(ctx context.Context) {
 	TasksJSONInputSchemaMap = map[string]*jsonschema.Schema{}
 	TasksJSONOutputSchemaMap = map[string]*jsonschema.Schema{}
 	for task := range TasksJSONMap {
+		switch task {
+		case "TASK_EMBEDDING", "TASK_CHAT", "TASK_COMPLETION", "TASK_TEXT_TO_IMAGE":
+			path := []string{"input", "properties", "data", "properties"}
+			removeNestedKey(TasksJSONMap[task], path, "model")
+		case "TASK_CLASSIFICATION", "TASK_DETECTION", "TASK_KEYPOINT", "TASK_OCR", "TASK_SEMANTIC_SEGMENTATION", "TASK_INSTANCE_SEGMENTATION":
+			for _, item := range TasksJSONMap[task]["input"].(map[string]any)["properties"].(map[string]any)["data"].(map[string]any)["oneOf"].([]any) {
+				path := []string{"properties"}
+				removeNestedKey(item.(map[string]any), path, "model")
+			}
+		}
+
 		inputSchemaBytes, err := json.Marshal(TasksJSONMap[task]["input"])
 		if err != nil {
 			logger.Fatal(fmt.Sprintf("%#v\n", err.Error()))
