@@ -32,6 +32,7 @@ jobs:
             "dummy-text-to-image",
             "dummy-multimodal-chat",
             "dummy-text-embedding",
+            "dummy-multimodal-embedding",
           ]
     steps:
       - uses: actions/checkout@v4
