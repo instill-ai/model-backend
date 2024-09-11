@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.30.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.29.0-alpha...v0.30.0-alpha) (2024-09-10)
+
+
+### Features
+
+* **task:** support new AI Tasks spec ([#655](https://github.com/instill-ai/model-backend/issues/655)) ([e34d4e1](https://github.com/instill-ai/model-backend/commit/e34d4e19c24e443f6488b95eeeb02470a01d961c))
+
 ## [0.29.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.28.0-alpha...v0.29.0-alpha) (2024-08-29)
 
 
