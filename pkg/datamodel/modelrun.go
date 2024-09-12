@@ -47,3 +47,7 @@ type ModelRun struct {
 	OutputReferenceID null.String
 	Error             null.String
 }
+
+func (*ModelRun) TableName() string {
+	return "model_trigger"
+}

@@ -32,7 +32,8 @@ jobs:
             "dummy-text-to-image",
             "dummy-multimodal-chat",
             "dummy-text-embedding",
-            "dummy-multimodal-embedding",
+            # disabled for now: image not found
+            # "dummy-multimodal-embedding",
           ]
     steps:
       - uses: actions/checkout@v4
