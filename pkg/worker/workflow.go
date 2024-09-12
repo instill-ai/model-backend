@@ -21,10 +21,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/errmsg"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	minio2 "github.com/instill-ai/model-backend/pkg/minio"
+	minioClient "github.com/instill-ai/model-backend/pkg/minio"
+
+	"github.com/instill-ai/x/errmsg"
+
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -48,7 +50,7 @@ type TriggerModelWorkflowRequest struct {
 	Mode               mgmtpb.Mode
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
-	RunLog             *datamodel.ModelTrigger
+	RunLog             *datamodel.ModelRun
 }
 
 type TriggerModelActivityRequest struct {
@@ -155,7 +157,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	var err error
 
-	// param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
+	// param.RunLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
 
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{constant.HeaderAuthTypeKey: []string{"user"}, constant.HeaderUserUIDKey: []string{param.UserUID.String()}})
 	ctx, span := tracer.Start(ctx, eventName,
@@ -191,7 +193,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	succeeded := false
 	defer func() {
 		if err != nil || !succeeded {
-			param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_FAILED)
+			param.RunLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_FAILED)
 			endTime := time.Now()
 			timeUsed := endTime.Sub(start)
 			param.RunLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
@@ -201,8 +203,8 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 			} else {
 				param.RunLog.Error = null.StringFrom("unknown error occurred")
 			}
-			if err = w.repository.UpdateModelTrigger(ctx, param.RunLog); err != nil {
-				logger.Error("UpdateModelTrigger for TriggerModelActivity failed", zap.Error(err))
+			if err = w.repository.UpdateModelRun(ctx, param.RunLog); err != nil {
+				logger.Error("UpdateModelRun for TriggerModelActivity failed", zap.Error(err))
 			}
 		}
 	}()
@@ -262,7 +264,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	outputReferenceID := minio2.GenerateOutputRefID()
+	outputReferenceID := minioClient.GenerateOutputRefID()
 	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = w.minioClient.UploadFileBytes(ctx, outputReferenceID, outputJSON, constant.ContentTypeJSON)
 	if err != nil {
@@ -272,8 +274,8 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	param.RunLog.TotalDuration = null.IntFrom(timeUsed.Milliseconds())
 	param.RunLog.EndTime = null.TimeFrom(endTime)
 	param.RunLog.OutputReferenceID = null.StringFrom(outputReferenceID)
-	param.RunLog.Status = datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
-	if err = w.repository.UpdateModelTrigger(ctx, param.RunLog); err != nil {
+	param.RunLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
+	if err = w.repository.UpdateModelRun(ctx, param.RunLog); err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 

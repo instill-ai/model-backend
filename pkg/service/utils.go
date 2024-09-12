@@ -7,6 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
@@ -50,4 +51,29 @@ func (s *service) GetRscNamespace(ctx context.Context, namespaceID string) (reso
 		}, nil
 	}
 	return resource.Namespace{}, fmt.Errorf("namespace error")
+}
+
+func (s *service) pageSizeInRange(pageSize int32) int32 {
+	if pageSize <= 0 {
+		return repository.DefaultPageSize
+	}
+
+	if pageSize > repository.MaxPageSize {
+		return repository.MaxPageSize
+	}
+
+	return pageSize
+}
+
+func (s *service) pageInRange(page int32) int32 {
+	if page <= 0 {
+		return 0
+	}
+
+	return page
+}
+
+// CanViewPrivateData - only with credit owner ns could users see their input/output data
+func CanViewPrivateData(namespace, requesterUID string) bool {
+	return namespace == requesterUID
 }

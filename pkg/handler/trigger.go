@@ -218,7 +218,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := h.service.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -228,7 +228,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	var triggerErr error
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		if err != nil && triggerErr == nil {
-			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
+			_ = h.service.UpdateModelRunWithError(ctx, runLog, err)
 		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := h.service.WriteNewDataPoint(ctx, usageData); err != nil {
@@ -476,7 +476,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	runLog, err := h.service.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := h.service.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -485,7 +485,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		if err != nil {
-			_ = h.service.UpdateModelTriggerWithError(ctx, runLog, err)
+			_ = h.service.UpdateModelRunWithError(ctx, runLog, err)
 		}
 		if u.Status == mgmtpb.Status_STATUS_ERRORED {
 			u.ComputeTimeDuration = time.Since(startTime).Seconds()
@@ -763,19 +763,19 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		return
 	}
 
-	runLog, err := s.CreateModelTrigger(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := s.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		logger.Error("CreateModelTrigger in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))
-		makeJSONResponse(w, 500, "CreateModelTrigger in DB failedd", "CreateModelTrigger in DB failed")
-		span.SetStatus(1, "CreateModelTrigger in DB failed")
+		logger.Error("CreateModelRun in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))
+		makeJSONResponse(w, 500, "CreateModelRun in DB failedd", "CreateModelRun in DB failed")
+		span.SetStatus(1, "CreateModelRun in DB failed")
 		return
 	}
 
 	// write usage/metric datapoint
 	defer func(u *utils.UsageMetricData, startTime time.Time) {
 		if err != nil {
-			_ = s.UpdateModelTriggerWithError(ctx, runLog, err)
+			_ = s.UpdateModelRunWithError(ctx, runLog, err)
 		}
 		u.ComputeTimeDuration = time.Since(startTime).Seconds()
 		if err := s.WriteNewDataPoint(ctx, usageData); err != nil {

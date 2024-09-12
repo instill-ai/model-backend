@@ -33,7 +33,7 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	userUID := utils.GetUserUID(ctx)
+	requesterUID, _ := utils.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, ErrNoPermission
 	}
 
-	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), "")).Result()
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", requesterUID, dbModel.UID.String(), "")).Result()
 
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -87,7 +87,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	userUID := utils.GetUserUID(ctx)
+	requesterUID, _ := utils.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 		return nil, ErrNoPermission
 	}
 
-	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), version)).Result()
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", requesterUID, dbModel.UID.String(), version)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil
@@ -143,7 +143,7 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 	switch workflowExecutionInfo.Status {
 	case enums.WORKFLOW_EXECUTION_STATUS_COMPLETED:
 
-		trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, triggerUID)
+		trigger, err := s.repository.GetModelRunByUID(ctx, triggerUID)
 		if err != nil {
 			return nil, err
 		}
