@@ -1125,7 +1125,7 @@ func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListMode
 		return nil, err
 	}
 
-	resp, err := h.service.ListModelTriggers(ctx, req, filter)
+	resp, err := h.service.ListModelRuns(ctx, req, filter)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err

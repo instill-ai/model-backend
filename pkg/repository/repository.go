@@ -67,12 +67,12 @@ type Repository interface {
 	DeleteModelTags(ctx context.Context, modelUID uuid.UUID, tagNames []string) error
 	ListModelTags(ctx context.Context, modelUID uuid.UUID) ([]datamodel.ModelTag, error)
 
-	GetModelTriggerByTriggerUID(ctx context.Context, triggerUID string) (modelTrigger *datamodel.ModelTrigger, err error)
-	GetLatestModelTriggerByModelUID(ctx context.Context, userUID string, modelUID string) (modelTrigger *datamodel.ModelTrigger, err error)
-	GetLatestModelVersionTriggerByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelTrigger *datamodel.ModelTrigger, err error)
-	ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error)
-	CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error)
-	UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error
+	GetModelRunByUID(ctx context.Context, triggerUID string) (modelRun *datamodel.ModelRun, err error)
+	GetLatestModelRunByModelUID(ctx context.Context, userUID string, modelUID string) (modelRun *datamodel.ModelRun, err error)
+	GetLatestModelVersionRunByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelRun *datamodel.ModelRun, err error)
+	ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
+	CreateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) (*datamodel.ModelRun, error)
+	UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -689,37 +689,39 @@ func (r *repository) transpileFilter(filter filtering.Filter, tableName string) 
 	}).Transpile()
 }
 
-func (r *repository) GetModelTriggerByTriggerUID(ctx context.Context, triggerUID string) (modelTrigger *datamodel.ModelTrigger, err error) {
-	return r.getModelTriggerByModelUID(
+func (r *repository) GetModelRunByUID(ctx context.Context, triggerUID string) (modelTrigger *datamodel.ModelRun, err error) {
+	return r.getModelRunByModelUID(
 		ctx,
 		"(uid = ?)",
 		[]any{triggerUID},
 	)
 }
 
-func (r *repository) GetLatestModelTriggerByModelUID(ctx context.Context, userUID string, modelUID string) (modelTrigger *datamodel.ModelTrigger, err error) {
-	return r.getModelTriggerByModelUID(
+func (r *repository) GetLatestModelRunByModelUID(ctx context.Context, userUID string, modelUID string) (modelTrigger *datamodel.ModelRun, err error) {
+	return r.getModelRunByModelUID(
 		ctx,
 		"(model_uid = ? AND requester_uid = ?)",
 		[]any{modelUID, userUID},
 	)
 }
 
-func (r *repository) GetLatestModelVersionTriggerByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelTrigger *datamodel.ModelTrigger, err error) {
-	return r.getModelTriggerByModelUID(
+func (r *repository) GetLatestModelVersionRunByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelTrigger *datamodel.ModelRun, err error) {
+	return r.getModelRunByModelUID(
 		ctx,
 		"(model_uid = ? AND requester_uid = ? AND model_version = ?)",
 		[]any{modelUID, userUID, version},
 	)
 }
 
-func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string, whereArgs []any) (modelTrigger *datamodel.ModelTrigger, err error) {
+const tableModelRun = "model_run"
 
-	db := r.CheckPinnedUser(ctx, r.db, "model_trigger")
+func (r *repository) getModelRunByModelUID(ctx context.Context, where string, whereArgs []any) (modelTrigger *datamodel.ModelRun, err error) {
 
-	var trigger datamodel.ModelTrigger
+	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
-	queryBuilder := db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...)
+	var trigger datamodel.ModelRun
+
+	queryBuilder := db.Model(&datamodel.ModelRun{}).Where(where, whereArgs...)
 	if result := queryBuilder.First(&trigger); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, status.Errorf(codes.NotFound, "The model trigger not found")
@@ -730,16 +732,17 @@ func (r *repository) getModelTriggerByModelUID(ctx context.Context, where string
 	return &trigger, nil
 }
 
-func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, userUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelTrigger, totalSize int64, err error) {
+func (r *repository) ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
+	requesterUID string, isOwner bool, modelUID string) (modelRuns []*datamodel.ModelRun, totalSize int64, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	db := r.CheckPinnedUser(ctx, r.db, "model_trigger")
+	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
 	whereConditions := []string{"model_uid = ?"}
 	whereArgs := []any{modelUID}
 
 	var expr *clause.Expr
-	if expr, err = r.transpileFilter(filter, "model_trigger"); err != nil {
+	if expr, err = r.transpileFilter(filter, tableModelRun); err != nil {
 		return nil, 0, err
 	}
 	if expr != nil {
@@ -749,7 +752,7 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 
 	if !isOwner {
 		whereConditions = append(whereConditions, "requester_uid = ?")
-		whereArgs = append(whereArgs, userUID)
+		whereArgs = append(whereArgs, requesterUID)
 	}
 
 	var where string
@@ -757,8 +760,8 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 		where = strings.Join(whereConditions, " and ")
 	}
 
-	if err = db.Model(&datamodel.ModelTrigger{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
-		logger.Error("failed in count model trigger total size", zap.Error(err))
+	if err = db.Model(&datamodel.ModelRun{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
+		logger.Error("failed in count model run total size", zap.Error(err))
 		return nil, 0, err
 	}
 
@@ -775,21 +778,21 @@ func (r *repository) ListModelTriggers(ctx context.Context, pageSize, page int64
 		queryBuilder.Order(orderString)
 	}
 
-	if err = queryBuilder.Limit(int(pageSize)).Offset(int(pageSize * page)).Find(&modelTriggers).Error; err != nil {
-		logger.Error("failed in querying model triggers", zap.Error(err))
+	if err = queryBuilder.Limit(int(pageSize)).Offset(int(pageSize * page)).Find(&modelRuns).Error; err != nil {
+		logger.Error("failed in querying model runs", zap.Error(err))
 		return nil, 0, err
 	}
 
-	return modelTriggers, totalSize, nil
+	return modelRuns, totalSize, nil
 }
 
-func (r *repository) CreateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) (*datamodel.ModelTrigger, error) {
+func (r *repository) CreateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) (*datamodel.ModelRun, error) {
 
 	r.PinUser(ctx, "model")
 	db := r.CheckPinnedUser(ctx, r.db, "model")
 
 	result := db.Model(&datamodel.Model{}).
-		Where("uid = ?", modelTrigger.ModelUID).
+		Where("uid = ?", modelRun.ModelUID).
 		UpdateColumns(map[string]any{
 			"last_run_time":  time.Now(),
 			"number_of_runs": gorm.Expr("number_of_runs + 1"),
@@ -798,21 +801,21 @@ func (r *repository) CreateModelTrigger(ctx context.Context, modelTrigger *datam
 		return nil, result.Error
 	}
 
-	r.PinUser(ctx, "model_trigger")
-	db = r.CheckPinnedUser(ctx, r.db, "model_trigger")
+	r.PinUser(ctx, tableModelRun)
+	db = r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
-	if err := db.Create(modelTrigger).Error; err != nil {
+	if err := db.Create(modelRun).Error; err != nil {
 		return nil, err
 	}
-	return modelTrigger, nil
+	return modelRun, nil
 }
 
-func (r *repository) UpdateModelTrigger(ctx context.Context, modelTrigger *datamodel.ModelTrigger) error {
+func (r *repository) UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error {
 
-	r.PinUser(ctx, "model_trigger")
-	db := r.CheckPinnedUser(ctx, r.db, "model_trigger")
+	r.PinUser(ctx, tableModelRun)
+	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
-	if err := db.Save(modelTrigger).Error; err != nil {
+	if err := db.Save(modelRun).Error; err != nil {
 		return err
 	}
 	return nil

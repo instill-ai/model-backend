@@ -99,7 +99,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
-	ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
+	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 }
 
 type service struct {
@@ -502,10 +502,10 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+	source := datamodel.RunSource(runpb.RunSource_RUN_SOURCE_API)
 	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
-		source = datamodel.TriggerSource(userAgentEnum)
+		source = datamodel.RunSource(userAgentEnum)
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
@@ -551,7 +551,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 	triggerModelResponse := &modelpb.TriggerNamespaceModelResponse{}
 
-	trigger, err := s.repository.GetModelTriggerByTriggerUID(ctx, triggerUID)
+	trigger, err := s.repository.GetModelRunByUID(ctx, triggerUID)
 	if err != nil {
 		return nil, err
 	}
@@ -646,10 +646,10 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		},
 	}
 
-	source := datamodel.TriggerSource(runpb.RunSource_RUN_SOURCE_API)
+	source := datamodel.RunSource(runpb.RunSource_RUN_SOURCE_API)
 	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
 	if ok {
-		source = datamodel.TriggerSource(userAgentEnum)
+		source = datamodel.RunSource(userAgentEnum)
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
@@ -728,7 +728,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	return pbModels, int32(totalSize), nextPageToken, err
 }
 
-func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error) {
+func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
 
@@ -748,20 +748,11 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 	if err != nil {
 		return nil, err
 	}
-	ctxUserUID := utils.GetUserUID(ctx)
 
-	userOrgUIDs, err := s.aclClient.ListPermissions(ctx, string(acl.Organization), string(acl.Member), false)
-	if err != nil {
-		return nil, err
-	}
+	requesterUID, _ := utils.GetRequesterUIDAndUserUID(ctx)
+	isOwner := dbModel.OwnerUID().String() == requesterUID
 
-	isOwner := dbModel.OwnerUID().String() == ctxUserUID
-	if slices.Contains(userOrgUIDs, dbModel.OwnerUID()) {
-		logger.Info("requester is viewing pipeline belonging to one of their organizations", zap.String("organizationUID", dbModel.OwnerUID().String()))
-		isOwner = true
-	}
-
-	triggers, totalSize, err := s.repository.ListModelTriggers(ctx, int64(pageSize), int64(page), filter, orderBy, ctxUserUID, isOwner, dbModel.UID.String())
+	triggers, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, isOwner, dbModel.UID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -769,7 +760,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 	metadataMap := make(map[string][]byte)
 	var referenceIDs []string
 	for _, trigger := range triggers {
-		if trigger.RequesterUID.String() == ctxUserUID { // only the runner could see their input/output data
+		if CanViewPrivateData(trigger.RequesterUID.String(), requesterUID) {
 			referenceIDs = append(referenceIDs, trigger.InputReferenceID)
 			if trigger.OutputReferenceID.Valid {
 				referenceIDs = append(referenceIDs, trigger.OutputReferenceID.String)
@@ -787,19 +778,19 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 		metadataMap[content.Name] = content.Content
 	}
 
-	requesterIDMap := make(map[string]struct{})
+	runnerIDMap := make(map[string]struct{})
 	for _, trigger := range triggers {
-		requesterIDMap[trigger.RequesterUID.String()] = struct{}{}
+		runnerIDMap[trigger.RunnerUID.String()] = struct{}{}
 	}
 
 	runnerMap := make(map[string]*string)
-	for requesterID := range requesterIDMap {
-		runner, err := s.mgmtPrivateServiceClient.CheckNamespaceByUIDAdmin(ctx, &mgmtpb.CheckNamespaceByUIDAdminRequest{Uid: requesterID})
+	for runnerID := range runnerIDMap {
+		runner, err := s.mgmtPrivateServiceClient.CheckNamespaceByUIDAdmin(ctx, &mgmtpb.CheckNamespaceByUIDAdminRequest{Uid: runnerID})
 		if err != nil {
 			return nil, err
 		}
-		logger.Info("CheckNamespaceByUIDAdmin finished", zap.String("RequesterUID", requesterID), zap.String("runnerId", runner.Id))
-		runnerMap[requesterID] = &runner.Id
+		logger.Info("CheckNamespaceByUIDAdmin finished", zap.String("runnerID", runnerID), zap.String("runnerId", runner.Id))
+		runnerMap[runnerID] = &runner.Id
 	}
 
 	pbTriggers := make([]*modelpb.ModelRun, len(triggers))
@@ -825,7 +816,7 @@ func (s *service) ListModelTriggers(ctx context.Context, req *modelpb.ListModelR
 			pbTrigger.EndTime = timestamppb.New(trigger.EndTime.Time)
 		}
 
-		if trigger.RequesterUID.String() == ctxUserUID { // only the runner could see their input/output data
+		if CanViewPrivateData(trigger.RequesterUID.String(), requesterUID) {
 			data, ok := metadataMap[trigger.InputReferenceID]
 			if !ok {
 				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)
@@ -1281,24 +1272,4 @@ func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, 
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
-}
-
-func (s *service) pageSizeInRange(pageSize int32) int32 {
-	if pageSize <= 0 {
-		return repository.DefaultPageSize
-	}
-
-	if pageSize > repository.MaxPageSize {
-		return repository.MaxPageSize
-	}
-
-	return pageSize
-}
-
-func (s *service) pageInRange(page int32) int32 {
-	if page <= 0 {
-		return 0
-	}
-
-	return page
 }

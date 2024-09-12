@@ -342,6 +342,21 @@ func (mr *MockServiceMockRecorder) GetNamespaceModelByID(arg0, arg1, arg2, arg3 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelByID", reflect.TypeOf((*MockService)(nil).GetNamespaceModelByID), arg0, arg1, arg2, arg3)
 }
 
+// GetNamespaceModelOperation mocks base method.
+func (m *MockService) GetNamespaceModelOperation(arg0 context.Context, arg1 resource.Namespace, arg2, arg3 string, arg4 modelv1alpha.View) (*longrunningpb.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespaceModelOperation", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*longrunningpb.Operation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespaceModelOperation indicates an expected call of GetNamespaceModelOperation.
+func (mr *MockServiceMockRecorder) GetNamespaceModelOperation(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceModelOperation", reflect.TypeOf((*MockService)(nil).GetNamespaceModelOperation), arg0, arg1, arg2, arg3, arg4)
+}
+
 // GetOperation mocks base method.
 func (m *MockService) GetOperation(arg0 context.Context, arg1 string) (*longrunningpb.Operation, error) {
 	m.ctrl.T.Helper()
@@ -431,19 +446,19 @@ func (mr *MockServiceMockRecorder) ListModelDefinitions(arg0, arg1, arg2, arg3 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelDefinitions", reflect.TypeOf((*MockService)(nil).ListModelDefinitions), arg0, arg1, arg2, arg3)
 }
 
-// ListModelTriggers mocks base method.
-func (m *MockService) ListModelTriggers(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsRequest, arg2 filtering.Filter) (*modelv1alpha.ListModelRunsResponse, error) {
+// ListModelRuns mocks base method.
+func (m *MockService) ListModelRuns(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsRequest, arg2 filtering.Filter) (*modelv1alpha.ListModelRunsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelTriggers", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ListModelRuns", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListModelTriggers indicates an expected call of ListModelTriggers.
-func (mr *MockServiceMockRecorder) ListModelTriggers(arg0, arg1, arg2 interface{}) *gomock.Call {
+// ListModelRuns indicates an expected call of ListModelRuns.
+func (mr *MockServiceMockRecorder) ListModelRuns(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelTriggers", reflect.TypeOf((*MockService)(nil).ListModelTriggers), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelRuns", reflect.TypeOf((*MockService)(nil).ListModelRuns), arg0, arg1, arg2)
 }
 
 // ListModels mocks base method.
