@@ -10,7 +10,7 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	mm_minio "github.com/instill-ai/model-backend/pkg/minio"
-	"github.com/minio/minio-go/v7"
+	miniogo "github.com/minio/minio-go/v7"
 )
 
 // MinioIMock implements minio.MinioI
@@ -36,13 +36,13 @@ type MinioIMock struct {
 	beforeGetFilesByPathsCounter uint64
 	GetFilesByPathsMock          mMinioIMockGetFilesByPaths
 
-	funcUploadFile          func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
+	funcUploadFile          func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)
 	inspectFuncUploadFile   func(ctx context.Context, filePath string, fileContent any, fileMimeType string)
 	afterUploadFileCounter  uint64
 	beforeUploadFileCounter uint64
 	UploadFileMock          mMinioIMockUploadFile
 
-	funcUploadFileBytes          func(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
+	funcUploadFileBytes          func(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)
 	inspectFuncUploadFileBytes   func(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string)
 	afterUploadFileBytesCounter  uint64
 	beforeUploadFileBytesCounter uint64
@@ -1079,7 +1079,7 @@ type MinioIMockUploadFileParamPtrs struct {
 // MinioIMockUploadFileResults contains results of the MinioI.UploadFile
 type MinioIMockUploadFileResults struct {
 	url        string
-	objectInfo *minio.ObjectInfo
+	objectInfo *miniogo.ObjectInfo
 	err        error
 }
 
@@ -1217,7 +1217,7 @@ func (mmUploadFile *mMinioIMockUploadFile) Inspect(f func(ctx context.Context, f
 }
 
 // Return sets up results that will be returned by MinioI.UploadFile
-func (mmUploadFile *mMinioIMockUploadFile) Return(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+func (mmUploadFile *mMinioIMockUploadFile) Return(url string, objectInfo *miniogo.ObjectInfo, err error) *MinioIMock {
 	if mmUploadFile.mock.funcUploadFile != nil {
 		mmUploadFile.mock.t.Fatalf("MinioIMock.UploadFile mock is already set by Set")
 	}
@@ -1230,7 +1230,7 @@ func (mmUploadFile *mMinioIMockUploadFile) Return(url string, objectInfo *minio.
 }
 
 // Set uses given function f to mock the MinioI.UploadFile method
-func (mmUploadFile *mMinioIMockUploadFile) Set(f func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)) *MinioIMock {
+func (mmUploadFile *mMinioIMockUploadFile) Set(f func(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)) *MinioIMock {
 	if mmUploadFile.defaultExpectation != nil {
 		mmUploadFile.mock.t.Fatalf("Default expectation is already set for the MinioI.UploadFile method")
 	}
@@ -1259,7 +1259,7 @@ func (mmUploadFile *mMinioIMockUploadFile) When(ctx context.Context, filePath st
 }
 
 // Then sets up MinioI.UploadFile return parameters for the expectation previously defined by the When method
-func (e *MinioIMockUploadFileExpectation) Then(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+func (e *MinioIMockUploadFileExpectation) Then(url string, objectInfo *miniogo.ObjectInfo, err error) *MinioIMock {
 	e.results = &MinioIMockUploadFileResults{url, objectInfo, err}
 	return e.mock
 }
@@ -1285,7 +1285,7 @@ func (mmUploadFile *mMinioIMockUploadFile) invocationsDone() bool {
 }
 
 // UploadFile implements minio.MinioI
-func (mmUploadFile *MinioIMock) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+func (mmUploadFile *MinioIMock) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error) {
 	mm_atomic.AddUint64(&mmUploadFile.beforeUploadFileCounter, 1)
 	defer mm_atomic.AddUint64(&mmUploadFile.afterUploadFileCounter, 1)
 
@@ -1457,7 +1457,7 @@ type MinioIMockUploadFileBytesParamPtrs struct {
 // MinioIMockUploadFileBytesResults contains results of the MinioI.UploadFileBytes
 type MinioIMockUploadFileBytesResults struct {
 	url        string
-	objectInfo *minio.ObjectInfo
+	objectInfo *miniogo.ObjectInfo
 	err        error
 }
 
@@ -1595,7 +1595,7 @@ func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Inspect(f func(ctx context.
 }
 
 // Return sets up results that will be returned by MinioI.UploadFileBytes
-func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Return(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Return(url string, objectInfo *miniogo.ObjectInfo, err error) *MinioIMock {
 	if mmUploadFileBytes.mock.funcUploadFileBytes != nil {
 		mmUploadFileBytes.mock.t.Fatalf("MinioIMock.UploadFileBytes mock is already set by Set")
 	}
@@ -1608,7 +1608,7 @@ func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Return(url string, objectIn
 }
 
 // Set uses given function f to mock the MinioI.UploadFileBytes method
-func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Set(f func(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)) *MinioIMock {
+func (mmUploadFileBytes *mMinioIMockUploadFileBytes) Set(f func(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)) *MinioIMock {
 	if mmUploadFileBytes.defaultExpectation != nil {
 		mmUploadFileBytes.mock.t.Fatalf("Default expectation is already set for the MinioI.UploadFileBytes method")
 	}
@@ -1637,7 +1637,7 @@ func (mmUploadFileBytes *mMinioIMockUploadFileBytes) When(ctx context.Context, f
 }
 
 // Then sets up MinioI.UploadFileBytes return parameters for the expectation previously defined by the When method
-func (e *MinioIMockUploadFileBytesExpectation) Then(url string, objectInfo *minio.ObjectInfo, err error) *MinioIMock {
+func (e *MinioIMockUploadFileBytesExpectation) Then(url string, objectInfo *miniogo.ObjectInfo, err error) *MinioIMock {
 	e.results = &MinioIMockUploadFileBytesResults{url, objectInfo, err}
 	return e.mock
 }
@@ -1663,7 +1663,7 @@ func (mmUploadFileBytes *mMinioIMockUploadFileBytes) invocationsDone() bool {
 }
 
 // UploadFileBytes implements minio.MinioI
-func (mmUploadFileBytes *MinioIMock) UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+func (mmUploadFileBytes *MinioIMock) UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error) {
 	mm_atomic.AddUint64(&mmUploadFileBytes.beforeUploadFileBytesCounter, 1)
 	defer mm_atomic.AddUint64(&mmUploadFileBytes.afterUploadFileBytesCounter, 1)
 

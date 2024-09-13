@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/lifecycle"
 	"go.uber.org/zap"
+
+	miniogo "github.com/minio/minio-go/v7"
 
 	"github.com/instill-ai/model-backend/config"
 
@@ -22,8 +23,8 @@ import (
 )
 
 type MinioI interface {
-	UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
-	UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error)
+	UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)
+	UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error)
 	DeleteFile(ctx context.Context, filePath string) (err error)
 	GetFile(ctx context.Context, filePath string) ([]byte, error)
 	GetFilesByPaths(ctx context.Context, filePaths []string) ([]FileContent, error)
@@ -32,7 +33,7 @@ type MinioI interface {
 const Location = "us-east-1"
 
 type Minio struct {
-	client *minio.Client
+	client *miniogo.Client
 	bucket string
 }
 
@@ -44,7 +45,7 @@ func NewMinioClientAndInitBucket(ctx context.Context, cfg *config.MinioConfig) (
 	logger.Info("Initializing Minio client and bucket...")
 
 	endpoint := net.JoinHostPort(cfg.Host, cfg.Port)
-	client, err := minio.New(endpoint, &minio.Options{
+	client, err := miniogo.New(endpoint, &miniogo.Options{
 		Creds:  credentials.NewStaticV4(cfg.RootUser, cfg.RootPwd, ""),
 		Secure: cfg.Secure,
 	})
@@ -66,7 +67,7 @@ func NewMinioClientAndInitBucket(ctx context.Context, cfg *config.MinioConfig) (
 		return &Minio{client: client, bucket: cfg.BucketName}, nil
 	}
 
-	if err = client.MakeBucket(ctx, cfg.BucketName, minio.MakeBucketOptions{
+	if err = client.MakeBucket(ctx, cfg.BucketName, miniogo.MakeBucketOptions{
 		Region: Location,
 	}); err != nil {
 		logger.Error("creating Bucket failed", zap.Error(err))
@@ -93,12 +94,12 @@ func NewMinioClientAndInitBucket(ctx context.Context, cfg *config.MinioConfig) (
 	return &Minio{client: client, bucket: cfg.BucketName}, nil
 }
 
-func (m *Minio) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+func (m *Minio) UploadFile(ctx context.Context, filePath string, fileContent any, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error) {
 	jsonData, _ := json.Marshal(fileContent)
 	return m.UploadFileBytes(ctx, filePath, jsonData, fileMimeType)
 }
 
-func (m *Minio) UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *minio.ObjectInfo, err error) {
+func (m *Minio) UploadFileBytes(ctx context.Context, filePath string, fileBytes []byte, fileMimeType string) (url string, objectInfo *miniogo.ObjectInfo, err error) {
 	logger, err := log.GetZapLogger(ctx)
 	if err != nil {
 		return "", nil, err
@@ -107,14 +108,14 @@ func (m *Minio) UploadFileBytes(ctx context.Context, filePath string, fileBytes 
 	reader := bytes.NewReader(fileBytes)
 
 	// Create the file path with folder structure
-	_, err = m.client.PutObject(ctx, m.bucket, filePath, reader, int64(len(fileBytes)), minio.PutObjectOptions{ContentType: fileMimeType})
+	_, err = m.client.PutObject(ctx, m.bucket, filePath, reader, int64(len(fileBytes)), miniogo.PutObjectOptions{ContentType: fileMimeType})
 	if err != nil {
 		logger.Error("Failed to upload file to MinIO", zap.Error(err))
 		return "", nil, err
 	}
 
 	// Get the object stat (metadata)
-	stat, err := m.client.StatObject(ctx, m.bucket, filePath, minio.StatObjectOptions{})
+	stat, err := m.client.StatObject(ctx, m.bucket, filePath, miniogo.StatObjectOptions{})
 	if err != nil {
 		return "", nil, err
 	}
@@ -135,7 +136,7 @@ func (m *Minio) DeleteFile(ctx context.Context, filePathName string) (err error)
 		return err
 	}
 	// Delete the file from MinIO
-	err = m.client.RemoveObject(ctx, m.bucket, filePathName, minio.RemoveObjectOptions{})
+	err = m.client.RemoveObject(ctx, m.bucket, filePathName, miniogo.RemoveObjectOptions{})
 	if err != nil {
 		logger.Error("Failed to delete file from MinIO", zap.Error(err))
 		return err
@@ -150,7 +151,7 @@ func (m *Minio) GetFile(ctx context.Context, filePathName string) ([]byte, error
 	}
 
 	// Get the object using the client
-	object, err := m.client.GetObject(ctx, m.bucket, filePathName, minio.GetObjectOptions{})
+	object, err := m.client.GetObject(ctx, m.bucket, filePathName, miniogo.GetObjectOptions{})
 	if err != nil {
 		logger.Error("Failed to get file from MinIO", zap.Error(err))
 		return nil, err
@@ -192,7 +193,7 @@ func (m *Minio) GetFilesByPaths(ctx context.Context, filePaths []string) ([]File
 		go func(filePath string) {
 			defer wg.Done()
 
-			obj, err := m.client.GetObject(ctx, m.bucket, filePath, minio.GetObjectOptions{})
+			obj, err := m.client.GetObject(ctx, m.bucket, filePath, miniogo.GetObjectOptions{})
 			if err != nil {
 				logger.Error("Failed to get object from MinIO", zap.String("path", filePath), zap.Error(err))
 				errCh <- err
