@@ -103,12 +103,12 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
 			w.redisClient.ExpireGT(
 				sCtx,
-				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), param.ModelVersion.Version),
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", param.UserUID, param.RequesterUID, param.ModelUID.String(), param.ModelVersion.Version),
 				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 			)
 			w.redisClient.ExpireGT(
 				sCtx,
-				fmt.Sprintf("model_trigger_output_key:%s:%s:%s", param.UserUID, param.ModelUID.String(), ""),
+				fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", param.UserUID, param.RequesterUID, param.ModelUID.String(), ""),
 				time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 			)
 		}
