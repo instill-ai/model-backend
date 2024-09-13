@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.30.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.0-alpha...v0.30.1-alpha) (2024-09-13)
+
+
+### Bug Fixes
+
+* **run:** fix Runner missing issue ([#689](https://github.com/instill-ai/model-backend/issues/689)) ([22f2aa0](https://github.com/instill-ai/model-backend/commit/22f2aa02cbef910a079d87a269eee8b32e6c0dda))
+
 ## [0.30.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.29.0-alpha...v0.30.0-alpha) (2024-09-10)
 
 
