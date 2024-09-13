@@ -456,11 +456,11 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	requesterUID, userUID := utils.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtpb.Mode_MODE_ASYNC,
@@ -476,7 +476,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	runLog, err := h.service.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := h.service.CreateModelRun(ctx, logUUID, uuid.FromStringOrNil(userUID), modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -549,14 +549,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	// latest operation
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, ""),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, pbModel.Uid, ""),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 	// latest version operation
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, pbModel.Uid, version.Version),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, pbModel.Uid, version.Version),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)

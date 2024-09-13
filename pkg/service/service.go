@@ -1020,7 +1020,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	requesterUID, userUID := utils.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false)
 	if err != nil {
@@ -1051,10 +1051,10 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		if err := s.DeleteModelVersionByID(ctx, ns, modelID, version.Version); err != nil {
 			return err
 		}
-		s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), version.Version))
+		s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), version.Version))
 	}
 
-	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s", userUID, dbModel.UID.String(), ""))
+	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), ""))
 
 	err = s.aclClient.Purge(ctx, "model_", dbModel.UID)
 	if err != nil {
