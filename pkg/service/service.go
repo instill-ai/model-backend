@@ -792,7 +792,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 			UpdateTime: timestamppb.New(trigger.UpdateTime),
 		}
 
-		pbTrigger.RunnerId = runnerMap[trigger.RequesterUID.String()]
+		pbTrigger.RunnerId = runnerMap[trigger.RunnerUID.String()]
 
 		if trigger.TotalDuration.Valid {
 			totalDuration := int32(trigger.TotalDuration.Int64)
