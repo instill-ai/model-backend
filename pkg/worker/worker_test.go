@@ -14,8 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/workflow"
-
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/mock"
@@ -89,11 +88,11 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 
 		uid, _ := uuid.NewV4()
-		modelTrigger := &datamodel.ModelTrigger{
+		modelTrigger := &datamodel.ModelRun{
 			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
 			ModelUID:             param.ModelUID,
 			ModelVersion:         param.ModelVersion.Version,
-			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			Status:               datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 			RequesterUID:         param.RequesterUID,
 			InputReferenceID:     "inputReferenceID",
 		}
@@ -131,7 +130,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			nil,
 		)
 
-		repo.EXPECT().UpdateModelTrigger(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		repo.EXPECT().UpdateModelRun(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
 		err := w.TriggerModelActivity(ctx, param)
@@ -153,11 +152,11 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
 
 		uid, _ := uuid.NewV4()
-		modelTrigger := &datamodel.ModelTrigger{
+		modelTrigger := &datamodel.ModelRun{
 			BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: uid},
 			ModelUID:             param.ModelUID,
 			ModelVersion:         param.ModelVersion.Version,
-			Status:               datamodel.TriggerStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
+			Status:               datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 			RequesterUID:         param.RequesterUID,
 			InputReferenceID:     "inputReferenceID",
 		}

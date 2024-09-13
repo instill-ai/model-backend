@@ -320,10 +320,11 @@ type UsageMetricData struct {
 	ModelTask           commonpb.Task
 }
 
-func GetUserUID(ctx context.Context) string {
+func GetRequesterUIDAndUserUID(ctx context.Context) (string, string) {
 	requesterUID := resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey)
-	if requesterUID == "" {
-		return resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	if strings.TrimSpace(requesterUID) == "" {
+		requesterUID = userUID
 	}
-	return requesterUID
+	return requesterUID, userUID
 }

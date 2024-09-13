@@ -120,7 +120,8 @@ jobs:
           docker pull instill/dummy-text-to-image:dev
           docker pull instill/dummy-multimodal-chat:dev
           docker pull instill/dummy-text-embedding:dev
-          docker pull instill/dummy-multimodal-embedding:dev
+          # disabled for now: image not found
+          # docker pull instill/dummy-multimodal-embedding:dev
           docker tag instill/dummy-cls:dev localhost:5001/admin/dummy-cls
           docker tag instill/dummy-det:dev localhost:5001/admin/dummy-det
           docker tag instill/dummy-instance-segmentation:dev localhost:5001/admin/dummy-instance-segmentation
@@ -131,7 +132,8 @@ jobs:
           docker tag instill/dummy-text-to-image:dev localhost:5001/admin/dummy-text-to-image
           docker tag instill/dummy-multimodal-chat:dev localhost:5001/admin/dummy-multimodal-chat
           docker tag instill/dummy-text-embedding:dev localhost:5001/admin/dummy-text-embedding
-          docker tag instill/dummy-multimodal-embedding:dev localhost:5001/admin/dummy-multimodal-embedding
+          # disabled for now: image not found
+          # docker tag instill/dummy-multimodal-embedding:dev localhost:5001/admin/dummy-multimodal-embedding
           docker push localhost:5001/admin/dummy-cls
           docker push localhost:5001/admin/dummy-det
           docker push localhost:5001/admin/dummy-instance-segmentation
@@ -142,7 +144,8 @@ jobs:
           docker push localhost:5001/admin/dummy-text-to-image
           docker push localhost:5001/admin/dummy-multimodal-chat
           docker push localhost:5001/admin/dummy-text-embedding
-          docker push localhost:5001/admin/dummy-multimodal-embedding
+          # disabled for now: image not found
+          # docker push localhost:5001/admin/dummy-multimodal-embedding
 
       - name: Launch Init Model Pod
         run: |
@@ -173,7 +176,8 @@ jobs:
         run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "model init pod still running"; sleep 5; done;
 
       - name: Check test model deployment
-        run: while [ "$(curl -s http://localhost:8265/api/serve/applications/ | jq '.applications | to_entries | map(select(.key | contains("dummy-")) | .value.status) | length == 11 and all(. == "RUNNING")')" != "true" ]; do echo "models still deploying"; sleep 5; done;
+        # disabled 1 for now: image not found
+        run: while [ "$(curl -s http://localhost:8265/api/serve/applications/ | jq '.applications | to_entries | map(select(.key | contains("dummy-")) | .value.status) | length == 10 and all(. == "RUNNING")')" != "true" ]; do echo "models still deploying"; sleep 5; done;
 
       - name: Run integration-test
         run: |

@@ -11,38 +11,43 @@ import (
 
 // for saving the protobuf types as string values
 type (
-	TriggerStatus runpb.RunStatus
-	TriggerSource runpb.RunSource
+	RunStatus runpb.RunStatus
+	RunSource runpb.RunSource
 )
 
-func (v *TriggerStatus) Scan(value any) error {
-	*v = TriggerStatus(runpb.RunStatus_value[value.(string)])
+func (v *RunStatus) Scan(value any) error {
+	*v = RunStatus(runpb.RunStatus_value[value.(string)])
 	return nil
 }
 
-func (v TriggerStatus) Value() (driver.Value, error) {
+func (v RunStatus) Value() (driver.Value, error) {
 	return runpb.RunStatus(v).String(), nil
 }
 
-func (v *TriggerSource) Scan(value any) error {
-	*v = TriggerSource(runpb.RunSource_value[value.(string)])
+func (v *RunSource) Scan(value any) error {
+	*v = RunSource(runpb.RunSource_value[value.(string)])
 	return nil
 }
 
-func (v TriggerSource) Value() (driver.Value, error) {
+func (v RunSource) Value() (driver.Value, error) {
 	return runpb.RunSource(v).String(), nil
 }
 
-type ModelTrigger struct {
+type ModelRun struct {
 	BaseStaticHardDelete
 	ModelUID          uuid.UUID
 	ModelVersion      string
-	Status            TriggerStatus
-	Source            TriggerSource
+	Status            RunStatus
+	Source            RunSource
 	TotalDuration     null.Int
 	EndTime           null.Time
 	RequesterUID      uuid.UUID
+	RunnerUID         uuid.UUID
 	InputReferenceID  string
 	OutputReferenceID null.String
 	Error             null.String
+}
+
+func (*ModelRun) TableName() string {
+	return "model_trigger"
 }
