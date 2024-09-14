@@ -23,15 +23,15 @@ import (
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	minioClient "github.com/instill-ai/model-backend/pkg/minio"
-
 	"github.com/instill-ai/x/errmsg"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	miniox "github.com/instill-ai/x/minio"
 )
 
 type InferInput any
@@ -212,7 +212,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
 
-	input, err := w.minioClient.GetFile(ctx, param.RunLog.InputReferenceID)
+	input, err := w.minioClient.GetFile(ctx, nil, param.RunLog.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -265,9 +265,9 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	outputReferenceID := minioClient.GenerateOutputRefID()
+	outputReferenceID := miniox.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = w.minioClient.UploadFileBytes(ctx, outputReferenceID, outputJSON, constant.ContentTypeJSON)
+	_, _, err = w.minioClient.UploadFileBytes(ctx, nil, outputReferenceID, outputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -336,7 +336,7 @@ type UploadToMinioActivityResponse struct {
 }
 
 func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error) {
-	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, param.ObjectName, param.Data, param.ContentType)
+	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, nil, param.ObjectName, param.Data, param.ContentType)
 	if err != nil {
 		return nil, err
 	}

@@ -13,6 +13,8 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/redis/go-redis/v9"
+
+	miniox "github.com/instill-ai/x/minio"
 )
 
 // ServerConfig defines HTTP server configurations
@@ -160,7 +162,7 @@ type AppConfig struct {
 	Registry        RegistryConfig        `koanf:"registry"`
 	InitModel       InitModelConfig       `koanf:"initmodel"`
 	Log             LogConfig             `koanf:"log"`
-	Minio           MinioConfig           `koanf:"minio"`
+	Minio           miniox.Config         `koanf:"minio"`
 }
 
 // Config - Global variable to export

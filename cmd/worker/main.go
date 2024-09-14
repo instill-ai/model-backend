@@ -20,12 +20,8 @@ import (
 
 	temporalclient "go.temporal.io/sdk/client"
 
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
-
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 
@@ -33,6 +29,11 @@ import (
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
+
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
+
+	miniox "github.com/instill-ai/x/minio"
 )
 
 func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
@@ -160,7 +161,7 @@ func main() {
 	}
 
 	// Initialize Minio client
-	minioClient, err := minio.NewMinioClientAndInitBucket(ctx, &config.Config.Minio)
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger)
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}

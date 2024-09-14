@@ -6,7 +6,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/instill-ai/model-backend/pkg/minio"
+	miniox "github.com/instill-ai/x/minio"
+
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/usage"
@@ -26,13 +27,13 @@ type Worker interface {
 type worker struct {
 	redisClient       *redis.Client
 	ray               ray.Ray
-	minioClient       minio.MinioI
+	minioClient       miniox.MinioI
 	repository        repository.Repository
 	modelUsageHandler usage.ModelUsageHandler
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(rc *redis.Client, ra ray.Ray, repo repository.Repository, minioClient minio.MinioI, modelUsageHandler usage.ModelUsageHandler) Worker {
+func NewWorker(rc *redis.Client, ra ray.Ray, repo repository.Repository, minioClient miniox.MinioI, modelUsageHandler usage.ModelUsageHandler) Worker {
 	if modelUsageHandler == nil {
 		modelUsageHandler = usage.NewNoopModelUsageHandler()
 	}

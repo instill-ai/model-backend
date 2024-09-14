@@ -28,7 +28,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
@@ -44,6 +43,9 @@ import (
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	constantx "github.com/instill-ai/x/constant"
+	miniox "github.com/instill-ai/x/minio"
+	resourcex "github.com/instill-ai/x/resource"
 )
 
 // Service is the interface for the service layer
@@ -113,7 +115,7 @@ type service struct {
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    acl.ACLClientInterface
-	minioClient                  minio.MinioI
+	minioClient                  miniox.MinioI
 	instillCoreHost              string
 }
 
@@ -127,7 +129,7 @@ func NewService(
 	tc client.Client,
 	ra ray.Ray,
 	a acl.ACLClientInterface,
-	minioClient minio.MinioI,
+	minioClient miniox.MinioI,
 	h string) Service {
 	return &service{
 		repository:                   r,
@@ -176,19 +178,19 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, user
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	source := datamodel.RunSource(runpb.RunSource_RUN_SOURCE_API)
-	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constant.HeaderUserAgent)]
+	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constantx.HeaderUserAgent)]
 	if ok {
 		source = datamodel.RunSource(userAgentEnum)
 	}
 
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey))
+	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constantx.HeaderRequesterUIDKey))
 	if requesterUID.IsNil() {
 		requesterUID = userUID
 	}
 
-	inputReferenceID := minio.GenerateInputRefID()
+	inputReferenceID := miniox.GenerateInputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, inputReferenceID, inputJSON, constant.ContentTypeJSON)
+	_, _, err = s.minioClient.UploadFileBytes(ctx, logger, inputReferenceID, inputJSON, constantx.ContentTypeJSON)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(inputJSON)), zap.Error(err))
 		return nil, status.Error(codes.Internal, err.Error())
@@ -573,7 +575,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if !trigger.OutputReferenceID.Valid {
 		return nil, fmt.Errorf("trigger output not valid")
 	}
-	output, err := s.minioClient.GetFile(ctx, trigger.OutputReferenceID.String)
+	output, err := s.minioClient.GetFile(ctx, logger, trigger.OutputReferenceID.String)
 	if err != nil {
 		return nil, err
 	}
@@ -735,7 +737,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		return nil, err
 	}
 
-	requesterUID, _ := utils.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, _ := resourcex.GetRequesterUIDAndUserUID(ctx)
 	isOwner := dbModel.OwnerUID().String() == requesterUID
 
 	runs, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, isOwner, dbModel.UID.String())
@@ -755,7 +757,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	logger.Info("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
-	fileContents, err := s.minioClient.GetFilesByPaths(ctx, referenceIDs)
+	fileContents, err := s.minioClient.GetFilesByPaths(ctx, logger, referenceIDs)
 	if err != nil {
 		logger.Error("failed to get files from minio", zap.Error(err))
 		return nil, err
@@ -1020,7 +1022,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	ownerPermalink := ns.Permalink()
 
-	requesterUID, userUID := utils.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false)
 	if err != nil {

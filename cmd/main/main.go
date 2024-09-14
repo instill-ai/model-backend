@@ -39,20 +39,22 @@ import (
 	"github.com/instill-ai/model-backend/pkg/external"
 	"github.com/instill-ai/model-backend/pkg/handler"
 	"github.com/instill-ai/model-backend/pkg/middleware"
-	"github.com/instill-ai/model-backend/pkg/minio"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
+
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
+
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	miniox "github.com/instill-ai/x/minio"
 )
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
@@ -230,7 +232,7 @@ func main() {
 	repo := repository.NewRepository(db, redisClient)
 
 	// Initialize Minio client
-	minioClient, err := minio.NewMinioClientAndInitBucket(ctx, &config.Config.Minio)
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger)
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
