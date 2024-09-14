@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
-	"github.com/golang/mock/gomock"
+	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -441,15 +441,11 @@ var ModelDefinition, _ = uuid.FromString("909c3278-f7d1-461c-9352-87741bef11d3")
 // }
 
 func TestGetModelDefinition(t *testing.T) {
-	t.Run("TestGetModelDefinition", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
+	mc := minimock.NewController(t)
 
-		mockRepository := mock.NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			GetModelDefinition("github").
-			Return(&datamodel.ModelDefinition{}, nil).
-			Times(1)
+	t.Run("TestGetModelDefinition", func(t *testing.T) {
+		mockRepository := mock.NewRepositoryMock(mc)
+		mockRepository.GetModelDefinitionMock.Times(1).Expect("github").Return(&datamodel.ModelDefinition{}, nil)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinition(context.Background(), "github")
@@ -457,14 +453,8 @@ func TestGetModelDefinition(t *testing.T) {
 	})
 
 	t.Run("GetModelDefinitionByUID", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-
-		mockRepository := mock.NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			GetModelDefinitionByUID(ModelDefinition).
-			Return(&datamodel.ModelDefinition{}, nil).
-			Times(1)
+		mockRepository := mock.NewRepositoryMock(mc)
+		mockRepository.GetModelDefinitionByUIDMock.Times(1).Expect(ModelDefinition).Return(&datamodel.ModelDefinition{}, nil)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, err := s.GetModelDefinitionByUID(context.Background(), ModelDefinition)
@@ -473,15 +463,12 @@ func TestGetModelDefinition(t *testing.T) {
 }
 
 func TestListModelDefinitions(t *testing.T) {
-	t.Run("TestListModelDefinition", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
+	mc := minimock.NewController(t)
 
-		mockRepository := mock.NewMockRepository(ctrl)
-		mockRepository.
-			EXPECT().
-			ListModelDefinitions(modelPB.View_VIEW_FULL, int64(100), "").
-			Return([]*datamodel.ModelDefinition{}, "", int64(100), nil).
-			Times(1)
+	t.Run("TestListModelDefinition", func(t *testing.T) {
+		mockRepository := mock.NewRepositoryMock(mc)
+		mockRepository.ListModelDefinitionsMock.Times(1).Expect(modelPB.View_VIEW_FULL, 100, "").
+			Return([]*datamodel.ModelDefinition{}, "", 100, nil)
 		s := service.NewService(mockRepository, nil, nil, nil, nil, nil, nil, nil, nil, "")
 
 		_, _, _, err := s.ListModelDefinitions(context.Background(), modelPB.View_VIEW_FULL, int32(100), "")
@@ -490,4 +477,6 @@ func TestListModelDefinitions(t *testing.T) {
 }
 
 func TestService_ListNamespaceModelVersions(t *testing.T) {
+	t.SkipNow()
+	// tod: implement this
 }

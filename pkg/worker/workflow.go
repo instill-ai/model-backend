@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/temporal"
@@ -15,6 +14,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/guregu/null.v4"
+
+	miniogo "github.com/minio/minio-go/v7"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
@@ -331,7 +332,7 @@ type UploadToMinioActivityRequest struct {
 
 type UploadToMinioActivityResponse struct {
 	URL        string
-	ObjectInfo *minio.ObjectInfo
+	ObjectInfo *miniogo.ObjectInfo
 }
 
 func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error) {

@@ -738,18 +738,18 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	requesterUID, _ := utils.GetRequesterUIDAndUserUID(ctx)
 	isOwner := dbModel.OwnerUID().String() == requesterUID
 
-	triggers, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, isOwner, dbModel.UID.String())
+	runs, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, isOwner, dbModel.UID.String())
 	if err != nil {
 		return nil, err
 	}
 
 	metadataMap := make(map[string][]byte)
 	var referenceIDs []string
-	for _, trigger := range triggers {
-		if CanViewPrivateData(trigger.RequesterUID.String(), requesterUID) {
-			referenceIDs = append(referenceIDs, trigger.InputReferenceID)
-			if trigger.OutputReferenceID.Valid {
-				referenceIDs = append(referenceIDs, trigger.OutputReferenceID.String)
+	for _, run := range runs {
+		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
+			referenceIDs = append(referenceIDs, run.InputReferenceID)
+			if run.OutputReferenceID.Valid {
+				referenceIDs = append(referenceIDs, run.OutputReferenceID.String)
 			}
 		}
 	}
@@ -765,7 +765,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	runnerIDMap := make(map[string]struct{})
-	for _, trigger := range triggers {
+	for _, trigger := range runs {
 		runnerIDMap[trigger.RunnerUID.String()] = struct{}{}
 	}
 
@@ -779,33 +779,33 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		runnerMap[runnerID] = &runner.Id
 	}
 
-	pbTriggers := make([]*modelpb.ModelRun, len(triggers))
-	for i, trigger := range triggers {
-		pbTrigger := &modelpb.ModelRun{
-			Uid:        trigger.UID.String(),
-			ModelUid:   trigger.ModelUID.String(),
-			Version:    trigger.ModelVersion,
-			Status:     runpb.RunStatus(trigger.Status),
-			Source:     runpb.RunSource(trigger.Source),
-			Error:      trigger.Error.Ptr(),
-			CreateTime: timestamppb.New(trigger.CreateTime),
-			UpdateTime: timestamppb.New(trigger.UpdateTime),
+	pbModelRuns := make([]*modelpb.ModelRun, len(runs))
+	for i, run := range runs {
+		pbModelRun := &modelpb.ModelRun{
+			Uid:        run.UID.String(),
+			ModelUid:   run.ModelUID.String(),
+			Version:    run.ModelVersion,
+			Status:     runpb.RunStatus(run.Status),
+			Source:     runpb.RunSource(run.Source),
+			Error:      run.Error.Ptr(),
+			CreateTime: timestamppb.New(run.CreateTime),
+			UpdateTime: timestamppb.New(run.UpdateTime),
 		}
 
-		pbTrigger.RunnerId = runnerMap[trigger.RunnerUID.String()]
+		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
 
-		if trigger.TotalDuration.Valid {
-			totalDuration := int32(trigger.TotalDuration.Int64)
-			pbTrigger.TotalDuration = &totalDuration
+		if run.TotalDuration.Valid {
+			totalDuration := int32(run.TotalDuration.Int64)
+			pbModelRun.TotalDuration = &totalDuration
 		}
-		if trigger.EndTime.Valid {
-			pbTrigger.EndTime = timestamppb.New(trigger.EndTime.Time)
+		if run.EndTime.Valid {
+			pbModelRun.EndTime = timestamppb.New(run.EndTime.Time)
 		}
 
-		if CanViewPrivateData(trigger.RequesterUID.String(), requesterUID) {
-			data, ok := metadataMap[trigger.InputReferenceID]
+		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
+			data, ok := metadataMap[run.InputReferenceID]
 			if !ok {
-				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", trigger.ModelUID.String(), trigger.InputReferenceID)
+				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", run.ModelUID.String(), run.InputReferenceID)
 			}
 			// todo: fix TaskInputs type
 			triggerReq := &modelpb.TriggerNamespaceModelRequest{}
@@ -813,10 +813,10 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 			if err != nil {
 				return nil, err
 			}
-			pbTrigger.TaskInputs = triggerReq.TaskInputs
+			pbModelRun.TaskInputs = triggerReq.TaskInputs
 
-			if trigger.OutputReferenceID.Valid {
-				data := metadataMap[trigger.OutputReferenceID.String]
+			if run.OutputReferenceID.Valid {
+				data := metadataMap[run.OutputReferenceID.String]
 
 				// todo: fix TaskOutputs type
 				triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
@@ -825,15 +825,15 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 					return nil, err
 				}
 
-				pbTrigger.TaskOutputs = triggerModelResp.TaskOutputs
+				pbModelRun.TaskOutputs = triggerModelResp.TaskOutputs
 			}
 		}
 
-		pbTriggers[i] = pbTrigger
+		pbModelRuns[i] = pbModelRun
 	}
 
 	return &modelpb.ListModelRunsResponse{
-		Runs:      pbTriggers,
+		Runs:      pbModelRuns,
 		TotalSize: int32(totalSize),
 		PageSize:  pageSize,
 		Page:      page,

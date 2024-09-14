@@ -1,10 +1,7 @@
 package worker_test
 
-//go:generate mockgen -destination mock_ray_test.go -package $GOPACKAGE github.com/instill-ai/model-backend/pkg/ray Ray
-
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -13,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	"go.temporal.io/sdk/workflow"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -23,34 +19,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/worker"
 
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
-	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
-
-func TestWorker_TriggerModelWorkflow(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s, err := miniredis.Run()
-	require.NoError(t, err)
-	defer s.Close()
-
-	rc := redis.NewClient(&redis.Options{
-		Addr: s.Addr(),
-	})
-
-	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
-		// todo: fix input workflow.Context for unit test
-		t.SkipNow()
-
-		param := &worker.TriggerModelWorkflowRequest{}
-		mockRay := NewMockRay(ctrl)
-
-		w := worker.NewWorker(rc, mockRay, nil, nil, nil)
-		err = w.TriggerModelWorkflow(workflow.Context(nil), param)
-		require.NoError(t, err)
-	})
-}
 
 func TestWorker_TriggerModelActivity(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -66,7 +37,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		Addr: s.Addr(),
 	})
 
-	repo := mock.NewMockRepository(ctrl)
+	repo := mock.NewRepositoryMock(mc)
 
 	mockMinio := mock.NewMinioIMock(mc)
 	mockMinio.UploadFileBytesMock.Return("", nil, nil)
@@ -84,8 +55,8 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.Task = taskv1alpha.Task_TASK_CHAT
-		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
+		param.Task = commonpb.Task_TASK_CHAT
+		param.Visibility = datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE)
 
 		uid, _ := uuid.NewV4()
 		modelTrigger := &datamodel.ModelRun{
@@ -98,30 +69,15 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		}
 		param.RunLog = modelTrigger
 
-		mockRay := NewMockRay(ctrl)
+		mockRay := mock.NewRayMock(mc)
 		ctx := context.Background()
 
-		state := modelPB.State_STATE_ACTIVE
-		mockRay.EXPECT().
-			ModelReady(
-				gomock.Any(),
-				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
-				param.ModelVersion.Version,
-			).Return(
-			&state,
-			"",
-			1,
-			nil,
-		).Times(1)
-		mockRay.EXPECT().ModelInferRequest(
-			gomock.Any(),
-			param.Task,
-			gomock.Any(),
-			fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
-			param.ModelVersion.Version,
-		).Return(&rayserver.CallResponse{
-			TaskOutputs: []*structpb.Struct{},
-		}, nil).Times(1)
+		state := modelpb.State_STATE_ACTIVE
+		mockRay.ModelReadyMock.Times(1).Return(&state, "", 1, nil)
+		mockRay.ModelInferRequestMock.Times(1).
+			Return(&rayserver.CallResponse{
+				TaskOutputs: []*structpb.Struct{},
+			}, nil)
 		mockMinio.GetFileMock.Expect(
 			minimock.AnyContext,
 			modelTrigger.InputReferenceID,
@@ -130,7 +86,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			nil,
 		)
 
-		repo.EXPECT().UpdateModelRun(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		repo.UpdateModelRunMock.Times(1).Return(nil)
 
 		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
 		err := w.TriggerModelActivity(ctx, param)
@@ -148,8 +104,8 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Version:  "Version",
 			ModelUID: param.ModelUID,
 		}
-		param.Task = taskv1alpha.Task_TASK_CHAT
-		param.Visibility = datamodel.ModelVisibility(modelPB.Model_VISIBILITY_PRIVATE)
+		param.Task = commonpb.Task_TASK_CHAT
+		param.Visibility = datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE)
 
 		uid, _ := uuid.NewV4()
 		modelTrigger := &datamodel.ModelRun{
@@ -162,20 +118,10 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		}
 		param.RunLog = modelTrigger
 
-		mockRay := NewMockRay(ctrl)
+		mockRay := mock.NewRayMock(mc)
 		ctx := context.Background()
 
-		mockRay.EXPECT().
-			ModelReady(
-				gomock.Any(),
-				fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID),
-				param.ModelVersion.Version,
-			).Return(
-			modelPB.State_STATE_OFFLINE.Enum(),
-			"",
-			1,
-			nil,
-		).Times(1)
+		mockRay.ModelReadyMock.Times(1).Return(modelpb.State_STATE_OFFLINE.Enum(), "", 1, nil)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)
