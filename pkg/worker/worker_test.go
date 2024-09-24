@@ -21,6 +21,7 @@ import (
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mockx "github.com/instill-ai/x/mock"
 )
 
 func TestWorker_TriggerModelActivity(t *testing.T) {
@@ -39,7 +40,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 	repo := mock.NewRepositoryMock(mc)
 
-	mockMinio := mock.NewMinioIMock(mc)
+	mockMinio := mockx.NewMinioIMock(mc)
 	mockMinio.UploadFileBytesMock.Return("", nil, nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
@@ -78,10 +79,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 			Return(&rayserver.CallResponse{
 				TaskOutputs: []*structpb.Struct{},
 			}, nil)
-		mockMinio.GetFileMock.Expect(
-			minimock.AnyContext,
-			modelTrigger.InputReferenceID,
-		).Return(
+		mockMinio.GetFileMock.Return(
 			[]byte("{}"),
 			nil,
 		)

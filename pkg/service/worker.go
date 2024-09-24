@@ -16,9 +16,11 @@ import (
 	rpcStatus "google.golang.org/genproto/googleapis/rpc/status"
 
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/model-backend/pkg/utils"
+
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	resourcex "github.com/instill-ai/x/resource"
 )
 
 func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrunningpb.Operation, error) {
@@ -33,7 +35,7 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	requesterUID, userID := utils.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -87,7 +89,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	requesterUID, userID := utils.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -138,6 +140,7 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 }
 
 func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerUID string) (*longrunningpb.Operation, error) {
+	logger, _ := custom_logger.GetZapLogger(ctx)
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -148,14 +151,14 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 			return nil, err
 		}
 
-		input, err := s.minioClient.GetFile(ctx, trigger.InputReferenceID)
+		input, err := s.minioClient.GetFile(ctx, logger, trigger.InputReferenceID)
 		if err != nil {
 			return nil, err
 		}
 		if !trigger.OutputReferenceID.Valid {
 			return nil, fmt.Errorf("trigger output not valid")
 		}
-		output, err := s.minioClient.GetFile(ctx, trigger.OutputReferenceID.String)
+		output, err := s.minioClient.GetFile(ctx, logger, trigger.OutputReferenceID.String)
 		if err != nil {
 			return nil, err
 		}

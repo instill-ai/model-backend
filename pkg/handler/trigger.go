@@ -21,6 +21,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/instill-ai/x/sterr"
+
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -28,11 +30,11 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/sterr"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	resourcex "github.com/instill-ai/x/resource"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
@@ -456,7 +458,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	requesterUID, userUID := utils.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,

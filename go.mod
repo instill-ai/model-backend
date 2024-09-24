@@ -9,7 +9,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.5
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
-	github.com/gojuno/minimock/v3 v3.3.13
+	github.com/gojuno/minimock/v3 v3.4.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
@@ -17,7 +17,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20240902051229-d15d37e2778e
 	github.com/instill-ai/usage-client v0.3.0-alpha
-	github.com/instill-ai/x v0.4.0-alpha
+	github.com/instill-ai/x v0.4.0-alpha.0.20240923052503-fd243919e005
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/knadh/koanf v1.5.0
 	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c
@@ -26,7 +26,7 @@ require (
 	github.com/lestrrat-go/pdebug v0.0.0-20210111095411-35b07dbf089b
 	github.com/lestrrat-go/structinfo v0.0.0-20210312050401-7f8bd69d6acb
 	github.com/mennanov/fieldmask-utils v1.1.2
-	github.com/minio/minio-go/v7 v7.0.74
+	github.com/minio/minio-go/v7 v7.0.76
 	github.com/openfga/api/proto v0.0.0-20240807201305-c96ec773cae9
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
@@ -76,7 +76,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/nexus-rpc/sdk-go v0.0.9 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/rs/xid v1.5.0 // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/sync v0.8.0 // indirect
