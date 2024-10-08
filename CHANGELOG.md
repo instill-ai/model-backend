@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.30.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.1-alpha...v0.30.2-alpha) (2024-10-08)
+
+
+### Bug Fixes
+
+* **minio:** fix nil logger causing panic ([ef9645e](https://github.com/instill-ai/model-backend/commit/ef9645e11d177df49fc8f71392d994e8b072c93b))
+* **test:** switch to minimock and add tests ([#687](https://github.com/instill-ai/model-backend/issues/687)) ([141da9d](https://github.com/instill-ai/model-backend/commit/141da9de40c3600cb58e379ae61d9c92221e19fd))
+
 ## [0.30.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.0-alpha...v0.30.1-alpha) (2024-09-13)
 
 
