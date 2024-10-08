@@ -267,7 +267,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	outputReferenceID := miniox.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = w.minioClient.UploadFileBytes(ctx, nil, outputReferenceID, outputJSON, constant.ContentTypeJSON)
+	_, _, err = w.minioClient.UploadFileBytes(ctx, logger, outputReferenceID, outputJSON, constant.ContentTypeJSON)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -336,7 +336,10 @@ type UploadToMinioActivityResponse struct {
 }
 
 func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error) {
-	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, nil, param.ObjectName, param.Data, param.ContentType)
+	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger.Info("UploadToMinioActivity started")
+
+	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, logger, param.ObjectName, param.Data, param.ContentType)
 	if err != nil {
 		return nil, err
 	}
