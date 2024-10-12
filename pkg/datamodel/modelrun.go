@@ -46,6 +46,7 @@ type ModelRun struct {
 	InputReferenceID  string
 	OutputReferenceID null.String
 	Error             null.String
+	Model             Model `gorm:"foreignKey:ModelUID;references:UID"`
 }
 
 func (*ModelRun) TableName() string {

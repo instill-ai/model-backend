@@ -102,6 +102,7 @@ type Service interface {
 	CreateModelRun(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error)
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
+	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error)
 }
 
 type service struct {
@@ -779,27 +780,10 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	pbModelRuns := make([]*modelpb.ModelRun, len(runs))
+	var pbModelRun *modelpb.ModelRun
 	for i, run := range runs {
-		pbModelRun := &modelpb.ModelRun{
-			Uid:        run.UID.String(),
-			ModelUid:   run.ModelUID.String(),
-			Version:    run.ModelVersion,
-			Status:     runpb.RunStatus(run.Status),
-			Source:     runpb.RunSource(run.Source),
-			Error:      run.Error.Ptr(),
-			CreateTime: timestamppb.New(run.CreateTime),
-			UpdateTime: timestamppb.New(run.UpdateTime),
-		}
-
+		pbModelRun = convertModelRunToPB(run)
 		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
-
-		if run.TotalDuration.Valid {
-			totalDuration := int32(run.TotalDuration.Int64)
-			pbModelRun.TotalDuration = &totalDuration
-		}
-		if run.EndTime.Valid {
-			pbModelRun.EndTime = timestamppb.New(run.EndTime.Time)
-		}
 
 		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
 			pbModelRun.TaskInputs, pbModelRun.TaskOutputs, err = parseMetadataToStructArr(metadataMap, run)
@@ -813,6 +797,81 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	return &modelpb.ListModelRunsResponse{
+		Runs:      pbModelRuns,
+		TotalSize: int32(totalSize),
+		PageSize:  pageSize,
+		Page:      page,
+	}, nil
+}
+
+func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error) {
+	pageSize := s.pageSizeInRange(req.GetPageSize())
+	page := s.pageInRange(req.GetPage())
+
+	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
+		filtering.DeclareStandardFunctions(),
+		filtering.DeclareIdent("status", filtering.TypeString),
+		filtering.DeclareIdent("source", filtering.TypeString),
+	}...)
+	if err != nil {
+		return nil, err
+	}
+
+	filter, err := filtering.ParseFilter(req, declarations)
+	if err != nil {
+		return nil, err
+	}
+
+	orderBy, err := ordering.ParseOrderBy(req)
+	if err != nil {
+		return nil, err
+	}
+
+	requesterUID, _ := resourcex.GetRequesterUIDAndUserUID(ctx)
+
+	now := time.Now().UTC()
+	startedTimeBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if req.GetStart().IsValid() {
+		startedTimeBegin = req.GetStart().AsTime()
+	}
+	startedTimeEnd := now
+	if req.GetStop().IsValid() {
+		startedTimeEnd = req.GetStop().AsTime()
+	}
+
+	if startedTimeBegin.After(startedTimeEnd) {
+		return nil, fmt.Errorf("time range end time is earlier than start time")
+	}
+
+	runs, totalSize, err := s.repository.ListModelRunsByRequester(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, startedTimeBegin, startedTimeEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	runnerIDMap := make(map[string]struct{})
+	for _, trigger := range runs {
+		runnerIDMap[trigger.RunnerUID.String()] = struct{}{}
+	}
+
+	runnerMap := make(map[string]*string)
+	for runnerID := range runnerIDMap {
+		runner, err := s.mgmtPrivateServiceClient.CheckNamespaceByUIDAdmin(ctx, &mgmtpb.CheckNamespaceByUIDAdminRequest{Uid: runnerID})
+		if err != nil {
+			return nil, err
+		}
+		runnerMap[runnerID] = &runner.Id
+	}
+
+	pbModelRuns := make([]*modelpb.ModelRun, len(runs))
+	var pbModelRun *modelpb.ModelRun
+
+	for i, run := range runs {
+		pbModelRun = convertModelRunToPB(run)
+		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
+		pbModelRuns[i] = pbModelRun
+	}
+
+	return &modelpb.ListModelRunsByCreditOwnerResponse{
 		Runs:      pbModelRuns,
 		TotalSize: int32(totalSize),
 		PageSize:  pageSize,

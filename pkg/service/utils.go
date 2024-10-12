@@ -7,12 +7,14 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
+	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
@@ -111,4 +113,28 @@ func parseMetadataToStructArr(metadataMap map[string][]byte, run *datamodel.Mode
 		taskOutputs = triggerModelResp.TaskOutputs
 	}
 	return triggerReq.TaskInputs, taskOutputs, nil
+}
+
+func convertModelRunToPB(run *datamodel.ModelRun) *modelpb.ModelRun {
+	pbModelRun := &modelpb.ModelRun{
+		Uid:        run.UID.String(),
+		ModelUid:   run.ModelUID.String(),
+		ModelId:    &run.Model.ID,
+		Version:    run.ModelVersion,
+		Status:     runpb.RunStatus(run.Status),
+		Source:     runpb.RunSource(run.Source),
+		Error:      run.Error.Ptr(),
+		CreateTime: timestamppb.New(run.CreateTime),
+		UpdateTime: timestamppb.New(run.UpdateTime),
+	}
+
+	if run.TotalDuration.Valid {
+		totalDuration := int32(run.TotalDuration.Int64)
+		pbModelRun.TotalDuration = &totalDuration
+	}
+	if run.EndTime.Valid {
+		pbModelRun.EndTime = timestamppb.New(run.EndTime.Time)
+	}
+
+	return pbModelRun
 }

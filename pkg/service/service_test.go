@@ -478,5 +478,5 @@ func TestListModelDefinitions(t *testing.T) {
 
 func TestService_ListNamespaceModelVersions(t *testing.T) {
 	t.SkipNow()
-	// tod: implement this
+	// todo: implement this
 }
