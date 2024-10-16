@@ -18,7 +18,7 @@ server:
     maxworkflowretry: 1
     maxactivityretry: 3
   instillcorehost: http://localhost:8080
-  taskschemaversion: 8f4ee7a
+  taskschemaversion: 662c3e2
 database:
   username: postgres
   password: password
