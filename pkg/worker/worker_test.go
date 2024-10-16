@@ -91,7 +91,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("when model is offline", func(t *testing.T) {
+	t.Run("when model is error", func(t *testing.T) {
 		param := &worker.TriggerModelActivityRequest{}
 		param.UserUID, _ = uuid.NewV4()
 		param.OwnerUID, _ = uuid.NewV4()
@@ -119,7 +119,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		mockRay := mock.NewRayMock(mc)
 		ctx := context.Background()
 
-		mockRay.ModelReadyMock.Times(1).Return(modelpb.State_STATE_OFFLINE.Enum(), "", 1, nil)
+		mockRay.ModelReadyMock.Return(modelpb.State_STATE_ERROR.Enum().Enum(), "", 0, nil)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)
