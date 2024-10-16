@@ -5,12 +5,16 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
 func (s *service) checkNamespacePermission(ctx context.Context, ns resource.Namespace) error {
@@ -76,4 +80,35 @@ func (s *service) pageInRange(page int32) int32 {
 // CanViewPrivateData - only with credit owner ns could users see their input/output data
 func CanViewPrivateData(namespace, requesterUID string) bool {
 	return namespace == requesterUID
+}
+
+func parseMetadataToStructArr(metadataMap map[string][]byte, run *datamodel.ModelRun) ([]*structpb.Struct, []*structpb.Struct, error) {
+	data, ok := metadataMap[run.InputReferenceID]
+	if !ok {
+		return nil, nil, fmt.Errorf("key doesn't exist")
+	}
+	// todo: fix TaskInputs type
+	triggerReq := &modelpb.TriggerNamespaceModelRequest{}
+	err := protojson.Unmarshal(data, triggerReq)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var taskOutputs []*structpb.Struct
+	if run.OutputReferenceID.Valid {
+		data, ok = metadataMap[run.OutputReferenceID.String]
+		if !ok {
+			return triggerReq.TaskInputs, nil, fmt.Errorf("key doesn't exist")
+		}
+
+		// todo: fix TaskOutputs type
+		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
+		err = protojson.Unmarshal(data, triggerModelResp)
+		if err != nil {
+			return triggerReq.TaskInputs, nil, err
+		}
+
+		taskOutputs = triggerModelResp.TaskOutputs
+	}
+	return triggerReq.TaskInputs, taskOutputs, nil
 }

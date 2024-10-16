@@ -33,11 +33,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
 	"github.com/instill-ai/x/errmsg"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
@@ -760,8 +758,8 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	fileContents, err := s.minioClient.GetFilesByPaths(ctx, logger, referenceIDs)
 	if err != nil {
 		logger.Error("failed to get files from minio", zap.Error(err))
-		return nil, err
 	}
+
 	for _, content := range fileContents {
 		metadataMap[content.Name] = content.Content
 	}
@@ -777,7 +775,6 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		if err != nil {
 			return nil, err
 		}
-		logger.Info("CheckNamespaceByUIDAdmin finished", zap.String("runnerID", runnerID), zap.String("runnerId", runner.Id))
 		runnerMap[runnerID] = &runner.Id
 	}
 
@@ -805,29 +802,10 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		}
 
 		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
-			data, ok := metadataMap[run.InputReferenceID]
-			if !ok {
-				return nil, fmt.Errorf("failed to load input metadata. model UID: %s input reference ID: %s", run.ModelUID.String(), run.InputReferenceID)
-			}
-			// todo: fix TaskInputs type
-			triggerReq := &modelpb.TriggerNamespaceModelRequest{}
-			err = protojson.Unmarshal(data, triggerReq)
+			pbModelRun.TaskInputs, pbModelRun.TaskOutputs, err = parseMetadataToStructArr(metadataMap, run)
 			if err != nil {
-				return nil, err
-			}
-			pbModelRun.TaskInputs = triggerReq.TaskInputs
-
-			if run.OutputReferenceID.Valid {
-				data := metadataMap[run.OutputReferenceID.String]
-
-				// todo: fix TaskOutputs type
-				triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
-				err = protojson.Unmarshal(data, triggerModelResp)
-				if err != nil {
-					return nil, err
-				}
-
-				pbModelRun.TaskOutputs = triggerModelResp.TaskOutputs
+				logger.Error("Failed to load metadata", zap.Error(err), zap.String("modelUID", run.ModelUID.String()),
+					zap.String("outputReferenceID", run.OutputReferenceID.String), zap.String("inputReferenceID", run.InputReferenceID))
 			}
 		}
 
