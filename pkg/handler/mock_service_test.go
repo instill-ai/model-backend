@@ -11,6 +11,11 @@ import (
 	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
+	redis "github.com/redis/go-redis/v9"
+	filtering "go.einride.tech/aip/filtering"
+	ordering "go.einride.tech/aip/ordering"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+
 	acl "github.com/instill-ai/model-backend/pkg/acl"
 	datamodel "github.com/instill-ai/model-backend/pkg/datamodel"
 	ray "github.com/instill-ai/model-backend/pkg/ray"
@@ -21,10 +26,6 @@ import (
 	taskv1alpha "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtv1beta "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelv1alpha "github.com/instill-ai/protogen-go/model/model/v1alpha"
-	redis "github.com/redis/go-redis/v9"
-	filtering "go.einride.tech/aip/filtering"
-	ordering "go.einride.tech/aip/ordering"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // MockService is a mock of Service interface.
@@ -475,6 +476,21 @@ func (m *MockService) ListModelRuns(arg0 context.Context, arg1 *modelv1alpha.Lis
 func (mr *MockServiceMockRecorder) ListModelRuns(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelRuns", reflect.TypeOf((*MockService)(nil).ListModelRuns), arg0, arg1, arg2)
+}
+
+// ListModelRunsByRequester mocks base method.
+func (m *MockService) ListModelRunsByRequester(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsByCreditOwnerRequest) (*modelv1alpha.ListModelRunsByCreditOwnerResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModelRunsByRequester", arg0, arg1)
+	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsByCreditOwnerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModelRunsByRequester indicates an expected call of ListModelRunsByRequester.
+func (mr *MockServiceMockRecorder) ListModelRunsByRequester(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelRunsByRequester", reflect.TypeOf((*MockService)(nil).ListModelRunsByRequester), arg0, arg1)
 }
 
 // ListModels mocks base method.

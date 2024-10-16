@@ -23,12 +23,10 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/checkfield"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
-
-	"github.com/instill-ai/x/checkfield"
-
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -1125,6 +1123,39 @@ func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListMode
 	}
 
 	resp, err := h.service.ListModelRuns(ctx, req, filter)
+	if err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	logUUID, _ := uuid.NewV4()
+	logger.Info(string(custom_otel.NewLogMessage(
+		ctx,
+		span,
+		logUUID.String(),
+		eventName,
+		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
+	)))
+
+	return resp, nil
+}
+
+func (h *PublicHandler) ListModelRunsByCreditOwner(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error) {
+
+	eventName := "ListModelRunsByRequester"
+
+	ctx, span := tracer.Start(ctx, eventName,
+		trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	if err := authenticateUser(ctx, true); err != nil {
+		span.SetStatus(1, err.Error())
+		return nil, err
+	}
+
+	resp, err := h.service.ListModelRunsByRequester(ctx, req)
 	if err != nil {
 		span.SetStatus(1, err.Error())
 		return nil, err

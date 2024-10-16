@@ -24,11 +24,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
 	"github.com/instill-ai/x/paginate"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -70,9 +68,10 @@ type Repository interface {
 	GetModelRunByUID(ctx context.Context, triggerUID string) (modelRun *datamodel.ModelRun, err error)
 	GetLatestModelRunByModelUID(ctx context.Context, userUID string, modelUID string) (modelRun *datamodel.ModelRun, err error)
 	GetLatestModelVersionRunByModelUID(ctx context.Context, userUID string, modelUID string, version string) (modelRun *datamodel.ModelRun, err error)
-	ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, isOwner bool, modelUID string) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
+	ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, isOwner bool, modelUID string) (modelRuns []*datamodel.ModelRun, totalSize int64, err error)
 	CreateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) (*datamodel.ModelRun, error)
 	UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error
+	ListModelRunsByRequester(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin, startedTimeEnd time.Time) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -726,7 +725,7 @@ func (r *repository) getModelRunByModelUID(ctx context.Context, where string, wh
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, status.Errorf(codes.NotFound, "The model trigger not found")
 		}
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, result.Error.Error())
 	}
 
 	return &trigger, nil
@@ -734,6 +733,7 @@ func (r *repository) getModelRunByModelUID(ctx context.Context, where string, wh
 
 func (r *repository) ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
 	requesterUID string, isOwner bool, modelUID string) (modelRuns []*datamodel.ModelRun, totalSize int64, err error) {
+
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
@@ -819,4 +819,58 @@ func (r *repository) UpdateModelRun(ctx context.Context, modelRun *datamodel.Mod
 		return err
 	}
 	return nil
+}
+
+func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
+	requesterUID string, startedTimeBegin, startedTimeEnd time.Time) ([]*datamodel.ModelRun, int64, error) {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	var modelRuns []*datamodel.ModelRun
+	var totalSize int64
+	var err error
+
+	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
+
+	whereConditions := []string{"requester_uid = ? and create_time >= ? and create_time <= ?"}
+	whereArgs := []any{requesterUID, startedTimeBegin, startedTimeEnd}
+
+	var expr *clause.Expr
+	if expr, err = r.transpileFilter(filter, tableModelRun); err != nil {
+		return nil, 0, err
+	}
+	if expr != nil {
+		whereConditions = append(whereConditions, "(?)")
+		whereArgs = append(whereArgs, expr)
+	}
+
+	var where string
+	if len(whereConditions) > 0 {
+		where = strings.Join(whereConditions, " and ")
+	}
+
+	if err = db.Model(&datamodel.ModelRun{}).Where(where, whereArgs...).Count(&totalSize).Error; err != nil {
+		logger.Error("failed in count model run total size", zap.Error(err))
+		return nil, 0, err
+	}
+
+	queryBuilder := db.Preload(clause.Associations).Where(where, whereArgs...)
+	if order.Fields == nil || len(order.Fields) == 0 {
+		order.Fields = append(order.Fields, ordering.Field{
+			Path: "create_time",
+			Desc: true,
+		})
+	}
+
+	for _, field := range order.Fields {
+		orderString := strcase.ToSnake(field.Path) + transformBoolToDescString(field.Desc)
+		queryBuilder.Order(orderString)
+	}
+
+	if err = queryBuilder.Limit(int(pageSize)).Offset(int(pageSize * page)).Find(&modelRuns).Error; err != nil {
+		logger.Error("failed in querying model runs", zap.Error(err))
+		return nil, 0, err
+	}
+
+	return modelRuns, totalSize, nil
 }
