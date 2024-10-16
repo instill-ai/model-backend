@@ -813,12 +813,9 @@ func (r *repository) CreateModelRun(ctx context.Context, modelRun *datamodel.Mod
 func (r *repository) UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error {
 
 	r.PinUser(ctx, tableModelRun)
-	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
-
-	if err := db.Save(modelRun).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.CheckPinnedUser(ctx, r.db, tableModelRun).Model(&datamodel.ModelRun{}).
+		Where(&datamodel.ModelRun{BaseStaticHardDelete: datamodel.BaseStaticHardDelete{UID: modelRun.UID}}).
+		Updates(&modelRun).Error
 }
 
 func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
