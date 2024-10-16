@@ -183,7 +183,8 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		} else if *state == modelpb.State_STATE_ACTIVE && numOfActiveReplica > 0 {
 			break
 		} else if *state != modelpb.State_STATE_SCALING_UP && *state != modelpb.State_STATE_STARTING {
-			return w.toApplicationError(fmt.Errorf("model upscale failed"), param.ModelID, ModelActivityError)
+			logger.Error(fmt.Sprintf("model upscale failed: current model state: %v", state), zap.Error(err))
+			return w.toApplicationError(fmt.Errorf("model upscale failed: current model state: %v", state), param.ModelID, ModelActivityError)
 		}
 	}
 
