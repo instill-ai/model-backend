@@ -479,10 +479,10 @@ func (mr *MockServiceMockRecorder) ListModelRuns(arg0, arg1, arg2 interface{}) *
 }
 
 // ListModelRunsByRequester mocks base method.
-func (m *MockService) ListModelRunsByRequester(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsByCreditOwnerRequest) (*modelv1alpha.ListModelRunsByCreditOwnerResponse, error) {
+func (m *MockService) ListModelRunsByRequester(arg0 context.Context, arg1 *modelv1alpha.ListModelRunsByRequesterRequest) (*modelv1alpha.ListModelRunsByRequesterResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListModelRunsByRequester", arg0, arg1)
-	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsByCreditOwnerResponse)
+	ret0, _ := ret[0].(*modelv1alpha.ListModelRunsByRequesterResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

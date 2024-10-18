@@ -102,7 +102,7 @@ type Service interface {
 	CreateModelRun(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error)
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
-	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error)
+	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error)
 }
 
 type service struct {
@@ -766,8 +766,9 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	runnerIDMap := make(map[string]struct{})
-	for _, trigger := range runs {
-		runnerIDMap[trigger.RunnerUID.String()] = struct{}{}
+	for _, run := range runs {
+		runnerIDMap[run.RunnerUID.String()] = struct{}{}
+		runnerIDMap[run.RequesterUID.String()] = struct{}{}
 	}
 
 	runnerMap := make(map[string]*string)
@@ -784,6 +785,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	for i, run := range runs {
 		pbModelRun = convertModelRunToPB(run)
 		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
+		pbModelRun.RequesterId = runnerMap[run.RequesterUID.String()]
 
 		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
 			pbModelRun.TaskInputs, pbModelRun.TaskOutputs, err = parseMetadataToStructArr(metadataMap, run)
@@ -804,7 +806,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}, nil
 }
 
-func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error) {
+func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error) {
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
 
@@ -849,8 +851,9 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 	}
 
 	runnerIDMap := make(map[string]struct{})
-	for _, trigger := range runs {
-		runnerIDMap[trigger.RunnerUID.String()] = struct{}{}
+	for _, run := range runs {
+		runnerIDMap[run.RunnerUID.String()] = struct{}{}
+		runnerIDMap[run.RequesterUID.String()] = struct{}{}
 	}
 
 	runnerMap := make(map[string]*string)
@@ -868,10 +871,11 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 	for i, run := range runs {
 		pbModelRun = convertModelRunToPB(run)
 		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
+		pbModelRun.RequesterId = runnerMap[run.RequesterUID.String()]
 		pbModelRuns[i] = pbModelRun
 	}
 
-	return &modelpb.ListModelRunsByCreditOwnerResponse{
+	return &modelpb.ListModelRunsByRequesterResponse{
 		Runs:      pbModelRuns,
 		TotalSize: int32(totalSize),
 		PageSize:  pageSize,

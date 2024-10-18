@@ -132,7 +132,7 @@ func MockNamespaceModel(t *testing.T, repo repository.Repository) *datamodel.Mod
 	return models[0]
 }
 
-func TestRepository_ListModelRunsByCreditOwner(t *testing.T) {
+func TestRepository_ListModelRunsByRequester(t *testing.T) {
 	c := qt.New(t)
 
 	s, err := miniredis.Run()

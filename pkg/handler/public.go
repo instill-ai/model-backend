@@ -1140,7 +1140,7 @@ func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListMode
 	return resp, nil
 }
 
-func (h *PublicHandler) ListModelRunsByCreditOwner(ctx context.Context, req *modelpb.ListModelRunsByCreditOwnerRequest) (*modelpb.ListModelRunsByCreditOwnerResponse, error) {
+func (h *PublicHandler) ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error) {
 
 	eventName := "ListModelRunsByRequester"
 
