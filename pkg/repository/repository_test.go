@@ -132,7 +132,7 @@ func MockNamespaceModel(t *testing.T, repo repository.Repository) *datamodel.Mod
 	return models[0]
 }
 
-func TestRepository_ListModelRunsByCreditOwner(t *testing.T) {
+func TestRepository_ListModelRunsByRequester(t *testing.T) {
 	c := qt.New(t)
 
 	s, err := miniredis.Run()
@@ -168,24 +168,45 @@ func TestRepository_ListModelRunsByCreditOwner(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("got no result in given time range", func(t *testing.T) {
-		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, 10, 0, filtering.Filter{}, ordering.OrderBy{}, userUUID.String(),
-			now.Add(-2*time.Hour), now.Add(-1*time.Hour))
+		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, &repository.ListModelRunsByRequesterParams{
+			PageSize:         10,
+			Page:             0,
+			Filter:           filtering.Filter{},
+			Order:            ordering.OrderBy{},
+			RequesterUID:     userUUID.String(),
+			StartedTimeBegin: now.Add(-2 * time.Hour),
+			StartedTimeEnd:   now.Add(-1 * time.Hour),
+		})
 		require.NoError(t, err)
 		require.Zero(t, totalSize)
 		require.Empty(t, resp)
 	})
 
 	t.Run("got 1 result in given time range", func(t *testing.T) {
-		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, 10, 0, filtering.Filter{}, ordering.OrderBy{}, userUUID.String(),
-			now.Add(-1*time.Hour), now.Add(1*time.Hour))
+		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, &repository.ListModelRunsByRequesterParams{
+			PageSize:         10,
+			Page:             0,
+			Filter:           filtering.Filter{},
+			Order:            ordering.OrderBy{},
+			RequesterUID:     userUUID.String(),
+			StartedTimeBegin: now.Add(-1 * time.Hour),
+			StartedTimeEnd:   now.Add(1 * time.Hour),
+		})
 		require.NoError(t, err)
 		require.Zero(t, totalSize-1)
 		require.Len(t, resp, 1)
 	})
 
 	t.Run("got no result with other's requester ID", func(t *testing.T) {
-		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, 10, 0, filtering.Filter{}, ordering.OrderBy{}, uuid.Must(uuid.NewV4()).String(),
-			now.Add(-1*time.Hour), now.Add(1*time.Hour))
+		resp, totalSize, err := repo.ListModelRunsByRequester(ctx, &repository.ListModelRunsByRequesterParams{
+			PageSize:         10,
+			Page:             0,
+			Filter:           filtering.Filter{},
+			Order:            ordering.OrderBy{},
+			RequesterUID:     userUUID.String(),
+			StartedTimeBegin: now.Add(-1 * time.Hour),
+			StartedTimeEnd:   now.Add(1 * time.Hour),
+		})
 		require.NoError(t, err)
 		require.Zero(t, totalSize)
 		require.Empty(t, resp)
