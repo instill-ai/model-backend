@@ -393,6 +393,21 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	if err := s.aclClient.SetOwner(ctx, "model_", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
 		return err
 	}
+	toCreatedTags := model.GetTags()
+	toBeCreatedTagNames := make([]string, 0, len(toCreatedTags))
+	for _, tag := range toCreatedTags {
+		tag = strings.ToLower(tag)
+		if !slices.Contains(preserveTags, tag) {
+			toBeCreatedTagNames = append(toBeCreatedTagNames, tag)
+		}
+	}
+
+	if len(toBeCreatedTagNames) > 0 {
+		err = s.repository.CreateModelTags(ctx, dbCreatedModel.UID, toBeCreatedTagNames)
+		if err != nil {
+			return err
+		}
+	}
 
 	if dbCreatedModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC) {
 		if err := s.aclClient.SetPublicModelPermission(ctx, dbCreatedModel.UID); err != nil {
@@ -1172,8 +1187,14 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 	}
 
 	toUpdTags := toUpdateModel.GetTags()
-
+	for i := range toUpdTags {
+		toUpdTags[i] = strings.ToLower(toUpdTags[i])
+	}
 	currentTags := dbModel.TagNames()
+	for i := range currentTags {
+		currentTags[i] = strings.ToLower(currentTags[i])
+	}
+
 	toBeCreatedTagNames := make([]string, 0, len(toUpdTags))
 	for _, tag := range toUpdTags {
 		if !slices.Contains(currentTags, tag) && !slices.Contains(preserveTags, tag) {

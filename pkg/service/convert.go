@@ -10,12 +10,15 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofrs/uuid"
 	"golang.org/x/image/draw"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -189,8 +192,18 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		License:          &dbModel.License.String,
 		Readme:           &dbModel.Readme.String,
 		ProfileImage:     &profileImage,
-		Tags:             dbModel.TagNames(),
-		Versions:         dbModel.VersionNames(),
+		Tags: func() []string {
+			tagNames := make([]string, len(dbModel.TagNames()))
+			for i, tag := range dbModel.TagNames() {
+				if slices.Contains(preserveTags, tag) {
+					tagNames[i] = cases.Title(language.English).String(tag)
+				} else {
+					tagNames[i] = tag
+				}
+			}
+			return tagNames
+		}(),
+		Versions: dbModel.VersionNames(),
 		Stats: &modelpb.Model_Stats{
 			NumberOfRuns: int32(dbModel.NumberOfRuns),
 			LastRunTime:  timestamppb.New(dbModel.LastRunTime),
