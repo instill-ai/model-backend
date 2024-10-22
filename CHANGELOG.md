@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.31.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.2-alpha...v0.31.0-alpha) (2024-10-22)
+
+
+### Features
+
+* **run:** run logging data list by requester API ([#695](https://github.com/instill-ai/model-backend/issues/695)) ([b118026](https://github.com/instill-ai/model-backend/commit/b118026c963f4279dacfdcde90f78b116dd91454))
+* **service:** standardize the tag naming convention ([#700](https://github.com/instill-ai/model-backend/issues/700)) ([e08be0d](https://github.com/instill-ai/model-backend/commit/e08be0d6a9432818b24ab3126e2e0a716e18002d))
+
+
+### Bug Fixes
+
+* **ray:** fix upscale deployment failure ([#698](https://github.com/instill-ai/model-backend/issues/698)) ([96563c9](https://github.com/instill-ai/model-backend/commit/96563c95ac8325b7ffe25479868eb48a49464375))
+* **run:** fix run logging update function ([#699](https://github.com/instill-ai/model-backend/issues/699)) ([a753fe4](https://github.com/instill-ai/model-backend/commit/a753fe4ac670b048b43de9e430add506ed555333))
+* **run:** not return minio error in list model run ([#696](https://github.com/instill-ai/model-backend/issues/696)) ([cbeea05](https://github.com/instill-ai/model-backend/commit/cbeea05698710b55022169f625bfdc6017a9f793))
+
 ## [0.30.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.1-alpha...v0.30.2-alpha) (2024-10-08)
 
 
