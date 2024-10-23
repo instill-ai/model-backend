@@ -71,7 +71,7 @@ type Repository interface {
 	ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, isOwner bool, modelUID string) (modelRuns []*datamodel.ModelRun, totalSize int64, err error)
 	CreateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) (*datamodel.ModelRun, error)
 	UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error
-	ListModelRunsByRequester(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin, startedTimeEnd time.Time) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
+	ListModelRunsByRequester(ctx context.Context, params *ListModelRunsByRequesterParams) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
@@ -818,8 +818,17 @@ func (r *repository) UpdateModelRun(ctx context.Context, modelRun *datamodel.Mod
 		Updates(&modelRun).Error
 }
 
-func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
-	requesterUID string, startedTimeBegin, startedTimeEnd time.Time) ([]*datamodel.ModelRun, int64, error) {
+type ListModelRunsByRequesterParams struct {
+	PageSize         int64
+	Page             int64
+	Filter           filtering.Filter
+	Order            ordering.OrderBy
+	RequesterUID     string
+	StartedTimeBegin time.Time
+	StartedTimeEnd   time.Time
+}
+
+func (r *repository) ListModelRunsByRequester(ctx context.Context, params *ListModelRunsByRequesterParams) ([]*datamodel.ModelRun, int64, error) {
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
@@ -830,10 +839,10 @@ func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, pag
 	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
 	whereConditions := []string{"requester_uid = ? and create_time >= ? and create_time <= ?"}
-	whereArgs := []any{requesterUID, startedTimeBegin, startedTimeEnd}
+	whereArgs := []any{params.RequesterUID, params.StartedTimeBegin, params.StartedTimeEnd}
 
 	var expr *clause.Expr
-	if expr, err = r.transpileFilter(filter, tableModelRun); err != nil {
+	if expr, err = r.transpileFilter(params.Filter, tableModelRun); err != nil {
 		return nil, 0, err
 	}
 	if expr != nil {
@@ -852,6 +861,7 @@ func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, pag
 	}
 
 	queryBuilder := db.Preload(clause.Associations).Where(where, whereArgs...)
+	order := params.Order
 	if order.Fields == nil || len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
@@ -864,7 +874,7 @@ func (r *repository) ListModelRunsByRequester(ctx context.Context, pageSize, pag
 		queryBuilder.Order(orderString)
 	}
 
-	if err = queryBuilder.Limit(int(pageSize)).Offset(int(pageSize * page)).Find(&modelRuns).Error; err != nil {
+	if err = queryBuilder.Limit(int(params.PageSize)).Offset(int(params.PageSize * params.Page)).Find(&modelRuns).Error; err != nil {
 		logger.Error("failed in querying model runs", zap.Error(err))
 		return nil, 0, err
 	}

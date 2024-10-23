@@ -5,7 +5,6 @@ package mock
 import (
 	"context"
 	"sync"
-	"time"
 
 	mm_atomic "sync/atomic"
 	mm_time "time"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
+	mm_repository "github.com/instill-ai/model-backend/pkg/repository"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -173,9 +173,9 @@ type RepositoryMock struct {
 	beforeListModelRunsCounter uint64
 	ListModelRunsMock          mRepositoryMockListModelRuns
 
-	funcListModelRunsByRequester          func(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
+	funcListModelRunsByRequester          func(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
 	funcListModelRunsByRequesterOrigin    string
-	inspectFuncListModelRunsByRequester   func(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time)
+	inspectFuncListModelRunsByRequester   func(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams)
 	afterListModelRunsByRequesterCounter  uint64
 	beforeListModelRunsByRequesterCounter uint64
 	ListModelRunsByRequesterMock          mRepositoryMockListModelRunsByRequester
@@ -8338,26 +8338,14 @@ type RepositoryMockListModelRunsByRequesterExpectation struct {
 
 // RepositoryMockListModelRunsByRequesterParams contains parameters of the Repository.ListModelRunsByRequester
 type RepositoryMockListModelRunsByRequesterParams struct {
-	ctx              context.Context
-	pageSize         int64
-	page             int64
-	filter           filtering.Filter
-	order            ordering.OrderBy
-	requesterUID     string
-	startedTimeBegin time.Time
-	startedTimeEnd   time.Time
+	ctx    context.Context
+	params *mm_repository.ListModelRunsByRequesterParams
 }
 
 // RepositoryMockListModelRunsByRequesterParamPtrs contains pointers to parameters of the Repository.ListModelRunsByRequester
 type RepositoryMockListModelRunsByRequesterParamPtrs struct {
-	ctx              *context.Context
-	pageSize         *int64
-	page             *int64
-	filter           *filtering.Filter
-	order            *ordering.OrderBy
-	requesterUID     *string
-	startedTimeBegin *time.Time
-	startedTimeEnd   *time.Time
+	ctx    *context.Context
+	params **mm_repository.ListModelRunsByRequesterParams
 }
 
 // RepositoryMockListModelRunsByRequesterResults contains results of the Repository.ListModelRunsByRequester
@@ -8369,15 +8357,9 @@ type RepositoryMockListModelRunsByRequesterResults struct {
 
 // RepositoryMockListModelRunsByRequesterOrigins contains origins of expectations of the Repository.ListModelRunsByRequester
 type RepositoryMockListModelRunsByRequesterExpectationOrigins struct {
-	origin                 string
-	originCtx              string
-	originPageSize         string
-	originPage             string
-	originFilter           string
-	originOrder            string
-	originRequesterUID     string
-	originStartedTimeBegin string
-	originStartedTimeEnd   string
+	origin       string
+	originCtx    string
+	originParams string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -8391,7 +8373,7 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Optio
 }
 
 // Expect sets up expected params for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Expect(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time) *mRepositoryMockListModelRunsByRequester {
+func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Expect(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams) *mRepositoryMockListModelRunsByRequester {
 	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
 		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
 	}
@@ -8404,7 +8386,7 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Expec
 		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by ExpectParams functions")
 	}
 
-	mmListModelRunsByRequester.defaultExpectation.params = &RepositoryMockListModelRunsByRequesterParams{ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd}
+	mmListModelRunsByRequester.defaultExpectation.params = &RepositoryMockListModelRunsByRequesterParams{ctx, params}
 	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmListModelRunsByRequester.expectations {
 		if minimock.Equal(e.params, mmListModelRunsByRequester.defaultExpectation.params) {
@@ -8438,8 +8420,8 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Expec
 	return mmListModelRunsByRequester
 }
 
-// ExpectPageSizeParam2 sets up expected param pageSize for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectPageSizeParam2(pageSize int64) *mRepositoryMockListModelRunsByRequester {
+// ExpectParamsParam2 sets up expected param params for Repository.ListModelRunsByRequester
+func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectParamsParam2(params *mm_repository.ListModelRunsByRequesterParams) *mRepositoryMockListModelRunsByRequester {
 	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
 		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
 	}
@@ -8455,152 +8437,14 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Expec
 	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
 		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
 	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.pageSize = &pageSize
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originPageSize = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectPageParam3 sets up expected param page for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectPageParam3(page int64) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.page = &page
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originPage = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectFilterParam4 sets up expected param filter for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectFilterParam4(filter filtering.Filter) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.filter = &filter
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originFilter = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectOrderParam5 sets up expected param order for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectOrderParam5(order ordering.OrderBy) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.order = &order
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originOrder = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectRequesterUIDParam6 sets up expected param requesterUID for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectRequesterUIDParam6(requesterUID string) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.requesterUID = &requesterUID
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originRequesterUID = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectStartedTimeBeginParam7 sets up expected param startedTimeBegin for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectStartedTimeBeginParam7(startedTimeBegin time.Time) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.startedTimeBegin = &startedTimeBegin
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originStartedTimeBegin = minimock.CallerInfo(1)
-
-	return mmListModelRunsByRequester
-}
-
-// ExpectStartedTimeEndParam8 sets up expected param startedTimeEnd for Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) ExpectStartedTimeEndParam8(startedTimeEnd time.Time) *mRepositoryMockListModelRunsByRequester {
-	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation == nil {
-		mmListModelRunsByRequester.defaultExpectation = &RepositoryMockListModelRunsByRequesterExpectation{}
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.params != nil {
-		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Expect")
-	}
-
-	if mmListModelRunsByRequester.defaultExpectation.paramPtrs == nil {
-		mmListModelRunsByRequester.defaultExpectation.paramPtrs = &RepositoryMockListModelRunsByRequesterParamPtrs{}
-	}
-	mmListModelRunsByRequester.defaultExpectation.paramPtrs.startedTimeEnd = &startedTimeEnd
-	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originStartedTimeEnd = minimock.CallerInfo(1)
+	mmListModelRunsByRequester.defaultExpectation.paramPtrs.params = &params
+	mmListModelRunsByRequester.defaultExpectation.expectationOrigins.originParams = minimock.CallerInfo(1)
 
 	return mmListModelRunsByRequester
 }
 
 // Inspect accepts an inspector function that has same arguments as the Repository.ListModelRunsByRequester
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Inspect(f func(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time)) *mRepositoryMockListModelRunsByRequester {
+func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Inspect(f func(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams)) *mRepositoryMockListModelRunsByRequester {
 	if mmListModelRunsByRequester.mock.inspectFuncListModelRunsByRequester != nil {
 		mmListModelRunsByRequester.mock.t.Fatalf("Inspect function is already set for RepositoryMock.ListModelRunsByRequester")
 	}
@@ -8625,7 +8469,7 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Retur
 }
 
 // Set uses given function f to mock the Repository.ListModelRunsByRequester method
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Set(f func(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)) *RepositoryMock {
+func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Set(f func(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)) *RepositoryMock {
 	if mmListModelRunsByRequester.defaultExpectation != nil {
 		mmListModelRunsByRequester.mock.t.Fatalf("Default expectation is already set for the Repository.ListModelRunsByRequester method")
 	}
@@ -8641,14 +8485,14 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) Set(f
 
 // When sets expectation for the Repository.ListModelRunsByRequester which will trigger the result defined by the following
 // Then helper
-func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) When(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time) *RepositoryMockListModelRunsByRequesterExpectation {
+func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) When(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams) *RepositoryMockListModelRunsByRequesterExpectation {
 	if mmListModelRunsByRequester.mock.funcListModelRunsByRequester != nil {
 		mmListModelRunsByRequester.mock.t.Fatalf("RepositoryMock.ListModelRunsByRequester mock is already set by Set")
 	}
 
 	expectation := &RepositoryMockListModelRunsByRequesterExpectation{
 		mock:               mmListModelRunsByRequester.mock,
-		params:             &RepositoryMockListModelRunsByRequesterParams{ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd},
+		params:             &RepositoryMockListModelRunsByRequesterParams{ctx, params},
 		expectationOrigins: RepositoryMockListModelRunsByRequesterExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmListModelRunsByRequester.expectations = append(mmListModelRunsByRequester.expectations, expectation)
@@ -8683,17 +8527,17 @@ func (mmListModelRunsByRequester *mRepositoryMockListModelRunsByRequester) invoc
 }
 
 // ListModelRunsByRequester implements mm_repository.Repository
-func (mmListModelRunsByRequester *RepositoryMock) ListModelRunsByRequester(ctx context.Context, pageSize int64, page int64, filter filtering.Filter, order ordering.OrderBy, requesterUID string, startedTimeBegin time.Time, startedTimeEnd time.Time) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error) {
+func (mmListModelRunsByRequester *RepositoryMock) ListModelRunsByRequester(ctx context.Context, params *mm_repository.ListModelRunsByRequesterParams) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error) {
 	mm_atomic.AddUint64(&mmListModelRunsByRequester.beforeListModelRunsByRequesterCounter, 1)
 	defer mm_atomic.AddUint64(&mmListModelRunsByRequester.afterListModelRunsByRequesterCounter, 1)
 
 	mmListModelRunsByRequester.t.Helper()
 
 	if mmListModelRunsByRequester.inspectFuncListModelRunsByRequester != nil {
-		mmListModelRunsByRequester.inspectFuncListModelRunsByRequester(ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd)
+		mmListModelRunsByRequester.inspectFuncListModelRunsByRequester(ctx, params)
 	}
 
-	mm_params := RepositoryMockListModelRunsByRequesterParams{ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd}
+	mm_params := RepositoryMockListModelRunsByRequesterParams{ctx, params}
 
 	// Record call args
 	mmListModelRunsByRequester.ListModelRunsByRequesterMock.mutex.Lock()
@@ -8712,7 +8556,7 @@ func (mmListModelRunsByRequester *RepositoryMock) ListModelRunsByRequester(ctx c
 		mm_want := mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.params
 		mm_want_ptrs := mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.paramPtrs
 
-		mm_got := RepositoryMockListModelRunsByRequesterParams{ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd}
+		mm_got := RepositoryMockListModelRunsByRequesterParams{ctx, params}
 
 		if mm_want_ptrs != nil {
 
@@ -8721,39 +8565,9 @@ func (mmListModelRunsByRequester *RepositoryMock) ListModelRunsByRequester(ctx c
 					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
-			if mm_want_ptrs.pageSize != nil && !minimock.Equal(*mm_want_ptrs.pageSize, mm_got.pageSize) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter pageSize, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originPageSize, *mm_want_ptrs.pageSize, mm_got.pageSize, minimock.Diff(*mm_want_ptrs.pageSize, mm_got.pageSize))
-			}
-
-			if mm_want_ptrs.page != nil && !minimock.Equal(*mm_want_ptrs.page, mm_got.page) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter page, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originPage, *mm_want_ptrs.page, mm_got.page, minimock.Diff(*mm_want_ptrs.page, mm_got.page))
-			}
-
-			if mm_want_ptrs.filter != nil && !minimock.Equal(*mm_want_ptrs.filter, mm_got.filter) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter filter, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originFilter, *mm_want_ptrs.filter, mm_got.filter, minimock.Diff(*mm_want_ptrs.filter, mm_got.filter))
-			}
-
-			if mm_want_ptrs.order != nil && !minimock.Equal(*mm_want_ptrs.order, mm_got.order) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter order, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originOrder, *mm_want_ptrs.order, mm_got.order, minimock.Diff(*mm_want_ptrs.order, mm_got.order))
-			}
-
-			if mm_want_ptrs.requesterUID != nil && !minimock.Equal(*mm_want_ptrs.requesterUID, mm_got.requesterUID) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter requesterUID, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originRequesterUID, *mm_want_ptrs.requesterUID, mm_got.requesterUID, minimock.Diff(*mm_want_ptrs.requesterUID, mm_got.requesterUID))
-			}
-
-			if mm_want_ptrs.startedTimeBegin != nil && !minimock.Equal(*mm_want_ptrs.startedTimeBegin, mm_got.startedTimeBegin) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter startedTimeBegin, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originStartedTimeBegin, *mm_want_ptrs.startedTimeBegin, mm_got.startedTimeBegin, minimock.Diff(*mm_want_ptrs.startedTimeBegin, mm_got.startedTimeBegin))
-			}
-
-			if mm_want_ptrs.startedTimeEnd != nil && !minimock.Equal(*mm_want_ptrs.startedTimeEnd, mm_got.startedTimeEnd) {
-				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter startedTimeEnd, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originStartedTimeEnd, *mm_want_ptrs.startedTimeEnd, mm_got.startedTimeEnd, minimock.Diff(*mm_want_ptrs.startedTimeEnd, mm_got.startedTimeEnd))
+			if mm_want_ptrs.params != nil && !minimock.Equal(*mm_want_ptrs.params, mm_got.params) {
+				mmListModelRunsByRequester.t.Errorf("RepositoryMock.ListModelRunsByRequester got unexpected parameter params, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListModelRunsByRequester.ListModelRunsByRequesterMock.defaultExpectation.expectationOrigins.originParams, *mm_want_ptrs.params, mm_got.params, minimock.Diff(*mm_want_ptrs.params, mm_got.params))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -8768,9 +8582,9 @@ func (mmListModelRunsByRequester *RepositoryMock) ListModelRunsByRequester(ctx c
 		return (*mm_results).modelTriggers, (*mm_results).totalSize, (*mm_results).err
 	}
 	if mmListModelRunsByRequester.funcListModelRunsByRequester != nil {
-		return mmListModelRunsByRequester.funcListModelRunsByRequester(ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd)
+		return mmListModelRunsByRequester.funcListModelRunsByRequester(ctx, params)
 	}
-	mmListModelRunsByRequester.t.Fatalf("Unexpected call to RepositoryMock.ListModelRunsByRequester. %v %v %v %v %v %v %v %v", ctx, pageSize, page, filter, order, requesterUID, startedTimeBegin, startedTimeEnd)
+	mmListModelRunsByRequester.t.Fatalf("Unexpected call to RepositoryMock.ListModelRunsByRequester. %v %v", ctx, params)
 	return
 }
 
