@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.32.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.31.0-alpha...v0.32.0-alpha) (2024-10-23)
+
+
+### Features
+
+* **run:** add requester id in list model run response ([#701](https://github.com/instill-ai/model-backend/issues/701)) ([8c22eec](https://github.com/instill-ai/model-backend/commit/8c22eecd636d6654623ac264b24c4bf98c7f0a09))
+
 ## [0.31.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.30.2-alpha...v0.31.0-alpha) (2024-10-22)
 
 
