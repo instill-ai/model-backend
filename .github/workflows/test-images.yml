@@ -26,6 +26,7 @@ jobs:
             # "dummy-image-to-image",
             "dummy-instance-segmentation",
             "dummy-keypoint",
+            "dummy-ocr",
             "dummy-semantic-segmentation",
             "dummy-completion",
             "dummy-chat",
