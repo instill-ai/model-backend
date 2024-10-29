@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/redis/go-redis/v9"
 	"go.temporal.io/sdk/workflow"
 
@@ -25,23 +26,32 @@ type Worker interface {
 
 // worker represents resources required to run Temporal workflow and activity
 type worker struct {
-	redisClient       *redis.Client
-	ray               ray.Ray
-	minioClient       miniox.MinioI
-	repository        repository.Repository
-	modelUsageHandler usage.ModelUsageHandler
+	redisClient         *redis.Client
+	ray                 ray.Ray
+	minioClient         miniox.MinioI
+	repository          repository.Repository
+	influxDBWriteClient api.WriteAPI
+	modelUsageHandler   usage.ModelUsageHandler
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
-func NewWorker(rc *redis.Client, ra ray.Ray, repo repository.Repository, minioClient miniox.MinioI, modelUsageHandler usage.ModelUsageHandler) Worker {
+func NewWorker(
+	rc *redis.Client,
+	ra ray.Ray,
+	repo repository.Repository,
+	i api.WriteAPI,
+	minioClient miniox.MinioI,
+	modelUsageHandler usage.ModelUsageHandler,
+) Worker {
 	if modelUsageHandler == nil {
 		modelUsageHandler = usage.NewNoopModelUsageHandler()
 	}
 	return &worker{
-		redisClient:       rc,
-		ray:               ra,
-		minioClient:       minioClient,
-		repository:        repo,
-		modelUsageHandler: modelUsageHandler,
+		redisClient:         rc,
+		ray:                 ra,
+		minioClient:         minioClient,
+		repository:          repo,
+		influxDBWriteClient: i,
+		modelUsageHandler:   modelUsageHandler,
 	}
 }

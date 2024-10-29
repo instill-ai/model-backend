@@ -21,5 +21,7 @@ func (s *service) WriteNewDataPoint(ctx context.Context, data *utils.UsageMetric
 		s.redisClient.RPush(ctx, fmt.Sprintf("owner:%s:model.trigger_data", data.OwnerUID), string(bData))
 	}
 
+	s.influxDBWriteClient.WritePoint(utils.NewModelDataPoint(data))
+
 	return nil
 }

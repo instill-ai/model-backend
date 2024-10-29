@@ -22,9 +22,7 @@ func (w *worker) writeNewDataPoint(ctx context.Context, data *utils.UsageMetricD
 		w.redisClient.RPush(ctx, fmt.Sprintf("owner:%s:model.trigger_data", data.OwnerUID), string(bData))
 	}
 
+	w.influxDBWriteClient.WritePoint(utils.NewModelDataPoint(data))
+
 	return nil
 }
-
-// func (w *worker) writePrediction(ctx context.Context, pred *datamodel.ModelPrediction) error {
-// 	return w.repository.CreateModelPrediction(ctx, pred)
-// }

@@ -167,7 +167,10 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db, redisClient)
-	cw := modelWorker.NewWorker(redisClient, rayService, repo, minioClient, nil)
+	timeseries := repository.MustNewInfluxDB(ctx, config.Config.Server.Debug)
+	defer timeseries.Close()
+
+	cw := modelWorker.NewWorker(redisClient, rayService, repo, timeseries.WriteAPI(), minioClient, nil)
 
 	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
 

@@ -149,6 +149,19 @@ type RegistryConfig struct {
 	Port int    `koanf:"port"`
 }
 
+// InfluxDBConfig defines the InfluxDB configuration.
+type InfluxDBConfig struct {
+	URL           string        `koanf:"url"`
+	Token         string        `koanf:"token"`
+	Org           string        `koanf:"org"`
+	Bucket        string        `koanf:"bucket"`
+	FlushInterval time.Duration `koanf:"flushinterval"`
+	HTTPS         struct {
+		Cert string `koanf:"cert"`
+		Key  string `koanf:"key"`
+	}
+}
+
 // AppConfig defines
 type AppConfig struct {
 	Server          ServerConfig          `koanf:"server"`
@@ -163,6 +176,7 @@ type AppConfig struct {
 	InitModel       InitModelConfig       `koanf:"initmodel"`
 	Log             LogConfig             `koanf:"log"`
 	Minio           miniox.Config         `koanf:"minio"`
+	InfluxDB        InfluxDBConfig        `koanf:"influxdb"`
 }
 
 // Config - Global variable to export

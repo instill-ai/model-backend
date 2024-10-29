@@ -82,3 +82,12 @@ minio:
   rootpwd: minioadmin
   bucketname: instill-ai-model
   secure: false
+influxdb:
+  url: http://influxdb:8086
+  token: i-love-instill-ai
+  org: instill-ai
+  bucket: instill-ai
+  flushinterval: 10s
+  https:
+    cert:
+    key:
