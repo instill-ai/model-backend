@@ -103,6 +103,8 @@ type Service interface {
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error)
+
+	GetExpiryTagBySubscriptionPlan(context.Context, uuid.UUID) (string, error)
 }
 
 type service struct {
@@ -187,9 +189,19 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, user
 		requesterUID = userUID
 	}
 
+	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, requesterUID)
+	if err != nil {
+		return nil, err
+	}
+
 	inputReferenceID := miniox.GenerateInputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, logger, inputReferenceID, inputJSON, constantx.ContentTypeJSON)
+	_, _, err = s.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
+		FilePath:      inputReferenceID,
+		FileBytes:     inputJSON,
+		FileMimeType:  constant.ContentTypeJSON,
+		ExpiryRuleTag: expiryRuleTag,
+	})
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(inputJSON)), zap.Error(err))
 		return nil, status.Error(codes.Internal, err.Error())
@@ -540,6 +552,11 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
+	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	if err != nil {
+		return nil, err
+	}
+
 	we, err := s.temporalClient.ExecuteWorkflow(
 		ctx,
 		workflowOptions,
@@ -560,6 +577,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
 			RunLog:             runLog,
+			ExpiryRuleTag:      expiryRuleTag,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -647,6 +665,11 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
+	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	if err != nil {
+		return nil, err
+	}
+
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       runLog.UID.String(),
 		TaskQueue:                worker.TaskQueue,
@@ -676,6 +699,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
 			RunLog:             runLog,
+			ExpiryRuleTag:      expiryRuleTag,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -1344,4 +1368,8 @@ func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, 
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
+}
+
+func (s *service) GetExpiryTagBySubscriptionPlan(context.Context, uuid.UUID) (string, error) {
+	return config.DefaultExpiryTag, nil
 }

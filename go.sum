@@ -233,8 +233,8 @@ github.com/instill-ai/protogen-go v0.3.3-alpha.0.20241022025309-9afd9231a821 h1:
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20241022025309-9afd9231a821/go.mod h1:rf0UY7VpEgpaLudYEcjx5rnbuwlBaaLyD4FQmWLtgAY=
 github.com/instill-ai/usage-client v0.3.0-alpha h1:yY5eNn5zINqy8wpOogiNmrVYzJKnd1KMnMxlYBpr7Tk=
 github.com/instill-ai/usage-client v0.3.0-alpha/go.mod h1:8lvtZulkhQ7t8alttb2KkLKYoCp5u4oatzDbfFlEld0=
-github.com/instill-ai/x v0.4.0-alpha.0.20240923052503-fd243919e005 h1:6iUpJs545Ivvv2joJCQoawRPr2YRPjux22k7t+gWg6s=
-github.com/instill-ai/x v0.4.0-alpha.0.20240923052503-fd243919e005/go.mod h1:jkVtaq9T2zAFA5N46tlV4K5EEVE7FcOVNbqY4wFWYz8=
+github.com/instill-ai/x v0.5.0-alpha.0.20241028101056-3b853d0b8656 h1:/7XGEVLGiEaXf8mzzvWqg15DJO2yDMww/TC5ZlE1yUY=
+github.com/instill-ai/x v0.5.0-alpha.0.20241028101056-3b853d0b8656/go.mod h1:jkVtaq9T2zAFA5N46tlV4K5EEVE7FcOVNbqY4wFWYz8=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=

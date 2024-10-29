@@ -50,6 +50,7 @@ type TriggerModelWorkflowRequest struct {
 	Hardware           string
 	Visibility         datamodel.ModelVisibility
 	RunLog             *datamodel.ModelRun
+	ExpiryRuleTag      string
 }
 
 type TriggerModelActivityRequest struct {
@@ -279,7 +280,12 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	outputReferenceID := miniox.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = w.minioClient.UploadFileBytes(ctx, logger, outputReferenceID, outputJSON, constant.ContentTypeJSON)
+	_, _, err = w.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
+		FilePath:      outputReferenceID,
+		FileBytes:     outputJSON,
+		FileMimeType:  constant.ContentTypeJSON,
+		ExpiryRuleTag: param.ExpiryRuleTag,
+	})
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -337,9 +343,10 @@ type EndUserErrorDetails struct {
 }
 
 type UploadToMinioActivityRequest struct {
-	ObjectName  string
-	Data        []byte
-	ContentType string
+	ObjectName    string
+	Data          []byte
+	ContentType   string
+	ExpiryRuleTag string
 }
 
 type UploadToMinioActivityResponse struct {
@@ -351,7 +358,12 @@ func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinio
 	logger, _ := custom_logger.GetZapLogger(ctx)
 	logger.Info("UploadToMinioActivity started")
 
-	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, logger, param.ObjectName, param.Data, param.ContentType)
+	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
+		FilePath:      param.ObjectName,
+		FileBytes:     param.Data,
+		FileMimeType:  param.ContentType,
+		ExpiryRuleTag: param.ExpiryRuleTag,
+	})
 	if err != nil {
 		return nil, err
 	}

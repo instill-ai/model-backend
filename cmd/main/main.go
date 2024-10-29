@@ -44,14 +44,12 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
-
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
-
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	miniox "github.com/instill-ai/x/minio"
@@ -232,12 +230,13 @@ func main() {
 	repo := repository.NewRepository(db, redisClient)
 
 	// Initialize Minio client
-	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger)
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger, config.MetadataExpiryRules...)
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, minioClient, config.Config.Server.InstillCoreHost)
+	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient,
+		redisClient, temporalClient, rayService, &aclClient, minioClient, config.Config.Server.InstillCoreHost)
 
 	modelpb.RegisterModelPublicServiceServer(
 		publicGrpcS,
