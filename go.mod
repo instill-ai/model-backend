@@ -17,7 +17,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20241022025309-9afd9231a821
 	github.com/instill-ai/usage-client v0.3.0-alpha
-	github.com/instill-ai/x v0.4.0-alpha.0.20240923052503-fd243919e005
+	github.com/instill-ai/x v0.5.0-alpha.0.20241028101056-3b853d0b8656
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/knadh/koanf v1.5.0
 	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c

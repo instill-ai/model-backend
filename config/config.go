@@ -219,12 +219,13 @@ func ParseConfigFlag() string {
 	return *configPath
 }
 
-// MinioConfig is the minio configuration.
-type MinioConfig struct {
-	Host       string `koanf:"host"`
-	Port       string `koanf:"port"`
-	RootUser   string `koanf:"rootuser"`
-	RootPwd    string `koanf:"rootpwd"`
-	BucketName string `koanf:"bucketname"`
-	Secure     bool   `koanf:"secure"` // Add this line for the Secure option
+const (
+	DefaultExpiryTag = "default-expiry"
+)
+
+var MetadataExpiryRules = []miniox.ExpiryRule{
+	{
+		Tag:            DefaultExpiryTag,
+		ExpirationDays: 3,
+	},
 }

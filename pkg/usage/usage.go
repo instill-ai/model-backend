@@ -10,18 +10,16 @@ import (
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/instill-ai/x/repo"
-
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/repo"
 
+	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
 	usageclient "github.com/instill-ai/usage-client/client"
 	usagereporter "github.com/instill-ai/usage-client/reporter"
-
-	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 )
 
 // Usage interface
