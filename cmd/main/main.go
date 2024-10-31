@@ -228,6 +228,8 @@ func main() {
 	aclClient := acl.NewACLClient(fgaClient, fgaReplicaClient, redisClient)
 
 	repo := repository.NewRepository(db, redisClient)
+	timeseries := repository.MustNewInfluxDB(ctx, config.Config.Server.Debug)
+	defer timeseries.Close()
 
 	// Initialize Minio client
 	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger, config.MetadataExpiryRules...)
@@ -235,8 +237,9 @@ func main() {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
 
-	serv := service.NewService(repo, mgmtPublicServiceClient, mgmtPrivateServiceClient, artifactPrivateServiceClient,
-		redisClient, temporalClient, rayService, &aclClient, minioClient, config.Config.Server.InstillCoreHost)
+	serv := service.NewService(repo, timeseries.WriteAPI(), mgmtPublicServiceClient, mgmtPrivateServiceClient,
+		artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, minioClient,
+		config.Config.Server.InstillCoreHost)
 
 	modelpb.RegisterModelPublicServiceServer(
 		publicGrpcS,

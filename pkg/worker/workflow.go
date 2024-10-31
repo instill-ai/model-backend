@@ -90,6 +90,8 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 			OwnerType:          ownerType,
 			UserUID:            param.UserUID.String(),
 			UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
+			RequesterUID:       param.RequesterUID.String(),
+			ModelID:            param.ModelID,
 			ModelUID:           param.ModelUID.String(),
 			Version:            param.ModelVersion.Version,
 			Mode:               param.Mode,

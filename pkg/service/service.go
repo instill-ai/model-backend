@@ -11,6 +11,7 @@ import (
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/redis/go-redis/v9"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
@@ -99,7 +100,7 @@ type Service interface {
 	// Usage collection
 	WriteNewDataPoint(ctx context.Context, data *utils.UsageMetricData) error
 
-	CreateModelRun(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error)
+	CreateModelRun(ctx context.Context, triggerUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error)
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error)
@@ -109,6 +110,7 @@ type Service interface {
 
 type service struct {
 	repository                   repository.Repository
+	influxDBWriteClient          api.WriteAPI
 	redisClient                  *redis.Client
 	mgmtPublicServiceClient      mgmtpb.MgmtPublicServiceClient
 	mgmtPrivateServiceClient     mgmtpb.MgmtPrivateServiceClient
@@ -123,6 +125,7 @@ type service struct {
 // NewService returns a new service instance
 func NewService(
 	r repository.Repository,
+	i api.WriteAPI,
 	mp mgmtpb.MgmtPublicServiceClient,
 	m mgmtpb.MgmtPrivateServiceClient,
 	ar artifactpb.ArtifactPrivateServiceClient,
@@ -134,6 +137,7 @@ func NewService(
 	h string) Service {
 	return &service{
 		repository:                   r,
+		influxDBWriteClient:          i,
 		ray:                          ra,
 		mgmtPublicServiceClient:      mp,
 		mgmtPrivateServiceClient:     m,
@@ -175,7 +179,7 @@ func (s *service) GetRayClient() ray.Ray {
 	return s.ray
 }
 
-func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, userUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error) {
+func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	source := datamodel.RunSource(runpb.RunSource_RUN_SOURCE_API)
@@ -184,12 +188,9 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, user
 		source = datamodel.RunSource(userAgentEnum)
 	}
 
-	requesterUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constantx.HeaderRequesterUIDKey))
-	if requesterUID.IsNil() {
-		requesterUID = userUID
-	}
-
-	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, requesterUID)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
+	requesterUUID := uuid.FromStringOrNil(requesterUID)
+	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, requesterUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +214,8 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, user
 		ModelVersion:         version,
 		Status:               datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 		Source:               source,
-		RequesterUID:         requesterUID,
-		RunnerUID:            userUID,
+		RequesterUID:         requesterUUID,
+		RunnerUID:            uuid.FromStringOrNil(userUID),
 		InputReferenceID:     inputReferenceID,
 	})
 	if err != nil {

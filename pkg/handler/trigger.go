@@ -21,23 +21,20 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/instill-ai/x/sterr"
-
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/sterr"
 
+	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	resourcex "github.com/instill-ai/x/resource"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 )
 
 func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.TriggerUserModelRequest) (*modelpb.TriggerUserModelResponse, error) {
@@ -200,12 +197,14 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
+		RequesterUID:       requesterUID,
+		ModelID:            pbModel.Id,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtpb.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
@@ -220,7 +219,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	runLog, err := h.service.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := h.service.CreateModelRun(ctx, logUUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -464,6 +463,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
 		UserUID:            userUID,
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
+		RequesterUID:       requesterUID,
+		ModelID:            pbModel.Id,
 		ModelUID:           pbModel.Uid,
 		Mode:               mgmtpb.Mode_MODE_ASYNC,
 		TriggerUID:         logUUID.String(),
@@ -478,7 +479,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	runLog, err := h.service.CreateModelRun(ctx, logUUID, uuid.FromStringOrNil(userUID), modelUID, version.Version, inputJSON)
+	runLog, err := h.service.CreateModelRun(ctx, logUUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -675,13 +676,14 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		}
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
-
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
 		OwnerUID:           ns.NsUID.String(),
 		OwnerType:          mgmtpb.OwnerType_OWNER_TYPE_USER,
-		UserUID:            userUID.String(),
+		UserUID:            userUID,
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
+		RequesterUID:       requesterUID,
+		ModelID:            pbModel.Id,
 		ModelUID:           pbModel.Uid,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
@@ -765,7 +767,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		return
 	}
 
-	runLog, err := s.CreateModelRun(ctx, logUUID, userUID, modelUID, version.Version, inputJSON)
+	runLog, err := s.CreateModelRun(ctx, logUUID, modelUID, version.Version, inputJSON)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		logger.Error("CreateModelRun in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))

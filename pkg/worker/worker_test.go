@@ -86,7 +86,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		repo.UpdateModelRunMock.Times(1).Return(nil)
 
-		w := worker.NewWorker(rc, mockRay, repo, mockMinio, nil)
+		w := worker.NewWorker(rc, mockRay, repo, nil, mockMinio, nil)
 		err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
 	})
@@ -121,7 +121,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		mockRay.ModelReadyMock.Return(modelpb.State_STATE_ERROR.Enum().Enum(), "", 0, nil)
 
-		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
+		w := worker.NewWorker(rc, mockRay, repo, nil, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)
 		require.ErrorContains(t, err, "model upscale failed")
 	})

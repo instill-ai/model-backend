@@ -67,18 +67,18 @@ func (mr *MockServiceMockRecorder) ConvertRepositoryNameToRscName(arg0 interface
 }
 
 // CreateModelRun mocks base method.
-func (m *MockService) CreateModelRun(arg0 context.Context, arg1, arg2, arg3 uuid.UUID, arg4 string, arg5 []byte) (*datamodel.ModelRun, error) {
+func (m *MockService) CreateModelRun(arg0 context.Context, arg1, arg2 uuid.UUID, arg3 string, arg4 []byte) (*datamodel.ModelRun, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModelRun", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "CreateModelRun", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*datamodel.ModelRun)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateModelRun indicates an expected call of CreateModelRun.
-func (mr *MockServiceMockRecorder) CreateModelRun(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockServiceMockRecorder) CreateModelRun(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelRun", reflect.TypeOf((*MockService)(nil).CreateModelRun), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelRun", reflect.TypeOf((*MockService)(nil).CreateModelRun), arg0, arg1, arg2, arg3, arg4)
 }
 
 // CreateModelVersionAdmin mocks base method.
