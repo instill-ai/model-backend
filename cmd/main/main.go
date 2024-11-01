@@ -232,13 +232,13 @@ func main() {
 	defer timeseries.Close()
 
 	// Initialize Minio client
-	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger, config.MetadataExpiryRules...)
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger, service.MetadataExpiryRules...)
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
 
 	serv := service.NewService(repo, timeseries.WriteAPI(), mgmtPublicServiceClient, mgmtPrivateServiceClient,
-		artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, minioClient,
+		artifactPrivateServiceClient, redisClient, temporalClient, rayService, &aclClient, minioClient, nil,
 		config.Config.Server.InstillCoreHost)
 
 	modelpb.RegisterModelPublicServiceServer(

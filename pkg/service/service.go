@@ -104,8 +104,6 @@ type Service interface {
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error)
-
-	GetExpiryTagBySubscriptionPlan(context.Context, uuid.UUID) (string, error)
 }
 
 type service struct {
@@ -119,6 +117,7 @@ type service struct {
 	ray                          ray.Ray
 	aclClient                    acl.ACLClientInterface
 	minioClient                  miniox.MinioI
+	retentionHandler             MetadataRetentionHandler
 	instillCoreHost              string
 }
 
@@ -134,7 +133,11 @@ func NewService(
 	ra ray.Ray,
 	a acl.ACLClientInterface,
 	minioClient miniox.MinioI,
+	retentionHandler MetadataRetentionHandler,
 	h string) Service {
+	if retentionHandler == nil {
+		retentionHandler = NewRetentionHandler()
+	}
 	return &service{
 		repository:                   r,
 		influxDBWriteClient:          i,
@@ -146,6 +149,7 @@ func NewService(
 		temporalClient:               tc,
 		aclClient:                    a,
 		minioClient:                  minioClient,
+		retentionHandler:             retentionHandler,
 		instillCoreHost:              h,
 	}
 }
@@ -190,7 +194,7 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	requesterUUID := uuid.FromStringOrNil(requesterUID)
-	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, requesterUUID)
+	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, requesterUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +557,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
 	if err != nil {
 		return nil, err
 	}
@@ -666,7 +670,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
-	expiryRuleTag, err := s.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
 	if err != nil {
 		return nil, err
 	}
@@ -1369,8 +1373,4 @@ func (s *service) GetModelVersionAdmin(ctx context.Context, modelUID uuid.UUID, 
 
 func (s *service) CreateModelVersionAdmin(ctx context.Context, version *datamodel.ModelVersion) error {
 	return s.repository.CreateModelVersion(ctx, "", version)
-}
-
-func (s *service) GetExpiryTagBySubscriptionPlan(context.Context, uuid.UUID) (string, error) {
-	return config.DefaultExpiryTag, nil
 }
