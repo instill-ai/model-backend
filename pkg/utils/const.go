@@ -32,3 +32,7 @@ const (
 	TextGenerationTopK         = int32(10)
 	TextGenerationSeed         = int32(0)
 )
+
+type Flag string
+
+const Testing Flag = "TESTING"
