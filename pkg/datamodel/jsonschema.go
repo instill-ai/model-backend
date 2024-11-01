@@ -18,6 +18,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/internal/jsonref"
+	"github.com/instill-ai/model-backend/pkg/utils"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
@@ -116,6 +117,10 @@ func renderJSON(tasksJSONBytes []byte) ([]byte, error) {
 
 // InitJSONSchema initializes JSON Schema instances with the given files
 func InitJSONSchema(ctx context.Context) {
+	v := ctx.Value(utils.Testing)
+	if testingFlag, ok := v.(bool); ok && testingFlag {
+		return
+	}
 
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
