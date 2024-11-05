@@ -1,12 +1,12 @@
 BEGIN;
 
-alter table model_trigger
-add runner_uid uuid;
+ALTER TABLE model_trigger
+ADD runner_uid uuid;
 
-comment on column model_trigger.requester_uid is 'run by namespace, which is the credit owner';
+COMMENT ON COLUMN model_trigger.requester_uid IS 'run by namespace, which is the credit owner';
 
-update model_trigger
-set runner_uid = requester_uid
-where runner_uid is null;
+UPDATE model_trigger
+SET runner_uid = requester_uid
+WHERE runner_uid IS NULL;
 
 COMMIT;

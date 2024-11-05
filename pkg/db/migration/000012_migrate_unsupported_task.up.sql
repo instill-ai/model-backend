@@ -1,0 +1,5 @@
+BEGIN;
+
+UPDATE model SET task = 'TASK_CUSTOM' WHERE task = 'TASK_IMAGE_TO_IMAGE';
+
+COMMIT;
