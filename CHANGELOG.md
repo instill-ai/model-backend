@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.33.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.32.0-alpha...v0.33.0-alpha) (2024-11-05)
+
+
+### Features
+
+* **minio:** import updated minio package and add tag on file upload ([#704](https://github.com/instill-ai/model-backend/issues/704)) ([7d03354](https://github.com/instill-ai/model-backend/commit/7d03354b97f1841593f3dee8e21bec4e23d3c829))
+* **run:** write data for usage by model trigger chart record api ([#705](https://github.com/instill-ai/model-backend/issues/705)) ([fababc9](https://github.com/instill-ai/model-backend/commit/fababc976e16dbe43118489d385b6db5b7e3bc63))
+
+
+### Bug Fixes
+
+* **migration:** migrate unsupported task to custom ([#709](https://github.com/instill-ai/model-backend/issues/709)) ([f44afd6](https://github.com/instill-ai/model-backend/commit/f44afd65f0550adc86e7a37aa7f73edca7ab5a04))
+* **run:** add metadata retention handler ([#707](https://github.com/instill-ai/model-backend/issues/707)) ([43a6a61](https://github.com/instill-ai/model-backend/commit/43a6a6171813a2afde5691ab0115ce166ab78611))
+* **run:** add namespace id in response ([#708](https://github.com/instill-ai/model-backend/issues/708)) ([2940b1c](https://github.com/instill-ai/model-backend/commit/2940b1c295aeaedbea40a5f5ff72376c77d4a2e8))
+
 ## [0.32.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.31.0-alpha...v0.32.0-alpha) (2024-10-23)
 
 
