@@ -1,7 +1,7 @@
 BEGIN;
 
-comment on column model_trigger.requester_uid is null;
+COMMENT ON COLUMN model_trigger.requester_uid IS NULL;
 
-alter table model_trigger drop column runner_uid;
+ALTER TABLE model_trigger DROP COLUMN runner_uid;
 
 COMMIT;
