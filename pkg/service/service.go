@@ -884,8 +884,6 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 		return nil, err
 	}
 
-	requesterUID, _ := resourcex.GetRequesterUIDAndUserUID(ctx)
-
 	now := time.Now().UTC()
 	startedTimeBegin := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	if req.GetStart().IsValid() {
@@ -905,7 +903,7 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 		Page:             int64(page),
 		Filter:           filter,
 		Order:            orderBy,
-		RequesterUID:     requesterUID,
+		RequesterUID:     ns.NsUID.String(),
 		StartedTimeBegin: startedTimeBegin,
 		StartedTimeEnd:   startedTimeEnd,
 	})
