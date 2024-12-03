@@ -53,6 +53,10 @@ type TriggerModelWorkflowRequest struct {
 	ExpiryRuleTag      string
 }
 
+func (r *TriggerModelWorkflowRequest) GetModelName() string {
+	return fmt.Sprintf("%s/%s/%s", r.OwnerType, r.OwnerUID.String(), r.ModelID)
+}
+
 type TriggerModelActivityRequest struct {
 	TriggerModelWorkflowRequest
 	WorkflowExecutionID string
@@ -159,8 +163,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	var err error
 
-	// param.RunLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING)
-
 	ctx = metadata.NewIncomingContext(ctx, metadata.MD{constant.HeaderAuthTypeKey: []string{"user"}, constant.HeaderUserUIDKey: []string{param.UserUID.String()}})
 	ctx, span := tracer.Start(ctx, eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
@@ -180,13 +182,13 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	// wait for model instance to come online to start processing the request
 	// temporary solution to not overcharge for credits
 	// TODO: design a better flow
-	state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version)
+	state, _, numOfActiveReplica, err := w.ray.ModelReady(ctx, param.GetModelName(), param.ModelVersion.Version)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 	for *state == modelpb.State_STATE_OFFLINE {
 		time.Sleep(time.Millisecond * 500)
-		state, _, numOfActiveReplica, err = w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version)
+		state, _, numOfActiveReplica, err = w.ray.ModelReady(ctx, param.GetModelName(), param.ModelVersion.Version)
 		if err != nil {
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		}
@@ -194,7 +196,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	for *state != modelpb.State_STATE_ACTIVE || numOfActiveReplica <= 0 {
 		logger.Debug(fmt.Sprintf("model upscale state: %v", state))
 		logger.Debug(fmt.Sprintf("model upscale numOfActiveReplica: %v", numOfActiveReplica))
-		if state, _, numOfActiveReplica, err = w.ray.ModelReady(ctx, fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID, param.ModelID), param.ModelVersion.Version); err != nil {
+		if state, _, numOfActiveReplica, err = w.ray.ModelReady(ctx, param.GetModelName(), param.ModelVersion.Version); err != nil {
 			return w.toApplicationError(err, param.ModelID, ModelActivityError)
 		} else if *state != modelpb.State_STATE_SCALING_UP && *state != modelpb.State_STATE_STARTING && *state != modelpb.State_STATE_ACTIVE {
 			logger.Error(fmt.Sprintf("model upscale failed: current model state: %v", state), zap.Error(err))
@@ -225,8 +227,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		}
 	}()
 
-	modelName := fmt.Sprintf("%s/%s/%s", param.OwnerType, param.OwnerUID.String(), param.ModelID)
-
 	input, err := w.minioClient.GetFile(ctx, nil, param.RunLog.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
@@ -237,9 +237,9 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return err
 	}
 
-	logger.Info("ModelInferRequest started", zap.String("modelName", modelName), zap.String("modelVersion", param.ModelVersion.Version))
+	logger.Info("ModelInferRequest started", zap.String("modelName", param.GetModelName()), zap.String("modelVersion", param.ModelVersion.Version))
 
-	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, triggerModelReq, modelName, param.ModelVersion.Version)
+	inferResponse, err := w.ray.ModelInferRequest(ctx, param.Task, triggerModelReq, param.GetModelName(), param.ModelVersion.Version)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -313,13 +313,6 @@ func (w *worker) writeErrorDataPoint(ctx context.Context, err error, span trace.
 	_ = w.writeNewDataPoint(ctx, dataPoint)
 }
 
-// func (w *worker) writeErrorPrediction(ctx context.Context, err error, span trace.Span, startTime time.Time, pred *datamodel.ModelPrediction) {
-// 	span.SetStatus(1, err.Error())
-// 	pred.ComputeTimeDuration = time.Since(startTime).Seconds()
-// 	pred.Status = datamodel.Status(mgmtpb.Status_STATUS_ERRORED)
-// 	_ = w.writePrediction(ctx, pred)
-// }
-
 // toApplicationError wraps a temporal task error in a temporal.Application
 // error, adding end-user information that can be extracted by the temporal
 // client.
@@ -369,6 +362,7 @@ func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinio
 	if err != nil {
 		return nil, err
 	}
+
 	return &UploadToMinioActivityResponse{
 		URL:        url,
 		ObjectInfo: objectInfo,
