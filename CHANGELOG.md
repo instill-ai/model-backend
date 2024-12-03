@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.33.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.33.0-alpha...v0.33.1-alpha) (2024-12-03)
+
+
+### Miscellaneous Chores
+
+* **release:** release v0.33.1-alpha ([7ad830f](https://github.com/instill-ai/model-backend/commit/7ad830f97d7c24f8841c5b530b0115f948341e12))
+
 ## [0.33.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.32.0-alpha...v0.33.0-alpha) (2024-11-05)
 
 
