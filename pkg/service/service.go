@@ -193,8 +193,7 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 	}
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
-	requesterUUID := uuid.FromStringOrNil(requesterUID)
-	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, requesterUUID)
+	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, requesterUID)
 	if err != nil {
 		return nil, err
 	}
@@ -218,8 +217,8 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 		ModelVersion:         version,
 		Status:               datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_PROCESSING),
 		Source:               source,
-		RequesterUID:         requesterUUID,
-		RunnerUID:            uuid.FromStringOrNil(userUID),
+		RequesterUID:         requesterUID,
+		RunnerUID:            userUID,
 		InputReferenceID:     inputReferenceID,
 	})
 	if err != nil {
@@ -781,9 +780,9 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	requesterUID, _ := resourcex.GetRequesterUIDAndUserUID(ctx)
-	isOwner := dbModel.OwnerUID().String() == requesterUID
+	isOwner := dbModel.OwnerUID().String() == requesterUID.String()
 
-	runs, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID, isOwner, dbModel.UID.String())
+	runs, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID.String(), isOwner, dbModel.UID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -791,7 +790,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	metadataMap := make(map[string][]byte)
 	var referenceIDs []string
 	for _, run := range runs {
-		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
+		if CanViewPrivateData(run.RequesterUID.String(), requesterUID.String()) {
 			referenceIDs = append(referenceIDs, run.InputReferenceID)
 			if run.OutputReferenceID.Valid {
 				referenceIDs = append(referenceIDs, run.OutputReferenceID.String)
@@ -833,7 +832,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 			pbModelRun.RequesterId = *requesterID
 		}
 
-		if CanViewPrivateData(run.RequesterUID.String(), requesterUID) {
+		if CanViewPrivateData(run.RequesterUID.String(), requesterUID.String()) {
 			pbModelRun.TaskInputs, pbModelRun.TaskOutputs, err = parseMetadataToStructArr(metadataMap, run)
 			if err != nil {
 				logger.Error("Failed to load metadata", zap.Error(err), zap.String("modelUID", run.ModelUID.String()),
