@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ type Ray interface {
 
 	// standard
 	IsRayServerReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU int) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error
 	Init()
 	Close()
 }
@@ -115,7 +116,7 @@ func (r *ray) Init() {
 	go r.sync()
 
 	// sync potential missing applications
-	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}, 1); err != nil {
+	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}, "1"); err != nil {
 		fmt.Printf("error syncing deployment config: %v\n", err)
 	}
 }
@@ -244,7 +245,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 	return modelInferResponse, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU int) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var err error
@@ -291,7 +292,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	return <-r.doneChan
 }
 
-func (r *ray) setHardwareRunOptions(hardware string, numOfGPU int) []string {
+func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 	logger, _ := custom_logger.GetZapLogger(context.Background())
 	runOptions := []string{}
 
@@ -316,7 +317,11 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU int) []string {
 			"--device nvidia.com/gpu=all",
 		)
 	default:
-		if numOfGPU > 1 {
+		numOfGPUInt, err := strconv.Atoi(numOfGPU)
+		if err != nil {
+			numOfGPUInt = 1
+		}
+		if numOfGPUInt > 1 {
 			runOptions = append(runOptions,
 				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),

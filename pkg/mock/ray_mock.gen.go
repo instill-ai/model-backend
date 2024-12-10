@@ -50,8 +50,8 @@ type RayMock struct {
 	beforeModelReadyCounter uint64
 	ModelReadyMock          mRayMockModelReady
 
-	funcUpdateContainerizedModel          func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int) (err error)
-	inspectFuncUpdateContainerizedModel   func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int)
+	funcUpdateContainerizedModel          func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string) (err error)
+	inspectFuncUpdateContainerizedModel   func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string)
 	afterUpdateContainerizedModelCounter  uint64
 	beforeUpdateContainerizedModelCounter uint64
 	UpdateContainerizedModelMock          mRayMockUpdateContainerizedModel
@@ -1507,7 +1507,7 @@ type RayMockUpdateContainerizedModelParams struct {
 	hardware      string
 	action        mm_ray.Action
 	scalingConfig []string
-	numOfGPU      int
+	numOfGPU      string
 }
 
 // RayMockUpdateContainerizedModelParamPtrs contains pointers to parameters of the Ray.UpdateContainerizedModel
@@ -1520,7 +1520,7 @@ type RayMockUpdateContainerizedModelParamPtrs struct {
 	hardware      *string
 	action        *mm_ray.Action
 	scalingConfig *[]string
-	numOfGPU      *int
+	numOfGPU      *string
 }
 
 // RayMockUpdateContainerizedModelResults contains results of the Ray.UpdateContainerizedModel
@@ -1539,7 +1539,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Optional() *
 }
 
 // Expect sets up expected params for Ray.UpdateContainerizedModel
-func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Expect(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int) *mRayMockUpdateContainerizedModel {
+func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Expect(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string) *mRayMockUpdateContainerizedModel {
 	if mmUpdateContainerizedModel.mock.funcUpdateContainerizedModel != nil {
 		mmUpdateContainerizedModel.mock.t.Fatalf("RayMock.UpdateContainerizedModel mock is already set by Set")
 	}
@@ -1739,7 +1739,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) ExpectScalin
 }
 
 // ExpectNumOfGPUParam9 sets up expected param numOfGPU for Ray.UpdateContainerizedModel
-func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) ExpectNumOfGPUParam9(numOfGPU int) *mRayMockUpdateContainerizedModel {
+func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) ExpectNumOfGPUParam9(numOfGPU string) *mRayMockUpdateContainerizedModel {
 	if mmUpdateContainerizedModel.mock.funcUpdateContainerizedModel != nil {
 		mmUpdateContainerizedModel.mock.t.Fatalf("RayMock.UpdateContainerizedModel mock is already set by Set")
 	}
@@ -1761,7 +1761,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) ExpectNumOfG
 }
 
 // Inspect accepts an inspector function that has same arguments as the Ray.UpdateContainerizedModel
-func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Inspect(f func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int)) *mRayMockUpdateContainerizedModel {
+func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Inspect(f func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string)) *mRayMockUpdateContainerizedModel {
 	if mmUpdateContainerizedModel.mock.inspectFuncUpdateContainerizedModel != nil {
 		mmUpdateContainerizedModel.mock.t.Fatalf("Inspect function is already set for RayMock.UpdateContainerizedModel")
 	}
@@ -1785,7 +1785,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Return(err e
 }
 
 // Set uses given function f to mock the Ray.UpdateContainerizedModel method
-func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Set(f func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int) (err error)) *RayMock {
+func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Set(f func(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string) (err error)) *RayMock {
 	if mmUpdateContainerizedModel.defaultExpectation != nil {
 		mmUpdateContainerizedModel.mock.t.Fatalf("Default expectation is already set for the Ray.UpdateContainerizedModel method")
 	}
@@ -1800,7 +1800,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) Set(f func(c
 
 // When sets expectation for the Ray.UpdateContainerizedModel which will trigger the result defined by the following
 // Then helper
-func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) When(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int) *RayMockUpdateContainerizedModelExpectation {
+func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) When(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string) *RayMockUpdateContainerizedModelExpectation {
 	if mmUpdateContainerizedModel.mock.funcUpdateContainerizedModel != nil {
 		mmUpdateContainerizedModel.mock.t.Fatalf("RayMock.UpdateContainerizedModel mock is already set by Set")
 	}
@@ -1840,7 +1840,7 @@ func (mmUpdateContainerizedModel *mRayMockUpdateContainerizedModel) invocationsD
 }
 
 // UpdateContainerizedModel implements ray.Ray
-func (mmUpdateContainerizedModel *RayMock) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU int) (err error) {
+func (mmUpdateContainerizedModel *RayMock) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action mm_ray.Action, scalingConfig []string, numOfGPU string) (err error) {
 	mm_atomic.AddUint64(&mmUpdateContainerizedModel.beforeUpdateContainerizedModelCounter, 1)
 	defer mm_atomic.AddUint64(&mmUpdateContainerizedModel.afterUpdateContainerizedModelCounter, 1)
 
