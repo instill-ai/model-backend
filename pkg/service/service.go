@@ -538,8 +538,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	} else if numOfActiveReplica == 0 {
 		if *state == modelpb.State_STATE_OFFLINE || *state == modelpb.State_STATE_SCALING_DOWN {
 			scalingConfig := ray.GenerateScalingConfig(dbModel.ID)
+			numOfGPU := ray.GenerateHardwareConfig(dbModel.ID)
 			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
-			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
+			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig, numOfGPU); err != nil {
 				logger.Warn(fmt.Sprintf("model is not ready to serve requests: %v", err))
 			}
 		}
@@ -660,8 +661,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 	} else if numOfActiveReplica == 0 {
 		if *state == modelpb.State_STATE_OFFLINE || *state == modelpb.State_STATE_SCALING_DOWN {
 			scalingConfig := ray.GenerateScalingConfig(dbModel.ID)
+			numOfGPU := ray.GenerateHardwareConfig(dbModel.ID)
 			name := fmt.Sprintf("%s/%s", ns.Permalink(), dbModel.ID)
-			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig); err != nil {
+			if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, dbModel.ID, version.Version, "", ray.UpScale, scalingConfig, numOfGPU); err != nil {
 				logger.Warn(fmt.Sprintf("model is not ready to serve requests: %v", err))
 			}
 		}
@@ -1356,9 +1358,10 @@ func (s *service) ListModelDefinitions(ctx context.Context, view modelpb.View, p
 func (s *service) UpdateModelInstanceAdmin(ctx context.Context, ns resource.Namespace, modelID string, hardware string, version string, action ray.Action) error {
 
 	scalingConfig := ray.GenerateScalingConfig(modelID)
+	numOfGPU := ray.GenerateHardwareConfig(modelID)
 
 	name := fmt.Sprintf("%s/%s", ns.Permalink(), modelID)
-	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, action, scalingConfig); err != nil {
+	if err := s.ray.UpdateContainerizedModel(ctx, name, ns.NsID, modelID, version, hardware, action, scalingConfig, numOfGPU); err != nil {
 		return err
 	}
 
