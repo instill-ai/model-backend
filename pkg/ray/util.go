@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -22,13 +23,13 @@ func GenerateHardwareConfig(modelID string) int {
 	// match suffix `-{int}g`
 	re := regexp.MustCompile(`-(\d+)g$`)
 
-	matches := re.FindStringSubmatch((modelID))
+	matches := re.FindStringSubmatch(modelID)
 	if len(matches) == 2 {
-		gpuCount, err := fmt.Sscanf(matches[1], "%d", new(int))
+		numOfGPU, err := strconv.Atoi(matches[1])
 		if err != nil {
 			return 1
 		}
-		return gpuCount
+		return numOfGPU
 	}
 
 	return 1
