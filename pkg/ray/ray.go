@@ -326,9 +326,9 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 	default:
 		numOfGPUInt, err := strconv.Atoi(numOfGPU)
 		if err != nil {
-			numOfGPUInt = 1
+			numOfGPUInt = 0
 		}
-		if numOfGPUInt > 1 {
+		if numOfGPUInt > 0 {
 			runOptions = append(runOptions,
 				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),
