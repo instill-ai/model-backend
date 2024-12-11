@@ -1065,18 +1065,27 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.L
 	for _, r := range regionsStruct {
 		subRegion := &modelpb.Region{
 			RegionName: r.Const,
-			Hardware:   []string{},
+			Hardware:   []*modelpb.Hardware{},
 		}
 		for _, h := range hardwaresStruct {
 			if h.If.Properties.Region.Const == r.Const {
 				for _, hardware := range h.Then.Properties.Hardware.OneOf {
-					subRegion.Hardware = append(subRegion.Hardware, hardware.Const)
+					subRegion.Hardware = append(subRegion.Hardware, &modelpb.Hardware{
+						Title: hardware.Title,
+						Value: hardware.Const,
+					})
 				}
 				for _, hardware := range h.Then.Properties.Hardware.AnyOf {
 					if hardware.Const != "" {
-						subRegion.Hardware = append(subRegion.Hardware, hardware.Const)
+						subRegion.Hardware = append(subRegion.Hardware, &modelpb.Hardware{
+							Title: hardware.Title,
+							Value: hardware.Const,
+						})
 					} else if hardware.Title != "" {
-						subRegion.Hardware = append(subRegion.Hardware, hardware.Title)
+						subRegion.Hardware = append(subRegion.Hardware, &modelpb.Hardware{
+							Title: hardware.Title,
+							Value: "",
+						})
 					}
 				}
 			}
