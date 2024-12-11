@@ -324,11 +324,11 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 			"--device nvidia.com/gpu=all",
 		)
 	default:
-		numOfGPUInt, err := strconv.Atoi(numOfGPU)
+		numOfGPUFloat, err := strconv.ParseFloat(numOfGPU, 64)
 		if err != nil {
-			numOfGPUInt = 1
+			numOfGPUFloat = 0
 		}
-		if numOfGPUInt > 1 {
+		if numOfGPUFloat > 0 {
 			runOptions = append(runOptions,
 				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),

@@ -27,7 +27,7 @@ func GenerateHardwareConfig(modelID string) string {
 		return matches[1]
 	}
 
-	return "1"
+	return "0"
 }
 
 func GetApplicationMetadaValue(modelName string, version string) (applicationMetadataValue string, err error) {
