@@ -261,6 +261,13 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	if action == Deploy {
+		runOptions = append(runOptions,
+			"--tls-verify=false",
+			"--pull=always",
+			"--rm",
+			"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
+			"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
+			"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py")
 		runOptions = append(runOptions, r.setHardwareRunOptions(hardware, numOfGPU)...)
 		if len(scalingConfig) > 0 {
 			runOptions = append(runOptions, scalingConfig...)
