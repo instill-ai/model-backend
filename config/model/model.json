@@ -181,13 +181,13 @@
                 "const": "NVIDIA_TESLA_T4",
                 "instillShortDescription": "Deploy model that runs on Nvidia T4 GPU",
                 "description": "Deploy model that runs on Nvidia T4 GPU",
-                "title": "Nvidia Tesla T4"
+                "title": "NVIDIA Tesla T4"
               },
               {
                 "const": "NVIDIA_L4",
                 "instillShortDescription": "Deploy model that runs on Nvidia L4 GPU",
                 "description": "Deploy model that runs on Nvidia L4 GPU",
-                "title": "Nvidia L4"
+                "title": "NVIDIA L4"
               },
               {
                 "const": "NVIDIA_A100",
