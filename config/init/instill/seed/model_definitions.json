@@ -198,6 +198,12 @@
                       "instillShortDescription": "Deploy model that runs on Nvidia A100 40G GPU",
                       "description": "Deploy model that runs on Nvidia A100 40G GPU",
                       "title": "NVIDIA A100"
+                    },
+                    {
+                      "const": "NVIDIA_A100_80G",
+                      "instillShortDescription": "Deploy model that runs on Nvidia A100 80G GPU",
+                      "description": "Deploy model that runs on Nvidia A100 80G GPU",
+                      "title": "NVIDIA A100 80G"
                     }
                   ]
                 }
