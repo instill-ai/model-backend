@@ -24,15 +24,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/x/temporal"
+	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
-
-	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
-
 	miniox "github.com/instill-ai/x/minio"
 )
 

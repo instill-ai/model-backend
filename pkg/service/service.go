@@ -134,10 +134,8 @@ func NewService(
 	a acl.ACLClientInterface,
 	minioClient miniox.MinioI,
 	retentionHandler MetadataRetentionHandler,
-	h string) Service {
-	if retentionHandler == nil {
-		retentionHandler = NewRetentionHandler()
-	}
+	h string,
+) Service {
 	return &service{
 		repository:                   r,
 		influxDBWriteClient:          i,
@@ -193,9 +191,9 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 	}
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
-	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, requesterUID)
+	expiryRule, err := s.retentionHandler.GetExpiryRuleByNamespace(ctx, requesterUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching expiration rule: %w", err)
 	}
 
 	inputReferenceID := miniox.GenerateInputRefID("model-runs")
@@ -204,7 +202,7 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 		FilePath:      inputReferenceID,
 		FileBytes:     inputJSON,
 		FileMimeType:  constant.ContentTypeJSON,
-		ExpiryRuleTag: expiryRuleTag,
+		ExpiryRuleTag: expiryRule.Tag,
 	})
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(inputJSON)), zap.Error(err))
@@ -557,9 +555,9 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		},
 	}
 
-	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	expiryRule, err := s.retentionHandler.GetExpiryRuleByNamespace(ctx, runLog.RequesterUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching expiration rule: %w", err)
 	}
 
 	we, err := s.temporalClient.ExecuteWorkflow(
@@ -582,7 +580,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
 			RunLog:             runLog,
-			ExpiryRuleTag:      expiryRuleTag,
+			ExpiryRuleTag:      expiryRule.Tag,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
@@ -671,9 +669,9 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 
 	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
 
-	expiryRuleTag, err := s.retentionHandler.GetExpiryTagBySubscriptionPlan(ctx, runLog.RequesterUID)
+	expiryRule, err := s.retentionHandler.GetExpiryRuleByNamespace(ctx, runLog.RequesterUID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching expiration rule: %w", err)
 	}
 
 	workflowOptions := client.StartWorkflowOptions{
@@ -705,7 +703,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 			Hardware:           dbModel.Hardware,
 			Visibility:         dbModel.Visibility,
 			RunLog:             runLog,
-			ExpiryRuleTag:      expiryRuleTag,
+			ExpiryRuleTag:      expiryRule.Tag,
 		})
 	if err != nil {
 		logger.Error(fmt.Sprintf("unable to execute workflow: %s", err.Error()))
