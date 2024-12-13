@@ -143,6 +143,7 @@ jobs:
           docker push localhost:5001/admin/dummy-multimodal-chat
           docker push localhost:5001/admin/dummy-text-embedding
           docker push localhost:5001/admin/dummy-multimodal-embedding
+          docker ps -a
 
       - name: Launch Init Model Pod
         run: |
