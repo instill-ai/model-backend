@@ -23,6 +23,7 @@ import (
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
+	"github.com/redis/go-redis/v9"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
@@ -38,7 +39,7 @@ type Ray interface {
 	// standard
 	IsRayServerReady(ctx context.Context) bool
 	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error
-	Init()
+	Init(rc *redis.Client)
 	Close()
 }
 
@@ -46,6 +47,7 @@ type ray struct {
 	rayClient      rayserver.RayServiceClient
 	rayServeClient rayserver.RayServeAPIServiceClient
 	rayHTTPClient  *http.Client
+	redisClient    *redis.Client
 	connection     *grpc.ClientConn
 	configFilePath string
 	configChan     chan ApplicationWithAction
@@ -55,15 +57,16 @@ type ray struct {
 var once sync.Once
 var rayService *ray
 
-func NewRay() Ray {
+func NewRay(rc *redis.Client) Ray {
 	once.Do(func() {
 		rayService = &ray{}
-		rayService.Init()
+		rayService.Init(rc)
 	})
 	return rayService
 }
 
-func (r *ray) Init() {
+func (r *ray) Init(rc *redis.Client) {
+	ctx := context.Background()
 	// Connect to gRPC server
 	conn, err := grpc.NewClient(
 		config.Config.RayServer.GrpcURI,
@@ -78,6 +81,8 @@ func (r *ray) Init() {
 		log.Fatalf("Couldn't connect to endpoint %s: %v", config.Config.RayServer.GrpcURI, err)
 	}
 
+	r.redisClient = rc
+
 	// Create client from gRPC server connection
 	r.connection = conn
 	r.rayClient = rayserver.NewRayServiceClient(conn)
@@ -87,28 +92,19 @@ func (r *ray) Init() {
 	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
 
-	var modelDeploymentConfig ModelDeploymentConfig
 	isCorrupted := false
 	currentConfigFile, err := os.ReadFile(r.configFilePath)
 	if err != nil {
 		isCorrupted = true
 	}
-	err = yaml.Unmarshal(currentConfigFile, &modelDeploymentConfig)
-	if err != nil {
-		isCorrupted = true
-	}
 
-	if _, err := os.Stat(r.configFilePath); os.IsNotExist(err) || isCorrupted {
-		initDeployConfig := ModelDeploymentConfig{
-			Applications: []Application{},
-		}
-		initConfigData, err := yaml.Marshal(&initDeployConfig)
-		if err != nil {
-			fmt.Printf("error while Marshaling deployment config: %v\n", err)
-		}
-		if err := os.WriteFile(r.configFilePath, initConfigData, 0666); err != nil {
-			fmt.Printf("error creating deployment config: %v\n", err)
-		}
+	if _, err := os.Stat(r.configFilePath); !os.IsNotExist(err) && !isCorrupted {
+		r.redisClient.Set(
+			ctx,
+			RayDeploymentKey,
+			currentConfigFile,
+			0,
+		)
 	}
 
 	// avoid race condition with file writing
@@ -381,7 +377,10 @@ func (r *ray) sync() {
 
 		var modelDeploymentConfig ModelDeploymentConfig
 
-		currentConfigFile, err := os.ReadFile(r.configFilePath)
+		currentConfigFile, err := r.redisClient.Get(
+			ctx,
+			RayDeploymentKey,
+		).Bytes()
 		if err != nil {
 			logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
 		}
@@ -414,7 +413,12 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error while Marshaling YAML deployment config: %v", err))
 		}
 
-		if err := os.WriteFile(r.configFilePath, modelDeploymentConfigData, 0666); err != nil {
+		if err := r.redisClient.Set(
+			ctx,
+			RayDeploymentKey,
+			modelDeploymentConfigData,
+			0,
+		).Err(); err != nil {
 			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
 		}
 
@@ -449,6 +453,22 @@ func (r *ray) sync() {
 }
 
 func (r *ray) Close() {
+	ctx := context.Background()
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	currentConfigFile, err := r.redisClient.Get(
+		ctx,
+		RayDeploymentKey,
+	).Bytes()
+	if err != nil {
+		logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
+	}
+
+	if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
+		logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+	}
+
 	if r.connection != nil {
 		r.connection.Close()
 	}

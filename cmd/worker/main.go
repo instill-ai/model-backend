@@ -109,11 +109,11 @@ func main() {
 	db := database.GetSharedConnection()
 	defer database.Close(db)
 
-	rayService := ray.NewRay()
-	defer rayService.Close()
-
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
+
+	rayService := ray.NewRay(redisClient)
+	defer rayService.Close()
 
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),

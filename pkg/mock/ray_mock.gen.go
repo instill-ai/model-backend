@@ -13,6 +13,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	"github.com/redis/go-redis/v9"
 )
 
 // RayMock implements ray.Ray
@@ -26,8 +27,8 @@ type RayMock struct {
 	beforeCloseCounter uint64
 	CloseMock          mRayMockClose
 
-	funcInit          func()
-	inspectFuncInit   func()
+	funcInit          func(rc *redis.Client)
+	inspectFuncInit   func(rc *redis.Client)
 	afterInitCounter  uint64
 	beforeInitCounter uint64
 	InitMock          mRayMockInit
@@ -68,6 +69,7 @@ func NewRayMock(t minimock.Tester) *RayMock {
 	m.CloseMock = mRayMockClose{mock: m}
 
 	m.InitMock = mRayMockInit{mock: m}
+	m.InitMock.callArgs = []*RayMockInitParams{}
 
 	m.IsRayServerReadyMock = mRayMockIsRayServerReady{mock: m}
 	m.IsRayServerReadyMock.callArgs = []*RayMockIsRayServerReadyParams{}
@@ -263,14 +265,29 @@ type mRayMockInit struct {
 	defaultExpectation *RayMockInitExpectation
 	expectations       []*RayMockInitExpectation
 
+	callArgs []*RayMockInitParams
+	mutex    sync.RWMutex
+
 	expectedInvocations uint64
 }
 
 // RayMockInitExpectation specifies expectation struct of the Ray.Init
 type RayMockInitExpectation struct {
-	mock *RayMock
+	mock      *RayMock
+	params    *RayMockInitParams
+	paramPtrs *RayMockInitParamPtrs
 
 	Counter uint64
+}
+
+// RayMockInitParams contains parameters of the Ray.Init
+type RayMockInitParams struct {
+	rc *redis.Client
+}
+
+// RayMockInitParamPtrs contains pointers to parameters of the Ray.Init
+type RayMockInitParamPtrs struct {
+	rc **redis.Client
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -284,7 +301,7 @@ func (mmInit *mRayMockInit) Optional() *mRayMockInit {
 }
 
 // Expect sets up expected params for Ray.Init
-func (mmInit *mRayMockInit) Expect() *mRayMockInit {
+func (mmInit *mRayMockInit) Expect(rc *redis.Client) *mRayMockInit {
 	if mmInit.mock.funcInit != nil {
 		mmInit.mock.t.Fatalf("RayMock.Init mock is already set by Set")
 	}
@@ -293,11 +310,44 @@ func (mmInit *mRayMockInit) Expect() *mRayMockInit {
 		mmInit.defaultExpectation = &RayMockInitExpectation{}
 	}
 
+	if mmInit.defaultExpectation.paramPtrs != nil {
+		mmInit.mock.t.Fatalf("RayMock.Init mock is already set by ExpectParams functions")
+	}
+
+	mmInit.defaultExpectation.params = &RayMockInitParams{rc}
+	for _, e := range mmInit.expectations {
+		if minimock.Equal(e.params, mmInit.defaultExpectation.params) {
+			mmInit.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmInit.defaultExpectation.params)
+		}
+	}
+
+	return mmInit
+}
+
+// ExpectRcParam1 sets up expected param rc for Ray.Init
+func (mmInit *mRayMockInit) ExpectRcParam1(rc *redis.Client) *mRayMockInit {
+	if mmInit.mock.funcInit != nil {
+		mmInit.mock.t.Fatalf("RayMock.Init mock is already set by Set")
+	}
+
+	if mmInit.defaultExpectation == nil {
+		mmInit.defaultExpectation = &RayMockInitExpectation{}
+	}
+
+	if mmInit.defaultExpectation.params != nil {
+		mmInit.mock.t.Fatalf("RayMock.Init mock is already set by Expect")
+	}
+
+	if mmInit.defaultExpectation.paramPtrs == nil {
+		mmInit.defaultExpectation.paramPtrs = &RayMockInitParamPtrs{}
+	}
+	mmInit.defaultExpectation.paramPtrs.rc = &rc
+
 	return mmInit
 }
 
 // Inspect accepts an inspector function that has same arguments as the Ray.Init
-func (mmInit *mRayMockInit) Inspect(f func()) *mRayMockInit {
+func (mmInit *mRayMockInit) Inspect(f func(rc *redis.Client)) *mRayMockInit {
 	if mmInit.mock.inspectFuncInit != nil {
 		mmInit.mock.t.Fatalf("Inspect function is already set for RayMock.Init")
 	}
@@ -321,7 +371,7 @@ func (mmInit *mRayMockInit) Return() *RayMock {
 }
 
 // Set uses given function f to mock the Ray.Init method
-func (mmInit *mRayMockInit) Set(f func()) *RayMock {
+func (mmInit *mRayMockInit) Set(f func(rc *redis.Client)) *RayMock {
 	if mmInit.defaultExpectation != nil {
 		mmInit.mock.t.Fatalf("Default expectation is already set for the Ray.Init method")
 	}
@@ -355,25 +405,53 @@ func (mmInit *mRayMockInit) invocationsDone() bool {
 }
 
 // Init implements ray.Ray
-func (mmInit *RayMock) Init() {
+func (mmInit *RayMock) Init(rc *redis.Client) {
 	mm_atomic.AddUint64(&mmInit.beforeInitCounter, 1)
 	defer mm_atomic.AddUint64(&mmInit.afterInitCounter, 1)
 
 	if mmInit.inspectFuncInit != nil {
-		mmInit.inspectFuncInit()
+		mmInit.inspectFuncInit(rc)
+	}
+
+	mm_params := RayMockInitParams{rc}
+
+	// Record call args
+	mmInit.InitMock.mutex.Lock()
+	mmInit.InitMock.callArgs = append(mmInit.InitMock.callArgs, &mm_params)
+	mmInit.InitMock.mutex.Unlock()
+
+	for _, e := range mmInit.InitMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return
+		}
 	}
 
 	if mmInit.InitMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmInit.InitMock.defaultExpectation.Counter, 1)
+		mm_want := mmInit.InitMock.defaultExpectation.params
+		mm_want_ptrs := mmInit.InitMock.defaultExpectation.paramPtrs
+
+		mm_got := RayMockInitParams{rc}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.rc != nil && !minimock.Equal(*mm_want_ptrs.rc, mm_got.rc) {
+				mmInit.t.Errorf("RayMock.Init got unexpected parameter rc, want: %#v, got: %#v%s\n", *mm_want_ptrs.rc, mm_got.rc, minimock.Diff(*mm_want_ptrs.rc, mm_got.rc))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmInit.t.Errorf("RayMock.Init got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
 
 		return
 
 	}
 	if mmInit.funcInit != nil {
-		mmInit.funcInit()
+		mmInit.funcInit(rc)
 		return
 	}
-	mmInit.t.Fatalf("Unexpected call to RayMock.Init.")
+	mmInit.t.Fatalf("Unexpected call to RayMock.Init. %v", rc)
 
 }
 
@@ -385,6 +463,19 @@ func (mmInit *RayMock) InitAfterCounter() uint64 {
 // InitBeforeCounter returns a count of RayMock.Init invocations
 func (mmInit *RayMock) InitBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmInit.beforeInitCounter)
+}
+
+// Calls returns a list of arguments used in each call to RayMock.Init.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmInit *mRayMockInit) Calls() []*RayMockInitParams {
+	mmInit.mutex.RLock()
+
+	argCopy := make([]*RayMockInitParams, len(mmInit.callArgs))
+	copy(argCopy, mmInit.callArgs)
+
+	mmInit.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockInitDone returns true if the count of the Init invocations corresponds
@@ -408,14 +499,18 @@ func (m *RayMock) MinimockInitDone() bool {
 func (m *RayMock) MinimockInitInspect() {
 	for _, e := range m.InitMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to RayMock.Init")
+			m.t.Errorf("Expected call to RayMock.Init with params: %#v", *e.params)
 		}
 	}
 
 	afterInitCounter := mm_atomic.LoadUint64(&m.afterInitCounter)
 	// if default expectation was set then invocations count should be greater than zero
 	if m.InitMock.defaultExpectation != nil && afterInitCounter < 1 {
-		m.t.Error("Expected call to RayMock.Init")
+		if m.InitMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to RayMock.Init")
+		} else {
+			m.t.Errorf("Expected call to RayMock.Init with params: %#v", *m.InitMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcInit != nil && afterInitCounter < 1 {

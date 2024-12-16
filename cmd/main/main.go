@@ -160,9 +160,6 @@ func main() {
 	publicGrpcS := grpc.NewServer(grpcServerOpts...)
 	reflection.Register(publicGrpcS)
 
-	rayService := ray.NewRay()
-	defer rayService.Close()
-
 	mgmtPublicServiceClient, mgmtPublicServiceClientConn := external.InitMgmtPublicServiceClient(ctx)
 	defer mgmtPublicServiceClientConn.Close()
 
@@ -174,6 +171,9 @@ func main() {
 
 	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
 	defer redisClient.Close()
+
+	rayService := ray.NewRay(redisClient)
+	defer rayService.Close()
 
 	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
 		Tracer:            otel.Tracer("temporal-tracer"),
