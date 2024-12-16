@@ -282,6 +282,10 @@ var SupportedAcceleratorTypeMemory = map[string]int{
 }
 
 const (
+	// Ray redis key
+	RayDeploymentKey = "model_deployment_config"
+
+	// Ray deployment env variables
 	EnvIsTestModel        = "RAY_IS_TEST_MODEL"
 	EnvMemory             = "RAY_MEMORY"
 	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
@@ -291,8 +295,5 @@ const (
 	EnvNumOfCPUs          = "RAY_NUM_OF_CPUS"
 	EnvNumOfMinReplicas   = "RAY_NUM_OF_MIN_REPLICAS"
 	EnvNumOfMaxReplicas   = "RAY_NUM_OF_MAX_REPLICAS"
-)
-
-const (
-	DummyModelPrefix = "dummy-"
+	DummyModelPrefix      = "dummy-"
 )
