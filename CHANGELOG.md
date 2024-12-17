@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.34.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.33.1-alpha...v0.34.0-alpha) (2024-12-16)
+
+
+### Features
+
+* **handler:** add title for region hardware ([#718](https://github.com/instill-ai/model-backend/issues/718)) ([c71bb75](https://github.com/instill-ai/model-backend/commit/c71bb75f7869498c62c2d6a93399f6d6bb633c28))
+* **ray:** support multi-gpu suffix ([#714](https://github.com/instill-ai/model-backend/issues/714)) ([bfc442d](https://github.com/instill-ai/model-backend/commit/bfc442d4215384843c4b771e2d8210c439ef448c))
+* **ray:** utilize redis as deployment config cache ([#722](https://github.com/instill-ai/model-backend/issues/722)) ([da20daf](https://github.com/instill-ai/model-backend/commit/da20daf573a3d3f399d4ace7a35d0515aba883be))
+
+
+### Bug Fixes
+
+* **ray:** fix missing deployment configs ([#717](https://github.com/instill-ai/model-backend/issues/717)) ([9d20344](https://github.com/instill-ai/model-backend/commit/9d20344a14912d1de40ffe1cee651727aa006b90))
+
 ## [0.33.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.33.0-alpha...v0.33.1-alpha) (2024-12-03)
 
 
