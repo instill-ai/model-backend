@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.34.0-alpha...v0.34.1-alpha) (2024-12-19)
+
+
+### Bug Fixes
+
+* **ray:** fix "GPU" tag deployment ([29f83af](https://github.com/instill-ai/model-backend/commit/29f83af44bb091631dcee9c68117a5103ef2a505))
+
 ## [0.34.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.33.1-alpha...v0.34.0-alpha) (2024-12-16)
 
 
