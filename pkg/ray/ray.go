@@ -316,7 +316,7 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 	case SupportedAcceleratorType["GPU"]:
 		runOptions = append(runOptions,
 			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
-			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),
+			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 1),
 			"--device nvidia.com/gpu=all",
 		)
 	default:
