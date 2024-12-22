@@ -46,7 +46,7 @@ require (
 	go.temporal.io/sdk/contrib/opentelemetry v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/image v0.19.0
-	golang.org/x/net v0.28.0
+	golang.org/x/net v0.33.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
