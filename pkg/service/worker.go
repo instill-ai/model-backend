@@ -17,8 +17,6 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/resource"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	resourcex "github.com/instill-ai/x/resource"
 )
@@ -35,7 +33,7 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	requesterUID, userID := resourcex.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -54,7 +52,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, ErrNoPermission
 	}
 
-	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userID, requesterUID, dbModel.UID.String(), "")).Result()
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), "")).Result()
 
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -89,7 +87,7 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
-	requesterUID, userID := resourcex.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
@@ -108,7 +106,7 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 		return nil, ErrNoPermission
 	}
 
-	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userID, requesterUID, dbModel.UID.String(), version)).Result()
+	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), version)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil
@@ -140,7 +138,6 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 }
 
 func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExecutionInfo *workflowpb.WorkflowExecutionInfo, triggerUID string) (*longrunningpb.Operation, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
 	operation := longrunningpb.Operation{}
 
 	switch workflowExecutionInfo.Status {
@@ -151,14 +148,15 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 			return nil, err
 		}
 
-		input, err := s.minioClient.GetFile(ctx, logger, trigger.InputReferenceID)
+		_, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
+		input, err := s.minioClient.GetFile(ctx, userUID, trigger.InputReferenceID)
 		if err != nil {
 			return nil, err
 		}
 		if !trigger.OutputReferenceID.Valid {
 			return nil, fmt.Errorf("trigger output not valid")
 		}
-		output, err := s.minioClient.GetFile(ctx, logger, trigger.OutputReferenceID.String)
+		output, err := s.minioClient.GetFile(ctx, userUID, trigger.OutputReferenceID.String)
 		if err != nil {
 			return nil, err
 		}

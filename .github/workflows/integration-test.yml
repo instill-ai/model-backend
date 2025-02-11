@@ -35,7 +35,7 @@ jobs:
       # mono occupies port 8084 which conflicts with mgmt-backend
       - name: Stop mono service
         run: |
-          sudo kill -9 `sudo lsof -t -i:8084`
+          sudo lsof -t -i:8084 | xargs -r sudo kill -9
           sudo lsof -i -P -n | grep LISTEN
 
       - name: Pre Free disk space (Ubuntu)
@@ -95,6 +95,7 @@ jobs:
       - name: Launch Instill Core (latest)
         run: |
           COMPOSE_PROFILES=all \
+          COMPONENT_ENV=.env.component-test \
           EDITION=local-ce:test \
           RAY_LATEST_TAG=latest \
           docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull
@@ -150,6 +151,7 @@ jobs:
           EDITION=local-ce:test \
           RAY_LATEST_TAG=latest \
           INITMODEL_ENABLED=true \
+          COMPONENT_ENV=.env.component-test \
           docker compose -f docker-compose.yml -f docker-compose-latest.yml up --quiet-pull model_backend_init_model
 
       - name: Install k6
