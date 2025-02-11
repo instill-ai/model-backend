@@ -15,8 +15,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/guregu/null.v4"
 
-	miniogo "github.com/minio/minio-go/v7"
-
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
@@ -227,7 +225,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		}
 	}()
 
-	input, err := w.minioClient.GetFile(ctx, nil, param.RunLog.InputReferenceID)
+	input, err := w.minioClient.GetFile(ctx, param.UserUID, param.RunLog.InputReferenceID)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -282,12 +280,16 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 
 	outputReferenceID := miniox.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = w.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
-		FilePath:      outputReferenceID,
-		FileBytes:     outputJSON,
-		FileMimeType:  constant.ContentTypeJSON,
-		ExpiryRuleTag: param.ExpiryRuleTag,
-	})
+	_, _, err = w.minioClient.UploadFileBytes(
+		ctx,
+		&miniox.UploadFileBytesParam{
+			UserUID:       param.UserUID,
+			FilePath:      outputReferenceID,
+			FileBytes:     outputJSON,
+			FileMimeType:  constant.ContentTypeJSON,
+			ExpiryRuleTag: param.ExpiryRuleTag,
+		},
+	)
 	if err != nil {
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
@@ -335,36 +337,4 @@ const (
 // message to a temporal.ApplicationError.
 type EndUserErrorDetails struct {
 	Message string
-}
-
-type UploadToMinioActivityRequest struct {
-	ObjectName    string
-	Data          []byte
-	ContentType   string
-	ExpiryRuleTag string
-}
-
-type UploadToMinioActivityResponse struct {
-	URL        string
-	ObjectInfo *miniogo.ObjectInfo
-}
-
-func (w *worker) UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
-	logger.Info("UploadToMinioActivity started")
-
-	url, objectInfo, err := w.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
-		FilePath:      param.ObjectName,
-		FileBytes:     param.Data,
-		FileMimeType:  param.ContentType,
-		ExpiryRuleTag: param.ExpiryRuleTag,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &UploadToMinioActivityResponse{
-		URL:        url,
-		ObjectInfo: objectInfo,
-	}, nil
 }

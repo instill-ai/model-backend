@@ -21,7 +21,6 @@ const TaskQueue = "model-backend"
 type Worker interface {
 	TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) error
 	TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) error
-	UploadToMinioActivity(ctx context.Context, param *UploadToMinioActivityRequest) (*UploadToMinioActivityResponse, error)
 }
 
 // worker represents resources required to run Temporal workflow and activity

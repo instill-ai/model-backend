@@ -198,12 +198,16 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 
 	inputReferenceID := miniox.GenerateInputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
-	_, _, err = s.minioClient.UploadFileBytes(ctx, logger, &miniox.UploadFileBytesParam{
-		FilePath:      inputReferenceID,
-		FileBytes:     inputJSON,
-		FileMimeType:  constant.ContentTypeJSON,
-		ExpiryRuleTag: expiryRule.Tag,
-	})
+	_, _, err = s.minioClient.UploadFileBytes(
+		ctx,
+		&miniox.UploadFileBytesParam{
+			UserUID:       userUID,
+			FilePath:      inputReferenceID,
+			FileBytes:     inputJSON,
+			FileMimeType:  constant.ContentTypeJSON,
+			ExpiryRuleTag: expiryRule.Tag,
+		},
+	)
 	if err != nil {
 		logger.Error("UploadBase64File for input failed", zap.String("inputReferenceID", inputReferenceID), zap.String("reqJSON", string(inputJSON)), zap.Error(err))
 		return nil, status.Error(codes.Internal, err.Error())
@@ -610,7 +614,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 	if !trigger.OutputReferenceID.Valid {
 		return nil, fmt.Errorf("trigger output not valid")
 	}
-	output, err := s.minioClient.GetFile(ctx, logger, trigger.OutputReferenceID.String)
+	output, err := s.minioClient.GetFile(ctx, userUID, trigger.OutputReferenceID.String)
 	if err != nil {
 		return nil, err
 	}
@@ -779,7 +783,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		return nil, err
 	}
 
-	requesterUID, _ := resourcex.GetRequesterUIDAndUserUID(ctx)
+	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	isOwner := dbModel.OwnerUID().String() == requesterUID.String()
 
 	runs, totalSize, err := s.repository.ListModelRuns(ctx, int64(pageSize), int64(page), filter, orderBy, requesterUID.String(), isOwner, dbModel.UID.String())
@@ -799,7 +803,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	}
 
 	logger.Info("start to get files from minio", zap.String("referenceIDs", strings.Join(referenceIDs, ",")))
-	fileContents, err := s.minioClient.GetFilesByPaths(ctx, logger, referenceIDs)
+	fileContents, err := s.minioClient.GetFilesByPaths(ctx, userUID, referenceIDs)
 	if err != nil {
 		logger.Error("failed to get files from minio", zap.Error(err))
 	}
