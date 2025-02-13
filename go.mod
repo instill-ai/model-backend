@@ -18,7 +18,7 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20241211175103-4f1558f81c9c
 	github.com/instill-ai/usage-client v0.3.0-alpha
-	github.com/instill-ai/x v0.6.0-alpha.0.20250211123925-1b1559c35b51
+	github.com/instill-ai/x v0.6.0-alpha.0.20250212192855-6af31ff7cc27
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/knadh/koanf v1.5.0
 	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c
@@ -27,7 +27,6 @@ require (
 	github.com/lestrrat-go/pdebug v0.0.0-20210111095411-35b07dbf089b
 	github.com/lestrrat-go/structinfo v0.0.0-20210312050401-7f8bd69d6acb
 	github.com/mennanov/fieldmask-utils v1.1.2
-	github.com/minio/minio-go/v7 v7.0.76
 	github.com/openfga/api/proto v0.0.0-20240807201305-c96ec773cae9
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
@@ -66,15 +65,16 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
-	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/minio/minio-go/v7 v7.0.85 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/nexus-rpc/sdk-go v0.0.9 // indirect
