@@ -57,6 +57,10 @@ import (
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
 
+// These variables might be overridden at buildtime.
+var version = "dev"
+var serviceName = "model-backend"
+
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
 	return h2c.NewHandler(
 
@@ -231,9 +235,17 @@ func main() {
 	timeseries := repository.MustNewInfluxDB(ctx, config.Config.Server.Debug)
 	defer timeseries.Close()
 
-	// Initialize Minio client
+	// Initialize MinIO client
 	retentionHandler := service.NewRetentionHandler()
-	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger, retentionHandler.ListExpiryRules()...)
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, miniox.ClientParams{
+		Config:      config.Config.Minio,
+		Logger:      logger,
+		ExpiryRules: retentionHandler.ListExpiryRules(),
+		AppInfo: miniox.AppInfo{
+			Name:    serviceName,
+			Version: version,
+		},
+	})
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}

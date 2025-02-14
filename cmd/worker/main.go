@@ -24,6 +24,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
+	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
@@ -33,6 +34,10 @@ import (
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 	miniox "github.com/instill-ai/x/minio"
 )
+
+// These variables might be overridden at buildtime.
+var version = "dev"
+var serviceName = "model-backend-worker"
 
 func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
 	logger, _ := customlogger.GetZapLogger(ctx)
@@ -158,8 +163,17 @@ func main() {
 		initTemporalNamespace(ctx, tempClient)
 	}
 
-	// Initialize Minio client
-	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, &config.Config.Minio, logger)
+	// Initialize MinIO client
+	retentionHandler := service.NewRetentionHandler()
+	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, miniox.ClientParams{
+		Config:      config.Config.Minio,
+		Logger:      logger,
+		ExpiryRules: retentionHandler.ListExpiryRules(),
+		AppInfo: miniox.AppInfo{
+			Name:    serviceName,
+			Version: version,
+		},
+	})
 	if err != nil {
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
