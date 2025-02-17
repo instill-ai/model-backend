@@ -56,7 +56,7 @@ func createContainerizedModel(s service.Service, ctx context.Context, ns resourc
 	// Manually set the custom header to have a StatusCreated http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	logger.Info(string(custom_otel.NewLogMessage(

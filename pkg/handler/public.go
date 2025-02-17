@@ -154,13 +154,13 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 	// Return error if resource ID does not follow RFC-1034
 	if err := checkfield.CheckResourceID(modelToCreate.GetId()); err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model spec
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, modelToCreate, false); err != nil {
 		span.SetStatus(1, fmt.Sprintf("Model spec is invalid %v", err.Error()))
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 	}
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
@@ -176,12 +176,12 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 
 	if _, err := h.service.GetNamespaceModelByID(ctx, ns, modelToCreate.GetId(), modelpb.View_VIEW_FULL); err == nil {
 		span.SetStatus(1, "Model already existed")
-		return nil, status.Errorf(codes.AlreadyExists, "Model already existed")
+		return nil, status.Error(codes.AlreadyExists, "Model already existed")
 	}
 
 	if modelToCreate.GetConfiguration() == nil {
 		span.SetStatus(1, "Missing Configuration")
-		return nil, status.Errorf(codes.InvalidArgument, "Missing Configuration")
+		return nil, status.Error(codes.InvalidArgument, "Missing Configuration")
 	}
 
 	modelDefinitionID, err := resource.GetDefinitionID(modelToCreate.GetModelDefinition())
@@ -193,19 +193,19 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 	modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
 		span.SetStatus(1, err.Error())
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	modelSpec := utils.ModelSpec{}
 	if err := json.Unmarshal(modelDefinition.ModelSpec, &modelSpec); err != nil {
 		span.SetStatus(1, "Could not get model schema")
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model configuration
 	if err := datamodel.ValidateJSONSchema(modelSpec.ModelConfigurationSchema, modelToCreate.GetConfiguration(), true); err != nil {
 		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
+		return nil, status.Errorf(codes.InvalidArgument, "Model configuration is invalid %v", err.Error())
 	}
 
 	switch modelDefinitionID {
@@ -213,7 +213,7 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 		return createContainerizedModel(h.service, ctx, ns, modelDefinition, modelToCreate)
 	default:
 		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
+		return nil, status.Errorf(codes.InvalidArgument, "model definition %v is not supported", modelDefinitionID)
 	}
 }
 
