@@ -78,8 +78,8 @@ registry:
 minio:
   host: minio
   port: 9000
-  rootuser: minioadmin
-  rootpwd: minioadmin
+  user: minioadmin
+  password: minioadmin
   bucketname: instill-ai-model
   secure: false
 influxdb:
