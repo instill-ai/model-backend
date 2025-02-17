@@ -143,7 +143,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	countBuilder.Count(&totalSize)
 
 	queryBuilder := db.Distinct().Model(&datamodel.Model{}).Joins(joinStr).Where(where, whereArgs...)
-	if order.Fields == nil || len(order.Fields) == 0 {
+	if len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
 			Desc: true,
@@ -623,7 +623,7 @@ func (r *repository) GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDef
 
 func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pageToken string) (definitions []*datamodel.ModelDefinition, nextPageToken string, totalSize int64, err error) {
 	if result := r.db.Model(&datamodel.ModelDefinition{}).Count(&totalSize); result.Error != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+		return nil, "", 0, status.Error(codes.Internal, result.Error.Error())
 	}
 
 	queryBuilder := r.db.Model(&datamodel.ModelDefinition{}).Order("create_time DESC, id DESC")
@@ -650,7 +650,7 @@ func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pag
 	var createTime time.Time
 	rows, err := queryBuilder.Rows()
 	if err != nil {
-		return nil, "", 0, status.Errorf(codes.Internal, err.Error())
+		return nil, "", 0, status.Error(codes.Internal, err.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -668,7 +668,7 @@ func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pag
 		if result := r.db.Model(&datamodel.ModelDefinition{}).
 			Order("create_time ASC, id ASC").
 			Limit(1).Find(lastItem); result.Error != nil {
-			return nil, "", 0, status.Errorf(codes.Internal, result.Error.Error())
+			return nil, "", 0, status.Error(codes.Internal, result.Error.Error())
 		}
 		if lastItem.ID == lastID {
 			nextPageToken = ""
@@ -725,7 +725,7 @@ func (r *repository) getModelRunByModelUID(ctx context.Context, where string, wh
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, status.Errorf(codes.NotFound, "The model trigger not found")
 		}
-		return nil, status.Errorf(codes.Internal, result.Error.Error())
+		return nil, status.Error(codes.Internal, result.Error.Error())
 	}
 
 	return &trigger, nil
@@ -766,7 +766,7 @@ func (r *repository) ListModelRuns(ctx context.Context, pageSize, page int64, fi
 	}
 
 	queryBuilder := db.Where(where, whereArgs...)
-	if order.Fields == nil || len(order.Fields) == 0 {
+	if len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
 			Desc: true,
@@ -862,7 +862,7 @@ func (r *repository) ListModelRunsByRequester(ctx context.Context, params *ListM
 
 	queryBuilder := db.Preload(clause.Associations).Where(where, whereArgs...)
 	order := params.Order
-	if order.Fields == nil || len(order.Fields) == 0 {
+	if len(order.Fields) == 0 {
 		order.Fields = append(order.Fields, ordering.Field{
 			Path: "create_time",
 			Desc: true,

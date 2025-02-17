@@ -378,10 +378,10 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	var modelConfig datamodel.ContainerizedModelConfiguration
 	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
-		return status.Errorf(codes.InvalidArgument, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
-		return status.Errorf(codes.InvalidArgument, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	bModelConfig, _ := json.Marshal(modelConfig)
