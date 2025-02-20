@@ -40,7 +40,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 	repo := mock.NewRepositoryMock(mc)
 
-	mockMinio := mockx.NewMinioIMock(mc)
+	mockMinio := mockx.NewClientMock(mc)
 	mockMinio.UploadFileBytesMock.Return("", nil, nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
