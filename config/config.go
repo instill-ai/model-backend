@@ -7,14 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/instill-ai/x/minio"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/redis/go-redis/v9"
-
-	miniox "github.com/instill-ai/x/minio"
 )
 
 // ServerConfig defines HTTP server configurations
@@ -175,7 +174,7 @@ type AppConfig struct {
 	Registry        RegistryConfig        `koanf:"registry"`
 	InitModel       InitModelConfig       `koanf:"initmodel"`
 	Log             LogConfig             `koanf:"log"`
-	Minio           miniox.Config         `koanf:"minio"`
+	Minio           minio.Config          `koanf:"minio"`
 	InfluxDB        InfluxDBConfig        `koanf:"influxdb"`
 }
 

@@ -44,6 +44,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/minio"
 	"github.com/instill-ai/x/temporal"
 	"github.com/instill-ai/x/zapadapter"
 
@@ -52,7 +53,6 @@ import (
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
-	miniox "github.com/instill-ai/x/minio"
 )
 
 var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
@@ -237,11 +237,11 @@ func main() {
 
 	// Initialize MinIO client
 	retentionHandler := service.NewRetentionHandler()
-	minioClient, err := miniox.NewMinioClientAndInitBucket(ctx, miniox.ClientParams{
+	minioClient, err := minio.NewMinIOClientAndInitBucket(ctx, minio.ClientParams{
 		Config:      config.Config.Minio,
 		Logger:      logger,
 		ExpiryRules: retentionHandler.ListExpiryRules(),
-		AppInfo: miniox.AppInfo{
+		AppInfo: minio.AppInfo{
 			Name:    serviceName,
 			Version: version,
 		},

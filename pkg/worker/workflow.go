@@ -21,13 +21,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/errmsg"
+	"github.com/instill-ai/x/minio"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
-	miniox "github.com/instill-ai/x/minio"
 )
 
 type InferInput any
@@ -278,11 +278,11 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	outputReferenceID := miniox.GenerateOutputRefID("model-runs")
+	outputReferenceID := minio.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = w.minioClient.UploadFileBytes(
 		ctx,
-		&miniox.UploadFileBytesParam{
+		&minio.UploadFileBytesParam{
 			UserUID:       param.UserUID,
 			FilePath:      outputReferenceID,
 			FileBytes:     outputJSON,
