@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-
-	miniox "github.com/instill-ai/x/minio"
+	"github.com/instill-ai/x/minio"
 )
 
 // MetadataRetentionHandler allows clients to access the object expiration rule
@@ -15,8 +14,8 @@ import (
 // client should set the tag-ased expiration rules for the bucket when it is
 // initialized.
 type MetadataRetentionHandler interface {
-	ListExpiryRules() []miniox.ExpiryRule
-	GetExpiryRuleByNamespace(_ context.Context, namespaceUID uuid.UUID) (miniox.ExpiryRule, error)
+	ListExpiryRules() []minio.ExpiryRule
+	GetExpiryRuleByNamespace(_ context.Context, namespaceUID uuid.UUID) (minio.ExpiryRule, error)
 }
 
 type metadataRetentionHandler struct{}
@@ -29,16 +28,16 @@ func NewRetentionHandler() MetadataRetentionHandler {
 }
 
 var (
-	defaultExpiryRule = miniox.ExpiryRule{
+	defaultExpiryRule = minio.ExpiryRule{
 		Tag:            "default-expiry",
 		ExpirationDays: 3,
 	}
 )
 
-func (h *metadataRetentionHandler) ListExpiryRules() []miniox.ExpiryRule {
-	return []miniox.ExpiryRule{defaultExpiryRule}
+func (h *metadataRetentionHandler) ListExpiryRules() []minio.ExpiryRule {
+	return []minio.ExpiryRule{defaultExpiryRule}
 }
 
-func (h *metadataRetentionHandler) GetExpiryRuleByNamespace(_ context.Context, _ uuid.UUID) (miniox.ExpiryRule, error) {
+func (h *metadataRetentionHandler) GetExpiryRuleByNamespace(_ context.Context, _ uuid.UUID) (minio.ExpiryRule, error) {
 	return defaultExpiryRule, nil
 }

@@ -35,6 +35,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
 	"github.com/instill-ai/x/errmsg"
+	"github.com/instill-ai/x/minio"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
@@ -43,7 +44,6 @@ import (
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	constantx "github.com/instill-ai/x/constant"
-	miniox "github.com/instill-ai/x/minio"
 	resourcex "github.com/instill-ai/x/resource"
 )
 
@@ -116,7 +116,7 @@ type service struct {
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    acl.ACLClientInterface
-	minioClient                  miniox.MinioI
+	minioClient                  minio.Client
 	retentionHandler             MetadataRetentionHandler
 	instillCoreHost              string
 }
@@ -132,7 +132,7 @@ func NewService(
 	tc client.Client,
 	ra ray.Ray,
 	a acl.ACLClientInterface,
-	minioClient miniox.MinioI,
+	minioClient minio.Client,
 	retentionHandler MetadataRetentionHandler,
 	h string,
 ) Service {
@@ -196,11 +196,11 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 		return nil, fmt.Errorf("fetching expiration rule: %w", err)
 	}
 
-	inputReferenceID := miniox.GenerateInputRefID("model-runs")
+	inputReferenceID := minio.GenerateInputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = s.minioClient.UploadFileBytes(
 		ctx,
-		&miniox.UploadFileBytesParam{
+		&minio.UploadFileBytesParam{
 			UserUID:       userUID,
 			FilePath:      inputReferenceID,
 			FileBytes:     inputJSON,

@@ -10,8 +10,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/usage"
-
-	miniox "github.com/instill-ai/x/minio"
+	"github.com/instill-ai/x/minio"
 )
 
 // TaskQueue is the Temporal task queue name for model-backend
@@ -27,7 +26,7 @@ type Worker interface {
 type worker struct {
 	redisClient         *redis.Client
 	ray                 ray.Ray
-	minioClient         miniox.MinioI
+	minioClient         minio.Client
 	repository          repository.Repository
 	influxDBWriteClient api.WriteAPI
 	modelUsageHandler   usage.ModelUsageHandler
@@ -39,7 +38,7 @@ func NewWorker(
 	ra ray.Ray,
 	repo repository.Repository,
 	i api.WriteAPI,
-	minioClient miniox.MinioI,
+	minioClient minio.Client,
 	modelUsageHandler usage.ModelUsageHandler,
 ) Worker {
 	if modelUsageHandler == nil {
