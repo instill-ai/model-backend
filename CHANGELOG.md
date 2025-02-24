@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.35.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.34.0-alpha...v0.35.0-alpha) (2025-02-24)
+
+
+### Features
+
+* **minio:** add service name and version to MinIO requests ([#728](https://github.com/instill-ai/model-backend/issues/728)) ([5c0d7a3](https://github.com/instill-ai/model-backend/commit/5c0d7a3278c7b7421d23d2fa4bcc8300d54ed4c2))
+* **minio:** log MinIO actions with requester ([#724](https://github.com/instill-ai/model-backend/issues/724)) ([f784e0c](https://github.com/instill-ai/model-backend/commit/f784e0c0dad57b4a6468b581632af532030cfaca))
+* **x:** update MinIO package to delegate audit logs ([#726](https://github.com/instill-ai/model-backend/issues/726)) ([24b0846](https://github.com/instill-ai/model-backend/commit/24b0846e8aabcc20d2bf5fed1a3132ea066c99e5))
+
+
+### Bug Fixes
+
+* **ci:** remove docker images only when they exist ([#725](https://github.com/instill-ai/model-backend/issues/725)) ([b6fc25d](https://github.com/instill-ai/model-backend/commit/b6fc25d9c041a7f5ed6683d05c822ff7d73dec3f))
+* **mod:** update golang.org/x/net module to fix vulnerability issue ([19f7527](https://github.com/instill-ai/model-backend/commit/19f7527add36e7ee4d2463619b6fcfa4d78ad22a))
+* **ray:** fix "GPU" tag deployment ([29f83af](https://github.com/instill-ai/model-backend/commit/29f83af44bb091631dcee9c68117a5103ef2a505))
+
 ## [0.34.0-alpha](https://github.com/instill-ai/model-backend/compare/v0.33.1-alpha...v0.34.0-alpha) (2024-12-16)
 
 
