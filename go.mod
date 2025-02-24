@@ -13,7 +13,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.21.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20241211175103-4f1558f81c9c
@@ -40,14 +40,14 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.28.0
-	go.temporal.io/api v1.36.0
+	go.temporal.io/api v1.44.1
 	go.temporal.io/sdk v1.28.1
 	go.temporal.io/sdk/contrib/opentelemetry v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/image v0.19.0
 	golang.org/x/net v0.33.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a
-	google.golang.org/grpc v1.65.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240827150818-7e3bb234dfed
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/datatypes v1.2.1
@@ -128,7 +128,7 @@ require (
 	golang.org/x/text v0.21.0
 	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20240808171019-573a1156607a // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240808171019-573a1156607a
+	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.7 // indirect
 )
