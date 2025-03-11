@@ -287,6 +287,7 @@ const (
 
 	// Ray deployment env variables
 	EnvIsTestModel        = "RAY_IS_TEST_MODEL"
+	EnvIsHighScaleModel   = "RAY_IS_HIGH_SCALE_MODEL"
 	EnvMemory             = "RAY_MEMORY"
 	EnvTotalVRAM          = "RAY_TOTAL_VRAM"
 	EnvRayAcceleratorType = "RAY_ACCELERATOR_TYPE"
