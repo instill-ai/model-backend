@@ -36,8 +36,8 @@ linters-settings:
     min-complexity: 15
   gofmt:
     rewrite-rules:
-      - pattern: 'interface{}'
-        replacement: 'any'
+      - pattern: "interface{}"
+        replacement: "any"
   goimports:
     local-prefixes: github.com/golangci/golangci-lint
 
@@ -75,7 +75,6 @@ linters:
     # - dupl
     - errcheck
     - errorlint
-    - exportloopref
     # - funlen
     - gocheckcompilerdirectives
     - gochecknoinits
@@ -119,8 +118,8 @@ linters:
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-dirs:
-    - test/testdata_etc  # test files
-    - internal/jsonref  # from https://github.com/lestrrat-go/jsref
+    - test/testdata_etc # test files
+    - internal/jsonref # from https://github.com/lestrrat-go/jsref
   exclude-rules:
     - path: pkg/golinters/errcheck.go
       text: "SA1019: errCfg.Exclude is deprecated: use ExcludeFunctions instead"
