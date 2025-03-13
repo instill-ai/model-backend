@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.22.5 AS build
+FROM --platform=$BUILDPLATFORM golang:1.23.7 AS build
 
 ARG SERVICE_NAME SERVICE_VERSION
 
@@ -47,7 +47,7 @@ RUN --mount=target=. \
 # Mounting points
 RUN mkdir /model-config
 
-FROM golang:1.22.5
+FROM golang:1.23.7
 
 # Need permission of /tmp folder for internal process such as store temporary files.
 RUN chown -R nobody:nogroup /tmp
