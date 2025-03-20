@@ -29,7 +29,7 @@ require (
 	github.com/mennanov/fieldmask-utils v1.1.2
 	github.com/openfga/api/proto v0.0.0-20240807201305-c96ec773cae9
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.6.1
+	github.com/redis/go-redis/v9 v9.6.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.10.0
 	go.einride.tech/aip v0.68.0
