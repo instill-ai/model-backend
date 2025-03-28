@@ -37,7 +37,7 @@ jobs:
           driver-opts: image=moby/buildkit:master
 
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v2
         with:
           username: dropletbot
           password: ${{ secrets.botDockerHubPassword }}
