@@ -67,6 +67,8 @@ func NewRay(rc *redis.Client) Ray {
 
 func (r *ray) Init(rc *redis.Client) {
 	ctx := context.Background()
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
 	// Connect to gRPC server
 	conn, err := grpc.NewClient(
 		config.Config.RayServer.GrpcURI,
@@ -92,19 +94,22 @@ func (r *ray) Init(rc *redis.Client) {
 	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
 
-	isCorrupted := false
-	currentConfigFile, err := os.ReadFile(r.configFilePath)
-	if err != nil {
-		isCorrupted = true
-	}
-
-	if _, err := os.Stat(r.configFilePath); !os.IsNotExist(err) && !isCorrupted {
-		r.redisClient.Set(
-			ctx,
-			RayDeploymentKey,
-			currentConfigFile,
-			0,
-		)
+	if currentConfigFile, err := r.redisClient.Get(
+		ctx,
+		RayDeploymentKey,
+	).Bytes(); err != nil {
+		if configFile, err := os.ReadFile(r.configFilePath); err == nil {
+			r.redisClient.Set(
+				ctx,
+				RayDeploymentKey,
+				configFile,
+				0,
+			)
+		}
+	} else {
+		if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
+			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+		}
 	}
 
 	// avoid race condition with file writing
@@ -463,10 +468,10 @@ func (r *ray) Close() {
 	).Bytes()
 	if err != nil {
 		logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
-	}
-
-	if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
-		logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+	} else {
+		if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
+			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+		}
 	}
 
 	if r.connection != nil {
