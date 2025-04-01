@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.2-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.1-alpha...v0.35.2-alpha) (2025-04-01)
+
+
+### Bug Fixes
+
+* **ray:** fix potential loss of deployment config ([#736](https://github.com/instill-ai/model-backend/issues/736)) ([6208b14](https://github.com/instill-ai/model-backend/commit/6208b144b1c045296fa3d9319141f42798e8b90a))
+
 ## [0.35.1-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.0-alpha...v0.35.1-alpha) (2025-03-28)
 
 
