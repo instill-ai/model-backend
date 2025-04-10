@@ -112,7 +112,7 @@ func ErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.
 			switch v := s.Details()[0].(type) {
 			case *errdetails.ResourceInfo:
 				switch v.ResourceType {
-				case "ray-server":
+				case "ray":
 					httpStatus = http.StatusUnprocessableEntity
 				default:
 					httpStatus = runtime.HTTPStatusFromCode(s.Code())

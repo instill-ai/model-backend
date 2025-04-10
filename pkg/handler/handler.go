@@ -46,7 +46,8 @@ func (h *PublicHandler) SetService(s service.Service) {
 }
 
 func (h *PublicHandler) Liveness(ctx context.Context, pb *modelpb.LivenessRequest) (*modelpb.LivenessResponse, error) {
-	if !h.ray.IsRayServerReady(ctx) {
+
+	if !h.ray.IsRayReady(ctx) {
 		return &modelpb.LivenessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
 				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
@@ -58,7 +59,7 @@ func (h *PublicHandler) Liveness(ctx context.Context, pb *modelpb.LivenessReques
 }
 
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelpb.ReadinessRequest) (*modelpb.ReadinessResponse, error) {
-	if !h.ray.IsRayServerReady(ctx) {
+	if !h.ray.IsRayReady(ctx) {
 		return &modelpb.ReadinessResponse{
 			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
 				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,

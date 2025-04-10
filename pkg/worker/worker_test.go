@@ -14,7 +14,6 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/mock"
-	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/worker"
 
@@ -76,7 +75,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		state := modelpb.State_STATE_ACTIVE
 		mockRay.ModelReadyMock.Times(1).Return(&state, "", 1, nil)
 		mockRay.ModelInferRequestMock.Times(1).
-			Return(&rayserver.CallResponse{
+			Return(&modelpb.CallResponse{
 				TaskOutputs: []*structpb.Struct{},
 			}, nil)
 		mockMinio.GetFileMock.Return(

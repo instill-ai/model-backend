@@ -66,8 +66,8 @@ type DatabaseConfig struct {
 	}
 }
 
-// RayServerConfig related to Ray server
-type RayServerConfig struct {
+// RayConfig related to Ray server
+type RayConfig struct {
 	GrpcURI    string `koanf:"grpcuri"`
 	ModelStore string `koanf:"modelstore"`
 	Vram       string `koanf:"vram"`
@@ -165,7 +165,7 @@ type InfluxDBConfig struct {
 type AppConfig struct {
 	Server          ServerConfig          `koanf:"server"`
 	Database        DatabaseConfig        `koanf:"database"`
-	RayServer       RayServerConfig       `koanf:"rayserver"`
+	Ray             RayConfig             `koanf:"ray"`
 	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
 	ArtifactBackend ArtifactBackendConfig `koanf:"artifactbackend"`
 	Cache           CacheConfig           `koanf:"cache"`

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -22,11 +21,11 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/ray/rayserver"
 	"github.com/redis/go-redis/v9"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	raypb "github.com/instill-ai/protogen-go/model/ray"
 
 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 )
@@ -34,24 +33,24 @@ import (
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
-	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error)
+	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*modelpb.CallResponse, error)
 
 	// standard
-	IsRayServerReady(ctx context.Context) bool
+	IsRayReady(ctx context.Context) bool
 	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error
 	Init(rc *redis.Client)
 	Close()
 }
 
 type ray struct {
-	rayClient      rayserver.RayServiceClient
-	rayServeClient rayserver.RayServeAPIServiceClient
-	rayHTTPClient  *http.Client
-	redisClient    *redis.Client
-	connection     *grpc.ClientConn
-	configFilePath string
-	configChan     chan ApplicationWithAction
-	doneChan       chan error
+	rayUserDefinedClient modelpb.RayUserDefinedServiceClient
+	rayServeClient       raypb.RayServeAPIServiceClient
+	rayHTTPClient        *http.Client
+	redisClient          *redis.Client
+	connection           *grpc.ClientConn
+	configFilePath       string
+	configChan           chan ApplicationWithAction
+	doneChan             chan error
 }
 
 var once sync.Once
@@ -71,7 +70,7 @@ func (r *ray) Init(rc *redis.Client) {
 
 	// Connect to gRPC server
 	conn, err := grpc.NewClient(
-		config.Config.RayServer.GrpcURI,
+		config.Config.Ray.GrpcURI,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
@@ -80,19 +79,19 @@ func (r *ray) Init(rc *redis.Client) {
 	)
 
 	if err != nil {
-		log.Fatalf("Couldn't connect to endpoint %s: %v", config.Config.RayServer.GrpcURI, err)
+		logger.Fatal(fmt.Sprintf("Couldn't connect to endpoint %s: %v", config.Config.Ray.GrpcURI, err))
 	}
 
 	r.redisClient = rc
 
 	// Create client from gRPC server connection
 	r.connection = conn
-	r.rayClient = rayserver.NewRayServiceClient(conn)
-	r.rayServeClient = rayserver.NewRayServeAPIServiceClient(conn)
+	r.rayUserDefinedClient = modelpb.NewRayUserDefinedServiceClient(conn)
+	r.rayServeClient = raypb.NewRayServeAPIServiceClient(conn)
 	r.rayHTTPClient = &http.Client{Timeout: time.Minute}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan error, 10000)
-	r.configFilePath = path.Join(config.Config.RayServer.ModelStore, "deploy.yaml")
+	r.configFilePath = path.Join(config.Config.Ray.ModelStore, "deploy.yaml")
 
 	if currentConfigFile, err := r.redisClient.Get(
 		ctx,
@@ -120,12 +119,20 @@ func (r *ray) Init(rc *redis.Client) {
 	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}, "1"); err != nil {
 		fmt.Printf("error syncing deployment config: %v\n", err)
 	}
+
+	// Wait for Ray to be ready before proceeding
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	if err := waitForRayReady(ctx, r, 10, 1*time.Second); err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to Ray service: %v", err))
+	}
 }
 
-func (r *ray) IsRayServerReady(ctx context.Context) bool {
+func (r *ray) IsRayReady(ctx context.Context) bool {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	resp, err := r.rayServeClient.Healthz(ctx, &rayserver.HealthzRequest{})
+	resp, err := r.rayServeClient.Healthz(ctx, &raypb.HealthzRequest{})
 	if err != nil {
 		logger.Error(err.Error())
 		return false
@@ -141,13 +148,17 @@ func (r *ray) IsRayServerReady(ctx context.Context) bool {
 func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
+	if !r.IsRayReady(ctx) {
+		return nil, "", 0, fmt.Errorf("ray service is not ready yet, please try again later")
+	}
+
+	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, "", 0, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265", 1), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.Replace(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.Ray.GrpcURI), "9000", "8265", 1), http.NoBody)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, "", 0, err
@@ -159,88 +170,92 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 	}
 	defer resp.Body.Close()
 
-	var applicationStatus rayserver.GetApplicationStatus
+	var applicationStatus GetApplicationStatus
 	err = json.NewDecoder(resp.Body).Decode(&applicationStatus)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, "", 0, err
 	}
 
-	application, ok := applicationStatus.Applications[applicationMetadatValue]
+	application, ok := applicationStatus.Applications[applicationMetadataValue]
 	if !ok {
 		return modelpb.State_STATE_OFFLINE.Enum(), "", 0, nil
 	}
 
 	switch application.Status {
-	case rayserver.ApplicationStatusStrUnhealthy, rayserver.ApplicationStatusStrRunning:
+	case ApplicationStatusStrUnhealthy, ApplicationStatusStrRunning:
 		for i := range application.Deployments {
 			numOfReplicas := len(application.Deployments[i].Replicas)
 			switch application.Deployments[i].Status {
-			case rayserver.DeploymentStatusStrHealthy:
+			case DeploymentStatusStrHealthy:
 				if numOfReplicas == 0 {
 					return modelpb.State_STATE_OFFLINE.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 				} else {
 					return modelpb.State_STATE_ACTIVE.Enum(), application.Deployments[i].Message, numOfReplicas, nil
 				}
-			case rayserver.DeploymentStatusStrUpdating:
+			case DeploymentStatusStrUpdating:
 				return modelpb.State_STATE_STARTING.Enum(), application.Deployments[i].Message, numOfReplicas, nil
-			case rayserver.DeploymentStatusStrUpscaling:
+			case DeploymentStatusStrUpscaling:
 				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, numOfReplicas, nil
-			case rayserver.DeploymentStatusStrDownscaling:
+			case DeploymentStatusStrDownscaling:
 				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, numOfReplicas, nil
-			case rayserver.DeploymentStatusStrUnhealthy:
+			case DeploymentStatusStrUnhealthy:
 				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
 		return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
-	case rayserver.ApplicationStatusStrDeploying:
+	case ApplicationStatusStrDeploying:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
-			case rayserver.DeploymentStatusStrUpdating:
+			case DeploymentStatusStrUpdating:
 				return modelpb.State_STATE_SCALING_UP.Enum(), application.Deployments[i].Message, 0, nil
-			case rayserver.DeploymentStatusStrUnhealthy:
+			case DeploymentStatusStrUnhealthy:
 				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
 		return modelpb.State_STATE_STARTING.Enum(), application.Message, 0, nil
-	case rayserver.ApplicationStatusStrDeleting:
+	case ApplicationStatusStrDeleting:
 		for i := range application.Deployments {
 			switch application.Deployments[i].Status {
-			case rayserver.DeploymentStatusStrUpdating:
+			case DeploymentStatusStrUpdating:
 				return modelpb.State_STATE_SCALING_DOWN.Enum(), application.Deployments[i].Message, 0, nil
-			case rayserver.DeploymentStatusStrUnhealthy:
+			case DeploymentStatusStrUnhealthy:
 				return modelpb.State_STATE_ERROR.Enum(), application.Deployments[i].Message, 0, nil
 			}
 		}
 		return modelpb.State_STATE_STARTING.Enum(), application.Message, 0, nil
-	case rayserver.ApplicationStatusStrNotStarted:
+	case ApplicationStatusStrNotStarted:
 		return modelpb.State_STATE_OFFLINE.Enum(), application.Message, 0, nil
-	case rayserver.ApplicationStatusStrDeployFailed:
+	case ApplicationStatusStrDeployFailed:
 		return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 	}
 
 	return modelpb.State_STATE_ERROR.Enum(), application.Message, 0, nil
 }
 
-func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayserver.CallResponse, error) {
+func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*modelpb.CallResponse, error) {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	applicationMetadatValue, err := GetApplicationMetadaValue(modelName, version)
+	if !r.IsRayReady(ctx) {
+		return nil, fmt.Errorf("ray service is not ready yet, please try again later")
+	}
+
+	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadatValue)
+	ctx = metadata.AppendToOutgoingContext(ctx, "application", applicationMetadataValue)
 
-	rayTriggerReq := &rayserver.CallRequest{
+	rayTriggerReq := &modelpb.CallRequest{
 		TaskInputs: req.GetTaskInputs(),
 	}
 
-	modelInferResponse, err := r.rayClient.XCall__(ctx, rayTriggerReq)
+	modelInferResponse, err := r.rayUserDefinedClient.XCall__(ctx, rayTriggerReq)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
-		return &rayserver.CallResponse{}, err
+		return &modelpb.CallResponse{}, err
 	}
 
 	return modelInferResponse, nil
@@ -249,12 +264,16 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
+	if !r.IsRayReady(ctx) {
+		return fmt.Errorf("ray service is not ready yet, please try again later")
+	}
+
 	var err error
-	applicationMetadatValue := ""
+	applicationMetadataValue := ""
 	runOptions := []string{}
 
 	if action != Sync {
-		applicationMetadatValue, err = GetApplicationMetadaValue(modelName, version)
+		applicationMetadataValue, err = GetApplicationMetadataValue(modelName, version)
 		if err != nil {
 			logger.Error(err.Error())
 			return err
@@ -266,9 +285,9 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 			"--tls-verify=false",
 			"--pull=always",
 			"--rm",
-			"-v /home/ray/ray_pb2.py:/home/ray/ray_pb2.py",
-			"-v /home/ray/ray_pb2.pyi:/home/ray/ray_pb2.pyi",
-			"-v /home/ray/ray_pb2_grpc.py:/home/ray/ray_pb2_grpc.py")
+			"-v /home/ray/model_ray_user_defined_pb2.py:/home/ray/model_ray_user_defined_pb2.py",
+			"-v /home/ray/model_ray_user_defined_pb2.pyi:/home/ray/model_ray_user_defined_pb2.pyi",
+			"-v /home/ray/model_ray_user_defined_pb2_grpc.py:/home/ray/model_ray_user_defined_pb2_grpc.py")
 		runOptions = append(runOptions, r.setHardwareRunOptions(hardware, numOfGPU)...)
 		if len(scalingConfig) > 0 {
 			runOptions = append(runOptions, scalingConfig...)
@@ -280,10 +299,10 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		}
 	}
 
-	applicationConfig := Application{
-		Name:        applicationMetadatValue,
+	rayApplicationConfig := RayApplication{
+		Name:        applicationMetadataValue,
 		ImportPath:  "_model:entrypoint",
-		RoutePrefix: "/" + applicationMetadatValue,
+		RoutePrefix: "/" + applicationMetadataValue,
 		RuntimeEnv: RuntimeEnv{
 			Container: Container{
 				Image:      fmt.Sprintf("%s:%v/%s/%s:%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName, version),
@@ -293,8 +312,8 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	r.configChan <- ApplicationWithAction{
-		Application: applicationConfig,
-		Action:      action,
+		RayApplication: rayApplicationConfig,
+		Action:         action,
 	}
 
 	return <-r.doneChan
@@ -308,7 +327,7 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 	if !ok {
 		logger.Warn("accelerator type(hardware) not supported, setting it as custom resource")
 		return append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
+			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.Ray.Vram),
 			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),
 			fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
 			"--device nvidia.com/gpu=all",
@@ -320,7 +339,7 @@ func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
 		runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1))
 	case SupportedAcceleratorType["GPU"]:
 		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.RayServer.Vram),
+			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.Ray.Vram),
 			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 1),
 			"--device nvidia.com/gpu=all",
 		)
@@ -362,7 +381,7 @@ func (r *ray) sync() {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 
-				req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.RayServer.GrpcURI, applicationWithAction.Application.RoutePrefix), "9000", "8000"), http.NoBody)
+				req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(fmt.Sprintf("http://%s%s", config.Config.Ray.GrpcURI, applicationWithAction.RayApplication.RoutePrefix), "9000", "8000"), http.NoBody)
 				if err != nil {
 					logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
 					return
@@ -394,23 +413,23 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error while Unmarshaling deployment config: %v", err))
 		}
 
-		newApplications := []Application{}
+		newRayApplications := []RayApplication{}
 		switch applicationWithAction.Action {
 		case Deploy:
-			for _, app := range modelDeploymentConfig.Applications {
-				if app.Name != applicationWithAction.Application.Name {
-					newApplications = append(newApplications, app)
+			for _, app := range modelDeploymentConfig.RayApplications {
+				if app.Name != applicationWithAction.RayApplication.Name {
+					newRayApplications = append(newRayApplications, app)
 				}
 			}
-			modelDeploymentConfig.Applications = newApplications
-			modelDeploymentConfig.Applications = append(modelDeploymentConfig.Applications, applicationWithAction.Application)
+			modelDeploymentConfig.RayApplications = newRayApplications
+			modelDeploymentConfig.RayApplications = append(modelDeploymentConfig.RayApplications, applicationWithAction.RayApplication)
 		case Undeploy:
-			for _, app := range modelDeploymentConfig.Applications {
-				if app.Name != applicationWithAction.Application.Name {
-					newApplications = append(newApplications, app)
+			for _, app := range modelDeploymentConfig.RayApplications {
+				if app.Name != applicationWithAction.RayApplication.Name {
+					newRayApplications = append(newRayApplications, app)
 				}
 			}
-			modelDeploymentConfig.Applications = newApplications
+			modelDeploymentConfig.RayApplications = newRayApplications
 		}
 
 		modelDeploymentConfigData, err := yaml.Marshal(modelDeploymentConfig)
@@ -432,7 +451,7 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error while Marshaling JSON deployment config: %v", err))
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.RayServer.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJSON))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, strings.ReplaceAll(fmt.Sprintf("http://%s/api/serve/applications/", config.Config.Ray.GrpcURI), "9000", "8265"), bytes.NewBuffer(modelDeploymentConfigJSON))
 		if err != nil {
 			logger.Error(fmt.Sprintf("error while creating deployment request: %v", err))
 		}
@@ -479,4 +498,20 @@ func (r *ray) Close() {
 	}
 	close(r.configChan)
 	close(r.doneChan)
+}
+
+func waitForRayReady(ctx context.Context, ray Ray, maxRetries int, initialBackoff time.Duration) error {
+
+	logger, _ := custom_logger.GetZapLogger(ctx)
+
+	backoff := initialBackoff
+	for i := 0; i < maxRetries; i++ {
+		if ray.IsRayReady(ctx) {
+			return nil
+		}
+		logger.Error(fmt.Sprintf("Ray service not ready, retrying in %v (attempt %d/%d)", backoff, i+1, maxRetries))
+		time.Sleep(backoff)
+		backoff *= 2 // Exponential backoff
+	}
+	return fmt.Errorf("Ray service failed to become ready after %d attempts", maxRetries)
 }

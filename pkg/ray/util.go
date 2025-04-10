@@ -30,7 +30,7 @@ func GenerateHardwareConfig(modelID string) string {
 	return "0"
 }
 
-func GetApplicationMetadaValue(modelName string, version string) (applicationMetadataValue string, err error) {
+func GetApplicationMetadataValue(modelName string, version string) (applicationMetadataValue string, err error) {
 	nameParts := strings.Split(modelName, "/") // {owner_type}/{owner_uid}/{model_id}
 
 	if len(nameParts) != 3 {

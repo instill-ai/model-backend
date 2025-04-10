@@ -42,7 +42,7 @@ RUN --mount=target=. \
     --mount=type=cache,target=/go/pkg \
     GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH \
     go build -ldflags "-X main.version=${SERVICE_VERSION} -X main.serviceName=${SERVICE_NAME}-init-model" \
-    -o /${SERVICE_NAME}-init-model ./cmd/model
+    -o /${SERVICE_NAME}-init-model ./cmd/initmodel
 
 # Mounting points
 RUN mkdir /model-config
@@ -63,7 +63,6 @@ WORKDIR /${SERVICE_NAME}
 COPY --from=docker:dind-rootless --chown=nobody:nogroup /usr/local/bin/docker /usr/local/bin
 
 COPY --from=build --chown=nobody:nogroup /src/config ./config
-COPY --from=build --chown=nobody:nogroup /src/assets ./assets
 COPY --from=build --chown=nobody:nogroup /src/release-please ./release-please
 COPY --from=build --chown=nobody:nogroup /src/pkg/db/migration ./pkg/db/migration
 COPY --from=build --chown=nobody:nogroup /model-config /model-config
