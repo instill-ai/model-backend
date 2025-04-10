@@ -24,7 +24,6 @@ func TestReadiness(t *testing.T) {
 		mockRay := mock.NewRayMock(mc)
 		ctx := context.Background()
 		ctxWithValue := context.WithValue(ctx, utils.Testing, true)
-		mockRay.IsRayServerReadyMock.Times(1).Expect(ctxWithValue).Return(true)
 
 		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay, nil)
 		readyRes, err := h.Readiness(ctxWithValue, &modelpb.ReadinessRequest{})
@@ -41,7 +40,6 @@ func TestLiveness(t *testing.T) {
 		mockRay := mock.NewRayMock(mc)
 		ctx := context.Background()
 		ctxWithValue := context.WithValue(ctx, utils.Testing, true)
-		mockRay.IsRayServerReadyMock.Times(1).Expect(ctxWithValue).Return(true)
 
 		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay, nil)
 

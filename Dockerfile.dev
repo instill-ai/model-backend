@@ -39,7 +39,7 @@ ENV GOCACHE=/go/.cache/go-build
 ENV GOENV=/go/.config/go/env
 
 # -- set up mounting points
-RUN mkdir /model-config && chown -R nobody:nogroup /model-config
+RUN mkdir /model-store && chown -R nobody:nogroup /model-store
 
 USER nobody:nogroup
 

@@ -16,6 +16,7 @@ import (
 
 var tracer = otel.Tracer("model-backend.public-handler.tracer")
 
+// PublicHandler is the handler for the public service
 type PublicHandler struct {
 	modelpb.UnimplementedModelPublicServiceServer
 	service           service.Service
@@ -23,6 +24,7 @@ type PublicHandler struct {
 	modelUsageHandler usage.ModelUsageHandler
 }
 
+// NewPublicHandler creates a new public handler
 func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray, h usage.ModelUsageHandler) modelpb.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	if h == nil {
@@ -45,35 +47,23 @@ func (h *PublicHandler) SetService(s service.Service) {
 	h.service = s
 }
 
+// Liveness returns the liveness of the service
 func (h *PublicHandler) Liveness(ctx context.Context, pb *modelpb.LivenessRequest) (*modelpb.LivenessResponse, error) {
-	if !h.ray.IsRayServerReady(ctx) {
-		return &modelpb.LivenessResponse{
-			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
-				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
-			},
-		}, nil
-	}
-
 	return &modelpb.LivenessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
+// Readiness returns the readiness of the service
 func (h *PublicHandler) Readiness(ctx context.Context, pb *modelpb.ReadinessRequest) (*modelpb.ReadinessResponse, error) {
-	if !h.ray.IsRayServerReady(ctx) {
-		return &modelpb.ReadinessResponse{
-			HealthCheckResponse: &healthcheckPB.HealthCheckResponse{
-				Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_NOT_SERVING,
-			},
-		}, nil
-	}
-
 	return &modelpb.ReadinessResponse{HealthCheckResponse: &healthcheckPB.HealthCheckResponse{Status: healthcheckPB.HealthCheckResponse_SERVING_STATUS_SERVING}}, nil
 }
 
+// PrivateHandler is the handler for the private service
 type PrivateHandler struct {
 	modelpb.UnimplementedModelPrivateServiceServer
 	service service.Service
 }
 
+// NewPrivateHandler creates a new private handler
 func NewPrivateHandler(ctx context.Context, s service.Service) modelpb.ModelPrivateServiceServer {
 	datamodel.InitJSONSchema(ctx)
 	return &PrivateHandler{

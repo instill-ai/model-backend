@@ -66,9 +66,17 @@ type DatabaseConfig struct {
 	}
 }
 
-// RayServerConfig related to Ray server
-type RayServerConfig struct {
-	GrpcURI    string `koanf:"grpcuri"`
+// RayConfig related to Ray server
+type RayConfig struct {
+	Host string `koanf:"host"`
+	Port struct {
+		DASHBOARD int `koanf:"dashboard"`
+		SERVE     int `koanf:"serve"`
+		GRPC      int `koanf:"grpc"`
+		CLIENT    int `koanf:"client"`
+		GCS       int `koanf:"gcs"`
+		METRICS   int `koanf:"metrics"`
+	} `koanf:"port"`
 	ModelStore string `koanf:"modelstore"`
 	Vram       string `koanf:"vram"`
 }
@@ -165,7 +173,7 @@ type InfluxDBConfig struct {
 type AppConfig struct {
 	Server          ServerConfig          `koanf:"server"`
 	Database        DatabaseConfig        `koanf:"database"`
-	RayServer       RayServerConfig       `koanf:"rayserver"`
+	Ray             RayConfig             `koanf:"ray"`
 	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
 	ArtifactBackend ArtifactBackendConfig `koanf:"artifactbackend"`
 	Cache           CacheConfig           `koanf:"cache"`

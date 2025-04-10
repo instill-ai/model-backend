@@ -12,7 +12,7 @@ server:
     host: usage.instill.tech
     port: 443
   debug: true
-  maxdatasize: 512 # MB in unit
+  maxdatasize: 1024 # MB in unit
   workflow:
     maxworkflowtimeout: 3600 # in seconds
     maxworkflowretry: 1
@@ -31,9 +31,16 @@ database:
     idleconnections: 5
     maxconnections: 30
     connlifetime: 30m # In minutes, e.g., '60m'
-rayserver:
-  grpcuri: ray-server:9000
-  modelstore: /model-config
+ray:
+  host: ray
+  port:
+    dashboard: 8265
+    serve: 8000
+    grpc: 9000
+    gcs: 6379
+    client: 10001
+    metrics: 8080
+  modelstore: /model-store
   vram:
 mgmtbackend:
   host: mgmt-backend
@@ -63,7 +70,7 @@ temporal:
   servername:
 initmodel:
   enabled: false
-  path: https://raw.githubusercontent.com/instill-ai/instill-core/main/model-hub/model_hub_test.json
+  path:
 log:
   external: false
   otelcollector:

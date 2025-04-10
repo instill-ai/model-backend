@@ -32,43 +32,47 @@ jobs:
     name: PR head branch
     runs-on: ubuntu-latest
     steps:
-      # mono occupies port 8084 which conflicts with mgmt-backend
-      - name: Stop mono service
-        run: |
-          sudo lsof -t -i:8084 | xargs -r sudo kill -9
-          sudo lsof -i -P -n | grep LISTEN
-
-      - name: Pre Free disk space (Ubuntu)
-        run: |
-          df --human-readable
-          sudo apt clean
-          rm --recursive --force "$AGENT_TOOLSDIRECTORY"
-
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
-          tool-cache: true
+          root-reserve-mb: 2048
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+          build-mount-path: "/var/lib/docker"
 
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+      - name: Restart docker
+        run: sudo service docker restart
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Checkout Python SDK
+        uses: actions/checkout@v4
+        with:
+          repository: instill-ai/python-sdk
+
+      - name: Install Python SDK (editable mode)
+        run: |
+          pip install -e .
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          path: model-backend
 
-      - name: Load .env file
+      - name: Set model-backend path
+        run: echo "MODEL_BACKEND_PATH=$GITHUB_WORKSPACE/model-backend" >> $GITHUB_ENV
+
+      - name: Load .env file (model-backend)
         uses: cardinalby/export-env-action@v2
         with:
-          envFile: .env
+          envFile: ${{ env.MODEL_BACKEND_PATH }}/.env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -76,7 +80,7 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ env.MODEL_BACKEND_PATH }}
           load: true
           build-args: |
             SERVICE_NAME=model-backend
@@ -87,73 +91,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: instill-ai/instill-core
+          path: instill-core
+
+      - name: Set instill-core path
+        run: echo "INSTILL_CORE_PATH=$GITHUB_WORKSPACE/instill-core" >> $GITHUB_ENV
 
       - name: Load .env file (instill-core)
         uses: cardinalby/export-env-action@v2
         with:
-          envFile: .env
+          envFile: ${{ env.INSTILL_CORE_PATH }}/.env
 
       - name: Launch Instill Core (latest)
         run: |
-          COMPOSE_PROFILES=all \
-          COMPONENT_ENV=.env.component-test \
-          EDITION=local-ce:test \
-          RAY_LATEST_TAG=latest \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml up -d --quiet-pull
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml rm -f
+          cd ${{ env.INSTILL_CORE_PATH }} && \
+          make latest EDITION=local-ce:test COMPONENT_ENV=.env.component-test
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: dropletbot
-          password: ${{ secrets.botDockerHubPassword }}
-
-      - name: Pull Test Models
+      - name: Build and Push Test Models
         run: |
-          docker pull instill/dummy-cls:dev
-          docker pull instill/dummy-det:dev
-          docker pull instill/dummy-instance-segmentation:dev
-          docker pull instill/dummy-keypoint:dev
-          docker pull instill/dummy-semantic-segmentation:dev
-          docker pull instill/dummy-completion:dev
-          docker pull instill/dummy-chat:dev
-          docker pull instill/dummy-text-to-image:dev
-          docker pull instill/dummy-multimodal-chat:dev
-          docker pull instill/dummy-text-embedding:dev
-          docker pull instill/dummy-multimodal-embedding:dev
-          docker tag instill/dummy-cls:dev localhost:5001/admin/dummy-cls
-          docker tag instill/dummy-det:dev localhost:5001/admin/dummy-det
-          docker tag instill/dummy-instance-segmentation:dev localhost:5001/admin/dummy-instance-segmentation
-          docker tag instill/dummy-keypoint:dev localhost:5001/admin/dummy-keypoint
-          docker tag instill/dummy-semantic-segmentation:dev localhost:5001/admin/dummy-semantic-segmentation
-          docker tag instill/dummy-completion:dev localhost:5001/admin/dummy-completion
-          docker tag instill/dummy-chat:dev localhost:5001/admin/dummy-chat
-          docker tag instill/dummy-text-to-image:dev localhost:5001/admin/dummy-text-to-image
-          docker tag instill/dummy-multimodal-chat:dev localhost:5001/admin/dummy-multimodal-chat
-          docker tag instill/dummy-text-embedding:dev localhost:5001/admin/dummy-text-embedding
-          docker tag instill/dummy-multimodal-embedding:dev localhost:5001/admin/dummy-multimodal-embedding
-          docker push localhost:5001/admin/dummy-cls
-          docker push localhost:5001/admin/dummy-det
-          docker push localhost:5001/admin/dummy-instance-segmentation
-          docker push localhost:5001/admin/dummy-keypoint
-          docker push localhost:5001/admin/dummy-semantic-segmentation
-          docker push localhost:5001/admin/dummy-completion
-          docker push localhost:5001/admin/dummy-chat
-          docker push localhost:5001/admin/dummy-text-to-image
-          docker push localhost:5001/admin/dummy-multimodal-chat
-          docker push localhost:5001/admin/dummy-text-embedding
-          docker push localhost:5001/admin/dummy-multimodal-embedding
+          cd ${{ env.MODEL_BACKEND_PATH }} && make integration-test-model-deploy INSTILL_PYTHON_SDK_LOCAL_PATH=${{ github.workspace }}/python-sdk INSTILL_CORE_REGISTRY_URL=localhost:5001
 
-      - name: Launch Init Model Pod
+      - name: Launch Init Model Container
         run: |
-          COMPOSE_PROFILES=all \
-          EDITION=local-ce:test \
-          RAY_LATEST_TAG=latest \
+          cd ${{ env.INSTILL_CORE_PATH }} && \
           INITMODEL_ENABLED=true \
-          COMPONENT_ENV=.env.component-test \
-          docker compose -f docker-compose.yml -f docker-compose-latest.yml up --quiet-pull model_backend_init_model
+          INITMODEL_PATH=${{ env.MODEL_BACKEND_PATH }}/integration-test/models/inventory.json \
+          make latest EDITION=local-ce:test COMPONENT_ENV=.env.component-test
 
       - name: Install k6
         run: |
@@ -162,22 +124,12 @@ jobs:
       - name: Install jq
         uses: dcarbone/install-jq-action@v2
 
-      - name: Checkout (model-backend)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Load .env file
-        uses: cardinalby/export-env-action@v2
-        with:
-          envFile: .env
-
       - name: Check test model init job
-        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "model init pod still running"; sleep 5; done;
+        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "model init container still running"; sleep 5; done;
 
       - name: Check test model deployment
         run: while [ "$(curl -s http://localhost:8265/api/serve/applications/ | jq '.applications | to_entries | map(select(.key | contains("dummy-")) | .value.status) | length == 11 and all(. == "RUNNING")')" != "true" ]; do echo "models still deploying"; sleep 5; done;
 
       - name: Run integration-test
         run: |
-          make integration-test API_GATEWAY_URL=localhost:8080
+          cd ${{ env.MODEL_BACKEND_PATH }} && make integration-test API_GATEWAY_URL=localhost:8080

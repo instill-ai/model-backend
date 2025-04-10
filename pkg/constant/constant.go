@@ -15,7 +15,4 @@ const HeaderVisitorUIDKey = "Instill-Visitor-Uid"
 const HeaderAuthTypeKey = "Instill-Auth-Type"
 const HeaderRequesterUIDKey = "Instill-Requester-Uid"
 
-// Ray proto path
-const RayProtoPath string = "assets/ray/proto"
-
 const ContentTypeJSON = "application/json"
