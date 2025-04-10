@@ -23,6 +23,23 @@ dev:							## Run dev container
 		--name ${SERVICE_NAME} \
 		instill/${SERVICE_NAME}:dev
 
+.PHONY: latest
+latest: ## Run latest container
+	@docker compose ls -q | grep -q "instill-core" && true || \
+		(echo "Error: Run \"make latest PROFILE=exclude-model\" in instill-core repository (https://github.com/instill-ai/instill-core) in your local machine first." && exit 1)
+	@docker inspect --type container ${SERVICE_NAME} >/dev/null 2>&1 && echo "A container named ${SERVICE_NAME} is already running." || \
+		echo "Run latest container ${SERVICE_NAME} and ${SERVICE_NAME}-worker. To stop it, run \"make stop\"."
+	@docker run --network=instill-network \
+		--name ${SERVICE_NAME} \
+		-d instill/${SERVICE_NAME}:latest ./${SERVICE_NAME}
+	@docker run --network=instill-network \
+		--name ${SERVICE_NAME}-worker \
+		-d instill/${SERVICE_NAME}:latest ./${SERVICE_NAME}-worker
+
+.PHONY: rm
+rm: ## Remove all running containers
+	@docker rm -f ${SERVICE_NAME} ${SERVICE_NAME}-worker >/dev/null 2>&1
+
 .PHONY: logs
 logs:							## Tail container logs with -n 10
 	@docker logs ${SERVICE_NAME} --follow --tail=10
@@ -62,7 +79,21 @@ integration-test:				## Run integration test
 	@TEST_FOLDER_ABS_PATH=${PWD} k6 run \
 		-e API_GATEWAY_PROTOCOL=${API_GATEWAY_PROTOCOL} -e API_GATEWAY_URL=${API_GATEWAY_URL} integration-test/rest_with_jwt.js --no-usage-report --quiet
 
+.PHONY: build-push-dummy-models
+build-push-dummy-models:       	 	## Build and push dummy models
+	@for dir in ${PWD}/integration-test/models/*/; do \
+		folder_name=$$(basename "$$dir"); \
+		echo "Building $$folder_name..."; \
+		cd $$dir; \
+		if [ -z "${INSTILL_PYTHON_SDK_LOCAL_PATH}" ]; then \
+			instill build instill/$$folder_name:dev; \
+		else \
+			instill build instill/$$folder_name:dev -e ${INSTILL_PYTHON_SDK_LOCAL_PATH}; \
+		fi; \
+		instill push instill/$$folder_name:dev -u ${INSTILL_CORE_REGISTRY_URL}; \
+	done
+
 .PHONY: help
 help:       	 				## Show this help
 	@echo "\nMakefile for local development"
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)

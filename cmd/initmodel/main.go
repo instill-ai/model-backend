@@ -38,7 +38,7 @@ type ModelConfig struct {
 	Task            string         `json:"task"`
 	ModelDefinition string         `json:"model_definition"`
 	Region          string         `json:"region"`
-	Hardwdare       string         `json:"hardware"`
+	Hardware        string         `json:"hardware"`
 	Configuration   map[string]any `json:"configuration"`
 	Version         string         `json:"version"`
 }
@@ -234,7 +234,7 @@ func main() {
 					Visibility:      modelpb.Model_VISIBILITY_PUBLIC,
 					Task:            commonpb.Task(commonpb.Task_value[modelConfig.Task]),
 					Region:          modelConfig.Region,
-					Hardware:        modelConfig.Hardwdare,
+					Hardware:        modelConfig.Hardware,
 					Configuration:   configuration,
 				}
 				if _, err = modelPublicServiceClient.CreateNamespaceModel(sCtx, &modelpb.CreateNamespaceModelRequest{

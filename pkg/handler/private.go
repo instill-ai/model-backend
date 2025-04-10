@@ -137,7 +137,7 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
-			"ray-server",
+			"ray",
 			"deploy model",
 			"",
 			err.Error(),
@@ -200,7 +200,7 @@ func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *m
 		st, e := sterr.CreateErrorResourceInfo(
 			codes.Internal,
 			fmt.Sprintf("[handler] undeploy a model error: %s", err.Error()),
-			"ray-server",
+			"ray",
 			"undeploy model",
 			"",
 			err.Error(),
