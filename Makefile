@@ -79,20 +79,6 @@ integration-test:				## Run integration test
 	@TEST_FOLDER_ABS_PATH=${PWD} k6 run \
 		-e API_GATEWAY_PROTOCOL=${API_GATEWAY_PROTOCOL} -e API_GATEWAY_URL=${API_GATEWAY_URL} integration-test/rest_with_jwt.js --no-usage-report --quiet
 
-.PHONY: integration-test-model-deploy
-integration-test-model-deploy:       	 	## Build and push dummy models
-	@for dir in ${PWD}/integration-test/models/*/; do \
-		folder_name=$$(basename "$$dir"); \
-		echo "Building $$folder_name..."; \
-		cd $$dir; \
-		if [ -z "${INSTILL_PYTHON_SDK_LOCAL_PATH}" ]; then \
-			instill build admin/$$folder_name:dev; \
-		else \
-			instill build admin/$$folder_name:dev -e ${INSTILL_PYTHON_SDK_LOCAL_PATH}; \
-		fi; \
-		instill push admin/$$folder_name:dev -u ${INSTILL_CORE_REGISTRY_URL}; \
-	done
-
 .PHONY: help
 help:       	 				## Show this help
 	@echo "\nMakefile for local development"
