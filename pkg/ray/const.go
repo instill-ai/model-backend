@@ -364,12 +364,8 @@ type RayApplication struct {
 }
 
 type RuntimeEnv struct {
-	Container Container `yaml:"container" json:"container"`
-}
-
-type Container struct {
-	Image      string   `yaml:"image" json:"image"`
-	RunOptions []string `yaml:"run_options" json:"run_options"`
+	ImageURI string            `yaml:"image_uri" json:"image_uri"`
+	EnvVars  map[string]string `yaml:"env_vars" json:"env_vars"`
 }
 
 var SupportedAcceleratorType = map[string]string{

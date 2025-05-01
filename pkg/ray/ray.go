@@ -37,7 +37,7 @@ type Ray interface {
 
 	// standard
 	IsRayReady(ctx context.Context) bool
-	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error
+	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error
 	Init(rc *redis.Client)
 	Close()
 }
@@ -116,7 +116,7 @@ func (r *ray) Init(rc *redis.Client) {
 	go r.sync()
 
 	// sync potential missing applications
-	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, []string{}, "1"); err != nil {
+	if err = r.UpdateContainerizedModel(context.Background(), "", "", "", "", "", Sync, "1"); err != nil {
 		logger.Error(fmt.Sprintf("error syncing deployment config: %v", err))
 	}
 }
@@ -246,12 +246,12 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 	return modelInferResponse, nil
 }
 
-func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, scalingConfig []string, numOfGPU string) error {
+func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	var err error
 	applicationMetadataValue := ""
-	runOptions := []string{}
+	envVars := map[string]string{}
 
 	if action != Sync {
 		applicationMetadataValue, err = GetApplicationMetadataValue(modelName, version)
@@ -262,22 +262,12 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	}
 
 	if action == Deploy {
-		runOptions = append(runOptions,
-			"--tls-verify=false",
-			"--pull=always",
-			"--rm",
-			"-v /home/ray/user_defined_pb2.py:/home/ray/user_defined_pb2.py",
-			"-v /home/ray/user_defined_pb2.pyi:/home/ray/user_defined_pb2.pyi",
-			"-v /home/ray/user_defined_pb2_grpc.py:/home/ray/user_defined_pb2_grpc.py")
-		runOptions = append(runOptions, r.setHardwareRunOptions(hardware, numOfGPU)...)
-		if len(scalingConfig) > 0 {
-			runOptions = append(runOptions, scalingConfig...)
-		} else {
-			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%v", EnvNumOfMinReplicas, 0),
-				fmt.Sprintf("-e %s=%v", EnvNumOfMaxReplicas, 10),
-			)
+		envVars = r.setHardwareRunOptions(hardware, numOfGPU)
+		if IsDummyModel(modelName) {
+			envVars[EnvNumOfCPUs] = "0.001"
 		}
+		envVars[EnvNumOfMinReplicas] = "0"
+		envVars[EnvNumOfMaxReplicas] = "10"
 	}
 
 	rayApplicationConfig := RayApplication{
@@ -285,10 +275,8 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		ImportPath:  "_model:entrypoint",
 		RoutePrefix: "/" + applicationMetadataValue,
 		RuntimeEnv: RuntimeEnv{
-			Container: Container{
-				Image:      fmt.Sprintf("%s:%v/%s/%s:%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName, version),
-				RunOptions: runOptions,
-			},
+			ImageURI: fmt.Sprintf("%s:%v/%s/%s:%s", config.Config.Registry.Host, config.Config.Registry.Port, userID, imageName, version),
+			EnvVars:  envVars,
 		},
 	}
 
@@ -300,51 +288,41 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 	return <-r.doneChan
 }
 
-func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) []string {
+func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) map[string]string {
 	logger, _ := custom_logger.GetZapLogger(context.Background())
 
-	runOptions := []string{}
+	envVars := map[string]string{}
 	accelerator, ok := SupportedAcceleratorType[hardware]
 	if !ok {
 		logger.Warn("accelerator type(hardware) not supported, setting it as custom resource")
-		return append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.Ray.Vram),
-			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),
-			fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
-			"--device nvidia.com/gpu=all",
-		)
+		return map[string]string{
+			EnvTotalVRAM:         config.Config.Ray.Vram,
+			EnvNumOfGPUs:         numOfGPU,
+			EnvRayCustomResource: hardware,
+		}
 	}
 
 	switch accelerator {
 	case SupportedAcceleratorType["CPU"]:
-		runOptions = append(runOptions, fmt.Sprintf("-e %s=%v", EnvNumOfCPUs, 1))
+		envVars[EnvNumOfCPUs] = "1"
 	case SupportedAcceleratorType["GPU"]:
-		runOptions = append(runOptions,
-			fmt.Sprintf("-e %s=%v", EnvTotalVRAM, config.Config.Ray.Vram),
-			fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, 1),
-			"--device nvidia.com/gpu=all",
-		)
+		envVars[EnvTotalVRAM] = config.Config.Ray.Vram
+		envVars[EnvNumOfGPUs] = numOfGPU
 	default:
 		numOfGPUFloat, err := strconv.ParseFloat(numOfGPU, 64)
 		if err != nil {
 			numOfGPUFloat = 0
 		}
 		if numOfGPUFloat > 0 {
-			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
-				fmt.Sprintf("-e %s=%v", EnvNumOfGPUs, numOfGPU),
-				"--device nvidia.com/gpu=all",
-			)
+			envVars[EnvRayCustomResource] = hardware
+			envVars[EnvNumOfGPUs] = numOfGPU
 		} else {
-			runOptions = append(runOptions,
-				fmt.Sprintf("-e %s=%s", EnvRayCustomResource, hardware),
-				fmt.Sprintf("-e %s=%v", EnvTotalVRAM, SupportedAcceleratorTypeMemory[hardware]),
-				"--device nvidia.com/gpu=all",
-			)
+			envVars[EnvRayCustomResource] = hardware
+			envVars[EnvTotalVRAM] = strconv.Itoa(SupportedAcceleratorTypeMemory[hardware])
 		}
 	}
 
-	return runOptions
+	return envVars
 }
 
 func (r *ray) sync() {
