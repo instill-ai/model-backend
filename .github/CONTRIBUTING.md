@@ -24,33 +24,33 @@ check out `.pre-commit-config.yaml` for the set of hooks that we used
 
 ### Local development
 
-On the local machine, clone `model` repository in your workspace, move to the repository folder, and launch all dependent microservices:
+On the local machine, clone `instill-core` repository in your workspace, move to the repository folder, and launch all dependent microservices:
 
 ```
-$ cd <your-workspace>
-$ git clone https://github.com/instill-ai/model.git
-$ cd model
-$ make latest PROFILE=model
+cd <your-workspace>
+git clone https://github.com/instill-ai/instill-core.git
+cd instill-core
+make latest PROFILE=exclude-model
 ```
 
 Clone `model-backend` repository in your workspace and move to the repository folder:
 
 ```
-$ cd <your-workspace>
-$ git clone https://github.com/instill-ai/model-backend.git
-$ cd model-backend
+cd <your-workspace>
+git clone https://github.com/instill-ai/model-backend.git
+cd model-backend
 ```
 
 ### Build the dev image
 
 ```bash
-$ make build
+make build
 ```
 
 ### Run the dev container
 
 ```bash
-$ make dev
+make dev
 ```
 
 Now, you have the Go project set up in the container, in which you can compile and run the binaries together with the integration test in each container shell.
@@ -58,42 +58,43 @@ Now, you have the Go project set up in the container, in which you can compile a
 ### Run the server
 
 ```bash
-$ docker exec -it model-backend /bin/bash
-$ go run ./cmd/migration
-$ go run ./cmd/init
-$ CFG_SERVER_ITMODE_ENABLED=true go run ./cmd/main
+docker exec -it model-backend /bin/bash
+go run ./cmd/migration
+go run ./cmd/init
+go run ./cmd/main
 ```
 
 ### Run the Temporal worker
 
 ```bash
-$ docker exec -it model-backend /bin/bash
-$ CFG_SERVER_ITMODE_ENABLED=true go run ./cmd/worker
+docker exec -it model-backend /bin/bash
+go run ./cmd/worker
 ```
 
 ### Run the unit test
 
-```
-$ make unit-test
+```bash
+docker exec -it model-backend /bin/bash
+make unit-test
 ```
 
 ### Run the integration test
 
 ```bash
-$ docker exec -it model-backend /bin/bash
-$ make integration-test
+docker exec -it model-backend /bin/bash
+make integration-test
 ```
 
 #### Run with api-gateway mode
 
 ```bash
-$ make integration-test API_GATEWAY_URL=localhost:8080
+make integration-test API_GATEWAY_URL=localhost:8080
 ```
 
 ### Stop the dev container
 
 ```bash
-$ make stop
+make stop
 ```
 
 ### Sending PRs

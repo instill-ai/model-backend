@@ -35,7 +35,7 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 2048
+          root-reserve-mb: 5120
           remove-dotnet: "true"
           remove-android: "true"
           remove-haskell: "true"
@@ -46,41 +46,23 @@ jobs:
       - name: Restart docker
         run: sudo service docker restart
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Checkout Python SDK
-        uses: actions/checkout@v4
-        with:
-          repository: instill-ai/python-sdk
-
-      - name: Install Python SDK (editable mode)
-        run: |
-          pip install -e .
-
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: model-backend
 
-      - name: Set model-backend path
-        run: echo "MODEL_BACKEND_PATH=$GITHUB_WORKSPACE/model-backend" >> $GITHUB_ENV
-
-      - name: Load .env file (model-backend)
+      - name: Load .env file
         uses: cardinalby/export-env-action@v2
         with:
-          envFile: ${{ env.MODEL_BACKEND_PATH }}/.env
+          envFile: .env
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Build image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ env.MODEL_BACKEND_PATH }}
+          context: .
           load: true
           build-args: |
             SERVICE_NAME=model-backend
@@ -106,30 +88,20 @@ jobs:
           cd ${{ env.INSTILL_CORE_PATH }} && \
           make latest EDITION=local-ce:test COMPONENT_ENV=.env.component-test
 
-      - name: Build and Push Test Models
-        run: |
-          cd ${{ env.MODEL_BACKEND_PATH }} && make integration-test-model-deploy INSTILL_PYTHON_SDK_LOCAL_PATH=${{ github.workspace }}/python-sdk INSTILL_CORE_REGISTRY_URL=localhost:5001
-
-      - name: Launch Init Model Container
-        run: |
-          cd ${{ env.INSTILL_CORE_PATH }} && \
-          INITMODEL_ENABLED=true \
-          INITMODEL_PATH=${{ env.MODEL_BACKEND_PATH }}/integration-test/models/inventory.json \
-          make latest EDITION=local-ce:test COMPONENT_ENV=.env.component-test
-
       - name: Install k6
         run: |
           curl https://github.com/grafana/k6/releases/download/v${{ env.K6_VERSION }}/k6-v${{ env.K6_VERSION }}-linux-amd64.tar.gz -L | tar xvz --strip-components 1 && sudo cp k6 /usr/bin
 
-      - name: Install jq
-        uses: dcarbone/install-jq-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Check test model init job
-        run: while [ -z "$(docker ps -f 'name=model-backend-init-model' -f 'status=exited' -q)" ]; do echo "model init container still running"; sleep 5; done;
-
-      - name: Check test model deployment
-        run: while [ "$(curl -s http://localhost:8265/api/serve/applications/ | jq '.applications | to_entries | map(select(.key | contains("dummy-")) | .value.status) | length == 11 and all(. == "RUNNING")')" != "true" ]; do echo "models still deploying"; sleep 5; done;
+      - name: Load .env file (model-backend)
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: .env
 
       - name: Run integration-test
         run: |
-          cd ${{ env.MODEL_BACKEND_PATH }} && make integration-test API_GATEWAY_URL=localhost:8080
+          make integration-test API_GATEWAY_URL=localhost:8080
