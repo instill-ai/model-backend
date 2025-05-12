@@ -158,7 +158,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 
 	pbModel := &modelpb.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
-		Uid:        dbModel.BaseDynamic.UID.String(),
+		Uid:        dbModel.UID.String(),
 		Id:         dbModel.ID,
 		CreateTime: timestamppb.New(dbModel.CreateTime),
 		UpdateTime: timestamppb.New(dbModel.UpdateTime),
@@ -289,7 +289,7 @@ func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *
 	pbModelDefinition := modelpb.ModelDefinition{
 		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),
 		Id:               dbModelDefinition.ID,
-		Uid:              dbModelDefinition.BaseStatic.UID.String(),
+		Uid:              dbModelDefinition.UID.String(),
 		Title:            dbModelDefinition.Title,
 		DocumentationUrl: dbModelDefinition.DocumentationURL,
 		Icon:             dbModelDefinition.Icon,

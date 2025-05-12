@@ -43,13 +43,14 @@ func (s *service) GetRscNamespace(ctx context.Context, namespaceID string) (reso
 	if err != nil {
 		return resource.Namespace{}, err
 	}
-	if resp.Type == mgmtpb.CheckNamespaceAdminResponse_NAMESPACE_USER {
+	switch resp.Type {
+	case mgmtpb.CheckNamespaceAdminResponse_NAMESPACE_USER:
 		return resource.Namespace{
 			NsType: resource.User,
 			NsID:   namespaceID,
 			NsUID:  uuid.FromStringOrNil(resp.Uid),
 		}, nil
-	} else if resp.Type == mgmtpb.CheckNamespaceAdminResponse_NAMESPACE_ORGANIZATION {
+	case mgmtpb.CheckNamespaceAdminResponse_NAMESPACE_ORGANIZATION:
 		return resource.Namespace{
 			NsType: resource.Organization,
 			NsID:   namespaceID,
