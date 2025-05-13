@@ -52,9 +52,10 @@ func (c *ModelACLConverter) migrateModel() error {
 			}
 
 			nsType := ""
-			if ns.Type == mgmtpb.CheckNamespaceByUIDAdminResponse_NAMESPACE_ORGANIZATION {
+			switch ns.Type {
+			case mgmtpb.CheckNamespaceByUIDAdminResponse_NAMESPACE_ORGANIZATION:
 				nsType = "organizations"
-			} else if ns.Type == mgmtpb.CheckNamespaceByUIDAdminResponse_NAMESPACE_USER {
+			case mgmtpb.CheckNamespaceByUIDAdminResponse_NAMESPACE_USER:
 				nsType = "users"
 			}
 			result := tx.Model(m).Where("uid = ?", m.UID).Update("namespace_id", ns.Id).Update("namespace_type", nsType)
