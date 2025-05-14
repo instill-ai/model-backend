@@ -90,10 +90,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Get short SHA
-        id: short-sha
-        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
-
       - name: Build image
         uses: docker/build-push-action@v6
         with:
@@ -101,8 +97,8 @@ jobs:
           load: true
           build-args: |
             SERVICE_NAME=model-backend
-            SERVICE_VERSION=${{ steps.short-sha.outputs.SHORT_SHA }}
-          tags: instill/model-backend:${{ steps.short-sha.outputs.SHORT_SHA }}
+            SERVICE_VERSION=${{ github.sha }}
+          tags: instill/model-backend:latest
           cache-from: |
             type=registry,ref=instill/model-backend:buildcache
           cache-to: |
