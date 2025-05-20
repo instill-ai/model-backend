@@ -77,8 +77,7 @@ type RayConfig struct {
 		GCS       int `koanf:"gcs"`
 		METRICS   int `koanf:"metrics"`
 	} `koanf:"port"`
-	ModelStore string `koanf:"modelstore"`
-	Vram       string `koanf:"vram"`
+	Vram string `koanf:"vram"`
 }
 
 // MgmtBackendConfig related to mgmt-backend

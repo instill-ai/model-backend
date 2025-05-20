@@ -40,7 +40,6 @@ ray:
     gcs: 6379
     client: 10001
     metrics: 8080
-  modelstore: /model-store
   vram:
 mgmtbackend:
   host: mgmt-backend

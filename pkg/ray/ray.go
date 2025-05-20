@@ -91,7 +91,7 @@ func (r *ray) Init(rc *redis.Client) {
 	r.rayHTTPClient = &http.Client{Timeout: time.Minute}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan error, 10000)
-	r.configFilePath = path.Join(config.Config.Ray.ModelStore, "deploy.yaml")
+	r.configFilePath = path.Join("/tmp", "deploy.yaml")
 
 	if currentConfigFile, err := r.redisClient.Get(
 		ctx,
