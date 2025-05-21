@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.5-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.4-alpha...v0.35.5-alpha) (2025-05-21)
+
+
+### Bug Fixes
+
+* **ray:** fix the wrong proto service ([#746](https://github.com/instill-ai/model-backend/issues/746)) ([1d80c4b](https://github.com/instill-ai/model-backend/commit/1d80c4bcf2e5f30642ad48e0122179f6b600d602))
+
 ## [0.35.4-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.3-alpha...v0.35.4-alpha) (2025-05-20)
 
 
