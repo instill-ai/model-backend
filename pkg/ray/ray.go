@@ -43,14 +43,14 @@ type Ray interface {
 }
 
 type ray struct {
-	rayUserDefinedClient rayuserdefinedpb.RayUserDefinedServiceClient
-	rayServeClient       raypb.RayServeAPIServiceClient
-	rayHTTPClient        *http.Client
-	redisClient          *redis.Client
-	connection           *grpc.ClientConn
-	configFilePath       string
-	configChan           chan ApplicationWithAction
-	doneChan             chan error
+	userDefinedClient rayuserdefinedpb.UserDefinedServiceClient
+	grpcClient        raypb.RayServeAPIServiceClient
+	httpClient        *http.Client
+	redisClient       *redis.Client
+	connection        *grpc.ClientConn
+	configFilePath    string
+	configChan        chan ApplicationWithAction
+	doneChan          chan error
 }
 
 var once sync.Once
@@ -86,9 +86,9 @@ func (r *ray) Init(rc *redis.Client) {
 
 	// Create client from gRPC server connection
 	r.connection = conn
-	r.rayUserDefinedClient = rayuserdefinedpb.NewRayUserDefinedServiceClient(conn)
-	r.rayServeClient = raypb.NewRayServeAPIServiceClient(conn)
-	r.rayHTTPClient = &http.Client{Timeout: time.Minute}
+	r.userDefinedClient = rayuserdefinedpb.NewUserDefinedServiceClient(conn)
+	r.grpcClient = raypb.NewRayServeAPIServiceClient(conn)
+	r.httpClient = &http.Client{Timeout: time.Minute}
 	r.configChan = make(chan ApplicationWithAction, 10000)
 	r.doneChan = make(chan error, 10000)
 	r.configFilePath = path.Join("/tmp", "deploy.yaml")
@@ -124,7 +124,7 @@ func (r *ray) Init(rc *redis.Client) {
 func (r *ray) IsRayReady(ctx context.Context) bool {
 	logger, _ := custom_logger.GetZapLogger(ctx)
 
-	resp, err := r.rayServeClient.Healthz(ctx, &raypb.HealthzRequest{})
+	resp, err := r.grpcClient.Healthz(ctx, &raypb.HealthzRequest{})
 	if err != nil {
 		logger.Error(err.Error())
 		return false
@@ -152,7 +152,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 		logger.Error(err.Error())
 		return nil, "", 0, err
 	}
-	resp, err := r.rayHTTPClient.Do(req)
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, "", 0, err
@@ -237,7 +237,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 		TaskInputs: req.GetTaskInputs(),
 	}
 
-	modelInferResponse, err := r.rayUserDefinedClient.XCall__(ctx, rayTriggerReq)
+	modelInferResponse, err := r.userDefinedClient.XCall__(ctx, rayTriggerReq)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error processing InferRequest: %s", err.Error()))
 		return &rayuserdefinedpb.CallResponse{}, err
@@ -345,7 +345,7 @@ func (r *ray) sync() {
 					logger.Error(fmt.Sprintf("error while creating upscale request: %v", err))
 					return
 				}
-				resp, err := r.rayHTTPClient.Do(req)
+				resp, err := r.httpClient.Do(req)
 				if err != nil {
 					logger.Error(fmt.Sprintf("error while sending upscale request: %v", err))
 					return
@@ -415,7 +415,7 @@ func (r *ray) sync() {
 			logger.Error(fmt.Sprintf("error while creating deployment request: %v", err))
 		}
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := r.rayHTTPClient.Do(req)
+		resp, err := r.httpClient.Do(req)
 		if err != nil {
 			logger.Error(fmt.Sprintf("error while sending deployment request: %v", err))
 		}
