@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.6-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.5-alpha...v0.35.6-alpha) (2025-05-27)
+
+
+### Miscellaneous
+
+* **ray:** update min_replica value ([#748](https://github.com/instill-ai/model-backend/issues/748)) ([a323a1e](https://github.com/instill-ai/model-backend/commit/a323a1e7c5d4f50bde3dd585176891612e1e9a98))
+
 ## [0.35.5-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.4-alpha...v0.35.5-alpha) (2025-05-21)
 
 
