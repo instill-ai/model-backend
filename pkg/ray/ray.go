@@ -266,7 +266,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 		if IsDummyModel(modelName) {
 			envVars[EnvNumOfCPUs] = "0.001"
 		}
-		envVars[EnvNumOfMinReplicas] = "0"
+		envVars[EnvNumOfMinReplicas] = "1"
 		envVars[EnvNumOfMaxReplicas] = "10"
 	}
 
