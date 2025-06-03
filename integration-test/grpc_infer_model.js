@@ -24,7 +24,7 @@ export function TriggerUserModel(header) {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
-        classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
+        classification: { image_url: "https://artifacts.instill-ai.com/imgs/dog.jpg" }
       }]
     }, header)
     check(res, {
@@ -38,7 +38,7 @@ export function TriggerUserModel(header) {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
-        classification: { image_url: "https://artifacts.instill.tech/imgs/tiff-sample.tiff" }
+        classification: { image_url: "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff" }
       }]
     }, header), {
       'TriggerModel status': (r) => r && r.status === grpc.StatusOK,
@@ -51,7 +51,7 @@ export function TriggerUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/non-existed`,
       task_inputs: [{
-        classification: { image_url: "https://artifacts.instill.tech/imgs/dog.jpg" }
+        classification: { image_url: "https://artifacts.instill-ai.com/imgs/dog.jpg" }
       }]
     }, header), {
       'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
@@ -60,7 +60,7 @@ export function TriggerUserModel(header) {
     check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       task_inputs: [{
-        classification: { image_url: "https://artifacts.instill.tech/non-existed.jpg" }
+        classification: { image_url: "https://artifacts.instill-ai.com/non-existed.jpg" }
       }]
     }, header), {
       'TriggerModel non-existed model url status': (r) => r && r.status === grpc.StatusInvalidArgument,

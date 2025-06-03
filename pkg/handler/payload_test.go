@@ -13,12 +13,12 @@ package handler
 // 	config.Config.Server.MaxImageSize = 12
 
 // 	{
-// 		_, _, err := parseImageFromURL("https://artifacts.instill.tech/non-existing.jpg")
-// 		assert.Equal(t, "unable to decode image at https://artifacts.instill.tech/non-existing.jpg", err.Error())
+// 		_, _, err := parseImageFromURL("https://artifacts.instill-ai.com/non-existing.jpg")
+// 		assert.Equal(t, "unable to decode image at https://artifacts.instill-ai.com/non-existing.jpg", err.Error())
 // 	}
 
 // 	{
-// 		_, _, err := parseImageFromURL("https://artifacts.instill.tech/imgs/dog.jpg")
+// 		_, _, err := parseImageFromURL("https://artifacts.instill-ai.com/imgs/dog.jpg")
 // 		assert.Equal(t, nil, err)
 // 	}
 

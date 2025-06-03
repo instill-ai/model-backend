@@ -34,7 +34,7 @@ export function ListModelDefinitions(header) {
         [`GET /v1alpha/model-definitions response modelDefinitions[0].title`]: (r) =>
           r.json().modelDefinitions[0].title === "Container",
         [`GET /v1alpha/model-definitions response modelDefinitions[0].documentation_url`]: (r) =>
-          r.json().modelDefinitions[0].documentation_url === "https://www.instill.tech/docs/import-models/local",
+          r.json().modelDefinitions[0].documentation_url === "https://www.instill-ai.com/docs/import-models/local",
         [`GET /v1alpha/model-definitions response modelDefinitions[0].icon`]: (r) =>
           r.json().modelDefinitions[0].icon === "local.svg",
         [`GET /v1alpha/model-definitions response modelDefinitions[0].model_spec`]: (r) =>
@@ -60,7 +60,7 @@ export function ListModelDefinitions(header) {
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response modelDefinitions[0].title`]: (r) =>
         r.json().modelDefinitions[0].title === "Container",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response modelDefinitions[0].documentation_url`]: (r) =>
-        r.json().modelDefinitions[0].documentation_url === "https://www.instill.tech/docs/import-models/local",
+        r.json().modelDefinitions[0].documentation_url === "https://www.instill-ai.com/docs/import-models/local",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response modelDefinitions[0].icon`]: (r) =>
         r.json().modelDefinitions[0].icon === "local.svg",
       [`GET /v1alpha/model-definitions?view=VIEW_FULL response modelDefinitions[0].model_spec`]: (r) =>

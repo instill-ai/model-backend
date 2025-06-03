@@ -30,7 +30,7 @@ enum ReleaseStage {
 // ModelDefinition defines how to configure and import a model.
 message ModelDefinition {
   option (google.api.resource) = {
-    type: "api.instill.tech/ModelDefinition"
+    type: "api.instill-ai.com/ModelDefinition"
     pattern: "model-definitions/{id}"
     pattern: "model-definitions/{uid}"
   };

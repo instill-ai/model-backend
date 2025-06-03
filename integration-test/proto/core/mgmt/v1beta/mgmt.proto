@@ -123,7 +123,7 @@ message OrganizationProfile {
 // the public user information plus some fields that should only be accessed by
 // the user themselves.
 message AuthenticatedUser {
-  option (google.api.resource) = {type: "api.instill.tech/AuthenticatedUser"};
+  option (google.api.resource) = {type: "api.instill-ai.com/AuthenticatedUser"};
 
   // The name of the user, defined by its ID.
   // - Format: `users/{user.id}`.
@@ -182,7 +182,7 @@ message Owner {
 // contain any private information about the user.
 message User {
   option (google.api.resource) = {
-    type: "api.instill.tech/User"
+    type: "api.instill-ai.com/User"
     pattern: "users/{user.id}"
     pattern: "users/{user.uid}"
   };
@@ -362,7 +362,7 @@ message GetUserRequest {
   // User ID
   string user_id = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/User"
+    (google.api.resource_reference).type = "api.instill-ai.com/User"
   ];
 }
 
@@ -461,7 +461,7 @@ message CheckNamespaceAdminResponse {
 
 // API tokens allow users to make requests to the Instill AI API.
 message ApiToken {
-  option (google.api.resource) = {type: "api.instill.tech/ApiToken"};
+  option (google.api.resource) = {type: "api.instill-ai.com/ApiToken"};
 
   // When users trigger a pipeline which uses an API token, the token is
   // updated with the current time. This field is used to track the last time
@@ -554,7 +554,7 @@ message GetTokenRequest {
   // Token ID
   string token_id = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "api.instill.tech/ApiToken"}
+    (google.api.resource_reference) = {type: "api.instill-ai.com/ApiToken"}
   ];
 }
 
@@ -571,7 +571,7 @@ message DeleteTokenRequest {
   // Token ID
   string token_id = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "api.instill.tech/ApiToken"}
+    (google.api.resource_reference) = {type: "api.instill-ai.com/ApiToken"}
   ];
 }
 
@@ -717,7 +717,7 @@ message AuthChangePasswordResponse {}
 // as pipelines or releases.
 message Organization {
   option (google.api.resource) = {
-    type: "api.instill.tech/Organization"
+    type: "api.instill-ai.com/Organization"
     pattern: "organizations/{organization.id}"
   };
 
@@ -794,7 +794,7 @@ message GetOrganizationRequest {
   // Organization ID
   string organization_id = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Organization"
+    (google.api.resource_reference).type = "api.instill-ai.com/Organization"
   ];
 }
 
@@ -830,7 +830,7 @@ message DeleteOrganizationRequest {
   // Organization ID
   string organization_id = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Organization"
+    (google.api.resource_reference).type = "api.instill-ai.com/Organization"
   ];
 }
 

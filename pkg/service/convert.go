@@ -346,7 +346,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_Classification{
 // 			Classification: &modelpb.ClassificationInput{
 // 				Type: &modelpb.ClassificationInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 				},
 // 			},
 // 		}
@@ -360,7 +360,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_Detection{
 // 			Detection: &modelpb.DetectionInput{
 // 				Type: &modelpb.DetectionInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 				},
 // 			},
 // 		}
@@ -394,7 +394,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_Keypoint{
 // 			Keypoint: &modelpb.KeypointInput{
 // 				Type: &modelpb.KeypointInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/dance.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/dance.jpg",
 // 				},
 // 			},
 // 		}
@@ -429,7 +429,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_Ocr{
 // 			Ocr: &modelpb.OcrInput{
 // 				Type: &modelpb.OcrInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/sign-small.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/sign-small.jpg",
 // 				},
 // 			},
 // 		}
@@ -463,7 +463,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_InstanceSegmentation{
 // 			InstanceSegmentation: &modelpb.InstanceSegmentationInput{
 // 				Type: &modelpb.InstanceSegmentationInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 				},
 // 			},
 // 		}
@@ -499,7 +499,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 		sampleInput.Input = &modelpb.TaskInput_SemanticSegmentation{
 // 			SemanticSegmentation: &modelpb.SemanticSegmentationInput{
 // 				Type: &modelpb.SemanticSegmentationInput_ImageUrl{
-// 					ImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 					ImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 				},
 // 			},
 // 		}
@@ -541,7 +541,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 			ImageToImage: &modelpb.ImageToImageInput{
 // 				Prompt: &prompt,
 // 				Type: &modelpb.ImageToImageInput_PromptImageUrl{
-// 					PromptImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 					PromptImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 				},
 // 				CfgScale: &cfgScale,
 // 				Steps:    &steps,
@@ -598,7 +598,7 @@ func (s *service) DBToPBModelDefinitions(ctx context.Context, dbModelDefinitions
 // 				PromptImages: []*modelpb.PromptImage{
 // 					{
 // 						Type: &modelpb.PromptImage_PromptImageUrl{
-// 							PromptImageUrl: "https://artifacts.instill.tech/imgs/dog.jpg",
+// 							PromptImageUrl: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 // 						},
 // 					},
 // 				},

@@ -77,7 +77,7 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -98,12 +98,12 @@ export function InferModel(header) {
       payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         },
         {
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
           }
         }
         ]
@@ -288,7 +288,7 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }],
       });
@@ -319,12 +319,12 @@ export function InferModel(header) {
       payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         },
         {
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }
         ],
@@ -599,7 +599,7 @@ export function InferModel(header) {
   //     let payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       }]
   //     });
@@ -626,12 +626,12 @@ export function InferModel(header) {
   //     payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       },
   //       {
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
   //         }
   //       }
   //       ]
@@ -855,7 +855,7 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -885,10 +885,10 @@ export function InferModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-          "classification": { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+          "classification": { "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg" }
         },
         {
-          "classification": { "image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+          "classification": { "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg" }
         }
         ]
       });
@@ -1147,7 +1147,7 @@ export function InferModel(header) {
   //     let payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       }],
   //     });
@@ -1178,12 +1178,12 @@ export function InferModel(header) {
   //     payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       },
   //       {
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       }
   //       ],
@@ -1437,7 +1437,7 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -1460,12 +1460,12 @@ export function InferModel(header) {
       payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         },
         {
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
           }
         }
         ]
@@ -1667,7 +1667,7 @@ export function InferModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -1700,12 +1700,12 @@ export function InferModel(header) {
       payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         },
         {
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+            "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
           }
         }
         ]
@@ -2017,7 +2017,7 @@ export function InferModel(header) {
         "task_inputs": [{
           "text_to_image": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg",
             "steps": "1",
             "cfg_scale": "5.5",
             "seed": "1",
@@ -2211,7 +2211,7 @@ export function InferModel(header) {
         "task_inputs": [{
           "image_to_image": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       })
@@ -2235,7 +2235,7 @@ export function InferModel(header) {
         "task_inputs": [{
           "image_to_image": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg",
             "steps": "1",
             "cfg_scale": "5.5",
             "seed": "1",
@@ -2254,7 +2254,7 @@ export function InferModel(header) {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -2290,7 +2290,7 @@ export function InferModel(header) {
         "task_inputs": [{
           "imaga_to_image": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg",
             "steps": "1",
             "cfg_scale": "5.5",
             "seed": "1",
@@ -2300,7 +2300,7 @@ export function InferModel(header) {
         {
           "image_to_image": {
             "prompt": "hello this is a test",
-            "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg",
+            "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg",
             "steps": "1",
             "cfg_scale": "5.5",
             "seed": "1",
@@ -2315,8 +2315,8 @@ export function InferModel(header) {
       });
 
       fd = new FormData();
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
         headers: genHeader(`multipart/form-data; boundary=${fd.boundary}`, header.headers.Authorization),
       }), {
@@ -2325,7 +2325,7 @@ export function InferModel(header) {
       });
 
       fd = new FormData();
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       fd.append("steps", 1);
       fd.append("steps", 1);
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
@@ -2336,7 +2336,7 @@ export function InferModel(header) {
       });
 
       fd = new FormData();
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       fd.append("samples", 1);
       fd.append("samples", 1);
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
@@ -2347,7 +2347,7 @@ export function InferModel(header) {
       });
 
       fd = new FormData();
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       fd.append("seed", 1);
       fd.append("seed", 1);
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
@@ -2358,7 +2358,7 @@ export function InferModel(header) {
       });
 
       fd = new FormData();
-      fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       fd.append("cfg_scale", 1.0);
       fd.append("cfg_scale", 1.0);
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger-multipart`, fd.body(), {
@@ -2452,7 +2452,7 @@ export function InferModel(header) {
           "text_generation": {
             "prompt": "hello this is a test",
             "prompt_images": [
-              { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              { "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg" }
             ],
             "chat_history": [
               {
@@ -2474,7 +2474,7 @@ export function InferModel(header) {
                   {
                     "type": "image_url",
                     "image_url": {
-                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                      "url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
                     }
                   }
                 ]
@@ -2509,7 +2509,7 @@ export function InferModel(header) {
       // Predict with multiple-part
       fd = new FormData();
       fd.append("prompt", "hello this is a test");
-      // fd.append("prompt_image_url", "https://artifacts.instill.tech/imgs/dog.jpg");
+      // fd.append("prompt_image_url", "https://artifacts.instill-ai.com/imgs/dog.jpg");
       fd.append("max_new_tokens", "50");
       fd.append("temperature", "0.8");
       fd.append("top_k", "2");
@@ -2635,7 +2635,7 @@ export function InferModel(header) {
           "text_generation_chat": {
             "prompt": "hello this is a test",
             "prompt_images": [
-              { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              { "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg" }
             ],
             "chat_history": [
               {
@@ -2657,7 +2657,7 @@ export function InferModel(header) {
                   {
                     "type": "image_url",
                     "image_url": {
-                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                      "url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
                     }
                   }
                 ]
@@ -2819,7 +2819,7 @@ export function InferModel(header) {
           "visual_question_answering": {
             "prompt": "hello this is a test",
             "prompt_images": [
-              { "prompt_image_url": "https://artifacts.instill.tech/imgs/dog.jpg" }
+              { "prompt_image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg" }
             ],
             "chat_history": [
               {
@@ -2841,7 +2841,7 @@ export function InferModel(header) {
                   {
                     "type": "image_url",
                     "image_url": {
-                      "url": "https://artifacts.instill.tech/imgs/dog.jpg"
+                      "url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
                     }
                   }
                 ]
