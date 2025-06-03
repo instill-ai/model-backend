@@ -67,7 +67,7 @@ message Region {
 }
 
 // State describes the state of a model. See [Deploy
-// Models](https://www.instill.tech/docs/latest/model/deploy) for more
+// Models](https://www.instill-ai.com/docs/latest/model/deploy) for more
 // information.
 enum State {
   // Unspecified. This state can occur while a model is under operation.
@@ -114,7 +114,7 @@ message ModelVersion {
 // making or or pattern recognition based on its training data
 message Model {
   option (google.api.resource) = {
-    type: "api.instill.tech/Model"
+    type: "api.instill-ai.com/Model"
     pattern: "users/{user.id}/models/{model.id}"
     pattern: "models/{model.uid}"
   };
@@ -153,7 +153,7 @@ message Model {
   string model_definition = 5 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE,
-    (google.api.resource_reference).type = "api.instill.tech/ModelDefinition"
+    (google.api.resource_reference).type = "api.instill-ai.com/ModelDefinition"
   ];
   // Model configuration. This field is validated against the model
   // specification in the model definition (i.e. the `model_spec` field in the
@@ -225,7 +225,7 @@ message Model {
 // Each model has exactly one README card.
 message ModelCard {
   option (google.api.resource) = {
-    type: "api.instill.tech/ModelCard"
+    type: "api.instill-ai.com/ModelCard"
     pattern: "users/{user.id}/models/{model.id}/readme"
   };
 
@@ -693,7 +693,7 @@ message CreateUserModelRequest {
   // Format: `users/{user.id}`.
   string parent = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
+    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_name"}
     }
@@ -720,7 +720,7 @@ message ListUserModelsRequest {
   // - Format: `users/{user.id}`.
   string parent = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
+    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_name"}
     }
@@ -756,7 +756,7 @@ message GetUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -797,7 +797,7 @@ message DeleteUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -814,7 +814,7 @@ message RenameUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -838,7 +838,7 @@ message PublishUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -858,7 +858,7 @@ message UnpublishUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -879,7 +879,7 @@ message GetUserModelCardRequest {
   // - Format: `users/{user.id}/models/{model.id}/readme`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelCard",
+    (google.api.resource_reference).type = "api.instill-ai.com/ModelCard",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_card_name"}
     }
@@ -899,7 +899,7 @@ message WatchUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -926,7 +926,7 @@ message WatchUserLatestModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -958,7 +958,7 @@ message ListUserModelVersionsRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -985,7 +985,7 @@ message DeleteUserModelVersionRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1101,7 +1101,7 @@ message TriggerUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1128,7 +1128,7 @@ message TriggerAsyncUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1154,7 +1154,7 @@ message TriggerUserLatestModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1179,7 +1179,7 @@ message TriggerAsyncUserLatestModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1203,7 +1203,7 @@ message TriggerUserModelBinaryFileUploadRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1236,7 +1236,7 @@ message CreateOrganizationModelRequest {
   // Format: `organizations/{organization.id}`.
   string parent = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
+    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_name"}
     }
@@ -1264,7 +1264,7 @@ message ListOrganizationModelsRequest {
   // - Format: `organizations/{organizations.id}`.
   string parent = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill.tech/Model"},
+    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_name"}
     }
@@ -1300,7 +1300,7 @@ message GetOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1341,7 +1341,7 @@ message DeleteOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1358,7 +1358,7 @@ message RenameOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1382,7 +1382,7 @@ message PublishOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1402,7 +1402,7 @@ message UnpublishOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1423,7 +1423,7 @@ message GetOrganizationModelCardRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}/readme`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/ModelCard",
+    (google.api.resource_reference).type = "api.instill-ai.com/ModelCard",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_card_name"}
     }
@@ -1443,7 +1443,7 @@ message WatchOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1470,7 +1470,7 @@ message WatchOrganizationLatestModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1502,7 +1502,7 @@ message ListOrganizationModelVersionsRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1531,7 +1531,7 @@ message DeleteOrganizationModelVersionRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1550,7 +1550,7 @@ message TriggerOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1577,7 +1577,7 @@ message TriggerAsyncOrganizationModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1602,7 +1602,7 @@ message TriggerOrganizationLatestModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1627,7 +1627,7 @@ message TriggerAsyncOrganizationLatestModelRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1651,7 +1651,7 @@ message TriggerOrganizationModelBinaryFileUploadRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1706,7 +1706,7 @@ message GetUserLatestModelOperationRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1730,7 +1730,7 @@ message GetOrganizationLatestModelOperationRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1817,7 +1817,7 @@ message DeployUserModelAdminRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1842,7 +1842,7 @@ message DeployOrganizationModelAdminRequest {
   // - Format: `organizations/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1865,7 +1865,7 @@ message UndeployUserModelAdminRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -1891,7 +1891,7 @@ message UndeployOrganizationModelAdminRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill.tech/Model",
+    (google.api.resource_reference).type = "api.instill-ai.com/Model",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }

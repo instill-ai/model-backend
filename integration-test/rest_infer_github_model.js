@@ -77,7 +77,7 @@ export function InferGitHubModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -97,15 +97,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
-          },
-          {
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
-            }
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
+        },
+        {
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -149,15 +149,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with base64
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
-          },
-          {
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
           }
+        },
+        {
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -286,7 +286,7 @@ export function InferGitHubModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "classification": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }]
       });
@@ -306,15 +306,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
-          },
-          {
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
-            }
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
+        },
+        {
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -358,15 +358,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with base64
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
-          },
-          {
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
           }
+        },
+        {
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -495,7 +495,7 @@ export function InferGitHubModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "detection": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }],
       });
@@ -525,15 +525,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-            "detection": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
-          },
-          {
-            "detection": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
+          "detection": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
+        },
+        {
+          "detection": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
+          }
+        }
         ],
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -607,15 +607,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with base64
       payload = JSON.stringify({
         "task_inputs": [{
-            "detection": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
-          },
-          {
-            "detection": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
           }
+        },
+        {
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -803,7 +803,7 @@ export function InferGitHubModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "detection": {
-            "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
         }],
       });
@@ -833,15 +833,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-            "detection": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
-          },
-          {
-            "detection": {
-              "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
-            }
+          "detection": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
           }
+        },
+        {
+          "detection": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
+          }
+        }
         ],
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -915,15 +915,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with base64
       payload = JSON.stringify({
         "task_inputs": [{
-            "detection": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
-          },
-          {
-            "detection": {
-              "image_base64": encoding.b64encode(constant.dog_img, "b"),
-            }
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
           }
+        },
+        {
+          "detection": {
+            "image_base64": encoding.b64encode(constant.dog_img, "b"),
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -1111,7 +1111,7 @@ export function InferGitHubModel(header) {
       let payload = JSON.stringify({
         "task_inputs": [{
           "keypoint": {
-            "image_url": "https://artifacts.instill.tech/imgs/dance.jpg"
+            "image_url": "https://artifacts.instill-ai.com/imgs/dance.jpg"
           }
         }]
       });
@@ -1141,15 +1141,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with url
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/dance.jpg"
-            }
-          },
-          {
-            "classification": {
-              "image_url": "https://artifacts.instill.tech/imgs/dance.jpg"
-            }
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dance.jpg"
           }
+        },
+        {
+          "classification": {
+            "image_url": "https://artifacts.instill-ai.com/imgs/dance.jpg"
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -1223,15 +1223,15 @@ export function InferGitHubModel(header) {
       // Predict multiple images with base64
       payload = JSON.stringify({
         "task_inputs": [{
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dance_img, "b"),
-            }
-          },
-          {
-            "classification": {
-              "image_base64": encoding.b64encode(constant.dance_img, "b"),
-            }
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dance_img, "b"),
           }
+        },
+        {
+          "classification": {
+            "image_base64": encoding.b64encode(constant.dance_img, "b"),
+          }
+        }
         ]
       });
       check(http.post(`${constant.apiPublicHost}/v1alpha/${constant.namespace}/models/${model_id}/trigger`, payload, header), {
@@ -1418,7 +1418,7 @@ export function InferGitHubModel(header) {
   //     let payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       }]
   //     });
@@ -1443,12 +1443,12 @@ export function InferGitHubModel(header) {
   //     payload = JSON.stringify({
   //       "task_inputs": [{
   //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //             "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //           }
   //         },
   //         {
   //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+  //             "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
   //           }
   //         }
   //       ]
@@ -1670,7 +1670,7 @@ export function InferGitHubModel(header) {
   //     let payload = JSON.stringify({
   //       "task_inputs": [{
   //         "classification": {
-  //           "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //           "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //         }
   //       }]
   //     });
@@ -1705,12 +1705,12 @@ export function InferGitHubModel(header) {
   //     payload = JSON.stringify({
   //       "task_inputs": [{
   //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/dog.jpg"
+  //             "image_url": "https://artifacts.instill-ai.com/imgs/dog.jpg"
   //           }
   //         },
   //         {
   //           "classification": {
-  //             "image_url": "https://artifacts.instill.tech/imgs/tiff-sample.tiff"
+  //             "image_url": "https://artifacts.instill-ai.com/imgs/tiff-sample.tiff"
   //           }
   //         }
   //       ]

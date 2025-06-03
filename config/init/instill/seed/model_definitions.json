@@ -3,7 +3,7 @@
     "id": "container",
     "uid": "3b4265b7-7d8c-42f7-b5a9-13737d7dee1d",
     "title": "Container",
-    "documentationUrl": "https://www.instill.tech/docs/import-models/container",
+    "documentationUrl": "https://www.instill-ai.dev/docs/model/introduction",
     "icon": "container.svg",
     "releaseStage": "alpha",
     "modelSpec": {
@@ -247,8 +247,7 @@
             }
           }
         ]
-      }
-      ,
+      },
       "configurationSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Containerized Model Specification",

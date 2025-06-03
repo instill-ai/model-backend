@@ -182,7 +182,7 @@ type ImageToImageInput struct {
 func NewImageToImageInput() *ImageToImageInput {
 	return &ImageToImageInput{
 		Prompt:      "cute dog",
-		PromptImage: "https://artifacts.instill.tech/imgs/dog.jpg",
+		PromptImage: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 		Steps:       10,
 		CfgScale:    7,
 		Seed:        1024,
@@ -251,7 +251,7 @@ type VisualQuestionAnsweringInput struct {
 func NewVisualQuestionAnsweringInput() *VisualQuestionAnsweringInput {
 	return &VisualQuestionAnsweringInput{
 		Prompt:        "What is in the picture?",
-		PromptImages:  "https://artifacts.instill.tech/imgs/dog.jpg",
+		PromptImages:  "https://artifacts.instill-ai.com/imgs/dog.jpg",
 		SystemMessage: "You are a helpful assistant.",
 		MaxNewTokens:  512,
 		Temperature:   0.7,
@@ -267,7 +267,7 @@ type ImageInput struct {
 
 func NewImageInput() *ImageInput {
 	return &ImageInput{
-		ImgURL: "https://artifacts.instill.tech/imgs/dog.jpg",
+		ImgURL: "https://artifacts.instill-ai.com/imgs/dog.jpg",
 	}
 }
 
