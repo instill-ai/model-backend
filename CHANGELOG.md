@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.7-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.6-alpha...v0.35.7-alpha) (2025-06-03)
+
+
+### Miscellaneous
+
+* **domain:** update production domain ([#750](https://github.com/instill-ai/model-backend/issues/750)) ([ab72b40](https://github.com/instill-ai/model-backend/commit/ab72b402ddccbde18b3786ae5ec63d25c1b3287a))
+
 ## [0.35.6-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.5-alpha...v0.35.6-alpha) (2025-05-27)
 
 
