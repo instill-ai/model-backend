@@ -154,7 +154,7 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 
 	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
-	profileImage := fmt.Sprintf("%s/model/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
+	profileImage := fmt.Sprintf("%s/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 
 	pbModel := &modelpb.Model{
 		Name:       fmt.Sprintf("%s/models/%s", ownerName, dbModel.ID),
