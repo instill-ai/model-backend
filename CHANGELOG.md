@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.35.8-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.7-alpha...v0.35.8-alpha) (2025-06-13)
+
+
+### Bug Fixes
+
+* **service:** fix profile-image path ([#754](https://github.com/instill-ai/model-backend/issues/754)) ([a696e04](https://github.com/instill-ai/model-backend/commit/a696e04a9532bddcd6ca2b8b88e88f9279050515))
+
+
+### Tests
+
+* **integration:** remove deprecated API prefix ([#752](https://github.com/instill-ai/model-backend/issues/752)) ([56575a7](https://github.com/instill-ai/model-backend/commit/56575a78ce96e1f669ce95de571caaef31b8e658))
+
 ## [0.35.7-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.6-alpha...v0.35.7-alpha) (2025-06-03)
 
 
