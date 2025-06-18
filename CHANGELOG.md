@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.36.0](https://github.com/instill-ai/model-backend/compare/v0.35.7-alpha...v0.36.0) (2025-06-18)
+
+
+### Bug Fixes
+
+* **service:** fix profile-image path ([#754](https://github.com/instill-ai/model-backend/issues/754)) ([a696e04](https://github.com/instill-ai/model-backend/commit/a696e04a9532bddcd6ca2b8b88e88f9279050515))
+
+
+### Miscellaneous
+
+* **proto:** adopt latest `protogen-go` package ([#756](https://github.com/instill-ai/model-backend/issues/756)) ([8460442](https://github.com/instill-ai/model-backend/commit/8460442c171c6a48741d7f833046eea026d284b3))
+* release v0.36.0 ([5efe41e](https://github.com/instill-ai/model-backend/commit/5efe41e8907db7fd5d6d5c318b3b4ecaa779dc0d))
+* release v0.36.0 ([d9c95d7](https://github.com/instill-ai/model-backend/commit/d9c95d7a2dce9e51c175c204068eb0ab6bebf7d7))
+
+
+### Tests
+
+* **integration:** remove deprecated API prefix ([#752](https://github.com/instill-ai/model-backend/issues/752)) ([56575a7](https://github.com/instill-ai/model-backend/commit/56575a78ce96e1f669ce95de571caaef31b8e658))
+
 ## [0.35.7-alpha](https://github.com/instill-ai/model-backend/compare/v0.35.6-alpha...v0.35.7-alpha) (2025-06-03)
 
 
