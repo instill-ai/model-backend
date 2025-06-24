@@ -56,7 +56,7 @@ RUN mkdir /nonexistent > /dev/null && chown -R nobody:nogroup /nonexistent
 
 USER nobody:nogroup
 
-ARG SERVICE_NAME
+ARG SERVICE_NAME SERVICE_VERSION
 
 WORKDIR /${SERVICE_NAME}
 
@@ -72,3 +72,6 @@ COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME} ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-worker ./
 COPY --from=build --chown=nobody:nogroup /${SERVICE_NAME}-init-model ./
+
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV SERVICE_VERSION=${SERVICE_VERSION}

@@ -77,14 +77,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set short commit SHA
+        run: |
+          echo "COMMIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: model-backend
           load: true
           build-args: |
-            SERVICE_NAME=model-backend
-            SERVICE_VERSION=${{ github.sha }}
+            SERVICE_NAME=${{ env.SERVICE_NAME }}
+            SERVICE_VERSION=${{ env.COMMIT_SHORT_SHA }}
           tags: instill/model-backend:latest
           cache-from: |
             type=registry,ref=instill/model-backend:buildcache
