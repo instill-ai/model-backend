@@ -35,9 +35,11 @@ import (
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
 )
 
-// These variables might be overridden at buildtime.
-var version = "dev"
-var serviceName = "model-backend-worker"
+var (
+	// These variables might be overridden at buildtime.
+	serviceVersion = "dev"
+	serviceName    = "model-backend-worker"
+)
 
 func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
 	logger, _ := customlogger.GetZapLogger(ctx)
@@ -171,7 +173,7 @@ func main() {
 		ExpiryRules: retentionHandler.ListExpiryRules(),
 		AppInfo: minio.AppInfo{
 			Name:    serviceName,
-			Version: version,
+			Version: serviceVersion,
 		},
 	})
 	if err != nil {

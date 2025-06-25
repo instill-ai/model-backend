@@ -1,85 +1,12 @@
 version: "2"
 linters:
-  default: none
   enable:
-    - bodyclose
-    - depguard
-    - dogsled
-    - errcheck
-    - errorlint
-    - gocheckcompilerdirectives
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - goprintffuncname
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - revive
     - staticcheck
-    - unconvert
-    - unparam
-    - unused
   settings:
-    depguard:
-      rules:
-        logger:
-          deny:
-            - pkg: github.com/sirupsen/logrus
-              desc: logging is allowed only by logutils.Log
-    dupl:
-      threshold: 100
-    errorlint:
-      asserts: false
-    funlen:
-      lines: -1
-      statements: 50
-    goconst:
-      min-len: 2
-      min-occurrences: 5
-    gocritic:
-      disabled-checks:
-        - dupImport
-        - ifElseChain
-        - octalLiteral
-        - whyNoLint
-        - paramTypeCombine
-        - unnamedResult
-        - commentedOutCode
-        - tooManyResultsChecker
-      enabled-tags:
-        - diagnostic
-        - experimental
-        - opinionated
-        - performance
-        - style
-    gocyclo:
-      min-complexity: 15
-    govet:
-      settings:
-        printf:
-          funcs:
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-    lll:
-      line-length: 140
-    misspell:
-      locale: US
-    nolintlint:
-      require-explanation: false
-      require-specific: false
-      allow-unused: false
-    revive:
-      rules:
-        - name: unexported-return
-          disabled: true
-        - name: unused-parameter
-          disabled: true
+    staticcheck:
+      checks:
+        - all
+        - -SA1019
   exclusions:
     generated: lax
     presets:
@@ -87,48 +14,14 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - path: pkg/golinters/errcheck.go
-        text: 'SA1019: errCfg.Exclude is deprecated: use ExcludeFunctions instead'
-      - path: pkg/commands/run.go
-        text: 'SA1019: lsc.Errcheck.Exclude is deprecated: use ExcludeFunctions instead'
-      - path: pkg/commands/run.go
-        text: 'SA1019: e.cfg.Run.Deadline is deprecated: Deadline exists for historical compatibility and should not be used.'
-      - path: pkg/golinters/gofumpt.go
-        text: 'SA1019: settings.LangVersion is deprecated: use the global `run.go` instead.'
-      - path: pkg/golinters/staticcheck_common.go
-        text: 'SA1019: settings.GoVersion is deprecated: use the global `run.go` instead.'
-      - path: pkg/lint/lintersdb/manager.go
-        text: 'SA1019: (.+).(GoVersion|LangVersion) is deprecated: use the global `run.go` instead.'
-      - path: pkg/golinters/unused.go
-        text: 'rangeValCopy: each iteration copies 160 bytes \(consider pointers or indexing\)'
-      - path: test/(fix|linters)_test.go
-        text: string `gocritic.go` has 3 occurrences, make it a constant
-      - path: pkg/golinters/nolintlint/nolintlint.go
-        text: 'hugeParam: (i|b) is heavy \(\d+ bytes\); consider passing it by pointer'
     paths:
-      - test/testdata_etc
-      - internal/jsonref
       - third_party$
       - builtin$
       - examples$
 formatters:
-  enable:
-    - gofmt
-    - goimports
-  settings:
-    gofmt:
-      rewrite-rules:
-        - pattern: interface{}
-          replacement: any
-    goimports:
-      local-prefixes:
-        - github.com/golangci/golangci-lint
   exclusions:
     generated: lax
     paths:
-      - test/testdata_etc
-      - internal/jsonref
       - third_party$
       - builtin$
       - examples$

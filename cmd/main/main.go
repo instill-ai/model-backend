@@ -51,15 +51,16 @@ import (
 	database "github.com/instill-ai/model-backend/pkg/db"
 	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
-var propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
+var (
+	// These variables might be overridden at buildtime.
+	serviceVersion = "dev"
+	serviceName    = "model-backend"
 
-// These variables might be overridden at buildtime.
-var version = "dev"
-var serviceName = "model-backend"
+	propagator = b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))
+)
 
 func grpcHandlerFunc(grpcServer *grpc.Server, gwHandler http.Handler) http.Handler {
 	return h2c.NewHandler(
@@ -243,7 +244,7 @@ func main() {
 		ExpiryRules: retentionHandler.ListExpiryRules(),
 		AppInfo: minio.AppInfo{
 			Name:    serviceName,
-			Version: version,
+			Version: serviceVersion,
 		},
 	})
 	if err != nil {
@@ -327,20 +328,12 @@ func main() {
 	// Start usage reporter
 	var usg usage.Usage
 	if config.Config.Server.Usage.Enabled {
-		userUID := config.Config.Server.Usage.UsageIdentifierUID
-		if userUID == "" {
-			if resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{UserId: constant.DefaultUserID}); err == nil {
-				userUID = resp.GetUser().GetUid()
-			} else {
-				logger.Error(err.Error())
-			}
-		}
 		usageServiceClient, usageServiceClientConn := external.InitUsageServiceClient(ctx)
 		defer usageServiceClientConn.Close()
 		logger.Info("try to start usage reporter")
 		go func() {
 			for {
-				usg = usage.NewUsage(ctx, repo, mgmtPrivateServiceClient, redisClient, usageServiceClient, userUID)
+				usg = usage.NewUsage(ctx, repo, mgmtPrivateServiceClient, redisClient, usageServiceClient, serviceVersion)
 				if usg != nil {
 					usg.StartReporter(ctx)
 					logger.Info("usage reporter started")

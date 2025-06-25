@@ -11,7 +11,7 @@ export
 .PHONY: dev
 dev:							## Run dev container
 	@docker compose ls -q | grep -q "instill-core" && true || \
-		(echo "Error: Run \"make latest PROFILE=exclude-model\" in model repository (https://github.com/instill-ai/instill-core) in your local machine first." && exit 1)
+		(echo "Error: Run \"make latest PROFILE=exclude-mode\" in model repository (https://github.com/instill-ai/instill-core) in your local machine first and  run \"docker rm -f ${SERVICE_NAME} ${SERVICE_NAME}-worker\"" && exit 1)
 	@docker inspect --type container ${SERVICE_NAME} >/dev/null 2>&1 && echo "A container named ${SERVICE_NAME} is already running." || \
 		echo "Run dev container ${SERVICE_NAME}. To stop it, run \"make stop\"."
 	@docker run -d --rm \
@@ -26,12 +26,17 @@ dev:							## Run dev container
 .PHONY: latest
 latest: ## Run latest container
 	@docker compose ls -q | grep -q "instill-core" && true || \
-		(echo "Error: Run \"make latest PROFILE=exclude-model\" in instill-core repository (https://github.com/instill-ai/instill-core) in your local machine first." && exit 1)
+		(echo "Error: Run \"make latest\" in instill-core repository (https://github.com/instill-ai/instill-core) in your local machine first and run \"docker rm -f ${SERVICE_NAME} ${SERVICE_NAME}-worker\"" && exit 1)
 	@docker inspect --type container ${SERVICE_NAME} >/dev/null 2>&1 && echo "A container named ${SERVICE_NAME} is already running." || \
 		echo "Run latest container ${SERVICE_NAME} and ${SERVICE_NAME}-worker. To stop it, run \"make stop\"."
 	@docker run --network=instill-network \
 		--name ${SERVICE_NAME} \
-		-d instill/${SERVICE_NAME}:latest ./${SERVICE_NAME}
+		-d instill/${SERVICE_NAME}:latest \
+		/bin/sh -c "\
+		./${SERVICE_NAME}-migrate && \
+		./${SERVICE_NAME}-init && \
+		./${SERVICE_NAME} \
+		"
 	@docker run --network=instill-network \
 		--name ${SERVICE_NAME}-worker \
 		-d instill/${SERVICE_NAME}:latest ./${SERVICE_NAME}-worker
@@ -52,12 +57,19 @@ stop:							## Stop container
 top:							## Display all running service processes
 	@docker top ${SERVICE_NAME}
 
-.PHONY: build
-build:							## Build dev docker image
+.PHONY: build-dev
+build-dev: ## Build dev docker image
 	@docker build \
 		--build-arg SERVICE_NAME=${SERVICE_NAME} \
 		--build-arg K6_VERSION=${K6_VERSION} \
 		-f Dockerfile.dev -t instill/${SERVICE_NAME}:dev .
+
+.PHONY: build-latest
+build-latest: ## Build latest docker image
+	@docker build \
+		--build-arg SERVICE_NAME=${SERVICE_NAME} \
+		--build-arg SERVICE_VERSION=dev \
+		-t instill/${SERVICE_NAME}:latest .
 
 .PHONY: go-gen
 go-gen:       					## Generate codes

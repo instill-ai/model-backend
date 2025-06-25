@@ -11,11 +11,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/instill-ai/model-backend/config"
+	"github.com/instill-ai/model-backend/pkg/constant"
+	"github.com/instill-ai/model-backend/pkg/logger"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/repo"
 
-	customlogger "github.com/instill-ai/model-backend/pkg/logger"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	usagepb "github.com/instill-ai/protogen-go/core/usage/v1beta"
 	usageclient "github.com/instill-ai/usage-client/client"
@@ -34,21 +34,21 @@ type usage struct {
 	mgmtPrivateServiceClient mgmtpb.MgmtPrivateServiceClient
 	redisClient              *redis.Client
 	reporter                 usagereporter.Reporter
-	version                  string
-	userUID                  string
+	serviceVersion           string
 }
 
 // NewUsage initiates a usage instance
-func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivateServiceClient, rc *redis.Client, usc usagepb.UsageServiceClient, userUID string) Usage {
-	logger, _ := customlogger.GetZapLogger(ctx)
+func NewUsage(ctx context.Context, r repository.Repository, m mgmtpb.MgmtPrivateServiceClient, rc *redis.Client, usc usagepb.UsageServiceClient, serviceVersion string) Usage {
+	logger, _ := logger.GetZapLogger(ctx)
 
-	version, err := repo.ReadReleaseManifest("release-please/manifest.json")
-	if err != nil {
+	var defaultOwnerUID string
+	if resp, err := m.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{UserId: constant.DefaultUserID}); err == nil {
+		defaultOwnerUID = resp.GetUser().GetUid()
+	} else {
 		logger.Error(err.Error())
-		return nil
 	}
 
-	reporter, err := usageclient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, version, userUID)
+	reporter, err := usageclient.InitReporter(ctx, usc, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, serviceVersion, defaultOwnerUID)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -56,18 +56,16 @@ func NewUsage(ctx context.Context, r repository.Repository, u mgmtpb.MgmtPrivate
 
 	return &usage{
 		repository:               r,
-		mgmtPrivateServiceClient: u,
+		mgmtPrivateServiceClient: m,
 		redisClient:              rc,
 		reporter:                 reporter,
-		version:                  version,
-		userUID:                  userUID,
 	}
 }
 
 func (u *usage) RetrieveUsageData() any {
 
 	ctx := context.Background()
-	logger, _ := customlogger.GetZapLogger(ctx)
+	logger, _ := logger.GetZapLogger(ctx)
 
 	logger.Debug("Retrieve usage data...")
 
@@ -207,11 +205,18 @@ func (u *usage) StartReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := customlogger.GetZapLogger(ctx)
+	logger, _ := logger.GetZapLogger(ctx)
+
+	var defaultOwnerUID string
+	if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{UserId: constant.DefaultUserID}); err == nil {
+		defaultOwnerUID = resp.GetUser().GetUid()
+	} else {
+		logger.Error(err.Error())
+	}
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		err := usageclient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData)
+		err := usageclient.StartReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.serviceVersion, defaultOwnerUID, u.RetrieveUsageData)
 		if err != nil {
 			logger.Error(fmt.Sprintf("unable to start reporter: %v\n", err))
 		}
@@ -223,14 +228,23 @@ func (u *usage) TriggerSingleReporter(ctx context.Context) {
 		return
 	}
 
-	logger, _ := customlogger.GetZapLogger(ctx)
+	logger, _ := logger.GetZapLogger(ctx)
 
-	err := usageclient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.version, u.userUID, u.RetrieveUsageData())
+	var defaultOwnerUID string
+	if resp, err := u.mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{UserId: constant.DefaultUserID}); err == nil {
+		defaultOwnerUID = resp.GetUser().GetUid()
+	} else {
+		logger.Error(err.Error())
+		return
+	}
+
+	err := usageclient.SingleReporter(ctx, u.reporter, usagepb.Session_SERVICE_MODEL, config.Config.Server.Edition, u.serviceVersion, defaultOwnerUID, u.RetrieveUsageData())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 }
 
+// ModelUsageHandlerParams is the parameters for the model usage handler.
 type ModelUsageHandlerParams struct {
 	UserUID        uuid.UUID
 	OwnerUID       uuid.UUID
@@ -244,6 +258,7 @@ type ModelUsageHandlerParams struct {
 	UsageTime      time.Duration
 }
 
+// ModelUsageHandler is the interface for the model usage handler.
 type ModelUsageHandler interface {
 	Check(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error
 	Collect(ctx context.Context, usageHandlerParams *ModelUsageHandlerParams) error
