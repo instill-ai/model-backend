@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.36.1](https://github.com/instill-ai/model-backend/compare/v0.36.0...v0.36.1) (2025-07-02)
+
+
+### Miscellaneous
+
+* release v0.36.1 ([18153df](https://github.com/instill-ai/model-backend/commit/18153dfa88d4ed9f2b54b5342820d316804baf54))
+
 ## [0.36.0](https://github.com/instill-ai/model-backend/compare/v0.35.7-alpha...v0.36.0) (2025-06-18)
 
 
