@@ -16,6 +16,9 @@ import (
 var db *gorm.DB
 var once sync.Once
 
+// TargetSchemaVersion is the target database schema version
+const TargetSchemaVersion = 12
+
 // GetConnection returns a connection to the database
 func GetConnection() *gorm.DB {
 	databaseConfig := config.Config.Database
