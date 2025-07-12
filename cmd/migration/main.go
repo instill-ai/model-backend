@@ -6,13 +6,75 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
+
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/db"
 	"github.com/instill-ai/model-backend/pkg/db/migration"
 )
+
+func main() {
+	migrateFolder, _ := os.Getwd()
+
+	if err := config.Init(config.ParseConfigFlag()); err != nil {
+		panic(err)
+	}
+
+	databaseConfig := config.Config.Database
+	if err := checkExist(&databaseConfig); err != nil {
+		panic(err)
+	}
+
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?%s",
+		databaseConfig.Username,
+		databaseConfig.Password,
+		databaseConfig.Host,
+		databaseConfig.Port,
+		databaseConfig.Name,
+		"sslmode=disable",
+	)
+
+	m, err := migrate.New(fmt.Sprintf("file:///%s/pkg/db/migration", migrateFolder), dsn)
+	if err != nil {
+		panic(err)
+	}
+
+	version, dirty, err := m.Version()
+
+	if err != nil && version != 0 {
+		panic(err)
+	}
+
+	ExpectedVersion := uint(migration.TargetSchemaVersion)
+
+	fmt.Printf("Expected migration version is %d\n", ExpectedVersion)
+	fmt.Printf("The current schema version is %d, and dirty flag is %t\n", version, dirty)
+	if dirty {
+		panic("The database has dirty flag, please fix it")
+	}
+
+	step := version
+	for {
+		if ExpectedVersion <= step {
+			fmt.Printf("Migration to version %d complete\n", step)
+			break
+		}
+
+		fmt.Printf("Step up to version %d\n", step+1)
+		if err := m.Steps(1); err != nil {
+			panic(err)
+		}
+
+		if step, _, err = m.Version(); err != nil {
+			panic(err)
+		}
+
+		if err := migration.Migrate(step); err != nil {
+			panic(err)
+		}
+	}
+}
 
 func checkExist(databaseConfig *config.DatabaseConfig) error {
 	db, err := sql.Open(
@@ -71,63 +133,4 @@ func checkExist(databaseConfig *config.DatabaseConfig) error {
 	}
 
 	return nil
-}
-
-func main() {
-	migrateFolder, _ := os.Getwd()
-
-	_ = config.Init(config.ParseConfigFlag())
-	databaseConfig := config.Config.Database
-	if err := checkExist(&databaseConfig); err != nil {
-		panic(err)
-	}
-
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?%s",
-		databaseConfig.Username,
-		databaseConfig.Password,
-		databaseConfig.Host,
-		databaseConfig.Port,
-		databaseConfig.Name,
-		"sslmode=disable",
-	)
-
-	m, err := migrate.New(fmt.Sprintf("file:///%s/pkg/db/migration", migrateFolder), dsn)
-	if err != nil {
-		panic(err)
-	}
-
-	version, dirty, err := m.Version()
-
-	if err != nil && version != 0 {
-		panic(err)
-	}
-
-	ExpectedVersion := uint(db.TargetSchemaVersion)
-
-	fmt.Printf("Expected migration version is %d\n", ExpectedVersion)
-	fmt.Printf("The current schema version is %d, and dirty flag is %t\n", version, dirty)
-	if dirty {
-		panic("The database has dirty flag, please fix it")
-	}
-
-	step := version
-	for {
-		if ExpectedVersion <= step {
-			fmt.Printf("Migration to version %d complete\n", step)
-			break
-		}
-
-		fmt.Printf("Step up to version %d\n", step+1)
-		if err := m.Steps(1); err != nil {
-			panic(err)
-		}
-
-		if step, _, err = m.Version(); err != nil {
-			panic(err)
-		}
-
-		if err := migration.Migrate(step); err != nil {
-			panic(err)
-		}
-	}
 }

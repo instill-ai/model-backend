@@ -21,13 +21,14 @@ import (
 	"gorm.io/plugin/dbresolver"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/x/constant"
 	"github.com/instill-ai/x/paginate"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	errorsx "github.com/instill-ai/x/errors"
+	logx "github.com/instill-ai/x/log"
+	resourcex "github.com/instill-ai/x/resource"
 )
 
 type Repository interface {
@@ -94,7 +95,7 @@ func NewRepository(db *gorm.DB, redisClient *redis.Client) Repository {
 }
 
 func (r *repository) CheckPinnedUser(ctx context.Context, db *gorm.DB, table string) *gorm.DB {
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := resourcex.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// If the user is pinned, we will use the primary database for querying.
 	if !errors.Is(r.redisClient.Get(ctx, fmt.Sprintf("db_pin_user:%s:%s", userUID, table)).Err(), redis.Nil) {
 		db = db.Clauses(dbresolver.Write)
@@ -103,7 +104,7 @@ func (r *repository) CheckPinnedUser(ctx context.Context, db *gorm.DB, table str
 }
 
 func (r *repository) PinUser(ctx context.Context, table string) {
-	userUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	userUID := resourcex.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 	// To solve the read-after-write inconsistency problem,
 	// we will direct the user to read from the primary database for a certain time frame
 	// to ensure that the data is synchronized from the primary DB to the replica DB.
@@ -112,7 +113,7 @@ func (r *repository) PinUser(ctx context.Context, table string) {
 
 func (r *repository) listModels(ctx context.Context, where string, whereArgs []any, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	db := r.db
 	if showDeleted {
@@ -171,7 +172,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 		tokens, err := DecodeToken(pageToken)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, 0, "", ErrPageTokenDecode
+			return nil, 0, "", errorsx.NewPageTokenErr(err)
 		}
 
 		for _, o := range order.Fields {
@@ -365,7 +366,7 @@ func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalin
 		Updates(model); result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
-		return ErrNoDataUpdated
+		return errorsx.ErrNoDataUpdated
 	}
 	return nil
 }
@@ -380,7 +381,7 @@ func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermal
 		Update("id", newID); result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
-		return ErrNoDataUpdated
+		return errorsx.ErrNoDataUpdated
 	}
 	return nil
 }
@@ -395,11 +396,14 @@ func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalin
 		Delete(&datamodel.Model{})
 
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return status.Errorf(codes.NotFound, "The model ID %s not found", id)
+		}
 		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrNoDataDeleted
+		return errorsx.ErrNoDataDeleted
 	}
 
 	return nil
@@ -415,9 +419,7 @@ func (r *repository) CreateModelVersion(ctx context.Context, ownerPermalink stri
 		var pgErr *pgconn.PgError
 
 		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-
-			return ErrNameExists
-
+			return errorsx.ErrAlreadyExists
 		}
 
 		return result.Error
@@ -436,7 +438,7 @@ func (r *repository) UpdateModelVersionDigestByID(ctx context.Context, modelUID 
 		Update("digest", digest); result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
-		return ErrNoDataUpdated
+		return errorsx.ErrNoDataUpdated
 	}
 
 	return nil
@@ -456,7 +458,7 @@ func (r *repository) DeleteModelVersionByID(ctx context.Context, modelUID uuid.U
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrNoDataDeleted
+		return errorsx.ErrNoDataDeleted
 	}
 
 	return nil
@@ -476,7 +478,7 @@ func (r *repository) DeleteModelVersionByDigest(ctx context.Context, modelUID uu
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrNoDataDeleted
+		return errorsx.ErrNoDataDeleted
 	}
 
 	return nil
@@ -546,17 +548,11 @@ func (r *repository) CreateModelTags(ctx context.Context, modelUID uuid.UUID, ta
 	}
 
 	if result := db.Model(&datamodel.ModelTag{}).Create(&tags); result.Error != nil {
-
 		var pgErr *pgconn.PgError
-
 		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" || errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-
-			return ErrNameExists
-
+			return errorsx.ErrAlreadyExists
 		}
-
 		return result.Error
-
 	}
 
 	return nil
@@ -579,7 +575,7 @@ func (r *repository) DeleteModelTags(ctx context.Context, modelUID uuid.UUID, ta
 
 	if result.RowsAffected == 0 {
 
-		return ErrNoDataDeleted
+		return errorsx.ErrNoDataDeleted
 
 	}
 
@@ -638,7 +634,7 @@ func (r *repository) ListModelDefinitions(view modelpb.View, pageSize int64, pag
 	if pageToken != "" {
 		createTime, id, err := paginate.DecodeToken(pageToken)
 		if err != nil {
-			return nil, "", 0, status.Errorf(codes.InvalidArgument, "Invalid page token: %s", err.Error())
+			return nil, "", 0, errorsx.NewPageTokenErr(err)
 		}
 		queryBuilder = queryBuilder.Where("(create_time,id) < (?::timestamp, ?)", createTime, id)
 	}
@@ -734,7 +730,7 @@ func (r *repository) getModelRunByModelUID(ctx context.Context, where string, wh
 func (r *repository) ListModelRuns(ctx context.Context, pageSize, page int64, filter filtering.Filter, order ordering.OrderBy,
 	requesterUID string, isOwner bool, modelUID string) (modelRuns []*datamodel.ModelRun, totalSize int64, err error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	db := r.CheckPinnedUser(ctx, r.db, tableModelRun)
 
@@ -818,6 +814,7 @@ func (r *repository) UpdateModelRun(ctx context.Context, modelRun *datamodel.Mod
 		Updates(&modelRun).Error
 }
 
+// ListModelRunsByRequesterParams is the parameters for listing model runs by requester
 type ListModelRunsByRequesterParams struct {
 	PageSize         int64
 	Page             int64
@@ -828,9 +825,10 @@ type ListModelRunsByRequesterParams struct {
 	StartedTimeEnd   time.Time
 }
 
+// ListModelRunsByRequester lists model runs by requester
 func (r *repository) ListModelRunsByRequester(ctx context.Context, params *ListModelRunsByRequesterParams) ([]*datamodel.ModelRun, int64, error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	var modelRuns []*datamodel.ModelRun
 	var totalSize int64

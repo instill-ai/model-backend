@@ -27,29 +27,27 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/acl"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
-	"github.com/instill-ai/x/errmsg"
-	"github.com/instill-ai/x/minio"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	constantx "github.com/instill-ai/x/constant"
+	errorsx "github.com/instill-ai/x/errors"
+	logx "github.com/instill-ai/x/log"
+	miniox "github.com/instill-ai/x/minio"
 	resourcex "github.com/instill-ai/x/resource"
 )
 
 // Service is the interface for the service layer
 type Service interface {
-
 	// Utils
 	GetMgmtPrivateServiceClient() mgmtpb.MgmtPrivateServiceClient
 	GetArtifactPrivateServiceClient() artifactpb.ArtifactPrivateServiceClient
@@ -110,13 +108,12 @@ type service struct {
 	repository                   repository.Repository
 	influxDBWriteClient          api.WriteAPI
 	redisClient                  *redis.Client
-	mgmtPublicServiceClient      mgmtpb.MgmtPublicServiceClient
 	mgmtPrivateServiceClient     mgmtpb.MgmtPrivateServiceClient
 	artifactPrivateServiceClient artifactpb.ArtifactPrivateServiceClient
 	temporalClient               client.Client
 	ray                          ray.Ray
 	aclClient                    acl.ACLClientInterface
-	minioClient                  minio.Client
+	minioClient                  miniox.Client
 	retentionHandler             MetadataRetentionHandler
 	instillCoreHost              string
 }
@@ -125,14 +122,13 @@ type service struct {
 func NewService(
 	r repository.Repository,
 	i api.WriteAPI,
-	mp mgmtpb.MgmtPublicServiceClient,
 	m mgmtpb.MgmtPrivateServiceClient,
 	ar artifactpb.ArtifactPrivateServiceClient,
 	rc *redis.Client,
 	tc client.Client,
 	ra ray.Ray,
 	a acl.ACLClientInterface,
-	minioClient minio.Client,
+	minioClient miniox.Client,
 	retentionHandler MetadataRetentionHandler,
 	h string,
 ) Service {
@@ -140,7 +136,6 @@ func NewService(
 		repository:                   r,
 		influxDBWriteClient:          i,
 		ray:                          ra,
-		mgmtPublicServiceClient:      mp,
 		mgmtPrivateServiceClient:     m,
 		artifactPrivateServiceClient: ar,
 		redisClient:                  rc,
@@ -182,10 +177,10 @@ func (s *service) GetRayClient() ray.Ray {
 }
 
 func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, modelUID uuid.UUID, version string, inputJSON []byte) (runLog *datamodel.ModelRun, err error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	source := datamodel.RunSource(runpb.RunSource_RUN_SOURCE_API)
-	userAgentEnum, ok := runpb.RunSource_value[resource.GetRequestSingleHeader(ctx, constantx.HeaderUserAgent)]
+	userAgentEnum, ok := runpb.RunSource_value[resourcex.GetRequestSingleHeader(ctx, constantx.HeaderUserAgentKey)]
 	if ok {
 		source = datamodel.RunSource(userAgentEnum)
 	}
@@ -196,15 +191,15 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 		return nil, fmt.Errorf("fetching expiration rule: %w", err)
 	}
 
-	inputReferenceID := minio.GenerateInputRefID("model-runs")
+	inputReferenceID := miniox.GenerateInputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size
 	_, _, err = s.minioClient.UploadFileBytes(
 		ctx,
-		&minio.UploadFileBytesParam{
+		&miniox.UploadFileBytesParam{
 			UserUID:       userUID,
 			FilePath:      inputReferenceID,
 			FileBytes:     inputJSON,
-			FileMimeType:  constant.ContentTypeJSON,
+			FileMimeType:  constantx.ContentTypeJSON,
 			ExpiryRuleTag: expiryRule.Tag,
 		},
 	)
@@ -232,7 +227,7 @@ func (s *service) CreateModelRun(ctx context.Context, triggerUID uuid.UUID, mode
 }
 
 func (s *service) UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	if runLog != nil {
 		runLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_FAILED)
@@ -305,7 +300,7 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", modelUID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	modelDef, err := s.repository.GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
@@ -352,13 +347,13 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, view == modelpb.View_VIEW_BASIC, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	modelDef, err := s.GetRepository().GetModelDefinitionByUID(dbModel.ModelDefinitionUID)
@@ -441,13 +436,13 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return nil, "", ErrNotFound
+		return nil, "", errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, "", err
 	} else if !granted {
-		return nil, "", ErrNotFound
+		return nil, "", errorsx.ErrNotFound
 	}
 
 	_, err = s.GetModelVersionAdmin(ctx, dbModel.UID, version)
@@ -468,14 +463,14 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 // checkRequesterPermission validates that the authenticated user can make
 // requests on behalf of the resource identified by the requester UID.
 func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel.Model) error {
-	authType := resource.GetRequestSingleHeader(ctx, constant.HeaderAuthTypeKey)
+	authType := resourcex.GetRequestSingleHeader(ctx, constantx.HeaderAuthTypeKey)
 	if authType != "user" {
 		// Only authenticated users can switch namespaces.
-		return ErrUnauthenticated
+		return errorsx.ErrUnauthenticated
 	}
 
-	requester := resource.GetRequestSingleHeader(ctx, constant.HeaderRequesterUIDKey)
-	authenticatedUser := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	requester := resourcex.GetRequestSingleHeader(ctx, constantx.HeaderRequesterUIDKey)
+	authenticatedUser := resourcex.GetRequestSingleHeader(ctx, constantx.HeaderUserUIDKey)
 	if requester == "" || authenticatedUser == requester {
 		// Request doesn't contain impersonation.
 		return nil
@@ -485,20 +480,20 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 	// organization namespace.
 	isMember, err := s.aclClient.CheckPermission(ctx, "organization", uuid.FromStringOrNil(requester), "member")
 	if err != nil {
-		return errmsg.AddMessage(
+		return errorsx.AddMessage(
 			fmt.Errorf("checking organization membership: %w", err),
 			"Couldn't check organization membership.",
 		)
 	}
 
 	if !isMember {
-		return fmt.Errorf("authenticated user doesn't belong to requester organization: %w", ErrUnauthenticated)
+		return fmt.Errorf("authenticated user doesn't belong to requester organization: %w", errorsx.ErrUnauthenticated)
 	}
 
 	// Organizations can only trigger private models owned by themselves.
 	// The rest of private models are invisible to them.
 	if !model.IsPublic() && model.OwnerUID().String() != requester {
-		return fmt.Errorf("model not found: %w", ErrNotFound)
+		return fmt.Errorf("model not found: %w", errorsx.ErrNotFound)
 	}
 
 	return nil
@@ -506,25 +501,25 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 
 func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelRun) ([]*structpb.Struct, error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthorized
 	}
 
 	// For now, impersonation is only implemented for model triggers. When
@@ -547,7 +542,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		logger.Warn(fmt.Sprintf("model is in %s and has %v active replica, starting new instance now.", state, numOfActiveReplica))
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	userUID := uuid.FromStringOrNil(resourcex.GetRequestSingleHeader(ctx, constantx.HeaderUserUIDKey))
 
 	workflowOptions := client.StartWorkflowOptions{
 		ID:                       runLog.UID.String(),
@@ -596,7 +591,7 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		if errors.As(err, &applicationErr) {
 			var details worker.EndUserErrorDetails
 			if dErr := applicationErr.Details(&details); dErr == nil && details.Message != "" {
-				err = errmsg.AddMessage(err, details.Message)
+				err = errorsx.AddMessage(err, details.Message)
 			}
 		}
 
@@ -628,25 +623,25 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 
 func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resource.Namespace, id string, version *datamodel.ModelVersion, reqJSON []byte, task commonpb.Task, runLog *datamodel.ModelRun) (*longrunningpb.Operation, error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, id, false, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthorized
 	}
 
 	// For now, impersonation is only implemented for model triggers. When
@@ -669,7 +664,7 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		logger.Warn(fmt.Sprintf("model is in %s and has %v active replica, starting new instance now.", state, numOfActiveReplica))
 	}
 
-	userUID := uuid.FromStringOrNil(resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey))
+	userUID := uuid.FromStringOrNil(resourcex.GetRequestSingleHeader(ctx, constantx.HeaderUserUIDKey))
 
 	expiryRule, err := s.retentionHandler.GetExpiryRuleByNamespace(ctx, runLog.RequesterUID)
 	if err != nil {
@@ -769,7 +764,7 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 		return nil, err
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ns, err := s.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
@@ -992,19 +987,19 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 
 func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Namespace, page int32, pageSize int32, modelID string) ([]*modelpb.ModelVersion, int32, int32, int32, error) {
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return nil, 0, 0, 0, ErrNotFound
+		return nil, 0, 0, 0, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, 0, 0, 0, err
 	} else if !granted {
-		return nil, 0, 0, 0, ErrNotFound
+		return nil, 0, 0, 0, errorsx.ErrNotFound
 	}
 
 	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactpb.ListRepositoryTagsRequest{
@@ -1053,25 +1048,25 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 }
 
 func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namespace, modelID string, version string) error {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ownerPermalink := ns.Permalink()
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return ErrNotFound
+		return errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
-		return ErrNotFound
+		return errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
-		return ErrNoPermission
+		return errorsx.ErrUnauthorized
 	}
 
 	dbVersion, err := s.repository.GetModelVersionByID(ctx, dbModel.UID, version)
@@ -1132,19 +1127,19 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, false, false)
 	if err != nil {
-		return ErrNotFound
+		return errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
-		return ErrNotFound
+		return errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
-		return ErrNoPermission
+		return errorsx.ErrUnauthorized
 	}
 
 	versions, err := s.repository.ListModelVersions(ctx, dbModel.UID, true)
@@ -1178,19 +1173,19 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthorized
 	}
 
 	if err := s.repository.UpdateNamespaceModelIDByID(ctx, ownerPermalink, modelID, newModelID); err != nil {
@@ -1222,13 +1217,13 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthorized
 	}
 
 	var dbModel *datamodel.Model
@@ -1301,7 +1296,7 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 			return nil, err
 		}
 		for len(versions) < int(totalSize) {
-			page += 1
+			page++
 			v, _, _, _, err := s.ListNamespaceModelVersions(ctx, ns, page, 10, updatedDBModel.ID)
 			if err != nil {
 				return nil, err

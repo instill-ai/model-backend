@@ -12,7 +12,6 @@ import (
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/gofrs/uuid"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -27,16 +26,15 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/sterr"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	logx "github.com/instill-ai/x/log"
 	resourcex "github.com/instill-ai/x/resource"
 )
 
+// TriggerUserModel triggers a model for a given user.
 func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.TriggerUserModelRequest) (*modelpb.TriggerUserModelResponse, error) {
 	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -54,6 +52,7 @@ func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.Trigg
 	}, nil
 }
 
+// TriggerOrganizationModel triggers a model for a given organization.
 func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *modelpb.TriggerOrganizationModelRequest) (*modelpb.TriggerOrganizationModelResponse, error) {
 	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -71,6 +70,7 @@ func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *model
 	}, nil
 }
 
+// TriggerUserLatestModel triggers a model for a given user.
 func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb.TriggerUserLatestModelRequest) (*modelpb.TriggerUserLatestModelResponse, error) {
 	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -87,6 +87,7 @@ func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb
 	}, nil
 }
 
+// TriggerOrganizationLatestModel triggers a model for a given organization.
 func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerOrganizationLatestModelRequest) (*modelpb.TriggerOrganizationLatestModelResponse, error) {
 	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -103,6 +104,7 @@ func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req 
 	}, nil
 }
 
+// TriggerNamespaceModelRequestInterface is an interface for triggering a namespace model.
 type TriggerNamespaceModelRequestInterface interface {
 	protoreflect.ProtoMessage
 	GetNamespaceId() string
@@ -111,6 +113,7 @@ type TriggerNamespaceModelRequestInterface interface {
 	GetTaskInputs() []*structpb.Struct
 }
 
+// TriggerNamespaceModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerNamespaceModelResponse{}
 
@@ -126,6 +129,7 @@ func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.
 	return resp, err
 }
 
+// TriggerNamespaceLatestModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerNamespaceLatestModelRequest) (resp *modelpb.TriggerNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.TriggerNamespaceLatestModelResponse{}
 
@@ -143,41 +147,29 @@ func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *mo
 func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*structpb.Struct, error) {
 
 	startTime := time.Now()
-	eventName := "TriggerNamespaceModel"
 
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 	if err = authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
 	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -196,6 +188,8 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.NotFound, err.Error())
 		}
 	}
+
+	logUUID, _ := uuid.NewV4()
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
@@ -241,12 +235,10 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
-			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
@@ -261,47 +253,27 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"ray server",
-			"",
-			"",
-			err.Error(),
-		)
-		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"ray server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
+		var st *status.Status
+		if strings.Contains(err.Error(), "failed to allocate memory") {
+			st = status.New(codes.ResourceExhausted, "inference model error: Out of memory for running the model, maybe try with smaller batch size")
+		} else {
+			st = status.New(codes.FailedPrecondition, fmt.Sprintf("inference model error: %s", err.Error()))
 		}
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, st.Err()
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
+	logger.Info("TriggerNamespaceModel",
+		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
+		zap.String("eventMessage", "TriggerNamespaceModel done"),
+	)
 
 	return pbModel.Task, response, nil
 }
 
+// TriggerAsyncUserModel triggers a model for a given user.
 func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.TriggerAsyncUserModelRequest) (*modelpb.TriggerAsyncUserModelResponse, error) {
 	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -318,6 +290,7 @@ func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.
 	}, nil
 }
 
+// TriggerAsyncOrganizationModel triggers a model for a given organization.
 func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationModelRequest) (*modelpb.TriggerAsyncOrganizationModelResponse, error) {
 	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -334,6 +307,7 @@ func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *
 	}, nil
 }
 
+// TriggerAsyncUserLatestModel triggers a model for a given user.
 func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *modelpb.TriggerAsyncUserLatestModelRequest) (*modelpb.TriggerAsyncUserLatestModelResponse, error) {
 	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -349,6 +323,7 @@ func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *mo
 	}, nil
 }
 
+// TriggerAsyncOrganizationLatestModel triggers a model for a given organization.
 func (h *PublicHandler) TriggerAsyncOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationLatestModelRequest) (*modelpb.TriggerAsyncOrganizationLatestModelResponse, error) {
 	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -364,6 +339,7 @@ func (h *PublicHandler) TriggerAsyncOrganizationLatestModel(ctx context.Context,
 	}, nil
 }
 
+// TriggerAsyncNamespaceModelRequestInterface is an interface for triggering a namespace model.
 type TriggerAsyncNamespaceModelRequestInterface interface {
 	protoreflect.ProtoMessage
 	GetNamespaceId() string
@@ -372,6 +348,7 @@ type TriggerAsyncNamespaceModelRequestInterface interface {
 	GetTaskInputs() []*structpb.Struct
 }
 
+// TriggerAsyncNamespaceModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
@@ -383,6 +360,7 @@ func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *mod
 	return resp, err
 }
 
+// TriggerAsyncNamespaceLatestModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceLatestModelRequest) (resp *modelpb.TriggerAsyncNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceLatestModelResponse{}
 
@@ -402,42 +380,30 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 
 func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req TriggerAsyncNamespaceModelRequestInterface) (operation *longrunningpb.Operation, err error) {
 
-	eventName := "TriggerAsyncNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	startTime := time.Now()
-	logUUID, _ := uuid.NewV4()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	modelDef, err := h.service.GetRepository().GetModelDefinition(modelDefID)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -456,6 +422,8 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 	}
+
+	logUUID, _ := uuid.NewV4()
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
@@ -502,12 +470,10 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	if len(req.GetTaskInputs()) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
-			span.SetStatus(1, err.Error())
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if !doSupportBatch {
-			span.SetStatus(1, "The model do not support batching, so could not make inference with multiple images")
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			return nil, status.Error(codes.InvalidArgument, "The model do not support batching, so could not make inference with multiple images")
 		}
@@ -522,29 +488,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"ray server",
-			"",
-			"",
-			err.Error(),
-		)
+		var st *status.Status
 		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"ray server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
+			st = status.New(codes.ResourceExhausted, "inference model error: Out of memory for running the model, maybe try with smaller batch size")
+		} else {
+			st = status.New(codes.FailedPrecondition, fmt.Sprintf("inference model error: %s", err.Error()))
 		}
-
-		if e != nil {
-			logger.Error(e.Error())
-		}
-		span.SetStatus(1, st.Err().Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, st.Err()
 	}
@@ -564,26 +513,18 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
+	logger.Info("TriggerNamespaceModel",
+		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
+		zap.String("eventMessage", "TriggerNamespaceModel done"),
+	)
 
 	return operation, nil
 }
 
+// HandleTriggerMultipartForm handles the multipart form request.
 func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 
 	startTime := time.Now()
-	eventName := "HandleTriggerMultipartForm"
-
-	ctx, span := tracer.Start(req.Context(), eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	// inject header into ctx
 	headers := map[string]string{}
@@ -594,18 +535,15 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		}
 	}
 	md := metadata.New(headers)
-	ctx = metadata.NewIncomingContext(ctx, md)
+	ctx := metadata.NewIncomingContext(context.Background(), md)
 
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	contentType := req.Header.Get("Content-Type")
 
 	if !strings.Contains(contentType, "multipart/form-data") {
 		w.Header().Add("Content-Type", "application/json+problem")
 		w.WriteHeader(405)
-		span.SetStatus(1, "")
 		return
 	}
 
@@ -615,11 +553,9 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		switch sta.Code() {
 		case codes.NotFound:
 			makeJSONResponse(w, 404, "Not found", "User not found")
-			span.SetStatus(1, "User not found")
 			return
 		default:
 			makeJSONResponse(w, 401, "Unauthorized", "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
-			span.SetStatus(1, "Required parameter 'Instill-User-Uid' or 'owner-id' not found in your header")
 			return
 		}
 	}
@@ -630,7 +566,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	ns, err := s.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		makeJSONResponse(w, 400, "Model path format error", "Model path format error")
-		span.SetStatus(1, "Model path format error")
 		return
 	}
 
@@ -638,13 +573,11 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	if err != nil {
 		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
-		span.SetStatus(1, "The model not found in server")
 		return
 	}
 
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return
 	}
 
@@ -652,7 +585,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	if err != nil {
 		logger.Error(fmt.Sprintf("GetModelDefinition Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model definition not found", "The model definition not found in server")
-		span.SetStatus(1, "The model definition not found in server")
 		return
 	}
 
@@ -663,7 +595,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		if err != nil {
 			logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
 			makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
-			span.SetStatus(1, "The model version not found in server")
 			return
 		}
 	} else {
@@ -671,10 +602,11 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		if err != nil {
 			logger.Error(fmt.Sprintf("GetModelVersion Error: %s", err.Error()))
 			makeJSONResponse(w, 404, "Version not found", "The model version not found in server")
-			span.SetStatus(1, "The model version not found in server")
 			return
 		}
 	}
+
+	logUUID, _ := uuid.NewV4()
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
@@ -694,7 +626,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	err = req.ParseMultipartForm(4 << 20)
 	if err != nil {
 		makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
@@ -707,7 +638,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		unmarshalErr := json.Unmarshal([]byte(v[0]), &b)
 		if unmarshalErr != nil {
 			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading variables from request %w", unmarshalErr))
-			span.SetStatus(1, fmt.Sprint("Error while reading variables from request %w", unmarshalErr))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
@@ -719,7 +649,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		file, err := v[0].Open()
 		if err != nil {
 			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
@@ -728,7 +657,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		byteContainer, err := io.ReadAll(file)
 		if err != nil {
 			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while reading file from request %w", err))
-			span.SetStatus(1, fmt.Sprint("Error while reading file from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
@@ -744,7 +672,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		structVal, err := structpb.NewValue(v)
 		if err != nil {
 			makeJSONResponse(w, 500, "Internal Error", fmt.Sprint("Error while parsing data from request %w", err))
-			span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
 			_ = s.WriteNewDataPoint(ctx, usageData)
 			return
@@ -761,7 +688,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	inputJSON, err := json.Marshal(inputReq)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parser input error", err.Error())
-		span.SetStatus(1, err.Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
@@ -771,8 +697,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		logger.Error("CreateModelRun in DB failed", zap.String("TriggerUID", logUUID.String()), zap.Error(err))
-		makeJSONResponse(w, 500, "CreateModelRun in DB failedd", "CreateModelRun in DB failed")
-		span.SetStatus(1, "CreateModelRun in DB failed")
+		makeJSONResponse(w, 500, "CreateModelRun in DB failed", "CreateModelRun in DB failed")
 		return
 	}
 
@@ -790,7 +715,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	data.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
 	if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], data, false); err != nil {
 		makeJSONResponse(w, 400, "Invalid argument", fmt.Sprint("Error while parsing data from request %w", err))
-		span.SetStatus(1, fmt.Sprint("Error while parsing data from request %w", err))
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
@@ -799,31 +723,14 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	var response []*structpb.Struct
 	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.FailedPrecondition,
-			fmt.Sprintf("[handler] inference model error: %s", err.Error()),
-			"Ray inference server",
-			"",
-			"",
-			err.Error(),
-		)
+		var st *status.Status
 		if strings.Contains(err.Error(), "Failed to allocate memory") {
-			st, e = sterr.CreateErrorResourceInfo(
-				codes.ResourceExhausted,
-				"[handler] inference model error",
-				"Ray inference server OOM",
-				"Out of memory for running the model, maybe try with smaller batch size",
-				"",
-				err.Error(),
-			)
-		}
-
-		if e != nil {
-			logger.Error(e.Error())
+			st = status.New(codes.ResourceExhausted, "inference model error: Out of memory for running the model, maybe try with smaller batch size")
+		} else {
+			st = status.New(codes.FailedPrecondition, fmt.Sprintf("inference model error: %s", err.Error()))
 		}
 		obj, _ := json.Marshal(st.Details())
 		makeJSONResponse(w, 500, st.Message(), string(obj))
-		span.SetStatus(1, st.Message())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		_ = s.WriteNewDataPoint(ctx, usageData)
 		return
@@ -831,13 +738,15 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 
 	w.Header().Add("Content-Type", "application/json+problem")
 	w.WriteHeader(200)
-	res, err := utils.MarshalOptions.Marshal(&modelpb.TriggerUserModelBinaryFileUploadResponse{
+	res, err := protojson.MarshalOptions{
+		EmitUnpopulated: true,
+		UseEnumNumbers:  false,
+	}.Marshal(&modelpb.TriggerUserModelBinaryFileUploadResponse{
 		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})
 	if err != nil {
 		makeJSONResponse(w, 500, "Error Predict Model", err.Error())
-		span.SetStatus(1, err.Error())
 		return
 	}
 
@@ -846,14 +755,10 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		logger.Warn("usage and metric data write fail")
 	}
 
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel.Id),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
+	logger.Info("TriggerNamespaceModel",
+		zap.Any("eventResource", pbModel.Id),
+		zap.String("eventMessage", "TriggerNamespaceModel done"),
+	)
 
 	_, _ = w.Write(res)
 }

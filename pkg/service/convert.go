@@ -25,14 +25,15 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/x/constant"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	logx "github.com/instill-ai/x/log"
+	resourcex "github.com/instill-ai/x/resource"
 )
 
 func (s *service) compressProfileImage(profileImage string) (string, error) {
@@ -79,7 +80,7 @@ func (s *service) compressProfileImage(profileImage string) (string, error) {
 }
 
 func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbModel *modelpb.Model) (*datamodel.Model, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	profileImage, err := s.compressProfileImage(pbModel.GetProfileImage())
 	if err != nil {
@@ -148,11 +149,11 @@ func (s *service) PBToDBModel(ctx context.Context, ns resource.Namespace, pbMode
 }
 
 func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefinition, dbModel *datamodel.Model, view modelpb.View, checkPermission bool) (*modelpb.Model, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	ownerName := fmt.Sprintf("%s/%s", dbModel.NamespaceType, dbModel.NamespaceID)
 
-	ctxUserUID := resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
+	ctxUserUID := resourcex.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey)
 
 	profileImage := fmt.Sprintf("%s/v1alpha/%s/models/%s/image", s.instillCoreHost, ownerName, dbModel.ID)
 
@@ -284,7 +285,7 @@ func (s *service) DBToPBModels(ctx context.Context, dbModels []*datamodel.Model,
 }
 
 func (s *service) DBToPBModelDefinition(ctx context.Context, dbModelDefinition *datamodel.ModelDefinition) (*modelpb.ModelDefinition, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	pbModelDefinition := modelpb.ModelDefinition{
 		Name:             fmt.Sprintf("model-definitions/%s", dbModelDefinition.ID),

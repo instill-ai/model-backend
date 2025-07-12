@@ -16,7 +16,6 @@ dev:							## Run dev container
 		echo "Run dev container ${SERVICE_NAME}. To stop it, run \"make stop\"."
 	@docker run -d --rm \
 		-v $(PWD):/${SERVICE_NAME} \
-		-v model-store:/model-store \
 		-p ${SERVICE_PORT}:${SERVICE_PORT} \
 		-p ${PRIVATE_SERVICE_PORT}:${PRIVATE_SERVICE_PORT} \
 		--network instill-network \
@@ -60,8 +59,9 @@ top:							## Display all running service processes
 .PHONY: build-dev
 build-dev: ## Build dev docker image
 	@docker build \
-		--build-arg SERVICE_NAME=${SERVICE_NAME} \
 		--build-arg K6_VERSION=${K6_VERSION} \
+		--build-arg SERVICE_NAME=${SERVICE_NAME} \
+		--build-arg SERVICE_VERSION=dev \
 		-f Dockerfile.dev -t instill/${SERVICE_NAME}:dev .
 
 .PHONY: build-latest

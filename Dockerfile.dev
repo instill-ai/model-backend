@@ -1,6 +1,6 @@
-FROM golang:1.24.2
+FROM golang:1.24.4
 
-ARG SERVICE_NAME
+ARG SERVICE_NAME SERVICE_VERSION
 
 WORKDIR /${SERVICE_NAME}
 
@@ -42,5 +42,8 @@ ENV GOENV=/go/.config/go/env
 RUN mkdir /model-store && chown -R nobody:nogroup /model-store
 
 USER nobody:nogroup
+
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV SERVICE_VERSION=${SERVICE_VERSION}
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]

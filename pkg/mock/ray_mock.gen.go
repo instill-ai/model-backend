@@ -21,7 +21,7 @@ type RayMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcClose          func()
+	funcClose          func() (err error)
 	funcCloseOrigin    string
 	inspectFuncClose   func()
 	afterCloseCounter  uint64
@@ -108,8 +108,14 @@ type mRayMockClose struct {
 type RayMockCloseExpectation struct {
 	mock *RayMock
 
+	results      *RayMockCloseResults
 	returnOrigin string
 	Counter      uint64
+}
+
+// RayMockCloseResults contains results of the Ray.Close
+type RayMockCloseResults struct {
+	err error
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -147,7 +153,7 @@ func (mmClose *mRayMockClose) Inspect(f func()) *mRayMockClose {
 }
 
 // Return sets up results that will be returned by Ray.Close
-func (mmClose *mRayMockClose) Return() *RayMock {
+func (mmClose *mRayMockClose) Return(err error) *RayMock {
 	if mmClose.mock.funcClose != nil {
 		mmClose.mock.t.Fatalf("RayMock.Close mock is already set by Set")
 	}
@@ -155,13 +161,13 @@ func (mmClose *mRayMockClose) Return() *RayMock {
 	if mmClose.defaultExpectation == nil {
 		mmClose.defaultExpectation = &RayMockCloseExpectation{mock: mmClose.mock}
 	}
-
+	mmClose.defaultExpectation.results = &RayMockCloseResults{err}
 	mmClose.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmClose.mock
 }
 
 // Set uses given function f to mock the Ray.Close method
-func (mmClose *mRayMockClose) Set(f func()) *RayMock {
+func (mmClose *mRayMockClose) Set(f func() (err error)) *RayMock {
 	if mmClose.defaultExpectation != nil {
 		mmClose.mock.t.Fatalf("Default expectation is already set for the Ray.Close method")
 	}
@@ -197,7 +203,7 @@ func (mmClose *mRayMockClose) invocationsDone() bool {
 }
 
 // Close implements mm_ray.Ray
-func (mmClose *RayMock) Close() {
+func (mmClose *RayMock) Close() (err error) {
 	mm_atomic.AddUint64(&mmClose.beforeCloseCounter, 1)
 	defer mm_atomic.AddUint64(&mmClose.afterCloseCounter, 1)
 
@@ -210,15 +216,17 @@ func (mmClose *RayMock) Close() {
 	if mmClose.CloseMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmClose.CloseMock.defaultExpectation.Counter, 1)
 
-		return
-
+		mm_results := mmClose.CloseMock.defaultExpectation.results
+		if mm_results == nil {
+			mmClose.t.Fatal("No results are set for the RayMock.Close")
+		}
+		return (*mm_results).err
 	}
 	if mmClose.funcClose != nil {
-		mmClose.funcClose()
-		return
+		return mmClose.funcClose()
 	}
 	mmClose.t.Fatalf("Unexpected call to RayMock.Close.")
-
+	return
 }
 
 // CloseAfterCounter returns a count of finished RayMock.Close invocations

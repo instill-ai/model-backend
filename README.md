@@ -6,11 +6,11 @@
 
 ## Contributing
 
-Please refer to the [Contributing Guidelines](./.github/CONTRIBUTING.md) for more details.
+Please refer to the [Contributing Guidelines](https://github.com/instill-ai/instill-core/blob/main/.github/CONTRIBUTING.md) for more details.
 
-## Community
+## Community support
 
-Please refer to the [community](https://github.com/instill-ai/community) repository.
+Get help by joining our [Discord community](https://discord.gg/sevxWsqpGh) where you can post any questions on our `#ask-for-help` channel.
 
 ## License
 

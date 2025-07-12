@@ -11,7 +11,8 @@ import (
 	client "github.com/influxdata/influxdb-client-go/v2"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/logger"
+
+	logx "github.com/instill-ai/x/log"
 )
 
 // InfluxDB reads and writes time series data from InfluxDB.
@@ -22,7 +23,7 @@ type InfluxDB struct {
 
 // MustNewInfluxDB returns an initialized InfluxDB repository.
 func MustNewInfluxDB(ctx context.Context, debug bool) *InfluxDB {
-	l, _ := logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	opts := client.DefaultOptions()
 	if debug {
@@ -39,10 +40,10 @@ func MustNewInfluxDB(ctx context.Context, debug bool) *InfluxDB {
 		// TODO support TLS
 		creds, err = credentials.NewServerTLSFromFile(config.Config.InfluxDB.HTTPS.Cert, config.Config.InfluxDB.HTTPS.Key)
 		if err != nil {
-			l.With(zap.Error(err)).Fatal("Couldn't initialize InfluxDB client")
+			logger.With(zap.Error(err)).Fatal("Couldn't initialize InfluxDB client")
 		}
 
-		l = l.With(zap.String("influxServer", creds.Info().ServerName))
+		logger = logger.With(zap.String("influxServer", creds.Info().ServerName))
 	}
 
 	db := new(InfluxDB)
@@ -54,25 +55,25 @@ func MustNewInfluxDB(ctx context.Context, debug bool) *InfluxDB {
 
 	bucket, org := config.Config.InfluxDB.Org, config.Config.InfluxDB.Bucket
 	db.api = db.client.WriteAPI(bucket, org)
-	l = l.With(zap.String("bucket", bucket)).
+	logger = logger.With(zap.String("bucket", bucket)).
 		With(zap.String("org", org))
 
 	errChan := db.api.Errors()
 	go func() {
 		for err := range errChan {
-			l.With(zap.Error(err)).Error("Failed to write to InfluxDB bucket")
+			logger.With(zap.Error(err)).Error("Failed to write to InfluxDB bucket")
 		}
 	}()
 
-	l.Info("InfluxDB client initialized")
+	logger.Info("InfluxDB client initialized")
 	if _, err = db.client.Ping(ctx); err != nil {
-		l.With(zap.Error(err)).Warn("Failed to ping InfluxDB")
+		logger.With(zap.Error(err)).Warn("Failed to ping InfluxDB")
 	}
 
 	return db
 }
 
-// Close  cleans up the InfluxDB connections.
+// Close cleans up the InfluxDB connections.
 func (i *InfluxDB) Close() {
 	i.client.Close()
 }
