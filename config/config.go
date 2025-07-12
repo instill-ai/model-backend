@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/instill-ai/x/client"
 	"github.com/instill-ai/x/minio"
+	"github.com/instill-ai/x/temporal"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -32,9 +34,8 @@ type ServerConfig struct {
 		Host               string `koanf:"host"`
 		Port               int    `koanf:"port"`
 	}
-	Debug       bool `koanf:"debug"`
-	MaxDataSize int  `koanf:"maxdatasize"`
-	Workflow    struct {
+	Debug    bool `koanf:"debug"`
+	Workflow struct {
 		MaxWorkflowTimeout int32 `koanf:"maxworkflowtimeout"`
 		MaxWorkflowRetry   int32 `koanf:"maxworkflowretry"`
 		MaxActivityRetry   int32 `koanf:"maxactivityretry"`
@@ -79,29 +80,7 @@ type RayConfig struct {
 	Vram string `koanf:"vram"`
 }
 
-// MgmtBackendConfig related to mgmt-backend
-type MgmtBackendConfig struct {
-	Host        string `koanf:"host"`
-	PrivatePort int    `koanf:"privateport"`
-	PublicPort  int    `koanf:"publicport"`
-	HTTPS       struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
-}
-
-// ArtifactBackendConfig related to artifact-backend
-type ArtifactBackendConfig struct {
-	Host        string `koanf:"host"`
-	PrivatePort int    `koanf:"privateport"`
-	PublicPort  int    `koanf:"publicport"`
-	HTTPS       struct {
-		Cert string `koanf:"cert"`
-		Key  string `koanf:"key"`
-	}
-}
-
-// CacheConfig related to Redis
+// CacheConfig related to cache
 type CacheConfig struct {
 	Redis struct {
 		RedisOptions redis.Options `koanf:"redisoptions"`
@@ -112,32 +91,20 @@ type CacheConfig struct {
 	}
 }
 
+// InitModelConfig related to init model
 type InitModelConfig struct {
 	Path    string `koanf:"path"`
 	Enabled bool   `koanf:"enabled"`
 }
 
-// TemporalConfig related to Temporal
-type TemporalConfig struct {
-	HostPort   string `koanf:"hostport"`
-	Namespace  string `koanf:"namespace"`
-	Retention  string `koanf:"retention"`
-	Ca         string `koanf:"ca"`
-	Cert       string `koanf:"cert"`
-	Key        string `koanf:"key"`
-	ServerName string `koanf:"servername"`
+// OtelCollectorConfig related to OpenTelemetry collector
+type OtelCollectorConfig struct {
+	Enable bool   `koanf:"enable"`
+	Host   string `koanf:"host"`
+	Port   string `koanf:"port"`
 }
 
-// LogConfig related to logging
-type LogConfig struct {
-	External      bool `koanf:"external"`
-	OtelCollector struct {
-		Host string `koanf:"host"`
-		Port string `koanf:"port"`
-	}
-}
-
-// OpenFGA config
+// OpenFGAConfig related to OpenFGA
 type OpenFGAConfig struct {
 	Host    string `koanf:"host"`
 	Port    int    `koanf:"port"`
@@ -148,7 +115,7 @@ type OpenFGAConfig struct {
 	} `koanf:"replica"`
 }
 
-// Registry config
+// RegistryConfig related to registry
 type RegistryConfig struct {
 	Host string `koanf:"host"`
 	Port int    `koanf:"port"`
@@ -172,14 +139,14 @@ type AppConfig struct {
 	Server          ServerConfig          `koanf:"server"`
 	Database        DatabaseConfig        `koanf:"database"`
 	Ray             RayConfig             `koanf:"ray"`
-	MgmtBackend     MgmtBackendConfig     `koanf:"mgmtbackend"`
-	ArtifactBackend ArtifactBackendConfig `koanf:"artifactbackend"`
+	MgmtBackend     client.ServiceConfig  `koanf:"mgmtbackend"`
+	ArtifactBackend client.ServiceConfig  `koanf:"artifactbackend"`
 	Cache           CacheConfig           `koanf:"cache"`
-	Temporal        TemporalConfig        `koanf:"temporal"`
+	Temporal        temporal.ClientConfig `koanf:"temporal"`
 	OpenFGA         OpenFGAConfig         `koanf:"openfga"`
 	Registry        RegistryConfig        `koanf:"registry"`
 	InitModel       InitModelConfig       `koanf:"initmodel"`
-	Log             LogConfig             `koanf:"log"`
+	OtelCollector   OtelCollectorConfig   `koanf:"otelcollector"`
 	Minio           minio.Config          `koanf:"minio"`
 	InfluxDB        InfluxDBConfig        `koanf:"influxdb"`
 }

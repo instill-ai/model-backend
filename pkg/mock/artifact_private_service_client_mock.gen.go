@@ -39,6 +39,13 @@ type ArtifactPrivateServiceClientMock struct {
 	beforeGetChatFileCounter uint64
 	GetChatFileMock          mArtifactPrivateServiceClientMockGetChatFile
 
+	funcGetFileAsMarkdown          func(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption) (gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse, err error)
+	funcGetFileAsMarkdownOrigin    string
+	inspectFuncGetFileAsMarkdown   func(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption)
+	afterGetFileAsMarkdownCounter  uint64
+	beforeGetFileAsMarkdownCounter uint64
+	GetFileAsMarkdownMock          mArtifactPrivateServiceClientMockGetFileAsMarkdown
+
 	funcGetObject          func(ctx context.Context, in *mm_artifactv1alpha.GetObjectRequest, opts ...grpc.CallOption) (gp1 *mm_artifactv1alpha.GetObjectResponse, err error)
 	funcGetObjectOrigin    string
 	inspectFuncGetObject   func(ctx context.Context, in *mm_artifactv1alpha.GetObjectRequest, opts ...grpc.CallOption)
@@ -91,6 +98,9 @@ func NewArtifactPrivateServiceClientMock(t minimock.Tester) *ArtifactPrivateServ
 
 	m.GetChatFileMock = mArtifactPrivateServiceClientMockGetChatFile{mock: m}
 	m.GetChatFileMock.callArgs = []*ArtifactPrivateServiceClientMockGetChatFileParams{}
+
+	m.GetFileAsMarkdownMock = mArtifactPrivateServiceClientMockGetFileAsMarkdown{mock: m}
+	m.GetFileAsMarkdownMock.callArgs = []*ArtifactPrivateServiceClientMockGetFileAsMarkdownParams{}
 
 	m.GetObjectMock = mArtifactPrivateServiceClientMockGetObject{mock: m}
 	m.GetObjectMock.callArgs = []*ArtifactPrivateServiceClientMockGetObjectParams{}
@@ -1231,6 +1241,380 @@ func (m *ArtifactPrivateServiceClientMock) MinimockGetChatFileInspect() {
 	if !m.GetChatFileMock.invocationsDone() && afterGetChatFileCounter > 0 {
 		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.GetChatFile at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.GetChatFileMock.expectedInvocations), m.GetChatFileMock.expectedInvocationsOrigin, afterGetChatFileCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockGetFileAsMarkdown struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation
+	expectations       []*ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockGetFileAsMarkdownParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation specifies expectation struct of the ArtifactPrivateServiceClient.GetFileAsMarkdown
+type ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockGetFileAsMarkdownParams
+	paramPtrs          *ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockGetFileAsMarkdownResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockGetFileAsMarkdownParams contains parameters of the ArtifactPrivateServiceClient.GetFileAsMarkdown
+type ArtifactPrivateServiceClientMockGetFileAsMarkdownParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.GetFileAsMarkdownRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.GetFileAsMarkdown
+type ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.GetFileAsMarkdownRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockGetFileAsMarkdownResults contains results of the ArtifactPrivateServiceClient.GetFileAsMarkdown
+type ArtifactPrivateServiceClientMockGetFileAsMarkdownResults struct {
+	gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockGetFileAsMarkdownOrigins contains origins of expectations of the ArtifactPrivateServiceClient.GetFileAsMarkdown
+type ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Optional() *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	mmGetFileAsMarkdown.optional = true
+	return mmGetFileAsMarkdown
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Expect(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation == nil {
+		mmGetFileAsMarkdown.defaultExpectation = &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{}
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.paramPtrs != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by ExpectParams functions")
+	}
+
+	mmGetFileAsMarkdown.defaultExpectation.params = &ArtifactPrivateServiceClientMockGetFileAsMarkdownParams{ctx, in, opts}
+	mmGetFileAsMarkdown.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmGetFileAsMarkdown.expectations {
+		if minimock.Equal(e.params, mmGetFileAsMarkdown.defaultExpectation.params) {
+			mmGetFileAsMarkdown.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmGetFileAsMarkdown.defaultExpectation.params)
+		}
+	}
+
+	return mmGetFileAsMarkdown
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation == nil {
+		mmGetFileAsMarkdown.defaultExpectation = &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{}
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.params != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Expect")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.paramPtrs == nil {
+		mmGetFileAsMarkdown.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs{}
+	}
+	mmGetFileAsMarkdown.defaultExpectation.paramPtrs.ctx = &ctx
+	mmGetFileAsMarkdown.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmGetFileAsMarkdown
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) ExpectInParam2(in *mm_artifactv1alpha.GetFileAsMarkdownRequest) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation == nil {
+		mmGetFileAsMarkdown.defaultExpectation = &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{}
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.params != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Expect")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.paramPtrs == nil {
+		mmGetFileAsMarkdown.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs{}
+	}
+	mmGetFileAsMarkdown.defaultExpectation.paramPtrs.in = &in
+	mmGetFileAsMarkdown.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmGetFileAsMarkdown
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation == nil {
+		mmGetFileAsMarkdown.defaultExpectation = &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{}
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.params != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Expect")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation.paramPtrs == nil {
+		mmGetFileAsMarkdown.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockGetFileAsMarkdownParamPtrs{}
+	}
+	mmGetFileAsMarkdown.defaultExpectation.paramPtrs.opts = &opts
+	mmGetFileAsMarkdown.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmGetFileAsMarkdown
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if mmGetFileAsMarkdown.mock.inspectFuncGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.GetFileAsMarkdown")
+	}
+
+	mmGetFileAsMarkdown.mock.inspectFuncGetFileAsMarkdown = f
+
+	return mmGetFileAsMarkdown
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.GetFileAsMarkdown
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Return(gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	if mmGetFileAsMarkdown.defaultExpectation == nil {
+		mmGetFileAsMarkdown.defaultExpectation = &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{mock: mmGetFileAsMarkdown.mock}
+	}
+	mmGetFileAsMarkdown.defaultExpectation.results = &ArtifactPrivateServiceClientMockGetFileAsMarkdownResults{gp1, err}
+	mmGetFileAsMarkdown.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmGetFileAsMarkdown.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.GetFileAsMarkdown method
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Set(f func(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption) (gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmGetFileAsMarkdown.defaultExpectation != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.GetFileAsMarkdown method")
+	}
+
+	if len(mmGetFileAsMarkdown.expectations) > 0 {
+		mmGetFileAsMarkdown.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.GetFileAsMarkdown method")
+	}
+
+	mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown = f
+	mmGetFileAsMarkdown.mock.funcGetFileAsMarkdownOrigin = minimock.CallerInfo(1)
+	return mmGetFileAsMarkdown.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.GetFileAsMarkdown which will trigger the result defined by the following
+// Then helper
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) When(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation {
+	if mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.mock.t.Fatalf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation{
+		mock:               mmGetFileAsMarkdown.mock,
+		params:             &ArtifactPrivateServiceClientMockGetFileAsMarkdownParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmGetFileAsMarkdown.expectations = append(mmGetFileAsMarkdown.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.GetFileAsMarkdown return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockGetFileAsMarkdownExpectation) Then(gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockGetFileAsMarkdownResults{gp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.GetFileAsMarkdown should be invoked
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Times(n uint64) *mArtifactPrivateServiceClientMockGetFileAsMarkdown {
+	if n == 0 {
+		mmGetFileAsMarkdown.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.GetFileAsMarkdown mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmGetFileAsMarkdown.expectedInvocations, n)
+	mmGetFileAsMarkdown.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmGetFileAsMarkdown
+}
+
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) invocationsDone() bool {
+	if len(mmGetFileAsMarkdown.expectations) == 0 && mmGetFileAsMarkdown.defaultExpectation == nil && mmGetFileAsMarkdown.mock.funcGetFileAsMarkdown == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmGetFileAsMarkdown.mock.afterGetFileAsMarkdownCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmGetFileAsMarkdown.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// GetFileAsMarkdown implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmGetFileAsMarkdown *ArtifactPrivateServiceClientMock) GetFileAsMarkdown(ctx context.Context, in *mm_artifactv1alpha.GetFileAsMarkdownRequest, opts ...grpc.CallOption) (gp1 *mm_artifactv1alpha.GetFileAsMarkdownResponse, err error) {
+	mm_atomic.AddUint64(&mmGetFileAsMarkdown.beforeGetFileAsMarkdownCounter, 1)
+	defer mm_atomic.AddUint64(&mmGetFileAsMarkdown.afterGetFileAsMarkdownCounter, 1)
+
+	mmGetFileAsMarkdown.t.Helper()
+
+	if mmGetFileAsMarkdown.inspectFuncGetFileAsMarkdown != nil {
+		mmGetFileAsMarkdown.inspectFuncGetFileAsMarkdown(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockGetFileAsMarkdownParams{ctx, in, opts}
+
+	// Record call args
+	mmGetFileAsMarkdown.GetFileAsMarkdownMock.mutex.Lock()
+	mmGetFileAsMarkdown.GetFileAsMarkdownMock.callArgs = append(mmGetFileAsMarkdown.GetFileAsMarkdownMock.callArgs, &mm_params)
+	mmGetFileAsMarkdown.GetFileAsMarkdownMock.mutex.Unlock()
+
+	for _, e := range mmGetFileAsMarkdown.GetFileAsMarkdownMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.gp1, e.results.err
+		}
+	}
+
+	if mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.Counter, 1)
+		mm_want := mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.params
+		mm_want_ptrs := mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockGetFileAsMarkdownParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmGetFileAsMarkdown.t.Errorf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmGetFileAsMarkdown.t.Errorf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmGetFileAsMarkdown.t.Errorf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmGetFileAsMarkdown.t.Errorf("ArtifactPrivateServiceClientMock.GetFileAsMarkdown got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmGetFileAsMarkdown.GetFileAsMarkdownMock.defaultExpectation.results
+		if mm_results == nil {
+			mmGetFileAsMarkdown.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.GetFileAsMarkdown")
+		}
+		return (*mm_results).gp1, (*mm_results).err
+	}
+	if mmGetFileAsMarkdown.funcGetFileAsMarkdown != nil {
+		return mmGetFileAsMarkdown.funcGetFileAsMarkdown(ctx, in, opts...)
+	}
+	mmGetFileAsMarkdown.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown. %v %v %v", ctx, in, opts)
+	return
+}
+
+// GetFileAsMarkdownAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.GetFileAsMarkdown invocations
+func (mmGetFileAsMarkdown *ArtifactPrivateServiceClientMock) GetFileAsMarkdownAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetFileAsMarkdown.afterGetFileAsMarkdownCounter)
+}
+
+// GetFileAsMarkdownBeforeCounter returns a count of ArtifactPrivateServiceClientMock.GetFileAsMarkdown invocations
+func (mmGetFileAsMarkdown *ArtifactPrivateServiceClientMock) GetFileAsMarkdownBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetFileAsMarkdown.beforeGetFileAsMarkdownCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmGetFileAsMarkdown *mArtifactPrivateServiceClientMockGetFileAsMarkdown) Calls() []*ArtifactPrivateServiceClientMockGetFileAsMarkdownParams {
+	mmGetFileAsMarkdown.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockGetFileAsMarkdownParams, len(mmGetFileAsMarkdown.callArgs))
+	copy(argCopy, mmGetFileAsMarkdown.callArgs)
+
+	mmGetFileAsMarkdown.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockGetFileAsMarkdownDone returns true if the count of the GetFileAsMarkdown invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockGetFileAsMarkdownDone() bool {
+	if m.GetFileAsMarkdownMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.GetFileAsMarkdownMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.GetFileAsMarkdownMock.invocationsDone()
+}
+
+// MinimockGetFileAsMarkdownInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockGetFileAsMarkdownInspect() {
+	for _, e := range m.GetFileAsMarkdownMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterGetFileAsMarkdownCounter := mm_atomic.LoadUint64(&m.afterGetFileAsMarkdownCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.GetFileAsMarkdownMock.defaultExpectation != nil && afterGetFileAsMarkdownCounter < 1 {
+		if m.GetFileAsMarkdownMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown at\n%s", m.GetFileAsMarkdownMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown at\n%s with params: %#v", m.GetFileAsMarkdownMock.defaultExpectation.expectationOrigins.origin, *m.GetFileAsMarkdownMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcGetFileAsMarkdown != nil && afterGetFileAsMarkdownCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.GetFileAsMarkdown at\n%s", m.funcGetFileAsMarkdownOrigin)
+	}
+
+	if !m.GetFileAsMarkdownMock.invocationsDone() && afterGetFileAsMarkdownCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.GetFileAsMarkdown at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.GetFileAsMarkdownMock.expectedInvocations), m.GetFileAsMarkdownMock.expectedInvocationsOrigin, afterGetFileAsMarkdownCounter)
 	}
 }
 
@@ -3114,6 +3498,8 @@ func (m *ArtifactPrivateServiceClientMock) MinimockFinish() {
 
 			m.MinimockGetChatFileInspect()
 
+			m.MinimockGetFileAsMarkdownInspect()
+
 			m.MinimockGetObjectInspect()
 
 			m.MinimockGetObjectURLInspect()
@@ -3149,6 +3535,7 @@ func (m *ArtifactPrivateServiceClientMock) minimockDone() bool {
 		m.MinimockCreateRepositoryTagDone() &&
 		m.MinimockDeleteRepositoryTagDone() &&
 		m.MinimockGetChatFileDone() &&
+		m.MinimockGetFileAsMarkdownDone() &&
 		m.MinimockGetObjectDone() &&
 		m.MinimockGetObjectURLDone() &&
 		m.MinimockGetRepositoryTagDone() &&

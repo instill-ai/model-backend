@@ -18,6 +18,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/resource"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	errorsx "github.com/instill-ai/x/errors"
 	resourcex "github.com/instill-ai/x/resource"
 )
 
@@ -37,19 +38,19 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthorized
 	}
 
 	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), "")).Result()
@@ -91,19 +92,19 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 
 	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNotFound
+		return nil, errorsx.ErrNotFound
 	}
 
 	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
-		return nil, ErrNoPermission
+		return nil, errorsx.ErrUnauthenticated
 	}
 
 	outputWorkflowID, err := s.redisClient.Get(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), version)).Result()

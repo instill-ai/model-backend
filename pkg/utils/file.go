@@ -12,7 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	logx "github.com/instill-ai/x/log"
 )
 
 type ProgressReader struct {
@@ -29,7 +29,7 @@ func NewProgressReader(r io.Reader, filename string) *ProgressReader {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 	return &ProgressReader{
 		r:        r,
 		logger:   logger,

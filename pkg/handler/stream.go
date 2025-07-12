@@ -25,7 +25,7 @@ package handler
 // 	"github.com/instill-ai/model-backend/pkg/utils"
 // 	"github.com/instill-ai/x/sterr"
 
-// 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+// 	logx "github.com/instill-ai/x/log"
 // 	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 // 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 // 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"

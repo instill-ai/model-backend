@@ -3,11 +3,11 @@ package handler
 import (
 	"context"
 
-	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/model-backend/pkg/service"
+	"github.com/instill-ai/x/constant"
 
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	errorsx "github.com/instill-ai/x/errors"
+	resourcex "github.com/instill-ai/x/resource"
 )
 
 func parseView(view modelpb.View) modelpb.View {
@@ -18,17 +18,17 @@ func parseView(view modelpb.View) modelpb.View {
 }
 
 func authenticateUser(ctx context.Context, allowVisitor bool) error {
-	if resource.GetRequestSingleHeader(ctx, constant.HeaderAuthTypeKey) == "user" {
-		if resource.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey) == "" {
-			return service.ErrUnauthenticated
+	if resourcex.GetRequestSingleHeader(ctx, constant.HeaderAuthTypeKey) == "user" {
+		if resourcex.GetRequestSingleHeader(ctx, constant.HeaderUserUIDKey) == "" {
+			return errorsx.ErrUnauthenticated
 		}
 		return nil
 	} else {
 		if !allowVisitor {
-			return service.ErrUnauthenticated
+			return errorsx.ErrUnauthenticated
 		}
-		if resource.GetRequestSingleHeader(ctx, constant.HeaderVisitorUIDKey) == "" {
-			return service.ErrUnauthenticated
+		if resourcex.GetRequestSingleHeader(ctx, constant.HeaderVisitorUIDKey) == "" {
+			return errorsx.ErrUnauthenticated
 		}
 		return nil
 	}

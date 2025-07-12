@@ -12,7 +12,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,9 +24,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/checkfield"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	errorsx "github.com/instill-ai/x/errors"
 )
 
 func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string) {
@@ -41,20 +39,10 @@ func makeJSONResponse(w http.ResponseWriter, st int, title string, detail string
 	_, _ = w.Write(obj)
 }
 
+// ListModels lists the models for a given user.
 func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsRequest) (*modelpb.ListModelsResponse, error) {
 
-	eventName := "ListModels"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.ListModelsResponse{}, err
 	}
 
@@ -73,36 +61,25 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsR
 		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
 	}...)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.ListModelsResponse{}, err
 	}
 
 	filter, err := filtering.ParseFilter(req, declarations)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.ListModelsResponse{}, err
 	}
 	visibility := req.GetVisibility()
 
 	orderBy, err := ordering.ParseOrderBy(req)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.ListModelsResponse{}, err
 	}
 
-	pbModels, totalSize, nextPageToken, err := h.service.ListModels(ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
+	pbModels, totalSize, nextPageToken, err := h.service.ListModels(
+		ctx, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.ListModelsResponse{}, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	resp := modelpb.ListModelsResponse{
 		Models:        pbModels,
@@ -113,6 +90,7 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsR
 	return &resp, nil
 }
 
+// CreateUserModel creates a model for a given user.
 func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.CreateUserModelRequest) (resp *modelpb.CreateUserModelResponse, err error) {
 	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
@@ -125,6 +103,7 @@ func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.Create
 	return &modelpb.CreateUserModelResponse{Model: r.Model}, nil
 }
 
+// CreateOrganizationModel creates a model for a given organization.
 func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelpb.CreateOrganizationModelRequest) (resp *modelpb.CreateOrganizationModelResponse, err error) {
 	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
@@ -137,86 +116,89 @@ func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelp
 	return &modelpb.CreateOrganizationModelResponse{Model: r.Model}, nil
 }
 
+// CreateNamespaceModel creates a model for a given namespace.
 func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.CreateNamespaceModelRequest) (*modelpb.CreateNamespaceModelResponse, error) {
-
-	ctx, span := tracer.Start(ctx, "CreateNamespaceModel",
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	modelToCreate := req.GetModel()
 
 	// Set all OUTPUT_ONLY fields to zero value on the requested payload model resource
 	if err := checkfield.CheckCreateOutputOnlyFields(modelToCreate, outputOnlyFields); err != nil {
-		span.SetStatus(1, ErrCheckOutputOnlyFields.Error())
-		return nil, ErrCheckOutputOnlyFields
+		return nil, errorsx.ErrCheckOutputOnlyFields
 	}
 
 	// Return error if resource ID does not follow RFC-1034
 	if err := checkfield.CheckResourceID(modelToCreate.GetId()); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model spec
 	if err := datamodel.ValidateJSONSchema(datamodel.ModelJSONSchema, modelToCreate, false); err != nil {
-		span.SetStatus(1, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Model spec is invalid %v", err.Error()))
 	}
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if _, err := h.service.GetNamespaceModelByID(ctx, ns, modelToCreate.GetId(), modelpb.View_VIEW_FULL); err == nil {
-		span.SetStatus(1, "Model already existed")
 		return nil, status.Error(codes.AlreadyExists, "Model already existed")
 	}
 
 	if modelToCreate.GetConfiguration() == nil {
-		span.SetStatus(1, "Missing Configuration")
 		return nil, status.Error(codes.InvalidArgument, "Missing Configuration")
 	}
 
 	modelDefinitionID, err := resource.GetDefinitionID(modelToCreate.GetModelDefinition())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	modelDefinition, err := h.service.GetRepository().GetModelDefinition(modelDefinitionID)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	modelSpec := utils.ModelSpec{}
 	if err := json.Unmarshal(modelDefinition.ModelSpec, &modelSpec); err != nil {
-		span.SetStatus(1, "Could not get model schema")
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// validate model configuration
 	if err := datamodel.ValidateJSONSchema(modelSpec.ModelConfigurationSchema, modelToCreate.GetConfiguration(), true); err != nil {
-		span.SetStatus(1, fmt.Sprintf("Model configuration is invalid %v", err.Error()))
 		return nil, status.Errorf(codes.InvalidArgument, "Model configuration is invalid %v", err.Error())
 	}
 
 	switch modelDefinitionID {
 	case "container":
-		return createContainerizedModel(h.service, ctx, ns, modelDefinition, modelToCreate)
+		if err := h.service.CreateNamespaceModel(ctx, ns, modelDefinition, modelToCreate); err != nil {
+			// Manually set the custom header to have a StatusBadRequest http response for REST endpoint
+			if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusBadRequest))); err != nil {
+				return nil, err
+			}
+			return &modelpb.CreateNamespaceModelResponse{}, err
+		}
+
+		modelToCreate, _ = h.service.GetNamespaceModelByID(ctx, ns, modelToCreate.GetId(), modelpb.View_VIEW_FULL)
+
+		// Manually set the custom header to have a StatusCreated http response for REST endpoint
+		if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusCreated))); err != nil {
+			return nil, err
+		}
+
+		return &modelpb.CreateNamespaceModelResponse{
+			Model: modelToCreate,
+		}, nil
 	default:
-		span.SetStatus(1, fmt.Sprintf("model definition %v is not supported", modelDefinitionID))
 		return nil, status.Errorf(codes.InvalidArgument, "model definition %v is not supported", modelDefinitionID)
 	}
 }
 
+// ListUserModels lists the models for a given user.
 func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelpb.ListUserModelsRequest) (resp *modelpb.ListUserModelsResponse, err error) {
 	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
@@ -238,6 +220,7 @@ func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelpb.ListUse
 	}, nil
 }
 
+// ListOrganizationModels lists the models for a given organization.
 func (h *PublicHandler) ListOrganizationModels(ctx context.Context, req *modelpb.ListOrganizationModelsRequest) (resp *modelpb.ListOrganizationModelsResponse, err error) {
 	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
 		NamespaceId: strings.Split(req.Parent, "/")[1],
@@ -259,26 +242,15 @@ func (h *PublicHandler) ListOrganizationModels(ctx context.Context, req *modelpb
 	}, nil
 }
 
+// ListNamespaceModels lists the models for a given namespace.
 func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.ListNamespaceModelsRequest) (*modelpb.ListNamespaceModelsResponse, error) {
-
-	eventName := "ListNamespaceModels"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
@@ -297,36 +269,24 @@ func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.Li
 		filtering.DeclareIdent("updateTime", filtering.TypeTimestamp),
 	}...)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	filter, err := filtering.ParseFilter(req, declarations)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	visibility := req.GetVisibility()
 
 	orderBy, err := ordering.ParseOrderBy(req)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	pbModels, totalSize, nextPageToken, err := h.service.ListNamespaceModels(ctx, ns, req.GetPageSize(), req.GetPageToken(), parseView(req.GetView()), &visibility, filter, req.GetShowDeleted(), orderBy)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.ListNamespaceModelsResponse{
 		Models:        pbModels,
@@ -335,6 +295,7 @@ func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.Li
 	}, nil
 }
 
+// ListUserModelVersions lists the model versions for a given user.
 func (h *PublicHandler) ListUserModelVersions(ctx context.Context, req *modelpb.ListUserModelVersionsRequest) (resp *modelpb.ListUserModelVersionsResponse, err error) {
 	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -354,6 +315,7 @@ func (h *PublicHandler) ListUserModelVersions(ctx context.Context, req *modelpb.
 	}, nil
 }
 
+// ListOrganizationModelVersions lists the model versions for a given organization.
 func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *modelpb.ListOrganizationModelVersionsRequest) (resp *modelpb.ListOrganizationModelVersionsResponse, err error) {
 	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -373,42 +335,22 @@ func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *
 	}, nil
 }
 
+// ListNamespaceModelVersions lists the model versions for a given namespace.
 func (h *PublicHandler) ListNamespaceModelVersions(ctx context.Context, req *modelpb.ListNamespaceModelVersionsRequest) (resp *modelpb.ListNamespaceModelVersionsResponse, err error) {
-
-	eventName := "ListNamespaceModelVersions"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	pbModelVersions, totalSize, pageSize, page, err := h.service.ListNamespaceModelVersions(ctx, ns, req.GetPage(), req.GetPageSize(), req.ModelId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.ListNamespaceModelVersionsResponse{
 		Versions:  pbModelVersions,
@@ -418,6 +360,7 @@ func (h *PublicHandler) ListNamespaceModelVersions(ctx context.Context, req *mod
 	}, nil
 }
 
+// DeleteUserModelVersion deletes a model version for a given user.
 func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb.DeleteUserModelVersionRequest) (*modelpb.DeleteUserModelVersionResponse, error) {
 	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -431,6 +374,7 @@ func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb
 	return &modelpb.DeleteUserModelVersionResponse{}, nil
 }
 
+// DeleteOrganizationModelVersion deletes a model version for a given organization.
 func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req *modelpb.DeleteOrganizationModelVersionRequest) (*modelpb.DeleteOrganizationModelVersionResponse, error) {
 	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -444,88 +388,51 @@ func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req 
 	return &modelpb.DeleteOrganizationModelVersionResponse{}, nil
 }
 
+// DeleteNamespaceModelVersion deletes a model version for a given namespace.
 func (h *PublicHandler) DeleteNamespaceModelVersion(ctx context.Context, req *modelpb.DeleteNamespaceModelVersionRequest) (*modelpb.DeleteNamespaceModelVersionResponse, error) {
-	eventName := "DeleteNamespaceModelVersion"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := h.service.DeleteModelVersionByID(ctx, ns, req.ModelId, req.GetVersion()); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.DeleteNamespaceModelVersionResponse{}, nil
 }
 
+// LookUpModel looks up a model by permalink.
 func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelpb.LookUpModelRequest) (*modelpb.LookUpModelResponse, error) {
-
-	eventName := "LookUpModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.LookUpModelResponse{}, err
 	}
 
 	pbModel, err := h.service.GetModelByUID(ctx, modelUID, parseView(req.GetView()))
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return &modelpb.LookUpModelResponse{}, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.LookUpModelResponse{Model: pbModel}, nil
 }
 
+// GetUserModel gets a model by name for a given user.
 type GetNamespaceModelRequestInterface interface {
 	GetName() string
 	GetView() modelpb.View
 }
 
+// GetUserModel gets a model by name for a given user.
 func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelpb.GetUserModelRequest) (*modelpb.GetUserModelResponse, error) {
 	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -541,6 +448,7 @@ func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelpb.GetUserMo
 	}, nil
 }
 
+// GetOrganizationModel gets a model by name for a given organization.
 func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelpb.GetOrganizationModelRequest) (*modelpb.GetOrganizationModelResponse, error) {
 	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -556,46 +464,26 @@ func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelpb.G
 	}, nil
 }
 
+// GetNamespaceModel gets a model by name for a given namespace.
 func (h *PublicHandler) GetNamespaceModel(ctx context.Context, req *modelpb.GetNamespaceModelRequest) (*modelpb.GetNamespaceModelResponse, error) {
-
-	eventName := "GetNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.ModelId, parseView(req.GetView()))
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel.Id),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.GetNamespaceModelResponse{Model: pbModel}, err
 }
 
+// UpdateUserModel updates a model for a given user.
 func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.UpdateUserModelRequest) (*modelpb.UpdateUserModelResponse, error) {
 	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Model.Name, "/")[1],
@@ -612,6 +500,7 @@ func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.Update
 	}, nil
 }
 
+// UpdateOrganizationModel updates a model for a given organization.
 func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelpb.UpdateOrganizationModelRequest) (*modelpb.UpdateOrganizationModelResponse, error) {
 	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Model.Name, "/")[1],
@@ -628,25 +517,14 @@ func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelp
 	}, nil
 }
 
+// UpdateNamespaceModel updates a model for a given namespace.
 func (h *PublicHandler) UpdateNamespaceModel(ctx context.Context, req *modelpb.UpdateNamespaceModelRequest) (*modelpb.UpdateNamespaceModelResponse, error) {
-
-	eventName := "UpdateNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
@@ -665,61 +543,49 @@ func (h *PublicHandler) UpdateNamespaceModel(ctx context.Context, req *modelpb.U
 
 	getResp, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{NamespaceId: req.NamespaceId, ModelId: req.ModelId, View: modelpb.View_VIEW_FULL.Enum()})
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	pbModelToUpdate := getResp.GetModel()
 
 	pbUpdateMask, err = checkfield.CheckUpdateOutputOnlyFields(pbUpdateMask, outputOnlyFields)
 	if err != nil {
-		span.SetStatus(1, ErrCheckOutputOnlyFields.Error())
-		return nil, ErrCheckOutputOnlyFields
+		return nil, errorsx.ErrCheckOutputOnlyFields
 	}
 
 	mask, err := fieldmask_utils.MaskFromProtoFieldMask(pbUpdateMask, strcase.ToCamel)
 	if err != nil {
-		span.SetStatus(1, ErrFieldMask.Error())
-		return nil, ErrFieldMask
+		return nil, errorsx.ErrFieldMask
 	}
 
 	if mask.IsEmpty() {
-		return nil, ErrUpdateMask
+		return nil, errorsx.ErrUpdateMask
 	}
 
 	// Return error if IMMUTABLE fields are intentionally changed
 	if err := checkfield.CheckUpdateImmutableFields(pbModel, pbModelToUpdate, immutableFields); err != nil {
-		span.SetStatus(1, ErrCheckUpdateImmutableFields.Error())
-		return nil, ErrCheckUpdateImmutableFields
+		return nil, errorsx.ErrCheckUpdateImmutableFields
 	}
 
 	// Only the fields mentioned in the field mask will be copied to `pbModelToUpdate`, other fields are left intact
 	err = fieldmask_utils.StructToStruct(mask, pbModel, pbModelToUpdate)
 	if err != nil {
-		span.SetStatus(1, ErrFieldMask.Error())
-		return nil, ErrFieldMask
+		return nil, errorsx.ErrFieldMask
 	}
 
 	pbUpdatedModel, err := h.service.UpdateNamespaceModelByID(ctx, ns, req.ModelId, pbModelToUpdate)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.UpdateNamespaceModelResponse{Model: pbUpdatedModel}, err
 }
 
+// DeleteNamespaceModelRequestInterface is an interface for deleting a namespace model.
 type DeleteNamespaceModelRequestInterface interface {
 	GetName() string
 }
 
+// DeleteUserModel deletes a model for a given user.
 func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelpb.DeleteUserModelRequest) (*modelpb.DeleteUserModelResponse, error) {
 	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -732,6 +598,7 @@ func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelpb.Delete
 	return &modelpb.DeleteUserModelResponse{}, nil
 }
 
+// DeleteOrganizationModel deletes a model for a given organization.
 func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelpb.DeleteOrganizationModelRequest) (*modelpb.DeleteOrganizationModelResponse, error) {
 	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -744,55 +611,36 @@ func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelp
 	return &modelpb.DeleteOrganizationModelResponse{}, nil
 }
 
+// DeleteNamespaceModel deletes a model for a given namespace.
 func (h *PublicHandler) DeleteNamespaceModel(ctx context.Context, req *modelpb.DeleteNamespaceModelRequest) (*modelpb.DeleteNamespaceModelResponse, error) {
-
-	eventName := "DeleteNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	// Manually set the custom header to have a StatusNoContent http response for REST endpoint
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusNoContent))); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	if err := h.service.DeleteNamespaceModelByID(ctx, ns, req.ModelId); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done. resource id: %s", eventName, req.ModelId)),
-	)))
 
 	return &modelpb.DeleteNamespaceModelResponse{}, nil
 }
 
+// RenameNamespaceModelRequestInterface is an interface for renaming a namespace model.
 type RenameNamespaceModelRequestInterface interface {
 	GetName() string
 	GetNewModelId() string
 }
 
+// RenameUserModel renames a model for a given user.
 func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelpb.RenameUserModelRequest) (*modelpb.RenameUserModelResponse, error) {
 	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -806,6 +654,7 @@ func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelpb.Rename
 	return &modelpb.RenameUserModelResponse{Model: r.Model}, nil
 }
 
+// RenameOrganizationModel renames a model for a given organization.
 func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelpb.RenameOrganizationModelRequest) (*modelpb.RenameOrganizationModelResponse, error) {
 	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -819,46 +668,26 @@ func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelp
 	return &modelpb.RenameOrganizationModelResponse{Model: r.Model}, nil
 }
 
+// RenameNamespaceModel renames a model for a given namespace.
 func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.RenameNamespaceModelRequest) (*modelpb.RenameNamespaceModelResponse, error) {
-
-	eventName := "RenameNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
 
 	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 	if err := authenticateUser(ctx, false); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, req.ModelId, req.GetNewModelId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventResource(pbModel.Id),
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return &modelpb.RenameNamespaceModelResponse{Model: pbModel}, nil
 }
 
+// WatchUserModel watches a model for a given user.
 func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelpb.WatchUserModelRequest) (*modelpb.WatchUserModelResponse, error) {
 	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -875,6 +704,7 @@ func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelpb.WatchUs
 	}, nil
 }
 
+// WatchOrganizationModel watches a model for a given organization.
 func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelpb.WatchOrganizationModelRequest) (*modelpb.WatchOrganizationModelResponse, error) {
 	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -891,6 +721,7 @@ func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelpb
 	}, nil
 }
 
+// WatchUserLatestModel watches the latest model for a given user.
 func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.WatchUserLatestModelRequest) (*modelpb.WatchUserLatestModelResponse, error) {
 	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -906,6 +737,7 @@ func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.W
 	}, nil
 }
 
+// WatchOrganizationLatestModel watches the latest model for a given organization.
 func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *modelpb.WatchOrganizationLatestModelRequest) (*modelpb.WatchOrganizationLatestModelResponse, error) {
 	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
 		NamespaceId: strings.Split(req.Name, "/")[1],
@@ -921,12 +753,14 @@ func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *m
 	}, nil
 }
 
+// WatchNamespaceModelRequestInterface is an interface for watching a namespace model.
 type WatchNamespaceModelRequestInterface interface {
 	GetNamespaceId() string
 	GetModelId() string
 	GetVersion() string
 }
 
+// WatchNamespaceModel watches a model for a given namespace.
 func (h *PublicHandler) WatchNamespaceModel(ctx context.Context, req *modelpb.WatchNamespaceModelRequest) (resp *modelpb.WatchNamespaceModelResponse, err error) {
 	resp = &modelpb.WatchNamespaceModelResponse{}
 
@@ -941,6 +775,7 @@ func (h *PublicHandler) WatchNamespaceModel(ctx context.Context, req *modelpb.Wa
 	return resp, err
 }
 
+// WatchNamespaceLatestModel watches the latest model for a given namespace.
 func (h *PublicHandler) WatchNamespaceLatestModel(ctx context.Context, req *modelpb.WatchNamespaceLatestModelRequest) (resp *modelpb.WatchNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.WatchNamespaceLatestModelResponse{}
 
@@ -956,38 +791,17 @@ func (h *PublicHandler) WatchNamespaceLatestModel(ctx context.Context, req *mode
 
 func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelpb.State, string, error) {
 
-	eventName := "WatchNamespaceModel"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logUUID, _ := uuid.NewV4()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
-		logger.Info(string(custom_otel.NewLogMessage(
-			ctx,
-			span,
-			logUUID.String(),
-			eventName,
-			custom_otel.SetEventResource(req.GetModelId()),
-			custom_otel.SetErrorMessage(err.Error()),
-		)))
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_BASIC)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
@@ -1002,26 +816,14 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 
 	state, message, err := h.service.WatchModel(ctx, ns, req.GetModelId(), versionID)
 	if err != nil {
-		span.SetStatus(1, err.Error())
-		logger.Info(string(custom_otel.NewLogMessage(
-			ctx,
-			span,
-			logUUID.String(),
-			eventName,
-			custom_otel.SetEventResource(req.GetModelId()),
-			custom_otel.SetErrorMessage(err.Error()),
-		)))
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
 	return *state, message, nil
 }
 
+// GetModelDefinition gets a model definition by ID.
 func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelpb.GetModelDefinitionRequest) (*modelpb.GetModelDefinitionResponse, error) {
-
-	ctx, span := tracer.Start(ctx, "GetModelDefinition",
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	pbModelDefinition, err := h.service.GetModelDefinition(ctx, req.ModelDefinitionId)
 	if err != nil {
@@ -1031,11 +833,8 @@ func (h *PublicHandler) GetModelDefinition(ctx context.Context, req *modelpb.Get
 	return &modelpb.GetModelDefinitionResponse{ModelDefinition: pbModelDefinition}, nil
 }
 
+// ListModelDefinitions lists the model definitions.
 func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelpb.ListModelDefinitionsRequest) (*modelpb.ListModelDefinitionsResponse, error) {
-
-	ctx, span := tracer.Start(ctx, "ListModelDefinitions",
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	pbModelDefinitions, totalSize, nextPageToken, err := h.service.ListModelDefinitions(ctx, parseView(req.GetView()), req.GetPageSize(), req.GetPageToken())
 	if err != nil {
@@ -1051,11 +850,8 @@ func (h *PublicHandler) ListModelDefinitions(ctx context.Context, req *modelpb.L
 	return &resp, nil
 }
 
+// ListAvailableRegions lists the available regions.
 func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.ListAvailableRegionsRequest) (*modelpb.ListAvailableRegionsResponse, error) {
-
-	_, span := tracer.Start(ctx, "ListAvailableRegions",
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
 
 	regionsStruct := datamodel.RegionHardwareJSON.Properties.Region.OneOf
 	hardwaresStruct := datamodel.RegionHardwareJSON.AllOf
@@ -1098,18 +894,10 @@ func (h *PublicHandler) ListAvailableRegions(ctx context.Context, req *modelpb.L
 	}, nil
 }
 
+// ListModelRuns lists the model runs.
 func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest) (*modelpb.ListModelRunsResponse, error) {
 
-	eventName := "ListModelRuns"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
@@ -1133,51 +921,23 @@ func (h *PublicHandler) ListModelRuns(ctx context.Context, req *modelpb.ListMode
 
 	resp, err := h.service.ListModelRuns(ctx, req, filter)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logUUID, _ := uuid.NewV4()
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return resp, nil
 }
 
+// ListModelRunsByRequester lists the model runs by requester.
 func (h *PublicHandler) ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error) {
 
-	eventName := "ListModelRunsByRequester"
-
-	ctx, span := tracer.Start(ctx, eventName,
-		trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
 	if err := authenticateUser(ctx, true); err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
 
 	resp, err := h.service.ListModelRunsByRequester(ctx, req)
 	if err != nil {
-		span.SetStatus(1, err.Error())
 		return nil, err
 	}
-
-	logUUID, _ := uuid.NewV4()
-	logger.Info(string(custom_otel.NewLogMessage(
-		ctx,
-		span,
-		logUUID.String(),
-		eventName,
-		custom_otel.SetEventMessage(fmt.Sprintf("%s done", eventName)),
-	)))
 
 	return resp, nil
 }

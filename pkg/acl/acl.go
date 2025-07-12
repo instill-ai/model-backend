@@ -18,10 +18,12 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/instill-ai/model-backend/pkg/resource"
+	"github.com/instill-ai/x/client"
+	"github.com/instill-ai/x/constant"
+	"github.com/instill-ai/x/resource"
 )
 
+// ACLClientInterface is an interface for the ACL client.
 type ACLClientInterface interface {
 	SetOwner(ctx context.Context, objectType string, objectUID uuid.UUID, ownerType string, ownerUID uuid.UUID) error
 	SetModelPermission(ctx context.Context, modelUID uuid.UUID, user, role string, enable bool) error
@@ -34,6 +36,7 @@ type ACLClientInterface interface {
 	ListPermissions(ctx context.Context, objectType string, role string, isPublic bool) ([]uuid.UUID, error)
 }
 
+// ACLClient is a client for the ACL.
 type ACLClient struct {
 	writeClient          openfga.OpenFGAServiceClient
 	readClient           openfga.OpenFGAServiceClient
@@ -42,6 +45,7 @@ type ACLClient struct {
 	storeID              string
 }
 
+// Relation is a relation for the ACL.
 type Relation struct {
 	UID      uuid.UUID
 	Relation string
@@ -60,7 +64,7 @@ const (
 	Member Role = "member"
 )
 
-func NewACLClient(wc openfga.OpenFGAServiceClient, rc openfga.OpenFGAServiceClient, redisClient *redis.Client) ACLClient {
+func NewACLClient(wc openfga.OpenFGAServiceClient, rc openfga.OpenFGAServiceClient, redisClient *redis.Client) *ACLClient {
 	if rc == nil {
 		rc = wc
 	}
@@ -78,7 +82,7 @@ func NewACLClient(wc openfga.OpenFGAServiceClient, rc openfga.OpenFGAServiceClie
 	}
 	modelID := modelResp.AuthorizationModels[0].Id
 
-	return ACLClient{
+	return &ACLClient{
 		writeClient:          wc,
 		readClient:           rc,
 		redisClient:          redisClient,
@@ -94,8 +98,8 @@ func InitOpenFGAClient(ctx context.Context, host string, port int) (openfga.Open
 		fmt.Sprintf("%v:%v", host, port),
 		clientDialOpts,
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
-			grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+			grpc.MaxCallRecvMsgSize(client.MaxPayloadSize),
+			grpc.MaxCallSendMsgSize(client.MaxPayloadSize),
 		),
 	)
 	if err != nil {

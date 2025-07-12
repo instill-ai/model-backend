@@ -20,7 +20,7 @@ import (
 	"github.com/instill-ai/model-backend/internal/jsonref"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	logx "github.com/instill-ai/x/log"
 )
 
 // ModelDefJSONSchema represents the ModelDefinition JSON Schema for validating the payload
@@ -122,7 +122,7 @@ func InitJSONSchema(ctx context.Context) {
 		return
 	}
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	compiler := jsonschema.NewCompiler()
 

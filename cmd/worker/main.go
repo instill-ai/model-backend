@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/contrib/opentelemetry"
@@ -17,7 +16,9 @@ import (
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"gorm.io/gorm"
 
+	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	temporalclient "go.temporal.io/sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
@@ -25,24 +26,164 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/x/minio"
 	"github.com/instill-ai/x/temporal"
-	"github.com/instill-ai/x/zapadapter"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
-	customlogger "github.com/instill-ai/model-backend/pkg/logger"
-	customotel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelWorker "github.com/instill-ai/model-backend/pkg/worker"
+	logx "github.com/instill-ai/x/log"
+	miniox "github.com/instill-ai/x/minio"
+	otelx "github.com/instill-ai/x/otel"
 )
 
 var (
 	// These variables might be overridden at buildtime.
-	serviceVersion = "dev"
 	serviceName    = "model-backend-worker"
+	serviceVersion = "dev"
 )
 
-func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
-	logger, _ := customlogger.GetZapLogger(ctx)
+func main() {
+	if err := config.Init(config.ParseConfigFlag()); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Setup all OpenTelemetry components
+	cleanup := otelx.SetupWithCleanup(ctx,
+		otelx.WithServiceName(serviceName),
+		otelx.WithServiceVersion(serviceVersion),
+		otelx.WithHost(config.Config.OtelCollector.Host),
+		otelx.WithPort(config.Config.OtelCollector.Port),
+		otelx.WithCollectorEnable(config.Config.OtelCollector.Enable),
+	)
+	defer cleanup()
+
+	logx.Debug = config.Config.Server.Debug
+	logger, _ := logx.GetZapLogger(ctx)
+	defer func() {
+		// can't handle the error due to https://github.com/uber-go/zap/issues/880
+		_ = logger.Sync()
+	}()
+
+	// Set gRPC logging based on debug mode
+	if config.Config.Server.Debug {
+		grpczap.ReplaceGrpcLoggerV2WithVerbosity(logger, 0) // All logs
+	} else {
+		grpczap.ReplaceGrpcLoggerV2WithVerbosity(logger, 3) // verbosity 3 will avoid [transport] from emitting
+	}
+
+	datamodel.InitJSONSchema(ctx)
+
+	// Initialize all clients
+	redisClient, db, rayService, temporalClient, minioClient, influxDB, closeClients := newClients(ctx, logger)
+	defer closeClients()
+
+	// for only local temporal cluster
+	if config.Config.Temporal.ServerRootCA == "" && config.Config.Temporal.ClientCert == "" && config.Config.Temporal.ClientKey == "" {
+		initTemporalNamespace(ctx, temporalClient, logger)
+	}
+
+	repo := repository.NewRepository(db, redisClient)
+	cw := modelWorker.NewWorker(redisClient, rayService, repo, influxDB.WriteAPI(), minioClient, nil)
+
+	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
+
+	w.RegisterWorkflow(cw.TriggerModelWorkflow)
+	w.RegisterActivity(cw.TriggerModelActivity)
+
+	if err := w.Run(worker.InterruptCh()); err != nil {
+		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
+	}
+}
+
+func newClients(ctx context.Context, logger *zap.Logger) (
+	*redis.Client,
+	*gorm.DB,
+	ray.Ray,
+	temporalclient.Client,
+	miniox.Client,
+	*repository.InfluxDB,
+	func(),
+) {
+	closeFuncs := map[string]func() error{}
+
+	// Initialize database
+	db := database.GetSharedConnection()
+	closeFuncs["database"] = func() error {
+		database.Close(db)
+		return nil
+	}
+
+	// Initialize redis client
+	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
+	closeFuncs["redis"] = redisClient.Close
+
+	// Initialize Ray service
+	rayService := ray.NewRay(redisClient)
+	closeFuncs["ray"] = func() error {
+		rayService.Close()
+		return nil
+	}
+
+	// Initialize Temporal client
+	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
+		Tracer:            otel.Tracer(serviceName + "-temporal"),
+		TextMapPropagator: otel.GetTextMapPropagator(),
+	})
+	if err != nil {
+		logger.Fatal("Unable to create temporal tracing interceptor", zap.Error(err))
+	}
+
+	temporalClientOptions, err := temporal.ClientOptions(config.Config.Temporal, logger)
+	if err != nil {
+		logger.Fatal("Unable to get Temporal client options", zap.Error(err))
+	}
+
+	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
+	temporalClient, err := temporalclient.Dial(temporalClientOptions)
+	if err != nil {
+		logger.Fatal("Unable to create client", zap.Error(err))
+	}
+	closeFuncs["temporal"] = func() error {
+		temporalClient.Close()
+		return nil
+	}
+
+	// Initialize MinIO client
+	retentionHandler := service.NewRetentionHandler()
+	minioClient, err := miniox.NewMinIOClientAndInitBucket(ctx, miniox.ClientParams{
+		Config:      config.Config.Minio,
+		Logger:      logger,
+		ExpiryRules: retentionHandler.ListExpiryRules(),
+		AppInfo: miniox.AppInfo{
+			Name:    serviceName,
+			Version: serviceVersion,
+		},
+	})
+	if err != nil {
+		logger.Fatal("failed to create minio client", zap.Error(err))
+	}
+
+	// Initialize InfluxDB
+	influxDB := repository.MustNewInfluxDB(ctx, config.Config.Server.Debug)
+	closeFuncs["influxDB"] = func() error {
+		influxDB.Close()
+		return nil
+	}
+
+	closer := func() {
+		for conn, fn := range closeFuncs {
+			if err := fn(); err != nil {
+				logger.Error("Failed to close conn", zap.Error(err), zap.String("conn", conn))
+			}
+		}
+	}
+
+	return redisClient, db, rayService, temporalClient, minioClient, influxDB, closer
+}
+
+func initTemporalNamespace(ctx context.Context, client temporalclient.Client, logger *zap.Logger) {
 
 	resp, err := client.WorkflowService().ListNamespaces(ctx, &workflowservice.ListNamespacesRequest{})
 	if err != nil {
@@ -82,118 +223,4 @@ func initTemporalNamespace(ctx context.Context, client temporalclient.Client) {
 			logger.Fatal(fmt.Sprintf("Unable to register namespace: %s", err))
 		}
 	}
-}
-
-func main() {
-
-	if err := config.Init(config.ParseConfigFlag()); err != nil {
-		log.Fatal(err.Error())
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	if tp, err := customotel.SetupTracing(ctx, "model-backend-worker"); err != nil {
-		panic(err)
-	} else {
-		defer func() {
-			err = tp.Shutdown(ctx)
-		}()
-	}
-
-	ctx, span := otel.Tracer("worker-tracer").Start(ctx,
-		"main",
-	)
-	defer cancel()
-
-	logger, _ := customlogger.GetZapLogger(ctx)
-	defer func() {
-		// can't handle the error due to https://github.com/uber-go/zap/issues/880
-		_ = logger.Sync()
-	}()
-
-	datamodel.InitJSONSchema(ctx)
-
-	db := database.GetSharedConnection()
-	defer database.Close(db)
-
-	redisClient := redis.NewClient(&config.Config.Cache.Redis.RedisOptions)
-	defer redisClient.Close()
-
-	rayService := ray.NewRay(redisClient)
-	defer rayService.Close()
-
-	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
-		Tracer:            otel.Tracer("temporal-tracer"),
-		TextMapPropagator: b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader)),
-	})
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to create temporal tracing interceptor: %s", err))
-	}
-
-	var temporalClientOptions temporalclient.Options
-	if config.Config.Temporal.Ca != "" && config.Config.Temporal.Cert != "" && config.Config.Temporal.Key != "" {
-		if temporalClientOptions, err = temporal.GetTLSClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger),
-			config.Config.Temporal.Ca,
-			config.Config.Temporal.Cert,
-			config.Config.Temporal.Key,
-			config.Config.Temporal.ServerName,
-			true,
-		); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	} else {
-		if temporalClientOptions, err = temporal.GetClientOption(
-			config.Config.Temporal.HostPort,
-			config.Config.Temporal.Namespace,
-			zapadapter.NewZapAdapter(logger)); err != nil {
-			logger.Fatal(fmt.Sprintf("Unable to get Temporal client options: %s", err))
-		}
-	}
-
-	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
-	tempClient, err := temporalclient.Dial(temporalClientOptions)
-	if err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to create client: %s", err))
-	}
-	defer tempClient.Close()
-
-	// for only local temporal cluster
-	if config.Config.Temporal.Ca == "" && config.Config.Temporal.Cert == "" && config.Config.Temporal.Key == "" {
-		initTemporalNamespace(ctx, tempClient)
-	}
-
-	// Initialize MinIO client
-	retentionHandler := service.NewRetentionHandler()
-	minioClient, err := minio.NewMinIOClientAndInitBucket(ctx, minio.ClientParams{
-		Config:      config.Config.Minio,
-		Logger:      logger,
-		ExpiryRules: retentionHandler.ListExpiryRules(),
-		AppInfo: minio.AppInfo{
-			Name:    serviceName,
-			Version: serviceVersion,
-		},
-	})
-	if err != nil {
-		logger.Fatal("failed to create minio client", zap.Error(err))
-	}
-
-	repo := repository.NewRepository(db, redisClient)
-	timeseries := repository.MustNewInfluxDB(ctx, config.Config.Server.Debug)
-	defer timeseries.Close()
-
-	cw := modelWorker.NewWorker(redisClient, rayService, repo, timeseries.WriteAPI(), minioClient, nil)
-
-	w := worker.New(tempClient, modelWorker.TaskQueue, worker.Options{})
-
-	w.RegisterWorkflow(cw.TriggerModelWorkflow)
-	w.RegisterActivity(cw.TriggerModelActivity)
-
-	span.End()
-	if err := w.Run(worker.InterruptCh()); err != nil {
-		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
-	}
-
 }
