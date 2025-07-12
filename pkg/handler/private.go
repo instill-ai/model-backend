@@ -2,20 +2,19 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"go.einride.tech/aip/filtering"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
-	"github.com/instill-ai/x/sterr"
 
-	artifactv1alpha "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
+	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -127,26 +126,14 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		}
 	}
 
-	if _, err := h.service.GetArtifactPrivateServiceClient().GetRepositoryTag(ctx, &artifactv1alpha.GetRepositoryTagRequest{
+	if _, err := h.service.GetArtifactPrivateServiceClient().GetRepositoryTag(ctx, &artifactpb.GetRepositoryTagRequest{
 		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, req.GetModelId(), version.Version),
 	}); err != nil {
 		return nil, err
 	}
 
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, req.GetModelId(), pbModel.GetHardware(), req.GetVersion(), ray.Deploy); err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] deploy a model error: %s", err.Error()),
-			"ray",
-			"deploy model",
-			"",
-			err.Error(),
-		)
-
-		if e != nil {
-			return nil, errors.New(e.Error())
-		}
-		return nil, st.Err()
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to deploy the model: %s", err.Error()))
 	}
 
 	return &modelpb.DeployNamespaceModelAdminResponse{}, nil
@@ -197,19 +184,7 @@ func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *m
 	}
 
 	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, req.GetModelId(), pbModel.GetHardware(), req.GetVersion(), ray.Undeploy); err != nil {
-		st, e := sterr.CreateErrorResourceInfo(
-			codes.Internal,
-			fmt.Sprintf("[handler] undeploy a model error: %s", err.Error()),
-			"ray",
-			"undeploy model",
-			"",
-			err.Error(),
-		)
-
-		if e != nil {
-			return nil, errors.New(e.Error())
-		}
-		return nil, st.Err()
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to undeploy the model: %s", err.Error()))
 	}
 
 	return &modelpb.UndeployNamespaceModelAdminResponse{}, nil

@@ -13,23 +13,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
-	"github.com/redis/go-redis/v9"
+	"github.com/instill-ai/x/client"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	raypb "github.com/instill-ai/protogen-go/model/ray"
 	rayuserdefinedpb "github.com/instill-ai/protogen-go/model/ray/v1alpha"
-
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+	logx "github.com/instill-ai/x/log"
 )
 
+// Ray is the interface for the Ray service.
 type Ray interface {
 	// grpc
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
@@ -39,7 +39,7 @@ type Ray interface {
 	IsRayReady(ctx context.Context) bool
 	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error
 	Init(rc *redis.Client)
-	Close()
+	Close() error
 }
 
 type ray struct {
@@ -66,15 +66,15 @@ func NewRay(rc *redis.Client) Ray {
 
 func (r *ray) Init(rc *redis.Client) {
 	ctx := context.Background()
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	// Connect to gRPC server
 	conn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", config.Config.Ray.Host, config.Config.Ray.Port.GRPC),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(config.Config.Server.MaxDataSize*constant.MB),
-			grpc.MaxCallSendMsgSize(config.Config.Server.MaxDataSize*constant.MB),
+			grpc.MaxCallRecvMsgSize(client.MaxPayloadSize),
+			grpc.MaxCallSendMsgSize(client.MaxPayloadSize),
 		),
 	)
 
@@ -122,7 +122,7 @@ func (r *ray) Init(rc *redis.Client) {
 }
 
 func (r *ray) IsRayReady(ctx context.Context) bool {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	resp, err := r.grpcClient.Healthz(ctx, &raypb.HealthzRequest{})
 	if err != nil {
@@ -139,7 +139,7 @@ func (r *ray) IsRayReady(ctx context.Context) bool {
 
 // ModelReady returns the state of the model
 func (r *ray) ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
 	if err != nil {
@@ -223,7 +223,7 @@ func (r *ray) ModelReady(ctx context.Context, modelName string, version string) 
 }
 
 func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerNamespaceModelRequest, modelName string, version string) (*rayuserdefinedpb.CallResponse, error) {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
 	if err != nil {
@@ -247,7 +247,7 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 }
 
 func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error {
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	var err error
 	applicationMetadataValue := ""
@@ -289,7 +289,7 @@ func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, us
 }
 
 func (r *ray) setHardwareRunOptions(hardware string, numOfGPU string) map[string]string {
-	logger, _ := custom_logger.GetZapLogger(context.Background())
+	logger, _ := logx.GetZapLogger(context.Background())
 
 	envVars := map[string]string{}
 	accelerator, ok := SupportedAcceleratorType[hardware]
@@ -331,7 +331,7 @@ func (r *ray) sync() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 
-		logger, _ := custom_logger.GetZapLogger(ctx)
+		logger, _ := logx.GetZapLogger(ctx)
 
 		if applicationWithAction.Action == UpScale {
 			// this is a pseudo trigger request to invoke model upscale
@@ -435,21 +435,23 @@ func (r *ray) sync() {
 	}
 }
 
-func (r *ray) Close() {
+func (r *ray) Close() error {
 	ctx := context.Background()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 
 	currentConfigFile, err := r.redisClient.Get(
 		ctx,
 		RayDeploymentKey,
 	).Bytes()
+
 	if err != nil {
 		logger.Error(fmt.Sprintf("error while reading deployment config: %v", err))
-	} else {
-		if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
-			logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
-		}
+		return err
+	}
+	if err := os.WriteFile(r.configFilePath, currentConfigFile, 0666); err != nil {
+		logger.Error(fmt.Sprintf("error creating deployment config: %v", err))
+		return err
 	}
 
 	if r.connection != nil {
@@ -457,4 +459,6 @@ func (r *ray) Close() {
 	}
 	close(r.configChan)
 	close(r.doneChan)
+
+	return nil
 }

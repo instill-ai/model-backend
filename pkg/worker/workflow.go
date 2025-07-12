@@ -16,18 +16,18 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/constant"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	"github.com/instill-ai/x/errmsg"
+	"github.com/instill-ai/x/constant"
+	"github.com/instill-ai/x/errors"
 	"github.com/instill-ai/x/minio"
 
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	logx "github.com/instill-ai/x/log"
 )
 
 type InferInput any
@@ -71,7 +71,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	logger, _ := custom_logger.GetZapLogger(sCtx)
+	logger, _ := logx.GetZapLogger(sCtx)
 	logger.Info("TriggerModelWorkflow started")
 
 	var ownerType mgmtpb.OwnerType
@@ -135,7 +135,7 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 			w.writeErrorDataPoint(sCtx, err, span, startTime, usageData)
 		}
 		_ = workflow.UpsertMemo(ctx, map[string]any{
-			"error": fmt.Sprintf("Model %s failed to execute. %s", param.ModelID, errmsg.MessageOrErr(err)),
+			"error": fmt.Sprintf("Model %s failed to execute. %s", param.ModelID, errors.MessageOrErr(err)),
 		})
 
 		logger.Error(w.toApplicationError(err, param.ModelID, ModelWorkflowError).Error())
@@ -166,7 +166,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	logger, _ := custom_logger.GetZapLogger(ctx)
+	logger, _ := logx.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
 	if err = w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
@@ -323,7 +323,7 @@ func (w *worker) toApplicationError(err error, modelID, errType string) error {
 		// If no end-user message is present in the error, MessageOrErr will
 		// return the string version of the error. For an end user, this extra
 		// information is more actionable than no information at all.
-		Message: fmt.Sprintf("Model %s failed to execute. %s", modelID, errmsg.MessageOrErr(err)),
+		Message: fmt.Sprintf("Model %s failed to execute. %s", modelID, errors.MessageOrErr(err)),
 	}
 	return temporal.NewApplicationErrorWithCause("model failed to execute", errType, err, details)
 }

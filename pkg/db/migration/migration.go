@@ -3,11 +3,14 @@ package migration
 import (
 	"context"
 
+	"go.uber.org/zap"
+
+	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/db/migration/convert/convert000008"
-	"github.com/instill-ai/model-backend/pkg/external"
-	"github.com/instill-ai/model-backend/pkg/logger"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
+	grpcclientx "github.com/instill-ai/x/client/grpc"
+	logx "github.com/instill-ai/x/log"
 )
 
 type migration interface {
@@ -27,15 +30,21 @@ func Migrate(version uint) error {
 	switch version {
 	case 8:
 		ctx := context.Background()
-		l, _ := logger.GetZapLogger(ctx)
+		l, _ := logx.GetZapLogger(ctx)
 
 		db := database.GetConnection().WithContext(ctx)
 		defer database.Close(db)
 
-		mgmtPrivateServiceClient, mgmtPrivateServiceClientConn := external.InitMgmtPrivateServiceClient(ctx)
-		if mgmtPrivateServiceClientConn != nil {
-			defer mgmtPrivateServiceClientConn.Close()
+		mgmtPrivateServiceClient, mclose, err := grpcclientx.NewMgmtPrivateClient(config.Config.MgmtBackend)
+		if err != nil {
+			l.Fatal("failed to create mgmt private service client", zap.Error(err))
 		}
+		defer func() {
+			err = mclose()
+			if err != nil {
+				l.Fatal("failed to close mgmt private service client", zap.Error(err))
+			}
+		}()
 
 		m = &convert000008.ModelACLConverter{
 			DB:         db,

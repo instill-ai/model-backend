@@ -12,7 +12,6 @@ server:
     host: usage.instill-ai.com
     port: 443
   debug: true
-  maxdatasize: 1024 # MB in unit
   workflow:
     maxworkflowtimeout: 3600 # in seconds
     maxworkflowretry: 1
@@ -62,18 +61,19 @@ temporal:
   hostport: temporal:7233
   namespace: model-backend
   retention: 1d
-  ca:
-  cert:
-  key:
+  metricsport:
   servername:
+  serverrootca:
+  clientcert:
+  clientkey:
+  insecureskipverify:
 initmodel:
   enabled: false
   path:
-log:
-  external: false
-  otelcollector:
-    host: otel-collector
-    port: 8095
+otelcollector:
+  enable: false
+  host: otel-collector
+  port: 4317
 openfga:
   host: openfga
   port: 8081

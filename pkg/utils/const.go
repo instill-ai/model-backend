@@ -1,19 +1,6 @@
 package utils
 
-import (
-	"google.golang.org/protobuf/encoding/protojson"
-)
-
 const MaxBatchSize int = 32
-
-var MarshalOptions protojson.MarshalOptions = protojson.MarshalOptions{
-	EmitUnpopulated: true,
-	UseEnumNumbers:  false,
-}
-
-var UnmarshalOptions protojson.UnmarshalOptions = protojson.UnmarshalOptions{
-	DiscardUnknown: true,
-}
 
 const DefaultPageSize = 10
 

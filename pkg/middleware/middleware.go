@@ -8,18 +8,21 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 )
 
 type fn func(service.Service, repository.Repository, http.ResponseWriter, *http.Request, map[string]string)
 
+// AppendCustomHeaderMiddleware appends custom header to the response.
 func AppendCustomHeaderMiddleware(s service.Service, repo repository.Repository, next fn) runtime.HandlerFunc {
 	return runtime.HandlerFunc(func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		next(s, repo, w, r, pathParams)
 	})
 }
 
+// HandleProfileImage handles the profile image request.
 func HandleProfileImage(s service.Service, r repository.Repository, w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 	ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
 	defer cancel()

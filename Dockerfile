@@ -1,4 +1,4 @@
-ARG GOLANG_VERSION=1.24.2
+ARG GOLANG_VERSION=1.24.4
 FROM golang:${GOLANG_VERSION} AS build
 
 WORKDIR /build
@@ -36,7 +36,7 @@ RUN --mount=type=bind,target=. \
 RUN --mount=type=bind,target=. \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH \    
+    GOOS=$TARGETOS CGO_ENABLED=0 GOARCH=$TARGETARCH \
     go build -ldflags "-X main.serviceVersion=${SERVICE_VERSION} -X main.serviceName=${SERVICE_NAME}-init-model" \
     -o /${SERVICE_NAME}-init-model ./cmd/initmodel
 

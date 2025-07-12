@@ -18,7 +18,7 @@ package handler
 // 	"github.com/instill-ai/model-backend/pkg/ray"
 // 	"github.com/instill-ai/model-backend/pkg/utils"
 
-// 	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
+// 	logx "github.com/instill-ai/x/log"
 // )
 
 // func parseImageFormDataInputsToBytes(req *http.Request) (imgsBytes [][]byte, err error) {

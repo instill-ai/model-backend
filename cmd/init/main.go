@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"log"
 
-	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+
+	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	databaseInit "github.com/instill-ai/model-backend/pkg/init"
-	custom_logger "github.com/instill-ai/model-backend/pkg/logger"
-	custom_otel "github.com/instill-ai/model-backend/pkg/logger/otel"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	logx "github.com/instill-ai/x/log"
 )
 
 func createModelDefinition(db *gorm.DB, modelDef *modelpb.ModelDefinition) error {
@@ -42,29 +42,25 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	// setup tracing
-	ctx, cancel := context.WithCancel(context.Background())
+	logx.Debug = config.Config.Server.Debug
+	logger, _ := logx.GetZapLogger(context.Background())
+	defer func() {
+		// can't handle the error due to https://github.com/uber-go/zap/issues/880
+		_ = logger.Sync()
+	}()
 
-	if tp, err := custom_otel.SetupTracing(ctx, "model-backend-init"); err != nil {
-		panic(err)
+	// Set gRPC logging based on debug mode
+	if config.Config.Server.Debug {
+		grpczap.ReplaceGrpcLoggerV2WithVerbosity(logger, 0) // All logs
 	} else {
-		defer func() {
-			err = tp.Shutdown(ctx)
-		}()
+		grpczap.ReplaceGrpcLoggerV2WithVerbosity(logger, 3) // verbosity 3 will avoid [transport] from emitting
 	}
 
-	ctx, span := otel.Tracer("init-tracer").Start(ctx,
-		"main",
-	)
-	defer span.End()
-	defer cancel()
-
-	logger, _ := custom_logger.GetZapLogger(ctx)
-
+	// Initialize OpenTelemetry tracing
 	db := database.GetConnection()
 	defer database.Close(db)
 
-	datamodel.InitJSONSchema(ctx)
+	datamodel.InitJSONSchema(context.Background())
 
 	modelDefs := []*modelpb.ModelDefinition{}
 

@@ -60,8 +60,9 @@ top:							## Display all running service processes
 .PHONY: build-dev
 build-dev: ## Build dev docker image
 	@docker build \
-		--build-arg SERVICE_NAME=${SERVICE_NAME} \
 		--build-arg K6_VERSION=${K6_VERSION} \
+		--build-arg SERVICE_NAME=${SERVICE_NAME} \
+		--build-arg SERVICE_VERSION=dev \
 		-f Dockerfile.dev -t instill/${SERVICE_NAME}:dev .
 
 .PHONY: build-latest

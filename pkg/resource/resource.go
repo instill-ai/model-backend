@@ -40,15 +40,6 @@ func ExtractFromMetadata(ctx context.Context, key string) ([]string, bool) {
 	return data[strings.ToLower(key)], true
 }
 
-// GetRequestSingleHeader get a request header, the header has to be single-value HTTP header
-func GetRequestSingleHeader(ctx context.Context, header string) string {
-	metaHeader := metadata.ValueFromIncomingContext(ctx, strings.ToLower(header))
-	if len(metaHeader) != 1 {
-		return ""
-	}
-	return metaHeader[0]
-}
-
 func GetDefinitionID(name string) (string, error) {
 	id := strings.TrimPrefix(name, "model-definitions/")
 	if !strings.HasPrefix(name, "model-definitions/") || id == "" {
