@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -34,6 +37,9 @@ import (
 	otelx "github.com/instill-ai/x/otel"
 	temporalx "github.com/instill-ai/x/temporal"
 )
+
+const gracefulShutdownWaitPeriod = 15 * time.Second
+const gracefulShutdownTimeout = 60 * time.Minute
 
 var (
 	// These variables might be overridden at buildtime.
@@ -87,7 +93,23 @@ func main() {
 	repo := repository.NewRepository(db, redisClient)
 	cw := modelWorker.NewWorker(redisClient, rayService, repo, influxDB.WriteAPI(), minioClient, nil)
 
-	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{})
+	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{
+		WorkerStopTimeout:                      gracefulShutdownTimeout,
+		MaxConcurrentWorkflowTaskExecutionSize: 100,
+		Interceptors: func() []interceptor.WorkerInterceptor {
+			if !config.Config.OTELCollector.Enable {
+				return nil
+			}
+			workerInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
+				Tracer:            otel.Tracer(serviceName),
+				TextMapPropagator: otel.GetTextMapPropagator(),
+			})
+			if err != nil {
+				logger.Fatal("Unable to create worker tracing interceptor", zap.Error(err))
+			}
+			return []interceptor.WorkerInterceptor{workerInterceptor}
+		}(),
+	})
 
 	w.RegisterWorkflow(cw.TriggerModelWorkflow)
 	w.RegisterActivity(cw.TriggerModelActivity)
@@ -95,6 +117,27 @@ func main() {
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))
 	}
+
+	logger.Info("worker is running.")
+
+	// kill (no param) default send syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+	quitSig := make(chan os.Signal, 1)
+	signal.Notify(quitSig, syscall.SIGINT, syscall.SIGTERM)
+
+	// When the server receives a SIGTERM, we'll try to finish ongoing
+	// workflows. This is because pipeline trigger activities use a shared
+	// in-process memory, which prevents workflows from recovering from
+	// interruptions.
+	// To handle this properly, we should make activities independent of
+	// the shared memory.
+	<-quitSig
+
+	time.Sleep(gracefulShutdownWaitPeriod)
+
+	logger.Info("Shutting down worker...")
+	w.Stop()
 }
 
 func newClients(ctx context.Context, logger *zap.Logger) (
@@ -127,23 +170,26 @@ func newClients(ctx context.Context, logger *zap.Logger) (
 	}
 
 	// Initialize Temporal client
-	temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
-		Tracer:            otel.Tracer(serviceName + "-temporal"),
-		TextMapPropagator: otel.GetTextMapPropagator(),
-	})
-	if err != nil {
-		logger.Fatal("Unable to create temporal tracing interceptor", zap.Error(err))
-	}
-
 	temporalClientOptions, err := temporalx.ClientOptions(config.Config.Temporal, logger)
 	if err != nil {
 		logger.Fatal("Unable to get Temporal client options", zap.Error(err))
 	}
 
-	temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
+	// Only add interceptor if tracing is enabled
+	if config.Config.OTELCollector.Enable {
+		temporalTracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{
+			Tracer:            otel.Tracer(serviceName),
+			TextMapPropagator: otel.GetTextMapPropagator(),
+		})
+		if err != nil {
+			logger.Fatal("Unable to create temporal tracing interceptor", zap.Error(err))
+		}
+		temporalClientOptions.Interceptors = []interceptor.ClientInterceptor{temporalTracingInterceptor}
+	}
+
 	temporalClient, err := temporalclient.Dial(temporalClientOptions)
 	if err != nil {
-		logger.Fatal("Unable to create client", zap.Error(err))
+		logger.Fatal("Unable to create Temporal client", zap.Error(err))
 	}
 	closeFuncs["temporal"] = func() error {
 		temporalClient.Close()
