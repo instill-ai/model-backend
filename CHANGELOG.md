@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.37.0](https://github.com/instill-ai/model-backend/compare/v0.36.1...v0.37.0) (2025-07-16)
+
+
+### Features
+
+* **otel:** integrate OTEL using gRPC interceptor ([#763](https://github.com/instill-ai/model-backend/issues/763)) ([2b479db](https://github.com/instill-ai/model-backend/commit/2b479dbd8c26171c689f290960fea7fbac15bcf7))
+
+
+### Miscellaneous
+
+* release v0.37.0 ([91bca67](https://github.com/instill-ai/model-backend/commit/91bca67bf507eba116309507e290563fa02bcedc))
+
+
+### Refactor
+
+* **config:** remove db version from config file ([#761](https://github.com/instill-ai/model-backend/issues/761)) ([e0b0e8f](https://github.com/instill-ai/model-backend/commit/e0b0e8f6874f12421691b141d5a2e6f15acb3969))
+
 ## [0.36.1](https://github.com/instill-ai/model-backend/compare/v0.36.0...v0.36.1) (2025-07-02)
 
 
