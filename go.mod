@@ -18,7 +18,7 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20250707160902-77023eb2f033
 	github.com/instill-ai/usage-client v0.4.0
-	github.com/instill-ai/x v0.9.0-alpha
+	github.com/instill-ai/x v0.9.0-alpha.0.20250804063509-85de2fb234cc
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/knadh/koanf v1.5.0
 	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c
@@ -34,8 +34,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.einride.tech/aip v0.68.0
 	go.opentelemetry.io/otel v1.37.0
-	go.temporal.io/api v1.49.1
-	go.temporal.io/sdk v1.34.0
+	go.temporal.io/api v1.51.0
+	go.temporal.io/sdk v1.35.0
 	go.temporal.io/sdk/contrib/opentelemetry v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/image v0.19.0
