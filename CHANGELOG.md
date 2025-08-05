@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.1](https://github.com/instill-ai/model-backend/compare/v0.38.0...v0.38.1) (2025-08-05)
+
+
+### Features
+
+* **temporal:** remove Temporal namespace initialization ([#769](https://github.com/instill-ai/model-backend/issues/769)) ([49e5f26](https://github.com/instill-ai/model-backend/commit/49e5f26a57c13b44704ec936dd889218dc620285))
+
 ## [0.38.0](https://github.com/instill-ai/model-backend/compare/v0.37.0...v0.38.0) (2025-07-31)
 
 
