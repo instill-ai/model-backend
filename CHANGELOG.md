@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.2](https://github.com/instill-ai/model-backend/compare/v0.38.1...v0.38.2) (2025-08-22)
+
+
+### Miscellaneous
+
+* **minio:** use new bucket name ([#772](https://github.com/instill-ai/model-backend/issues/772)) ([2ea7f85](https://github.com/instill-ai/model-backend/commit/2ea7f850f940b6e0e0d86e96c3e6c95f324f7010))
+
 ## [0.38.1](https://github.com/instill-ai/model-backend/compare/v0.38.0...v0.38.1) (2025-08-05)
 
 
