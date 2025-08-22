@@ -82,7 +82,7 @@ minio:
   port: 9000
   user: minioadmin
   password: minioadmin
-  bucketname: instill-ai-model
+  bucketname: core-model
   secure: false
 influxdb:
   url: http://influxdb:8086
