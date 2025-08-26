@@ -43,6 +43,7 @@ import (
 	errorsx "github.com/instill-ai/x/errors"
 	logx "github.com/instill-ai/x/log"
 	miniox "github.com/instill-ai/x/minio"
+	openfgax "github.com/instill-ai/x/openfga"
 	resourcex "github.com/instill-ai/x/resource"
 )
 
@@ -297,7 +298,7 @@ func (s *service) GetModelByUID(ctx context.Context, modelUID uuid.UUID, view mo
 		return nil, err
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", modelUID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, modelUID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
@@ -350,7 +351,7 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
@@ -401,9 +402,14 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	if err != nil {
 		return err
 	}
-	ownerType := nsType[0 : len(nsType)-1]
+	var ownerType openfgax.OwnerType
+	if string(nsType) == "users" {
+		ownerType = openfgax.OwnerTypeUser
+	} else {
+		ownerType = openfgax.OwnerTypeOrganization
+	}
 
-	if err := s.aclClient.SetOwner(ctx, "model_", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
+	if err := s.aclClient.SetOwner(ctx, acl.ObjectTypeModel, dbCreatedModel.UID, ownerType, ownerUID); err != nil {
 		return err
 	}
 	toCreatedTags := model.GetTags()
@@ -439,7 +445,7 @@ func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID
 		return nil, "", errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, "", err
 	} else if !granted {
 		return nil, "", errorsx.ErrNotFound
@@ -478,7 +484,7 @@ func (s *service) checkRequesterPermission(ctx context.Context, model *datamodel
 
 	// The only impersonation that's currently implemented is switching to an
 	// organization namespace.
-	isMember, err := s.aclClient.CheckPermission(ctx, "organization", uuid.FromStringOrNil(requester), "member")
+	isMember, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeOrganization, uuid.FromStringOrNil(requester), "member")
 	if err != nil {
 		return errorsx.AddMessage(
 			fmt.Errorf("checking organization membership: %w", err),
@@ -510,13 +516,13 @@ func (s *service) TriggerNamespaceModelByID(ctx context.Context, ns resource.Nam
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthorized
@@ -632,13 +638,13 @@ func (s *service) TriggerAsyncNamespaceModelByID(ctx context.Context, ns resourc
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthorized
@@ -722,16 +728,16 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 	role := "reader"
 
 	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -741,7 +747,7 @@ func (s *service) ListModels(ctx context.Context, pageSize int32, pageToken stri
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -951,16 +957,16 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 	role := "reader"
 
 	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, true)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -970,7 +976,7 @@ func (s *service) ListNamespaceModels(ctx context.Context, ns resource.Namespace
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, acl.ObjectTypeModel, role, false)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -996,7 +1002,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, 0, 0, 0, err
 	} else if !granted {
 		return nil, 0, 0, 0, errorsx.ErrNotFound
@@ -1057,13 +1063,13 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 		return errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
 		return errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
 		return errorsx.ErrUnauthorized
@@ -1130,13 +1136,13 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 		return errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return err
 	} else if !granted {
 		return errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "admin"); err != nil {
 		return err
 	} else if !granted {
 		return errorsx.ErrUnauthorized
@@ -1159,7 +1165,7 @@ func (s *service) DeleteNamespaceModelByID(ctx context.Context, ns resource.Name
 
 	s.redisClient.Del(ctx, fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, dbModel.UID.String(), ""))
 
-	err = s.aclClient.Purge(ctx, "model_", dbModel.UID)
+	err = s.aclClient.Purge(ctx, acl.ObjectTypeModel, dbModel.UID)
 	if err != nil {
 		return err
 	}
@@ -1176,13 +1182,13 @@ func (s *service) RenameNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthorized
@@ -1214,13 +1220,13 @@ func (s *service) UpdateNamespaceModelByID(ctx context.Context, ns resource.Name
 		return nil, err
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbToUpdateModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbToUpdateModel.UID, "admin"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbToUpdateModel.UID, "admin"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthorized

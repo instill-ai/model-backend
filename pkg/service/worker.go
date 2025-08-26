@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/instill-ai/model-backend/pkg/acl"
 	workflowpb "go.temporal.io/api/workflow/v1"
 	rpcStatus "google.golang.org/genproto/googleapis/rpc/status"
 
@@ -41,13 +42,13 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthorized
@@ -95,13 +96,13 @@ func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Na
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "reader"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrNotFound
 	}
 
-	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor"); err != nil {
+	if granted, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "executor"); err != nil {
 		return nil, err
 	} else if !granted {
 		return nil, errorsx.ErrUnauthenticated

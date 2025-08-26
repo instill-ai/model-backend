@@ -25,7 +25,6 @@ import (
 	"gorm.io/gorm"
 
 	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	openfga "github.com/openfga/api/proto/openfga/v1"
 	temporalclient "go.temporal.io/sdk/client"
 
 	"github.com/instill-ai/model-backend/config"
@@ -46,6 +45,7 @@ import (
 	clientgrpcx "github.com/instill-ai/x/client/grpc"
 	logx "github.com/instill-ai/x/log"
 	miniox "github.com/instill-ai/x/minio"
+	openfgax "github.com/instill-ai/x/openfga"
 	otelx "github.com/instill-ai/x/otel"
 	servergrpcx "github.com/instill-ai/x/server/grpc"
 	gatewayx "github.com/instill-ai/x/server/grpc/gateway"
@@ -334,7 +334,7 @@ func newClients(ctx context.Context, logger *zap.Logger) (
 	*redis.Client,
 	*gorm.DB,
 	miniox.Client,
-	*acl.ACLClient,
+	acl.ACLClientInterface,
 	ray.Ray,
 	temporalclient.Client,
 	*repository.InfluxDB,
@@ -387,22 +387,20 @@ func newClients(ctx context.Context, logger *zap.Logger) (
 		logger.Fatal("failed to create minio client", zap.Error(err))
 	}
 
-	// Initialize ACL client
-	fgaClient, fgaClientConn := acl.InitOpenFGAClient(ctx, config.Config.OpenFGA.Host, config.Config.OpenFGA.Port)
-	if fgaClientConn != nil {
-		closeFuncs["fga"] = fgaClientConn.Close
+	// Initialize ACL client using x/openfga package
+	fgaClient, err := openfgax.NewClient(openfgax.ClientParams{
+		Config: config.Config.OpenFGA,
+		Logger: logger,
+	})
+	if err != nil {
+		logger.Fatal("Failed to create OpenFGA client", zap.Error(err))
 	}
 
-	var fgaReplicaClient openfga.OpenFGAServiceClient
-	if config.Config.OpenFGA.Replica.Host != "" {
-		var fgaReplicaClientConn *grpc.ClientConn
-		fgaReplicaClient, fgaReplicaClientConn = acl.InitOpenFGAClient(ctx, config.Config.OpenFGA.Replica.Host, config.Config.OpenFGA.Replica.Port)
-		if fgaReplicaClientConn != nil {
-			closeFuncs["fgaReplica"] = fgaReplicaClientConn.Close
-		}
-	}
+	// Log that we have the client ready for future migration
+	logger.Info("OpenFGA x/openfga client initialized", zap.String("host", config.Config.OpenFGA.Host))
 
-	aclClient := acl.NewACLClient(fgaClient, fgaReplicaClient, redisClient)
+	// Create ACL client wrapper
+	aclClient := acl.NewFGAClient(fgaClient)
 
 	// Initialize Ray service
 	rayService := ray.NewRay(redisClient)

@@ -16,6 +16,7 @@ import (
 
 	clientx "github.com/instill-ai/x/client"
 	miniox "github.com/instill-ai/x/minio"
+	openfgax "github.com/instill-ai/x/openfga"
 	temporalx "github.com/instill-ai/x/temporal"
 )
 
@@ -105,16 +106,7 @@ type OTELCollectorConfig struct {
 	Port   int    `koanf:"port"`
 }
 
-// OpenFGAConfig related to OpenFGA
-type OpenFGAConfig struct {
-	Host    string `koanf:"host"`
-	Port    int    `koanf:"port"`
-	Replica struct {
-		Host                 string `koanf:"host"`
-		Port                 int    `koanf:"port"`
-		ReplicationTimeFrame int    `koanf:"replicationtimeframe"` // in seconds
-	} `koanf:"replica"`
-}
+
 
 // RegistryConfig related to registry
 type RegistryConfig struct {
@@ -144,7 +136,7 @@ type AppConfig struct {
 	ArtifactBackend clientx.ServiceConfig  `koanf:"artifactbackend"`
 	Cache           CacheConfig            `koanf:"cache"`
 	Temporal        temporalx.ClientConfig `koanf:"temporal"`
-	OpenFGA         OpenFGAConfig          `koanf:"openfga"`
+	OpenFGA         openfgax.Config        `koanf:"openfga"`
 	Registry        RegistryConfig         `koanf:"registry"`
 	InitModel       InitModelConfig        `koanf:"initmodel"`
 	OTELCollector   OTELCollectorConfig    `koanf:"otelcollector"`

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/instill-ai/model-backend/pkg/acl"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/x/constant"
@@ -217,13 +218,13 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 			pbModel.Permission.CanEdit = true
 			pbModel.Permission.CanTrigger = true
 		} else {
-			canEdit, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "writer")
+			canEdit, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "writer")
 			if err != nil {
 				return nil, err
 			}
 			pbModel.Permission.CanEdit = canEdit
 
-			canTrigger, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "executor")
+			canTrigger, err := s.aclClient.CheckPermission(ctx, acl.ObjectTypeModel, dbModel.UID, "executor")
 			if err != nil {
 				return nil, err
 			}
