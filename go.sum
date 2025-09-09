@@ -252,8 +252,8 @@ github.com/instill-ai/protogen-go v0.3.3-alpha.0.20250707160902-77023eb2f033 h1:
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20250707160902-77023eb2f033/go.mod h1:bCnBosofpaUxKBuTTJM3/I3thAK37kvfBnKByjnLsl4=
 github.com/instill-ai/usage-client v0.4.0 h1:xf1hAlO4a8lZwZzz9bprZOJqU3ghIcIsavUUB7UURyg=
 github.com/instill-ai/usage-client v0.4.0/go.mod h1:zZ9LRoXps2u63ARYPAbR2YvqTib3dWJLObZn+9YqhF0=
-github.com/instill-ai/x v0.9.0-alpha.0.20250804063509-85de2fb234cc h1:rzg5semefqYy7AuYBAJp16P96c6fs9r3Y1d7OeSrGk4=
-github.com/instill-ai/x v0.9.0-alpha.0.20250804063509-85de2fb234cc/go.mod h1:OaBzHZhIBfrngDMxWbyTPSd1gILO2vrndi5z/tFpCSk=
+github.com/instill-ai/x v0.10.0-alpha h1:I83WJc+21J+IgI4aJDn755ON/BX4cDvKCVVguI77r14=
+github.com/instill-ai/x v0.10.0-alpha/go.mod h1:OaBzHZhIBfrngDMxWbyTPSd1gILO2vrndi5z/tFpCSk=
 github.com/jackc/chunkreader/v2 v2.0.0/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
 github.com/jackc/chunkreader/v2 v2.0.1 h1:i+RDz65UE+mmpjTfyz0MoVTnzeYxroil2G82ki7MGG8=
 github.com/jackc/chunkreader/v2 v2.0.1/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
