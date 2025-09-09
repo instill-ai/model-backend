@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.3](https://github.com/instill-ai/model-backend/compare/v0.38.2...v0.38.3) (2025-09-09)
+
+
+### Miscellaneous
+
+* **x:** update x package to v0.10.0-alpha ([#774](https://github.com/instill-ai/model-backend/issues/774)) ([15b412c](https://github.com/instill-ai/model-backend/commit/15b412c8bde55e8dc31b21b07f7cf8597c6c896b))
+
 ## [0.38.2](https://github.com/instill-ai/model-backend/compare/v0.38.1...v0.38.2) (2025-08-22)
 
 
