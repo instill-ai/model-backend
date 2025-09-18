@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.4](https://github.com/instill-ai/model-backend/compare/v0.38.3...v0.38.4) (2025-09-16)
+
+
+### Miscellaneous
+
+* **deps:** bump github.com/docker/docker from 26.1.5+incompatible to 28.0.0+incompatible ([#771](https://github.com/instill-ai/model-backend/issues/771)) ([5608f02](https://github.com/instill-ai/model-backend/commit/5608f02e5c284219e202f909df473b3c136a4974))
+
 ## [0.38.3](https://github.com/instill-ai/model-backend/compare/v0.38.2...v0.38.3) (2025-09-09)
 
 
