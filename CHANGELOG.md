@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.5](https://github.com/instill-ai/model-backend/compare/v0.38.4...v0.38.5) (2025-09-22)
+
+
+### Bug Fixes
+
+* **usage:** add missing error filtering for users/admin ([#777](https://github.com/instill-ai/model-backend/issues/777)) ([1ff428f](https://github.com/instill-ai/model-backend/commit/1ff428f9a31553073047c12aa8ecb4aa8263ab39))
+
 ## [0.38.4](https://github.com/instill-ai/model-backend/compare/v0.38.3...v0.38.4) (2025-09-16)
 
 
