@@ -7,6 +7,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/frankban/quicktest v1.14.6
 	github.com/gabriel-vasile/mimetype v1.4.5
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gogo/status v1.1.1
 	github.com/gojuno/minimock/v3 v3.4.5
@@ -16,7 +17,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20250707160902-77023eb2f033
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20251029195138-d623a821ff95
 	github.com/instill-ai/usage-client v0.4.0
 	github.com/instill-ai/x v0.10.0-alpha
 	github.com/jackc/pgx/v5 v5.6.0

@@ -211,3 +211,11 @@ const (
 	FieldLastRunTime  = "last_run_time"
 	FieldNumberOfRuns = "number_of_runs"
 )
+
+// Tag represents a repository tag (domain model) for Docker registry versioning
+type Tag struct {
+	Name       string    // The name of the tag (e.g. "repositories/{repo}/tags/{id}")
+	ID         string    // The tag identifier
+	Digest     string    // Unique identifier from the manifest
+	UpdateTime time.Time // Tag update time
+}

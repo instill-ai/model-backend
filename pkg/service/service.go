@@ -102,6 +102,12 @@ type Service interface {
 	UpdateModelRunWithError(ctx context.Context, runLog *datamodel.ModelRun, err error) *datamodel.ModelRun
 	ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsRequest, filter filtering.Filter) (*modelpb.ListModelRunsResponse, error)
 	ListModelRunsByRequester(ctx context.Context, req *modelpb.ListModelRunsByRequesterRequest) (*modelpb.ListModelRunsByRequesterResponse, error)
+
+	// Repository tag operations for Docker registry versioning
+	ListRepositoryTags(ctx context.Context, req *modelpb.ListRepositoryTagsRequest) (*modelpb.ListRepositoryTagsResponse, error)
+	GetRepositoryTag(ctx context.Context, req *modelpb.GetRepositoryTagRequest) (*modelpb.GetRepositoryTagResponse, error)
+	CreateRepositoryTag(ctx context.Context, req *modelpb.CreateRepositoryTagRequest) (*modelpb.CreateRepositoryTagResponse, error)
+	DeleteRepositoryTag(ctx context.Context, req *modelpb.DeleteRepositoryTagRequest) (*modelpb.DeleteRepositoryTagResponse, error)
 }
 
 type service struct {
@@ -116,6 +122,7 @@ type service struct {
 	minioClient                  miniox.Client
 	retentionHandler             MetadataRetentionHandler
 	instillCoreHost              string
+	cfg                          *config.AppConfig
 }
 
 // NewService returns a new service instance
@@ -144,6 +151,7 @@ func NewService(
 		minioClient:                  minioClient,
 		retentionHandler:             retentionHandler,
 		instillCoreHost:              h,
+		cfg:                          &config.Config,
 	}
 }
 
@@ -1002,7 +1010,7 @@ func (s *service) ListNamespaceModelVersions(ctx context.Context, ns resource.Na
 		return nil, 0, 0, 0, errorsx.ErrNotFound
 	}
 
-	resp, err := s.artifactPrivateServiceClient.ListRepositoryTags(ctx, &artifactpb.ListRepositoryTagsRequest{
+	resp, err := s.ListRepositoryTags(ctx, &modelpb.ListRepositoryTagsRequest{
 		Parent:   fmt.Sprintf("repositories/%s/%s", ns.NsID, modelID),
 		Page:     &page,
 		PageSize: &pageSize,
@@ -1079,7 +1087,7 @@ func (s *service) DeleteModelVersionByID(ctx context.Context, ns resource.Namesp
 		return err
 	}
 
-	if _, err := s.artifactPrivateServiceClient.DeleteRepositoryTag(ctx, &artifactpb.DeleteRepositoryTagRequest{
+	if _, err := s.DeleteRepositoryTag(ctx, &modelpb.DeleteRepositoryTagRequest{
 		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version),
 	}); err != nil {
 		if e, ok := status.FromError(err); ok {

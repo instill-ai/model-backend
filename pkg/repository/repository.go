@@ -22,6 +22,7 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
+	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/constant"
 	"github.com/instill-ai/x/paginate"
 
@@ -73,6 +74,11 @@ type Repository interface {
 	CreateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) (*datamodel.ModelRun, error)
 	UpdateModelRun(ctx context.Context, modelRun *datamodel.ModelRun) error
 	ListModelRunsByRequester(ctx context.Context, params *ListModelRunsByRequesterParams) (modelTriggers []*datamodel.ModelRun, totalSize int64, err error)
+
+	// Repository tag operations for Docker registry versioning
+	GetRepositoryTag(ctx context.Context, name utils.RepositoryTagName) (*datamodel.Tag, error)
+	UpsertRepositoryTag(ctx context.Context, tag *datamodel.Tag) (*datamodel.Tag, error)
+	DeleteRepositoryTag(ctx context.Context, digest string) error
 }
 
 // DefaultPageSize is the default pagination page size when page size is not assigned
