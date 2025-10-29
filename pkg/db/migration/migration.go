@@ -15,7 +15,7 @@ import (
 )
 
 // TargetSchemaVersion is the target database schema version
-const TargetSchemaVersion = 12
+const TargetSchemaVersion = 13
 
 type migration interface {
 	Migrate() error

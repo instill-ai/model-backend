@@ -14,7 +14,6 @@ import (
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
-	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
 	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 )
 
@@ -126,7 +125,7 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		}
 	}
 
-	if _, err := h.service.GetArtifactPrivateServiceClient().GetRepositoryTag(ctx, &artifactpb.GetRepositoryTagRequest{
+	if _, err := h.service.GetRepositoryTag(ctx, &modelpb.GetRepositoryTagRequest{
 		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, req.GetModelId(), version.Version),
 	}); err != nil {
 		return nil, err
@@ -188,4 +187,26 @@ func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *m
 	}
 
 	return &modelpb.UndeployNamespaceModelAdminResponse{}, nil
+}
+
+// Repository Tag Management handlers
+
+// ListRepositoryTags lists tags in a repository
+func (h *PrivateHandler) ListRepositoryTags(ctx context.Context, req *modelpb.ListRepositoryTagsRequest) (*modelpb.ListRepositoryTagsResponse, error) {
+	return h.service.ListRepositoryTags(ctx, req)
+}
+
+// GetRepositoryTag gets details of a repository tag
+func (h *PrivateHandler) GetRepositoryTag(ctx context.Context, req *modelpb.GetRepositoryTagRequest) (*modelpb.GetRepositoryTagResponse, error) {
+	return h.service.GetRepositoryTag(ctx, req)
+}
+
+// CreateRepositoryTag creates a new repository tag
+func (h *PrivateHandler) CreateRepositoryTag(ctx context.Context, req *modelpb.CreateRepositoryTagRequest) (*modelpb.CreateRepositoryTagResponse, error) {
+	return h.service.CreateRepositoryTag(ctx, req)
+}
+
+// DeleteRepositoryTag deletes a repository tag
+func (h *PrivateHandler) DeleteRepositoryTag(ctx context.Context, req *modelpb.DeleteRepositoryTagRequest) (*modelpb.DeleteRepositoryTagResponse, error) {
+	return h.service.DeleteRepositoryTag(ctx, req)
 }
