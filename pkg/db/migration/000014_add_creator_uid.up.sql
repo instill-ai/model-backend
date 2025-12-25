@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE model ADD COLUMN IF NOT EXISTS creator_uid UUID;
+
+COMMIT;

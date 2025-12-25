@@ -90,6 +90,11 @@ type Model struct {
 	NamespaceID        string `gorm:"type:namespace_id"`
 	NamespaceType      string `gorm:"type:namespace_type"`
 
+	// CreatorUID is the UID of the user who created this model.
+	// This is nullable because models created before this field was added
+	// will not have a creator_uid.
+	CreatorUID *uuid.UUID `gorm:"type:uuid"`
+
 	// Note:
 	// We store the NumberOfRuns and LastRunTime in this table
 	// to make it easier to sort the models. We should develop an approach to
