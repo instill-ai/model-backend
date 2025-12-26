@@ -14,6 +14,8 @@ import {
 import {
   genHeader,
   isValidOwner,
+  isValidCreator,
+  isUUID,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -75,6 +77,12 @@ export function GetModel(header) {
           r.json().model.visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models/${model_id} task cls response model.owner_name`]: (r) =>
           isValidOwner(r.json().model.owner_name),
+        [`GET /v1alpha/models/${model_id} task cls response model.ownerUid`]: (r) =>
+          isUUID(r.json().model.ownerUid),
+        [`GET /v1alpha/models/${model_id} task cls response model.creatorUid`]: (r) =>
+          isUUID(r.json().model.creatorUid),
+        [`GET /v1alpha/models/${model_id} task cls response model.creator`]: (r) =>
+          isValidCreator(r.json().model.creator),
         [`GET /v1alpha/models/${model_id} task cls response model.createTime`]: (r) =>
           r.json().model.createTime !== undefined,
         [`GET /v1alpha/models/${model_id} task cls response model.updateTime`]: (r) =>
@@ -219,6 +227,12 @@ export function ListModels(header) {
           r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
+        [`GET /v1alpha/models task cls response models[0].ownerUid`]: (r) =>
+          isUUID(r.json().models[0].ownerUid),
+        [`GET /v1alpha/models task cls response models[0].creatorUid`]: (r) =>
+          isUUID(r.json().models[0].creatorUid),
+        [`GET /v1alpha/models task cls response models[0].creator`]: (r) =>
+          isValidCreator(r.json().models[0].creator),
         [`GET /v1alpha/models task cls response models[0].createTime`]: (r) =>
           r.json().models[0].createTime !== undefined,
         [`GET /v1alpha/models task cls response models[0].updateTime`]: (r) =>
@@ -254,6 +268,12 @@ export function ListModels(header) {
           r.json().models[0].visibility === "VISIBILITY_PRIVATE",
         [`GET /v1alpha/models task cls response models[0].owner_name`]: (r) =>
           isValidOwner(r.json().models[0].owner_name),
+        [`GET /v1alpha/models task cls response models[0].ownerUid`]: (r) =>
+          isUUID(r.json().models[0].ownerUid),
+        [`GET /v1alpha/models task cls response models[0].creatorUid`]: (r) =>
+          isUUID(r.json().models[0].creatorUid),
+        [`GET /v1alpha/models task cls response models[0].creator`]: (r) =>
+          isValidCreator(r.json().models[0].creator),
         [`GET /v1alpha/models task cls response models[0].createTime`]: (r) =>
           r.json().models[0].createTime !== undefined,
         [`GET /v1alpha/models task cls response models[0].updateTime`]: (r) =>

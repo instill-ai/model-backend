@@ -288,6 +288,29 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 	}
 }
 
+func (s *service) FetchUserByUID(ctx context.Context, uid string) (*mgmtpb.User, error) {
+	key := fmt.Sprintf("user_profile:%s", uid)
+	if b, err := s.redisClient.Get(ctx, key).Bytes(); err == nil {
+		user := &mgmtpb.User{}
+		if protojson.Unmarshal(b, user) == nil {
+			return user, nil
+		}
+	}
+
+	resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{
+		UserUid: uid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("LookUpUserAdmin error: %w", err)
+	}
+
+	user := resp.GetUser()
+	if b, err := protojson.Marshal(user); err == nil {
+		s.redisClient.Set(ctx, key, b, 5*time.Minute)
+	}
+	return user, nil
+}
+
 func (s *service) ConvertRepositoryNameToRscName(repositoryName string) (string, error) {
 	// repository/flaming-wombat/llava-34b
 	splits := strings.Split(repositoryName, "/")
@@ -395,6 +418,13 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	}
 	dbModel.Configuration = bModelConfig
 	dbModel.ModelDefinitionUID = modelDefinition.UID
+
+	// Set the creator UID from the authenticated user
+	creatorUIDStr := resourcex.GetRequestSingleHeader(ctx, constantx.HeaderUserUIDKey)
+	if creatorUIDStr != "" {
+		creatorUID := uuid.FromStringOrNil(creatorUIDStr)
+		dbModel.CreatorUID = &creatorUID
+	}
 
 	if err := s.repository.CreateNamespaceModel(ctx, dbModel.Owner, dbModel); err != nil {
 		return err

@@ -16,6 +16,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofrs/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/image/draw"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -237,6 +238,20 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 		return nil, err
 	}
 	pbModel.Owner = owner
+	pbModel.OwnerUid = dbModel.OwnerUID().String()
+
+	// Populate creator fields if creator_uid is set
+	if dbModel.CreatorUID != nil {
+		creatorUIDStr := dbModel.CreatorUID.String()
+		pbModel.CreatorUid = &creatorUIDStr
+		creator, err := s.FetchUserByUID(ctx, creatorUIDStr)
+		if err != nil {
+			// Log but don't fail - creator may have been deleted
+			logger.Warn("Failed to fetch creator user", zap.String("creator_uid", creatorUIDStr), zap.Error(err))
+		} else {
+			pbModel.Creator = creator
+		}
+	}
 
 	if view > modelpb.View_VIEW_BASIC {
 

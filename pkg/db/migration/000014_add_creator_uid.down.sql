@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE model DROP COLUMN IF EXISTS creator_uid;
+
+COMMIT;
