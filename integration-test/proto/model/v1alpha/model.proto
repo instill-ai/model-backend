@@ -1,12 +1,13 @@
 syntax = "proto3";
 
-package model.model.v1alpha;
+package model.v1alpha;
 
 // common definitions
-import "../../../common/healthcheck/v1beta/healthcheck.proto";
-import "../../../common/task/v1alpha/task.proto";
+import "common/healthcheck/v1beta/healthcheck.proto";
+import "common/run/v1alpha/run.proto";
+import "common/task/v1alpha/task.proto";
 // Core definitions
-import "../../../core/mgmt/v1beta/mgmt.proto";
+import "mgmt/v1beta/mgmt.proto";
 // Google API
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
@@ -16,20 +17,8 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 // Model definitions
-import "../../../model/model/v1alpha/common.proto";
-import "../../../model/model/v1alpha/model_definition.proto";
-import "../../../model/model/v1alpha/task_classification.proto";
-import "../../../model/model/v1alpha/task_detection.proto";
-import "../../../model/model/v1alpha/task_image_to_image.proto";
-import "../../../model/model/v1alpha/task_instance_segmentation.proto";
-import "../../../model/model/v1alpha/task_keypoint.proto";
-import "../../../model/model/v1alpha/task_ocr.proto";
-import "../../../model/model/v1alpha/task_semantic_segmentation.proto";
-import "../../../model/model/v1alpha/task_text_generation.proto";
-import "../../../model/model/v1alpha/task_text_generation_chat.proto";
-import "../../../model/model/v1alpha/task_text_to_image.proto";
-import "../../../model/model/v1alpha/task_unspecified.proto";
-import "../../../model/model/v1alpha/task_visual_question_answering.proto";
+import "model/v1alpha/common.proto";
+import "model/v1alpha/model_definition.proto";
 // OpenAPI definition
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -60,22 +49,30 @@ message ReadinessResponse {
 // Region describes the supported cloud provider and regions, with
 // their supported GPU respectively.
 message Region {
-  // Concate name of provider and region
+  // Concatenate name of provider and region
   string region_name = 1;
   // Hardware describes the available hardware types in this region
-  repeated string hardware = 2;
+  repeated Hardware hardware = 2;
+}
+
+// Hardware describes the hardware title and string value that backend consumes.
+message Hardware {
+  // Hardware display title
+  string title = 1;
+  // Hardware name value
+  string value = 2;
 }
 
 // State describes the state of a model. See [Deploy
-// Models](https://www.instill-ai.com/docs/latest/model/deploy) for more
+// Models](https://instill-ai.dev/docs/latest/model/deploy) for more
 // information.
 enum State {
   // Unspecified. This state can occur while a model is under operation.
   STATE_UNSPECIFIED = 0;
   // Offline is the state when the model instance number is 0.
   STATE_OFFLINE = 1;
-  // Scaling is the transition state when a model instance is scaling up or down.
-  STATE_SCALING = 2;
+  // Deprecate state.
+  reserved 2;
   // Active is the state when a model is processing requests.
   STATE_ACTIVE = 3;
   // Idle is the state when a model is alive but not processing requests.
@@ -85,6 +82,12 @@ enum State {
   // Starting is the state when the system is provisioning the necessary
   // resources for the model
   STATE_STARTING = 6;
+  // Scaling Up is the transition state when the system is provisioning compute
+  // resource for this model instance.
+  STATE_SCALING_UP = 7;
+  // Scaling is the transition state when the system is releasing compute
+  // resource for this model instance.
+  STATE_SCALING_DOWN = 8;
 }
 
 // ModelVersion contains information about the version of a model.
@@ -94,16 +97,16 @@ message ModelVersion {
   // The resource name of the model, which allows its access by parent user
   // and ID.
   // - Format: `users/{user.id}/models/{model.id}`.
-  // The name of the tag.
+  // The name of the Version.
   // - Format: `users/{user.id}/models/{model.id}/versions/{version.id}`.
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   // The model version identifier, which is equal to image tag.
   string version = 2 [(google.api.field_behavior) = IMMUTABLE];
-  // Unique identifier, computed from the manifest the tag refers to.
+  // Unique identifier, computed from the manifest the Version refers to.
   string digest = 3 [(google.api.field_behavior) = OPTIONAL];
   // Current state of this model version.
   State state = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Tag update time, i.e. timestamp of the last push.
+  // Version update time, i.e. timestamp of the last push.
   google.protobuf.Timestamp update_time = 5 [
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.field_behavior) = OPTIONAL
@@ -112,11 +115,11 @@ message ModelVersion {
 
 // Model represents an AI model, i.e. a program that performs tasks as decision
 // making or or pattern recognition based on its training data
+// Model represents an AI/ML model.
+// Field ordering follows AIP standard: name(1), id(2), display_name(3), slug(4), aliases(5), description(6)
 message Model {
   option (google.api.resource) = {
-    type: "api.instill-ai.com/Model"
-    pattern: "users/{user.id}/models/{model.id}"
-    pattern: "models/{model.uid}"
+    pattern: "namespaces/{namespace}/models/{model}"
   };
 
   // Visibility defines who can access the model.
@@ -129,118 +132,128 @@ message Model {
     VISIBILITY_PUBLIC = 2;
   }
 
-  // The resource name of the model, which allows its access by owner and ID.
-  // - Format: `users/{user.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "model_name"}
-    }
-  ];
-  // Model UUID.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Model resource ID (used in `name` as the last segment). This conforms to
-  // RFC-1034, which restricts to letters, numbers, and hyphen, with the first
-  // character a letter, the last a letter or a number, and a 63 character
-  // maximum.
-  string id = 3 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE
-  ];
-  // Model description.
-  optional string description = 4 [(google.api.field_behavior) = OPTIONAL];
-  // The model definition that has been used to import the model.
-  string model_definition = 5 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE,
-    (google.api.resource_reference).type = "api.instill-ai.com/ModelDefinition"
-  ];
-  // Model configuration. This field is validated against the model
-  // specification in the model definition (i.e. the `model_spec` field in the
-  // model definition).
-  google.protobuf.Struct configuration = 6 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE
-  ];
-  // Model task.
-  common.task.v1alpha.Task task = 7 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE
-  ];
-  // Deprecated Model state.
-  reserved 8;
-  // Model visibility.
-  Visibility visibility = 9 [(google.api.field_behavior) = REQUIRED];
-  // Model creation time.
-  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Model update time.
-  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Model deletion time.
-  google.protobuf.Timestamp delete_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Resource name of the owner.
-  string owner_name = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Deleted Fields.
-  reserved 16;
-  // Model owner.
-  optional core.mgmt.v1beta.Owner owner = 17 [
-    (google.api.field_behavior) = OPTIONAL,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  // Region of choice for the particular provider to host the model.
-  string region = 18 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.field_behavior) = IMMUTABLE
-  ];
-  // Hardware of choice to serve the model.
-  string hardware = 19 [(google.api.field_behavior) = REQUIRED];
-  // README holds the model documentation.
-  optional string readme = 20 [(google.api.field_behavior) = OPTIONAL];
-  // A link to the source code of the model (e.g. to a GitHub repository).
-  optional string source_url = 21 [(google.api.field_behavior) = OPTIONAL];
-  // A link to any extra information.
-  optional string documentation_url = 22 [(google.api.field_behavior) = OPTIONAL];
-  // License under which the model is distributed.
-  optional string license = 23 [(google.api.field_behavior) = OPTIONAL];
-  // Sample input for this model
-  TaskInput sample_input = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Sample output for this model
-  TaskOutput sample_output = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Model profile image in base64 format.
-  optional string profile_image = 26 [(google.api.field_behavior) = OPTIONAL];
-  // Permission defines how a pipeline can be used.
-  Permission permission = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Input schema for the model
-  google.protobuf.Struct input_schema = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Output schema for the model
-  google.protobuf.Struct output_schema = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Tags.
-  repeated string tags = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
+  // Statistic data
+  message Stats {
+    // Number of model runs.
+    int32 number_of_runs = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // Last run time.
+    google.protobuf.Timestamp last_run_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  }
 
-// ModelCard represents a README.md file that accompanies the model to describe
-// handy information with additional model metadata. Under the hood, a model
-// card is associated with a specific model. It is an crucial for
-// reproducibility, sharing and discoverability.
-//
-// Each model has exactly one README card.
-message ModelCard {
-  option (google.api.resource) = {
-    type: "api.instill-ai.com/ModelCard"
-    pattern: "users/{user.id}/models/{model.id}/readme"
-  };
+  // ===== Standard AIP fields 1-6 (ALL resources must follow this order) =====
 
-  // The resource name of the model card, which allows its access by parent
-  // user and model ID.
-  // - Format: `users/{user.id}/models/{model.id}/readme`.
+  // Field 1: Canonical resource name.
+  // Format: `namespaces/{namespace}/models/{model}`.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Size of the file in bytes.
-  int32 size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Type of the resource. Its value is fixed to `file`.
-  string type = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Content of the README file in bytes and base64 format.
-  bytes content = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Encoding type of the content. Its value is fixed to `base64`.
-  string encoding = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Field 2: Immutable canonical resource ID (80-96 bits entropy, base62).
+  // Example: "mod-8f3a2k9E7c1"
+  string id = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Field 3: Human-readable display name for UI.
+  string display_name = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // Field 4: URL-friendly slug (NO prefix).
+  // If omitted, server generates from display_name.
+  // Slug is NOT part of resource identity.
+  string slug = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Field 5: Previous slugs for backward compatibility.
+  repeated string aliases = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Field 6: Optional description.
+  optional string description = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // ===== Timestamps (common to all resources) =====
+
+  // Field 7: Creation time.
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Field 8: Last update time.
+  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // ===== Resource-specific fields start from field 9+ =====
+
+  // The model definition that has been used to import the model.
+  string model_definition = 9 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // Model configuration. This field is validated against the model
+  // specification in the model definition.
+  google.protobuf.Struct configuration = 10 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // Model task.
+  common.task.v1alpha.Task task = 11 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // Model visibility.
+  Visibility visibility = 12 [(google.api.field_behavior) = REQUIRED];
+
+  // Permission defines how the model can be used.
+  Permission permission = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Region of choice for the particular provider to host the model.
+  string region = 14 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // Hardware of choice to serve the model.
+  string hardware = 15 [(google.api.field_behavior) = REQUIRED];
+
+  // Input schema for the model.
+  google.protobuf.Struct input_schema = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output schema for the model.
+  google.protobuf.Struct output_schema = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Tags.
+  repeated string tags = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // Version names.
+  repeated string versions = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Statistic data.
+  Stats stats = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // README holds the model documentation.
+  optional string readme = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // A link to the source code of the model (e.g. to a GitHub repository).
+  optional string source_url = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // A link to any extra information.
+  optional string documentation_url = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // License under which the model is distributed.
+  optional string license = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // Model profile image in base64 format.
+  optional string profile_image = 25 [(google.api.field_behavior) = OPTIONAL];
+
+  // ===== Owner and creator references =====
+
+  // Resource name of the owner namespace.
+  string owner_name = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Model owner (User or Organization).
+  optional mgmt.v1beta.Owner owner = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The UID of the user who created this model.
+  optional string creator_uid = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The user who created this model.
+  optional mgmt.v1beta.User creator = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Soft delete timestamp.
+  google.protobuf.Timestamp delete_time = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListModelsRequest represents a request to list  models.
@@ -261,19 +274,20 @@ message ListModelsRequest {
   optional string filter = 5 [(google.api.field_behavior) = OPTIONAL];
   // Limit results to pipelines with the specified visibility.
   optional Model.Visibility visibility = 6 [(google.api.field_behavior) = OPTIONAL];
-  // Order by field, with options for ordering by `id`, `create_time` or `update_time`.
-  // Format: `order_by=id` or `order_by=create_time desc`, default is `asc`.
+  // Order by field, with options for ordering by `id`, `create_time` or
+  // `update_time`. Format: `order_by=id` or `order_by=create_time desc`,
+  // default is `asc`.
   optional string order_by = 7 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListModelsResponse contains a list of models.
 message ListModelsResponse {
   // A list of model resources.
-  repeated Model models = 1;
+  repeated Model models = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Next page token.
-  string next_page_token = 2;
+  string next_page_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Total number of models.
-  int32 total_size = 3;
+  int32 total_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // LookUpModelRequest represents a request to query a model by its UID.
@@ -288,13 +302,15 @@ message LookUpModelRequest {
 // LookUpModelResponse contains the requested model.
 message LookUpModelResponse {
   // The requested model.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListNamespaceModelsRequest represents a request to list namepsace models.
+// Follows AIP-132: https://google.aip.dev/132
 message ListNamespaceModelsRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // The parent resource name.
+  // Format: `namespaces/{namespace}`
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
   // The maximum number of models to return. If this parameter is unspecified,
   // at most 10 models will be returned. The cap value for this parameter is
   // 100 (i.e. any value above that will be coerced to 100).
@@ -311,25 +327,29 @@ message ListNamespaceModelsRequest {
   optional string filter = 6 [(google.api.field_behavior) = OPTIONAL];
   // Limit results to pipelines with the specified visibility.
   optional Model.Visibility visibility = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Order by field, with options for ordering by `id`, `create_time` or `update_time`.
-  // Format: `order_by=id` or `order_by=create_time desc`, default is `asc`.
+  // Order by field, with options for ordering by `id`, `create_time` or
+  // `update_time`. Format: `order_by=id` or `order_by=create_time desc`,
+  // default is `asc`.
   optional string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListNamespaceModelsResponse contains a list of models.
 message ListNamespaceModelsResponse {
   // A list of model resources.
-  repeated Model models = 1;
+  repeated Model models = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Next page token.
-  string next_page_token = 2;
+  string next_page_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Total number of models.
-  int32 total_size = 3;
+  int32 total_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// CreateNamespaceModelRequest represents a request from a namespace to create a model.
+// CreateNamespaceModelRequest represents a request from a namespace to create a
+// model.
+// Follows AIP-133: https://google.aip.dev/133
 message CreateNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // The parent resource name.
+  // Format: `namespaces/{namespace}`
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
   // The properties of the model to be created.
   Model model = 2;
 }
@@ -337,55 +357,53 @@ message CreateNamespaceModelRequest {
 // CreateNamespaceModelResponse contains the created model.
 message CreateNamespaceModelResponse {
   // The created model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // GetNamespaceModelRequest represents a request to fetch the details of a model
 // owned by a namespace.
+// Follows AIP-131: https://google.aip.dev/131
 message GetNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
+  // The resource name of the model.
+  // Format: `namespaces/{namespace}/models/{model}`
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
   // View allows clients to specify the desired model view in the response.
-  optional View view = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // GetNamespaceModelResponse contains the requested model.
 message GetNamespaceModelResponse {
   // The model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // UpdateNamespaceModelRequest represents a request to update a model owned by a
 // namespace.
+// Follows AIP-134: https://google.aip.dev/134
 message UpdateNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // The model to update
-  Model model = 3 [(google.api.field_behavior) = REQUIRED];
+  // The model resource to update. The model's `name` field identifies
+  // the resource. Format: `namespaces/{namespace}/models/{model}`
+  Model model = 1 [(google.api.field_behavior) = REQUIRED];
   // The update mask specifies the subset of fields that should be modified.
   //
   // For more information about this field, see
   // https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#field-mask.
-  google.protobuf.FieldMask update_mask = 4 [(google.api.field_behavior) = REQUIRED];
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // UpdateNamespaceModelResponse contains the updated model.
 message UpdateNamespaceModelResponse {
   // The updated model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DeleteNamespaceModelRequest represents a request to delete a model owned by a
 // namespace.
+// Follows AIP-135: https://google.aip.dev/135
 message DeleteNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
+  // The resource name of the model to delete.
+  // Format: `namespaces/{namespace}/models/{model}`
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // DeleteNamespaceModelResponse is an empty response.
@@ -405,74 +423,32 @@ message RenameNamespaceModelRequest {
 // RenameNamespaceModelResponse contains a renamed model.
 message RenameNamespaceModelResponse {
   // The renamed model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// PublishNamespacehModelRequest represents a request to publish a model.
-message PublishNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-// PublishNamespaceModelResponse contains a published model.
-message PublishNamespaceModelResponse {
-  // The published model resource.
-  Model model = 1;
-}
-
-// UnpublishNamespaceModelRequest represents a request to unpublish a model.
-message UnpublishNamespaceModelRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-// UnpublishNamespaceModelResponse contains an unpublished model.
-message UnpublishNamespaceModelResponse {
-  // The unpublished model resource.
-  Model model = 1;
-}
-
-// GetNamespaceModelCardRequest represents a request to fetch the README card of a
-// model.
-message GetNamespaceModelCardRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-// GetNamespaceModelCardResponse contains the model's README card.
-message GetNamespaceModelCardResponse {
-  // A model card resource.
-  ModelCard readme = 1;
-}
-
-// WatchNamespaceModelRequest represents a request to fetch current state of a model
+// WatchNamespaceModelRequest represents a request to fetch current state of a
+// model
 message WatchNamespaceModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // WatchNamespaceModelResponse contains the state of a model.
 message WatchNamespaceModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// WatchNamespaceNamespaceLatestModelRequest represents a request to fetch current state of
-// the latest model version.
+// WatchNamespaceNamespaceLatestModelRequest represents a request to fetch
+// current state of the latest model version.
 message WatchNamespaceLatestModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
@@ -480,35 +456,36 @@ message WatchNamespaceLatestModelRequest {
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// WatchNamespaceLatestModelResponse contains the state of the latest model version.
+// WatchNamespaceLatestModelResponse contains the state of the latest model
+// version.
 message WatchNamespaceLatestModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// ListNamespaceModelVersionsRequest represents a request to list all the versions
-// of a model namespace of a namespace.
+// ListNamespaceModelVersionsRequest represents a request to list all the
+// versions of a model namespace of a namespace.
+// Follows AIP-132: https://google.aip.dev/132
 message ListNamespaceModelVersionsRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // The maximum number of tags to return. The default and cap values are 10
+  // The parent resource name (model).
+  // Format: `namespaces/{namespace}/models/{model}`
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  // The maximum number of versions to return. The default and cap values are 10
   // and 100, respectively.
-  optional int32 page_size = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
   // Page number.
-  optional int32 page = 4 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 page = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListNamespaceModelVersionsResponse contains a list of models.
 message ListNamespaceModelVersionsResponse {
   // A list of model resources.
   repeated ModelVersion versions = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Total number of tags.
+  // Total number of versions.
   int32 total_size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The requested page size.
   int32 page_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -516,51 +493,56 @@ message ListNamespaceModelVersionsResponse {
   int32 page = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// DeleteNamespaceModelVersionRequest represents a request to delete a model version
-//  owned by a namespace.
+// DeleteNamespaceModelVersionRequest represents a request to delete a model
+// version owned by a namespace.
+// Follows AIP-135: https://google.aip.dev/135
 message DeleteNamespaceModelVersionRequest {
-  // Namespace ID
-  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
-  // Model ID
-  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
-  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // The resource name of the model version to delete.
+  // Format: `namespaces/{namespace}/models/{model}/versions/{version}`
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 // DeleteNamespaceModelVersionResponse is an empty response.
 message DeleteNamespaceModelVersionResponse {}
 
-// TriggerNamespaceModelRequest represents a request to trigger a model inference.
+// TriggerNamespaceModelRequest represents a request to trigger a model
+// inference.
 message TriggerNamespaceModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleteted field.
+  reserved 3;
+  // Model version
   string version = 4 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 5 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerNamespaceModelResponse contains the model inference results.
 message TriggerNamespaceModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncNamespaceModelRequest represents a request to trigger a model inference
-// asynchronously.
+// TriggerAsyncNamespaceModelRequest represents a request to trigger a model
+// inference asynchronously.
 message TriggerAsyncNamespaceModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleteted field.
+  reserved 3;
+  // Model version
   string version = 4 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 5 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerAsyncNamespaceModelResponse contains the information to access the
@@ -570,91 +552,150 @@ message TriggerAsyncNamespaceModelResponse {
   google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerNamespaceLatestModelRequest represents a request to trigger a model inference
-// with the latest uploaded version.
+// TriggerNamespaceLatestModelRequest represents a request to trigger a model
+// inference with the latest uploaded version.
 message TriggerNamespaceLatestModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
+  // Deleteted field.
+  reserved 3;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerNamespaceLatestModelResponse contains the model inference results.
 message TriggerNamespaceLatestModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncNamespaceLatestModelRequest represents a request to trigger a model inference
-// asynchronously with the latest uploaded version.
+// TriggerAsyncNamespaceLatestModelRequest represents a request to trigger a
+// model inference asynchronously with the latest uploaded version.
 message TriggerAsyncNamespaceLatestModelRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
+  // Deleteted field.
+  reserved 3;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerAsyncNamespaceLatestModelResponse contains the information to access the
-// status of an asynchronous model inference.
+// TriggerAsyncNamespaceLatestModelResponse contains the information to access
+// the status of an asynchronous model inference.
 message TriggerAsyncNamespaceLatestModelResponse {
   // Long-running operation information.
   google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerNamespaceModelBinaryFileUploadRequest represents a request trigger a model
-// inference by uploading a binary file as the input.
+// TriggerNamespaceModelBinaryFileUploadRequest represents a request trigger a
+// model inference by uploading a binary file as the input.
 message TriggerNamespaceModelBinaryFileUploadRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Inference input as a binary file.
-  TaskInputStream task_input = 3 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 3;
+  // Model version
   string version = 4 [(google.api.field_behavior) = REQUIRED];
+  // Inference input as a binary file.
+  repeated google.protobuf.Struct task_input = 5 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerNamespaceModelBinaryFileUploadResponse contains the model inference results.
+// TriggerNamespaceModelBinaryFileUploadResponse contains the model inference
+// results.
 message TriggerNamespaceModelBinaryFileUploadResponse {
   // Task type.
   common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  // Deleteted field.
+  reserved 2;
+  // Deleteted field.
+  reserved 3;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
-  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated google.protobuf.Struct task_outputs = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// GetNamespaceLatestModelOperationRequest represents a request to fetch the latest long-running
-// operation performed on a model for a namespace.
+// TriggerNamespaceModelLatestBinaryFileUploadRequest represents a request
+// trigger a model inference by uploading a binary file as the input.
+message TriggerNamespaceLatestModelBinaryFileUploadRequest {
+  // Namespace ID
+  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Model ID
+  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 3;
+  // Inference input as a binary file.
+  repeated google.protobuf.Struct task_input = 4 [(google.api.field_behavior) = REQUIRED];
+}
+
+// TriggerNamespaceLatestModelBinaryFileUploadResponse contains the model
+// inference results.
+message TriggerNamespaceLatestModelBinaryFileUploadResponse {
+  // Task type.
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  reserved 2;
+  // Deleteted field.
+  // Model inference outputs.
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// GetNamespaceLatestModelOperationRequest represents a request to fetch the
+// latest long-running operation performed on a model for a namespace.
 message GetNamespaceLatestModelOperationRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // View allows clients to specify the desired operation result in the response.
+  // View allows clients to specify the desired operation result in the
+  // response.
   optional View view = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// GetNamespaceLatestModelOperationRequest represents a request to query a long-running
-// operation.
+// GetNamespaceLatestModelOperationResponse represents a response to query a
+// long-running operation.
 message GetNamespaceLatestModelOperationResponse {
+  // The long-running operation.
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// GetNamespaceModelOperationRequest represents a request to fetch the
+// long-running operation performed on a particular model version for a
+// namespace.
+message GetNamespaceModelOperationRequest {
+  // Namespace ID
+  string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Model ID
+  string model_id = 2 [(google.api.field_behavior) = REQUIRED];
+  // Model version
+  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // View allows clients to specify the desired operation result in the
+  // response.
+  optional View view = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// GetNamespaceModelOperationResponse represents a response to query a
+// long-running operation.
+message GetNamespaceModelOperationResponse {
   // The long-running operation.
   google.longrunning.Operation operation = 1;
 }
 
-// DeployNamespaceModelAdminRequest represents a request to deploy a model to online state
+// DeployNamespaceModelAdminRequest represents a request to deploy a model to
+// online state
 message DeployNamespaceModelAdminRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
@@ -666,20 +707,21 @@ message DeployNamespaceModelAdminResponse {
   reserved 1;
 }
 
-// UndeployNamespaceModelAdminRequest represents a request to undeploy a model to offline
-// state
+// UndeployNamespaceModelAdminRequest represents a request to undeploy a model
+// to offline state
 message UndeployNamespaceModelAdminRequest {
   // Namespace ID
   string namespace_id = 1 [(google.api.field_behavior) = REQUIRED];
   // Model ID
   string model_id = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// UndeployNamespaceModelAdminResponse represents a response for a undeployed model
+// UndeployNamespaceModelAdminResponse represents a response for a undeployed
+// model
 message UndeployNamespaceModelAdminResponse {
   // Deprecated operation
   reserved 1;
@@ -693,7 +735,6 @@ message CreateUserModelRequest {
   // Format: `users/{user.id}`.
   string parent = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_name"}
     }
@@ -703,7 +744,7 @@ message CreateUserModelRequest {
 // CreateUserModelResponse contains the created model.
 message CreateUserModelResponse {
   // The created model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListUserModelsRequest represents a request to list the models of a user.
@@ -720,7 +761,6 @@ message ListUserModelsRequest {
   // - Format: `users/{user.id}`.
   string parent = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_name"}
     }
@@ -733,19 +773,20 @@ message ListUserModelsRequest {
   optional string filter = 6 [(google.api.field_behavior) = OPTIONAL];
   // Limit results to pipelines with the specified visibility.
   optional Model.Visibility visibility = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Order by field, with options for ordering by `id`, `create_time` or `update_time`.
-  // Format: `order_by=id` or `order_by=create_time desc`, default is `asc`.
+  // Order by field, with options for ordering by `id`, `create_time` or
+  // `update_time`. Format: `order_by=id` or `order_by=create_time desc`,
+  // default is `asc`.
   optional string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListUserModelsResponse contains a list of models.
 message ListUserModelsResponse {
   // A list of model resources.
-  repeated Model models = 1;
+  repeated Model models = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Next page token.
-  string next_page_token = 2;
+  string next_page_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Total number of models.
-  int32 total_size = 3;
+  int32 total_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // GetUserModelRequest represents a request to fetch the details of a model
@@ -756,7 +797,7 @@ message GetUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -768,7 +809,7 @@ message GetUserModelRequest {
 // GetUserModelResponse contains the requested model.
 message GetUserModelResponse {
   // The model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // UpdateUserModelRequest represents a request to update a model owned by a
@@ -786,7 +827,7 @@ message UpdateUserModelRequest {
 // UpdateUserModelResponse contains the updated model.
 message UpdateUserModelResponse {
   // The updated model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DeleteUserModelRequest represents a request to delete a model owned by a
@@ -797,7 +838,7 @@ message DeleteUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -814,7 +855,7 @@ message RenameUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -828,68 +869,7 @@ message RenameUserModelRequest {
 // RenameUserModelResponse contains a renamed model.
 message RenameUserModelResponse {
   // The renamed model resource.
-  Model model = 1;
-}
-
-// PublisUserhModelRequest represents a request to publish a model.
-message PublishUserModelRequest {
-  // The resource name of the model, which allows its access by parent user
-  // and ID.
-  // - Format: `users/{user.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_model_name"}
-    }
-  ];
-}
-
-// PublishUserModelResponse contains a published model.
-message PublishUserModelResponse {
-  // The published model resource.
-  Model model = 1;
-}
-
-// UnpublishUserModelRequest represents a request to unpublish a model.
-message UnpublishUserModelRequest {
-  // The resource name of the model, which allows its access by parent user
-  // and ID.
-  // - Format: `users/{user.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_model_name"}
-    }
-  ];
-}
-
-// UnpublishUserModelResponse contains an unpublished model.
-message UnpublishUserModelResponse {
-  // The unpublished model resource.
-  Model model = 1;
-}
-
-// GetUserModelCardRequest represents a request to fetch the README card of a
-// model.
-message GetUserModelCardRequest {
-  // The resource name of the model card, which allows its access by parent
-  // user and model ID.
-  // - Format: `users/{user.id}/models/{model.id}/readme`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/ModelCard",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "user_model_card_name"}
-    }
-  ];
-}
-
-// GetUserModelCardResponse contains the model's README card.
-message GetUserModelCardResponse {
-  // A model card resource.
-  ModelCard readme = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // WatchUserModelRequest represents a request to fetch current state of a model
@@ -899,23 +879,23 @@ message WatchUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // WatchUserModelResponse contains the state of a model.
 message WatchUserModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // WatchUserLatestModelRequest represents a request to fetch current state of
@@ -926,7 +906,7 @@ message WatchUserLatestModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -936,17 +916,17 @@ message WatchUserLatestModelRequest {
 // WatchUserLatestModelResponse contains the state of the latest model version.
 message WatchUserLatestModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListUserModelVersionsRequest represents a request to list all the versions
 // of a model namespace of a user.
 message ListUserModelVersionsRequest {
-  // The maximum number of tags to return. The default and cap values are 10
+  // The maximum number of versions to return. The default and cap values are 10
   // and 100, respectively.
   optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
   // Page number.
@@ -958,7 +938,7 @@ message ListUserModelVersionsRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
@@ -968,13 +948,13 @@ message ListUserModelVersionsRequest {
 // ListUserModelVersionsResponse contains a list of models.
 message ListUserModelVersionsResponse {
   // A list of model resources.
-  repeated ModelVersion versions = 1;
-  // Total number of tags.
-  int32 total_size = 2;
+  repeated ModelVersion versions = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Total number of versions.
+  int32 total_size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The requested page size.
-  int32 page_size = 3;
+  int32 page_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The requested page offset.
-  int32 page = 4;
+  int32 page = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DeleteUserModelVersionRequest represents a request to delete a model version
@@ -985,12 +965,12 @@ message DeleteUserModelVersionRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -1001,99 +981,6 @@ message DeleteUserModelVersionResponse {}
 //  Trigger methods
 ////////////////////////////////////
 
-// TaskInput represents a question or task for an AI model.
-message TaskInput {
-  // Input type.
-  oneof input {
-    // Image classification input.
-    ClassificationInput classification = 1;
-    // Object detection input.
-    DetectionInput detection = 2;
-    // Keypoint detection input.
-    KeypointInput keypoint = 3;
-    // Optical Character Recognition input.
-    OcrInput ocr = 4;
-    // Instance segmentation input.
-    InstanceSegmentationInput instance_segmentation = 5;
-    // Semantic segmentation input.
-    SemanticSegmentationInput semantic_segmentation = 6;
-    // Text to image input.
-    TextToImageInput text_to_image = 7;
-    // Image to image input.
-    ImageToImageInput image_to_image = 8;
-    // Text generation input.
-    TextGenerationInput text_generation = 9;
-    // Conversational text generation input.
-    TextGenerationChatInput text_generation_chat = 10;
-    // Visual question answering input.
-    VisualQuestionAnsweringInput visual_question_answering = 11;
-    // Unspecified task input.
-    UnspecifiedInput unspecified = 12;
-  }
-}
-
-// TaskInputStream represents the input to trigger a model with stream method
-message TaskInputStream {
-  // Input type
-  oneof input {
-    // The classification input
-    ClassificationInputStream classification = 1;
-    // The detection input
-    DetectionInputStream detection = 2;
-    // The keypoint input
-    KeypointInputStream keypoint = 3;
-    // The ocr input
-    OcrInputStream ocr = 4;
-    // The instance segmentation input
-    InstanceSegmentationInputStream instance_segmentation = 5;
-    // The semantic segmentation input
-    SemanticSegmentationInputStream semantic_segmentation = 6;
-    // The text to image input
-    TextToImageInput text_to_image = 7;
-    // The image to image input
-    ImageToImageInput image_to_image = 8;
-    // The text generation input
-    TextGenerationInput text_generation = 9;
-    // The text generation chat input
-    TextGenerationChatInput text_generation_chat = 10;
-    // The visual question answering input
-    VisualQuestionAnsweringInput visual_question_answering = 11;
-    // The unspecified task input
-    UnspecifiedInput unspecified = 12;
-  }
-}
-
-// TaskOutput represents the result of an AI task performed by a model.
-message TaskOutput {
-  // Inference task output.
-  oneof output {
-    // Image classification output.
-    ClassificationOutput classification = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Object detection output.
-    DetectionOutput detection = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Keypoint detection output.
-    KeypointOutput keypoint = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Optical Character Recognition output.
-    OcrOutput ocr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Instance segmentation output.
-    InstanceSegmentationOutput instance_segmentation = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Semantic segmentation output.
-    SemanticSegmentationOutput semantic_segmentation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Text to image output.
-    TextToImageOutput text_to_image = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Image to image output.
-    ImageToImageOutput image_to_image = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Text generation output.
-    TextGenerationOutput text_generation = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Conversational text generation output.
-    TextGenerationChatOutput text_generation_chat = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Visual question answering output.
-    VisualQuestionAnsweringOutput visual_question_answering = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-    // Unspecified task output.
-    UnspecifiedOutput unspecified = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
-  }
-}
-
 // TriggerUserModelRequest represents a request to trigger a model inference.
 message TriggerUserModelRequest {
   // The resource name of the model , which allows its access by parent user
@@ -1101,42 +988,48 @@ message TriggerUserModelRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerUserModelResponse contains the model inference results.
 message TriggerUserModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncUserModelRequest represents a request to trigger a model inference
-// asynchronously.
+// TriggerAsyncUserModelRequest represents a request to trigger a model
+// inference asynchronously.
 message TriggerAsyncUserModelRequest {
   // The resource name of the model , which allows its access by parent user
   // and ID.
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerAsyncUserModelResponse contains the information to access the
@@ -1146,46 +1039,52 @@ message TriggerAsyncUserModelResponse {
   google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerUserLatestModelRequest represents a request to trigger a model inference
-// with the latest uploaded version.
+// TriggerUserLatestModelRequest represents a request to trigger a model
+// inference with the latest uploaded version.
 message TriggerUserLatestModelRequest {
   // The resource name of the model , which allows its access by parent user
   // and ID.
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerUserLatestModelResponse contains the model inference results.
 message TriggerUserLatestModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncUserLatestModelRequest represents a request to trigger a model inference
-// asynchronously with the latest uploaded version.
+// TriggerAsyncUserLatestModelRequest represents a request to trigger a model
+// inference asynchronously with the latest uploaded version.
 message TriggerAsyncUserLatestModelRequest {
   // The resource name of the model , which allows its access by parent user
   // and ID.
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerAsyncUserLatestModelResponse contains the information to access the
@@ -1203,32 +1102,38 @@ message TriggerUserModelBinaryFileUploadRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Inference input as a binary file.
-  TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerUserModelBinaryFileUploadResponse contains the model inference results.
+// TriggerUserModelBinaryFileUploadResponse contains the model inference
+// results.
 message TriggerUserModelBinaryFileUploadResponse {
   // Task type.
   common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
+  // Deleted field.
+  reserved 3;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
-  string version = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated google.protobuf.Struct task_outputs = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 ////////////////////////////////////
 //  Organization methods
 ////////////////////////////////////
 
-// CreateOrganizationModelRequest represents a request from an organization to create a model.
+// CreateOrganizationModelRequest represents a request from an organization to
+// create a model.
 message CreateOrganizationModelRequest {
   // The properties of the model to be created.
   Model model = 1;
@@ -1236,7 +1141,7 @@ message CreateOrganizationModelRequest {
   // Format: `organizations/{organization.id}`.
   string parent = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_name"}
     }
@@ -1246,7 +1151,7 @@ message CreateOrganizationModelRequest {
 // CreateOrganizationModelResponse contains the created model.
 message CreateOrganizationModelResponse {
   // The created model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListOrganizationModelsRequest represents a request to list the models
@@ -1264,7 +1169,7 @@ message ListOrganizationModelsRequest {
   // - Format: `organizations/{organizations.id}`.
   string parent = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {child_type: "api.instill-ai.com/Model"},
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_name"}
     }
@@ -1277,30 +1182,31 @@ message ListOrganizationModelsRequest {
   optional string filter = 6 [(google.api.field_behavior) = OPTIONAL];
   // Limit results to pipelines with the specified visibility.
   optional Model.Visibility visibility = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Order by field, with options for ordering by `id`, `create_time` or `update_time`.
-  // Format: `order_by=id` or `order_by=create_time desc`, default is `asc`.
+  // Order by field, with options for ordering by `id`, `create_time` or
+  // `update_time`. Format: `order_by=id` or `order_by=create_time desc`,
+  // default is `asc`.
   optional string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ListOrganizationModelsResponse contains a list of models.
 message ListOrganizationModelsResponse {
   // A list of model resources.
-  repeated Model models = 1;
+  repeated Model models = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Next page token.
-  string next_page_token = 2;
+  string next_page_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Total number of models.
-  int32 total_size = 3;
+  int32 total_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// GetOrganizationModelRequest represents a request to fetch the details of a model
-// owned by an organization.
+// GetOrganizationModelRequest represents a request to fetch the details of a
+// model owned by an organization.
 message GetOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1312,11 +1218,11 @@ message GetOrganizationModelRequest {
 // GetOrganizationModelResponse contains the requested model.
 message GetOrganizationModelResponse {
   // The model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// UpdateOrganizationModelRequest represents a request to update a model owned by an
-// organization.
+// UpdateOrganizationModelRequest represents a request to update a model owned
+// by an organization.
 message UpdateOrganizationModelRequest {
   // The model to update
   Model model = 1 [(google.api.field_behavior) = REQUIRED];
@@ -1330,18 +1236,18 @@ message UpdateOrganizationModelRequest {
 // UpdateOrganizationModelResponse contains the updated model.
 message UpdateOrganizationModelResponse {
   // The updated model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// DeleteOrganizationModelRequest represents a request to delete a model owned by an
-// organization.
+// DeleteOrganizationModelRequest represents a request to delete a model owned
+// by an organization.
 message DeleteOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1353,12 +1259,12 @@ message DeleteOrganizationModelResponse {}
 
 // RenameOrganizationModelRequest represents a request to rename a model
 message RenameOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1372,125 +1278,66 @@ message RenameOrganizationModelRequest {
 // RenameOrganizationModelResponse contains a renamed model.
 message RenameOrganizationModelResponse {
   // The renamed model resource.
-  Model model = 1;
+  Model model = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// PublisOrganizationhModelRequest represents a request to publish a model.
-message PublishOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
-  // - Format: `organizations/{organization.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_model_name"}
-    }
-  ];
-}
-
-// PublishOrganizationModelResponse contains a published model.
-message PublishOrganizationModelResponse {
-  // The published model resource.
-  Model model = 1;
-}
-
-// UnpublishOrganizationModelRequest represents a request to unpublish a model.
-message UnpublishOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
-  // - Format: `organizations/{organization.id}/models/{model.id}`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_model_name"}
-    }
-  ];
-}
-
-// UnpublishOrganizationModelResponse contains an unpublished model.
-message UnpublishOrganizationModelResponse {
-  // The unpublished model resource.
-  Model model = 1;
-}
-
-// GetOrganizationModelCardRequest represents a request to fetch the README card of a
-// model.
-message GetOrganizationModelCardRequest {
-  // The resource name of the model card, which allows its access by parent
-  // organization and model ID.
-  // - Format: `organizations/{organization.id}/models/{model.id}/readme`.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/ModelCard",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      field_configuration: {path_param_name: "organization_model_card_name"}
-    }
-  ];
-}
-
-// GetOrganizationModelCardResponse contains the model's README card.
-message GetOrganizationModelCardResponse {
-  // A model card resource.
-  ModelCard readme = 1;
-}
-
-// WatchOrganizationModelRequest represents a request to fetch current state of a model.
+// WatchOrganizationModelRequest represents a request to fetch current state of
+// a model.
 message WatchOrganizationModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // WatchOrganizationModelResponse contains the state of a model.
 message WatchOrganizationModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// WatchOrganizationLatestModelRequest represents a request to fetch current state of
-// the latest model version
+// WatchOrganizationLatestModelRequest represents a request to fetch current
+// state of the latest model version
 message WatchOrganizationLatestModelRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
 }
 
-// WatchOrganizationLatestModelResponse contains the state of the latest model version.
+// WatchOrganizationLatestModelResponse contains the state of the latest model
+// version.
 message WatchOrganizationLatestModelResponse {
   // State.
-  State state = 1;
+  State state = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Deprecated field `progress`
   reserved 2;
   // Detail description of the state
-  string message = 3;
+  string message = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// ListOrganizationModelVersionsRequest represents a request to list all the versions
-// of a model namespace of an organization.
+// ListOrganizationModelVersionsRequest represents a request to list all the
+// versions of a model namespace of an organization.
 message ListOrganizationModelVersionsRequest {
-  // The maximum number of tags to return. The default and cap values are 10
+  // The maximum number of versions to return. The default and cap values are 10
   // and 100, respectively.
   optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
   // Page number.
@@ -1502,7 +1349,7 @@ message ListOrganizationModelVersionsRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 3 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
@@ -1512,16 +1359,17 @@ message ListOrganizationModelVersionsRequest {
 // ListOrganizationModelVersionsResponse contains a list of models.
 message ListOrganizationModelVersionsResponse {
   // A list of model resources.
-  repeated ModelVersion versions = 1;
-  // Total number of tags.
-  int32 total_size = 2;
+  repeated ModelVersion versions = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Total number of versions.
+  int32 total_size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The requested page size.
-  int32 page_size = 3;
+  int32 page_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The requested page offset.
-  int32 page = 4;
+  int32 page = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// DeleteOrganizationModelVersionRequest represents a request to delete a model version
+// DeleteOrganizationModelVersionRequest represents a request to delete a model
+// version
 //  owned by an organization.
 message DeleteOrganizationModelVersionRequest {
   // The parent resource, i.e., the user that created the models.
@@ -1531,61 +1379,68 @@ message DeleteOrganizationModelVersionRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // DeleteOrganizationModelVersionResponse is an empty response.
 message DeleteOrganizationModelVersionResponse {}
 
-// TriggerOrganizationModelRequest represents a request to trigger a model inference.
+// TriggerOrganizationModelRequest represents a request to trigger a model
+// inference.
 message TriggerOrganizationModelRequest {
-  // The resource name of the model , which allows its access by parent organization
-  // and ID.
+  // The resource name of the model , which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerOrganizationModelResponse contains the model inference results.
 message TriggerOrganizationModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncOrganizationModelRequest represents a request to trigger a model inference
-// asynchronously
+// TriggerAsyncOrganizationModelRequest represents a request to trigger a model
+// inference asynchronously
 message TriggerAsyncOrganizationModelRequest {
-  // The resource name of the model , which allows its access by parent organization
-  // and ID.
+  // The resource name of the model , which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerAsyncOrganizationModelResponse contains the information to access the
@@ -1595,87 +1450,98 @@ message TriggerAsyncOrganizationModelResponse {
   google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerOrganizationLatestModelRequest represents a request to trigger a model inference.
+// TriggerOrganizationLatestModelRequest represents a request to trigger a model
+// inference.
 message TriggerOrganizationLatestModelRequest {
-  // The resource name of the model , which allows its access by parent organization
-  // and ID.
+  // The resource name of the model , which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 // TriggerOrganizationLatestModelResponse contains the model inference results.
 message TriggerOrganizationLatestModelResponse {
   // Task type.
-  common.task.v1alpha.Task task = 1;
+  common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2;
+  repeated google.protobuf.Struct task_outputs = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerAsyncOrganizationLatestModelRequest represents a request to trigger a model inference
-// asynchronously
+// TriggerAsyncOrganizationLatestModelRequest represents a request to trigger a
+// model inference asynchronously
 message TriggerAsyncOrganizationLatestModelRequest {
-  // The resource name of the model , which allows its access by parent organization
-  // and ID.
+  // The resource name of the model , which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Inference input parameters.
-  repeated TaskInput task_inputs = 2 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerAsyncOrganizationLatestModelResponse contains the information to access the
-// status of an asynchronous model inference.
+// TriggerAsyncOrganizationLatestModelResponse contains the information to
+// access the status of an asynchronous model inference.
 message TriggerAsyncOrganizationLatestModelResponse {
   // Long-running operation information.
   google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// TriggerOrganizationModelBinaryFileUploadRequest represents a request trigger a model
-// inference by uploading a binary file as the input.
+// TriggerOrganizationModelBinaryFileUploadRequest represents a request trigger
+// a model inference by uploading a binary file as the input.
 message TriggerOrganizationModelBinaryFileUploadRequest {
-  // The resource name of the model , which allows its access by parent organization
-  // and ID.
+  // The resource name of the model , which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Inference input as a binary file.
-  TaskInputStream task_input = 2 [(google.api.field_behavior) = REQUIRED];
-  // Model version tag
+  // Deleted field.
+  reserved 2;
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
+  // Model inference inputs.
+  repeated google.protobuf.Struct task_inputs = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
-// TriggerOrganizationModelBinaryFileUploadResponse contains the model inference results.
+// TriggerOrganizationModelBinaryFileUploadResponse contains the model inference
+// results.
 message TriggerOrganizationModelBinaryFileUploadResponse {
   // Task type.
   common.task.v1alpha.Task task = 1 [(google.api.field_behavior) = REQUIRED];
+  // Deleted field.
+  reserved 2;
   // Model inference outputs.
-  repeated TaskOutput task_outputs = 2 [(google.api.field_behavior) = REQUIRED];
+  repeated google.protobuf.Struct task_outputs = 4;
 }
 
 // GetModelOperationRequest represents a request to fetch a long-running
 // operation performed on a model.
 message GetModelOperationRequest {
   // The resource name of the model, which allows its access ID.
-  // - Format: `operations/{operation.id}`.
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string operation_id = 1 [(google.api.field_behavior) = REQUIRED];
   // View allows clients to specify the desired model view in the response.
   optional View view = 2 [
     deprecated = true,
@@ -1687,63 +1553,70 @@ message GetModelOperationRequest {
 // operation.
 message GetModelOperationResponse {
   // The long-running operation.
-  google.longrunning.Operation operation = 1;
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// LatestOperation represents an internal message for GetLatestModelOperation Response
+// LatestOperation represents an internal message for GetLatestModelOperation
+// Response
 message LatestOperation {
+  // Deprecated input request type
+  reserved 1;
+  // Deprecated output response type
+  reserved 2;
   // Input request
-  TriggerUserModelRequest request = 1;
+  TriggerNamespaceModelRequest request = 3;
   // Output response
-  TriggerUserModelResponse response = 2;
+  TriggerNamespaceModelResponse response = 4;
 }
 
-// GetUserLatestModelOperationRequest represents a request to fetch the latest long-running
-// operation performed on a model for a user.
+// GetUserLatestModelOperationRequest represents a request to fetch the latest
+// long-running operation performed on a model for a user.
 message GetUserLatestModelOperationRequest {
   // The resource name of the model, which allows its access by parent user
   // and ID.
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // View allows clients to specify the desired operation result in the response.
+  // View allows clients to specify the desired operation result in the
+  // response.
   optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// GetUserLatestModelOperationRequest represents a request to query a long-running
-// operation.
+// GetUserLatestModelOperationRequest represents a request to query a
+// long-running operation.
 message GetUserLatestModelOperationResponse {
   // The long-running operation.
-  google.longrunning.Operation operation = 1;
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-// GetOrganizationLatestModelOperationRequest represents a request to fetch the latest long-running
-// operation performed on a model for a user.
+// GetOrganizationLatestModelOperationRequest represents a request to fetch the
+// latest long-running operation performed on a model for a user.
 message GetOrganizationLatestModelOperationRequest {
-  // The resource name of the model, which allows its access by parent organization
-  // and ID.
+  // The resource name of the model, which allows its access by parent
+  // organization and ID.
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // View allows clients to specify the desired operation result in the response.
+  // View allows clients to specify the desired operation result in the
+  // response.
   optional View view = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// GetOrganizationLatestModelOperationRequest represents a request to query a long-running
-// operation.
+// GetOrganizationLatestModelOperationRequest represents a request to query a
+// long-running operation.
 message GetOrganizationLatestModelOperationResponse {
   // The long-running operation.
-  google.longrunning.Operation operation = 1;
+  google.longrunning.Operation operation = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ListAvailableRegionsRequest represents a request to fetch a list
@@ -1754,7 +1627,7 @@ message ListAvailableRegionsRequest {}
 // regions and hardware types a model can be deployed on.
 message ListAvailableRegionsResponse {
   // A list of available region
-  repeated Region regions = 1;
+  repeated Region regions = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ========== Private endpoints
@@ -1809,7 +1682,8 @@ message LookUpModelAdminResponse {
   Model model = 1;
 }
 
-// DeployUserModelAdminRequest represents a request to deploy a model to online state
+// DeployUserModelAdminRequest represents a request to deploy a model to online
+// state
 message DeployUserModelAdminRequest {
   reserved 1;
   // The resource name of the model, which allows its access by parent user
@@ -1817,12 +1691,12 @@ message DeployUserModelAdminRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
@@ -1834,7 +1708,8 @@ message DeployUserModelAdminResponse {
   reserved 1;
 }
 
-// DeployOrganizationModelAdminRequest represents a request to deploy a model to online state
+// DeployOrganizationModelAdminRequest represents a request to deploy a model to
+// online state
 message DeployOrganizationModelAdminRequest {
   reserved 1;
   // The resource name of the model, which allows its access by parent user
@@ -1842,22 +1717,23 @@ message DeployOrganizationModelAdminRequest {
   // - Format: `organizations/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// DeployOrganizationModelAdminResponse represents a response for a deployed model
+// DeployOrganizationModelAdminResponse represents a response for a deployed
+// model
 message DeployOrganizationModelAdminResponse {}
 
-// UndeployUserModelAdminRequest represents a request to undeploy a model to offline
-// state
+// UndeployUserModelAdminRequest represents a request to undeploy a model to
+// offline state
 message UndeployUserModelAdminRequest {
   reserved 1;
   // The resource name of the model, which allows its access by parent user
@@ -1865,12 +1741,12 @@ message UndeployUserModelAdminRequest {
   // - Format: `users/{user.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "user_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
@@ -1882,8 +1758,8 @@ message UndeployUserModelAdminResponse {
   reserved 1;
 }
 
-// UndeployOrganizationModelAdminRequest represents a request to undeploy a model to offline
-// state
+// UndeployOrganizationModelAdminRequest represents a request to undeploy a
+// model to offline state
 message UndeployOrganizationModelAdminRequest {
   reserved 1;
   // The resource name of the model, which allows its access by parent user
@@ -1891,16 +1767,248 @@ message UndeployOrganizationModelAdminRequest {
   // - Format: `organizations/{organization.id}/models/{model.id}`.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "api.instill-ai.com/Model",
+
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       field_configuration: {path_param_name: "organization_model_name"}
     }
   ];
-  // Model version tag
+  // Model version
   string version = 3 [(google.api.field_behavior) = REQUIRED];
   // Model image digest
   string digest = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// UndeployOrganizationModelAdminResponse represents a response for a undeployed model
+// UndeployOrganizationModelAdminResponse represents a response for a undeployed
+// model
 message UndeployOrganizationModelAdminResponse {}
+
+// ModelRun contains information about a run of models.
+message ModelRun {
+  // Model Run UUID.
+  string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // 2 is reserved for the model UUID. Public resources should be identified by
+  // their ID and parent resource.
+  reserved 2;
+  // Model run status.
+  common.run.v1alpha.RunStatus status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Run source.
+  common.run.v1alpha.RunSource source = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Run total duration in milliseconds.
+  optional int32 total_duration = 5 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // Run end time.
+  optional google.protobuf.Timestamp end_time = 6 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // Runner ID. If current viewing requester does not have enough permission, it
+  // will return null.
+  optional string runner_id = 7 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // The amount of Instill Credit consumed by the run. This field will only be
+  // present on Instill Cloud.
+  optional float credit_amount = 8 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // Error message occurred during model run.
+  optional string error = 9 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // Model run created time.
+  google.protobuf.Timestamp create_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Model run updated time.
+  google.protobuf.Timestamp update_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The model version identifier, which is same as image tag.
+  string version = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Model inference input.
+  repeated google.protobuf.Struct task_inputs = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Model inference outputs.
+  repeated google.protobuf.Struct task_outputs = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Model ID.
+  optional string model_id = 15 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+  // Requester ID. The namespace used to trigger the run. This field might be
+  // empty if the model run belongs to a deleted namespace.
+  string requester_id = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // ID of the namespace that owns the model.
+  string model_namespace_id = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ListModelRunsRequest represents a request to list of model runs.
+message ListModelRunsRequest {
+  // The maximum number of runs to return. The default and cap values are 10
+  // and 100, respectively.
+  optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Page number.
+  optional int32 page = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Deprecated: View allows clients to specify the desired run view in the
+  // response. The basic view excludes input / output data.
+  reserved 3;
+  // Sort the results by the given expression.
+  // Format: `field [ASC | DESC], where `field` can be:
+  // - `create_time`
+  // - `update_time`
+  // By default, results are sorted by descending creation time.
+  optional string order_by = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Namespace ID.
+  string namespace_id = 5 [(google.api.field_behavior) = REQUIRED];
+  // Model ID.
+  string model_id = 6 [(google.api.field_behavior) = REQUIRED];
+  // Filter can hold an [AIP-160](https://google.aip.dev/160)-compliant filter
+  // expression.
+  // - Example: `create_time>timestamp("2000-06-19T23:31:08.657Z")`.
+  // The filter can be applied to the following fields:
+  // - `create_time`
+  optional string filter = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ListModelRunsByRequesterRequest is the request message for
+// ListModelRunsByRequester.
+message ListModelRunsByRequesterRequest {
+  // The maximum number of runs to return. The default and cap values are 10
+  // and 100, respectively.
+  optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Page number.
+  optional int32 page = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Sort the results by the given expression.
+  // Format: `field [ASC | DESC], where `field` can be:
+  // - `create_time`
+  // - `update_time`
+  // By default, results are sorted by descending creation time.
+  optional string order_by = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter can hold an [AIP-160](https://google.aip.dev/160)-compliant filter
+  // expression.
+  // - Example: `status="RUN_STATUS_COMPLETED"`.
+  // The filter can be applied to the following fields:
+  // - `status`
+  // - `source`
+  optional string filter = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Beginning of the time range from which the records will be fetched.
+  // The default value is the beginning of the current day, in UTC.
+  optional google.protobuf.Timestamp start = 5;
+  // End of the time range from which the records will be fetched.
+  // The default value is the current timestamp.
+  optional google.protobuf.Timestamp stop = 6;
+  // Requester ID.
+  string requester_id = 7 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListModelRunsResponse contains a list of model runs.
+message ListModelRunsResponse {
+  // A list of runs resources.
+  repeated ModelRun runs = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Total number of runs.
+  int32 total_size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The requested page size.
+  int32 page_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The requested page offset.
+  int32 page = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ListModelRunsByRequesterResponse is the request message for
+// ListModelRunsByRequester.
+message ListModelRunsByRequesterResponse {
+  // A list of runs resources.
+  repeated ModelRun runs = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Total number of runs.
+  int32 total_size = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The requested page size.
+  int32 page_size = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The requested page offset.
+  int32 page = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// RepositoryTag contains information about the version of some content in a
+// repository (e.g., Docker registry for model images).
+message RepositoryTag {
+  // The name of the tag, defined by its parent repository and ID.
+  // - Format: `repositories/{repository.id}/tags/{tag.id}`.
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  // The tag identifier.
+  string id = 2 [(google.api.field_behavior) = IMMUTABLE];
+
+  // The Model backend will register the tag digest and timestamp when a
+  // new version is pushed. However, the registry remains the source of truth
+  // for tags, so if this information isn't found in the Model database,
+  // these fields will be empty.
+
+  // Unique identifier, computed from the manifest the tag refers to.
+  string digest = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Tag update time, i.e. timestamp of the last push.
+  google.protobuf.Timestamp update_time = 4 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+}
+
+// ListRepositoryTagsRequest represents a request to list the tags of a
+// repository.
+message ListRepositoryTagsRequest {
+  // The maximum number of tags to return. The default and cap values are 10
+  // and 100, respectively.
+  optional int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Page number.
+  optional int32 page = 2 [(google.api.field_behavior) = OPTIONAL];
+  // The repository holding the different versions of a given content.
+  // - Format: `repositories/{repository.id}`.
+  // - Example: `repositories/flaming-wombat/llama-2-7b`.
+  string parent = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListRepositoryTagsResponse contains a list of container image tags.
+message ListRepositoryTagsResponse {
+  // A list of repository tags.
+  repeated RepositoryTag tags = 1;
+  // Total number of tags.
+  int32 total_size = 2;
+  // The requested page size.
+  int32 page_size = 3;
+  // The requested page offset.
+  int32 page = 4;
+}
+
+// CreateRepositoryTagRequest represents a request to add a tag to a given
+// repository.
+message CreateRepositoryTagRequest {
+  // The tag information.
+  RepositoryTag tag = 1;
+}
+
+// CreateRepositoryTagResponse contains the created tag.
+message CreateRepositoryTagResponse {
+  // The created tag.
+  RepositoryTag tag = 1;
+}
+
+// GetRepositoryTagRequest represents a request to get a tag from a given
+// repository.
+message GetRepositoryTagRequest {
+  // The name of the tag, defined by its parent repository and ID.
+  // - Format: `repositories/{repository.id}/tags/{tag.id}`.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// GetRepositoryTagResponse contains the requested tag.
+message GetRepositoryTagResponse {
+  // The requested tag.
+  RepositoryTag tag = 1;
+}
+
+// DeleteRepositoryTagRequest represents a request to delete a tag from a given
+// repository.
+message DeleteRepositoryTagRequest {
+  // The name of the tag, defined by its parent repository and ID.
+  // - Format: `repositories/{repository.id}/tags/{tag.id}`.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// DeleteRepositoryTagResponse represent an empty response.
+message DeleteRepositoryTagResponse {}

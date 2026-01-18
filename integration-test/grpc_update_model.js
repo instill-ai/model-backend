@@ -20,9 +20,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/model/model/v1alpha'], 'model.proto');
-client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -55,7 +55,7 @@ export function UpdateUserModel(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = client.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -64,7 +64,7 @@ export function UpdateUserModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    let res = client.invoke('model.model.v1alpha.ModelPublicService/UpdateUserModel', {
+    let res = client.invoke('model.v1alpha.ModelPublicService/UpdateUserModel', {
       model: {
         name: `${constant.namespace}/models/${model_id}`,
         description: "new_description"
@@ -87,7 +87,7 @@ export function UpdateUserModel(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      let res = client.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
@@ -96,7 +96,7 @@ export function UpdateUserModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

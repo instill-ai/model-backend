@@ -17,7 +17,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/resource"
 
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	errorsx "github.com/instill-ai/x/errors"
 	resourcex "github.com/instill-ai/x/resource"
 )
@@ -191,7 +191,7 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 		if err != nil {
 			return nil, err
 		}
-		resp.TypeUrl = "buf.build/instill-ai/protobufs/model.model.v1alpha.LatestOperation"
+		resp.TypeUrl = "buf.build/instill-ai/protobufs/model.v1alpha.LatestOperation"
 		operation = longrunningpb.Operation{
 			Done: true,
 			Result: &longrunningpb.Operation_Response{

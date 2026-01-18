@@ -82,7 +82,7 @@ func main() {
 	defer closeClients()
 
 	repo := repository.NewRepository(db, redisClient)
-	cw := modelWorker.NewWorker(redisClient, rayService, repo, influxDB.WriteAPI(), minioClient, nil)
+	cw := modelWorker.NewWorker(redisClient, rayService, repo, influxDB.WriteAPI(), minioClient)
 
 	w := worker.New(temporalClient, modelWorker.TaskQueue, worker.Options{
 		WorkerStopTimeout:                      gracefulShutdownTimeout,

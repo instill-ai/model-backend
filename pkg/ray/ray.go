@@ -23,7 +23,7 @@ import (
 	"github.com/instill-ai/x/client"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	raypb "github.com/instill-ai/protogen-go/model/ray"
 	rayuserdefinedpb "github.com/instill-ai/protogen-go/model/ray/v1alpha"
 	logx "github.com/instill-ai/x/log"

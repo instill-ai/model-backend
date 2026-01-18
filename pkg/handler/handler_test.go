@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	healthcheckpb "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const NAMESPACE = "instill-ai"
@@ -25,7 +25,7 @@ func TestReadiness(t *testing.T) {
 		ctx := context.Background()
 		ctxWithValue := context.WithValue(ctx, utils.Testing, true)
 
-		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay, nil)
+		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay)
 		readyRes, err := h.Readiness(ctxWithValue, &modelpb.ReadinessRequest{})
 
 		assert.NoError(t, err)
@@ -41,7 +41,7 @@ func TestLiveness(t *testing.T) {
 		ctx := context.Background()
 		ctxWithValue := context.WithValue(ctx, utils.Testing, true)
 
-		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay, nil)
+		h := handler.NewPublicHandler(ctxWithValue, nil, mockRay)
 
 		// ctx, cancel := context.WithTimeout(context.Background(), time.Second*1000)
 		// defer cancel()

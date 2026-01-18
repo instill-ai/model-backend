@@ -10,7 +10,7 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
 )
 
 const batchSize = 100

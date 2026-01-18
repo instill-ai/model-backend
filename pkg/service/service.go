@@ -34,11 +34,11 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/model-backend/pkg/worker"
 
-	artifactpb "github.com/instill-ai/protogen-go/artifact/artifact/v1alpha"
+	artifactpb "github.com/instill-ai/protogen-go/artifact/v1alpha"
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	constantx "github.com/instill-ai/x/constant"
 	errorsx "github.com/instill-ai/x/errors"
 	logx "github.com/instill-ai/x/log"
@@ -68,7 +68,8 @@ type Service interface {
 	GetModelByUID(ctx context.Context, modelUID uuid.UUID, view modelpb.View) (*modelpb.Model, error)
 	ListNamespaceModels(ctx context.Context, ns resource.Namespace, pageSize int32, pageToken string, view modelpb.View, visibility *modelpb.Model_Visibility, filter filtering.Filter, showDeleted bool, order ordering.OrderBy) ([]*modelpb.Model, int32, string, error)
 	GetNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*modelpb.Model, error)
-	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) error
+	GetNamespaceModelUIDByID(ctx context.Context, ns resource.Namespace, modelID string) (uuid.UUID, error)
+	CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) (string, error)
 	DeleteNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string) error
 	RenameNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, newModelID string) (*modelpb.Model, error)
 	UpdateNamespaceModelByID(ctx context.Context, ns resource.Namespace, modelID string, model *modelpb.Model) (*modelpb.Model, error)
@@ -265,7 +266,7 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 
 	uid := strings.Split(permalink, "/")[1]
 	if strings.HasPrefix(permalink, "users") {
-		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{UserUid: uid})
+		resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{Permalink: fmt.Sprintf("users/%s", uid)})
 		if err != nil {
 			return nil, fmt.Errorf("fetchOwnerByPermalink error")
 		}
@@ -274,18 +275,17 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 			s.redisClient.Set(ctx, key, b, 5*time.Minute)
 		}
 		return owner, nil
-	} else {
-		resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
-		if err != nil {
-			return nil, fmt.Errorf("fetchOwnerByPermalink error")
-		}
-		owner := &mgmtpb.Owner{Owner: &mgmtpb.Owner_Organization{Organization: resp.Organization}}
-		if b, err := protojson.Marshal(owner); err == nil {
-			s.redisClient.Set(ctx, key, b, 5*time.Minute)
-		}
-		return owner, nil
-
 	}
+
+	resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
+	if err != nil {
+		return nil, fmt.Errorf("fetchOwnerByPermalink error")
+	}
+	owner := &mgmtpb.Owner{Owner: &mgmtpb.Owner_Organization{Organization: resp.Organization}}
+	if b, err := protojson.Marshal(owner); err == nil {
+		s.redisClient.Set(ctx, key, b, 5*time.Minute)
+	}
+	return owner, nil
 }
 
 func (s *service) FetchUserByUID(ctx context.Context, uid string) (*mgmtpb.User, error) {
@@ -298,7 +298,7 @@ func (s *service) FetchUserByUID(ctx context.Context, uid string) (*mgmtpb.User,
 	}
 
 	resp, err := s.mgmtPrivateServiceClient.LookUpUserAdmin(ctx, &mgmtpb.LookUpUserAdminRequest{
-		UserUid: uid,
+		Permalink: fmt.Sprintf("users/%s", uid),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("LookUpUserAdmin error: %w", err)
@@ -395,26 +395,45 @@ func (s *service) GetNamespaceModelByID(ctx context.Context, ns resource.Namespa
 	return s.DBToPBModel(ctx, modelDef, dbModel, view, true)
 }
 
-func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) error {
+// GetNamespaceModelUIDByID returns the internal UID for a model given its ID.
+// This is needed for internal operations that require the UID (e.g., permission checks, versions).
+func (s *service) GetNamespaceModelUIDByID(ctx context.Context, ns resource.Namespace, modelID string) (uuid.UUID, error) {
+	ownerPermalink := ns.Permalink()
+
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	if err != nil {
+		return uuid.Nil, errorsx.ErrNotFound
+	}
+
+	if granted, err := s.aclClient.CheckPermission(ctx, "model_", dbModel.UID, "reader"); err != nil {
+		return uuid.Nil, err
+	} else if !granted {
+		return uuid.Nil, errorsx.ErrNotFound
+	}
+
+	return dbModel.UID, nil
+}
+
+func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespace, modelDefinition *datamodel.ModelDefinition, model *modelpb.Model) (string, error) {
 
 	if err := s.checkNamespacePermission(ctx, ns); err != nil {
-		return err
+		return "", err
 	}
 
 	var modelConfig datamodel.ContainerizedModelConfiguration
 	b, err := model.GetConfiguration().MarshalJSON()
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return "", status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := json.Unmarshal(b, &modelConfig); err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return "", status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	bModelConfig, _ := json.Marshal(modelConfig)
 
 	dbModel, err := s.PBToDBModel(ctx, ns, model)
 	if err != nil {
-		return err
+		return "", err
 	}
 	dbModel.Configuration = bModelConfig
 	dbModel.ModelDefinitionUID = modelDefinition.UID
@@ -427,22 +446,22 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	}
 
 	if err := s.repository.CreateNamespaceModel(ctx, dbModel.Owner, dbModel); err != nil {
-		return err
+		return "", err
 	}
 
 	dbCreatedModel, err := s.repository.GetNamespaceModelByID(ctx, dbModel.Owner, dbModel.ID, false, false)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	nsType, ownerUID, err := resource.GetNamespaceTypeAndUID(dbModel.Owner)
 	if err != nil {
-		return err
+		return "", err
 	}
 	ownerType := nsType[0 : len(nsType)-1]
 
 	if err := s.aclClient.SetOwner(ctx, "model_", dbCreatedModel.UID, ownerType, ownerUID); err != nil {
-		return err
+		return "", err
 	}
 	toCreatedTags := model.GetTags()
 	toBeCreatedTagNames := make([]string, 0, len(toCreatedTags))
@@ -456,17 +475,18 @@ func (s *service) CreateNamespaceModel(ctx context.Context, ns resource.Namespac
 	if len(toBeCreatedTagNames) > 0 {
 		err = s.repository.CreateModelTags(ctx, dbCreatedModel.UID, toBeCreatedTagNames)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	if dbCreatedModel.Visibility == datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PUBLIC) {
 		if err := s.aclClient.SetPublicModelPermission(ctx, dbCreatedModel.UID); err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return nil
+	// Return the generated model ID
+	return dbModel.ID, nil
 }
 
 func (s *service) WatchModel(ctx context.Context, ns resource.Namespace, modelID string, version string) (*modelpb.State, string, error) {

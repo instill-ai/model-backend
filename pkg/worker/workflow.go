@@ -17,7 +17,6 @@ import (
 
 	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/model-backend/pkg/utils"
 	"github.com/instill-ai/x/constant"
 	"github.com/instill-ai/x/errors"
@@ -25,8 +24,8 @@ import (
 
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	logx "github.com/instill-ai/x/log"
 )
 
@@ -169,14 +168,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	logger, _ := logx.GetZapLogger(ctx)
 	logger.Info("TriggerModelActivity started")
 
-	if err = w.modelUsageHandler.Check(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:      param.UserUID,
-		OwnerUID:     param.OwnerUID,
-		RequesterUID: param.RequesterUID,
-	}); err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
-
 	// wait for model instance to come online to start processing the request
 	// temporary solution to not overcharge for credits
 	// TODO: design a better flow
@@ -262,21 +253,6 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	endTime := time.Now()
 	timeUsed := endTime.Sub(start)
 	logger.Info("ModelInferRequest ended", zap.Duration("timeUsed", timeUsed))
-
-	if err = w.modelUsageHandler.Collect(ctx, &usage.ModelUsageHandlerParams{
-		UserUID:        param.UserUID,
-		OwnerUID:       param.OwnerUID,
-		ModelUID:       param.ModelUID,
-		ModelRunUID:    param.RunLog.UID,
-		ModelVersion:   param.ModelVersion.Version,
-		ModelTriggerID: param.TriggerUID.String(),
-		ModelID:        param.ModelID,
-		UsageTime:      timeUsed,
-		Hardware:       param.Hardware,
-		RequesterUID:   param.RequesterUID,
-	}); err != nil {
-		return w.toApplicationError(err, param.ModelID, ModelActivityError)
-	}
 
 	outputReferenceID := minio.GenerateOutputRefID("model-runs")
 	// todo: put it in separate workflow activity and store url and file size

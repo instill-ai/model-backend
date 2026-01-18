@@ -19,9 +19,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/model/model/v1alpha'], 'model.proto');
-client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -53,7 +53,7 @@ export function DeployUndeployUserModel(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = client.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = client.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -66,7 +66,7 @@ export function DeployUndeployUserModel(header) {
     let req = {
       name: `${constant.namespace}/models/${model_id}`
     }
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
+    check(client.invoke('model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel model name': (r) => r && r.message.modelId === model_id
     });
@@ -75,7 +75,7 @@ export function DeployUndeployUserModel(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      var res = client.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      var res = client.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state === "STATE_ONLINE") {
@@ -85,13 +85,13 @@ export function DeployUndeployUserModel(header) {
       currentTime = new Date().getTime();
     }
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeployUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/DeployUserModel', {
       name: `${constant.namespace}/models/non-existed`
     }, header), {
       'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

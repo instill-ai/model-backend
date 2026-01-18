@@ -14,7 +14,7 @@ import (
 
 	database "github.com/instill-ai/model-backend/pkg/db"
 	databaseInit "github.com/instill-ai/model-backend/pkg/init"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	logx "github.com/instill-ai/x/log"
 )
 

@@ -3,7 +3,7 @@ package init
 import (
 	"fmt"
 
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const (

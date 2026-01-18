@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package model.model.v1alpha;
+package model.v1alpha;
 
-import "../../../model/model/v1alpha/model.proto";
+import "model/v1alpha/model.proto";
 
 // Model service responds to internal access
 service ModelPrivateService {
@@ -33,4 +33,27 @@ service ModelPrivateService {
 
   // UndeployOrganizationModelAdmin undeploy a model to offline state
   rpc UndeployOrganizationModelAdmin(UndeployOrganizationModelAdminRequest) returns (UndeployOrganizationModelAdminResponse) {}
+
+  // Repository Tag Management APIs
+
+  // List the tags in a repository.
+  //
+  // Returns a portion of the versions that the specified repository holds.
+  rpc ListRepositoryTags(ListRepositoryTagsRequest) returns (ListRepositoryTagsResponse) {}
+
+  // Get details of repository tag.
+  rpc GetRepositoryTag(GetRepositoryTagRequest) returns (GetRepositoryTagResponse) {}
+
+  // Create a new repository tag.
+  //
+  // Adds a tag to a given repository. Note that this operation is only
+  // intended to register the information of an *already created* tag. This
+  // method should be called as part of the content push operation, right after
+  // the [PUT Manifest](https://distribution.github.io/distribution/#put-manifest) has
+  // succeeded. The distribution registry won't hold data such as the push time
+  // or the tag digest, so `model-backend` will hold this information locally.
+  rpc CreateRepositoryTag(CreateRepositoryTagRequest) returns (CreateRepositoryTagResponse) {}
+
+  // Delete a repository tag.
+  rpc DeleteRepositoryTag(DeleteRepositoryTagRequest) returns (DeleteRepositoryTagResponse) {}
 }

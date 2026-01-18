@@ -28,8 +28,8 @@ import (
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	logx "github.com/instill-ai/x/log"
 	resourcex "github.com/instill-ai/x/resource"
 )
@@ -163,6 +163,11 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	if err != nil {
+		return commonpb.Task_TASK_UNSPECIFIED, nil, err
+	}
+
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
@@ -175,7 +180,6 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 
 	var version *datamodel.ModelVersion
 	versionID := req.GetVersion()
-	modelUID := uuid.FromStringOrNil(pbModel.Uid)
 
 	if versionID == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
@@ -199,7 +203,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		RequesterUID:       requesterUID.String(),
 		ModelID:            pbModel.Id,
-		ModelUID:           pbModel.Uid,
+		ModelUID:           modelUID.String(),
 		Mode:               mgmtpb.Mode_MODE_SYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
@@ -397,6 +401,11 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	if err != nil {
+		return nil, err
+	}
+
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
 		return nil, err
@@ -409,7 +418,6 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 
 	var version *datamodel.ModelVersion
 	versionID := req.GetVersion()
-	modelUID := uuid.FromStringOrNil(pbModel.Uid)
 
 	if versionID == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
@@ -433,7 +441,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		RequesterUID:       requesterUID.String(),
 		ModelID:            pbModel.Id,
-		ModelUID:           pbModel.Uid,
+		ModelUID:           modelUID.String(),
 		Mode:               mgmtpb.Mode_MODE_ASYNC,
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
@@ -501,14 +509,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	// latest operation
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, pbModel.Uid, ""),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, modelUID.String(), ""),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 	// latest version operation
 	h.service.GetRedisClient().Set(
 		ctx,
-		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, pbModel.Uid, version.Version),
+		fmt.Sprintf("model_trigger_output_key:%s:%s:%s:%s", userUID, requesterUID, modelUID.String(), version.Version),
 		operation.GetName(),
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
@@ -576,6 +584,13 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		return
 	}
 
+	modelUID, err := s.GetNamespaceModelUIDByID(ctx, ns, modelID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("GetNamespaceModelUIDByID Error: %s", err.Error()))
+		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
+		return
+	}
+
 	modelDefID, err := resource.GetDefinitionID(pbModel.ModelDefinition)
 	if err != nil {
 		return
@@ -589,7 +604,6 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	}
 
 	var version *datamodel.ModelVersion
-	modelUID := uuid.FromStringOrNil(pbModel.Uid)
 	if versionStr, ok := pathParams["version"]; !ok {
 		version, err = s.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
 		if err != nil {
@@ -616,7 +630,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		UserType:           mgmtpb.OwnerType_OWNER_TYPE_USER,
 		RequesterUID:       requesterUID.String(),
 		ModelID:            pbModel.Id,
-		ModelUID:           pbModel.Uid,
+		ModelUID:           modelUID.String(),
 		TriggerUID:         logUUID.String(),
 		TriggerTime:        startTime.Format(time.RFC3339Nano),
 		ModelDefinitionUID: modelDef.UID.String(),

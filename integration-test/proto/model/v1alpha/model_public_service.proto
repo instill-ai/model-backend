@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package model.model.v1alpha;
+package model.v1alpha;
 
 // Google API
 import "google/api/annotations.proto";
 import "google/api/visibility.proto";
 // Model definitions
-import "../../../model/model/v1alpha/model.proto";
-import "../../../model/model/v1alpha/model_definition.proto";
+import "model/v1alpha/model.proto";
+import "model/v1alpha/model_definition.proto";
 // OpenAPI definition
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -47,7 +47,13 @@ service ModelPublicService {
   // Returns a paginated list of model definitions.
   rpc ListModelDefinitions(ListModelDefinitionsRequest) returns (ListModelDefinitionsResponse) {
     option (google.api.http) = {get: "/v1alpha/model-definitions"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model Definition"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // List available regions
@@ -55,7 +61,13 @@ service ModelPublicService {
   // Returns a paginated list of available regions.
   rpc ListAvailableRegions(ListAvailableRegionsRequest) returns (ListAvailableRegionsResponse) {
     option (google.api.http) = {get: "/v1alpha/available-regions"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Region"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Get a model definition
@@ -63,15 +75,27 @@ service ModelPublicService {
   // Returns the details of a model definition.
   rpc GetModelDefinition(GetModelDefinitionRequest) returns (GetModelDefinitionResponse) {
     option (google.api.http) = {get: "/v1alpha/model-definitions/{model_definition_id}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model Definition"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // List models
   //
   // Returns a paginated list of models.
   rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
-    option (google.api.http) = {get: "/v1beta/models"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (google.api.http) = {get: "/v1alpha/models"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Get a model by UID
@@ -79,7 +103,13 @@ service ModelPublicService {
   // Returns the details of a model by a permalink defined by the resource UID.
   rpc LookUpModel(LookUpModelRequest) returns (LookUpModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{permalink=models/*}/lookUp"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
     option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
@@ -87,8 +117,14 @@ service ModelPublicService {
   //
   // Returns a paginated list of models.
   rpc ListNamespaceModels(ListNamespaceModelsRequest) returns (ListNamespaceModelsResponse) {
-    option (google.api.http) = {get: "/v1beta/namespaces/{namespace_id}/models"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (google.api.http) = {get: "/v1alpha/{parent=namespaces/*}/models"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Create a new model
@@ -100,18 +136,31 @@ service ModelPublicService {
   // operation.
   rpc CreateNamespaceModel(CreateNamespaceModelRequest) returns (CreateNamespaceModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models"
+      post: "/v1alpha/{parent=namespaces/*}/models"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Get a model
   //
-  // Returns the detail of a model, accessing it by the model ID and its parent namespace.
+  // Returns the detail of a model, accessing it by the model ID and its parent
+  // namespace.
   rpc GetNamespaceModel(GetNamespaceModelRequest) returns (GetNamespaceModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (google.api.http) = {get: "/v1alpha/{name=namespaces/*/models/*}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Update a model
@@ -123,10 +172,16 @@ service ModelPublicService {
   // account when updating the resource.
   rpc UpdateNamespaceModel(UpdateNamespaceModelRequest) returns (UpdateNamespaceModelResponse) {
     option (google.api.http) = {
-      patch: "/v1alpha/namespaces/{namespace_id}/models/{model_id}"
+      patch: "/v1alpha/{model.name=namespaces/*/models/*}"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Delete a model
@@ -134,8 +189,14 @@ service ModelPublicService {
   // Deletes a model, accesing it by its resource name, which is defined by the
   // parent namespace and the ID of the model.
   rpc DeleteNamespaceModel(DeleteNamespaceModelRequest) returns (DeleteNamespaceModelResponse) {
-    option (google.api.http) = {delete: "/v1alpha/namespaces/{namespace_id}/models/{model_id}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (google.api.http) = {delete: "/v1alpha/{name=namespaces/*/models/*}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Rename a model
@@ -147,78 +208,79 @@ service ModelPublicService {
       post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/rename"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
-  }
-
-  // Publish a model
-  //
-  // Updates the visibility in a model to PUBLIC. The model is accessed by its
-  // resource name, defined by the model ID and its parent namespace.
-  rpc PublishNamespaceModel(PublishNamespaceModelRequest) returns (PublishNamespaceModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/publish"
-      body: "*"
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
-  }
-
-  // Unpublish a model
-  //
-  // Updates the visibility in a model to PRIVATE. The model is accessed by its
-  // resource name, defined by the model ID and its parent namespace.
-  rpc UnpublishNamespaceModel(UnpublishNamespaceModelRequest) returns (UnpublishNamespaceModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/unpublish"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
-  }
-
-  // Get a model card
-  //
-  // Returns the README file that accompanies a model, describing it and
-  // enhancing it with metadata. The model is accessed by its resource name.
-  rpc GetNamespaceModelCard(GetNamespaceModelCardRequest) returns (GetNamespaceModelCardResponse) {
-    option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/readme"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
   }
 
   // Watch the state of a model version
   //
-  // Returns the state of a model. The model resource allocation and scaling actions take some
-  // time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of a model. The model resource allocation and scaling
+  // actions take some time, during which a model will be in various state. This
+  // endpoint allows clients to track the state.
   rpc WatchNamespaceModel(WatchNamespaceModelRequest) returns (WatchNamespaceModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/{version}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version"};
+    option (google.api.http) = {get:
+        "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/"
+        "{version}/watch"
+};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Watch the state of the latest model version
   //
-  // Returns the state of the latest model version. The model resource allocation and scaling actions
-  // take some time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of the latest model version. The model resource
+  // allocation and scaling actions take some time, during which a model will be
+  // in various state. This endpoint allows clients to track the state.
   rpc WatchNamespaceLatestModel(WatchNamespaceLatestModelRequest) returns (WatchNamespaceLatestModelResponse) {
     option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // List namespace model versions
   //
-  // Returns a paginated list of version of a model namespace that belong to the specified namespace.
-  // Contains model version and digest.
+  // Returns a paginated list of version of a model namespace that belong to the
+  // specified namespace. Contains model version and digest.
   rpc ListNamespaceModelVersions(ListNamespaceModelVersionsRequest) returns (ListNamespaceModelVersionsResponse) {
-    option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version"};
+    option (google.api.http) = {get: "/v1alpha/{parent=namespaces/*/models/*}/versions"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Delete a model version
   //
-  // Deletes a model version, accesing it by its resource name, which is defined by the
-  // parent namespace and the ID of the model, and version.
+  // Deletes a model version, accesing it by its resource name, which is defined
+  // by the parent namespace and the ID of the model, and version.
   rpc DeleteNamespaceModelVersion(DeleteNamespaceModelVersionRequest) returns (DeleteNamespaceModelVersionResponse) {
-    option (google.api.http) = {delete: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/{version}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version"};
+    option (google.api.http) = {delete: "/v1alpha/{name=namespaces/*/models/*/versions/*}"
+};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Trigger model inference
@@ -227,15 +289,24 @@ service ModelPublicService {
   // questions.
   rpc TriggerNamespaceModel(TriggerNamespaceModelRequest) returns (TriggerNamespaceModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/{version}/trigger"
+      post:
+        "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/"
+        "{version}/trigger"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger"
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
       parameters: {
         headers: {
           name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated namespace is making the request on behalf of another entity, typically an organization they belong to"
+          description:
+            "Indicates the authenticated namespace is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
           type: STRING
         }
       }
@@ -248,15 +319,24 @@ service ModelPublicService {
   // questions.
   rpc TriggerAsyncNamespaceModel(TriggerAsyncNamespaceModelRequest) returns (TriggerAsyncNamespaceModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/{version}/trigger-async"
+      post:
+        "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/"
+        "{version}/trigger-async"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger"
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
       parameters: {
         headers: {
           name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated namespace is making the request on behalf of another entity, typically an organization they belong to"
+          description:
+            "Indicates the authenticated namespace is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
           type: STRING
         }
       }
@@ -265,19 +345,26 @@ service ModelPublicService {
 
   // Trigger model inference
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerNamespaceLatestModel(TriggerNamespaceLatestModelRequest) returns (TriggerNamespaceLatestModelResponse) {
     option (google.api.http) = {
       post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/trigger"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger"
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
       parameters: {
         headers: {
           name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated namespace is making the request on behalf of another entity, typically an organization they belong to"
+          description:
+            "Indicates the authenticated namespace is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
           type: STRING
         }
       }
@@ -286,21 +373,97 @@ service ModelPublicService {
 
   // Trigger model inference asynchronously
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerAsyncNamespaceLatestModel(TriggerAsyncNamespaceLatestModelRequest) returns (TriggerAsyncNamespaceLatestModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/trigger-async"
+      post:
+        "/v1alpha/namespaces/{namespace_id}/models/{model_id}/"
+        "trigger-async"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger"
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
       parameters: {
         headers: {
           name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated namespace is making the request on behalf of another entity, typically an organization they belong to"
+          description:
+            "Indicates the authenticated namespace is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
           type: STRING
         }
+      }
+    };
+  }
+
+  // Trigger model inference with a binary input
+  //
+  // Triggers a deployed model to infer the result of a task or question,
+  // submitted as a binary file.
+  rpc TriggerNamespaceModelBinaryFileUpload(stream TriggerNamespaceModelBinaryFileUploadRequest) returns (TriggerNamespaceModelBinaryFileUploadResponse) {
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+      parameters: {
+        headers: {
+          name: "Instill-Requester-Uid"
+          description:
+            "Indicates the authenticated user is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
+          type: STRING
+        }
+      }
+    };
+  }
+
+  // Trigger model inference with a binary input
+  //
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions, submitted as a binary file.
+  rpc TriggerNamespaceLatestModelBinaryFileUpload(stream TriggerNamespaceLatestModelBinaryFileUploadRequest) returns (TriggerNamespaceLatestModelBinaryFileUploadResponse) {
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+      parameters: {
+        headers: {
+          name: "Instill-Requester-Uid"
+          description:
+            "Indicates the authenticated user is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
+          type: STRING
+        }
+      }
+    };
+  }
+
+  // Get the details of the long-running operation from a namespace model
+  // with a particular version
+  //
+  // This method allows requesters to request the status and outcome of
+  // long-running operations in a model, such as trigger.
+  rpc GetNamespaceModelOperation(GetNamespaceModelOperationRequest) returns (GetNamespaceModelOperationResponse) {
+    option (google.api.http) = {get:
+        "/v1alpha/namespaces/{namespace_id}/models/{model_id}/versions/"
+        "{version}/operation"
+};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
       }
     };
   }
@@ -308,19 +471,31 @@ service ModelPublicService {
   // Get the details of the latest long-running operation from a namespace model
   //
   // This method allows requesters to request the status and outcome of
-  // long-running operations in a model, such as deployment.
+  // long-running operations in a model, such as trigger.
   rpc GetNamespaceLatestModelOperation(GetNamespaceLatestModelOperationRequest) returns (GetNamespaceLatestModelOperationResponse) {
     option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/operation"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // Get the details of a long-running operation
   //
   // This method allows requesters to request the status and outcome of
-  // long-running operations in a model, such as deployment.
+  // long-running operations in a model, such as trigger.
   rpc GetModelOperation(GetModelOperationRequest) returns (GetModelOperationResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=operations/*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model"};
+    option (google.api.http) = {get: "/v1alpha/operations/{operation_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 
   // The following endpoints are all deprecated
@@ -332,8 +507,8 @@ service ModelPublicService {
   // the results will contain the models that are visible to the latter.
   rpc ListUserModels(ListUserModelsRequest) returns (ListUserModelsResponse) {
     option (google.api.http) = {get: "/v1alpha/{parent=users/*}/models"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Create a new model
@@ -348,17 +523,18 @@ service ModelPublicService {
       post: "/v1alpha/{parent=users/*}/models"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Get a model
   //
-  // Returns the detail of a model, accessing it by the model ID and its parent user.
+  // Returns the detail of a model, accessing it by the model ID and its parent
+  // user.
   rpc GetUserModel(GetUserModelRequest) returns (GetUserModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Update a model
@@ -373,8 +549,8 @@ service ModelPublicService {
       patch: "/v1alpha/{model.name=users/*/models/*}"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Delete a model
@@ -383,8 +559,8 @@ service ModelPublicService {
   // parent user and the ID of the model.
   rpc DeleteUserModel(DeleteUserModelRequest) returns (DeleteUserModelResponse) {
     option (google.api.http) = {delete: "/v1alpha/{name=users/*/models/*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Rename a model
@@ -396,86 +572,50 @@ service ModelPublicService {
       post: "/v1alpha/{name=users/*/models/*}/rename"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
-  }
-
-  // Publish a model
-  //
-  // Updates the visibility in a model to PUBLIC. The model is accessed by its
-  // resource name, defined by the model ID and its parent user.
-  rpc PublishUserModel(PublishUserModelRequest) returns (PublishUserModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/publish"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
-  }
-
-  // Unpublish a model
-  //
-  // Updates the visibility in a model to PRIVATE. The model is accessed by its
-  // resource name, defined by the model ID and its parent user.
-  rpc UnpublishUserModel(UnpublishUserModelRequest) returns (UnpublishUserModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/unpublish"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
-  }
-
-  // Get a model card
-  //
-  // Returns the README file that accompanies a model, describing it and
-  // enhancing it with metadata. The model is accessed by its resource name.
-  rpc GetUserModelCard(GetUserModelCardRequest) returns (GetUserModelCardResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*/readme}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Watch the state of a model version
   //
-  // Returns the state of a model. The model resource allocation and scaling actions take some
-  // time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of a model. The model resource allocation and scaling
+  // actions take some time, during which a model will be in various state. This
+  // endpoint allows clients to track the state.
   rpc WatchUserModel(WatchUserModelRequest) returns (WatchUserModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/versions/{version=*}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Watch the state of the latest model version
   //
-  // Returns the state of the latest model version. The model resource allocation and scaling actions
-  // take some time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of the latest model version. The model resource
+  // allocation and scaling actions take some time, during which a model will be
+  // in various state. This endpoint allows clients to track the state.
   rpc WatchUserLatestModel(WatchUserLatestModelRequest) returns (WatchUserLatestModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // List user model versions
   //
-  // Returns a paginated list of version of a model namespace that belong to the specified user.
-  // Contains model version and digest.
+  // Returns a paginated list of version of a model namespace that belong to the
+  // specified user. Contains model version and digest.
   rpc ListUserModelVersions(ListUserModelVersionsRequest) returns (ListUserModelVersionsResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/versions"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Delete a model version
   //
-  // Deletes a model version, accesing it by its resource name, which is defined by the
-  // parent user and the ID of the model, and version.
+  // Deletes a model version, accesing it by its resource name, which is defined
+  // by the parent user and the ID of the model, and version.
   rpc DeleteUserModelVersion(DeleteUserModelVersionRequest) returns (DeleteUserModelVersionResponse) {
     option (google.api.http) = {delete: "/v1alpha/{name=users/*/models/*}/versions/{version=*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   ///////////////////////////////////////////////////////
@@ -489,17 +629,8 @@ service ModelPublicService {
       post: "/v1alpha/{name=users/*/models/*}/versions/{version=*}/trigger"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference asynchronously
@@ -508,64 +639,39 @@ service ModelPublicService {
   // questions.
   rpc TriggerAsyncUserModel(TriggerAsyncUserModelRequest) returns (TriggerAsyncUserModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=users/*/models/*}/versions/{version=*}/triggerAsync"
+      post:
+        "/v1alpha/{name=users/*/models/*}/versions/{version=*}/"
+        "triggerAsync"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerUserLatestModel(TriggerUserLatestModelRequest) returns (TriggerUserLatestModelResponse) {
     option (google.api.http) = {
       post: "/v1alpha/{name=users/*/models/*}/trigger"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference asynchronously
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerAsyncUserLatestModel(TriggerAsyncUserLatestModelRequest) returns (TriggerAsyncUserLatestModelResponse) {
     option (google.api.http) = {
       post: "/v1alpha/{name=users/*/models/*}/triggerAsync"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference with a binary input
@@ -573,28 +679,20 @@ service ModelPublicService {
   // Triggers a deployed model to infer the result of a task or question,
   // submitted as a binary file.
   rpc TriggerUserModelBinaryFileUpload(stream TriggerUserModelBinaryFileUploadRequest) returns (TriggerUserModelBinaryFileUploadResponse) {
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // List organization models
   //
-  // Returns a paginated list of models that belong to the specified organization. The
-  // parent organization may be different from the authenticated organization, in which case
-  // the results will contain the models that are visible to the latter.
+  // Returns a paginated list of models that belong to the specified
+  // organization. The parent organization may be different from the
+  // authenticated organization, in which case the results will contain the
+  // models that are visible to the latter.
   rpc ListOrganizationModels(ListOrganizationModelsRequest) returns (ListOrganizationModelsResponse) {
     option (google.api.http) = {get: "/v1alpha/{parent=organizations/*}/models"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Create a new model
@@ -609,17 +707,18 @@ service ModelPublicService {
       post: "/v1alpha/{parent=organizations/*}/models"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Get a model
   //
-  // Returns the detail of a model, accessing it by the model ID and its parent organization.
+  // Returns the detail of a model, accessing it by the model ID and its parent
+  // organization.
   rpc GetOrganizationModel(GetOrganizationModelRequest) returns (GetOrganizationModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Update a model
@@ -634,8 +733,8 @@ service ModelPublicService {
       patch: "/v1alpha/{model.name=organizations/*/models/*}"
       body: "model"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Delete a model
@@ -644,8 +743,8 @@ service ModelPublicService {
   // parent organization and the ID of the model.
   rpc DeleteOrganizationModel(DeleteOrganizationModelRequest) returns (DeleteOrganizationModelResponse) {
     option (google.api.http) = {delete: "/v1alpha/{name=organizations/*/models/*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Rename a model
@@ -657,86 +756,53 @@ service ModelPublicService {
       post: "/v1alpha/{name=organizations/*/models/*}/rename"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
     option deprecated = true;
-  }
-
-  // Publish a model
-  //
-  // Updates the visibility in a model to PUBLIC. The model is accessed by its
-  // resource name, defined by the model ID and its parent organization.
-  rpc PublishOrganizationModel(PublishOrganizationModelRequest) returns (PublishOrganizationModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/publish"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
-  }
-
-  // Unpublish a model
-  //
-  // Updates the visibility in a model to PRIVATE. The model is accessed by its
-  // resource name, defined by the model ID and its parent organization.
-  rpc UnpublishOrganizationModel(UnpublishOrganizationModelRequest) returns (UnpublishOrganizationModelResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/unpublish"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
-  }
-
-  // Get a model card
-  //
-  // Returns the README file that accompanies a model, describing it and
-  // enhancing it with metadata. The model is accessed by its resource name.
-  rpc GetOrganizationModelCard(GetOrganizationModelCardRequest) returns (GetOrganizationModelCardResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*/readme}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Model (Deprecated)"};
-    option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Watch the state of a model version
   //
-  // Returns the state of a model.  The model resource allocation and scaling actions
-  // take some time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of a model.  The model resource allocation and scaling
+  // actions take some time, during which a model will be in various state. This
+  // endpoint allows clients to track the state.
   rpc WatchOrganizationModel(WatchOrganizationModelRequest) returns (WatchOrganizationModelResponse) {
-    option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
+    option (google.api.http) = {get:
+        "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/"
+        "watch"
+};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Watch the state of the latest model version
   //
-  // Returns the state of the latest model version.  The model resource allocation and scaling actions
-  // take some time, during which a model will be in various state. This endpoint
-  // allows clients to track the state.
+  // Returns the state of the latest model version.  The model resource
+  // allocation and scaling actions take some time, during which a model will be
+  // in various state. This endpoint allows clients to track the state.
   rpc WatchOrganizationLatestModel(WatchOrganizationLatestModelRequest) returns (WatchOrganizationLatestModelResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/watch"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // List organization model versions
   //
-  // Returns a paginated list of version of a model namespace that belong to the specified organization.
-  // Contains model version and digest.
+  // Returns a paginated list of version of a model namespace that belong to the
+  // specified organization. Contains model version and digest.
   rpc ListOrganizationModelVersions(ListOrganizationModelVersionsRequest) returns (ListOrganizationModelVersionsResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/versions"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Delete a model version
   //
-  // Deletes a model version, accesing it by its resource name, which is defined by the
-  // parent organization and the ID of the model, and version.
+  // Deletes a model version, accesing it by its resource name, which is defined
+  // by the parent organization and the ID of the model, and version.
   rpc DeleteOrganizationModelVersion(DeleteOrganizationModelVersionRequest) returns (DeleteOrganizationModelVersionResponse) {
     option (google.api.http) = {delete: "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Version (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   ///////////////////////////////////////////////////////
@@ -747,20 +813,13 @@ service ModelPublicService {
   // questions.
   rpc TriggerOrganizationModel(TriggerOrganizationModelRequest) returns (TriggerOrganizationModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/trigger"
+      post:
+        "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/"
+        "trigger"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference asynchronously
@@ -769,64 +828,39 @@ service ModelPublicService {
   // questions.
   rpc TriggerAsyncOrganizationModel(TriggerAsyncOrganizationModelRequest) returns (TriggerAsyncOrganizationModelResponse) {
     option (google.api.http) = {
-      post: "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/triggerAsync"
+      post:
+        "/v1alpha/{name=organizations/*/models/*}/versions/{version=*}/"
+        "triggerAsync"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerOrganizationLatestModel(TriggerOrganizationLatestModelRequest) returns (TriggerOrganizationLatestModelResponse) {
     option (google.api.http) = {
       post: "/v1alpha/{name=organizations/*/models/*}/trigger"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference asynchronously
   //
-  // Triggers the latest deployed model version to infer the result of a set of task or
-  // questions.
+  // Triggers the latest deployed model version to infer the result of a set of
+  // task or questions.
   rpc TriggerAsyncOrganizationLatestModel(TriggerAsyncOrganizationLatestModelRequest) returns (TriggerAsyncOrganizationLatestModelResponse) {
     option (google.api.http) = {
       post: "/v1alpha/{name=organizations/*/models/*}/triggerAsync"
       body: "*"
     };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Trigger model inference with a binary input
@@ -834,36 +868,71 @@ service ModelPublicService {
   // Triggers a deployed model to infer the result of a task or question,
   // submitted as a binary file.
   rpc TriggerOrganizationModelBinaryFileUpload(stream TriggerOrganizationModelBinaryFileUploadRequest) returns (TriggerOrganizationModelBinaryFileUploadResponse) {
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      tags: "Trigger (Deprecated)"
-      parameters: {
-        headers: {
-          name: "Instill-Requester-Uid"
-          description: "Indicates the authenticated user is making the request on behalf of another entity, typically an organization they belong to"
-          type: STRING
-        }
-      }
-    };
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // Get the details of the latest long-running operation from a user model
   //
   // This method allows requesters to request the status and outcome of
-  // long-running operations in a model, such as deployment.
+  // long-running operations in a model, such as trigger.
   rpc GetUserLatestModelOperation(GetUserLatestModelOperationRequest) returns (GetUserLatestModelOperationResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=users/*/models/*}/operation"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Trigger (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
-  // Get the details of the latest long-running operation from a organization model
+  // Get the details of the latest long-running operation from a organization
+  // model
   //
   // This method allows requesters to request the status and outcome of
-  // long-running operations in a model, such as deployment.
+  // long-running operations in a model, such as trigger.
   rpc GetOrganizationLatestModelOperation(GetOrganizationLatestModelOperationRequest) returns (GetOrganizationLatestModelOperationResponse) {
     option (google.api.http) = {get: "/v1alpha/{name=organizations/*/models/*}/operation"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {tags: "Trigger (Deprecated)"};
     option deprecated = true;
+    option (google.api.method_visibility).restriction = "INTERNAL";
+  }
+
+  // List Model Runs
+  //
+  // Returns a paginated list of runs for a given model. When the requester is
+  // the owner of the model, they will be able to all the model runs,
+  // regardless who requested the trigger (the view will be partial to hide
+  // sensitive data like e.g. the trigger input and output). Other requesters
+  // will only be able to see the runs requested by themselves.
+  rpc ListModelRuns(ListModelRunsRequest) returns (ListModelRunsResponse) {
+    option (google.api.http) = {get: "/v1alpha/namespaces/{namespace_id}/models/{model_id}/runs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      parameters: {
+        headers: {
+          name: "Instill-Requester-Uid"
+          description:
+            "Indicates the authenticated namespace is making the "
+            "request on behalf of another entity, typically an "
+            "organization they belong to"
+          type: STRING
+        }
+      }
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
+  }
+
+  // List Model Runs By Requester
+  //
+  // Returns a paginated list of runs requested by a namespace. The response
+  // may contain runs from several models.
+  rpc ListModelRunsByRequester(ListModelRunsByRequesterRequest) returns (ListModelRunsByRequesterResponse) {
+    option (google.api.http) = {get: "/v1alpha/dashboard/models/runs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Model"
+      extensions: {
+        key: "x-stage"
+        value: {string_value: "alpha"}
+      }
+    };
   }
 }

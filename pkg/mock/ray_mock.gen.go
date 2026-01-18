@@ -11,7 +11,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 	mm_ray "github.com/instill-ai/model-backend/pkg/ray"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	rayuserdefinedpb "github.com/instill-ai/protogen-go/model/ray/v1alpha"
 	"github.com/redis/go-redis/v9"
 )

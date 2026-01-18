@@ -13,7 +13,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	mm_repository "github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/utils"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	"go.einride.tech/aip/filtering"
 	"go.einride.tech/aip/ordering"
 	"gorm.io/gorm"
