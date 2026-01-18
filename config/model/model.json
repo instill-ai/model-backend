@@ -3,7 +3,7 @@
   "title": "Containerized Model Specification",
   "type": "object",
   "required": [
-    "id",
+    "display_name",
     "model_definition",
     "configuration",
     "visibility",
@@ -16,12 +16,12 @@
   "minProperties": 7,
   "maxProperties": 12,
   "properties": {
-    "id": {
+    "display_name": {
       "type": "string",
-      "title": "Name",
+      "title": "Display Name",
       "minLength": 1,
-      "maxLength": 63,
-      "description": "The model name"
+      "maxLength": 255,
+      "description": "Human-readable display name for the model"
     },
     "description": {
       "type": "string",

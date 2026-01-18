@@ -9,7 +9,6 @@ import (
 
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
-	"github.com/instill-ai/model-backend/pkg/usage"
 	"github.com/instill-ai/x/minio"
 )
 
@@ -29,7 +28,6 @@ type worker struct {
 	minioClient         minio.Client
 	repository          repository.Repository
 	influxDBWriteClient api.WriteAPI
-	modelUsageHandler   usage.ModelUsageHandler
 }
 
 // NewWorker initiates a temporal worker for workflow and activity definition
@@ -39,17 +37,12 @@ func NewWorker(
 	repo repository.Repository,
 	i api.WriteAPI,
 	minioClient minio.Client,
-	modelUsageHandler usage.ModelUsageHandler,
 ) Worker {
-	if modelUsageHandler == nil {
-		modelUsageHandler = usage.NewNoopModelUsageHandler()
-	}
 	return &worker{
 		redisClient:         rc,
 		ray:                 ra,
 		minioClient:         minioClient,
 		repository:          repo,
 		influxDBWriteClient: i,
-		modelUsageHandler:   modelUsageHandler,
 	}
 }

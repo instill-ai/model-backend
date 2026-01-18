@@ -20,14 +20,14 @@ import {
 import * as constant from "./const.js"
 
 const privateClient = new grpc.Client();
-privateClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-privateClient.load(['proto/model/model/v1alpha'], 'model.proto');
-privateClient.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model_private_service.proto');
 
 const publicClient = new grpc.Client();
-publicClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-publicClient.load(['proto/model/model/v1alpha'], 'model.proto');
-publicClient.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -64,7 +64,7 @@ export function CheckModel(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -74,18 +74,18 @@ export function CheckModel(header) {
       currentTime = new Date().getTime();
     }
 
-    let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+    let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header)
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/CheckModelAdmin', {
       model_permalink: "models/" + res.message.model.uid
     }, header), {
       "CheckModelAdmin response status": (r) => r.status === grpc.StatusOK,
       "CheckModelAdmin response state": (r) => r.message.state === "STATE_OFFLINE",
     });
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/CheckModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/CheckModelAdmin', {
       model_permalink: "models/" + randomString(10)
     }, header), {
       'CheckModelAdmin uuid length is invalid': (r) => r && r.status === grpc.StatusNotFound,
@@ -93,7 +93,7 @@ export function CheckModel(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
@@ -102,7 +102,7 @@ export function CheckModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(publicClient.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -145,7 +145,7 @@ export function DeployUndeployModel(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -155,7 +155,7 @@ export function DeployUndeployModel(header) {
       currentTime = new Date().getTime();
     }
 
-    let getModelRes = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+    let getModelRes = publicClient.invoke('model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header)
 
@@ -163,7 +163,7 @@ export function DeployUndeployModel(header) {
       model_permalink: "models/" + getModelRes.message.model.uid
     }
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', req, header), {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/DeployModelAdmin', req, header), {
       'DeployModel status': (r) => r && r.status === grpc.StatusOK,
       'DeployModel operation name': (r) => r && r.message.operation.name !== undefined,
       'DeployModel operation metadata': (r) => r && r.message.operation.metadata === null,
@@ -174,7 +174,7 @@ export function DeployUndeployModel(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      var res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      var res = publicClient.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state === "STATE_ONLINE") {
@@ -184,18 +184,18 @@ export function DeployUndeployModel(header) {
       currentTime = new Date().getTime();
     }
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/DeployModelAdmin', {
       model_permalink: `models/non-existed`
     }, header), {
       'DeployModel uuid length is invalid': (r) => r && r.status === grpc.StatusInvalidArgument,
     });
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/DeployModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/DeployModelAdmin', {
       model_permalink: `models/${uuidv4()}`
     }, header), {
       'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(publicClient.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

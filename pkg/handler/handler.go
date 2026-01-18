@@ -8,10 +8,9 @@ import (
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/service"
-	"github.com/instill-ai/model-backend/pkg/usage"
 
 	healthcheckPB "github.com/instill-ai/protogen-go/common/healthcheck/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 var tracer = otel.Tracer("model-backend.public-handler.tracer")
@@ -19,21 +18,16 @@ var tracer = otel.Tracer("model-backend.public-handler.tracer")
 // PublicHandler is the handler for the public service
 type PublicHandler struct {
 	modelpb.UnimplementedModelPublicServiceServer
-	service           service.Service
-	ray               ray.Ray
-	modelUsageHandler usage.ModelUsageHandler
+	service service.Service
+	ray     ray.Ray
 }
 
 // NewPublicHandler creates a new public handler
-func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray, h usage.ModelUsageHandler) modelpb.ModelPublicServiceServer {
+func NewPublicHandler(ctx context.Context, s service.Service, r ray.Ray) modelpb.ModelPublicServiceServer {
 	datamodel.InitJSONSchema(ctx)
-	if h == nil {
-		h = usage.NewNoopModelUsageHandler()
-	}
 	return &PublicHandler{
-		service:           s,
-		ray:               r,
-		modelUsageHandler: h,
+		service: s,
+		ray:     r,
 	}
 }
 

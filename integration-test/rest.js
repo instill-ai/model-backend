@@ -15,6 +15,7 @@ import * as updateModel from "./rest_update_model.js"
 import * as queryModelDefinition from "./rest_query_model_definition.js"
 import * as getModelCard from "./rest_model_card.js"
 import * as longrunningOperation from "./rest_longrunning_operation.js"
+import * as restInvariants from "./rest-invariants.js"
 
 import {
   genHeader,
@@ -75,10 +76,10 @@ export default function (header) {
 
   // Query Model API by admin
   // if (!constant.apiGatewayMode) {
-    // queryModelPrivate.ListModelsAdmin(header)
-    // queryModelPrivate.LookupModelAdmin(header)
-    // private deploy will be trigger by public deploy
-    // deployModelPrivate.DeployUndeployModel()
+  // queryModelPrivate.ListModelsAdmin(header)
+  // queryModelPrivate.LookupModelAdmin(header)
+  // private deploy will be trigger by public deploy
+  // deployModelPrivate.DeployUndeployModel()
   // }
 
   // Infer Model API
@@ -111,13 +112,25 @@ export default function (header) {
 
   // Long-running Operation
   // longrunningOperation.GetLongRunningOperation(header)
+
+  // AIP Resource Refactoring Invariants
+  if (constant.apiGatewayMode) {
+    restInvariants.checkInvariants(header);
+  }
 }
 
 export function teardown(header) {
   group("Model API: Delete all models created by this test", () => {
-    for (const model of http
+    const models = http
       .request("GET", `${constant.apiPublicHost}/v1alpha/${constant.namespace}/models`, null, header)
-      .json("models")) {
+      .json("models");
+
+    if (!models) return;
+
+    for (const model of models) {
+      // Skip models without valid IDs
+      if (!model || !model.id) continue;
+
       check(model, {
         "GET /models response contents[*] id": (c) => c.id !== undefined,
       });

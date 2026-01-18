@@ -20,14 +20,14 @@ import {
 import * as constant from "./const.js"
 
 const privateClient = new grpc.Client();
-privateClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-privateClient.load(['proto/model/model/v1alpha'], 'model.proto');
-privateClient.load(['proto/model/model/v1alpha'], 'model_private_service.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+privateClient.load(['proto', 'proto/model/v1alpha'], 'model_private_service.proto');
 
 const publicClient = new grpc.Client();
-publicClient.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-publicClient.load(['proto/model/model/v1alpha'], 'model.proto');
-publicClient.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+publicClient.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -63,7 +63,7 @@ export function ListModels(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -73,7 +73,7 @@ export function ListModels(header) {
       currentTime = new Date().getTime();
     }
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/ListModelsAdmin', {}, {}), {
       "ListModelsAdmin response status": (r) => r.status === grpc.StatusOK,
       "ListModelsAdmin response total_size": (r) => r.message.totalSize >= 1,
       "ListModelsAdmin response next_page_token": (r) => r.message.nextPageToken !== undefined,
@@ -92,7 +92,7 @@ export function ListModels(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
@@ -101,7 +101,7 @@ export function ListModels(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(publicClient.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,
@@ -144,7 +144,7 @@ export function LookUpModel(header) {
     let currentTime = new Date().getTime();
     let timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetModelOperation', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetModelOperation', {
         name: createClsModelRes.json().operation.name
       }, header)
       if (res.message.operation.done === true) {
@@ -154,11 +154,11 @@ export function LookUpModel(header) {
       currentTime = new Date().getTime();
     }
 
-    let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/GetUserModel', {
+    let res = publicClient.invoke('model.v1alpha.ModelPublicService/GetUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header)
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
       permalink: "models/" + res.message.model.uid
     }, {}), {
       "LookUpModelAdmin response status": (r) => r.status === grpc.StatusOK,
@@ -174,7 +174,7 @@ export function LookUpModel(header) {
       "LookUpModelAdmin response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
 
-    check(privateClient.invoke('model.model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
+    check(privateClient.invoke('model.v1alpha.ModelPrivateService/LookUpModelAdmin', {
       permalink: "models/" + randomString(10)
     }, {}), {
       'LookUpModelAdmin non-existed model status not found': (r) => r && r.status === grpc.StatusNotFound,
@@ -182,7 +182,7 @@ export function LookUpModel(header) {
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      let res = publicClient.invoke('model.model.v1alpha.ModelPublicService/WatchUserModel', {
+      let res = publicClient.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
       if (res.message.state !== "STATE_UNSPECIFIED") {
@@ -191,7 +191,7 @@ export function LookUpModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-    check(publicClient.invoke('model.model.v1alpha.ModelPublicService/DeleteUserModel', {
+    check(publicClient.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {
       'Delete model status is OK': (r) => r && r.status === grpc.StatusOK,

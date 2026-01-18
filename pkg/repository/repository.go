@@ -26,7 +26,7 @@ import (
 	"github.com/instill-ai/x/constant"
 	"github.com/instill-ai/x/paginate"
 
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	errorsx "github.com/instill-ai/x/errors"
 	logx "github.com/instill-ai/x/log"
 	resourcex "github.com/instill-ai/x/resource"

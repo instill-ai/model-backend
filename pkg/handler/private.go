@@ -9,12 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/gofrs/uuid"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
 	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/resource"
 
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelpb.ListModelsAdminRequest) (*modelpb.ListModelsAdminResponse, error) {
@@ -112,14 +111,19 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		return nil, err
 	}
 
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	if err != nil {
+		return nil, err
+	}
+
 	version := &datamodel.ModelVersion{
 		Name:     ns.Name(),
 		Version:  req.GetVersion(),
 		Digest:   req.GetDigest(),
-		ModelUID: uuid.FromStringOrNil(pbModel.Uid),
+		ModelUID: modelUID,
 	}
 
-	if _, err := h.service.GetModelVersionAdmin(ctx, uuid.FromStringOrNil(pbModel.Uid), version.Version); err != nil {
+	if _, err := h.service.GetModelVersionAdmin(ctx, modelUID, version.Version); err != nil {
 		if err := h.service.CreateModelVersionAdmin(ctx, version); err != nil {
 			return nil, err
 		}

@@ -15,8 +15,8 @@ import (
 	"github.com/instill-ai/x/constant"
 
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	errorsx "github.com/instill-ai/x/errors"
 	resourcex "github.com/instill-ai/x/resource"
 )

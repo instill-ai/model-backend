@@ -19,8 +19,8 @@ import (
 
 	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
 	rayuserdefinedpb "github.com/instill-ai/protogen-go/model/ray/v1alpha"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	miniomockx "github.com/instill-ai/x/mock/minio"
 )
 
@@ -86,7 +86,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		repo.UpdateModelRunMock.Times(1).Return(nil)
 
-		w := worker.NewWorker(rc, mockRay, repo, nil, mockMinio, nil)
+		w := worker.NewWorker(rc, mockRay, repo, nil, mockMinio)
 		err := w.TriggerModelActivity(ctx, param)
 		require.NoError(t, err)
 	})
@@ -121,7 +121,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 
 		mockRay.ModelReadyMock.Return(modelpb.State_STATE_ERROR.Enum().Enum(), "", 0, nil)
 
-		w := worker.NewWorker(rc, mockRay, repo, nil, nil, nil)
+		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
 		err = w.TriggerModelActivity(ctx, param)
 		require.ErrorContains(t, err, "model upscale failed")
 	})

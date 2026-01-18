@@ -12,7 +12,7 @@ import (
 	"github.com/instill-ai/model-backend/pkg/mock"
 	"github.com/instill-ai/model-backend/pkg/service"
 
-	modelPB "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	modelPB "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 const ID = "modelID"

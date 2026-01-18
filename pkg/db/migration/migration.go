@@ -9,13 +9,13 @@ import (
 	"github.com/instill-ai/model-backend/pkg/db/migration/convert/convert000008"
 
 	database "github.com/instill-ai/model-backend/pkg/db"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
 	clientgrpcx "github.com/instill-ai/x/client/grpc"
 	logx "github.com/instill-ai/x/log"
 )
 
 // TargetSchemaVersion is the target database schema version
-const TargetSchemaVersion = 14
+const TargetSchemaVersion = 15
 
 type migration interface {
 	Migrate() error

@@ -15,12 +15,11 @@ import (
 	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 
 	"github.com/instill-ai/model-backend/config"
-	"github.com/instill-ai/model-backend/pkg/resource"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 	clientx "github.com/instill-ai/x/client"
 	clientgrpcx "github.com/instill-ai/x/client/grpc"
 	logx "github.com/instill-ai/x/log"
@@ -85,26 +84,16 @@ func main() {
 
 	for i := range modelConfigs {
 		go func(modelConfig ModelConfig) {
-			var owner *mgmtpb.User
-			if modelConfig.OwnerType == string(resource.User) {
-				resp, err := mgmtPrivateServiceClient.GetUserAdmin(ctx, &mgmtpb.GetUserAdminRequest{
-					UserId: modelConfig.OwnerID,
-				})
-				if err != nil {
-					logger.Fatal(err.Error())
-				}
-				owner = resp.GetUser()
-			} else if modelConfig.OwnerType == string(resource.Organization) {
-				resp, err := mgmtPrivateServiceClient.GetOrganizationAdmin(ctx, &mgmtpb.GetOrganizationAdminRequest{
-					OrganizationId: modelConfig.OwnerID,
-				})
-				if err != nil {
-					logger.Fatal(err.Error())
-				}
-				owner = resp.GetOrganization().GetOwner()
+			// Get the owner UID by checking the namespace
+			checkResp, err := mgmtPrivateServiceClient.CheckNamespaceAdmin(ctx, &mgmtpb.CheckNamespaceAdminRequest{
+				Id: modelConfig.OwnerID,
+			})
+			if err != nil {
+				logger.Fatal(err.Error())
 			}
+			ownerUID := checkResp.GetUid()
 
-			sCtx := gatewayx.InjectOwnerToContext(ctx, owner)
+			sCtx := gatewayx.InjectOwnerToContext(ctx, ownerUID)
 
 			defer wg.Done()
 			configuration, err := structpb.NewStruct(modelConfig.Configuration)
@@ -114,9 +103,8 @@ func main() {
 			}
 
 			if _, err = modelPublicServiceClient.GetNamespaceModel(sCtx, &modelpb.GetNamespaceModelRequest{
-				NamespaceId: modelConfig.OwnerID,
-				ModelId:     modelConfig.ID,
-				View:        modelpb.View_VIEW_FULL.Enum(),
+				Name: fmt.Sprintf("namespaces/%s/models/%s", modelConfig.OwnerID, modelConfig.ID),
+				View: modelpb.View_VIEW_FULL.Enum(),
 			}); err != nil {
 				logger.Info("Creating model: " + modelConfig.ID)
 
@@ -131,8 +119,8 @@ func main() {
 					Configuration:   configuration,
 				}
 				if _, err = modelPublicServiceClient.CreateNamespaceModel(sCtx, &modelpb.CreateNamespaceModelRequest{
-					NamespaceId: modelConfig.OwnerID,
-					Model:       model,
+					Parent: fmt.Sprintf("namespaces/%s", modelConfig.OwnerID),
+					Model:  model,
 				}); err != nil {
 					logger.Fatal("Created model err: " + err.Error())
 					if e, ok := status.FromError(err); ok {

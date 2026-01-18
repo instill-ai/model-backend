@@ -6,9 +6,9 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto/model/model/v1alpha'], 'model_definition.proto');
-client.load(['proto/model/model/v1alpha'], 'model.proto');
-client.load(['proto/model/model/v1alpha'], 'model_public_service.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
+client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
@@ -20,7 +20,7 @@ export function TriggerUserModel(header) {
       plaintext: true
     });
 
-    let res = client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    let res = client.invoke('model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
@@ -34,7 +34,7 @@ export function TriggerUserModel(header) {
       'TriggerModel output classification_outputs score': (r) => r && r.message.taskOutputs[0].classification.score === 1,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       version: "test",
       task_inputs: [{
@@ -48,7 +48,7 @@ export function TriggerUserModel(header) {
     });
 
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/non-existed`,
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill-ai.com/imgs/dog.jpg" }
@@ -57,7 +57,7 @@ export function TriggerUserModel(header) {
       'TriggerModel non-existed model name status': (r) => r && r.status === grpc.StatusNotFound,
     });
 
-    check(client.invoke('model.model.v1alpha.ModelPublicService/TriggerUserModel', {
+    check(client.invoke('model.v1alpha.ModelPublicService/TriggerUserModel', {
       name: `${constant.namespace}/models/${constant.cls_model}`,
       task_inputs: [{
         classification: { image_url: "https://artifacts.instill-ai.com/non-existed.jpg" }

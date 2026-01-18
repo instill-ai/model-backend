@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/lib/pq"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"github.com/instill-ai/model-backend/pkg/utils"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
-	mgmtpb "github.com/instill-ai/protogen-go/core/mgmt/v1beta"
-	modelpb "github.com/instill-ai/protogen-go/model/model/v1alpha"
+	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
+	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
 type ModelVisibility modelpb.Model_Visibility
@@ -68,10 +70,19 @@ type ModelDefinition struct {
 	ReleaseStage ReleaseStage   `sql:"type:valid_release_stage"`
 }
 
-// Model
+// Model is the data model for the model table
+// Field ordering follows AIP standard: name (derived), id, display_name, slug, aliases, description
 type Model struct {
 	BaseDynamic
-	ID                 string
+	// Field 2: Immutable canonical ID with prefix (e.g., "mod-8f3A2k9E7c1")
+	ID string `gorm:"column:id;not null"`
+	// Field 3: Human-readable display name for UI
+	DisplayName string `gorm:"column:display_name"`
+	// Field 4: URL-friendly slug without prefix
+	Slug string `gorm:"column:slug"`
+	// Field 5: Previous slugs for backward compatibility
+	Aliases pq.StringArray `gorm:"column:aliases;type:text[]"`
+	// Field 6: Optional description
 	Description        sql.NullString
 	ModelDefinitionUID uuid.UUID
 	Configuration      datatypes.JSON `gorm:"type:jsonb"`
@@ -111,6 +122,24 @@ func (m *Model) IsPublic() bool {
 // OwnerUID returns the UID of the model owner.
 func (m *Model) OwnerUID() uuid.UUID {
 	return uuid.FromStringOrNil(strings.Split(m.Owner, "/")[1])
+}
+
+// BeforeCreate ensures hash-based ID and slug are generated before insertion.
+func (m *Model) BeforeCreate(db *gorm.DB) error {
+	if err := m.BaseDynamic.BeforeCreate(db); err != nil {
+		return err
+	}
+	// Generate prefixed canonical ID if not provided (AIP standard)
+	if m.ID == "" {
+		m.ID = utils.GeneratePrefixedResourceID(utils.PrefixModel, m.UID)
+		db.Statement.SetColumn("ID", m.ID)
+	}
+	// Generate slug from display name if not provided
+	if m.Slug == "" && m.DisplayName != "" {
+		m.Slug = utils.GenerateSlug(m.DisplayName)
+		db.Statement.SetColumn("Slug", m.Slug)
+	}
+	return nil
 }
 
 func (m *Model) TagNames() []string {

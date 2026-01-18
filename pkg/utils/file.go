@@ -8,68 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
-	"go.uber.org/zap"
-
-	logx "github.com/instill-ai/x/log"
 )
-
-type ProgressReader struct {
-	r io.Reader
-
-	filename   string
-	n          float64
-	lastPrintN float64
-	lastPrint  time.Time
-	logger     *zap.Logger
-}
-
-func NewProgressReader(r io.Reader, filename string) *ProgressReader {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	logger, _ := logx.GetZapLogger(ctx)
-	return &ProgressReader{
-		r:        r,
-		logger:   logger,
-		filename: filename,
-	}
-}
-
-func (pr *ProgressReader) Read(p []byte) (int, error) {
-	n, err := pr.r.Read(p)
-	bf := float64(n)
-	bf /= (1 << 10)
-	pr.n += bf
-
-	if time.Since(pr.lastPrint) > time.Second ||
-		(err != nil && pr.n != pr.lastPrintN) {
-
-		pr.logger.Info(fmt.Sprintf("Copied %3.1fKiB for %s", pr.n, pr.filename))
-		pr.lastPrintN = pr.n
-		pr.lastPrint = time.Now()
-	}
-	return n, err
-}
-
-// writeToFp takes in a file pointer and byte array and writes the byte array into the file
-// returns error if pointer is nil or error in writing to file
-func WriteToFp(fp *os.File, data []byte) error {
-	w := 0
-	n := len(data)
-	for {
-
-		nw, err := fp.Write(data[w:])
-		if err != nil {
-			return err
-		}
-		w += nw
-		if nw >= n {
-			return nil
-		}
-	}
-}
 
 // GetJSON fetches the contents from the given URL or reads from a local file path
 // and decodes it as JSON into the given result,
