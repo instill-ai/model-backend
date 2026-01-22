@@ -277,7 +277,7 @@ func (s *service) FetchOwnerWithPermalink(ctx context.Context, permalink string)
 		return owner, nil
 	}
 
-	resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{OrganizationUid: uid})
+	resp, err := s.mgmtPrivateServiceClient.LookUpOrganizationAdmin(ctx, &mgmtpb.LookUpOrganizationAdminRequest{Name: fmt.Sprintf("organizations/%s", uid)})
 	if err != nil {
 		return nil, fmt.Errorf("fetchOwnerByPermalink error")
 	}
@@ -824,12 +824,22 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 
 	logger, _ := logx.GetZapLogger(ctx)
 
-	ns, err := s.GetRscNamespace(ctx, req.GetNamespaceId())
+	// Parse namespace_id and model_id from parent resource name
+	// Format: namespaces/{namespace}/models/{model}
+	parent := req.GetParent()
+	parts := strings.Split(parent, "/")
+	if len(parts) < 4 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid parent resource name: %s", parent))
+	}
+	namespaceID := parts[1]
+	modelID := parts[3]
+
+	ns, err := s.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), req.GetModelId(), true, false)
+	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -882,9 +892,12 @@ func (s *service) ListModelRuns(ctx context.Context, req *modelpb.ListModelRunsR
 	var pbModelRun *modelpb.ModelRun
 	for i, run := range runs {
 		pbModelRun = convertModelRunToPB(run)
-		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
+		if runnerID, ok := runnerMap[run.RunnerUID.String()]; ok && runnerID != nil {
+			runnerName := fmt.Sprintf("users/%s", *runnerID)
+			pbModelRun.Runner = &runnerName
+		}
 		if requesterID, ok := runnerMap[run.RequesterUID.String()]; ok && requesterID != nil {
-			pbModelRun.RequesterId = *requesterID
+			pbModelRun.Requester = fmt.Sprintf("namespaces/%s", *requesterID)
 		}
 
 		if CanViewPrivateData(run.RequesterUID.String(), requesterUID.String()) {
@@ -910,7 +923,16 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 	pageSize := s.pageSizeInRange(req.GetPageSize())
 	page := s.pageInRange(req.GetPage())
 
-	ns, err := s.GetRscNamespace(ctx, req.GetRequesterId())
+	// Parse requester_id from requester resource name
+	// Format: namespaces/{namespace}
+	requester := req.GetRequester()
+	requesterParts := strings.Split(requester, "/")
+	requesterID := ""
+	if len(requesterParts) >= 2 {
+		requesterID = requesterParts[1]
+	}
+
+	ns, err := s.GetRscNamespace(ctx, requesterID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid namespace: %w", err)
 	}
@@ -985,9 +1007,12 @@ func (s *service) ListModelRunsByRequester(ctx context.Context, req *modelpb.Lis
 
 	for i, run := range runs {
 		pbModelRun = convertModelRunToPB(run)
-		pbModelRun.RunnerId = runnerMap[run.RunnerUID.String()]
+		if runnerID, ok := runnerMap[run.RunnerUID.String()]; ok && runnerID != nil {
+			runnerName := fmt.Sprintf("users/%s", *runnerID)
+			pbModelRun.Runner = &runnerName
+		}
 		if requesterID, ok := runnerMap[run.RequesterUID.String()]; ok && requesterID != nil {
-			pbModelRun.RequesterId = *requesterID
+			pbModelRun.Requester = fmt.Sprintf("namespaces/%s", *requesterID)
 		}
 
 		pbModelRuns[i] = pbModelRun

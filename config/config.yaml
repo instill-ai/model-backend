@@ -74,6 +74,9 @@ otelcollector:
 openfga:
   host: openfga
   port: 8081
+  cache:
+    enabled: false
+    ttl: 60
 registry:
   host: registry
   port: 5000

@@ -17,7 +17,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260118041154-8f06ba4d527d
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260122065215-c32ea2feec1f
 	github.com/instill-ai/x v0.10.1-alpha.0.20260118004501-5221537d0a1d
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/knadh/koanf v1.5.0
@@ -29,7 +29,7 @@ require (
 	github.com/mennanov/fieldmask-utils v1.1.2
 	github.com/openfga/api/proto v0.0.0-20240807201305-c96ec773cae9
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.6.3
+	github.com/redis/go-redis/v9 v9.9.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.10.0
 	go.einride.tech/aip v0.68.0
@@ -146,3 +146,7 @@ require (
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 )
+
+replace github.com/instill-ai/protogen-go => ../protogen-go
+
+replace github.com/instill-ai/x => ../x
