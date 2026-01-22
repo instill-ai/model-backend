@@ -16,6 +16,16 @@ import (
 	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
 )
 
+// parseAdminModelVersionName parses a model version resource name for admin requests.
+// Expected format: namespaces/{namespace}/models/{model}/versions/{version}
+func parseAdminModelVersionName(name string) (namespaceID, modelID, version string, err error) {
+	parts := strings.Split(name, "/")
+	if len(parts) != 6 || parts[0] != "namespaces" || parts[2] != "models" || parts[4] != "versions" {
+		return "", "", "", status.Errorf(codes.InvalidArgument, "invalid model version name format: %s", name)
+	}
+	return parts[1], parts[3], parts[5], nil
+}
+
 func (h *PrivateHandler) ListModelsAdmin(ctx context.Context, req *modelpb.ListModelsAdminRequest) (*modelpb.ListModelsAdminResponse, error) {
 
 	declarations, err := filtering.NewDeclarations([]filtering.DeclarationOption{
@@ -67,58 +77,31 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelpb.Look
 	return &modelpb.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-type DeployNamespaceModelAdminRequestInterface interface {
-	GetName() string
-	GetVersion() string
-	GetDigest() string
-}
-
-func (h *PrivateHandler) DeployUserModelAdmin(ctx context.Context, req *modelpb.DeployUserModelAdminRequest) (*modelpb.DeployUserModelAdminResponse, error) {
-	if _, err := h.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.GetVersion(),
-		Digest:      req.GetDigest(),
-	}); err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeployUserModelAdminResponse{}, nil
-}
-
-func (h *PrivateHandler) DeployOrganizationModelAdmin(ctx context.Context, req *modelpb.DeployOrganizationModelAdminRequest) (*modelpb.DeployOrganizationModelAdminResponse, error) {
-	if _, err := h.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.GetVersion(),
-		Digest:      req.GetDigest(),
-	}); err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeployOrganizationModelAdminResponse{}, nil
-}
-
 func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *modelpb.DeployNamespaceModelAdminRequest) (*modelpb.DeployNamespaceModelAdminResponse, error) {
 
-	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	namespaceID, modelID, versionStr, err := parseAdminModelVersionName(req.GetName())
 	if err != nil {
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
+	ns, err := h.service.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, modelID)
 	if err != nil {
 		return nil, err
 	}
 
 	version := &datamodel.ModelVersion{
 		Name:     ns.Name(),
-		Version:  req.GetVersion(),
+		Version:  versionStr,
 		Digest:   req.GetDigest(),
 		ModelUID: modelUID,
 	}
@@ -130,63 +113,36 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 	}
 
 	if _, err := h.service.GetRepositoryTag(ctx, &modelpb.GetRepositoryTagRequest{
-		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, req.GetModelId(), version.Version),
+		Name: fmt.Sprintf("repositories/%s/%s/tags/%s", ns.NsID, modelID, version.Version),
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, req.GetModelId(), pbModel.GetHardware(), req.GetVersion(), ray.Deploy); err != nil {
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), versionStr, ray.Deploy); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to deploy the model: %s", err.Error()))
 	}
 
 	return &modelpb.DeployNamespaceModelAdminResponse{}, nil
 }
 
-type UndeployNamespaceModelAdminRequestInterface interface {
-	GetName() string
-	GetVersion() string
-	GetDigest() string
-}
-
-func (h *PrivateHandler) UndeployUserModelAdmin(ctx context.Context, req *modelpb.UndeployUserModelAdminRequest) (*modelpb.UndeployUserModelAdminResponse, error) {
-	if _, err := h.UndeployNamespaceModelAdmin(ctx, &modelpb.UndeployNamespaceModelAdminRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.GetVersion(),
-		Digest:      req.GetDigest(),
-	}); err != nil {
-		return nil, err
-	}
-
-	return &modelpb.UndeployUserModelAdminResponse{}, nil
-}
-
-func (h *PrivateHandler) UndeployOrganizationModelAdmin(ctx context.Context, req *modelpb.UndeployOrganizationModelAdminRequest) (*modelpb.UndeployOrganizationModelAdminResponse, error) {
-	if _, err := h.UndeployNamespaceModelAdmin(ctx, &modelpb.UndeployNamespaceModelAdminRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.GetVersion(),
-		Digest:      req.GetDigest(),
-	}); err != nil {
-		return nil, err
-	}
-
-	return &modelpb.UndeployOrganizationModelAdminResponse{}, nil
-}
-
 func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *modelpb.UndeployNamespaceModelAdminRequest) (*modelpb.UndeployNamespaceModelAdminResponse, error) {
 
-	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	namespaceID, modelID, versionStr, err := parseAdminModelVersionName(req.GetName())
 	if err != nil {
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
+	ns, err := h.service.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, req.GetModelId(), pbModel.GetHardware(), req.GetVersion(), ray.Undeploy); err != nil {
+	pbModel, err := h.service.GetModelByIDAdmin(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := h.service.UpdateModelInstanceAdmin(ctx, ns, modelID, pbModel.GetHardware(), versionStr, ray.Undeploy); err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to undeploy the model: %s", err.Error()))
 	}
 

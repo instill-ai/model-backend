@@ -133,12 +133,10 @@ func main() {
 					return
 				}
 			}
-			logger.Info("Deploying model: " + modelConfig.ID)
-			if _, err = modelPrivateServiceClient.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
-				NamespaceId: modelConfig.OwnerID,
-				ModelId:     modelConfig.ID,
-				Version:     modelConfig.Version,
-			}); err != nil {
+		logger.Info("Deploying model: " + modelConfig.ID)
+		if _, err = modelPrivateServiceClient.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
+			Name: fmt.Sprintf("namespaces/%s/models/%s/versions/%s", modelConfig.OwnerID, modelConfig.ID, modelConfig.Version),
+		}); err != nil {
 				logger.Error(fmt.Sprintf("deploy model err: %v", err))
 				if e, ok := status.FromError(err); ok {
 					if e.Code() == codes.FailedPrecondition {

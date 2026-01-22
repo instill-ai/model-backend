@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/instill-ai/model-backend/pkg/utils"
+	"github.com/instill-ai/x/resource"
+
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
@@ -131,12 +133,12 @@ func (m *Model) BeforeCreate(db *gorm.DB) error {
 	}
 	// Generate prefixed canonical ID if not provided (AIP standard)
 	if m.ID == "" {
-		m.ID = utils.GeneratePrefixedResourceID(utils.PrefixModel, m.UID)
+		m.ID = resource.GeneratePrefixedID(utils.PrefixModel, m.UID)
 		db.Statement.SetColumn("ID", m.ID)
 	}
 	// Generate slug from display name if not provided
 	if m.Slug == "" && m.DisplayName != "" {
-		m.Slug = utils.GenerateSlug(m.DisplayName)
+		m.Slug = resource.GenerateSlug(m.DisplayName, 0)
 		db.Statement.SetColumn("Slug", m.Slug)
 	}
 	return nil

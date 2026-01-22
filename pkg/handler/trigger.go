@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/instill-ai/model-backend/config"
@@ -34,97 +33,51 @@ import (
 	resourcex "github.com/instill-ai/x/resource"
 )
 
-// TriggerUserModel triggers a model for a given user.
-func (h *PublicHandler) TriggerUserModel(ctx context.Context, req *modelpb.TriggerUserModelRequest) (*modelpb.TriggerUserModelResponse, error) {
-	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerUserModelResponse{
-		Task:        r.Task,
-		TaskOutputs: r.TaskOutputs,
-	}, nil
+// triggerModelParams contains parsed parameters for model trigger.
+type triggerModelParams struct {
+	namespaceID string
+	modelID     string
+	version     string
+	taskInputs  []*structpb.Struct
 }
 
-// TriggerOrganizationModel triggers a model for a given organization.
-func (h *PublicHandler) TriggerOrganizationModel(ctx context.Context, req *modelpb.TriggerOrganizationModelRequest) (*modelpb.TriggerOrganizationModelResponse, error) {
-	r, err := h.TriggerNamespaceModel(ctx, &modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
+// parseModelVersionName parses a model version name and extracts namespace, model, and version.
+// Format: namespaces/{namespace}/models/{model}/versions/{version}
+func parseModelVersionName(name string) (namespaceID, modelID, version string, err error) {
+	parts := strings.Split(name, "/")
+	if len(parts) != 6 || parts[0] != "namespaces" || parts[2] != "models" || parts[4] != "versions" {
+		return "", "", "", status.Errorf(codes.InvalidArgument, "invalid model version name format: %s", name)
 	}
-
-	return &modelpb.TriggerOrganizationModelResponse{
-		Task:        r.Task,
-		TaskOutputs: r.TaskOutputs,
-	}, nil
+	return parts[1], parts[3], parts[5], nil
 }
 
-// TriggerUserLatestModel triggers a model for a given user.
-func (h *PublicHandler) TriggerUserLatestModel(ctx context.Context, req *modelpb.TriggerUserLatestModelRequest) (*modelpb.TriggerUserLatestModelResponse, error) {
-	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-	})
-	if err != nil {
-		return nil, err
+// parseModelName parses a model name and extracts namespace and model.
+// Format: namespaces/{namespace}/models/{model}
+func parseModelName(name string) (namespaceID, modelID string, err error) {
+	parts := strings.Split(name, "/")
+	if len(parts) != 4 || parts[0] != "namespaces" || parts[2] != "models" {
+		return "", "", status.Errorf(codes.InvalidArgument, "invalid model name format: %s", name)
 	}
-
-	return &modelpb.TriggerUserLatestModelResponse{
-		Task:        r.Task,
-		TaskOutputs: r.TaskOutputs,
-	}, nil
-}
-
-// TriggerOrganizationLatestModel triggers a model for a given organization.
-func (h *PublicHandler) TriggerOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerOrganizationLatestModelRequest) (*modelpb.TriggerOrganizationLatestModelResponse, error) {
-	r, err := h.TriggerNamespaceLatestModel(ctx, &modelpb.TriggerNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerOrganizationLatestModelResponse{
-		Task:        r.Task,
-		TaskOutputs: r.TaskOutputs,
-	}, nil
-}
-
-// TriggerNamespaceModelRequestInterface is an interface for triggering a namespace model.
-type TriggerNamespaceModelRequestInterface interface {
-	protoreflect.ProtoMessage
-	GetNamespaceId() string
-	GetModelId() string
-	GetVersion() string
-	GetTaskInputs() []*structpb.Struct
+	return parts[1], parts[3], nil
 }
 
 // TriggerNamespaceModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerNamespaceModelResponse{}
 
-	r := &modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		Version:     req.GetVersion(),
-		TaskInputs:  req.GetTaskInputs(),
+	namespaceID, modelID, version, err := parseModelVersionName(req.GetName())
+	if err != nil {
+		return nil, err
 	}
 
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, r)
+	params := triggerModelParams{
+		namespaceID: namespaceID,
+		modelID:     modelID,
+		version:     version,
+		taskInputs:  req.GetTaskInputs(),
+	}
+
+	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, params)
 
 	return resp, err
 }
@@ -133,24 +86,30 @@ func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.
 func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerNamespaceLatestModelRequest) (resp *modelpb.TriggerNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.TriggerNamespaceLatestModelResponse{}
 
-	r := &modelpb.TriggerNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		TaskInputs:  req.GetTaskInputs(),
+	namespaceID, modelID, err := parseModelName(req.GetName())
+	if err != nil {
+		return nil, err
 	}
 
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, r)
+	params := triggerModelParams{
+		namespaceID: namespaceID,
+		modelID:     modelID,
+		version:     "", // empty for latest
+		taskInputs:  req.GetTaskInputs(),
+	}
+
+	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, params)
 
 	return resp, err
 }
 
-func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNamespaceModelRequestInterface) (commonpb.Task, []*structpb.Struct, error) {
+func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, params triggerModelParams) (commonpb.Task, []*structpb.Struct, error) {
 
 	startTime := time.Now()
 
 	logger, _ := logx.GetZapLogger(ctx)
 
-	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	ns, err := h.service.GetRscNamespace(ctx, params.namespaceID)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
@@ -158,12 +117,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, params.modelID)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
@@ -179,7 +138,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}
 
 	var version *datamodel.ModelVersion
-	versionID := req.GetVersion()
+	versionID := params.version
 
 	if versionID == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
@@ -211,7 +170,14 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		ModelTask:          pbModel.Task,
 	}
 
-	inputJSON, err := protojson.Marshal(req)
+	// Marshal task inputs for logging
+	inputData := map[string]interface{}{
+		"namespace_id": params.namespaceID,
+		"model_id":     params.modelID,
+		"version":      params.version,
+		"task_inputs":  params.taskInputs,
+	}
+	inputJSON, err := json.Marshal(inputData)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -236,7 +202,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	}(usageData, startTime)
 
 	// check whether model support batching or not. If not, raise an error
-	if len(req.GetTaskInputs()) > 1 {
+	if len(params.taskInputs) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
@@ -248,14 +214,14 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 		}
 	}
 
-	for _, i := range req.GetTaskInputs() {
+	for _, i := range params.taskInputs {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
 		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
+	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		var st *status.Status
 		if strings.Contains(err.Error(), "failed to allocate memory") {
@@ -270,93 +236,30 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, req TriggerNa
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
 	logger.Info("TriggerNamespaceModel",
-		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
+		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), params.modelID, versionID)),
 		zap.String("eventMessage", "TriggerNamespaceModel done"),
 	)
 
 	return pbModel.Task, response, nil
 }
 
-// TriggerAsyncUserModel triggers a model for a given user.
-func (h *PublicHandler) TriggerAsyncUserModel(ctx context.Context, req *modelpb.TriggerAsyncUserModelRequest) (*modelpb.TriggerAsyncUserModelResponse, error) {
-	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerAsyncUserModelResponse{
-		Operation: r.Operation,
-	}, nil
-}
-
-// TriggerAsyncOrganizationModel triggers a model for a given organization.
-func (h *PublicHandler) TriggerAsyncOrganizationModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationModelRequest) (*modelpb.TriggerAsyncOrganizationModelResponse, error) {
-	r, err := h.TriggerAsyncNamespaceModel(ctx, &modelpb.TriggerAsyncNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerAsyncOrganizationModelResponse{
-		Operation: r.Operation,
-	}, nil
-}
-
-// TriggerAsyncUserLatestModel triggers a model for a given user.
-func (h *PublicHandler) TriggerAsyncUserLatestModel(ctx context.Context, req *modelpb.TriggerAsyncUserLatestModelRequest) (*modelpb.TriggerAsyncUserLatestModelResponse, error) {
-	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerAsyncUserLatestModelResponse{
-		Operation: r.Operation,
-	}, nil
-}
-
-// TriggerAsyncOrganizationLatestModel triggers a model for a given organization.
-func (h *PublicHandler) TriggerAsyncOrganizationLatestModel(ctx context.Context, req *modelpb.TriggerAsyncOrganizationLatestModelRequest) (*modelpb.TriggerAsyncOrganizationLatestModelResponse, error) {
-	r, err := h.TriggerAsyncNamespaceLatestModel(ctx, &modelpb.TriggerAsyncNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		TaskInputs:  req.TaskInputs,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.TriggerAsyncOrganizationLatestModelResponse{
-		Operation: r.Operation,
-	}, nil
-}
-
-// TriggerAsyncNamespaceModelRequestInterface is an interface for triggering a namespace model.
-type TriggerAsyncNamespaceModelRequestInterface interface {
-	protoreflect.ProtoMessage
-	GetNamespaceId() string
-	GetModelId() string
-	GetVersion() string
-	GetTaskInputs() []*structpb.Struct
-}
-
 // TriggerAsyncNamespaceModel triggers a model for a given namespace.
 func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
 
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, req)
+	namespaceID, modelID, version, err := parseModelVersionName(req.GetName())
+	if err != nil {
+		return nil, err
+	}
+
+	params := triggerModelParams{
+		namespaceID: namespaceID,
+		modelID:     modelID,
+		version:     version,
+		taskInputs:  req.GetTaskInputs(),
+	}
+
+	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -368,13 +271,19 @@ func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *mod
 func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceLatestModelRequest) (resp *modelpb.TriggerAsyncNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.TriggerAsyncNamespaceLatestModelResponse{}
 
-	r := &modelpb.TriggerAsyncNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		TaskInputs:  req.GetTaskInputs(),
+	namespaceID, modelID, err := parseModelName(req.GetName())
+	if err != nil {
+		return nil, err
 	}
 
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, r)
+	params := triggerModelParams{
+		namespaceID: namespaceID,
+		modelID:     modelID,
+		version:     "", // empty for latest
+		taskInputs:  req.GetTaskInputs(),
+	}
+
+	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -382,13 +291,13 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 	return resp, err
 }
 
-func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req TriggerAsyncNamespaceModelRequestInterface) (operation *longrunningpb.Operation, err error) {
+func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, params triggerModelParams) (operation *longrunningpb.Operation, err error) {
 
 	startTime := time.Now()
 
 	logger, _ := logx.GetZapLogger(ctx)
 
-	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	ns, err := h.service.GetRscNamespace(ctx, params.namespaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,12 +305,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, req.GetModelId())
+	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, params.modelID)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +326,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}
 
 	var version *datamodel.ModelVersion
-	versionID := req.GetVersion()
+	versionID := params.version
 
 	if versionID == "" {
 		version, err = h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, modelUID)
@@ -449,7 +358,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		ModelTask:          pbModel.Task,
 	}
 
-	inputJSON, err := protojson.Marshal(req)
+	// Marshal task inputs for logging
+	inputData := map[string]interface{}{
+		"namespace_id": params.namespaceID,
+		"model_id":     params.modelID,
+		"version":      params.version,
+		"task_inputs":  params.taskInputs,
+	}
+	inputJSON, err := json.Marshal(inputData)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -475,7 +391,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	}(usageData, startTime)
 
 	// check whether model support batching or not. If not, raise an error
-	if len(req.GetTaskInputs()) > 1 {
+	if len(params.taskInputs) > 1 {
 		doSupportBatch, err := utils.DoSupportBatch()
 		if err != nil {
 			usageData.Status = mgmtpb.Status_STATUS_ERRORED
@@ -487,14 +403,14 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 		}
 	}
 
-	for _, i := range req.GetTaskInputs() {
+	for _, i := range params.taskInputs {
 		i.Fields["data"].GetStructValue().Fields["model"] = structpb.NewStringValue(pbModel.Id)
 		if err = datamodel.ValidateJSONSchema(datamodel.TasksJSONInputSchemaMap[pbModel.Task.String()], i, false); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, req.GetModelId(), version, inputJSON, pbModel.Task, runLog)
+	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		var st *status.Status
 		if strings.Contains(err.Error(), "Failed to allocate memory") {
@@ -522,7 +438,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, req Trig
 	)
 
 	logger.Info("TriggerNamespaceModel",
-		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), req.GetModelId(), versionID)),
+		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), params.modelID, versionID)),
 		zap.String("eventMessage", "TriggerNamespaceModel done"),
 	)
 
@@ -693,11 +609,11 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		data.Fields[k] = structVal
 	}
 
-	inputReq := &modelpb.TriggerNamespaceModelRequest{}
-	inputReq.ModelId = ""
-	inputReq.NamespaceId = ns.NsID
-	inputReq.TaskInputs = []*structpb.Struct{data}
-	inputReq.Version = version.Version
+	// Create a trigger request with the new name format
+	inputReq := &modelpb.TriggerNamespaceModelRequest{
+		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", ns.NsID, modelID, version.Version),
+		TaskInputs: []*structpb.Struct{data},
+	}
 
 	inputJSON, err := json.Marshal(inputReq)
 	if err != nil {
@@ -755,7 +671,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	res, err := protojson.MarshalOptions{
 		EmitUnpopulated: true,
 		UseEnumNumbers:  false,
-	}.Marshal(&modelpb.TriggerUserModelBinaryFileUploadResponse{
+	}.Marshal(&modelpb.TriggerNamespaceModelBinaryFileUploadResponse{
 		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})

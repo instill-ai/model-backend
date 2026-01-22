@@ -297,7 +297,8 @@ func (s *service) DBToPBModel(ctx context.Context, modelDef *datamodel.ModelDefi
 	// Populate creator fields if creator_uid is set
 	if dbModel.CreatorUID != nil {
 		creatorUIDStr := dbModel.CreatorUID.String()
-		pbModel.CreatorUid = &creatorUIDStr
+		creatorName := fmt.Sprintf("users/%s", creatorUIDStr)
+		pbModel.CreatorName = &creatorName
 		creator, err := s.FetchUserByUID(ctx, creatorUIDStr)
 		if err != nil {
 			// Log but don't fail - creator may have been deleted

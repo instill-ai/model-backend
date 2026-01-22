@@ -90,32 +90,6 @@ func (h *PublicHandler) ListModels(ctx context.Context, req *modelpb.ListModelsR
 	return &resp, nil
 }
 
-// CreateUserModel creates a model for a given user.
-func (h *PublicHandler) CreateUserModel(ctx context.Context, req *modelpb.CreateUserModelRequest) (resp *modelpb.CreateUserModelResponse, err error) {
-	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
-		Parent: req.Parent,
-		Model:  req.Model,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.CreateUserModelResponse{Model: r.Model}, nil
-}
-
-// CreateOrganizationModel creates a model for a given organization.
-func (h *PublicHandler) CreateOrganizationModel(ctx context.Context, req *modelpb.CreateOrganizationModelRequest) (resp *modelpb.CreateOrganizationModelResponse, err error) {
-	r, err := h.CreateNamespaceModel(ctx, &modelpb.CreateNamespaceModelRequest{
-		Parent: req.Parent,
-		Model:  req.Model,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.CreateOrganizationModelResponse{Model: r.Model}, nil
-}
-
 // CreateNamespaceModel creates a model for a given namespace.
 func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.CreateNamespaceModelRequest) (*modelpb.CreateNamespaceModelResponse, error) {
 
@@ -201,50 +175,6 @@ func (h *PublicHandler) CreateNamespaceModel(ctx context.Context, req *modelpb.C
 	}
 }
 
-// ListUserModels lists the models for a given user.
-func (h *PublicHandler) ListUserModels(ctx context.Context, req *modelpb.ListUserModelsRequest) (resp *modelpb.ListUserModelsResponse, err error) {
-	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
-		Parent:      req.Parent,
-		PageSize:    req.PageSize,
-		PageToken:   req.PageToken,
-		View:        req.View,
-		Visibility:  req.Visibility,
-		Filter:      req.Filter,
-		OrderBy:     req.OrderBy,
-		ShowDeleted: req.ShowDeleted,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &modelpb.ListUserModelsResponse{
-		Models:        r.Models,
-		NextPageToken: r.NextPageToken,
-		TotalSize:     r.TotalSize,
-	}, nil
-}
-
-// ListOrganizationModels lists the models for a given organization.
-func (h *PublicHandler) ListOrganizationModels(ctx context.Context, req *modelpb.ListOrganizationModelsRequest) (resp *modelpb.ListOrganizationModelsResponse, err error) {
-	r, err := h.ListNamespaceModels(ctx, &modelpb.ListNamespaceModelsRequest{
-		Parent:      req.Parent,
-		PageSize:    req.PageSize,
-		PageToken:   req.PageToken,
-		View:        req.View,
-		Visibility:  req.Visibility,
-		Filter:      req.Filter,
-		OrderBy:     req.OrderBy,
-		ShowDeleted: req.ShowDeleted,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &modelpb.ListOrganizationModelsResponse{
-		Models:        r.Models,
-		NextPageToken: r.NextPageToken,
-		TotalSize:     r.TotalSize,
-	}, nil
-}
-
 // ListNamespaceModels lists the models for a given namespace.
 func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.ListNamespaceModelsRequest) (*modelpb.ListNamespaceModelsResponse, error) {
 
@@ -303,44 +233,6 @@ func (h *PublicHandler) ListNamespaceModels(ctx context.Context, req *modelpb.Li
 	}, nil
 }
 
-// ListUserModelVersions lists the model versions for a given user.
-func (h *PublicHandler) ListUserModelVersions(ctx context.Context, req *modelpb.ListUserModelVersionsRequest) (resp *modelpb.ListUserModelVersionsResponse, err error) {
-	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
-		Parent:   req.Name,
-		PageSize: req.PageSize,
-		Page:     req.Page,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.ListUserModelVersionsResponse{
-		Versions:  r.Versions,
-		TotalSize: r.TotalSize,
-		PageSize:  r.PageSize,
-		Page:      r.Page,
-	}, nil
-}
-
-// ListOrganizationModelVersions lists the model versions for a given organization.
-func (h *PublicHandler) ListOrganizationModelVersions(ctx context.Context, req *modelpb.ListOrganizationModelVersionsRequest) (resp *modelpb.ListOrganizationModelVersionsResponse, err error) {
-	r, err := h.ListNamespaceModelVersions(ctx, &modelpb.ListNamespaceModelVersionsRequest{
-		Parent:   req.Name,
-		PageSize: req.PageSize,
-		Page:     req.Page,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.ListOrganizationModelVersionsResponse{
-		Versions:  r.Versions,
-		TotalSize: r.TotalSize,
-		PageSize:  r.PageSize,
-		Page:      r.Page,
-	}, nil
-}
-
 // ListNamespaceModelVersions lists the model versions for a given namespace.
 func (h *PublicHandler) ListNamespaceModelVersions(ctx context.Context, req *modelpb.ListNamespaceModelVersionsRequest) (resp *modelpb.ListNamespaceModelVersionsResponse, err error) {
 
@@ -371,40 +263,6 @@ func (h *PublicHandler) ListNamespaceModelVersions(ctx context.Context, req *mod
 	}, nil
 }
 
-// DeleteUserModelVersion deletes a model version for a given user.
-func (h *PublicHandler) DeleteUserModelVersion(ctx context.Context, req *modelpb.DeleteUserModelVersionRequest) (*modelpb.DeleteUserModelVersionResponse, error) {
-	// Build the name from the old-style request: users/{user}/models/{model} + version
-	name := fmt.Sprintf("namespaces/%s/models/%s/versions/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3],
-		req.Version)
-	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeleteUserModelVersionResponse{}, nil
-}
-
-// DeleteOrganizationModelVersion deletes a model version for a given organization.
-func (h *PublicHandler) DeleteOrganizationModelVersion(ctx context.Context, req *modelpb.DeleteOrganizationModelVersionRequest) (*modelpb.DeleteOrganizationModelVersionResponse, error) {
-	// Build the name from the old-style request: organizations/{org}/models/{model} + version
-	name := fmt.Sprintf("namespaces/%s/models/%s/versions/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3],
-		req.Version)
-	_, err := h.DeleteNamespaceModelVersion(ctx, &modelpb.DeleteNamespaceModelVersionRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeleteOrganizationModelVersionResponse{}, nil
-}
-
 // DeleteNamespaceModelVersion deletes a model version for a given namespace.
 func (h *PublicHandler) DeleteNamespaceModelVersion(ctx context.Context, req *modelpb.DeleteNamespaceModelVersionRequest) (*modelpb.DeleteNamespaceModelVersionResponse, error) {
 
@@ -429,69 +287,6 @@ func (h *PublicHandler) DeleteNamespaceModelVersion(ctx context.Context, req *mo
 	return &modelpb.DeleteNamespaceModelVersionResponse{}, nil
 }
 
-// LookUpModel looks up a model by permalink.
-func (h *PublicHandler) LookUpModel(ctx context.Context, req *modelpb.LookUpModelRequest) (*modelpb.LookUpModelResponse, error) {
-
-	modelUID, err := resource.GetRscPermalinkUID(req.Permalink)
-	if err != nil {
-		return &modelpb.LookUpModelResponse{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-	if err := authenticateUser(ctx, false); err != nil {
-		return &modelpb.LookUpModelResponse{}, err
-	}
-
-	pbModel, err := h.service.GetModelByUID(ctx, modelUID, parseView(req.GetView()))
-	if err != nil {
-		return &modelpb.LookUpModelResponse{}, err
-	}
-
-	return &modelpb.LookUpModelResponse{Model: pbModel}, nil
-}
-
-// GetUserModel gets a model by name for a given user.
-type GetNamespaceModelRequestInterface interface {
-	GetName() string
-	GetView() modelpb.View
-}
-
-// GetUserModel gets a model by name for a given user.
-func (h *PublicHandler) GetUserModel(ctx context.Context, req *modelpb.GetUserModelRequest) (*modelpb.GetUserModelResponse, error) {
-	// Convert users/{user}/models/{model} to namespaces/{user}/models/{model}
-	name := fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3])
-	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
-		Name: name,
-		View: req.View,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.GetUserModelResponse{
-		Model: r.Model,
-	}, nil
-}
-
-// GetOrganizationModel gets a model by name for a given organization.
-func (h *PublicHandler) GetOrganizationModel(ctx context.Context, req *modelpb.GetOrganizationModelRequest) (*modelpb.GetOrganizationModelResponse, error) {
-	// Convert organizations/{org}/models/{model} to namespaces/{org}/models/{model}
-	name := fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3])
-	r, err := h.GetNamespaceModel(ctx, &modelpb.GetNamespaceModelRequest{
-		Name: name,
-		View: req.View,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.GetOrganizationModelResponse{
-		Model: r.Model,
-	}, nil
-}
-
 // GetNamespaceModel gets a model by name for a given namespace.
 func (h *PublicHandler) GetNamespaceModel(ctx context.Context, req *modelpb.GetNamespaceModelRequest) (*modelpb.GetNamespaceModelResponse, error) {
 
@@ -514,46 +309,6 @@ func (h *PublicHandler) GetNamespaceModel(ctx context.Context, req *modelpb.GetN
 	}
 
 	return &modelpb.GetNamespaceModelResponse{Model: pbModel}, err
-}
-
-// UpdateUserModel updates a model for a given user.
-func (h *PublicHandler) UpdateUserModel(ctx context.Context, req *modelpb.UpdateUserModelRequest) (*modelpb.UpdateUserModelResponse, error) {
-	// Convert model name from users/{user}/models/{model} to namespaces/{user}/models/{model}
-	model := req.Model
-	model.Name = fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Model.Name, "/")[1],
-		strings.Split(req.Model.Name, "/")[3])
-	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
-		Model:      model,
-		UpdateMask: req.UpdateMask,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.UpdateUserModelResponse{
-		Model: r.Model,
-	}, nil
-}
-
-// UpdateOrganizationModel updates a model for a given organization.
-func (h *PublicHandler) UpdateOrganizationModel(ctx context.Context, req *modelpb.UpdateOrganizationModelRequest) (*modelpb.UpdateOrganizationModelResponse, error) {
-	// Convert model name from organizations/{org}/models/{model} to namespaces/{org}/models/{model}
-	model := req.Model
-	model.Name = fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Model.Name, "/")[1],
-		strings.Split(req.Model.Name, "/")[3])
-	r, err := h.UpdateNamespaceModel(ctx, &modelpb.UpdateNamespaceModelRequest{
-		Model:      model,
-		UpdateMask: req.UpdateMask,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.UpdateOrganizationModelResponse{
-		Model: r.Model,
-	}, nil
 }
 
 // UpdateNamespaceModel updates a model for a given namespace.
@@ -624,43 +379,6 @@ func (h *PublicHandler) UpdateNamespaceModel(ctx context.Context, req *modelpb.U
 	return &modelpb.UpdateNamespaceModelResponse{Model: pbUpdatedModel}, err
 }
 
-// DeleteNamespaceModelRequestInterface is an interface for deleting a namespace model.
-type DeleteNamespaceModelRequestInterface interface {
-	GetName() string
-}
-
-// DeleteUserModel deletes a model for a given user.
-func (h *PublicHandler) DeleteUserModel(ctx context.Context, req *modelpb.DeleteUserModelRequest) (*modelpb.DeleteUserModelResponse, error) {
-	// Convert users/{user}/models/{model} to namespaces/{user}/models/{model}
-	name := fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3])
-	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeleteUserModelResponse{}, nil
-}
-
-// DeleteOrganizationModel deletes a model for a given organization.
-func (h *PublicHandler) DeleteOrganizationModel(ctx context.Context, req *modelpb.DeleteOrganizationModelRequest) (*modelpb.DeleteOrganizationModelResponse, error) {
-	// Convert organizations/{org}/models/{model} to namespaces/{org}/models/{model}
-	name := fmt.Sprintf("namespaces/%s/models/%s",
-		strings.Split(req.Name, "/")[1],
-		strings.Split(req.Name, "/")[3])
-	_, err := h.DeleteNamespaceModel(ctx, &modelpb.DeleteNamespaceModelRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.DeleteOrganizationModelResponse{}, nil
-}
-
 // DeleteNamespaceModel deletes a model for a given namespace.
 func (h *PublicHandler) DeleteNamespaceModel(ctx context.Context, req *modelpb.DeleteNamespaceModelRequest) (*modelpb.DeleteNamespaceModelResponse, error) {
 
@@ -689,44 +407,20 @@ func (h *PublicHandler) DeleteNamespaceModel(ctx context.Context, req *modelpb.D
 	return &modelpb.DeleteNamespaceModelResponse{}, nil
 }
 
-// RenameNamespaceModelRequestInterface is an interface for renaming a namespace model.
-type RenameNamespaceModelRequestInterface interface {
-	GetName() string
-	GetNewModelId() string
-}
-
-// RenameUserModel renames a model for a given user.
-func (h *PublicHandler) RenameUserModel(ctx context.Context, req *modelpb.RenameUserModelRequest) (*modelpb.RenameUserModelResponse, error) {
-	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		NewModelId:  req.NewModelId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.RenameUserModelResponse{Model: r.Model}, nil
-}
-
-// RenameOrganizationModel renames a model for a given organization.
-func (h *PublicHandler) RenameOrganizationModel(ctx context.Context, req *modelpb.RenameOrganizationModelRequest) (*modelpb.RenameOrganizationModelResponse, error) {
-	r, err := h.RenameNamespaceModel(ctx, &modelpb.RenameNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		NewModelId:  req.NewModelId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.RenameOrganizationModelResponse{Model: r.Model}, nil
-}
-
 // RenameNamespaceModel renames a model for a given namespace.
 func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.RenameNamespaceModelRequest) (*modelpb.RenameNamespaceModelResponse, error) {
 
-	ns, err := h.service.GetRscNamespace(ctx, req.NamespaceId)
+	// Parse namespace_id and model_id from name resource name
+	// Format: namespaces/{namespace}/models/{model}
+	name := req.GetName()
+	parts := strings.Split(name, "/")
+	if len(parts) < 4 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid resource name: %s", name))
+	}
+	namespaceID := parts[1]
+	modelID := parts[3]
+
+	ns, err := h.service.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -734,7 +428,7 @@ func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.R
 		return nil, err
 	}
 
-	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, req.ModelId, req.GetNewModelId())
+	pbModel, err := h.service.RenameNamespaceModelByID(ctx, ns, modelID, req.GetNewModelId())
 	if err != nil {
 		return nil, err
 	}
@@ -742,76 +436,14 @@ func (h *PublicHandler) RenameNamespaceModel(ctx context.Context, req *modelpb.R
 	return &modelpb.RenameNamespaceModelResponse{Model: pbModel}, nil
 }
 
-// WatchUserModel watches a model for a given user.
-func (h *PublicHandler) WatchUserModel(ctx context.Context, req *modelpb.WatchUserModelRequest) (*modelpb.WatchUserModelResponse, error) {
-	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.WatchUserModelResponse{
-		State:   r.State,
-		Message: r.Message,
-	}, nil
-}
-
-// WatchOrganizationModel watches a model for a given organization.
-func (h *PublicHandler) WatchOrganizationModel(ctx context.Context, req *modelpb.WatchOrganizationModelRequest) (*modelpb.WatchOrganizationModelResponse, error) {
-	r, err := h.WatchNamespaceModel(ctx, &modelpb.WatchNamespaceModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-		Version:     req.Version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.WatchOrganizationModelResponse{
-		State:   r.State,
-		Message: r.Message,
-	}, nil
-}
-
-// WatchUserLatestModel watches the latest model for a given user.
-func (h *PublicHandler) WatchUserLatestModel(ctx context.Context, req *modelpb.WatchUserLatestModelRequest) (*modelpb.WatchUserLatestModelResponse, error) {
-	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.WatchUserLatestModelResponse{
-		State:   r.State,
-		Message: r.Message,
-	}, nil
-}
-
-// WatchOrganizationLatestModel watches the latest model for a given organization.
-func (h *PublicHandler) WatchOrganizationLatestModel(ctx context.Context, req *modelpb.WatchOrganizationLatestModelRequest) (*modelpb.WatchOrganizationLatestModelResponse, error) {
-	r, err := h.WatchNamespaceLatestModel(ctx, &modelpb.WatchNamespaceLatestModelRequest{
-		NamespaceId: strings.Split(req.Name, "/")[1],
-		ModelId:     strings.Split(req.Name, "/")[3],
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &modelpb.WatchOrganizationLatestModelResponse{
-		State:   r.State,
-		Message: r.Message,
-	}, nil
-}
-
 // WatchNamespaceModelRequestInterface is an interface for watching a namespace model.
 type WatchNamespaceModelRequestInterface interface {
-	GetNamespaceId() string
-	GetModelId() string
+	GetName() string
+}
+
+// WatchNamespaceModelRequestWithVersionInterface is an interface for watching a namespace model with a specific version.
+type WatchNamespaceModelRequestWithVersionInterface interface {
+	WatchNamespaceModelRequestInterface
 	GetVersion() string
 }
 
@@ -819,13 +451,7 @@ type WatchNamespaceModelRequestInterface interface {
 func (h *PublicHandler) WatchNamespaceModel(ctx context.Context, req *modelpb.WatchNamespaceModelRequest) (resp *modelpb.WatchNamespaceModelResponse, err error) {
 	resp = &modelpb.WatchNamespaceModelResponse{}
 
-	r := &modelpb.WatchNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-		Version:     req.GetVersion(),
-	}
-
-	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
@@ -834,19 +460,24 @@ func (h *PublicHandler) WatchNamespaceModel(ctx context.Context, req *modelpb.Wa
 func (h *PublicHandler) WatchNamespaceLatestModel(ctx context.Context, req *modelpb.WatchNamespaceLatestModelRequest) (resp *modelpb.WatchNamespaceLatestModelResponse, err error) {
 	resp = &modelpb.WatchNamespaceLatestModelResponse{}
 
-	r := &modelpb.WatchNamespaceModelRequest{
-		NamespaceId: req.GetNamespaceId(),
-		ModelId:     req.GetModelId(),
-	}
-
-	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, r)
+	resp.State, resp.Message, err = h.watchNamespaceModel(ctx, req)
 
 	return resp, err
 }
 
 func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamespaceModelRequestInterface) (modelpb.State, string, error) {
 
-	ns, err := h.service.GetRscNamespace(ctx, req.GetNamespaceId())
+	// Parse namespace_id and model_id from name resource name
+	// Format: namespaces/{namespace}/models/{model}
+	name := req.GetName()
+	parts := strings.Split(name, "/")
+	if len(parts) < 4 {
+		return modelpb.State_STATE_ERROR, "", status.Error(codes.InvalidArgument, fmt.Sprintf("invalid resource name: %s", name))
+	}
+	namespaceID := parts[1]
+	modelID := parts[3]
+
+	ns, err := h.service.GetRscNamespace(ctx, namespaceID)
 	if err != nil {
 		return modelpb.State_STATE_ERROR, "", err
 	}
@@ -855,12 +486,16 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, req.GetModelId(), modelpb.View_VIEW_BASIC)
+	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_BASIC)
 	if err != nil {
 		return modelpb.State_STATE_ERROR, "", err
 	}
 
-	versionID := req.GetVersion()
+	// Get version if provided; otherwise use the latest version
+	var versionID string
+	if reqWithVersion, ok := req.(WatchNamespaceModelRequestWithVersionInterface); ok {
+		versionID = reqWithVersion.GetVersion()
+	}
 	if versionID == "" {
 		version, err := h.service.GetRepository().GetLatestModelVersionByModelUID(ctx, uuid.FromStringOrNil(pbModel.Id))
 		if err != nil {
@@ -869,7 +504,7 @@ func (h *PublicHandler) watchNamespaceModel(ctx context.Context, req WatchNamesp
 		versionID = version.Version
 	}
 
-	state, message, err := h.service.WatchModel(ctx, ns, req.GetModelId(), versionID)
+	state, message, err := h.service.WatchModel(ctx, ns, modelID, versionID)
 	if err != nil {
 		return modelpb.State_STATE_ERROR, "", err
 	}

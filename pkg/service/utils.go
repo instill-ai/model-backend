@@ -119,16 +119,22 @@ func parseMetadataToStructArr(metadataMap map[string][]byte, run *datamodel.Mode
 }
 
 func convertModelRunToPB(run *datamodel.ModelRun) *modelpb.ModelRun {
+	// Construct full resource names
+	runName := fmt.Sprintf("namespaces/%s/models/%s/runs/%s",
+		run.Model.NamespaceID, run.Model.ID, run.UID.String())
+	modelName := fmt.Sprintf("namespaces/%s/models/%s",
+		run.Model.NamespaceID, run.Model.ID)
+
 	pbModelRun := &modelpb.ModelRun{
-		Uid:              run.UID.String(),
-		ModelId:          &run.Model.ID,
-		ModelNamespaceId: run.Model.NamespaceID,
-		Version:          run.ModelVersion,
-		Status:           runpb.RunStatus(run.Status),
-		Source:           runpb.RunSource(run.Source),
-		Error:            run.Error.Ptr(),
-		CreateTime:       timestamppb.New(run.CreateTime),
-		UpdateTime:       timestamppb.New(run.UpdateTime),
+		Name:       runName,
+		Id:         run.UID.String(),
+		Model:      &modelName,
+		Version:    run.ModelVersion,
+		Status:     runpb.RunStatus(run.Status),
+		Source:     runpb.RunSource(run.Source),
+		Error:      run.Error.Ptr(),
+		CreateTime: timestamppb.New(run.CreateTime),
+		UpdateTime: timestamppb.New(run.UpdateTime),
 	}
 
 	if run.TotalDuration.Valid {
