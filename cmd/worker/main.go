@@ -102,8 +102,8 @@ func main() {
 		}(),
 	})
 
-	w.RegisterWorkflow(cw.TriggerModelWorkflow)
-	w.RegisterActivity(cw.TriggerModelActivity)
+	w.RegisterWorkflow(cw.TriggerModelVersionWorkflow)
+	w.RegisterActivity(cw.TriggerModelVersionActivity)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		logger.Fatal(fmt.Sprintf("Unable to start worker: %s", err))

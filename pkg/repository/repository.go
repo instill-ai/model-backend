@@ -36,16 +36,16 @@ type Repository interface {
 	PinUser(ctx context.Context, table string)
 	CheckPinnedUser(ctx context.Context, db *gorm.DB, table string) *gorm.DB
 
-	ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	ListPublicModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
 	GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
-	CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
-	ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
-	GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
+	CreateModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error
+	ListModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error)
+	GetModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error)
 
-	UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
-	UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
-	DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error
+	UpdateModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error
+	UpdateModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error
+	DeleteModelByID(ctx context.Context, ownerPermalink string, id string) error
 
 	GetModelDefinition(id string) (*datamodel.ModelDefinition, error)
 	GetModelDefinitionByUID(uid uuid.UUID) (*datamodel.ModelDefinition, error)
@@ -264,7 +264,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 	return models, totalSize, nextPageToken, nil
 }
 
-func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListPublicModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	where := ""
 	whereArgs := []any{}
 	if *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
@@ -277,7 +277,7 @@ func (r *repository) ListModels(ctx context.Context, pageSize int64, pageToken s
 		pageSize, pageToken, isBasicView, filter, uidAllowList, showDeleted, order)
 }
 
-func (r *repository) ListNamespaceModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
+func (r *repository) ListModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	where := "(owner = ?)"
 	whereArgs := []any{ownerPermalink}
 	if *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
@@ -294,7 +294,7 @@ func (r *repository) ListModelsAdmin(ctx context.Context, pageSize int64, pageTo
 	return r.listModels(ctx, "", []any{}, pageSize, pageToken, isBasicView, filter, nil, showDeleted, ordering.OrderBy{})
 }
 
-func (r *repository) getNamespaceModel(ctx context.Context, where string, whereArgs []any, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
+func (r *repository) getModel(ctx context.Context, where string, whereArgs []any, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 
 	db := r.CheckPinnedUser(ctx, r.db, "model")
 
@@ -328,15 +328,15 @@ func (r *repository) getNamespaceModel(ctx context.Context, where string, whereA
 
 func (r *repository) GetModelByUID(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
 	// TODO: ACL
-	return r.getNamespaceModel(ctx,
+	return r.getModel(ctx,
 		"(uid = ?)",
 		[]any{uid},
 		isBasicView,
 		includeAvatar)
 }
 
-func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
-	return r.getNamespaceModel(ctx,
+func (r *repository) GetModelByID(ctx context.Context, ownerPermalink string, id string, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
+	return r.getModel(ctx,
 		"(id = ? AND owner = ? )",
 		[]any{id, ownerPermalink},
 		isBasicView,
@@ -344,14 +344,14 @@ func (r *repository) GetNamespaceModelByID(ctx context.Context, ownerPermalink s
 }
 
 func (r *repository) GetModelByUIDAdmin(ctx context.Context, uid uuid.UUID, isBasicView bool, includeAvatar bool) (*datamodel.Model, error) {
-	return r.getNamespaceModel(ctx,
+	return r.getModel(ctx,
 		"(uid = ?)",
 		[]any{uid},
 		isBasicView,
 		includeAvatar)
 }
 
-func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {
+func (r *repository) CreateModel(ctx context.Context, ownerPermalink string, model *datamodel.Model) error {
 
 	r.PinUser(ctx, "model")
 	db := r.CheckPinnedUser(ctx, r.db, "model")
@@ -362,7 +362,7 @@ func (r *repository) CreateNamespaceModel(ctx context.Context, ownerPermalink st
 	return nil
 }
 
-func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error {
+func (r *repository) UpdateModelByID(ctx context.Context, ownerPermalink string, id string, model *datamodel.Model) error {
 
 	r.PinUser(ctx, "model")
 	db := r.CheckPinnedUser(ctx, r.db, "model")
@@ -377,7 +377,7 @@ func (r *repository) UpdateNamespaceModelByID(ctx context.Context, ownerPermalin
 	return nil
 }
 
-func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error {
+func (r *repository) UpdateModelIDByID(ctx context.Context, ownerPermalink string, id string, newID string) error {
 
 	r.PinUser(ctx, "model")
 	db := r.CheckPinnedUser(ctx, r.db, "model")
@@ -392,7 +392,7 @@ func (r *repository) UpdateNamespaceModelIDByID(ctx context.Context, ownerPermal
 	return nil
 }
 
-func (r *repository) DeleteNamespaceModelByID(ctx context.Context, ownerPermalink string, id string) error {
+func (r *repository) DeleteModelByID(ctx context.Context, ownerPermalink string, id string) error {
 
 	r.PinUser(ctx, "model")
 	db := r.CheckPinnedUser(ctx, r.db, "model")

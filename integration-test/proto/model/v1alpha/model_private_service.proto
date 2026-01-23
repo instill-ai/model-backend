@@ -16,8 +16,8 @@ service ModelPrivateService {
   // returns a LookUpModelAdminResponse
   rpc LookUpModelAdmin(LookUpModelAdminRequest) returns (LookUpModelAdminResponse) {}
 
-  // DeployNamespaceModelAdmin deploy a model to online state
-  rpc DeployNamespaceModelAdmin(DeployNamespaceModelAdminRequest) returns (DeployNamespaceModelAdminResponse) {}
+  // DeployModelAdmin deploy a model to online state
+  rpc DeployModelAdmin(DeployModelAdminRequest) returns (DeployModelAdminResponse) {}
 
   // DeployUserModelAdmin deploy a model to online state
   rpc DeployUserModelAdmin(DeployUserModelAdminRequest) returns (DeployUserModelAdminResponse) {}
@@ -28,8 +28,8 @@ service ModelPrivateService {
   // UndeployUserModelAdmin undeploy a model to offline state
   rpc UndeployUserModelAdmin(UndeployUserModelAdminRequest) returns (UndeployUserModelAdminResponse) {}
 
-  // UndeployNamespaceModelAdmin undeploy a model to offline state
-  rpc UndeployNamespaceModelAdmin(UndeployNamespaceModelAdminRequest) returns (UndeployNamespaceModelAdminResponse) {}
+  // UndeployModelAdmin undeploy a model to offline state
+  rpc UndeployModelAdmin(UndeployModelAdminRequest) returns (UndeployModelAdminResponse) {}
 
   // UndeployOrganizationModelAdmin undeploy a model to offline state
   rpc UndeployOrganizationModelAdmin(UndeployOrganizationModelAdminRequest) returns (UndeployOrganizationModelAdminResponse) {}

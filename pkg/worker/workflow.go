@@ -31,7 +31,7 @@ import (
 
 type InferInput any
 
-type TriggerModelWorkflowRequest struct {
+type TriggerModelVersionWorkflowRequest struct {
 	TriggerUID         uuid.UUID
 	ModelID            string
 	ModelUID           uuid.UUID
@@ -50,28 +50,28 @@ type TriggerModelWorkflowRequest struct {
 	ExpiryRuleTag      string
 }
 
-func (r *TriggerModelWorkflowRequest) GetModelName() string {
+func (r *TriggerModelVersionWorkflowRequest) GetModelName() string {
 	return fmt.Sprintf("%s/%s/%s", r.OwnerType, r.OwnerUID.String(), r.ModelID)
 }
 
-type TriggerModelActivityRequest struct {
-	TriggerModelWorkflowRequest
+type TriggerModelVersionActivityRequest struct {
+	TriggerModelVersionWorkflowRequest
 	WorkflowExecutionID string
 }
 
 var tracer = otel.Tracer("model-backend.temporal.tracer")
 
-func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) error {
+func (w *worker) TriggerModelVersionWorkflow(ctx workflow.Context, param *TriggerModelVersionWorkflowRequest) error {
 
 	startTime := time.Now()
-	eventName := "TriggerModelWorkflow"
+	eventName := "TriggerModelVersionWorkflow"
 
 	sCtx, span := tracer.Start(context.Background(), eventName,
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
 	logger, _ := logx.GetZapLogger(sCtx)
-	logger.Info("TriggerModelWorkflow started")
+	logger.Info("TriggerModelVersionWorkflow started")
 
 	var ownerType mgmtpb.OwnerType
 	switch param.OwnerType {
@@ -126,8 +126,8 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
-	if err := workflow.ExecuteActivity(ctx, w.TriggerModelActivity, &TriggerModelActivityRequest{
-		TriggerModelWorkflowRequest: *param,
+	if err := workflow.ExecuteActivity(ctx, w.TriggerModelVersionActivity, &TriggerModelVersionActivityRequest{
+		TriggerModelVersionWorkflowRequest: *param,
 		WorkflowExecutionID:         workflow.GetInfo(ctx).WorkflowExecution.ID,
 	}).Get(ctx, nil); err != nil {
 		if param.Mode == mgmtpb.Mode_MODE_ASYNC {
@@ -149,14 +149,14 @@ func (w *worker) TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelW
 		}
 	}
 
-	logger.Info("TriggerModelWorkflow completed")
+	logger.Info("TriggerModelVersionWorkflow completed")
 
 	return nil
 }
 
-func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) error {
+func (w *worker) TriggerModelVersionActivity(ctx context.Context, param *TriggerModelVersionActivityRequest) error {
 
-	eventName := "TriggerModelActivity"
+	eventName := "TriggerModelVersionActivity"
 
 	var err error
 
@@ -166,7 +166,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	defer span.End()
 
 	logger, _ := logx.GetZapLogger(ctx)
-	logger.Info("TriggerModelActivity started")
+	logger.Info("TriggerModelVersionActivity started")
 
 	// wait for model instance to come online to start processing the request
 	// temporary solution to not overcharge for credits
@@ -211,7 +211,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 				param.RunLog.Error = null.StringFrom("unknown error occurred")
 			}
 			if err = w.repository.UpdateModelRun(ctx, param.RunLog); err != nil {
-				logger.Error("UpdateModelRun for TriggerModelActivity failed", zap.Error(err))
+				logger.Error("UpdateModelRun for TriggerModelVersionActivity failed", zap.Error(err))
 			}
 		}
 	}()
@@ -221,7 +221,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		return w.toApplicationError(err, param.ModelID, ModelActivityError)
 	}
 
-	triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
+	triggerModelReq := &modelpb.TriggerModelVersionRequest{}
 	if err := protojson.Unmarshal(input, triggerModelReq); err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 		}
 	}
 
-	triggerModelResp := &modelpb.TriggerNamespaceModelResponse{
+	triggerModelResp := &modelpb.TriggerModelVersionResponse{
 		Task:        param.Task,
 		TaskOutputs: inferResponse.GetTaskOutputs(),
 	}
@@ -279,7 +279,7 @@ func (w *worker) TriggerModelActivity(ctx context.Context, param *TriggerModelAc
 	}
 
 	succeeded = true
-	logger.Info("TriggerModelActivity completed")
+	logger.Info("TriggerModelVersionActivity completed")
 
 	return nil
 }

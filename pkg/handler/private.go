@@ -77,7 +77,7 @@ func (h *PrivateHandler) LookUpModelAdmin(ctx context.Context, req *modelpb.Look
 	return &modelpb.LookUpModelAdminResponse{Model: pbModel}, nil
 }
 
-func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *modelpb.DeployNamespaceModelAdminRequest) (*modelpb.DeployNamespaceModelAdminResponse, error) {
+func (h *PrivateHandler) DeployModelAdmin(ctx context.Context, req *modelpb.DeployModelAdminRequest) (*modelpb.DeployModelAdminResponse, error) {
 
 	namespaceID, modelID, versionStr, err := parseAdminModelVersionName(req.GetName())
 	if err != nil {
@@ -94,7 +94,7 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		return nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, modelID)
+	modelUID, err := h.service.GetModelUIDByID(ctx, ns, modelID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +122,10 @@ func (h *PrivateHandler) DeployNamespaceModelAdmin(ctx context.Context, req *mod
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to deploy the model: %s", err.Error()))
 	}
 
-	return &modelpb.DeployNamespaceModelAdminResponse{}, nil
+	return &modelpb.DeployModelAdminResponse{}, nil
 }
 
-func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *modelpb.UndeployNamespaceModelAdminRequest) (*modelpb.UndeployNamespaceModelAdminResponse, error) {
+func (h *PrivateHandler) UndeployModelAdmin(ctx context.Context, req *modelpb.UndeployModelAdminRequest) (*modelpb.UndeployModelAdminResponse, error) {
 
 	namespaceID, modelID, versionStr, err := parseAdminModelVersionName(req.GetName())
 	if err != nil {
@@ -146,7 +146,7 @@ func (h *PrivateHandler) UndeployNamespaceModelAdmin(ctx context.Context, req *m
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to undeploy the model: %s", err.Error()))
 	}
 
-	return &modelpb.UndeployNamespaceModelAdminResponse{}, nil
+	return &modelpb.UndeployModelAdminResponse{}, nil
 }
 
 // Repository Tag Management handlers
