@@ -93,7 +93,7 @@ func parseMetadataToStructArr(metadataMap map[string][]byte, run *datamodel.Mode
 		return nil, nil, fmt.Errorf("key doesn't exist")
 	}
 	// todo: fix TaskInputs type
-	triggerReq := &modelpb.TriggerNamespaceModelRequest{}
+	triggerReq := &modelpb.TriggerModelVersionRequest{}
 	err := protojson.Unmarshal(data, triggerReq)
 	if err != nil {
 		return nil, nil, err
@@ -107,7 +107,7 @@ func parseMetadataToStructArr(metadataMap map[string][]byte, run *datamodel.Mode
 		}
 
 		// todo: fix TaskOutputs type
-		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
+		triggerModelResp := &modelpb.TriggerModelVersionResponse{}
 		err = protojson.Unmarshal(data, triggerModelResp)
 		if err != nil {
 			return triggerReq.TaskInputs, nil, err

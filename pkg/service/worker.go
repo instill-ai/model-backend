@@ -31,12 +31,12 @@ func (s *service) GetOperation(ctx context.Context, workflowID string) (*longrun
 	return s.getOperationFromWorkflowInfo(ctx, workflowExecutionRes.WorkflowExecutionInfo, workflowID)
 }
 
-func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
+func (s *service) GetModelOperation(ctx context.Context, ns resource.Namespace, modelID string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	dbModel, err := s.repository.GetModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
 		return nil, errorsx.ErrNotFound
 	}
@@ -85,12 +85,12 @@ func (s *service) GetNamespaceLatestModelOperation(ctx context.Context, ns resou
 
 }
 
-func (s *service) GetNamespaceModelOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
+func (s *service) GetModelVersionOperation(ctx context.Context, ns resource.Namespace, modelID string, version string, view modelpb.View) (*longrunningpb.Operation, error) {
 	ownerPermalink := ns.Permalink()
 
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 
-	dbModel, err := s.repository.GetNamespaceModelByID(ctx, ownerPermalink, modelID, true, false)
+	dbModel, err := s.repository.GetModelByID(ctx, ownerPermalink, modelID, true, false)
 	if err != nil {
 		return nil, errorsx.ErrNotFound
 	}
@@ -163,8 +163,8 @@ func (s *service) getOperationFromWorkflowInfo(ctx context.Context, workflowExec
 		}
 
 		latestOperation := &modelpb.LatestOperation{}
-		triggerModelReq := &modelpb.TriggerNamespaceModelRequest{}
-		triggerModelResp := &modelpb.TriggerNamespaceModelResponse{}
+		triggerModelReq := &modelpb.TriggerModelVersionRequest{}
+		triggerModelResp := &modelpb.TriggerModelVersionResponse{}
 
 		if err := protojson.Unmarshal(input, triggerModelReq); err != nil {
 			return nil, err

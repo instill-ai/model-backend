@@ -17,8 +17,8 @@ const TaskQueue = "model-backend"
 
 // Worker interface
 type Worker interface {
-	TriggerModelWorkflow(ctx workflow.Context, param *TriggerModelWorkflowRequest) error
-	TriggerModelActivity(ctx context.Context, param *TriggerModelActivityRequest) error
+	TriggerModelVersionWorkflow(ctx workflow.Context, param *TriggerModelVersionWorkflowRequest) error
+	TriggerModelVersionActivity(ctx context.Context, param *TriggerModelVersionActivityRequest) error
 }
 
 // worker represents resources required to run Temporal workflow and activity

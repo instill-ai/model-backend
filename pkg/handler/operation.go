@@ -35,10 +35,10 @@ func parseOperationModelVersionName(name string) (namespaceID, modelID, version 
 	return parts[1], parts[3], parts[5], nil
 }
 
-// GetModelOperation returns the operation details for a given model operation ID.
-func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetModelOperationRequest) (*modelpb.GetModelOperationResponse, error) {
+// GetOperation returns the operation details for a given operation ID.
+func (h *PublicHandler) GetOperation(ctx context.Context, req *modelpb.GetOperationRequest) (*modelpb.GetOperationResponse, error) {
 
-	ctx, span := tracer.Start(ctx, "GetModelOperation",
+	ctx, span := tracer.Start(ctx, "GetOperation",
 		trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
@@ -49,21 +49,21 @@ func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetM
 
 	workflowID, err := resource.GetWorkflowID(req.OperationId)
 	if err != nil {
-		return &modelpb.GetModelOperationResponse{}, err
+		return &modelpb.GetOperationResponse{}, err
 	}
 
 	operation, err := h.service.GetOperation(ctx, workflowID)
 	if err != nil {
-		return &modelpb.GetModelOperationResponse{}, err
+		return &modelpb.GetOperationResponse{}, err
 	}
 
-	return &modelpb.GetModelOperationResponse{
+	return &modelpb.GetOperationResponse{
 		Operation: operation,
 	}, nil
 }
 
-// GetNamespaceLatestModelOperation returns the latest model operation for a given namespace.
-func (h *PublicHandler) GetNamespaceLatestModelOperation(ctx context.Context, req *modelpb.GetNamespaceLatestModelOperationRequest) (*modelpb.GetNamespaceLatestModelOperationResponse, error) {
+// GetModelOperation returns the latest model operation for a given model.
+func (h *PublicHandler) GetModelOperation(ctx context.Context, req *modelpb.GetModelOperationRequest) (*modelpb.GetModelOperationResponse, error) {
 
 	logger, _ := logx.GetZapLogger(ctx)
 
@@ -78,27 +78,27 @@ func (h *PublicHandler) GetNamespaceLatestModelOperation(ctx context.Context, re
 	}
 
 	if err := authenticateUser(ctx, false); err != nil {
-		logger.Info("GetNamespaceLatestModelOperation",
+		logger.Info("GetModelOperation",
 			zap.Any("eventResource", modelID),
 			zap.String("errorMessage", err.Error()),
 		)
 		return nil, err
 	}
 
-	operation, err := h.service.GetNamespaceLatestModelOperation(ctx, ns, modelID, req.GetView())
+	operation, err := h.service.GetModelOperation(ctx, ns, modelID, req.GetView())
 	if err != nil {
-		logger.Info("GetNamespaceLatestModelOperation",
+		logger.Info("GetModelOperation",
 			zap.Any("eventResource", modelID),
 			zap.String("errorMessage", err.Error()),
 		)
 		return nil, err
 	}
 
-	return &modelpb.GetNamespaceLatestModelOperationResponse{Operation: operation}, nil
+	return &modelpb.GetModelOperationResponse{Operation: operation}, nil
 }
 
-// GetNamespaceModelOperation returns the model operation for a given namespace and model ID.
-func (h *PublicHandler) GetNamespaceModelOperation(ctx context.Context, req *modelpb.GetNamespaceModelOperationRequest) (*modelpb.GetNamespaceModelOperationResponse, error) {
+// GetModelVersionOperation returns the model operation for a given model version.
+func (h *PublicHandler) GetModelVersionOperation(ctx context.Context, req *modelpb.GetModelVersionOperationRequest) (*modelpb.GetModelVersionOperationResponse, error) {
 
 	logger, _ := logx.GetZapLogger(ctx)
 
@@ -113,17 +113,17 @@ func (h *PublicHandler) GetNamespaceModelOperation(ctx context.Context, req *mod
 	}
 
 	if err := authenticateUser(ctx, false); err != nil {
-		logger.Info("GetNamespaceModelOperation",
+		logger.Info("GetModelVersionOperation",
 			zap.Any("eventResource", modelID),
 			zap.String("errorMessage", err.Error()),
 		)
 		return nil, err
 	}
 
-	operation, err := h.service.GetNamespaceModelOperation(ctx, ns, modelID, version, req.GetView())
+	operation, err := h.service.GetModelVersionOperation(ctx, ns, modelID, version, req.GetView())
 	if err != nil {
 		return nil, err
 	}
 
-	return &modelpb.GetNamespaceModelOperationResponse{Operation: operation}, nil
+	return &modelpb.GetModelVersionOperationResponse{Operation: operation}, nil
 }

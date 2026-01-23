@@ -324,11 +324,11 @@ package handler
 // 	return nil, "", "", errors.New("unsupported task input type")
 // }
 
-// func triggerNamespaceModelBinaryFileUploadParser(stream modelpb.ModelPublicService_TriggerNamespaceModelBinaryFileUploadServer) (triggerInput any, namespaceID string, modelID string, version string, err error) {
+// func triggerModelBinaryFileUploadParser(stream modelpb.ModelPublicService_TriggerModelVersionBinaryFileUploadServer) (triggerInput any, namespaceID string, modelID string, version string, err error) {
 
 // 	var firstChunk = true
 
-// 	var fileData *modelpb.TriggerNamespaceModelBinaryFileUploadRequest
+// 	var fileData *modelpb.TriggerModelVersionBinaryFileUploadRequest
 
 // 	var allContentFiles []byte
 // 	var fileLengths []uint32
@@ -468,11 +468,11 @@ package handler
 // 	return nil, "", "", "", errors.New("unsupported task input type")
 // }
 
-// func triggerNamespaceLatestModelBinaryFileUploadParser(stream modelpb.ModelPublicService_TriggerNamespaceLatestModelBinaryFileUploadServer) (triggerInput any, namespaceID string, modelID string, err error) {
+// func triggerNamespaceLatestModelBinaryFileUploadParser(stream modelpb.ModelPublicService_TriggerModelBinaryFileUploadServer) (triggerInput any, namespaceID string, modelID string, err error) {
 
 // 	var firstChunk = true
 
-// 	var fileData *modelpb.TriggerNamespaceLatestModelBinaryFileUploadRequest
+// 	var fileData *modelpb.TriggerModelBinaryFileUploadRequest
 
 // 	var allContentFiles []byte
 // 	var fileLengths []uint32
@@ -620,7 +620,7 @@ package handler
 // 	namespaceID := strings.Split(path, "/")[1]
 // 	modelID := strings.Split(path, "/")[3]
 
-// 	response, task, err := h.triggerNamespaceModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
+// 	response, task, err := h.triggerModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
 // 	if err != nil {
 // 		return err
 // 	}
@@ -642,7 +642,7 @@ package handler
 // 	namespaceID := strings.Split(path, "/")[1]
 // 	modelID := strings.Split(path, "/")[3]
 
-// 	response, task, err := h.triggerNamespaceModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
+// 	response, task, err := h.triggerModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
 // 	if err != nil {
 // 		return err
 // 	}
@@ -655,18 +655,18 @@ package handler
 // 	return err
 // }
 
-// func (h *PublicHandler) TriggerNamespaceModelBinaryFileUpload(stream modelpb.ModelPublicService_TriggerNamespaceModelBinaryFileUploadServer) error {
-// 	triggerInput, namespaceID, modelID, versionID, err := triggerNamespaceModelBinaryFileUploadParser(stream)
+// func (h *PublicHandler) TriggerModelVersionBinaryFileUpload(stream modelpb.ModelPublicService_TriggerModelVersionBinaryFileUploadServer) error {
+// 	triggerInput, namespaceID, modelID, versionID, err := triggerModelBinaryFileUploadParser(stream)
 // 	if err != nil {
 // 		return status.Error(codes.Internal, err.Error())
 // 	}
 
-// 	response, task, err := h.triggerNamespaceModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
+// 	response, task, err := h.triggerModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, versionID)
 // 	if err != nil {
 // 		return err
 // 	}
 
-// 	err = stream.SendAndClose(&modelpb.TriggerNamespaceModelBinaryFileUploadResponse{
+// 	err = stream.SendAndClose(&modelpb.TriggerModelVersionBinaryFileUploadResponse{
 // 		Task:        *task,
 // 		TaskOutputs: response,
 // 	})
@@ -674,18 +674,18 @@ package handler
 // 	return err
 // }
 
-// func (h *PublicHandler) TriggerNamespaceLatestModelBinaryFileUpload(stream modelpb.ModelPublicService_TriggerNamespaceLatestModelBinaryFileUploadServer) error {
+// func (h *PublicHandler) TriggerModelBinaryFileUpload(stream modelpb.ModelPublicService_TriggerModelBinaryFileUploadServer) error {
 // 	triggerInput, namespaceID, modelID, err := triggerNamespaceLatestModelBinaryFileUploadParser(stream)
 // 	if err != nil {
 // 		return status.Error(codes.Internal, err.Error())
 // 	}
 
-// 	response, task, err := h.triggerNamespaceModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, "")
+// 	response, task, err := h.triggerModelBinaryFileUpload(stream.Context(), triggerInput, namespaceID, modelID, "")
 // 	if err != nil {
 // 		return err
 // 	}
 
-// 	err = stream.SendAndClose(&modelpb.TriggerNamespaceLatestModelBinaryFileUploadResponse{
+// 	err = stream.SendAndClose(&modelpb.TriggerModelBinaryFileUploadResponse{
 // 		Task:        *task,
 // 		TaskOutputs: response,
 // 	})
@@ -693,7 +693,7 @@ package handler
 // 	return err
 // }
 
-// func (h *PublicHandler) triggerNamespaceModelBinaryFileUpload(ctx context.Context, triggerInput any, namespaceID string, modelID string, versionID string) ([]*modelpb.TaskOutput, *commonpb.Task, error) {
+// func (h *PublicHandler) triggerModelBinaryFileUpload(ctx context.Context, triggerInput any, namespaceID string, modelID string, versionID string) ([]*modelpb.TaskOutput, *commonpb.Task, error) {
 
 // 	startTime := time.Now()
 // 	eventName := "TriggerUserModelBinaryFileUpload"
@@ -716,7 +716,7 @@ package handler
 // 		return nil, nil, err
 // 	}
 
-// 	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+// 	pbModel, err := h.service.GetModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 // 	if err != nil {
 // 		span.SetStatus(1, err.Error())
 // 		return nil, nil, err
@@ -808,7 +808,7 @@ package handler
 // 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 // 	}
 
-// 	response, err := h.service.TriggerNamespaceModelByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
+// 	response, err := h.service.TriggerModelVersionByID(ctx, ns, modelID, version, parsedInputJSON, pbModel.Task, logUUID.String())
 // 	if err != nil {
 // 		st, e := sterr.CreateErrorResourceInfo(
 // 			codes.FailedPrecondition,

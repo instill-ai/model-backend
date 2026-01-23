@@ -24,7 +24,7 @@ import (
 	miniomockx "github.com/instill-ai/x/mock/minio"
 )
 
-func TestWorker_TriggerModelActivity(t *testing.T) {
+func TestWorker_TriggerModelVersionActivity(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -44,7 +44,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 	mockMinio.UploadFileBytesMock.Return("", nil, nil)
 
 	t.Run("Task_TASK_TEXT_GENERATION", func(t *testing.T) {
-		param := &worker.TriggerModelActivityRequest{}
+		param := &worker.TriggerModelVersionActivityRequest{}
 		param.ModelUID, _ = uuid.NewV4()
 		param.TriggerUID, _ = uuid.NewV4()
 		param.UserUID, _ = uuid.NewV4()
@@ -87,12 +87,12 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		repo.UpdateModelRunMock.Times(1).Return(nil)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, mockMinio)
-		err := w.TriggerModelActivity(ctx, param)
+		err := w.TriggerModelVersionActivity(ctx, param)
 		require.NoError(t, err)
 	})
 
 	t.Run("when model is error", func(t *testing.T) {
-		param := &worker.TriggerModelActivityRequest{}
+		param := &worker.TriggerModelVersionActivityRequest{}
 		param.UserUID, _ = uuid.NewV4()
 		param.OwnerUID, _ = uuid.NewV4()
 		param.TriggerUID, _ = uuid.NewV4()
@@ -122,7 +122,7 @@ func TestWorker_TriggerModelActivity(t *testing.T) {
 		mockRay.ModelReadyMock.Return(modelpb.State_STATE_ERROR.Enum().Enum(), "", 0, nil)
 
 		w := worker.NewWorker(rc, mockRay, repo, nil, nil)
-		err = w.TriggerModelActivity(ctx, param)
+		err = w.TriggerModelVersionActivity(ctx, param)
 		require.ErrorContains(t, err, "model upscale failed")
 	})
 }

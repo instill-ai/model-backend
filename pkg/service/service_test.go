@@ -476,7 +476,7 @@ func TestListModelDefinitions(t *testing.T) {
 	})
 }
 
-func TestService_ListNamespaceModelVersions(t *testing.T) {
+func TestService_ListModelVersions(t *testing.T) {
 	// TODO: This test needs to be updated to properly mock the repository tag infrastructure
 	// after migrating repository tag management from artifact-backend to model-backend.
 	// The test currently cannot run because it requires:

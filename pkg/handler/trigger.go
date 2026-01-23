@@ -61,9 +61,9 @@ func parseModelName(name string) (namespaceID, modelID string, err error) {
 	return parts[1], parts[3], nil
 }
 
-// TriggerNamespaceModel triggers a model for a given namespace.
-func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.TriggerNamespaceModelRequest) (resp *modelpb.TriggerNamespaceModelResponse, err error) {
-	resp = &modelpb.TriggerNamespaceModelResponse{}
+// TriggerModelVersion triggers a model for a given namespace.
+func (h *PublicHandler) TriggerModelVersion(ctx context.Context, req *modelpb.TriggerModelVersionRequest) (resp *modelpb.TriggerModelVersionResponse, err error) {
+	resp = &modelpb.TriggerModelVersionResponse{}
 
 	namespaceID, modelID, version, err := parseModelVersionName(req.GetName())
 	if err != nil {
@@ -77,14 +77,14 @@ func (h *PublicHandler) TriggerNamespaceModel(ctx context.Context, req *modelpb.
 		taskInputs:  req.GetTaskInputs(),
 	}
 
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, params)
+	resp.Task, resp.TaskOutputs, err = h.triggerModel(ctx, params)
 
 	return resp, err
 }
 
-// TriggerNamespaceLatestModel triggers a model for a given namespace.
-func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerNamespaceLatestModelRequest) (resp *modelpb.TriggerNamespaceLatestModelResponse, err error) {
-	resp = &modelpb.TriggerNamespaceLatestModelResponse{}
+// TriggerModel triggers a model for a given namespace.
+func (h *PublicHandler) TriggerModel(ctx context.Context, req *modelpb.TriggerModelRequest) (resp *modelpb.TriggerModelResponse, err error) {
+	resp = &modelpb.TriggerModelResponse{}
 
 	namespaceID, modelID, err := parseModelName(req.GetName())
 	if err != nil {
@@ -98,12 +98,12 @@ func (h *PublicHandler) TriggerNamespaceLatestModel(ctx context.Context, req *mo
 		taskInputs:  req.GetTaskInputs(),
 	}
 
-	resp.Task, resp.TaskOutputs, err = h.triggerNamespaceModel(ctx, params)
+	resp.Task, resp.TaskOutputs, err = h.triggerModel(ctx, params)
 
 	return resp, err
 }
 
-func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, params triggerModelParams) (commonpb.Task, []*structpb.Struct, error) {
+func (h *PublicHandler) triggerModel(ctx context.Context, params triggerModelParams) (commonpb.Task, []*structpb.Struct, error) {
 
 	startTime := time.Now()
 
@@ -117,12 +117,12 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, params trigge
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, params.modelID)
+	modelUID, err := h.service.GetModelUIDByID(ctx, ns, params.modelID)
 	if err != nil {
 		return commonpb.Task_TASK_UNSPECIFIED, nil, err
 	}
@@ -221,7 +221,7 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, params trigge
 		}
 	}
 
-	response, triggerErr := h.service.TriggerNamespaceModelByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
+	response, triggerErr := h.service.TriggerModelVersionByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		var st *status.Status
 		if strings.Contains(err.Error(), "failed to allocate memory") {
@@ -235,17 +235,17 @@ func (h *PublicHandler) triggerNamespaceModel(ctx context.Context, params trigge
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
-	logger.Info("TriggerNamespaceModel",
+	logger.Info("TriggerModelVersion",
 		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), params.modelID, versionID)),
-		zap.String("eventMessage", "TriggerNamespaceModel done"),
+		zap.String("eventMessage", "TriggerModelVersion done"),
 	)
 
 	return pbModel.Task, response, nil
 }
 
-// TriggerAsyncNamespaceModel triggers a model for a given namespace.
-func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceModelRequest) (resp *modelpb.TriggerAsyncNamespaceModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncNamespaceModelResponse{}
+// TriggerAsyncModelVersion triggers a model for a given namespace.
+func (h *PublicHandler) TriggerAsyncModelVersion(ctx context.Context, req *modelpb.TriggerAsyncModelVersionRequest) (resp *modelpb.TriggerAsyncModelVersionResponse, err error) {
+	resp = &modelpb.TriggerAsyncModelVersionResponse{}
 
 	namespaceID, modelID, version, err := parseModelVersionName(req.GetName())
 	if err != nil {
@@ -259,7 +259,7 @@ func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *mod
 		taskInputs:  req.GetTaskInputs(),
 	}
 
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, params)
+	resp.Operation, err = h.triggerAsyncModel(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -267,9 +267,9 @@ func (h *PublicHandler) TriggerAsyncNamespaceModel(ctx context.Context, req *mod
 	return resp, err
 }
 
-// TriggerAsyncNamespaceLatestModel triggers a model for a given namespace.
-func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, req *modelpb.TriggerAsyncNamespaceLatestModelRequest) (resp *modelpb.TriggerAsyncNamespaceLatestModelResponse, err error) {
-	resp = &modelpb.TriggerAsyncNamespaceLatestModelResponse{}
+// TriggerAsyncModel triggers a model for a given namespace.
+func (h *PublicHandler) TriggerAsyncModel(ctx context.Context, req *modelpb.TriggerAsyncModelRequest) (resp *modelpb.TriggerAsyncModelResponse, err error) {
+	resp = &modelpb.TriggerAsyncModelResponse{}
 
 	namespaceID, modelID, err := parseModelName(req.GetName())
 	if err != nil {
@@ -283,7 +283,7 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 		taskInputs:  req.GetTaskInputs(),
 	}
 
-	resp.Operation, err = h.triggerAsyncNamespaceModel(ctx, params)
+	resp.Operation, err = h.triggerAsyncModel(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +291,7 @@ func (h *PublicHandler) TriggerAsyncNamespaceLatestModel(ctx context.Context, re
 	return resp, err
 }
 
-func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, params triggerModelParams) (operation *longrunningpb.Operation, err error) {
+func (h *PublicHandler) triggerAsyncModel(ctx context.Context, params triggerModelParams) (operation *longrunningpb.Operation, err error) {
 
 	startTime := time.Now()
 
@@ -305,12 +305,12 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, params t
 		return nil, err
 	}
 
-	pbModel, err := h.service.GetNamespaceModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
+	pbModel, err := h.service.GetModelByID(ctx, ns, params.modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
 
-	modelUID, err := h.service.GetNamespaceModelUIDByID(ctx, ns, params.modelID)
+	modelUID, err := h.service.GetModelUIDByID(ctx, ns, params.modelID)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +410,7 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, params t
 		}
 	}
 
-	operation, err = h.service.TriggerAsyncNamespaceModelByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
+	operation, err = h.service.TriggerAsyncModelVersionByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		var st *status.Status
 		if strings.Contains(err.Error(), "Failed to allocate memory") {
@@ -437,9 +437,9 @@ func (h *PublicHandler) triggerAsyncNamespaceModel(ctx context.Context, params t
 		time.Duration(config.Config.Server.Workflow.MaxWorkflowTimeout)*time.Second,
 	)
 
-	logger.Info("TriggerNamespaceModel",
+	logger.Info("TriggerModelVersion",
 		zap.Any("eventResource", fmt.Sprintf("userID: %s, modelID: %s, versionID: %s", ns.Name(), params.modelID, versionID)),
-		zap.String("eventMessage", "TriggerNamespaceModel done"),
+		zap.String("eventMessage", "TriggerModelVersion done"),
 	)
 
 	return operation, nil
@@ -493,16 +493,16 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		return
 	}
 
-	pbModel, err := s.GetNamespaceModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
+	pbModel, err := s.GetModelByID(ctx, ns, modelID, modelpb.View_VIEW_FULL)
 	if err != nil {
-		logger.Error(fmt.Sprintf("GetNamespaceModelByID Error: %s", err.Error()))
+		logger.Error(fmt.Sprintf("GetModelByID Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		return
 	}
 
-	modelUID, err := s.GetNamespaceModelUIDByID(ctx, ns, modelID)
+	modelUID, err := s.GetModelUIDByID(ctx, ns, modelID)
 	if err != nil {
-		logger.Error(fmt.Sprintf("GetNamespaceModelUIDByID Error: %s", err.Error()))
+		logger.Error(fmt.Sprintf("GetModelUIDByID Error: %s", err.Error()))
 		makeJSONResponse(w, 404, "Model not found", "The model not found in server")
 		return
 	}
@@ -610,7 +610,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	}
 
 	// Create a trigger request with the new name format
-	inputReq := &modelpb.TriggerNamespaceModelRequest{
+	inputReq := &modelpb.TriggerModelVersionRequest{
 		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", ns.NsID, modelID, version.Version),
 		TaskInputs: []*structpb.Struct{data},
 	}
@@ -651,7 +651,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	}
 
 	var response []*structpb.Struct
-	response, err = s.TriggerNamespaceModelByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, runLog)
+	response, err = s.TriggerModelVersionByID(ctx, ns, modelID, version, inputJSON, pbModel.Task, runLog)
 	if err != nil {
 		var st *status.Status
 		if strings.Contains(err.Error(), "Failed to allocate memory") {
@@ -671,7 +671,7 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 	res, err := protojson.MarshalOptions{
 		EmitUnpopulated: true,
 		UseEnumNumbers:  false,
-	}.Marshal(&modelpb.TriggerNamespaceModelBinaryFileUploadResponse{
+	}.Marshal(&modelpb.TriggerModelVersionBinaryFileUploadResponse{
 		Task:        pbModel.Task,
 		TaskOutputs: response,
 	})
@@ -685,9 +685,9 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		logger.Warn("usage and metric data write fail")
 	}
 
-	logger.Info("TriggerNamespaceModel",
+	logger.Info("TriggerModelVersion",
 		zap.Any("eventResource", pbModel.Id),
-		zap.String("eventMessage", "TriggerNamespaceModel done"),
+		zap.String("eventMessage", "TriggerModelVersion done"),
 	)
 
 	_, _ = w.Write(res)

@@ -61,7 +61,7 @@ func TestRepository(t *testing.T) {
 	c.Cleanup(func() { tx.Rollback() })
 
 	repo := repository.NewRepository(tx, rc)
-	mockModel := MockNamespaceModel(t, repo)
+	mockModel := MockModel(t, repo)
 	ctx := context.Background()
 
 	triggerUUID, _ := uuid.NewV4()
@@ -101,7 +101,7 @@ func TestRepository(t *testing.T) {
 	require.GreaterOrEqual(t, runLog.TotalDuration.Int64, int64(2000))
 }
 
-func MockNamespaceModel(t *testing.T, repo repository.Repository) *datamodel.Model {
+func MockModel(t *testing.T, repo repository.Repository) *datamodel.Model {
 	orgUID := uuid.Must(uuid.NewV4())
 	ownerPermalink := "organizations/" + orgUID.String()
 
@@ -110,7 +110,7 @@ func MockNamespaceModel(t *testing.T, repo repository.Repository) *datamodel.Mod
 	require.NotEmpty(t, defs)
 
 	ctx := context.Background()
-	err = repo.CreateNamespaceModel(ctx, ownerPermalink, &datamodel.Model{
+	err = repo.CreateModel(ctx, ownerPermalink, &datamodel.Model{
 		ID:                 uuid.Must(uuid.NewV4()).String(),
 		ModelDefinitionUID: defs[0].UID,
 		Visibility:         datamodel.ModelVisibility(modelpb.Model_VISIBILITY_PRIVATE),
@@ -120,7 +120,7 @@ func MockNamespaceModel(t *testing.T, repo repository.Repository) *datamodel.Mod
 	require.NoError(t, err)
 
 	visibility := modelpb.Model_VISIBILITY_PRIVATE
-	models, totalSize, _, err := repo.ListNamespaceModels(ctx, ownerPermalink, 10, "",
+	models, totalSize, _, err := repo.ListModels(ctx, ownerPermalink, 10, "",
 		true, filtering.Filter{}, nil, false, ordering.OrderBy{}, &visibility)
 	require.NoError(t, err)
 	require.NotEmpty(t, models)
@@ -147,7 +147,7 @@ func TestRepository_ListModelRunsByRequester(t *testing.T) {
 	c.Cleanup(func() { tx.Rollback() })
 
 	repo := repository.NewRepository(tx, rc)
-	mockModel := MockNamespaceModel(t, repo)
+	mockModel := MockModel(t, repo)
 	ctx := context.Background()
 
 	triggerUUID, _ := uuid.NewV4()

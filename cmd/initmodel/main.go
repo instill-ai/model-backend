@@ -102,7 +102,7 @@ func main() {
 				return
 			}
 
-			if _, err = modelPublicServiceClient.GetNamespaceModel(sCtx, &modelpb.GetNamespaceModelRequest{
+			if _, err = modelPublicServiceClient.GetModel(sCtx, &modelpb.GetModelRequest{
 				Name: fmt.Sprintf("namespaces/%s/models/%s", modelConfig.OwnerID, modelConfig.ID),
 				View: modelpb.View_VIEW_FULL.Enum(),
 			}); err != nil {
@@ -118,7 +118,7 @@ func main() {
 					Hardware:        modelConfig.Hardware,
 					Configuration:   configuration,
 				}
-				if _, err = modelPublicServiceClient.CreateNamespaceModel(sCtx, &modelpb.CreateNamespaceModelRequest{
+				if _, err = modelPublicServiceClient.CreateModel(sCtx, &modelpb.CreateModelRequest{
 					Parent: fmt.Sprintf("namespaces/%s", modelConfig.OwnerID),
 					Model:  model,
 				}); err != nil {
@@ -134,7 +134,7 @@ func main() {
 				}
 			}
 		logger.Info("Deploying model: " + modelConfig.ID)
-		if _, err = modelPrivateServiceClient.DeployNamespaceModelAdmin(ctx, &modelpb.DeployNamespaceModelAdminRequest{
+		if _, err = modelPrivateServiceClient.DeployModelAdmin(ctx, &modelpb.DeployModelAdminRequest{
 			Name: fmt.Sprintf("namespaces/%s/models/%s/versions/%s", modelConfig.OwnerID, modelConfig.ID, modelConfig.Version),
 		}); err != nil {
 				logger.Error(fmt.Sprintf("deploy model err: %v", err))

@@ -41,7 +41,7 @@ func HandleProfileImage(s service.Service, r repository.Repository, w http.Respo
 	}
 
 	profileImageBase64 := ""
-	dbModel, err := r.GetNamespaceModelByID(ctx, ns.Permalink(), modelID, true, true)
+	dbModel, err := r.GetModelByID(ctx, ns.Permalink(), modelID, true, true)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
