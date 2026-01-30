@@ -4,21 +4,22 @@ import {
   group
 } from "k6";
 
-import * as createModel from "./rest_create_model.js"
-import * as queryModel from "./rest_query_model.js"
-import * as queryModelPrivate from "./rest_query_model_private.js"
-import * as deployModelPrivate from "./rest_deploy_model_private.js"
-import * as inferModel from "./rest_infer_model.js"
-import * as deployModel from "./rest_deploy_model.js"
-import * as publishModel from "./rest_publish_model.js"
-import * as updateModel from "./rest_update_model.js"
-import * as queryModelDefinition from "./rest_query_model_definition.js"
-import * as getModelCard from "./rest_model_card.js"
-import * as longrunningOperation from "./rest_longrunning_operation.js"
+import * as createModel from "./rest-create-model.js"
+import * as queryModel from "./rest-query-model.js"
+import * as queryModelPrivate from "./rest-query-model-private.js"
+import * as deployModelPrivate from "./rest-deploy-model-private.js"
+import * as inferModel from "./rest-infer-model.js"
+import * as deployModel from "./rest-deploy-model.js"
+import * as publishModel from "./rest-publish-model.js"
+import * as updateModel from "./rest-update-model.js"
+import * as queryModelDefinition from "./rest-query-model-definition.js"
+import * as getModelCard from "./rest-model-card.js"
+import * as longrunningOperation from "./rest-longrunning-operation.js"
 import * as restInvariants from "./rest-invariants.js"
 
 import {
   genHeader,
+  getBasicAuthHeader,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
@@ -40,20 +41,12 @@ export let options = {
 };
 
 export function setup() {
-  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1beta/auth/login`, JSON.stringify({
-    "username": constant.defaultUserId,
-    "password": constant.defaultPassword,
-  }))
-
-  check(loginResp, {
-    [`POST ${constant.mgmtPublicHost}/v1beta/auth/login response status is 200`]: (
-      r
-    ) => r.status === 200,
-  });
+  // CE uses Basic Auth (JWT auth is only available in EE)
+  const authHeader = getBasicAuthHeader(constant.defaultUserId, constant.defaultPassword);
 
   var header = {
     "headers": {
-      "Authorization": `Bearer ${loginResp.json().accessToken}`
+      "Authorization": authHeader
     },
     "timeout": "600s",
   }
@@ -65,11 +58,11 @@ export default function (header) {
    * Model API - API CALLS
    */
 
-  // Health check
+  // Health check (via API Gateway: /v1beta/health/model -> /v1alpha/health/model)
   {
     group("Model API: health check", () => {
-      check(http.request("GET", `${constant.apiPublicHost}/v1alpha/health/model`, null, header), {
-        "GET /v1alpha/health/model response status is 200": (r) => r.status === 200,
+      check(http.request("GET", `${constant.apiPublicHost}/v1beta/health/model`, null, header), {
+        "GET /v1beta/health/model response status is 200": (r) => r.status === 200,
       });
     });
   }

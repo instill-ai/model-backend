@@ -14,20 +14,21 @@ import {
 
 import {
   genHeader,
+  isValidOwner,
 } from "./helpers.js";
 
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
+// Load protos from root 'proto' directory - let imports resolve naturally
+client.load(['proto'], 'model/v1alpha/model_public_service.proto');
 
 const model_def_name = "model-definitions/local"
 
-export function DeployUndeployUserModel(header) {
-  // Deploy Model check
-  group("Model API: Deploy User Model", () => {
+
+export function UpdateUserModel(header) {
+  // UpdateModel check
+  group("Model API: UpdateUserModel", () => {
     client.connect(constant.gRPCPublicHost, {
       plaintext: true
     });
@@ -62,35 +63,38 @@ export function DeployUndeployUserModel(header) {
       sleep(1)
       currentTime = new Date().getTime();
     }
-
-    let req = {
-      name: `${constant.namespace}/models/${model_id}`
-    }
-    check(client.invoke('model.v1alpha.ModelPublicService/DeployUserModel', req, header), {
-      'DeployModel status': (r) => r && r.status === grpc.StatusOK,
-      'DeployModel model name': (r) => r && r.message.modelId === model_id
+    let res = client.invoke('model.v1alpha.ModelPublicService/UpdateUserModel', {
+      model: {
+        name: `${constant.namespace}/models/${model_id}`,
+        description: "new_description"
+      },
+      update_mask: "description"
+    }, header)
+    check(res, {
+      "UpdateModel response status": (r) => r.status === grpc.StatusOK,
+      "UpdateModel response model.name": (r) => r.message.model.name === `${constant.namespace}/models/${model_id}`,
+      "UpdateModel response model.uid": (r) => r.message.model.uid !== undefined,
+      "UpdateModel response model.id": (r) => r.message.model.id === model_id,
+      "UpdateModel response model.description": (r) => r.message.model.description === "new_description",
+      "UpdateModel response model.modelDefinition": (r) => r.message.model.modelDefinition === model_def_name,
+      "UpdateModel response model.configuration": (r) => r.message.model.configuration !== undefined,
+      "UpdateModel response model.visibility": (r) => r.message.model.visibility === "VISIBILITY_PRIVATE",
+      "UpdateModel response model.ownerName": (r) => isValidOwner(r.message.model.ownerName),
+      "UpdateModel response model.createTime": (r) => r.message.model.createTime !== undefined,
+      "UpdateModel response model.updateTime": (r) => r.message.model.updateTime !== undefined,
     });
-
-    // Check the model state being updated in 120 secs (in integration test, model is dummy model without download time but in real use case, time will be longer)
     currentTime = new Date().getTime();
     timeoutTime = new Date().getTime() + 120000;
     while (timeoutTime > currentTime) {
-      var res = client.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
+      let res = client.invoke('model.v1alpha.ModelPublicService/WatchUserModel', {
         name: `${constant.namespace}/models/${model_id}`
       }, header)
-      if (res.message.state === "STATE_ONLINE") {
+      if (res.message.state !== "STATE_UNSPECIFIED") {
         break
       }
       sleep(1)
       currentTime = new Date().getTime();
     }
-
-    check(client.invoke('model.v1alpha.ModelPublicService/DeployUserModel', {
-      name: `${constant.namespace}/models/non-existed`
-    }, header), {
-      'DeployModel non-existed model name status not found': (r) => r && r.status === grpc.StatusNotFound,
-    });
-
     check(client.invoke('model.v1alpha.ModelPublicService/DeleteUserModel', {
       name: `${constant.namespace}/models/${model_id}`
     }, header), {

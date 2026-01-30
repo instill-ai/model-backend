@@ -1,20 +1,20 @@
 import grpc from 'k6/net/grpc';
-import http from 'k6/http';
 import {
   check,
   group
 } from 'k6';
 
-import * as createModel from "./grpc_create_model.js"
-import * as updateModel from "./grpc_update_model.js"
-import * as queryModel from "./grpc_query_model.js"
-import * as queryModelPrivate from "./grpc_query_model_private.js"
-import * as deployModelPrivate from "./grpc_deploy_model_private.js"
-import * as deployModel from "./grpc_deploy_model.js"
-import * as triggerModel from "./grpc_infer_model.js"
-import * as publishModel from "./grpc_publish_model.js"
-import * as queryModelDefinition from "./grpc_query_model_definition.js"
+import * as createModel from "./grpc-create-model.js"
+import * as updateModel from "./grpc-update-model.js"
+import * as queryModel from "./grpc-query-model.js"
+import * as queryModelPrivate from "./grpc-query-model-private.js"
+import * as deployModelPrivate from "./grpc-deploy-model-private.js"
+import * as deployModel from "./grpc-deploy-model.js"
+import * as triggerModel from "./grpc-infer-model.js"
+import * as publishModel from "./grpc-publish-model.js"
+import * as queryModelDefinition from "./grpc-query-model-definition.js"
 
+import { getBasicAuthHeader } from "./helpers.js"
 import * as constant from "./const.js"
 
 export const options = {
@@ -26,26 +26,17 @@ export const options = {
 };
 
 const client = new grpc.Client();
-client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model_private_service.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
+// Load protos from root 'proto' directory - let imports resolve naturally
+client.load(['proto'], 'model/v1alpha/model_public_service.proto');
+client.load(['proto'], 'model/v1alpha/model_private_service.proto');
 
 export function setup() {
-  var loginResp = http.request("POST", `${constant.mgmtPublicHost}/v1beta/auth/login`, JSON.stringify({
-    "username": constant.defaultUserId,
-    "password": constant.defaultPassword,
-  }))
-
-  check(loginResp, {
-    [`POST ${constant.mgmtPublicHost}/v1beta/auth/login response status is 200`]: (
-      r
-    ) => r.status === 200,
-  });
+  // CE uses Basic Auth (JWT auth is only available in EE)
+  const authHeader = getBasicAuthHeader(constant.defaultUserId, constant.defaultPassword);
 
   var metadata = {
     "metadata": {
-      "Authorization": `Bearer ${loginResp.json().accessToken}`
+      "Authorization": authHeader
     },
     "timeout": "600s",
   }
@@ -77,11 +68,11 @@ export default (header) => {
 
   // Private API
   // if (!constant.apiGatewayMode) {
-    // queryModelPrivate.ListModels(header)
-    // queryModelPrivate.LookUpModel(header)
-    // deployModelPrivate.CheckModel(header)
-    // private deploy will be triggered by public deploy
-    // deployModelPrivate.DeployUndeployModel()
+  // queryModelPrivate.ListModels(header)
+  // queryModelPrivate.LookUpModel(header)
+  // deployModelPrivate.CheckModel(header)
+  // private deploy will be triggered by public deploy
+  // deployModelPrivate.DeployUndeployModel()
   // }
 
   // Update model API

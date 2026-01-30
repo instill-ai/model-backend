@@ -90,7 +90,7 @@ unit-test:       				## Run unit test
 	@rm coverage.out
 
 .PHONY: integration-test
-integration-test:				## Run integration test
+integration-test:				## Run integration test (CE: Basic Auth only)
 	@echo "✓ Running tests via API Gateway: ${API_GATEWAY_URL}"
 	@echo "  DB_HOST: ${DB_HOST}"
 	@rm -f /tmp/model-integration-test.log
@@ -108,7 +108,7 @@ integration-test:				## Run integration test
 		-e API_GATEWAY_PROTOCOL=${API_GATEWAY_PROTOCOL} \
 		-e API_GATEWAY_URL=${API_GATEWAY_URL} \
 		-e DB_HOST=${DB_HOST} \
-		integration-test/rest_with_jwt.js --no-usage-report 2>&1 | tee -a /tmp/model-integration-test.log
+		integration-test/rest-with-basic-auth.js --no-usage-report 2>&1 | tee -a /tmp/model-integration-test.log
 
 .PHONY: help
 help:       	 				## Show this help

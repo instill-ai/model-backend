@@ -7,9 +7,8 @@ import {
 import * as constant from "./const.js"
 
 const client = new grpc.Client();
-client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
+// Load protos from root 'proto' directory - let imports resolve naturally
+client.load(['proto'], 'model/v1alpha/model_public_service.proto');
 
 const model_def_name = "model-definitions/github"
 

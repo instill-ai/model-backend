@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package model.ray.v1alpha;
+
+// Protobuf standard
+import "google/protobuf/struct.proto";
+
+// CallRequest represents a request for model inference
+message CallRequest {
+  // Inference input parameters.
+  repeated google.protobuf.Struct task_inputs = 1;
+}
+
+// CallResponse represents a response for model inference
+message CallResponse {
+  // Model inference outputs.
+  repeated google.protobuf.Struct task_outputs = 1;
+}
+
+// User defined service for internal process
+service UserDefinedService {
+  // Trigger method is the default trigger entry for ray deployment
+  // Ray doesn't comply with the naming convention of protobuf, so we need to
+  // buf:lint:ignore RPC_PASCAL_CASE
+  rpc __call__(CallRequest) returns (CallResponse);
+}

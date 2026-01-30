@@ -18,7 +18,8 @@ export const isHostMode = apiGatewayUrl === "localhost:8080";
 export const apiGatewayMode = true;
 
 export const defaultUserId = "admin"
-export const namespace = "users/admin"
+// API Gateway uses AIP naming: namespaces/{namespace_id}/...
+export const namespace = "namespaces/admin"
 export const defaultPassword = "password"
 
 // Public hosts (via API Gateway)
