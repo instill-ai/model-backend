@@ -8,9 +8,8 @@ import {
 } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 const client = new grpc.Client();
-client.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model.proto');
-client.load(['proto', 'proto/model/v1alpha'], 'model_public_service.proto');
+// Load protos from root 'proto' directory - let imports resolve naturally
+client.load(['proto'], 'model/v1alpha/model_public_service.proto');
 
 import * as constant from "./const.js"
 

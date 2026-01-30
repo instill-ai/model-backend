@@ -19,20 +19,8 @@ service ModelPrivateService {
   // DeployModelAdmin deploy a model to online state
   rpc DeployModelAdmin(DeployModelAdminRequest) returns (DeployModelAdminResponse) {}
 
-  // DeployUserModelAdmin deploy a model to online state
-  rpc DeployUserModelAdmin(DeployUserModelAdminRequest) returns (DeployUserModelAdminResponse) {}
-
-  // DeployOrganizationModelAdmin deploy a model to online state
-  rpc DeployOrganizationModelAdmin(DeployOrganizationModelAdminRequest) returns (DeployOrganizationModelAdminResponse) {}
-
-  // UndeployUserModelAdmin undeploy a model to offline state
-  rpc UndeployUserModelAdmin(UndeployUserModelAdminRequest) returns (UndeployUserModelAdminResponse) {}
-
   // UndeployModelAdmin undeploy a model to offline state
   rpc UndeployModelAdmin(UndeployModelAdminRequest) returns (UndeployModelAdminResponse) {}
-
-  // UndeployOrganizationModelAdmin undeploy a model to offline state
-  rpc UndeployOrganizationModelAdmin(UndeployOrganizationModelAdminRequest) returns (UndeployOrganizationModelAdminResponse) {}
 
   // Repository Tag Management APIs
 

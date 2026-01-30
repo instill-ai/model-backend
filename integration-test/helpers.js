@@ -1,8 +1,22 @@
+import encoding from 'k6/encoding';
+
 export function genHeader(contentType, authorization) {
   return {
     "Content-Type": `${contentType}`,
     "Authorization": authorization
   };
+}
+
+/**
+ * Generate Basic Auth header from username and password
+ * @param {string} username - Username
+ * @param {string} password - Password
+ * @returns {string} - Basic Auth header value
+ */
+export function getBasicAuthHeader(username, password) {
+  const credentials = `${username}:${password}`;
+  const encodedCredentials = encoding.b64encode(credentials);
+  return `Basic ${encodedCredentials}`;
 }
 
 export function genHeaderWithRandomAuth(contentType, randomStr) {

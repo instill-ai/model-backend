@@ -20,9 +20,8 @@ import {
 import * as constant from "./const.js"
 
 const privateClient = new grpc.Client();
-privateClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');
-privateClient.load(['proto', 'proto/model/v1alpha'], 'model.proto');
-privateClient.load(['proto', 'proto/model/v1alpha'], 'model_private_service.proto');
+// Load protos from root 'proto' directory - let imports resolve naturally
+privateClient.load(['proto'], 'model/v1alpha/model_private_service.proto');
 
 const publicClient = new grpc.Client();
 publicClient.load(['proto', 'proto/model/v1alpha'], 'model_definition.proto');

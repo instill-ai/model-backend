@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package mgmt.v1beta;
 
+import "mgmt/v1beta/integration.proto";
 import "mgmt/v1beta/mgmt.proto";
 
 // Mgmt service responds to internal access
@@ -41,4 +42,10 @@ service MgmtPrivateService {
   // Returns the availability of a namespace or, alternatively, the type of
   // resource that is using it.
   rpc CheckNamespaceByUIDAdmin(CheckNamespaceByUIDAdminRequest) returns (CheckNamespaceByUIDAdminResponse) {}
+
+  // Get a connection by UID (admin only)
+  //
+  // This *private* method allows internal clients to access any connection
+  // resource by UID.
+  rpc LookUpConnectionAdmin(LookUpConnectionAdminRequest) returns (LookUpConnectionAdminResponse) {}
 }
