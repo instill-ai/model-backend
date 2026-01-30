@@ -252,10 +252,14 @@ github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260125053435-9764054668e5 h1:
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260125053435-9764054668e5/go.mod h1:bCnBosofpaUxKBuTTJM3/I3thAK37kvfBnKByjnLsl4=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260126193523-156ce51dc037 h1:+sFq2NoZVxia4dffoBmI9cDLrI9k2T/oFH6noNPXWAs=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260126193523-156ce51dc037/go.mod h1:bCnBosofpaUxKBuTTJM3/I3thAK37kvfBnKByjnLsl4=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260129193003-3968ab7c42a9 h1:zOKahHOtvNkvUOLsM7HC2xThbjIx3THwP4+4hWwy/GA=
+github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260129193003-3968ab7c42a9/go.mod h1:bCnBosofpaUxKBuTTJM3/I3thAK37kvfBnKByjnLsl4=
 github.com/instill-ai/x v0.10.1-alpha.0.20260125054429-74b22dd4e0e8 h1:siGEvzgpsgvezvjJKnEv8p0s5yRn8e5tOXgkuGdCeyA=
 github.com/instill-ai/x v0.10.1-alpha.0.20260125054429-74b22dd4e0e8/go.mod h1:/xG0LMh43kyyK9jXGtV/JGd5p9GVcreSZ6GRGVbALEU=
 github.com/instill-ai/x v0.10.1-alpha.0.20260126193844-80180146fe69 h1:7VkyancyoCs3VzmN4Xotp1lHtNLqZnWidVnN7NX5bQY=
 github.com/instill-ai/x v0.10.1-alpha.0.20260126193844-80180146fe69/go.mod h1:/xG0LMh43kyyK9jXGtV/JGd5p9GVcreSZ6GRGVbALEU=
+github.com/instill-ai/x v0.10.1-alpha.0.20260129195415-09e1680f104d h1:FLDqMpALmq2e/j9inTGWrY4mhRFhe5/xXvjjxwQDqDg=
+github.com/instill-ai/x v0.10.1-alpha.0.20260129195415-09e1680f104d/go.mod h1:/xG0LMh43kyyK9jXGtV/JGd5p9GVcreSZ6GRGVbALEU=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
