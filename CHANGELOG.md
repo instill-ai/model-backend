@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.38.6](https://github.com/instill-ai/model-backend/compare/v0.38.5...v0.38.6) (2026-02-05)
+
+
+### Features
+
+* **model:** add creator tracking to model resource ([#782](https://github.com/instill-ai/model-backend/issues/782)) ([6006495](https://github.com/instill-ai/model-backend/commit/6006495cbfc5c6b852bd729e2fb4f8ba72f02b8b))
+
+
+### Miscellaneous
+
+* **ci:** replace maximize-build-space with free-disk-space action ([2c0fa7a](https://github.com/instill-ai/model-backend/commit/2c0fa7af7853488084534bd418291d1b7f6a0635))
+* **deps:** bump golang.org/x/crypto from 0.39.0 to 0.45.0 ([#781](https://github.com/instill-ai/model-backend/issues/781)) ([5ba9c88](https://github.com/instill-ai/model-backend/commit/5ba9c88024819013d8d2aecee59d1c98430b3c87))
+* **deps:** update protogen-go and x dependencies ([#786](https://github.com/instill-ai/model-backend/issues/786)) ([611f0f2](https://github.com/instill-ai/model-backend/commit/611f0f2aa158006ead6b3ddd2cdbc19a21fa1809))
+* **go:** upgrade to 1.25.6 ([b1e0c30](https://github.com/instill-ai/model-backend/commit/b1e0c30fae7915d064112a1f03d442d7cea5efe9))
+
+
+### Refactor
+
+* **acl:** migrate to shared ACL client library and remove deprecated handlers ([#784](https://github.com/instill-ai/model-backend/issues/784)) ([b32dd03](https://github.com/instill-ai/model-backend/commit/b32dd03fa465792a3076cc5931e7a216dac871f3))
+* **api:** align Model API naming with Pipeline convention ([#785](https://github.com/instill-ai/model-backend/issues/785)) ([aa64bd3](https://github.com/instill-ai/model-backend/commit/aa64bd32f5da6e10a38fcc1a8391be87bd4af82c))
+* **model:** adopt flattened protobuf packages and AIP-compliant resource names ([#783](https://github.com/instill-ai/model-backend/issues/783)) ([1d372db](https://github.com/instill-ai/model-backend/commit/1d372db832933f6a3f345497e9a26958e7d81f49))
+* **model:** move repository tag management APIs for Docker registry ([#779](https://github.com/instill-ai/model-backend/issues/779)) ([0247eee](https://github.com/instill-ai/model-backend/commit/0247eee3c4659b3f9da49956b67bce75bb88f1c6))
+* **test:** standardize file naming and migrate from JWT to Basic Auth ([#787](https://github.com/instill-ai/model-backend/issues/787)) ([f732758](https://github.com/instill-ai/model-backend/commit/f7327585f313de9e7760fce6ca7e4db5d73cf4a9))
+
 ## [0.38.5](https://github.com/instill-ai/model-backend/compare/v0.38.4...v0.38.5) (2025-09-22)
 
 
