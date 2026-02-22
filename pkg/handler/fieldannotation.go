@@ -11,7 +11,7 @@ var outputOnlyFields = []string{
 	"create_time", "update_time", "delete_time",
 	"permission", "input_schema", "output_schema",
 	"versions", "stats",
-	"owner_name", "owner", "creator_uid", "creator",
+	"owner_name", "owner", "creator_name", "creator",
 }
 
 // requiredFields are Protobuf message fields with REQUIRED field_behavior annotation
