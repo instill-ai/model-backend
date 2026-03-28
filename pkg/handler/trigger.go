@@ -170,14 +170,11 @@ func (h *PublicHandler) triggerModel(ctx context.Context, params triggerModelPar
 		ModelTask:          pbModel.Task,
 	}
 
-	// Marshal task inputs for logging
-	inputData := map[string]interface{}{
-		"namespace_id": params.namespaceID,
-		"model_id":     params.modelID,
-		"version":      params.version,
-		"task_inputs":  params.taskInputs,
+	inputReq := &modelpb.TriggerModelVersionRequest{
+		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", params.namespaceID, params.modelID, version.Version),
+		TaskInputs: params.taskInputs,
 	}
-	inputJSON, err := json.Marshal(inputData)
+	inputJSON, err := protojson.Marshal(inputReq)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -222,12 +219,12 @@ func (h *PublicHandler) triggerModel(ctx context.Context, params triggerModelPar
 	}
 
 	response, triggerErr := h.service.TriggerModelVersionByID(ctx, ns, params.modelID, version, inputJSON, pbModel.Task, runLog)
-	if err != nil {
+	if triggerErr != nil {
 		var st *status.Status
-		if strings.Contains(err.Error(), "failed to allocate memory") {
+		if strings.Contains(triggerErr.Error(), "failed to allocate memory") {
 			st = status.New(codes.ResourceExhausted, "inference model error: Out of memory for running the model, maybe try with smaller batch size")
 		} else {
-			st = status.New(codes.FailedPrecondition, fmt.Sprintf("inference model error: %s", err.Error()))
+			st = status.New(codes.FailedPrecondition, fmt.Sprintf("inference model error: %s", triggerErr.Error()))
 		}
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return commonpb.Task_TASK_UNSPECIFIED, nil, st.Err()
@@ -358,14 +355,11 @@ func (h *PublicHandler) triggerAsyncModel(ctx context.Context, params triggerMod
 		ModelTask:          pbModel.Task,
 	}
 
-	// Marshal task inputs for logging
-	inputData := map[string]interface{}{
-		"namespace_id": params.namespaceID,
-		"model_id":     params.modelID,
-		"version":      params.version,
-		"task_inputs":  params.taskInputs,
+	inputReq := &modelpb.TriggerModelVersionRequest{
+		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", params.namespaceID, params.modelID, version.Version),
+		TaskInputs: params.taskInputs,
 	}
-	inputJSON, err := json.Marshal(inputData)
+	inputJSON, err := protojson.Marshal(inputReq)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -609,13 +603,12 @@ func HandleTriggerMultipartForm(s service.Service, _ repository.Repository, w ht
 		data.Fields[k] = structVal
 	}
 
-	// Create a trigger request with the new name format
 	inputReq := &modelpb.TriggerModelVersionRequest{
 		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", ns.NsID, modelID, version.Version),
 		TaskInputs: []*structpb.Struct{data},
 	}
 
-	inputJSON, err := json.Marshal(inputReq)
+	inputJSON, err := protojson.Marshal(inputReq)
 	if err != nil {
 		makeJSONResponse(w, 400, "Parser input error", err.Error())
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
