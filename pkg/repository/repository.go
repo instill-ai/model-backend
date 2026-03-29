@@ -267,7 +267,7 @@ func (r *repository) listModels(ctx context.Context, where string, whereArgs []a
 func (r *repository) ListPublicModels(ctx context.Context, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	where := ""
 	whereArgs := []any{}
-	if *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
+	if visibility != nil && *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
 		where = "(visibility = ?)"
 		whereArgs = append(whereArgs, datamodel.ModelVisibility(*visibility))
 	}
@@ -280,7 +280,7 @@ func (r *repository) ListPublicModels(ctx context.Context, pageSize int64, pageT
 func (r *repository) ListModels(ctx context.Context, ownerPermalink string, pageSize int64, pageToken string, isBasicView bool, filter filtering.Filter, uidAllowList []uuid.UUID, showDeleted bool, order ordering.OrderBy, visibility *modelpb.Model_Visibility) (models []*datamodel.Model, totalSize int64, nextPageToken string, err error) {
 	where := "(owner = ?)"
 	whereArgs := []any{ownerPermalink}
-	if *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
+	if visibility != nil && *visibility != modelpb.Model_VISIBILITY_UNSPECIFIED {
 		where = "(owner = ? AND visibility = ?)"
 		whereArgs = append(whereArgs, datamodel.ModelVisibility(*visibility))
 	}

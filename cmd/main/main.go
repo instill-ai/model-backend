@@ -187,6 +187,18 @@ func main() {
 		panic(err)
 	}
 
+	// OpenAI-compatible API endpoints
+	if err := publicServeMux.HandlePath("POST", "/v1/chat/completions", middleware.AppendCustomHeaderMiddleware(service, repo, handler.HandleChatCompletions)); err != nil {
+		panic(err)
+	}
+	if err := publicServeMux.HandlePath("GET", "/v1/models", middleware.AppendCustomHeaderMiddleware(service, repo, handler.HandleListModels)); err != nil {
+		panic(err)
+	}
+	// Anthropic-compatible API endpoint
+	if err := publicServeMux.HandlePath("POST", "/v1/messages", middleware.AppendCustomHeaderMiddleware(service, repo, handler.HandleMessages)); err != nil {
+		panic(err)
+	}
+
 	if err := publicServeMux.HandlePath("GET", "/v1alpha/{path=users/*/models/*}/image", middleware.AppendCustomHeaderMiddleware(service, repo, middleware.HandleProfileImage)); err != nil {
 		logger.Fatal(err.Error())
 	}
