@@ -183,10 +183,10 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 func anthropicToInstillTaskInput(antReq anthropicRequest, modelID string) (*structpb.Struct, error) {
 	instillMessages := make([]any, 0, len(antReq.Messages)+1)
 
-	if antReq.System != "" {
+	if sysText := antReq.SystemText(); sysText != "" {
 		instillMessages = append(instillMessages, map[string]any{
 			"role":    "system",
-			"content": []any{map[string]any{"type": "text", "text": antReq.System}},
+			"content": []any{map[string]any{"type": "text", "text": sysText}},
 		})
 	}
 
