@@ -222,7 +222,9 @@ func anthropicToInstillTaskInput(antReq anthropicRequest, modelID string) (*stru
 }
 
 // convertAnthropicContent converts Anthropic message content (string or array
-// of content blocks) into Instill content parts format.
+// of content blocks) into a single Instill text content part. Multiple text
+// blocks are merged because the Instill task input expects at most one text
+// element per message.
 func convertAnthropicContent(raw json.RawMessage) ([]any, error) {
 	if len(raw) == 0 || string(raw) == "null" {
 		return []any{map[string]any{"type": "text", "text": ""}}, nil
@@ -238,16 +240,20 @@ func convertAnthropicContent(raw json.RawMessage) ([]any, error) {
 		return nil, fmt.Errorf("content must be a string or array of content blocks")
 	}
 
-	result := make([]any, 0, len(blocks))
+	var texts []string
 	for _, b := range blocks {
-		switch b["type"] {
-		case "text":
-			result = append(result, map[string]any{"type": "text", "text": b["text"]})
-		default:
-			result = append(result, b)
+		if b["type"] == "text" {
+			if t, ok := b["text"].(string); ok && t != "" {
+				texts = append(texts, t)
+			}
 		}
 	}
-	return result, nil
+
+	merged := strings.Join(texts, "\n")
+	if merged == "" {
+		merged = ""
+	}
+	return []any{map[string]any{"type": "text", "text": merged}}, nil
 }
 
 // instillOutputToAnthropicResponse converts an Instill TASK_CHAT task_output
