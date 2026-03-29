@@ -5,15 +5,69 @@ import (
 	"net/http"
 )
 
-// openaiChatRequest holds only the fields we need to inspect from the incoming
-// request.  The full body is forwarded to Ray Serve as-is so that we stay
-// compatible with any new fields the OpenAI spec may add.
 type openaiChatRequest struct {
-	Model  string `json:"model"`
-	Stream bool   `json:"stream,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []openaiMessage `json:"messages"`
+	MaxTokens   *int            `json:"max_tokens,omitempty"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	TopP        *float64        `json:"top_p,omitempty"`
+	N           *int            `json:"n,omitempty"`
+	Seed        *int            `json:"seed,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
 }
 
-// openaiModel is the OpenAI model object returned by GET /v1/models.
+type openaiMessage struct {
+	Role    string          `json:"role"`
+	Content json.RawMessage `json:"content"`
+	Name    string          `json:"name,omitempty"`
+}
+
+type openaiChatResponse struct {
+	ID      string             `json:"id"`
+	Object  string             `json:"object"`
+	Created int64              `json:"created"`
+	Model   string             `json:"model"`
+	Choices []openaiChatChoice `json:"choices"`
+	Usage   *openaiChatUsage   `json:"usage,omitempty"`
+}
+
+type openaiChatChoice struct {
+	Index        int            `json:"index"`
+	Message      openaiChatMsg  `json:"message"`
+	FinishReason string         `json:"finish_reason"`
+}
+
+type openaiChatMsg struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type openaiChatUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+type openaiStreamChunk struct {
+	ID      string               `json:"id"`
+	Object  string               `json:"object"`
+	Created int64                `json:"created"`
+	Model   string               `json:"model"`
+	Choices []openaiStreamChoice `json:"choices"`
+	Usage   *openaiChatUsage     `json:"usage,omitempty"`
+}
+
+type openaiStreamChoice struct {
+	Index        int         `json:"index"`
+	Delta        openaiDelta `json:"delta"`
+	FinishReason *string     `json:"finish_reason"`
+}
+
+type openaiDelta struct {
+	Role    string `json:"role,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 type openaiModel struct {
 	ID      string `json:"id"`
 	Object  string `json:"object"`
@@ -21,7 +75,6 @@ type openaiModel struct {
 	OwnedBy string `json:"owned_by"`
 }
 
-// openaiModelList is the response for GET /v1/models.
 type openaiModelList struct {
 	Object string        `json:"object"`
 	Data   []openaiModel `json:"data"`

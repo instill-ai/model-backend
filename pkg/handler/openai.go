@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,11 +14,10 @@ import (
 	"go.einride.tech/aip/ordering"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
@@ -61,8 +59,8 @@ func parseOpenAIModelField(model string) (namespace, modelID, version string, er
 	return namespace, modelID, version, nil
 }
 
-// HandleChatCompletions handles POST /v1/chat/completions by authenticating
-// the caller, resolving the model, and proxying the request to Ray Serve HTTP.
+// HandleChatCompletions handles POST /v1/chat/completions using the production
+// gRPC path to Ray Serve, translating between OpenAI and Instill formats.
 func HandleChatCompletions(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, _ map[string]string) {
 
 	startTime := time.Now()
@@ -131,13 +129,6 @@ func HandleChatCompletions(s service.Service, _ repository.Repository, w http.Re
 		return
 	}
 
-	appName, err := ray.GetApplicationMetadataValue(modelName, version.Version)
-	if err != nil {
-		writeOpenAIError(w, http.StatusInternalServerError, "internal error resolving model", "server_error", "")
-		return
-	}
-
-	// Run logging
 	logUUID, _ := uuid.NewV4()
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
@@ -166,101 +157,278 @@ func HandleChatCompletions(s service.Service, _ repository.Repository, w http.Re
 		}
 	}()
 
-	targetURL := fmt.Sprintf("http://%s:%d/%s/v1/chat/completions",
-		config.Config.Ray.Host,
-		config.Config.Ray.Port.SERVE,
-		appName,
-	)
-
-	proxyReq, err := http.NewRequestWithContext(req.Context(), http.MethodPost, targetURL, strings.NewReader(string(body)))
+	taskInput, err := openaiToInstillTaskInput(chatReq, pbModel.Id)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		writeOpenAIError(w, http.StatusInternalServerError, "failed to create proxy request", "server_error", "")
+		writeOpenAIError(w, http.StatusBadRequest, "failed to build task input: "+err.Error(), "invalid_request_error", "")
 		return
 	}
-	proxyReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 600 * time.Second}
-	resp, err := client.Do(proxyReq)
+	triggerReq := &modelpb.TriggerModelVersionRequest{
+		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", nsID, modelID, version.Version),
+		TaskInputs: []*structpb.Struct{taskInput},
+	}
+
+	inferResp, err := s.GetRayClient().ModelInferRequest(ctx, commonpb.Task_TASK_CHAT, triggerReq, modelName, version.Version)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		if runLog != nil {
 			_ = s.UpdateModelRunWithError(ctx, runLog, err)
 		}
-		writeOpenAIError(w, http.StatusBadGateway, "failed to reach model backend", "server_error", "upstream_error")
+		if strings.Contains(err.Error(), "allocate memory") || strings.Contains(err.Error(), "out of memory") {
+			writeOpenAIError(w, http.StatusServiceUnavailable, "model out of memory, try with smaller input", "server_error", "resource_exhausted")
+		} else {
+			writeOpenAIError(w, http.StatusBadGateway, "model inference failed: "+err.Error(), "server_error", "upstream_error")
+		}
 		return
 	}
-	defer resp.Body.Close()
+
+	outputs := inferResp.GetTaskOutputs()
+	if len(outputs) == 0 {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		writeOpenAIError(w, http.StatusBadGateway, "model returned empty response", "server_error", "empty_response")
+		return
+	}
+
+	chatResp, err := instillOutputToOpenAIResponse(outputs[0], chatReq.Model, logUUID.String())
+	if err != nil {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		writeOpenAIError(w, http.StatusBadGateway, "failed to parse model response: "+err.Error(), "server_error", "")
+		return
+	}
+
+	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
 
 	if chatReq.Stream {
-		streamSSEResponse(ctx, w, resp, s, runLog, usageData, logger)
+		simulateOpenAIStream(w, chatResp)
 	} else {
-		proxyNonStreamResponse(w, resp, s, ctx, runLog, usageData)
+		writeOpenAIJSON(w, http.StatusOK, chatResp)
+	}
+
+	if runLog != nil {
+		updateRunCompleted(ctx, s, runLog)
 	}
 }
 
-func streamSSEResponse(ctx context.Context, w http.ResponseWriter, resp *http.Response, s service.Service, runLog *datamodel.ModelRun, usageData *utils.UsageMetricData, logger *zap.Logger) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
+// openaiToInstillTaskInput converts an OpenAI chat request into the Instill
+// TASK_CHAT task_input protobuf structure expected by Ray Serve gRPC.
+func openaiToInstillTaskInput(chatReq openaiChatRequest, modelID string) (*structpb.Struct, error) {
+	instillMessages := make([]any, 0, len(chatReq.Messages))
+	for _, msg := range chatReq.Messages {
+		contentParts, err := convertOpenAIContent(msg.Content)
+		if err != nil {
+			return nil, fmt.Errorf("message content: %w", err)
+		}
+		instillMsg := map[string]any{
+			"role":    msg.Role,
+			"content": contentParts,
+		}
+		if msg.Name != "" {
+			instillMsg["name"] = msg.Name
+		}
+		instillMessages = append(instillMessages, instillMsg)
+	}
 
+	params := map[string]any{
+		"stream": false,
+	}
+	if chatReq.MaxTokens != nil {
+		params["max-tokens"] = *chatReq.MaxTokens
+	}
+	if chatReq.Temperature != nil {
+		params["temperature"] = *chatReq.Temperature
+	}
+	if chatReq.TopP != nil {
+		params["top-p"] = *chatReq.TopP
+	}
+	if chatReq.N != nil {
+		params["n"] = *chatReq.N
+	}
+	if chatReq.Seed != nil {
+		params["seed"] = *chatReq.Seed
+	}
+
+	return structpb.NewStruct(map[string]any{
+		"data": map[string]any{
+			"model":    modelID,
+			"messages": instillMessages,
+		},
+		"parameter": params,
+	})
+}
+
+// convertOpenAIContent converts OpenAI message content (string or array) into
+// the Instill content parts format: [{"type":"text","text":"..."}].
+func convertOpenAIContent(raw json.RawMessage) ([]any, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return []any{map[string]any{"type": "text", "text": ""}}, nil
+	}
+
+	var text string
+	if err := json.Unmarshal(raw, &text); err == nil {
+		return []any{map[string]any{"type": "text", "text": text}}, nil
+	}
+
+	var parts []map[string]any
+	if err := json.Unmarshal(raw, &parts); err != nil {
+		return nil, fmt.Errorf("content must be a string or array of content parts")
+	}
+
+	result := make([]any, 0, len(parts))
+	for _, p := range parts {
+		switch p["type"] {
+		case "text":
+			result = append(result, map[string]any{"type": "text", "text": p["text"]})
+		case "image_url":
+			if urlObj, ok := p["image_url"].(map[string]any); ok {
+				result = append(result, map[string]any{"type": "image-url", "image-url": urlObj["url"]})
+			}
+		default:
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
+// instillOutputToOpenAIResponse converts an Instill TASK_CHAT task_output
+// into an OpenAI ChatCompletion response.
+func instillOutputToOpenAIResponse(output *structpb.Struct, model, chatID string) (*openaiChatResponse, error) {
+	dataField := output.Fields["data"]
+	if dataField == nil || dataField.GetStructValue() == nil {
+		return nil, fmt.Errorf("missing data in task output")
+	}
+	data := dataField.GetStructValue()
+
+	choicesList := data.Fields["choices"]
+	if choicesList == nil || choicesList.GetListValue() == nil {
+		return nil, fmt.Errorf("missing choices in task output")
+	}
+
+	var created int64
+	choices := make([]openaiChatChoice, 0)
+	for _, cv := range choicesList.GetListValue().Values {
+		c := cv.GetStructValue()
+		if c == nil {
+			continue
+		}
+
+		finishReason := "stop"
+		if fr, ok := c.Fields["finish-reason"]; ok && fr.GetStringValue() == "length" {
+			finishReason = "length"
+		}
+
+		var msgContent, msgRole string
+		if msgField := c.Fields["message"]; msgField != nil && msgField.GetStructValue() != nil {
+			msg := msgField.GetStructValue()
+			msgContent = msg.Fields["content"].GetStringValue()
+			msgRole = msg.Fields["role"].GetStringValue()
+		}
+		if msgRole == "" {
+			msgRole = "assistant"
+		}
+
+		if createdVal, ok := c.Fields["created"]; ok && createdVal.GetNumberValue() > 0 {
+			created = int64(createdVal.GetNumberValue())
+		}
+
+		choices = append(choices, openaiChatChoice{
+			Index:        int(c.Fields["index"].GetNumberValue()),
+			Message:      openaiChatMsg{Role: msgRole, Content: msgContent},
+			FinishReason: finishReason,
+		})
+	}
+
+	if created == 0 {
+		created = time.Now().Unix()
+	}
+
+	resp := &openaiChatResponse{
+		ID:      "chatcmpl-" + chatID,
+		Object:  "chat.completion",
+		Created: created,
+		Model:   model,
+		Choices: choices,
+	}
+
+	if metaField := output.Fields["metadata"]; metaField != nil && metaField.GetStructValue() != nil {
+		if usageField := metaField.GetStructValue().Fields["usage"]; usageField != nil && usageField.GetStructValue() != nil {
+			u := usageField.GetStructValue()
+			prompt := int(u.Fields["prompt-tokens"].GetNumberValue())
+			completion := int(u.Fields["completion-tokens"].GetNumberValue())
+			total := int(u.Fields["total-tokens"].GetNumberValue())
+			if total == 0 {
+				total = prompt + completion
+			}
+			resp.Usage = &openaiChatUsage{
+				PromptTokens:     prompt,
+				CompletionTokens: completion,
+				TotalTokens:      total,
+			}
+		}
+	}
+
+	return resp, nil
+}
+
+// simulateOpenAIStream emits SSE chunks from a complete gRPC response.
+// gRPC is unary so we receive the full response then stream it to the client.
+func simulateOpenAIStream(w http.ResponseWriter, resp *openaiChatResponse) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		writeOpenAIError(w, http.StatusInternalServerError, "streaming not supported", "server_error", "")
 		return
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Fprintf(w, "%s\n", line)
-		flusher.Flush()
-
-		if strings.HasPrefix(line, "data: ") && line != "data: [DONE]" {
-			extractStreamingUsage(line, usageData)
-		}
+	base := openaiStreamChunk{
+		ID:      resp.ID,
+		Object:  "chat.completion.chunk",
+		Created: resp.Created,
+		Model:   resp.Model,
 	}
 
-	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	if runLog != nil {
-		updateRunCompleted(ctx, s, runLog)
+	// First chunk: role
+	base.Choices = []openaiStreamChoice{{
+		Index: 0,
+		Delta: openaiDelta{Role: "assistant"},
+	}}
+	writeOpenAIStreamChunk(w, flusher, base)
+
+	// Content chunk(s)
+	if len(resp.Choices) > 0 {
+		content := resp.Choices[0].Message.Content
+		base.Choices = []openaiStreamChoice{{
+			Index: 0,
+			Delta: openaiDelta{Content: content},
+		}}
+		writeOpenAIStreamChunk(w, flusher, base)
 	}
+
+	// Finish chunk with usage
+	finishReason := "stop"
+	if len(resp.Choices) > 0 {
+		finishReason = resp.Choices[0].FinishReason
+	}
+	base.Choices = []openaiStreamChoice{{
+		Index:        0,
+		Delta:        openaiDelta{},
+		FinishReason: &finishReason,
+	}}
+	base.Usage = resp.Usage
+	writeOpenAIStreamChunk(w, flusher, base)
+
+	fmt.Fprintf(w, "data: [DONE]\n\n")
+	flusher.Flush()
 }
 
-func proxyNonStreamResponse(w http.ResponseWriter, resp *http.Response, s service.Service, ctx context.Context, runLog *datamodel.ModelRun, usageData *utils.UsageMetricData) {
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		writeOpenAIError(w, http.StatusBadGateway, "failed to read upstream response", "server_error", "")
-		return
-	}
-
-	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(respBody)
-
-	if runLog != nil {
-		updateRunCompleted(ctx, s, runLog)
-	}
-}
-
-// extractStreamingUsage looks for usage data in an SSE data line.
-func extractStreamingUsage(line string, usageData *utils.UsageMetricData) {
-	payload := strings.TrimPrefix(line, "data: ")
-	var chunk struct {
-		Usage *struct {
-			PromptTokens     int `json:"prompt_tokens"`
-			CompletionTokens int `json:"completion_tokens"`
-		} `json:"usage"`
-	}
-	if err := json.Unmarshal([]byte(payload), &chunk); err == nil && chunk.Usage != nil {
-		_ = chunk.Usage // token counts available for future billing integration
-	}
+func writeOpenAIStreamChunk(w http.ResponseWriter, flusher http.Flusher, chunk openaiStreamChunk) {
+	data, _ := json.Marshal(chunk)
+	fmt.Fprintf(w, "data: %s\n\n", data)
+	flusher.Flush()
 }
 
 func updateRunCompleted(ctx context.Context, s service.Service, runLog *datamodel.ModelRun) {

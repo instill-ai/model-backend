@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"bufio"
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,16 +10,13 @@ import (
 
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
-	"gopkg.in/guregu/null.v4"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/instill-ai/model-backend/config"
 	"github.com/instill-ai/model-backend/pkg/datamodel"
-	"github.com/instill-ai/model-backend/pkg/ray"
 	"github.com/instill-ai/model-backend/pkg/repository"
 	"github.com/instill-ai/model-backend/pkg/service"
 	"github.com/instill-ai/model-backend/pkg/utils"
 
-	runpb "github.com/instill-ai/protogen-go/common/run/v1alpha"
 	commonpb "github.com/instill-ai/protogen-go/common/task/v1alpha"
 	mgmtpb "github.com/instill-ai/protogen-go/mgmt/v1beta"
 	modelpb "github.com/instill-ai/protogen-go/model/v1alpha"
@@ -30,9 +24,9 @@ import (
 	resourcex "github.com/instill-ai/x/resource"
 )
 
-// HandleMessages handles POST /v1/messages (Anthropic Messages API).
-// It translates the request to OpenAI format, proxies to Ray Serve,
-// and translates the response back to Anthropic format.
+// HandleMessages handles POST /v1/messages (Anthropic Messages API) using the
+// production gRPC path to Ray Serve, translating between Anthropic and Instill
+// formats.
 func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseWriter, req *http.Request, _ map[string]string) {
 
 	startTime := time.Now()
@@ -101,13 +95,6 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 		return
 	}
 
-	appName, err := ray.GetApplicationMetadataValue(modelName, version.Version)
-	if err != nil {
-		writeAnthropicError(w, http.StatusInternalServerError, "internal error resolving model", "api_error")
-		return
-	}
-
-	// Run logging
 	logUUID, _ := uuid.NewV4()
 	requesterUID, userUID := resourcex.GetRequesterUIDAndUserUID(ctx)
 	usageData := &utils.UsageMetricData{
@@ -136,214 +123,218 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 		}
 	}()
 
-	// Translate Anthropic -> OpenAI
-	openAIBody := translateAnthropicToOpenAI(antReq)
-	openAIBytes, _ := json.Marshal(openAIBody)
-
-	targetURL := fmt.Sprintf("http://%s:%d/%s/v1/chat/completions",
-		config.Config.Ray.Host,
-		config.Config.Ray.Port.SERVE,
-		appName,
-	)
-
-	proxyReq, err := http.NewRequestWithContext(req.Context(), http.MethodPost, targetURL, bytes.NewReader(openAIBytes))
+	taskInput, err := anthropicToInstillTaskInput(antReq, pbModel.Id)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		writeAnthropicError(w, http.StatusInternalServerError, "failed to create proxy request", "api_error")
+		writeAnthropicError(w, http.StatusBadRequest, "failed to build task input: "+err.Error(), "invalid_request_error")
 		return
 	}
-	proxyReq.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 600 * time.Second}
-	resp, err := client.Do(proxyReq)
+	triggerReq := &modelpb.TriggerModelVersionRequest{
+		Name:       fmt.Sprintf("namespaces/%s/models/%s/versions/%s", nsID, modelID, version.Version),
+		TaskInputs: []*structpb.Struct{taskInput},
+	}
+
+	inferResp, err := s.GetRayClient().ModelInferRequest(ctx, commonpb.Task_TASK_CHAT, triggerReq, modelName, version.Version)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
 		if runLog != nil {
 			_ = s.UpdateModelRunWithError(ctx, runLog, err)
 		}
-		writeAnthropicError(w, http.StatusBadGateway, "failed to reach model backend", "api_error")
+		if strings.Contains(err.Error(), "allocate memory") || strings.Contains(err.Error(), "out of memory") {
+			writeAnthropicError(w, http.StatusServiceUnavailable, "model out of memory", "overloaded_error")
+		} else {
+			writeAnthropicError(w, http.StatusBadGateway, "model inference failed: "+err.Error(), "api_error")
+		}
 		return
 	}
-	defer resp.Body.Close()
 
-	if antReq.Stream {
-		streamAnthropicResponse(w, resp, antReq.Model, s, ctx, runLog, usageData, logger)
-	} else {
-		proxyAnthropicNonStream(w, resp, antReq.Model, s, ctx, runLog, usageData)
-	}
-}
-
-func translateAnthropicToOpenAI(r anthropicRequest) map[string]any {
-	messages := make([]map[string]any, 0, len(r.Messages)+1)
-
-	if r.System != "" {
-		messages = append(messages, map[string]any{
-			"role":    "system",
-			"content": r.System,
-		})
+	outputs := inferResp.GetTaskOutputs()
+	if len(outputs) == 0 {
+		usageData.Status = mgmtpb.Status_STATUS_ERRORED
+		writeAnthropicError(w, http.StatusBadGateway, "model returned empty response", "api_error")
+		return
 	}
 
-	for _, m := range r.Messages {
-		msg := map[string]any{"role": m.Role}
-		var text string
-		if err := json.Unmarshal(m.Content, &text); err == nil {
-			msg["content"] = text
-		} else {
-			msg["content"] = m.Content
-		}
-		messages = append(messages, msg)
-	}
-
-	out := map[string]any{
-		"model":      r.Model,
-		"messages":   messages,
-		"max_tokens": r.MaxTokens,
-		"stream":     r.Stream,
-	}
-	if r.Temperature != nil {
-		out["temperature"] = *r.Temperature
-	}
-	if r.TopP != nil {
-		out["top_p"] = *r.TopP
-	}
-	if len(r.StopSeqs) > 0 {
-		out["stop"] = r.StopSeqs
-	}
-
-	return out
-}
-
-func proxyAnthropicNonStream(w http.ResponseWriter, resp *http.Response, model string, s service.Service, ctx context.Context, runLog *datamodel.ModelRun, usageData *utils.UsageMetricData) {
-	respBody, err := io.ReadAll(resp.Body)
+	antResp, err := instillOutputToAnthropicResponse(outputs[0], antReq.Model, logUUID.String())
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		writeAnthropicError(w, http.StatusBadGateway, "failed to read upstream response", "api_error")
+		writeAnthropicError(w, http.StatusBadGateway, "failed to parse model response: "+err.Error(), "api_error")
 		return
-	}
-
-	var openAIResp struct {
-		ID      string `json:"id"`
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-			FinishReason string `json:"finish_reason"`
-		} `json:"choices"`
-		Usage struct {
-			PromptTokens     int `json:"prompt_tokens"`
-			CompletionTokens int `json:"completion_tokens"`
-		} `json:"usage"`
-	}
-	if err := json.Unmarshal(respBody, &openAIResp); err != nil {
-		usageData.Status = mgmtpb.Status_STATUS_ERRORED
-		writeAnthropicError(w, http.StatusBadGateway, "invalid upstream response", "api_error")
-		return
-	}
-
-	content := ""
-	stopReason := "end_turn"
-	if len(openAIResp.Choices) > 0 {
-		content = openAIResp.Choices[0].Message.Content
-		if openAIResp.Choices[0].FinishReason == "length" {
-			stopReason = "max_tokens"
-		}
-	}
-
-	antResp := anthropicResponse{
-		ID:         openAIResp.ID,
-		Type:       "message",
-		Role:       "assistant",
-		Content:    []anthropicContent{{Type: "text", Text: content}},
-		Model:      model,
-		StopReason: &stopReason,
-		Usage: anthropicUsage{
-			InputTokens:  openAIResp.Usage.PromptTokens,
-			OutputTokens: openAIResp.Usage.CompletionTokens,
-		},
 	}
 
 	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(antResp)
+
+	if antReq.Stream {
+		simulateAnthropicStream(w, antResp)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(antResp)
+	}
 
 	if runLog != nil {
 		updateRunCompleted(ctx, s, runLog)
 	}
 }
 
-func streamAnthropicResponse(w http.ResponseWriter, resp *http.Response, model string, s service.Service, ctx context.Context, runLog *datamodel.ModelRun, usageData *utils.UsageMetricData, logger *zap.Logger) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.WriteHeader(http.StatusOK)
+// anthropicToInstillTaskInput converts an Anthropic Messages request into the
+// Instill TASK_CHAT task_input protobuf structure expected by Ray Serve gRPC.
+func anthropicToInstillTaskInput(antReq anthropicRequest, modelID string) (*structpb.Struct, error) {
+	instillMessages := make([]any, 0, len(antReq.Messages)+1)
 
+	if antReq.System != "" {
+		instillMessages = append(instillMessages, map[string]any{
+			"role":    "system",
+			"content": []any{map[string]any{"type": "text", "text": antReq.System}},
+		})
+	}
+
+	for _, msg := range antReq.Messages {
+		contentParts, err := convertAnthropicContent(msg.Content)
+		if err != nil {
+			return nil, fmt.Errorf("message content: %w", err)
+		}
+		instillMessages = append(instillMessages, map[string]any{
+			"role":    msg.Role,
+			"content": contentParts,
+		})
+	}
+
+	params := map[string]any{
+		"max-tokens": antReq.MaxTokens,
+		"stream":     false,
+	}
+	if antReq.Temperature != nil {
+		params["temperature"] = *antReq.Temperature
+	}
+	if antReq.TopP != nil {
+		params["top-p"] = *antReq.TopP
+	}
+
+	return structpb.NewStruct(map[string]any{
+		"data": map[string]any{
+			"model":    modelID,
+			"messages": instillMessages,
+		},
+		"parameter": params,
+	})
+}
+
+// convertAnthropicContent converts Anthropic message content (string or array
+// of content blocks) into Instill content parts format.
+func convertAnthropicContent(raw json.RawMessage) ([]any, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return []any{map[string]any{"type": "text", "text": ""}}, nil
+	}
+
+	var text string
+	if err := json.Unmarshal(raw, &text); err == nil {
+		return []any{map[string]any{"type": "text", "text": text}}, nil
+	}
+
+	var blocks []map[string]any
+	if err := json.Unmarshal(raw, &blocks); err != nil {
+		return nil, fmt.Errorf("content must be a string or array of content blocks")
+	}
+
+	result := make([]any, 0, len(blocks))
+	for _, b := range blocks {
+		switch b["type"] {
+		case "text":
+			result = append(result, map[string]any{"type": "text", "text": b["text"]})
+		default:
+			result = append(result, b)
+		}
+	}
+	return result, nil
+}
+
+// instillOutputToAnthropicResponse converts an Instill TASK_CHAT task_output
+// into an Anthropic Messages response.
+func instillOutputToAnthropicResponse(output *structpb.Struct, model, msgID string) (*anthropicResponse, error) {
+	dataField := output.Fields["data"]
+	if dataField == nil || dataField.GetStructValue() == nil {
+		return nil, fmt.Errorf("missing data in task output")
+	}
+	data := dataField.GetStructValue()
+
+	choicesList := data.Fields["choices"]
+	if choicesList == nil || choicesList.GetListValue() == nil {
+		return nil, fmt.Errorf("missing choices in task output")
+	}
+
+	content := ""
+	stopReason := "end_turn"
+
+	values := choicesList.GetListValue().Values
+	if len(values) > 0 {
+		c := values[0].GetStructValue()
+		if c != nil {
+			if msgField := c.Fields["message"]; msgField != nil && msgField.GetStructValue() != nil {
+				content = msgField.GetStructValue().Fields["content"].GetStringValue()
+			}
+			if fr, ok := c.Fields["finish-reason"]; ok && fr.GetStringValue() == "length" {
+				stopReason = "max_tokens"
+			}
+		}
+	}
+
+	resp := &anthropicResponse{
+		ID:         "msg_" + msgID,
+		Type:       "message",
+		Role:       "assistant",
+		Content:    []anthropicContent{{Type: "text", Text: content}},
+		Model:      model,
+		StopReason: &stopReason,
+	}
+
+	if metaField := output.Fields["metadata"]; metaField != nil && metaField.GetStructValue() != nil {
+		if usageField := metaField.GetStructValue().Fields["usage"]; usageField != nil && usageField.GetStructValue() != nil {
+			u := usageField.GetStructValue()
+			resp.Usage = anthropicUsage{
+				InputTokens:  int(u.Fields["prompt-tokens"].GetNumberValue()),
+				OutputTokens: int(u.Fields["completion-tokens"].GetNumberValue()),
+			}
+		}
+	}
+
+	return resp, nil
+}
+
+// simulateAnthropicStream emits Anthropic SSE events from a complete gRPC
+// response. gRPC is unary so we receive the full response then stream it.
+func simulateAnthropicStream(w http.ResponseWriter, resp *anthropicResponse) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		writeAnthropicError(w, http.StatusInternalServerError, "streaming not supported", "api_error")
 		return
 	}
 
-	msgID, _ := uuid.NewV4()
-	writeSSE(w, flusher, "message_start", anthropicMessageStart(msgID.String(), model))
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	writeSSE(w, flusher, "message_start", anthropicMessageStart(resp.ID, resp.Model))
 	writeSSE(w, flusher, "content_block_start", anthropicContentBlockStart(0))
 
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-
-	outputTokens := 0
-	finishReason := "end_turn"
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !strings.HasPrefix(line, "data: ") || line == "data: [DONE]" {
-			continue
-		}
-
-		payload := strings.TrimPrefix(line, "data: ")
-		var chunk struct {
-			Choices []struct {
-				Delta struct {
-					Content string `json:"content"`
-				} `json:"delta"`
-				FinishReason *string `json:"finish_reason"`
-			} `json:"choices"`
-			Usage *struct {
-				CompletionTokens int `json:"completion_tokens"`
-			} `json:"usage"`
-		}
-		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
-			continue
-		}
-
-		if len(chunk.Choices) > 0 {
-			delta := chunk.Choices[0].Delta.Content
-			if delta != "" {
-				writeSSE(w, flusher, "content_block_delta", anthropicContentBlockDelta(0, delta))
-			}
-			if chunk.Choices[0].FinishReason != nil {
-				if *chunk.Choices[0].FinishReason == "length" {
-					finishReason = "max_tokens"
-				}
-			}
-		}
-		if chunk.Usage != nil {
-			outputTokens = chunk.Usage.CompletionTokens
-		}
+	content := ""
+	if len(resp.Content) > 0 {
+		content = resp.Content[0].Text
+	}
+	if content != "" {
+		writeSSE(w, flusher, "content_block_delta", anthropicContentBlockDelta(0, content))
 	}
 
 	writeSSE(w, flusher, "content_block_stop", anthropicContentBlockStop(0))
-	writeSSE(w, flusher, "message_delta", anthropicMessageDelta(finishReason, outputTokens))
-	writeSSE(w, flusher, "message_stop", anthropicMessageStop())
 
-	usageData.Status = mgmtpb.Status_STATUS_COMPLETED
-	if runLog != nil {
-		now := time.Now()
-		runLog.EndTime = null.TimeFrom(now)
-		runLog.TotalDuration = null.IntFrom(now.Sub(runLog.CreateTime).Milliseconds())
-		runLog.Status = datamodel.RunStatus(runpb.RunStatus_RUN_STATUS_COMPLETED)
-		_ = s.GetRepository().UpdateModelRun(ctx, runLog)
+	stopReason := "end_turn"
+	if resp.StopReason != nil {
+		stopReason = *resp.StopReason
 	}
+	writeSSE(w, flusher, "message_delta", anthropicMessageDelta(stopReason, resp.Usage.OutputTokens))
+	writeSSE(w, flusher, "message_stop", anthropicMessageStop())
 }
 
 func writeSSE(w http.ResponseWriter, flusher http.Flusher, eventType string, data any) {
