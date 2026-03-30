@@ -35,8 +35,8 @@ type Ray interface {
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
 	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerModelVersionRequest, modelName string, version string) (*rayuserdefinedpb.CallResponse, error)
 
-	// direct HTTP access to the underlying inference server (e.g. llama-server)
-	GetLlamaServerURL(ctx context.Context, modelName string, version string) (string, error)
+	// direct HTTP access to the underlying inference server (vLLM, llama-server, etc.)
+	GetInferenceServerURL(ctx context.Context, modelName string, version string) (string, error)
 
 	// standard
 	IsRayReady(ctx context.Context) bool
@@ -249,10 +249,11 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 	return modelInferResponse, nil
 }
 
-// GetLlamaServerURL resolves the direct HTTP URL to the llama-server running
-// inside a Ray Serve replica. It queries the Ray Dashboard for the application's
-// replica metadata and returns http://{replicaNodeIP}:{llamaServerPort}/v1.
-func (r *ray) GetLlamaServerURL(ctx context.Context, modelName string, version string) (string, error) {
+// GetInferenceServerURL resolves the direct HTTP URL to the inference server
+// (vLLM, llama-server, etc.) running inside a Ray Serve replica. It queries the
+// Ray Dashboard for the application's replica metadata and returns
+// http://{replicaNodeIP}:{inferenceServerPort}/v1.
+func (r *ray) GetInferenceServerURL(ctx context.Context, modelName string, version string) (string, error) {
 	logger, _ := logx.GetZapLogger(ctx)
 
 	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
@@ -286,8 +287,8 @@ func (r *ray) GetLlamaServerURL(ctx context.Context, modelName string, version s
 	for _, deployment := range app.Deployments {
 		for _, replica := range deployment.Replicas {
 			if replica.State == ReplicaStateStrRunning && replica.NodeIP != "" {
-				url := fmt.Sprintf("http://%s:%d/v1", replica.NodeIP, DefaultLlamaServerPort)
-				logger.Info(fmt.Sprintf("resolved llama-server URL: %s for %s", url, applicationMetadataValue))
+				url := fmt.Sprintf("http://%s:%d/v1", replica.NodeIP, DefaultInferenceServerPort)
+				logger.Info(fmt.Sprintf("resolved inference server URL: %s for %s", url, applicationMetadataValue))
 				return url, nil
 			}
 		}

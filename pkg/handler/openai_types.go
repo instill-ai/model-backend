@@ -14,12 +14,16 @@ type openaiChatRequest struct {
 	N           *int            `json:"n,omitempty"`
 	Seed        *int            `json:"seed,omitempty"`
 	Stream      bool            `json:"stream,omitempty"`
+	Tools       json.RawMessage `json:"tools,omitempty"`
+	ToolChoice  json.RawMessage `json:"tool_choice,omitempty"`
 }
 
 type openaiMessage struct {
-	Role    string          `json:"role"`
-	Content json.RawMessage `json:"content"`
-	Name    string          `json:"name,omitempty"`
+	Role       string          `json:"role"`
+	Content    json.RawMessage `json:"content"`
+	Name       string          `json:"name,omitempty"`
+	ToolCalls  json.RawMessage `json:"tool_calls,omitempty"`
+	ToolCallID string          `json:"tool_call_id,omitempty"`
 }
 
 type openaiChatResponse struct {
@@ -64,8 +68,9 @@ type openaiStreamChoice struct {
 }
 
 type openaiDelta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
+	Role      string          `json:"role,omitempty"`
+	Content   string          `json:"content,omitempty"`
+	ToolCalls json.RawMessage `json:"tool_calls,omitempty"`
 }
 
 type openaiModel struct {

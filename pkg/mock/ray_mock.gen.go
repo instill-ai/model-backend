@@ -2236,10 +2236,10 @@ func (m *RayMock) MinimockUpdateContainerizedModelInspect() {
 	}
 }
 
-// GetLlamaServerURL implements mm_ray.Ray. In tests, this stub always returns
-// an error so the handler falls back to the gRPC unary path.
-func (m *RayMock) GetLlamaServerURL(_ context.Context, _ string, _ string) (string, error) {
-	return "", fmt.Errorf("mock: GetLlamaServerURL not configured")
+// GetInferenceServerURL implements mm_ray.Ray. In tests, this stub always
+// returns an error so the handler falls back to the gRPC unary path.
+func (m *RayMock) GetInferenceServerURL(_ context.Context, _ string, _ string) (string, error) {
+	return "", fmt.Errorf("mock: GetInferenceServerURL not configured")
 }
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times

@@ -123,13 +123,14 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 		}
 	}()
 
-	// Direct streaming: bypass gRPC unary path and call llama-server HTTP
-	// directly, translating OpenAI SSE chunks to Anthropic SSE on-the-fly.
+	// Direct streaming: bypass gRPC unary path and call the inference server
+	// HTTP endpoint directly, translating OpenAI SSE chunks to Anthropic SSE
+	// on-the-fly.
 	if antReq.Stream {
-		llamaURL, urlErr := s.GetRayClient().GetLlamaServerURL(ctx, modelName, version.Version)
+		inferURL, urlErr := s.GetRayClient().GetInferenceServerURL(ctx, modelName, version.Version)
 		if urlErr == nil {
-			llamaReq := anthropicToLlamaRequest(antReq)
-			streamResp, streamErr := doLlamaStream(ctx, llamaURL, llamaReq)
+			inferReq := anthropicToInferenceRequest(antReq)
+			streamResp, streamErr := doInferenceStream(ctx, inferURL, inferReq)
 			if streamErr == nil {
 				usage := forwardAsAnthropicStream(w, streamResp, "msg_"+logUUID.String(), antReq.Model)
 				usageData.Status = mgmtpb.Status_STATUS_COMPLETED
@@ -141,7 +142,7 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 			}
 			logger.Warn("direct streaming failed, falling back to gRPC", zap.Error(streamErr))
 		} else {
-			logger.Warn("could not resolve llama-server URL, falling back to gRPC", zap.Error(urlErr))
+			logger.Warn("could not resolve inference server URL, falling back to gRPC", zap.Error(urlErr))
 		}
 	}
 

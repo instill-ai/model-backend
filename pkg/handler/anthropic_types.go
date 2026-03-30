@@ -17,6 +17,14 @@ type anthropicRequest struct {
 	TopP        *float64         `json:"top_p,omitempty"`
 	StopSeqs    []string         `json:"stop_sequences,omitempty"`
 	Metadata    *json.RawMessage `json:"metadata,omitempty"`
+	Tools       []anthropicTool  `json:"tools,omitempty"`
+	ToolChoice  json.RawMessage  `json:"tool_choice,omitempty"`
+}
+
+type anthropicTool struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description,omitempty"`
+	InputSchema json.RawMessage `json:"input_schema"`
 }
 
 // SystemText extracts a plain text system prompt from the System field,
