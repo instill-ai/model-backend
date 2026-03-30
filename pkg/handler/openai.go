@@ -157,6 +157,30 @@ func HandleChatCompletions(s service.Service, _ repository.Repository, w http.Re
 		}
 	}()
 
+	// Direct streaming: bypass gRPC unary path and call llama-server HTTP
+	// directly so tokens flow to the client in real-time.
+	if chatReq.Stream {
+		llamaURL, urlErr := s.GetRayClient().GetLlamaServerURL(ctx, modelName, version.Version)
+		if urlErr == nil {
+			llamaReq := openaiToLlamaRequest(chatReq)
+			streamResp, streamErr := doLlamaStream(ctx, llamaURL, llamaReq)
+			if streamErr == nil {
+				usage := forwardOpenAIStream(w, streamResp, logUUID.String(), chatReq.Model)
+				usageData.Status = mgmtpb.Status_STATUS_COMPLETED
+				_ = usage // usage is embedded in the SSE stream
+				if runLog != nil {
+					updateRunCompleted(ctx, s, runLog)
+				}
+				return
+			}
+			logger.Warn("direct streaming failed, falling back to gRPC", zap.Error(streamErr))
+		} else {
+			logger.Warn("could not resolve llama-server URL, falling back to gRPC", zap.Error(urlErr))
+		}
+	}
+
+	// gRPC unary path: used for non-streaming requests or as a fallback when
+	// direct streaming is unavailable.
 	taskInput, err := openaiToInstillTaskInput(chatReq, pbModel.Id)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED

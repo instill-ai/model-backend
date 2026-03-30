@@ -123,6 +123,30 @@ func HandleMessages(s service.Service, _ repository.Repository, w http.ResponseW
 		}
 	}()
 
+	// Direct streaming: bypass gRPC unary path and call llama-server HTTP
+	// directly, translating OpenAI SSE chunks to Anthropic SSE on-the-fly.
+	if antReq.Stream {
+		llamaURL, urlErr := s.GetRayClient().GetLlamaServerURL(ctx, modelName, version.Version)
+		if urlErr == nil {
+			llamaReq := anthropicToLlamaRequest(antReq)
+			streamResp, streamErr := doLlamaStream(ctx, llamaURL, llamaReq)
+			if streamErr == nil {
+				usage := forwardAsAnthropicStream(w, streamResp, "msg_"+logUUID.String(), antReq.Model)
+				usageData.Status = mgmtpb.Status_STATUS_COMPLETED
+				_ = usage
+				if runLog != nil {
+					updateRunCompleted(ctx, s, runLog)
+				}
+				return
+			}
+			logger.Warn("direct streaming failed, falling back to gRPC", zap.Error(streamErr))
+		} else {
+			logger.Warn("could not resolve llama-server URL, falling back to gRPC", zap.Error(urlErr))
+		}
+	}
+
+	// gRPC unary path: used for non-streaming requests or as a fallback when
+	// direct streaming is unavailable.
 	taskInput, err := anthropicToInstillTaskInput(antReq, pbModel.Id)
 	if err != nil {
 		usageData.Status = mgmtpb.Status_STATUS_ERRORED

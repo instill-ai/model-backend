@@ -425,6 +425,11 @@ var SupportedAcceleratorTypeMemory = map[string]int{
 }
 
 const (
+	// DefaultLlamaServerPort is the port llama-server listens on inside the
+	// Ray Serve container. This must match the LLAMA_SERVER_PORT env var in
+	// the model's runtime_env (default 8081).
+	DefaultLlamaServerPort = 8081
+
 	// Ray redis key
 	RayDeploymentKey = "model_deployment_config"
 

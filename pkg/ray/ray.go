@@ -35,6 +35,9 @@ type Ray interface {
 	ModelReady(ctx context.Context, modelName string, version string) (*modelpb.State, string, int, error)
 	ModelInferRequest(ctx context.Context, task commonpb.Task, req *modelpb.TriggerModelVersionRequest, modelName string, version string) (*rayuserdefinedpb.CallResponse, error)
 
+	// direct HTTP access to the underlying inference server (e.g. llama-server)
+	GetLlamaServerURL(ctx context.Context, modelName string, version string) (string, error)
+
 	// standard
 	IsRayReady(ctx context.Context) bool
 	UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error
@@ -244,6 +247,53 @@ func (r *ray) ModelInferRequest(ctx context.Context, task commonpb.Task, req *mo
 	}
 
 	return modelInferResponse, nil
+}
+
+// GetLlamaServerURL resolves the direct HTTP URL to the llama-server running
+// inside a Ray Serve replica. It queries the Ray Dashboard for the application's
+// replica metadata and returns http://{replicaNodeIP}:{llamaServerPort}/v1.
+func (r *ray) GetLlamaServerURL(ctx context.Context, modelName string, version string) (string, error) {
+	logger, _ := logx.GetZapLogger(ctx)
+
+	applicationMetadataValue, err := GetApplicationMetadataValue(modelName, version)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		fmt.Sprintf("http://%s:%d/api/serve/applications/", config.Config.Ray.Host, config.Config.Ray.Port.DASHBOARD),
+		http.NoBody)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var appStatus GetApplicationStatus
+	if err := json.NewDecoder(resp.Body).Decode(&appStatus); err != nil {
+		return "", err
+	}
+
+	app, ok := appStatus.Applications[applicationMetadataValue]
+	if !ok {
+		return "", fmt.Errorf("application %q not found", applicationMetadataValue)
+	}
+
+	for _, deployment := range app.Deployments {
+		for _, replica := range deployment.Replicas {
+			if replica.State == ReplicaStateStrRunning && replica.NodeIP != "" {
+				url := fmt.Sprintf("http://%s:%d/v1", replica.NodeIP, DefaultLlamaServerPort)
+				logger.Info(fmt.Sprintf("resolved llama-server URL: %s for %s", url, applicationMetadataValue))
+				return url, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no running replica found for %s", applicationMetadataValue)
 }
 
 func (r *ray) UpdateContainerizedModel(ctx context.Context, modelName string, userID string, imageName string, version string, hardware string, action Action, numOfGPU string) error {

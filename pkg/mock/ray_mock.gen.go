@@ -4,6 +4,7 @@ package mock
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
@@ -2233,6 +2234,12 @@ func (m *RayMock) MinimockUpdateContainerizedModelInspect() {
 		m.t.Errorf("Expected %d calls to RayMock.UpdateContainerizedModel at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.UpdateContainerizedModelMock.expectedInvocations), m.UpdateContainerizedModelMock.expectedInvocationsOrigin, afterUpdateContainerizedModelCounter)
 	}
+}
+
+// GetLlamaServerURL implements mm_ray.Ray. In tests, this stub always returns
+// an error so the handler falls back to the gRPC unary path.
+func (m *RayMock) GetLlamaServerURL(_ context.Context, _ string, _ string) (string, error) {
+	return "", fmt.Errorf("mock: GetLlamaServerURL not configured")
 }
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
