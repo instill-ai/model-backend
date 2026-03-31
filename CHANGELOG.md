@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.38.6](https://github.com/instill-ai/model-backend/compare/v0.38.5...v0.38.6) (2026-03-31)
+
+
+### Features
+
+* **handler:** add OpenAI and Anthropic compatible API endpoints ([41ec761](https://github.com/instill-ai/model-backend/commit/41ec7617e2a162203fb4fb237571d7f2a5315162))
+* **handler:** add real token-by-token streaming via direct llama-server HTTP ([1abfafd](https://github.com/instill-ai/model-backend/commit/1abfafda642ec39370a848e78211fe7db437d809))
+* **handler:** add tool-use support and rename to generic inference server ([11c8f22](https://github.com/instill-ai/model-backend/commit/11c8f224bb048529aeadf02d4b150c0158f0b325))
+* **model:** add creator tracking to model resource ([#782](https://github.com/instill-ai/model-backend/issues/782)) ([6006495](https://github.com/instill-ai/model-backend/commit/6006495cbfc5c6b852bd729e2fb4f8ba72f02b8b))
+
+
+### Bug Fixes
+
+* **anthropic:** accept system field as string or array of content blocks ([ea55b40](https://github.com/instill-ai/model-backend/commit/ea55b40b267caa6ff0e683062512131c6ced2ab1))
+* **anthropic:** merge multiple text content blocks into single element ([a102fc7](https://github.com/instill-ai/model-backend/commit/a102fc7102bcadef9f412490cf6e4f502bf92902))
+* **ci,handler:** use maximize-build-space action and fix creator field name ([aef3cd8](https://github.com/instill-ai/model-backend/commit/aef3cd8e41acd7027be723cb6eccfc94649d3562))
+* **handler:** fix protojson serialization and error propagation in model trigger ([f564f23](https://github.com/instill-ai/model-backend/commit/f564f23b3bab5dbb3d4eb46852d2e3bbbd9cde92))
+* **handler:** use gRPC path for OpenAI/Anthropic API instead of HTTP proxy ([2d7a2c6](https://github.com/instill-ai/model-backend/commit/2d7a2c6b8c35f1d5db736593a503025b449b791e))
+
+
+### Miscellaneous
+
+* **ci:** remove maximize-build-space action ([7f910e9](https://github.com/instill-ai/model-backend/commit/7f910e9e86efd0c31790be05f7b0e1e7337afcb6))
+* **ci:** replace maximize-build-space with free-disk-space action ([2c0fa7a](https://github.com/instill-ai/model-backend/commit/2c0fa7af7853488084534bd418291d1b7f6a0635))
+* **deps:** bump golang.org/x/crypto from 0.39.0 to 0.45.0 ([#781](https://github.com/instill-ai/model-backend/issues/781)) ([5ba9c88](https://github.com/instill-ai/model-backend/commit/5ba9c88024819013d8d2aecee59d1c98430b3c87))
+* **deps:** update protogen-go and x dependencies ([#786](https://github.com/instill-ai/model-backend/issues/786)) ([611f0f2](https://github.com/instill-ai/model-backend/commit/611f0f2aa158006ead6b3ddd2cdbc19a21fa1809))
+* **go:** upgrade to 1.25.6 ([b1e0c30](https://github.com/instill-ai/model-backend/commit/b1e0c30fae7915d064112a1f03d442d7cea5efe9))
+
+
+### Refactor
+
+* **acl:** migrate to shared ACL client library and remove deprecated handlers ([#784](https://github.com/instill-ai/model-backend/issues/784)) ([b32dd03](https://github.com/instill-ai/model-backend/commit/b32dd03fa465792a3076cc5931e7a216dac871f3))
+* **api:** align Model API naming with Pipeline convention ([#785](https://github.com/instill-ai/model-backend/issues/785)) ([aa64bd3](https://github.com/instill-ai/model-backend/commit/aa64bd32f5da6e10a38fcc1a8391be87bd4af82c))
+* **model:** adopt flattened protobuf packages and AIP-compliant resource names ([#783](https://github.com/instill-ai/model-backend/issues/783)) ([1d372db](https://github.com/instill-ai/model-backend/commit/1d372db832933f6a3f345497e9a26958e7d81f49))
+* **model:** move repository tag management APIs for Docker registry ([#779](https://github.com/instill-ai/model-backend/issues/779)) ([0247eee](https://github.com/instill-ai/model-backend/commit/0247eee3c4659b3f9da49956b67bce75bb88f1c6))
+* **test:** standardize file naming and migrate from JWT to Basic Auth ([#787](https://github.com/instill-ai/model-backend/issues/787)) ([f732758](https://github.com/instill-ai/model-backend/commit/f7327585f313de9e7760fce6ca7e4db5d73cf4a9))
+
+
+### Tests
+
+* **handler:** add unit tests for streaming and tool-call translation ([fc6bbc0](https://github.com/instill-ai/model-backend/commit/fc6bbc055b3acc6f331a194cae41defa3a1fbd97))
+
 ## [0.38.5](https://github.com/instill-ai/model-backend/compare/v0.38.4...v0.38.5) (2025-09-22)
 
 
