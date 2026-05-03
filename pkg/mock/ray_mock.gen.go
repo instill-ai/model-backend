@@ -4,7 +4,6 @@ package mock
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
@@ -28,6 +27,13 @@ type RayMock struct {
 	afterCloseCounter  uint64
 	beforeCloseCounter uint64
 	CloseMock          mRayMockClose
+
+	funcGetInferenceServerURL          func(ctx context.Context, modelName string, version string) (s1 string, err error)
+	funcGetInferenceServerURLOrigin    string
+	inspectFuncGetInferenceServerURL   func(ctx context.Context, modelName string, version string)
+	afterGetInferenceServerURLCounter  uint64
+	beforeGetInferenceServerURLCounter uint64
+	GetInferenceServerURLMock          mRayMockGetInferenceServerURL
 
 	funcInit          func(rc *redis.Client)
 	funcInitOrigin    string
@@ -74,6 +80,9 @@ func NewRayMock(t minimock.Tester) *RayMock {
 	}
 
 	m.CloseMock = mRayMockClose{mock: m}
+
+	m.GetInferenceServerURLMock = mRayMockGetInferenceServerURL{mock: m}
+	m.GetInferenceServerURLMock.callArgs = []*RayMockGetInferenceServerURLParams{}
 
 	m.InitMock = mRayMockInit{mock: m}
 	m.InitMock.callArgs = []*RayMockInitParams{}
@@ -278,6 +287,380 @@ func (m *RayMock) MinimockCloseInspect() {
 	if !m.CloseMock.invocationsDone() && afterCloseCounter > 0 {
 		m.t.Errorf("Expected %d calls to RayMock.Close at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.CloseMock.expectedInvocations), m.CloseMock.expectedInvocationsOrigin, afterCloseCounter)
+	}
+}
+
+type mRayMockGetInferenceServerURL struct {
+	optional           bool
+	mock               *RayMock
+	defaultExpectation *RayMockGetInferenceServerURLExpectation
+	expectations       []*RayMockGetInferenceServerURLExpectation
+
+	callArgs []*RayMockGetInferenceServerURLParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// RayMockGetInferenceServerURLExpectation specifies expectation struct of the Ray.GetInferenceServerURL
+type RayMockGetInferenceServerURLExpectation struct {
+	mock               *RayMock
+	params             *RayMockGetInferenceServerURLParams
+	paramPtrs          *RayMockGetInferenceServerURLParamPtrs
+	expectationOrigins RayMockGetInferenceServerURLExpectationOrigins
+	results            *RayMockGetInferenceServerURLResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// RayMockGetInferenceServerURLParams contains parameters of the Ray.GetInferenceServerURL
+type RayMockGetInferenceServerURLParams struct {
+	ctx       context.Context
+	modelName string
+	version   string
+}
+
+// RayMockGetInferenceServerURLParamPtrs contains pointers to parameters of the Ray.GetInferenceServerURL
+type RayMockGetInferenceServerURLParamPtrs struct {
+	ctx       *context.Context
+	modelName *string
+	version   *string
+}
+
+// RayMockGetInferenceServerURLResults contains results of the Ray.GetInferenceServerURL
+type RayMockGetInferenceServerURLResults struct {
+	s1  string
+	err error
+}
+
+// RayMockGetInferenceServerURLOrigins contains origins of expectations of the Ray.GetInferenceServerURL
+type RayMockGetInferenceServerURLExpectationOrigins struct {
+	origin          string
+	originCtx       string
+	originModelName string
+	originVersion   string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Optional() *mRayMockGetInferenceServerURL {
+	mmGetInferenceServerURL.optional = true
+	return mmGetInferenceServerURL
+}
+
+// Expect sets up expected params for Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Expect(ctx context.Context, modelName string, version string) *mRayMockGetInferenceServerURL {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation == nil {
+		mmGetInferenceServerURL.defaultExpectation = &RayMockGetInferenceServerURLExpectation{}
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.paramPtrs != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by ExpectParams functions")
+	}
+
+	mmGetInferenceServerURL.defaultExpectation.params = &RayMockGetInferenceServerURLParams{ctx, modelName, version}
+	mmGetInferenceServerURL.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmGetInferenceServerURL.expectations {
+		if minimock.Equal(e.params, mmGetInferenceServerURL.defaultExpectation.params) {
+			mmGetInferenceServerURL.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmGetInferenceServerURL.defaultExpectation.params)
+		}
+	}
+
+	return mmGetInferenceServerURL
+}
+
+// ExpectCtxParam1 sets up expected param ctx for Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) ExpectCtxParam1(ctx context.Context) *mRayMockGetInferenceServerURL {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation == nil {
+		mmGetInferenceServerURL.defaultExpectation = &RayMockGetInferenceServerURLExpectation{}
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.params != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Expect")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.paramPtrs == nil {
+		mmGetInferenceServerURL.defaultExpectation.paramPtrs = &RayMockGetInferenceServerURLParamPtrs{}
+	}
+	mmGetInferenceServerURL.defaultExpectation.paramPtrs.ctx = &ctx
+	mmGetInferenceServerURL.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmGetInferenceServerURL
+}
+
+// ExpectModelNameParam2 sets up expected param modelName for Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) ExpectModelNameParam2(modelName string) *mRayMockGetInferenceServerURL {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation == nil {
+		mmGetInferenceServerURL.defaultExpectation = &RayMockGetInferenceServerURLExpectation{}
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.params != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Expect")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.paramPtrs == nil {
+		mmGetInferenceServerURL.defaultExpectation.paramPtrs = &RayMockGetInferenceServerURLParamPtrs{}
+	}
+	mmGetInferenceServerURL.defaultExpectation.paramPtrs.modelName = &modelName
+	mmGetInferenceServerURL.defaultExpectation.expectationOrigins.originModelName = minimock.CallerInfo(1)
+
+	return mmGetInferenceServerURL
+}
+
+// ExpectVersionParam3 sets up expected param version for Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) ExpectVersionParam3(version string) *mRayMockGetInferenceServerURL {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation == nil {
+		mmGetInferenceServerURL.defaultExpectation = &RayMockGetInferenceServerURLExpectation{}
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.params != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Expect")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation.paramPtrs == nil {
+		mmGetInferenceServerURL.defaultExpectation.paramPtrs = &RayMockGetInferenceServerURLParamPtrs{}
+	}
+	mmGetInferenceServerURL.defaultExpectation.paramPtrs.version = &version
+	mmGetInferenceServerURL.defaultExpectation.expectationOrigins.originVersion = minimock.CallerInfo(1)
+
+	return mmGetInferenceServerURL
+}
+
+// Inspect accepts an inspector function that has same arguments as the Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Inspect(f func(ctx context.Context, modelName string, version string)) *mRayMockGetInferenceServerURL {
+	if mmGetInferenceServerURL.mock.inspectFuncGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("Inspect function is already set for RayMock.GetInferenceServerURL")
+	}
+
+	mmGetInferenceServerURL.mock.inspectFuncGetInferenceServerURL = f
+
+	return mmGetInferenceServerURL
+}
+
+// Return sets up results that will be returned by Ray.GetInferenceServerURL
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Return(s1 string, err error) *RayMock {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	if mmGetInferenceServerURL.defaultExpectation == nil {
+		mmGetInferenceServerURL.defaultExpectation = &RayMockGetInferenceServerURLExpectation{mock: mmGetInferenceServerURL.mock}
+	}
+	mmGetInferenceServerURL.defaultExpectation.results = &RayMockGetInferenceServerURLResults{s1, err}
+	mmGetInferenceServerURL.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmGetInferenceServerURL.mock
+}
+
+// Set uses given function f to mock the Ray.GetInferenceServerURL method
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Set(f func(ctx context.Context, modelName string, version string) (s1 string, err error)) *RayMock {
+	if mmGetInferenceServerURL.defaultExpectation != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("Default expectation is already set for the Ray.GetInferenceServerURL method")
+	}
+
+	if len(mmGetInferenceServerURL.expectations) > 0 {
+		mmGetInferenceServerURL.mock.t.Fatalf("Some expectations are already set for the Ray.GetInferenceServerURL method")
+	}
+
+	mmGetInferenceServerURL.mock.funcGetInferenceServerURL = f
+	mmGetInferenceServerURL.mock.funcGetInferenceServerURLOrigin = minimock.CallerInfo(1)
+	return mmGetInferenceServerURL.mock
+}
+
+// When sets expectation for the Ray.GetInferenceServerURL which will trigger the result defined by the following
+// Then helper
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) When(ctx context.Context, modelName string, version string) *RayMockGetInferenceServerURLExpectation {
+	if mmGetInferenceServerURL.mock.funcGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.mock.t.Fatalf("RayMock.GetInferenceServerURL mock is already set by Set")
+	}
+
+	expectation := &RayMockGetInferenceServerURLExpectation{
+		mock:               mmGetInferenceServerURL.mock,
+		params:             &RayMockGetInferenceServerURLParams{ctx, modelName, version},
+		expectationOrigins: RayMockGetInferenceServerURLExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmGetInferenceServerURL.expectations = append(mmGetInferenceServerURL.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Ray.GetInferenceServerURL return parameters for the expectation previously defined by the When method
+func (e *RayMockGetInferenceServerURLExpectation) Then(s1 string, err error) *RayMock {
+	e.results = &RayMockGetInferenceServerURLResults{s1, err}
+	return e.mock
+}
+
+// Times sets number of times Ray.GetInferenceServerURL should be invoked
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Times(n uint64) *mRayMockGetInferenceServerURL {
+	if n == 0 {
+		mmGetInferenceServerURL.mock.t.Fatalf("Times of RayMock.GetInferenceServerURL mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmGetInferenceServerURL.expectedInvocations, n)
+	mmGetInferenceServerURL.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmGetInferenceServerURL
+}
+
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) invocationsDone() bool {
+	if len(mmGetInferenceServerURL.expectations) == 0 && mmGetInferenceServerURL.defaultExpectation == nil && mmGetInferenceServerURL.mock.funcGetInferenceServerURL == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmGetInferenceServerURL.mock.afterGetInferenceServerURLCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmGetInferenceServerURL.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// GetInferenceServerURL implements mm_ray.Ray
+func (mmGetInferenceServerURL *RayMock) GetInferenceServerURL(ctx context.Context, modelName string, version string) (s1 string, err error) {
+	mm_atomic.AddUint64(&mmGetInferenceServerURL.beforeGetInferenceServerURLCounter, 1)
+	defer mm_atomic.AddUint64(&mmGetInferenceServerURL.afterGetInferenceServerURLCounter, 1)
+
+	mmGetInferenceServerURL.t.Helper()
+
+	if mmGetInferenceServerURL.inspectFuncGetInferenceServerURL != nil {
+		mmGetInferenceServerURL.inspectFuncGetInferenceServerURL(ctx, modelName, version)
+	}
+
+	mm_params := RayMockGetInferenceServerURLParams{ctx, modelName, version}
+
+	// Record call args
+	mmGetInferenceServerURL.GetInferenceServerURLMock.mutex.Lock()
+	mmGetInferenceServerURL.GetInferenceServerURLMock.callArgs = append(mmGetInferenceServerURL.GetInferenceServerURLMock.callArgs, &mm_params)
+	mmGetInferenceServerURL.GetInferenceServerURLMock.mutex.Unlock()
+
+	for _, e := range mmGetInferenceServerURL.GetInferenceServerURLMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.s1, e.results.err
+		}
+	}
+
+	if mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.Counter, 1)
+		mm_want := mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.params
+		mm_want_ptrs := mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.paramPtrs
+
+		mm_got := RayMockGetInferenceServerURLParams{ctx, modelName, version}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmGetInferenceServerURL.t.Errorf("RayMock.GetInferenceServerURL got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.modelName != nil && !minimock.Equal(*mm_want_ptrs.modelName, mm_got.modelName) {
+				mmGetInferenceServerURL.t.Errorf("RayMock.GetInferenceServerURL got unexpected parameter modelName, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.expectationOrigins.originModelName, *mm_want_ptrs.modelName, mm_got.modelName, minimock.Diff(*mm_want_ptrs.modelName, mm_got.modelName))
+			}
+
+			if mm_want_ptrs.version != nil && !minimock.Equal(*mm_want_ptrs.version, mm_got.version) {
+				mmGetInferenceServerURL.t.Errorf("RayMock.GetInferenceServerURL got unexpected parameter version, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.expectationOrigins.originVersion, *mm_want_ptrs.version, mm_got.version, minimock.Diff(*mm_want_ptrs.version, mm_got.version))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmGetInferenceServerURL.t.Errorf("RayMock.GetInferenceServerURL got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmGetInferenceServerURL.GetInferenceServerURLMock.defaultExpectation.results
+		if mm_results == nil {
+			mmGetInferenceServerURL.t.Fatal("No results are set for the RayMock.GetInferenceServerURL")
+		}
+		return (*mm_results).s1, (*mm_results).err
+	}
+	if mmGetInferenceServerURL.funcGetInferenceServerURL != nil {
+		return mmGetInferenceServerURL.funcGetInferenceServerURL(ctx, modelName, version)
+	}
+	mmGetInferenceServerURL.t.Fatalf("Unexpected call to RayMock.GetInferenceServerURL. %v %v %v", ctx, modelName, version)
+	return
+}
+
+// GetInferenceServerURLAfterCounter returns a count of finished RayMock.GetInferenceServerURL invocations
+func (mmGetInferenceServerURL *RayMock) GetInferenceServerURLAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetInferenceServerURL.afterGetInferenceServerURLCounter)
+}
+
+// GetInferenceServerURLBeforeCounter returns a count of RayMock.GetInferenceServerURL invocations
+func (mmGetInferenceServerURL *RayMock) GetInferenceServerURLBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetInferenceServerURL.beforeGetInferenceServerURLCounter)
+}
+
+// Calls returns a list of arguments used in each call to RayMock.GetInferenceServerURL.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmGetInferenceServerURL *mRayMockGetInferenceServerURL) Calls() []*RayMockGetInferenceServerURLParams {
+	mmGetInferenceServerURL.mutex.RLock()
+
+	argCopy := make([]*RayMockGetInferenceServerURLParams, len(mmGetInferenceServerURL.callArgs))
+	copy(argCopy, mmGetInferenceServerURL.callArgs)
+
+	mmGetInferenceServerURL.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockGetInferenceServerURLDone returns true if the count of the GetInferenceServerURL invocations corresponds
+// the number of defined expectations
+func (m *RayMock) MinimockGetInferenceServerURLDone() bool {
+	if m.GetInferenceServerURLMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.GetInferenceServerURLMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.GetInferenceServerURLMock.invocationsDone()
+}
+
+// MinimockGetInferenceServerURLInspect logs each unmet expectation
+func (m *RayMock) MinimockGetInferenceServerURLInspect() {
+	for _, e := range m.GetInferenceServerURLMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to RayMock.GetInferenceServerURL at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterGetInferenceServerURLCounter := mm_atomic.LoadUint64(&m.afterGetInferenceServerURLCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.GetInferenceServerURLMock.defaultExpectation != nil && afterGetInferenceServerURLCounter < 1 {
+		if m.GetInferenceServerURLMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to RayMock.GetInferenceServerURL at\n%s", m.GetInferenceServerURLMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to RayMock.GetInferenceServerURL at\n%s with params: %#v", m.GetInferenceServerURLMock.defaultExpectation.expectationOrigins.origin, *m.GetInferenceServerURLMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcGetInferenceServerURL != nil && afterGetInferenceServerURLCounter < 1 {
+		m.t.Errorf("Expected call to RayMock.GetInferenceServerURL at\n%s", m.funcGetInferenceServerURLOrigin)
+	}
+
+	if !m.GetInferenceServerURLMock.invocationsDone() && afterGetInferenceServerURLCounter > 0 {
+		m.t.Errorf("Expected %d calls to RayMock.GetInferenceServerURL at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.GetInferenceServerURLMock.expectedInvocations), m.GetInferenceServerURLMock.expectedInvocationsOrigin, afterGetInferenceServerURLCounter)
 	}
 }
 
@@ -2236,17 +2619,13 @@ func (m *RayMock) MinimockUpdateContainerizedModelInspect() {
 	}
 }
 
-// GetInferenceServerURL implements mm_ray.Ray. In tests, this stub always
-// returns an error so the handler falls back to the gRPC unary path.
-func (m *RayMock) GetInferenceServerURL(_ context.Context, _ string, _ string) (string, error) {
-	return "", fmt.Errorf("mock: GetInferenceServerURL not configured")
-}
-
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *RayMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockCloseInspect()
+
+			m.MinimockGetInferenceServerURLInspect()
 
 			m.MinimockInitInspect()
 
@@ -2281,6 +2660,7 @@ func (m *RayMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockCloseDone() &&
+		m.MinimockGetInferenceServerURLDone() &&
 		m.MinimockInitDone() &&
 		m.MinimockIsRayReadyDone() &&
 		m.MinimockModelInferRequestDone() &&

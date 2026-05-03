@@ -25,6 +25,13 @@ type ArtifactPrivateServiceClientMock struct {
 	beforeAbortKnowledgeBaseUpdateAdminCounter uint64
 	AbortKnowledgeBaseUpdateAdminMock          mArtifactPrivateServiceClientMockAbortKnowledgeBaseUpdateAdmin
 
+	funcAddFilesToKnowledgeBaseAdmin          func(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse, err error)
+	funcAddFilesToKnowledgeBaseAdminOrigin    string
+	inspectFuncAddFilesToKnowledgeBaseAdmin   func(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption)
+	afterAddFilesToKnowledgeBaseAdminCounter  uint64
+	beforeAddFilesToKnowledgeBaseAdminCounter uint64
+	AddFilesToKnowledgeBaseAdminMock          mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin
+
 	funcCreateKnowledgeBaseAdmin          func(ctx context.Context, in *mm_artifactv1alpha.CreateKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (cp1 *mm_artifactv1alpha.CreateKnowledgeBaseAdminResponse, err error)
 	funcCreateKnowledgeBaseAdminOrigin    string
 	inspectFuncCreateKnowledgeBaseAdmin   func(ctx context.Context, in *mm_artifactv1alpha.CreateKnowledgeBaseAdminRequest, opts ...grpc.CallOption)
@@ -45,6 +52,13 @@ type ArtifactPrivateServiceClientMock struct {
 	afterDeleteFileAdminCounter  uint64
 	beforeDeleteFileAdminCounter uint64
 	DeleteFileAdminMock          mArtifactPrivateServiceClientMockDeleteFileAdmin
+
+	funcDeleteKnowledgeBaseAdmin          func(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse, err error)
+	funcDeleteKnowledgeBaseAdminOrigin    string
+	inspectFuncDeleteKnowledgeBaseAdmin   func(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption)
+	afterDeleteKnowledgeBaseAdminCounter  uint64
+	beforeDeleteKnowledgeBaseAdminCounter uint64
+	DeleteKnowledgeBaseAdminMock          mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin
 
 	funcDeleteSystemAdmin          func(ctx context.Context, in *mm_artifactv1alpha.DeleteSystemAdminRequest, opts ...grpc.CallOption) (dp1 *mm_artifactv1alpha.DeleteSystemAdminResponse, err error)
 	funcDeleteSystemAdminOrigin    string
@@ -88,6 +102,20 @@ type ArtifactPrivateServiceClientMock struct {
 	beforeGetSystemAdminCounter uint64
 	GetSystemAdminMock          mArtifactPrivateServiceClientMockGetSystemAdmin
 
+	funcListFilesAdmin          func(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListFilesAdminResponse, err error)
+	funcListFilesAdminOrigin    string
+	inspectFuncListFilesAdmin   func(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption)
+	afterListFilesAdminCounter  uint64
+	beforeListFilesAdminCounter uint64
+	ListFilesAdminMock          mArtifactPrivateServiceClientMockListFilesAdmin
+
+	funcListKnowledgeBasesAdmin          func(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse, err error)
+	funcListKnowledgeBasesAdminOrigin    string
+	inspectFuncListKnowledgeBasesAdmin   func(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption)
+	afterListKnowledgeBasesAdminCounter  uint64
+	beforeListKnowledgeBasesAdminCounter uint64
+	ListKnowledgeBasesAdminMock          mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin
+
 	funcListSystemsAdmin          func(ctx context.Context, in *mm_artifactv1alpha.ListSystemsAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListSystemsAdminResponse, err error)
 	funcListSystemsAdminOrigin    string
 	inspectFuncListSystemsAdmin   func(ctx context.Context, in *mm_artifactv1alpha.ListSystemsAdminRequest, opts ...grpc.CallOption)
@@ -108,6 +136,20 @@ type ArtifactPrivateServiceClientMock struct {
 	afterRenameSystemAdminCounter  uint64
 	beforeRenameSystemAdminCounter uint64
 	RenameSystemAdminMock          mArtifactPrivateServiceClientMockRenameSystemAdmin
+
+	funcReprocessFileAdmin          func(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse, err error)
+	funcReprocessFileAdminOrigin    string
+	inspectFuncReprocessFileAdmin   func(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption)
+	afterReprocessFileAdminCounter  uint64
+	beforeReprocessFileAdminCounter uint64
+	ReprocessFileAdminMock          mArtifactPrivateServiceClientMockReprocessFileAdmin
+
+	funcResetKnowledgeBaseEmbeddingsAdmin          func(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse, err error)
+	funcResetKnowledgeBaseEmbeddingsAdminOrigin    string
+	inspectFuncResetKnowledgeBaseEmbeddingsAdmin   func(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption)
+	afterResetKnowledgeBaseEmbeddingsAdminCounter  uint64
+	beforeResetKnowledgeBaseEmbeddingsAdminCounter uint64
+	ResetKnowledgeBaseEmbeddingsAdminMock          mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin
 
 	funcRollbackAdmin          func(ctx context.Context, in *mm_artifactv1alpha.RollbackAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.RollbackAdminResponse, err error)
 	funcRollbackAdminOrigin    string
@@ -170,6 +212,9 @@ func NewArtifactPrivateServiceClientMock(t minimock.Tester) *ArtifactPrivateServ
 	m.AbortKnowledgeBaseUpdateAdminMock = mArtifactPrivateServiceClientMockAbortKnowledgeBaseUpdateAdmin{mock: m}
 	m.AbortKnowledgeBaseUpdateAdminMock.callArgs = []*ArtifactPrivateServiceClientMockAbortKnowledgeBaseUpdateAdminParams{}
 
+	m.AddFilesToKnowledgeBaseAdminMock = mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin{mock: m}
+	m.AddFilesToKnowledgeBaseAdminMock.callArgs = []*ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams{}
+
 	m.CreateKnowledgeBaseAdminMock = mArtifactPrivateServiceClientMockCreateKnowledgeBaseAdmin{mock: m}
 	m.CreateKnowledgeBaseAdminMock.callArgs = []*ArtifactPrivateServiceClientMockCreateKnowledgeBaseAdminParams{}
 
@@ -178,6 +223,9 @@ func NewArtifactPrivateServiceClientMock(t minimock.Tester) *ArtifactPrivateServ
 
 	m.DeleteFileAdminMock = mArtifactPrivateServiceClientMockDeleteFileAdmin{mock: m}
 	m.DeleteFileAdminMock.callArgs = []*ArtifactPrivateServiceClientMockDeleteFileAdminParams{}
+
+	m.DeleteKnowledgeBaseAdminMock = mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin{mock: m}
+	m.DeleteKnowledgeBaseAdminMock.callArgs = []*ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams{}
 
 	m.DeleteSystemAdminMock = mArtifactPrivateServiceClientMockDeleteSystemAdmin{mock: m}
 	m.DeleteSystemAdminMock.callArgs = []*ArtifactPrivateServiceClientMockDeleteSystemAdminParams{}
@@ -197,6 +245,12 @@ func NewArtifactPrivateServiceClientMock(t minimock.Tester) *ArtifactPrivateServ
 	m.GetSystemAdminMock = mArtifactPrivateServiceClientMockGetSystemAdmin{mock: m}
 	m.GetSystemAdminMock.callArgs = []*ArtifactPrivateServiceClientMockGetSystemAdminParams{}
 
+	m.ListFilesAdminMock = mArtifactPrivateServiceClientMockListFilesAdmin{mock: m}
+	m.ListFilesAdminMock.callArgs = []*ArtifactPrivateServiceClientMockListFilesAdminParams{}
+
+	m.ListKnowledgeBasesAdminMock = mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin{mock: m}
+	m.ListKnowledgeBasesAdminMock.callArgs = []*ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams{}
+
 	m.ListSystemsAdminMock = mArtifactPrivateServiceClientMockListSystemsAdmin{mock: m}
 	m.ListSystemsAdminMock.callArgs = []*ArtifactPrivateServiceClientMockListSystemsAdminParams{}
 
@@ -205,6 +259,12 @@ func NewArtifactPrivateServiceClientMock(t minimock.Tester) *ArtifactPrivateServ
 
 	m.RenameSystemAdminMock = mArtifactPrivateServiceClientMockRenameSystemAdmin{mock: m}
 	m.RenameSystemAdminMock.callArgs = []*ArtifactPrivateServiceClientMockRenameSystemAdminParams{}
+
+	m.ReprocessFileAdminMock = mArtifactPrivateServiceClientMockReprocessFileAdmin{mock: m}
+	m.ReprocessFileAdminMock.callArgs = []*ArtifactPrivateServiceClientMockReprocessFileAdminParams{}
+
+	m.ResetKnowledgeBaseEmbeddingsAdminMock = mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin{mock: m}
+	m.ResetKnowledgeBaseEmbeddingsAdminMock.callArgs = []*ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams{}
 
 	m.RollbackAdminMock = mArtifactPrivateServiceClientMockRollbackAdmin{mock: m}
 	m.RollbackAdminMock.callArgs = []*ArtifactPrivateServiceClientMockRollbackAdminParams{}
@@ -603,6 +663,380 @@ func (m *ArtifactPrivateServiceClientMock) MinimockAbortKnowledgeBaseUpdateAdmin
 	if !m.AbortKnowledgeBaseUpdateAdminMock.invocationsDone() && afterAbortKnowledgeBaseUpdateAdminCounter > 0 {
 		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.AbortKnowledgeBaseUpdateAdmin at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.AbortKnowledgeBaseUpdateAdminMock.expectedInvocations), m.AbortKnowledgeBaseUpdateAdminMock.expectedInvocationsOrigin, afterAbortKnowledgeBaseUpdateAdminCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams contains parameters of the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminResults contains results of the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminResults struct {
+	ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Optional() *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	mmAddFilesToKnowledgeBaseAdmin.optional = true
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams{ctx, in, opts}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmAddFilesToKnowledgeBaseAdmin.expectations {
+		if minimock.Equal(e.params, mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params) {
+			mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs{}
+	}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) ExpectInParam2(in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs{}
+	}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs.in = &in
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParamPtrs{}
+	}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.inspectFuncAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin")
+	}
+
+	mmAddFilesToKnowledgeBaseAdmin.mock.inspectFuncAddFilesToKnowledgeBaseAdmin = f
+
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Return(ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmAddFilesToKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{mock: mmAddFilesToKnowledgeBaseAdmin.mock}
+	}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminResults{ap1, err}
+	mmAddFilesToKnowledgeBaseAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmAddFilesToKnowledgeBaseAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin method
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmAddFilesToKnowledgeBaseAdmin.defaultExpectation != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin method")
+	}
+
+	if len(mmAddFilesToKnowledgeBaseAdmin.expectations) > 0 {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin method")
+	}
+
+	mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin = f
+	mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdminOrigin = minimock.CallerInfo(1)
+	return mmAddFilesToKnowledgeBaseAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin which will trigger the result defined by the following
+// Then helper
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) When(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation {
+	if mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation{
+		mock:               mmAddFilesToKnowledgeBaseAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmAddFilesToKnowledgeBaseAdmin.expectations = append(mmAddFilesToKnowledgeBaseAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminExpectation) Then(ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminResults{ap1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.AddFilesToKnowledgeBaseAdmin should be invoked
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin {
+	if n == 0 {
+		mmAddFilesToKnowledgeBaseAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmAddFilesToKnowledgeBaseAdmin.expectedInvocations, n)
+	mmAddFilesToKnowledgeBaseAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmAddFilesToKnowledgeBaseAdmin
+}
+
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) invocationsDone() bool {
+	if len(mmAddFilesToKnowledgeBaseAdmin.expectations) == 0 && mmAddFilesToKnowledgeBaseAdmin.defaultExpectation == nil && mmAddFilesToKnowledgeBaseAdmin.mock.funcAddFilesToKnowledgeBaseAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmAddFilesToKnowledgeBaseAdmin.mock.afterAddFilesToKnowledgeBaseAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmAddFilesToKnowledgeBaseAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// AddFilesToKnowledgeBaseAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmAddFilesToKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) AddFilesToKnowledgeBaseAdmin(ctx context.Context, in *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (ap1 *mm_artifactv1alpha.AddFilesToKnowledgeBaseAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmAddFilesToKnowledgeBaseAdmin.beforeAddFilesToKnowledgeBaseAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmAddFilesToKnowledgeBaseAdmin.afterAddFilesToKnowledgeBaseAdminCounter, 1)
+
+	mmAddFilesToKnowledgeBaseAdmin.t.Helper()
+
+	if mmAddFilesToKnowledgeBaseAdmin.inspectFuncAddFilesToKnowledgeBaseAdmin != nil {
+		mmAddFilesToKnowledgeBaseAdmin.inspectFuncAddFilesToKnowledgeBaseAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.mutex.Lock()
+	mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.callArgs = append(mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.callArgs, &mm_params)
+	mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.mutex.Unlock()
+
+	for _, e := range mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.ap1, e.results.err
+		}
+	}
+
+	if mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmAddFilesToKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmAddFilesToKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmAddFilesToKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmAddFilesToKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmAddFilesToKnowledgeBaseAdmin.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmAddFilesToKnowledgeBaseAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin")
+		}
+		return (*mm_results).ap1, (*mm_results).err
+	}
+	if mmAddFilesToKnowledgeBaseAdmin.funcAddFilesToKnowledgeBaseAdmin != nil {
+		return mmAddFilesToKnowledgeBaseAdmin.funcAddFilesToKnowledgeBaseAdmin(ctx, in, opts...)
+	}
+	mmAddFilesToKnowledgeBaseAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// AddFilesToKnowledgeBaseAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin invocations
+func (mmAddFilesToKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) AddFilesToKnowledgeBaseAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmAddFilesToKnowledgeBaseAdmin.afterAddFilesToKnowledgeBaseAdminCounter)
+}
+
+// AddFilesToKnowledgeBaseAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin invocations
+func (mmAddFilesToKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) AddFilesToKnowledgeBaseAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmAddFilesToKnowledgeBaseAdmin.beforeAddFilesToKnowledgeBaseAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmAddFilesToKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdmin) Calls() []*ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams {
+	mmAddFilesToKnowledgeBaseAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockAddFilesToKnowledgeBaseAdminParams, len(mmAddFilesToKnowledgeBaseAdmin.callArgs))
+	copy(argCopy, mmAddFilesToKnowledgeBaseAdmin.callArgs)
+
+	mmAddFilesToKnowledgeBaseAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockAddFilesToKnowledgeBaseAdminDone returns true if the count of the AddFilesToKnowledgeBaseAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockAddFilesToKnowledgeBaseAdminDone() bool {
+	if m.AddFilesToKnowledgeBaseAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.AddFilesToKnowledgeBaseAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.AddFilesToKnowledgeBaseAdminMock.invocationsDone()
+}
+
+// MinimockAddFilesToKnowledgeBaseAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockAddFilesToKnowledgeBaseAdminInspect() {
+	for _, e := range m.AddFilesToKnowledgeBaseAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterAddFilesToKnowledgeBaseAdminCounter := mm_atomic.LoadUint64(&m.afterAddFilesToKnowledgeBaseAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.AddFilesToKnowledgeBaseAdminMock.defaultExpectation != nil && afterAddFilesToKnowledgeBaseAdminCounter < 1 {
+		if m.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin at\n%s", m.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin at\n%s with params: %#v", m.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.origin, *m.AddFilesToKnowledgeBaseAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcAddFilesToKnowledgeBaseAdmin != nil && afterAddFilesToKnowledgeBaseAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin at\n%s", m.funcAddFilesToKnowledgeBaseAdminOrigin)
+	}
+
+	if !m.AddFilesToKnowledgeBaseAdminMock.invocationsDone() && afterAddFilesToKnowledgeBaseAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.AddFilesToKnowledgeBaseAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.AddFilesToKnowledgeBaseAdminMock.expectedInvocations), m.AddFilesToKnowledgeBaseAdminMock.expectedInvocationsOrigin, afterAddFilesToKnowledgeBaseAdminCounter)
 	}
 }
 
@@ -1725,6 +2159,380 @@ func (m *ArtifactPrivateServiceClientMock) MinimockDeleteFileAdminInspect() {
 	if !m.DeleteFileAdminMock.invocationsDone() && afterDeleteFileAdminCounter > 0 {
 		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.DeleteFileAdmin at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.DeleteFileAdminMock.expectedInvocations), m.DeleteFileAdminMock.expectedInvocationsOrigin, afterDeleteFileAdminCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams contains parameters of the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminResults contains results of the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminResults struct {
+	dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+type ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Optional() *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	mmDeleteKnowledgeBaseAdmin.optional = true
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams{ctx, in, opts}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmDeleteKnowledgeBaseAdmin.expectations {
+		if minimock.Equal(e.params, mmDeleteKnowledgeBaseAdmin.defaultExpectation.params) {
+			mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDeleteKnowledgeBaseAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs{}
+	}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) ExpectInParam2(in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs{}
+	}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs.in = &in
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{}
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.params != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Expect")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParamPtrs{}
+	}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if mmDeleteKnowledgeBaseAdmin.mock.inspectFuncDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin")
+	}
+
+	mmDeleteKnowledgeBaseAdmin.mock.inspectFuncDeleteKnowledgeBaseAdmin = f
+
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Return(dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil {
+		mmDeleteKnowledgeBaseAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{mock: mmDeleteKnowledgeBaseAdmin.mock}
+	}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminResults{dp1, err}
+	mmDeleteKnowledgeBaseAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmDeleteKnowledgeBaseAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin method
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmDeleteKnowledgeBaseAdmin.defaultExpectation != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin method")
+	}
+
+	if len(mmDeleteKnowledgeBaseAdmin.expectations) > 0 {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin method")
+	}
+
+	mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin = f
+	mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdminOrigin = minimock.CallerInfo(1)
+	return mmDeleteKnowledgeBaseAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin which will trigger the result defined by the following
+// Then helper
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) When(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation {
+	if mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation{
+		mock:               mmDeleteKnowledgeBaseAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmDeleteKnowledgeBaseAdmin.expectations = append(mmDeleteKnowledgeBaseAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminExpectation) Then(dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminResults{dp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.DeleteKnowledgeBaseAdmin should be invoked
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin {
+	if n == 0 {
+		mmDeleteKnowledgeBaseAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmDeleteKnowledgeBaseAdmin.expectedInvocations, n)
+	mmDeleteKnowledgeBaseAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmDeleteKnowledgeBaseAdmin
+}
+
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) invocationsDone() bool {
+	if len(mmDeleteKnowledgeBaseAdmin.expectations) == 0 && mmDeleteKnowledgeBaseAdmin.defaultExpectation == nil && mmDeleteKnowledgeBaseAdmin.mock.funcDeleteKnowledgeBaseAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmDeleteKnowledgeBaseAdmin.mock.afterDeleteKnowledgeBaseAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmDeleteKnowledgeBaseAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// DeleteKnowledgeBaseAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmDeleteKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) DeleteKnowledgeBaseAdmin(ctx context.Context, in *mm_artifactv1alpha.DeleteKnowledgeBaseAdminRequest, opts ...grpc.CallOption) (dp1 *mm_artifactv1alpha.DeleteKnowledgeBaseAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmDeleteKnowledgeBaseAdmin.beforeDeleteKnowledgeBaseAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmDeleteKnowledgeBaseAdmin.afterDeleteKnowledgeBaseAdminCounter, 1)
+
+	mmDeleteKnowledgeBaseAdmin.t.Helper()
+
+	if mmDeleteKnowledgeBaseAdmin.inspectFuncDeleteKnowledgeBaseAdmin != nil {
+		mmDeleteKnowledgeBaseAdmin.inspectFuncDeleteKnowledgeBaseAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.mutex.Lock()
+	mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.callArgs = append(mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.callArgs, &mm_params)
+	mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.mutex.Unlock()
+
+	for _, e := range mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.dp1, e.results.err
+		}
+	}
+
+	if mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmDeleteKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmDeleteKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmDeleteKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDeleteKnowledgeBaseAdmin.t.Errorf("ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmDeleteKnowledgeBaseAdmin.DeleteKnowledgeBaseAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmDeleteKnowledgeBaseAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin")
+		}
+		return (*mm_results).dp1, (*mm_results).err
+	}
+	if mmDeleteKnowledgeBaseAdmin.funcDeleteKnowledgeBaseAdmin != nil {
+		return mmDeleteKnowledgeBaseAdmin.funcDeleteKnowledgeBaseAdmin(ctx, in, opts...)
+	}
+	mmDeleteKnowledgeBaseAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// DeleteKnowledgeBaseAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin invocations
+func (mmDeleteKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) DeleteKnowledgeBaseAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteKnowledgeBaseAdmin.afterDeleteKnowledgeBaseAdminCounter)
+}
+
+// DeleteKnowledgeBaseAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin invocations
+func (mmDeleteKnowledgeBaseAdmin *ArtifactPrivateServiceClientMock) DeleteKnowledgeBaseAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteKnowledgeBaseAdmin.beforeDeleteKnowledgeBaseAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmDeleteKnowledgeBaseAdmin *mArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdmin) Calls() []*ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams {
+	mmDeleteKnowledgeBaseAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockDeleteKnowledgeBaseAdminParams, len(mmDeleteKnowledgeBaseAdmin.callArgs))
+	copy(argCopy, mmDeleteKnowledgeBaseAdmin.callArgs)
+
+	mmDeleteKnowledgeBaseAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockDeleteKnowledgeBaseAdminDone returns true if the count of the DeleteKnowledgeBaseAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockDeleteKnowledgeBaseAdminDone() bool {
+	if m.DeleteKnowledgeBaseAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.DeleteKnowledgeBaseAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.DeleteKnowledgeBaseAdminMock.invocationsDone()
+}
+
+// MinimockDeleteKnowledgeBaseAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockDeleteKnowledgeBaseAdminInspect() {
+	for _, e := range m.DeleteKnowledgeBaseAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterDeleteKnowledgeBaseAdminCounter := mm_atomic.LoadUint64(&m.afterDeleteKnowledgeBaseAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DeleteKnowledgeBaseAdminMock.defaultExpectation != nil && afterDeleteKnowledgeBaseAdminCounter < 1 {
+		if m.DeleteKnowledgeBaseAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin at\n%s", m.DeleteKnowledgeBaseAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin at\n%s with params: %#v", m.DeleteKnowledgeBaseAdminMock.defaultExpectation.expectationOrigins.origin, *m.DeleteKnowledgeBaseAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDeleteKnowledgeBaseAdmin != nil && afterDeleteKnowledgeBaseAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin at\n%s", m.funcDeleteKnowledgeBaseAdminOrigin)
+	}
+
+	if !m.DeleteKnowledgeBaseAdminMock.invocationsDone() && afterDeleteKnowledgeBaseAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.DeleteKnowledgeBaseAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.DeleteKnowledgeBaseAdminMock.expectedInvocations), m.DeleteKnowledgeBaseAdminMock.expectedInvocationsOrigin, afterDeleteKnowledgeBaseAdminCounter)
 	}
 }
 
@@ -3972,6 +4780,754 @@ func (m *ArtifactPrivateServiceClientMock) MinimockGetSystemAdminInspect() {
 	}
 }
 
+type mArtifactPrivateServiceClientMockListFilesAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockListFilesAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockListFilesAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockListFilesAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockListFilesAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.ListFilesAdmin
+type ArtifactPrivateServiceClientMockListFilesAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockListFilesAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockListFilesAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockListFilesAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockListFilesAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockListFilesAdminParams contains parameters of the ArtifactPrivateServiceClient.ListFilesAdmin
+type ArtifactPrivateServiceClientMockListFilesAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.ListFilesAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockListFilesAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.ListFilesAdmin
+type ArtifactPrivateServiceClientMockListFilesAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.ListFilesAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockListFilesAdminResults contains results of the ArtifactPrivateServiceClient.ListFilesAdmin
+type ArtifactPrivateServiceClientMockListFilesAdminResults struct {
+	lp1 *mm_artifactv1alpha.ListFilesAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockListFilesAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.ListFilesAdmin
+type ArtifactPrivateServiceClientMockListFilesAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Optional() *mArtifactPrivateServiceClientMockListFilesAdmin {
+	mmListFilesAdmin.optional = true
+	return mmListFilesAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	if mmListFilesAdmin.defaultExpectation == nil {
+		mmListFilesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListFilesAdminExpectation{}
+	}
+
+	if mmListFilesAdmin.defaultExpectation.paramPtrs != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmListFilesAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockListFilesAdminParams{ctx, in, opts}
+	mmListFilesAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmListFilesAdmin.expectations {
+		if minimock.Equal(e.params, mmListFilesAdmin.defaultExpectation.params) {
+			mmListFilesAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmListFilesAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmListFilesAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	if mmListFilesAdmin.defaultExpectation == nil {
+		mmListFilesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListFilesAdminExpectation{}
+	}
+
+	if mmListFilesAdmin.defaultExpectation.params != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Expect")
+	}
+
+	if mmListFilesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListFilesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListFilesAdminParamPtrs{}
+	}
+	mmListFilesAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmListFilesAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmListFilesAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) ExpectInParam2(in *mm_artifactv1alpha.ListFilesAdminRequest) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	if mmListFilesAdmin.defaultExpectation == nil {
+		mmListFilesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListFilesAdminExpectation{}
+	}
+
+	if mmListFilesAdmin.defaultExpectation.params != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Expect")
+	}
+
+	if mmListFilesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListFilesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListFilesAdminParamPtrs{}
+	}
+	mmListFilesAdmin.defaultExpectation.paramPtrs.in = &in
+	mmListFilesAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmListFilesAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	if mmListFilesAdmin.defaultExpectation == nil {
+		mmListFilesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListFilesAdminExpectation{}
+	}
+
+	if mmListFilesAdmin.defaultExpectation.params != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Expect")
+	}
+
+	if mmListFilesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListFilesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListFilesAdminParamPtrs{}
+	}
+	mmListFilesAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmListFilesAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmListFilesAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if mmListFilesAdmin.mock.inspectFuncListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.ListFilesAdmin")
+	}
+
+	mmListFilesAdmin.mock.inspectFuncListFilesAdmin = f
+
+	return mmListFilesAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.ListFilesAdmin
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Return(lp1 *mm_artifactv1alpha.ListFilesAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	if mmListFilesAdmin.defaultExpectation == nil {
+		mmListFilesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListFilesAdminExpectation{mock: mmListFilesAdmin.mock}
+	}
+	mmListFilesAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockListFilesAdminResults{lp1, err}
+	mmListFilesAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmListFilesAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.ListFilesAdmin method
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListFilesAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmListFilesAdmin.defaultExpectation != nil {
+		mmListFilesAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.ListFilesAdmin method")
+	}
+
+	if len(mmListFilesAdmin.expectations) > 0 {
+		mmListFilesAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.ListFilesAdmin method")
+	}
+
+	mmListFilesAdmin.mock.funcListFilesAdmin = f
+	mmListFilesAdmin.mock.funcListFilesAdminOrigin = minimock.CallerInfo(1)
+	return mmListFilesAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.ListFilesAdmin which will trigger the result defined by the following
+// Then helper
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) When(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockListFilesAdminExpectation {
+	if mmListFilesAdmin.mock.funcListFilesAdmin != nil {
+		mmListFilesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListFilesAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockListFilesAdminExpectation{
+		mock:               mmListFilesAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockListFilesAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockListFilesAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmListFilesAdmin.expectations = append(mmListFilesAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.ListFilesAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockListFilesAdminExpectation) Then(lp1 *mm_artifactv1alpha.ListFilesAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockListFilesAdminResults{lp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.ListFilesAdmin should be invoked
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockListFilesAdmin {
+	if n == 0 {
+		mmListFilesAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.ListFilesAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmListFilesAdmin.expectedInvocations, n)
+	mmListFilesAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmListFilesAdmin
+}
+
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) invocationsDone() bool {
+	if len(mmListFilesAdmin.expectations) == 0 && mmListFilesAdmin.defaultExpectation == nil && mmListFilesAdmin.mock.funcListFilesAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmListFilesAdmin.mock.afterListFilesAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmListFilesAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// ListFilesAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmListFilesAdmin *ArtifactPrivateServiceClientMock) ListFilesAdmin(ctx context.Context, in *mm_artifactv1alpha.ListFilesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListFilesAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmListFilesAdmin.beforeListFilesAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmListFilesAdmin.afterListFilesAdminCounter, 1)
+
+	mmListFilesAdmin.t.Helper()
+
+	if mmListFilesAdmin.inspectFuncListFilesAdmin != nil {
+		mmListFilesAdmin.inspectFuncListFilesAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockListFilesAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmListFilesAdmin.ListFilesAdminMock.mutex.Lock()
+	mmListFilesAdmin.ListFilesAdminMock.callArgs = append(mmListFilesAdmin.ListFilesAdminMock.callArgs, &mm_params)
+	mmListFilesAdmin.ListFilesAdminMock.mutex.Unlock()
+
+	for _, e := range mmListFilesAdmin.ListFilesAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.lp1, e.results.err
+		}
+	}
+
+	if mmListFilesAdmin.ListFilesAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockListFilesAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmListFilesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListFilesAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmListFilesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListFilesAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmListFilesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListFilesAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmListFilesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListFilesAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmListFilesAdmin.ListFilesAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmListFilesAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.ListFilesAdmin")
+		}
+		return (*mm_results).lp1, (*mm_results).err
+	}
+	if mmListFilesAdmin.funcListFilesAdmin != nil {
+		return mmListFilesAdmin.funcListFilesAdmin(ctx, in, opts...)
+	}
+	mmListFilesAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.ListFilesAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// ListFilesAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.ListFilesAdmin invocations
+func (mmListFilesAdmin *ArtifactPrivateServiceClientMock) ListFilesAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmListFilesAdmin.afterListFilesAdminCounter)
+}
+
+// ListFilesAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.ListFilesAdmin invocations
+func (mmListFilesAdmin *ArtifactPrivateServiceClientMock) ListFilesAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmListFilesAdmin.beforeListFilesAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.ListFilesAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmListFilesAdmin *mArtifactPrivateServiceClientMockListFilesAdmin) Calls() []*ArtifactPrivateServiceClientMockListFilesAdminParams {
+	mmListFilesAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockListFilesAdminParams, len(mmListFilesAdmin.callArgs))
+	copy(argCopy, mmListFilesAdmin.callArgs)
+
+	mmListFilesAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockListFilesAdminDone returns true if the count of the ListFilesAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockListFilesAdminDone() bool {
+	if m.ListFilesAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.ListFilesAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.ListFilesAdminMock.invocationsDone()
+}
+
+// MinimockListFilesAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockListFilesAdminInspect() {
+	for _, e := range m.ListFilesAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListFilesAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterListFilesAdminCounter := mm_atomic.LoadUint64(&m.afterListFilesAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ListFilesAdminMock.defaultExpectation != nil && afterListFilesAdminCounter < 1 {
+		if m.ListFilesAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListFilesAdmin at\n%s", m.ListFilesAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListFilesAdmin at\n%s with params: %#v", m.ListFilesAdminMock.defaultExpectation.expectationOrigins.origin, *m.ListFilesAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcListFilesAdmin != nil && afterListFilesAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListFilesAdmin at\n%s", m.funcListFilesAdminOrigin)
+	}
+
+	if !m.ListFilesAdminMock.invocationsDone() && afterListFilesAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.ListFilesAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ListFilesAdminMock.expectedInvocations), m.ListFilesAdminMock.expectedInvocationsOrigin, afterListFilesAdminCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+type ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams contains parameters of the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+type ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+type ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.ListKnowledgeBasesAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockListKnowledgeBasesAdminResults contains results of the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+type ArtifactPrivateServiceClientMockListKnowledgeBasesAdminResults struct {
+	lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockListKnowledgeBasesAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+type ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Optional() *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	mmListKnowledgeBasesAdmin.optional = true
+	return mmListKnowledgeBasesAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{}
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmListKnowledgeBasesAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams{ctx, in, opts}
+	mmListKnowledgeBasesAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmListKnowledgeBasesAdmin.expectations {
+		if minimock.Equal(e.params, mmListKnowledgeBasesAdmin.defaultExpectation.params) {
+			mmListKnowledgeBasesAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmListKnowledgeBasesAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmListKnowledgeBasesAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{}
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.params != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Expect")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs{}
+	}
+	mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmListKnowledgeBasesAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmListKnowledgeBasesAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) ExpectInParam2(in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{}
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.params != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Expect")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs{}
+	}
+	mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs.in = &in
+	mmListKnowledgeBasesAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmListKnowledgeBasesAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{}
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.params != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Expect")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParamPtrs{}
+	}
+	mmListKnowledgeBasesAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmListKnowledgeBasesAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmListKnowledgeBasesAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if mmListKnowledgeBasesAdmin.mock.inspectFuncListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin")
+	}
+
+	mmListKnowledgeBasesAdmin.mock.inspectFuncListKnowledgeBasesAdmin = f
+
+	return mmListKnowledgeBasesAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Return(lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	if mmListKnowledgeBasesAdmin.defaultExpectation == nil {
+		mmListKnowledgeBasesAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{mock: mmListKnowledgeBasesAdmin.mock}
+	}
+	mmListKnowledgeBasesAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminResults{lp1, err}
+	mmListKnowledgeBasesAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmListKnowledgeBasesAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin method
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmListKnowledgeBasesAdmin.defaultExpectation != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin method")
+	}
+
+	if len(mmListKnowledgeBasesAdmin.expectations) > 0 {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin method")
+	}
+
+	mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin = f
+	mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdminOrigin = minimock.CallerInfo(1)
+	return mmListKnowledgeBasesAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin which will trigger the result defined by the following
+// Then helper
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) When(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation {
+	if mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation{
+		mock:               mmListKnowledgeBasesAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmListKnowledgeBasesAdmin.expectations = append(mmListKnowledgeBasesAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockListKnowledgeBasesAdminExpectation) Then(lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockListKnowledgeBasesAdminResults{lp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.ListKnowledgeBasesAdmin should be invoked
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin {
+	if n == 0 {
+		mmListKnowledgeBasesAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmListKnowledgeBasesAdmin.expectedInvocations, n)
+	mmListKnowledgeBasesAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmListKnowledgeBasesAdmin
+}
+
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) invocationsDone() bool {
+	if len(mmListKnowledgeBasesAdmin.expectations) == 0 && mmListKnowledgeBasesAdmin.defaultExpectation == nil && mmListKnowledgeBasesAdmin.mock.funcListKnowledgeBasesAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmListKnowledgeBasesAdmin.mock.afterListKnowledgeBasesAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmListKnowledgeBasesAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// ListKnowledgeBasesAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmListKnowledgeBasesAdmin *ArtifactPrivateServiceClientMock) ListKnowledgeBasesAdmin(ctx context.Context, in *mm_artifactv1alpha.ListKnowledgeBasesAdminRequest, opts ...grpc.CallOption) (lp1 *mm_artifactv1alpha.ListKnowledgeBasesAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmListKnowledgeBasesAdmin.beforeListKnowledgeBasesAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmListKnowledgeBasesAdmin.afterListKnowledgeBasesAdminCounter, 1)
+
+	mmListKnowledgeBasesAdmin.t.Helper()
+
+	if mmListKnowledgeBasesAdmin.inspectFuncListKnowledgeBasesAdmin != nil {
+		mmListKnowledgeBasesAdmin.inspectFuncListKnowledgeBasesAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.mutex.Lock()
+	mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.callArgs = append(mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.callArgs, &mm_params)
+	mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.mutex.Unlock()
+
+	for _, e := range mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.lp1, e.results.err
+		}
+	}
+
+	if mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmListKnowledgeBasesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmListKnowledgeBasesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmListKnowledgeBasesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmListKnowledgeBasesAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmListKnowledgeBasesAdmin.ListKnowledgeBasesAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmListKnowledgeBasesAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin")
+		}
+		return (*mm_results).lp1, (*mm_results).err
+	}
+	if mmListKnowledgeBasesAdmin.funcListKnowledgeBasesAdmin != nil {
+		return mmListKnowledgeBasesAdmin.funcListKnowledgeBasesAdmin(ctx, in, opts...)
+	}
+	mmListKnowledgeBasesAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// ListKnowledgeBasesAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin invocations
+func (mmListKnowledgeBasesAdmin *ArtifactPrivateServiceClientMock) ListKnowledgeBasesAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmListKnowledgeBasesAdmin.afterListKnowledgeBasesAdminCounter)
+}
+
+// ListKnowledgeBasesAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin invocations
+func (mmListKnowledgeBasesAdmin *ArtifactPrivateServiceClientMock) ListKnowledgeBasesAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmListKnowledgeBasesAdmin.beforeListKnowledgeBasesAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmListKnowledgeBasesAdmin *mArtifactPrivateServiceClientMockListKnowledgeBasesAdmin) Calls() []*ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams {
+	mmListKnowledgeBasesAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockListKnowledgeBasesAdminParams, len(mmListKnowledgeBasesAdmin.callArgs))
+	copy(argCopy, mmListKnowledgeBasesAdmin.callArgs)
+
+	mmListKnowledgeBasesAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockListKnowledgeBasesAdminDone returns true if the count of the ListKnowledgeBasesAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockListKnowledgeBasesAdminDone() bool {
+	if m.ListKnowledgeBasesAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.ListKnowledgeBasesAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.ListKnowledgeBasesAdminMock.invocationsDone()
+}
+
+// MinimockListKnowledgeBasesAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockListKnowledgeBasesAdminInspect() {
+	for _, e := range m.ListKnowledgeBasesAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterListKnowledgeBasesAdminCounter := mm_atomic.LoadUint64(&m.afterListKnowledgeBasesAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ListKnowledgeBasesAdminMock.defaultExpectation != nil && afterListKnowledgeBasesAdminCounter < 1 {
+		if m.ListKnowledgeBasesAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin at\n%s", m.ListKnowledgeBasesAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin at\n%s with params: %#v", m.ListKnowledgeBasesAdminMock.defaultExpectation.expectationOrigins.origin, *m.ListKnowledgeBasesAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcListKnowledgeBasesAdmin != nil && afterListKnowledgeBasesAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin at\n%s", m.funcListKnowledgeBasesAdminOrigin)
+	}
+
+	if !m.ListKnowledgeBasesAdminMock.invocationsDone() && afterListKnowledgeBasesAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.ListKnowledgeBasesAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ListKnowledgeBasesAdminMock.expectedInvocations), m.ListKnowledgeBasesAdminMock.expectedInvocationsOrigin, afterListKnowledgeBasesAdminCounter)
+	}
+}
+
 type mArtifactPrivateServiceClientMockListSystemsAdmin struct {
 	optional           bool
 	mock               *ArtifactPrivateServiceClientMock
@@ -5091,6 +6647,754 @@ func (m *ArtifactPrivateServiceClientMock) MinimockRenameSystemAdminInspect() {
 	if !m.RenameSystemAdminMock.invocationsDone() && afterRenameSystemAdminCounter > 0 {
 		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.RenameSystemAdmin at\n%s but found %d calls",
 			mm_atomic.LoadUint64(&m.RenameSystemAdminMock.expectedInvocations), m.RenameSystemAdminMock.expectedInvocationsOrigin, afterRenameSystemAdminCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockReprocessFileAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockReprocessFileAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockReprocessFileAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockReprocessFileAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockReprocessFileAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.ReprocessFileAdmin
+type ArtifactPrivateServiceClientMockReprocessFileAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockReprocessFileAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockReprocessFileAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockReprocessFileAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockReprocessFileAdminParams contains parameters of the ArtifactPrivateServiceClient.ReprocessFileAdmin
+type ArtifactPrivateServiceClientMockReprocessFileAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.ReprocessFileAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.ReprocessFileAdmin
+type ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.ReprocessFileAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockReprocessFileAdminResults contains results of the ArtifactPrivateServiceClient.ReprocessFileAdmin
+type ArtifactPrivateServiceClientMockReprocessFileAdminResults struct {
+	rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockReprocessFileAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.ReprocessFileAdmin
+type ArtifactPrivateServiceClientMockReprocessFileAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Optional() *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	mmReprocessFileAdmin.optional = true
+	return mmReprocessFileAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation == nil {
+		mmReprocessFileAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{}
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.paramPtrs != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmReprocessFileAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockReprocessFileAdminParams{ctx, in, opts}
+	mmReprocessFileAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmReprocessFileAdmin.expectations {
+		if minimock.Equal(e.params, mmReprocessFileAdmin.defaultExpectation.params) {
+			mmReprocessFileAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmReprocessFileAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmReprocessFileAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation == nil {
+		mmReprocessFileAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{}
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.params != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Expect")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.paramPtrs == nil {
+		mmReprocessFileAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs{}
+	}
+	mmReprocessFileAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmReprocessFileAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmReprocessFileAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) ExpectInParam2(in *mm_artifactv1alpha.ReprocessFileAdminRequest) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation == nil {
+		mmReprocessFileAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{}
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.params != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Expect")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.paramPtrs == nil {
+		mmReprocessFileAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs{}
+	}
+	mmReprocessFileAdmin.defaultExpectation.paramPtrs.in = &in
+	mmReprocessFileAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmReprocessFileAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation == nil {
+		mmReprocessFileAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{}
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.params != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Expect")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation.paramPtrs == nil {
+		mmReprocessFileAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockReprocessFileAdminParamPtrs{}
+	}
+	mmReprocessFileAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmReprocessFileAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmReprocessFileAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if mmReprocessFileAdmin.mock.inspectFuncReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.ReprocessFileAdmin")
+	}
+
+	mmReprocessFileAdmin.mock.inspectFuncReprocessFileAdmin = f
+
+	return mmReprocessFileAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.ReprocessFileAdmin
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Return(rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	if mmReprocessFileAdmin.defaultExpectation == nil {
+		mmReprocessFileAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{mock: mmReprocessFileAdmin.mock}
+	}
+	mmReprocessFileAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockReprocessFileAdminResults{rp1, err}
+	mmReprocessFileAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmReprocessFileAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.ReprocessFileAdmin method
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmReprocessFileAdmin.defaultExpectation != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.ReprocessFileAdmin method")
+	}
+
+	if len(mmReprocessFileAdmin.expectations) > 0 {
+		mmReprocessFileAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.ReprocessFileAdmin method")
+	}
+
+	mmReprocessFileAdmin.mock.funcReprocessFileAdmin = f
+	mmReprocessFileAdmin.mock.funcReprocessFileAdminOrigin = minimock.CallerInfo(1)
+	return mmReprocessFileAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.ReprocessFileAdmin which will trigger the result defined by the following
+// Then helper
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) When(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockReprocessFileAdminExpectation {
+	if mmReprocessFileAdmin.mock.funcReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockReprocessFileAdminExpectation{
+		mock:               mmReprocessFileAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockReprocessFileAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockReprocessFileAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmReprocessFileAdmin.expectations = append(mmReprocessFileAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.ReprocessFileAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockReprocessFileAdminExpectation) Then(rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockReprocessFileAdminResults{rp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.ReprocessFileAdmin should be invoked
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockReprocessFileAdmin {
+	if n == 0 {
+		mmReprocessFileAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.ReprocessFileAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmReprocessFileAdmin.expectedInvocations, n)
+	mmReprocessFileAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmReprocessFileAdmin
+}
+
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) invocationsDone() bool {
+	if len(mmReprocessFileAdmin.expectations) == 0 && mmReprocessFileAdmin.defaultExpectation == nil && mmReprocessFileAdmin.mock.funcReprocessFileAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmReprocessFileAdmin.mock.afterReprocessFileAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmReprocessFileAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// ReprocessFileAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmReprocessFileAdmin *ArtifactPrivateServiceClientMock) ReprocessFileAdmin(ctx context.Context, in *mm_artifactv1alpha.ReprocessFileAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ReprocessFileAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmReprocessFileAdmin.beforeReprocessFileAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmReprocessFileAdmin.afterReprocessFileAdminCounter, 1)
+
+	mmReprocessFileAdmin.t.Helper()
+
+	if mmReprocessFileAdmin.inspectFuncReprocessFileAdmin != nil {
+		mmReprocessFileAdmin.inspectFuncReprocessFileAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockReprocessFileAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmReprocessFileAdmin.ReprocessFileAdminMock.mutex.Lock()
+	mmReprocessFileAdmin.ReprocessFileAdminMock.callArgs = append(mmReprocessFileAdmin.ReprocessFileAdminMock.callArgs, &mm_params)
+	mmReprocessFileAdmin.ReprocessFileAdminMock.mutex.Unlock()
+
+	for _, e := range mmReprocessFileAdmin.ReprocessFileAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.rp1, e.results.err
+		}
+	}
+
+	if mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockReprocessFileAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmReprocessFileAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmReprocessFileAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmReprocessFileAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmReprocessFileAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ReprocessFileAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmReprocessFileAdmin.ReprocessFileAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmReprocessFileAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.ReprocessFileAdmin")
+		}
+		return (*mm_results).rp1, (*mm_results).err
+	}
+	if mmReprocessFileAdmin.funcReprocessFileAdmin != nil {
+		return mmReprocessFileAdmin.funcReprocessFileAdmin(ctx, in, opts...)
+	}
+	mmReprocessFileAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// ReprocessFileAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.ReprocessFileAdmin invocations
+func (mmReprocessFileAdmin *ArtifactPrivateServiceClientMock) ReprocessFileAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmReprocessFileAdmin.afterReprocessFileAdminCounter)
+}
+
+// ReprocessFileAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.ReprocessFileAdmin invocations
+func (mmReprocessFileAdmin *ArtifactPrivateServiceClientMock) ReprocessFileAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmReprocessFileAdmin.beforeReprocessFileAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmReprocessFileAdmin *mArtifactPrivateServiceClientMockReprocessFileAdmin) Calls() []*ArtifactPrivateServiceClientMockReprocessFileAdminParams {
+	mmReprocessFileAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockReprocessFileAdminParams, len(mmReprocessFileAdmin.callArgs))
+	copy(argCopy, mmReprocessFileAdmin.callArgs)
+
+	mmReprocessFileAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockReprocessFileAdminDone returns true if the count of the ReprocessFileAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockReprocessFileAdminDone() bool {
+	if m.ReprocessFileAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.ReprocessFileAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.ReprocessFileAdminMock.invocationsDone()
+}
+
+// MinimockReprocessFileAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockReprocessFileAdminInspect() {
+	for _, e := range m.ReprocessFileAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterReprocessFileAdminCounter := mm_atomic.LoadUint64(&m.afterReprocessFileAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ReprocessFileAdminMock.defaultExpectation != nil && afterReprocessFileAdminCounter < 1 {
+		if m.ReprocessFileAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin at\n%s", m.ReprocessFileAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin at\n%s with params: %#v", m.ReprocessFileAdminMock.defaultExpectation.expectationOrigins.origin, *m.ReprocessFileAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcReprocessFileAdmin != nil && afterReprocessFileAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ReprocessFileAdmin at\n%s", m.funcReprocessFileAdminOrigin)
+	}
+
+	if !m.ReprocessFileAdminMock.invocationsDone() && afterReprocessFileAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.ReprocessFileAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ReprocessFileAdminMock.expectedInvocations), m.ReprocessFileAdminMock.expectedInvocationsOrigin, afterReprocessFileAdminCounter)
+	}
+}
+
+type mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin struct {
+	optional           bool
+	mock               *ArtifactPrivateServiceClientMock
+	defaultExpectation *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation
+	expectations       []*ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation
+
+	callArgs []*ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation specifies expectation struct of the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+type ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation struct {
+	mock               *ArtifactPrivateServiceClientMock
+	params             *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams
+	paramPtrs          *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs
+	expectationOrigins ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectationOrigins
+	results            *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminResults
+	returnOrigin       string
+	Counter            uint64
+}
+
+// ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams contains parameters of the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+type ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams struct {
+	ctx  context.Context
+	in   *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest
+	opts []grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs contains pointers to parameters of the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+type ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs struct {
+	ctx  *context.Context
+	in   **mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest
+	opts *[]grpc.CallOption
+}
+
+// ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminResults contains results of the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+type ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminResults struct {
+	rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse
+	err error
+}
+
+// ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminOrigins contains origins of expectations of the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+type ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectationOrigins struct {
+	origin     string
+	originCtx  string
+	originIn   string
+	originOpts string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Optional() *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	mmResetKnowledgeBaseEmbeddingsAdmin.optional = true
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// Expect sets up expected params for ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Expect(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{}
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by ExpectParams functions")
+	}
+
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams{ctx, in, opts}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmResetKnowledgeBaseEmbeddingsAdmin.expectations {
+		if minimock.Equal(e.params, mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params) {
+			mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params)
+		}
+	}
+
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// ExpectCtxParam1 sets up expected param ctx for ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) ExpectCtxParam1(ctx context.Context) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{}
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Expect")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs{}
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs.ctx = &ctx
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
+
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// ExpectInParam2 sets up expected param in for ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) ExpectInParam2(in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{}
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Expect")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs{}
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs.in = &in
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.expectationOrigins.originIn = minimock.CallerInfo(1)
+
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// ExpectOptsParam3 sets up expected param opts for ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) ExpectOptsParam3(opts ...grpc.CallOption) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{}
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.params != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Expect")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParamPtrs{}
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.paramPtrs.opts = &opts
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// Inspect accepts an inspector function that has same arguments as the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Inspect(f func(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption)) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.inspectFuncResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("Inspect function is already set for ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin")
+	}
+
+	mmResetKnowledgeBaseEmbeddingsAdmin.mock.inspectFuncResetKnowledgeBaseEmbeddingsAdmin = f
+
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+// Return sets up results that will be returned by ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Return(rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{mock: mmResetKnowledgeBaseEmbeddingsAdmin.mock}
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.results = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminResults{rp1, err}
+	mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmResetKnowledgeBaseEmbeddingsAdmin.mock
+}
+
+// Set uses given function f to mock the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin method
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Set(f func(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse, err error)) *ArtifactPrivateServiceClientMock {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("Default expectation is already set for the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin method")
+	}
+
+	if len(mmResetKnowledgeBaseEmbeddingsAdmin.expectations) > 0 {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("Some expectations are already set for the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin method")
+	}
+
+	mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin = f
+	mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdminOrigin = minimock.CallerInfo(1)
+	return mmResetKnowledgeBaseEmbeddingsAdmin.mock
+}
+
+// When sets expectation for the ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin which will trigger the result defined by the following
+// Then helper
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) When(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption) *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation {
+	if mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock is already set by Set")
+	}
+
+	expectation := &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation{
+		mock:               mmResetKnowledgeBaseEmbeddingsAdmin.mock,
+		params:             &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams{ctx, in, opts},
+		expectationOrigins: ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.expectations = append(mmResetKnowledgeBaseEmbeddingsAdmin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin return parameters for the expectation previously defined by the When method
+func (e *ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminExpectation) Then(rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse, err error) *ArtifactPrivateServiceClientMock {
+	e.results = &ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminResults{rp1, err}
+	return e.mock
+}
+
+// Times sets number of times ArtifactPrivateServiceClient.ResetKnowledgeBaseEmbeddingsAdmin should be invoked
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Times(n uint64) *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin {
+	if n == 0 {
+		mmResetKnowledgeBaseEmbeddingsAdmin.mock.t.Fatalf("Times of ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.expectedInvocations, n)
+	mmResetKnowledgeBaseEmbeddingsAdmin.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmResetKnowledgeBaseEmbeddingsAdmin
+}
+
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) invocationsDone() bool {
+	if len(mmResetKnowledgeBaseEmbeddingsAdmin.expectations) == 0 && mmResetKnowledgeBaseEmbeddingsAdmin.defaultExpectation == nil && mmResetKnowledgeBaseEmbeddingsAdmin.mock.funcResetKnowledgeBaseEmbeddingsAdmin == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.mock.afterResetKnowledgeBaseEmbeddingsAdminCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// ResetKnowledgeBaseEmbeddingsAdmin implements mm_artifactv1alpha.ArtifactPrivateServiceClient
+func (mmResetKnowledgeBaseEmbeddingsAdmin *ArtifactPrivateServiceClientMock) ResetKnowledgeBaseEmbeddingsAdmin(ctx context.Context, in *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminRequest, opts ...grpc.CallOption) (rp1 *mm_artifactv1alpha.ResetKnowledgeBaseEmbeddingsAdminResponse, err error) {
+	mm_atomic.AddUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.beforeResetKnowledgeBaseEmbeddingsAdminCounter, 1)
+	defer mm_atomic.AddUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.afterResetKnowledgeBaseEmbeddingsAdminCounter, 1)
+
+	mmResetKnowledgeBaseEmbeddingsAdmin.t.Helper()
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.inspectFuncResetKnowledgeBaseEmbeddingsAdmin != nil {
+		mmResetKnowledgeBaseEmbeddingsAdmin.inspectFuncResetKnowledgeBaseEmbeddingsAdmin(ctx, in, opts...)
+	}
+
+	mm_params := ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams{ctx, in, opts}
+
+	// Record call args
+	mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.mutex.Lock()
+	mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.callArgs = append(mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.callArgs, &mm_params)
+	mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.mutex.Unlock()
+
+	for _, e := range mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.rp1, e.results.err
+		}
+	}
+
+	if mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.Counter, 1)
+		mm_want := mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.params
+		mm_want_ptrs := mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.paramPtrs
+
+		mm_got := ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams{ctx, in, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmResetKnowledgeBaseEmbeddingsAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.in != nil && !minimock.Equal(*mm_want_ptrs.in, mm_got.in) {
+				mmResetKnowledgeBaseEmbeddingsAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin got unexpected parameter in, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.expectationOrigins.originIn, *mm_want_ptrs.in, mm_got.in, minimock.Diff(*mm_want_ptrs.in, mm_got.in))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmResetKnowledgeBaseEmbeddingsAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmResetKnowledgeBaseEmbeddingsAdmin.t.Errorf("ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmResetKnowledgeBaseEmbeddingsAdmin.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.results
+		if mm_results == nil {
+			mmResetKnowledgeBaseEmbeddingsAdmin.t.Fatal("No results are set for the ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin")
+		}
+		return (*mm_results).rp1, (*mm_results).err
+	}
+	if mmResetKnowledgeBaseEmbeddingsAdmin.funcResetKnowledgeBaseEmbeddingsAdmin != nil {
+		return mmResetKnowledgeBaseEmbeddingsAdmin.funcResetKnowledgeBaseEmbeddingsAdmin(ctx, in, opts...)
+	}
+	mmResetKnowledgeBaseEmbeddingsAdmin.t.Fatalf("Unexpected call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin. %v %v %v", ctx, in, opts)
+	return
+}
+
+// ResetKnowledgeBaseEmbeddingsAdminAfterCounter returns a count of finished ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin invocations
+func (mmResetKnowledgeBaseEmbeddingsAdmin *ArtifactPrivateServiceClientMock) ResetKnowledgeBaseEmbeddingsAdminAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.afterResetKnowledgeBaseEmbeddingsAdminCounter)
+}
+
+// ResetKnowledgeBaseEmbeddingsAdminBeforeCounter returns a count of ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin invocations
+func (mmResetKnowledgeBaseEmbeddingsAdmin *ArtifactPrivateServiceClientMock) ResetKnowledgeBaseEmbeddingsAdminBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmResetKnowledgeBaseEmbeddingsAdmin.beforeResetKnowledgeBaseEmbeddingsAdminCounter)
+}
+
+// Calls returns a list of arguments used in each call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmResetKnowledgeBaseEmbeddingsAdmin *mArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdmin) Calls() []*ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams {
+	mmResetKnowledgeBaseEmbeddingsAdmin.mutex.RLock()
+
+	argCopy := make([]*ArtifactPrivateServiceClientMockResetKnowledgeBaseEmbeddingsAdminParams, len(mmResetKnowledgeBaseEmbeddingsAdmin.callArgs))
+	copy(argCopy, mmResetKnowledgeBaseEmbeddingsAdmin.callArgs)
+
+	mmResetKnowledgeBaseEmbeddingsAdmin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockResetKnowledgeBaseEmbeddingsAdminDone returns true if the count of the ResetKnowledgeBaseEmbeddingsAdmin invocations corresponds
+// the number of defined expectations
+func (m *ArtifactPrivateServiceClientMock) MinimockResetKnowledgeBaseEmbeddingsAdminDone() bool {
+	if m.ResetKnowledgeBaseEmbeddingsAdminMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.ResetKnowledgeBaseEmbeddingsAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.ResetKnowledgeBaseEmbeddingsAdminMock.invocationsDone()
+}
+
+// MinimockResetKnowledgeBaseEmbeddingsAdminInspect logs each unmet expectation
+func (m *ArtifactPrivateServiceClientMock) MinimockResetKnowledgeBaseEmbeddingsAdminInspect() {
+	for _, e := range m.ResetKnowledgeBaseEmbeddingsAdminMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterResetKnowledgeBaseEmbeddingsAdminCounter := mm_atomic.LoadUint64(&m.afterResetKnowledgeBaseEmbeddingsAdminCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation != nil && afterResetKnowledgeBaseEmbeddingsAdminCounter < 1 {
+		if m.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin at\n%s", m.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin at\n%s with params: %#v", m.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.expectationOrigins.origin, *m.ResetKnowledgeBaseEmbeddingsAdminMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcResetKnowledgeBaseEmbeddingsAdmin != nil && afterResetKnowledgeBaseEmbeddingsAdminCounter < 1 {
+		m.t.Errorf("Expected call to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin at\n%s", m.funcResetKnowledgeBaseEmbeddingsAdminOrigin)
+	}
+
+	if !m.ResetKnowledgeBaseEmbeddingsAdminMock.invocationsDone() && afterResetKnowledgeBaseEmbeddingsAdminCounter > 0 {
+		m.t.Errorf("Expected %d calls to ArtifactPrivateServiceClientMock.ResetKnowledgeBaseEmbeddingsAdmin at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ResetKnowledgeBaseEmbeddingsAdminMock.expectedInvocations), m.ResetKnowledgeBaseEmbeddingsAdminMock.expectedInvocationsOrigin, afterResetKnowledgeBaseEmbeddingsAdminCounter)
 	}
 }
 
@@ -7718,11 +10022,15 @@ func (m *ArtifactPrivateServiceClientMock) MinimockFinish() {
 		if !m.minimockDone() {
 			m.MinimockAbortKnowledgeBaseUpdateAdminInspect()
 
+			m.MinimockAddFilesToKnowledgeBaseAdminInspect()
+
 			m.MinimockCreateKnowledgeBaseAdminInspect()
 
 			m.MinimockCreateSystemAdminInspect()
 
 			m.MinimockDeleteFileAdminInspect()
+
+			m.MinimockDeleteKnowledgeBaseAdminInspect()
 
 			m.MinimockDeleteSystemAdminInspect()
 
@@ -7736,11 +10044,19 @@ func (m *ArtifactPrivateServiceClientMock) MinimockFinish() {
 
 			m.MinimockGetSystemAdminInspect()
 
+			m.MinimockListFilesAdminInspect()
+
+			m.MinimockListKnowledgeBasesAdminInspect()
+
 			m.MinimockListSystemsAdminInspect()
 
 			m.MinimockPurgeRollbackAdminInspect()
 
 			m.MinimockRenameSystemAdminInspect()
+
+			m.MinimockReprocessFileAdminInspect()
+
+			m.MinimockResetKnowledgeBaseEmbeddingsAdminInspect()
 
 			m.MinimockRollbackAdminInspect()
 
@@ -7779,18 +10095,24 @@ func (m *ArtifactPrivateServiceClientMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockAbortKnowledgeBaseUpdateAdminDone() &&
+		m.MinimockAddFilesToKnowledgeBaseAdminDone() &&
 		m.MinimockCreateKnowledgeBaseAdminDone() &&
 		m.MinimockCreateSystemAdminDone() &&
 		m.MinimockDeleteFileAdminDone() &&
+		m.MinimockDeleteKnowledgeBaseAdminDone() &&
 		m.MinimockDeleteSystemAdminDone() &&
 		m.MinimockExecuteKnowledgeBaseUpdateAdminDone() &&
 		m.MinimockGetDefaultSystemAdminDone() &&
 		m.MinimockGetKnowledgeBaseUpdateStatusAdminDone() &&
 		m.MinimockGetObjectAdminDone() &&
 		m.MinimockGetSystemAdminDone() &&
+		m.MinimockListFilesAdminDone() &&
+		m.MinimockListKnowledgeBasesAdminDone() &&
 		m.MinimockListSystemsAdminDone() &&
 		m.MinimockPurgeRollbackAdminDone() &&
 		m.MinimockRenameSystemAdminDone() &&
+		m.MinimockReprocessFileAdminDone() &&
+		m.MinimockResetKnowledgeBaseEmbeddingsAdminDone() &&
 		m.MinimockRollbackAdminDone() &&
 		m.MinimockSetDefaultSystemAdminDone() &&
 		m.MinimockSetRollbackRetentionAdminDone() &&

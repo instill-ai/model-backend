@@ -780,16 +780,16 @@ func (s *service) ListPublicModels(ctx context.Context, pageSize int32, pageToke
 	role := "reader"
 
 	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
+		uidAllowList, err = s.aclClient.ListPublicPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPublicPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -799,7 +799,7 @@ func (s *service) ListPublicModels(ctx context.Context, pageSize int32, pageToke
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -1034,16 +1034,16 @@ func (s *service) ListModels(ctx context.Context, ns resource.Namespace, pageSiz
 	role := "reader"
 
 	if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PUBLIC {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, true)
+		uidAllowList, err = s.aclClient.ListPublicPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
 	} else if visibility != nil && *visibility == modelpb.Model_VISIBILITY_PRIVATE {
-		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, false)
+		allUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		publicUIDAllowList, err := s.aclClient.ListPermissions(ctx, "model_", role, true)
+		publicUIDAllowList, err := s.aclClient.ListPublicPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -1053,7 +1053,7 @@ func (s *service) ListModels(ctx context.Context, ns resource.Namespace, pageSiz
 			}
 		}
 	} else {
-		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role, false)
+		uidAllowList, err = s.aclClient.ListPermissions(ctx, "model_", role)
 		if err != nil {
 			return nil, 0, "", err
 		}

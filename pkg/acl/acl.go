@@ -25,7 +25,8 @@ type ACLClientInterface interface {
 	Purge(ctx context.Context, objectType string, objectUID uuid.UUID) error
 	CheckPermission(ctx context.Context, objectType string, objectUID uuid.UUID, role string) (bool, error)
 	CheckPublicExecutable(ctx context.Context, objectType string, objectUID uuid.UUID) (bool, error)
-	ListPermissions(ctx context.Context, objectType string, role string, isPublic bool) ([]uuid.UUID, error)
+	ListPermissions(ctx context.Context, objectType string, role string) ([]uuid.UUID, error)
+	ListPublicPermissions(ctx context.Context, objectType string, role string) ([]uuid.UUID, error)
 }
 
 // ACLClient wraps the shared ACL client and adds model-specific methods.
@@ -104,6 +105,11 @@ func (c *ACLClient) DeletePublicModelPermission(ctx context.Context, modelUID uu
 }
 
 // ListPermissions lists all objects of a type that the current user has a role for.
-func (c *ACLClient) ListPermissions(ctx context.Context, objectType string, role string, isPublic bool) ([]uuid.UUID, error) {
-	return c.ACLClient.ListPermissions(ctx, objectType, role, isPublic)
+func (c *ACLClient) ListPermissions(ctx context.Context, objectType string, role string) ([]uuid.UUID, error) {
+	return c.ACLClient.ListPermissions(ctx, objectType, role)
+}
+
+// ListPublicPermissions lists all objects of a type readable by everyone (FGA wildcard user:*).
+func (c *ACLClient) ListPublicPermissions(ctx context.Context, objectType string, role string) ([]uuid.UUID, error) {
+	return c.ACLClient.ListPublicPermissions(ctx, objectType, role)
 }
