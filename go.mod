@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	cloud.google.com/go/longrunning v0.6.7
-	github.com/alicebob/miniredis/v2 v2.33.0
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/frankban/quicktest v1.14.6
 	github.com/gabriel-vasile/mimetype v1.4.5
 	github.com/go-resty/resty/v2 v2.16.5
@@ -17,8 +17,8 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260130101410-2df13d165253
-	github.com/instill-ai/x v0.10.1-alpha.0.20260129195415-09e1680f104d
+	github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260303010248-9dda50abe5bb
+	github.com/instill-ai/x v0.10.1-alpha.0.20260503172130-376b2c86aa36
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/knadh/koanf v1.5.0
 	github.com/lestrrat-go/jspointer v0.0.0-20181205001929-82fadba7561c
@@ -55,7 +55,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
