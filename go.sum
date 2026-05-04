@@ -248,8 +248,8 @@ github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 h1:W9WBk7
 github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839/go.mod h1:xaLFMmpvUxqXtVkUJfg9QmT88cDaCJ3ZKgdZ78oO8Qo=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260303010248-9dda50abe5bb h1:y/0EnCVzJv8uof6mtjDKWvhGL27Hx4Vq30iYncFBPDI=
 github.com/instill-ai/protogen-go v0.3.3-alpha.0.20260303010248-9dda50abe5bb/go.mod h1:bCnBosofpaUxKBuTTJM3/I3thAK37kvfBnKByjnLsl4=
-github.com/instill-ai/x v0.10.1-alpha.0.20260504035013-d46ae1fa56df h1:O6ftLzLEyD6416OANnMY2ABaAkW4PhFcdQybPIq1K7I=
-github.com/instill-ai/x v0.10.1-alpha.0.20260504035013-d46ae1fa56df/go.mod h1:r6kGo7M1dkYtzSqetAWT1kpglpVzqOmPc+ADs6obpKs=
+github.com/instill-ai/x v0.10.1-alpha.0.20260504052429-28ea48389e9d h1:Fr/s1Pa27DPcpXRolykqttGbX4WPDMpv0HFR2bTTcUM=
+github.com/instill-ai/x v0.10.1-alpha.0.20260504052429-28ea48389e9d/go.mod h1:r6kGo7M1dkYtzSqetAWT1kpglpVzqOmPc+ADs6obpKs=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
